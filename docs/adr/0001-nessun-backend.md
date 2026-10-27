@@ -1,0 +1,20 @@
+---
+status: Accettato
+date: 2026-10-27
+---
+
+# Nessun backend: tutta la logica di posta sul dispositivo
+
+Postino è usato dall'autore e da pochi tester (meno di 100), senza pubblicazione sugli store. Tutta la logica di posta gira sul dispositivo e parla direttamente con i Provider: non c'è nessun server da ospitare e i token degli Account non lasciano mai il dispositivo. Il client OAuth Google è pubblicato "in produzione non verificato" (avviso di app non verificata, tetto di 100 utenti): i refresh token non scadono, a differenza della modalità Testing che li fa scadere dopo 7 giorni.
+
+## Alternative considerate
+
+- **Piccolo server push** (IMAP IDLE + APNs/FCM): notifiche affidabili, ma richiede hosting e custodire i token degli Account lato server.
+- **Backend di sincronizzazione completo**: massimo controllo, massimo costo di gestione e superficie di sicurezza, sproporzionato per meno di 100 utenti.
+
+## Conseguenze
+
+- Le notifiche di nuova posta su mobile sono in ritardo o inaffidabili: dipendono dal fetch in background pianificato dal sistema operativo (su iOS, almeno 15 minuti).
+- Il desktop compensa restando attivo nella tray / barra dei menu con connessioni aperte.
+- Una Posticipa torna nella posta in arrivo solo quando uno dei dispositivi dell'utente è in esecuzione dopo il momento scelto.
+- Un server push potrà essere aggiunto in seguito senza rifare il resto.

@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
 
+import 'design_system/tokens/postino_theme.dart';
 import 'i18n/strings.g.dart';
 import 'main.config.dart';
 import 'main.route.dart';
@@ -33,6 +34,8 @@ class PostinoApp extends StatelessWidget {
         routes: routes,
         initialPath: routePaths.posta,
       ),
+      theme: PostinoTheme.light(),
+      darkTheme: PostinoTheme.dark(),
       onGenerateTitle: (context) => context.t.appTitle,
       locale: TranslationProvider.of(context).flutterLocale,
       supportedLocales: AppLocaleUtils.supportedLocales,

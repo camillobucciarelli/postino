@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.8
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Codegen
+        run: |
+          dart run routefly
+          dart run build_runner build
+      - name: Generated code is committed
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - run: flutter analyze
+      - run: flutter test

@@ -5,3 +5,4 @@ targets:
       source_gen:combining_builder:
         generate_for:
           - lib/core/data/postino_database.dart
+          - lib/core/data/daos/*.dart

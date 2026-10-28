@@ -5,68 +5,24 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3 show Database;
 
+// The generated part maps enum columns to these types.
 import '../domain/account.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
+import 'daos/accounts_dao.dart';
+import 'daos/messages_dao.dart';
+import 'tables/accounts_table.dart';
+import 'tables/labels_table.dart';
+import 'tables/message_labels_table.dart';
+import 'tables/messages_table.dart';
 
 part 'postino_database.g.dart';
 
-@DataClassName('AccountRow')
-class Accounts extends Table {
-  TextColumn get id => text()();
-  TextColumn get address => text()();
-  TextColumn get provider => textEnum<ProviderKind>()();
-  IntColumn get color => integer()();
-  IntColumn get position => integer()();
-  TextColumn get status => textEnum<AccountStatus>()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-@DataClassName('LabelRow')
-class Labels extends Table {
-  TextColumn get accountId => text()();
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  TextColumn get kind => textEnum<LabelKind>()();
-
-  @override
-  Set<Column> get primaryKey => {accountId, id};
-}
-
-@DataClassName('MessageRow')
-class Messages extends Table {
-  TextColumn get accountId => text()();
-  TextColumn get id => text()();
-  TextColumn get messageId => text()();
-  TextColumn get conversationId => text()();
-  TextColumn get sender => text()();
-  TextColumn get recipients => text()();
-  TextColumn get subject => text()();
-  TextColumn get snippet => text()();
-
-  /// Milliseconds since epoch, UTC.
-  IntColumn get date => integer()();
-  BoolColumn get isRead => boolean()();
-  BoolColumn get isStarred => boolean()();
-
-  @override
-  Set<Column> get primaryKey => {accountId, id};
-}
-
-@DataClassName('MessageLabelRow')
-class MessageLabels extends Table {
-  TextColumn get accountId => text()();
-  TextColumn get messageId => text()();
-  TextColumn get labelId => text()();
-
-  @override
-  Set<Column> get primaryKey => {accountId, messageId, labelId};
-}
-
 /// Single local database (ADR 0003). The UI reads only from here; the sync engine writes.
-@DriftDatabase(tables: [Accounts, Labels, Messages, MessageLabels])
+@DriftDatabase(
+  tables: [Accounts, Labels, Messages, MessageLabels],
+  daos: [AccountsDao, MessagesDao],
+)
 class PostinoDatabase extends _$PostinoDatabase {
   PostinoDatabase(super.executor);
 

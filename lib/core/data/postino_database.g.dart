@@ -1671,6 +1671,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $LabelsTable labels = $LabelsTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $MessageLabelsTable messageLabels = $MessageLabelsTable(this);
+  late final AccountsDao accountsDao = AccountsDao(this as PostinoDatabase);
+  late final MessagesDao messagesDao = MessagesDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

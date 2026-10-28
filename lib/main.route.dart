@@ -3,7 +3,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
-import 'app/posta/posta_page.dart' as a0;
+import 'app/posta/posta_layout.dart' as a0;
 
 Route b0Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a0.UnifiedInboxPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a0.PostaLayout());

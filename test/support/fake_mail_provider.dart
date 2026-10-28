@@ -46,6 +46,11 @@ class FakeMailProvider implements MailProvider {
     _changes.add(null);
   }
 
+  void removeRemotely(String id) {
+    _messages.remove(id);
+    _changes.add(null);
+  }
+
   void goOffline() => _offline = true;
   void breakAuth() => _authBroken = true;
 

@@ -21,7 +21,7 @@ class SyncEngine {
 
   Future<void> _sync(String accountId, MailProvider provider) async {
     if (await provider.initialSync() case Ok(:final value)) {
-      _store.applySync(accountId, value);
+      _store.applySync(accountId, value, fullSnapshot: true);
     }
   }
 }

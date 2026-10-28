@@ -39,9 +39,27 @@ class MailStore implements InboxRepository {
       ),
   ];
 
-  void applySync(String accountId, SyncBatch batch) {
+  /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
+  void applySync(
+    String accountId,
+    SyncBatch batch, {
+    bool fullSnapshot = false,
+  }) {
     _db.execute('BEGIN');
     try {
+      if (fullSnapshot) {
+        final keep = [for (final m in batch.messages) m.id];
+        final notKept = keep.isEmpty
+            ? ''
+            : ' AND id NOT IN (${List.filled(keep.length, '?').join(',')})';
+        final args = [accountId, ...keep];
+        _db.execute(
+          'DELETE FROM message_labels WHERE account_id = ? AND message_id IN '
+          '(SELECT id FROM messages WHERE account_id = ?$notKept)',
+          [accountId, ...args],
+        );
+        _db.execute('DELETE FROM messages WHERE account_id = ?$notKept', args);
+      }
       for (final l in batch.labels) {
         _db.execute('INSERT OR REPLACE INTO labels VALUES (?, ?, ?, ?)', [
           accountId,

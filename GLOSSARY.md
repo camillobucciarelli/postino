@@ -18,6 +18,10 @@ _Avoid_: Servizio, server
 Lo stato di un Account il cui Provider non accetta più il suo accesso (password cambiata, accesso revocato). La sua posta resta leggibile, le azioni in attesa restano in sospeso e l'utente è invitato ad accedere di nuovo.
 _Avoid_: Disconnesso, errore di login
 
+**Conflitto**:
+Un'Azione fatta offline che, alla riconnessione, trova il messaggio cambiato altrove in modo diverso; resta in sospeso finché l'utente sceglie se tenere la propria modifica o quella del Provider.
+_Avoid_: collisione, divergenza
+
 **Posta unificata**:
 La vista che fonde la posta in arrivo di tutti gli Account.
 _Avoid_: Inbox globale, posta combinata

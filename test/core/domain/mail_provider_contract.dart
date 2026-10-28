@@ -73,6 +73,18 @@ void mailProviderContract(String name, ContractHarness Function() create) {
       },
     );
 
+    test('the delta reduces each message to its final state', () async {
+      h.deliver(msg('a'));
+      final first = _ok(await h.provider.initialSync());
+      h.removeRemotely('a');
+      h.deliver(msg('a'));
+      h.deliver(msg('b'));
+      h.removeRemotely('b');
+      final next = _ok(await h.provider.incrementalSync(first.cursor));
+      expect(next.messages.map((m) => m.id), ['a']);
+      expect(next.removedMessageIds, ['b']);
+    });
+
     test('a refused login is an AuthFailure', () async {
       h.breakAuth();
       for (final r in [

@@ -82,19 +82,24 @@ class FakeMailProvider implements MailProvider {
   );
 
   @override
-  Future<Result<SyncBatch>> incrementalSync(String cursor) async => _guard(
-    () => SyncBatch(
+  Future<Result<SyncBatch>> incrementalSync(String cursor) async => _guard(() {
+    // Only the latest operation per id counts (a Provider delta is final state).
+    final latest = <String, (int, Message?, String)>{};
+    for (final e in _log) {
+      if (e.$1 > int.parse(cursor)) latest[e.$2?.id ?? e.$3] = e;
+    }
+    return SyncBatch(
       cursor: '$_version',
       messages: [
-        for (final e in _log)
-          if (e.$1 > int.parse(cursor) && e.$2 != null) e.$2!,
+        for (final e in latest.values)
+          if (e.$2 != null) e.$2!,
       ],
       removedMessageIds: [
-        for (final e in _log)
-          if (e.$1 > int.parse(cursor) && e.$2 == null) e.$3,
+        for (final e in latest.values)
+          if (e.$2 == null) e.$3,
       ],
-    ),
-  );
+    );
+  });
 
   @override
   Stream<void> get changes => _changes.stream;

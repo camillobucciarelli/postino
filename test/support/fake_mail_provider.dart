@@ -48,6 +48,7 @@ class FakeMailProvider implements MailProvider {
 
   void removeRemotely(String id) {
     _messages.remove(id);
+    _log.add((++_version, null, id));
     _changes.add(null);
   }
 
@@ -87,6 +88,10 @@ class FakeMailProvider implements MailProvider {
       messages: [
         for (final e in _log)
           if (e.$1 > int.parse(cursor) && e.$2 != null) e.$2!,
+      ],
+      removedMessageIds: [
+        for (final e in _log)
+          if (e.$1 > int.parse(cursor) && e.$2 == null) e.$3,
       ],
     ),
   );

@@ -12,6 +12,9 @@ abstract class ContractHarness {
 
   /// A message arrives in the mailbox "elsewhere".
   void deliver(Message m);
+
+  /// A message is deleted from the mailbox "elsewhere".
+  void removeRemotely(String id);
   void goOffline();
   void breakAuth();
 }
@@ -22,6 +25,8 @@ class FakeHarness implements ContractHarness {
   MailProvider get provider => fake;
   @override
   void deliver(Message m) => fake.deliver(m);
+  @override
+  void removeRemotely(String id) => fake.removeRemotely(id);
   @override
   void goOffline() => fake.goOffline();
   @override
@@ -55,6 +60,18 @@ void mailProviderContract(String name, ContractHarness Function() create) {
       final again = _ok(await h.provider.incrementalSync(next.cursor));
       expect(again.messages, isEmpty);
     });
+
+    test(
+      'a message removed remotely shows up as removed and moves the cursor',
+      () async {
+        h.deliver(msg('a'));
+        final first = _ok(await h.provider.initialSync());
+        h.removeRemotely('a');
+        final next = _ok(await h.provider.incrementalSync(first.cursor));
+        expect(next.removedMessageIds, ['a']);
+        expect(next.cursor, isNot(first.cursor));
+      },
+    );
 
     test('a refused login is an AuthFailure', () async {
       h.breakAuth();

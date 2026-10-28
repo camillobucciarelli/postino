@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../features/posta/presentation/unified_inbox.dart';
 import '../../i18n/strings.g.dart';
 
 /// Layout of `/posta`: child routes render in the [RouterOutlet]; with no child
@@ -14,10 +15,18 @@ class PostaLayout extends StatelessWidget {
     // Routefly.of subscribes to route changes; the last configuration is the active route.
     final own = Routefly.of(context).route.uri.path;
     if (Routefly.currentOriginalPath != own) return const RouterOutlet();
-    // ponytail: placeholder for Posta unificata, replaced by the posta feature's presentation.
     return Scaffold(
       appBar: AppBar(title: Text(context.t.appTitle)),
-      body: Center(child: Text(context.t.postaUnificata)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(context.t.postaUnificata),
+          ),
+          const Expanded(child: UnifiedInbox()),
+        ],
+      ),
     );
   }
 }

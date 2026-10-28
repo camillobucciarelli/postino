@@ -69,6 +69,11 @@ List<String> violations(String file, String source) {
     if (file.startsWith('app/') && segments.contains('data')) {
       bad('pages must not import data');
     }
+    // ADR 0003: the UI reads only from the local database, never from a Provider.
+    if ((file.startsWith('app/') || file.split('/').contains('presentation')) &&
+        t.endsWith('core/domain/mail_provider.dart')) {
+      bad('the UI must not import the Provider interface');
+    }
   }
   return out;
 }
@@ -189,6 +194,28 @@ void main() {
           "import 'dart:async';\nimport 'package:flutter/widgets.dart'\n    show Widget,\n        State;",
         ),
         isNotEmpty,
+      );
+    });
+    for (final file in [
+      'features/posta/presentation/inbox.dart',
+      'app/posta/posta_layout.dart',
+    ]) {
+      for (final uri in [
+        'package:postino/core/domain/mail_provider.dart',
+        '../../core/domain/mail_provider.dart',
+      ]) {
+        test('$file may not import the Provider interface ($uri)', () {
+          expect(violations(file, "import '$uri';"), isNotEmpty);
+        });
+      }
+    }
+    test('the sync engine in core/data may import the Provider interface', () {
+      expect(
+        violations(
+          'core/data/sync_engine.dart',
+          "import '../domain/mail_provider.dart';",
+        ),
+        isEmpty,
       );
     });
     test('Windows paths are normalised', () {

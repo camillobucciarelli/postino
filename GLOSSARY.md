@@ -107,6 +107,10 @@ Su Android, la scelta di ricevere la posta nuova in tempo reale al prezzo di una
 Un mittente le cui immagini remote l'utente ha scelto di mostrare sempre. Fa parte delle Impostazioni di Postino.
 _Avoid_: Whitelist, contatto sicuro
 
+**Segnalazione di un problema**:
+L'email che un utente manda all'autore di Postino con il log degli errori allegato, preparata da Postino al riavvio dopo un crash o su richiesta. L'utente la rilegge e decide se inviarla.
+_Avoid_: Crash report, telemetria
+
 ## Relationships
 
 - Un **Account** appartiene a un solo **Provider**

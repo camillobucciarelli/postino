@@ -55,6 +55,10 @@ _Avoid_: Thread, discussione
 **Bozza**:
 Un messaggio non ancora inviato, salvato nella cartella Bozze del Provider del suo Account, così da poterlo riprendere su qualsiasi dispositivo o in un altro client. Appartiene a un solo Account; se viene modificata in due posti diversi nasce un Conflitto.
 
+**Annulla invio**:
+La breve attesa dopo Invia durante la quale l'utente può ritirare il messaggio e tornare a modificarlo; trascorsa l'attesa il messaggio parte anche se l'app è stata chiusa.
+_Avoid_: Undo send, ripensamento
+
 **Invito**:
 Un messaggio che propone un evento di calendario, a cui l'utente risponde Sì, Forse o No.
 _Avoid_: Evento (è la cosa proposta), meeting

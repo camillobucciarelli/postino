@@ -52,6 +52,9 @@ _Avoid_: Snoozed, in sospeso
 I messaggi di uno stesso scambio, sempre all'interno di un solo Account. Lo stesso scambio che raggiunge due Account sono due Conversazioni: nella Posta unificata compare due volte, ciascuna con il colore del proprio Account.
 _Avoid_: Thread, discussione
 
+**Bozza**:
+Un messaggio non ancora inviato, salvato nella cartella Bozze del Provider del suo Account, così da poterlo riprendere su qualsiasi dispositivo o in un altro client. Appartiene a un solo Account; se viene modificata in due posti diversi nasce un Conflitto.
+
 **Invito**:
 Un messaggio che propone un evento di calendario, a cui l'utente risponde Sì, Forse o No.
 _Avoid_: Evento (è la cosa proposta), meeting
@@ -100,5 +103,6 @@ _Avoid_: Whitelist, contatto sicuro
 - Un **Provider** può ospitare molti **Account**
 - Le **Etichette** appartengono a un **Account** e non sono mai condivise tra **Account**
 - Una **Conversazione** appartiene a un solo **Account**
+- Una **Bozza** appartiene a un solo **Account**
 - La **Posta unificata** mostra la posta in arrivo di tutti gli **Account**
 - Una **Sessione di smistamento** applica le **Azioni** ai messaggi della posta in arrivo

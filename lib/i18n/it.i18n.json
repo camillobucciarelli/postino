@@ -13,6 +13,7 @@
   "connect": {
     "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
     "offline": "Nessuna connessione: riprova quando sei online.",
+    "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
     "failed": "Collegamento non riuscito. Riprova."
   }
 }

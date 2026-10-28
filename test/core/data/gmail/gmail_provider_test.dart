@@ -124,6 +124,18 @@ void main() {
     );
   });
 
+  test('a 403 for insufficient scope is an AuthFailure, so the Account is Da ricollegare', () async {
+    final h = GmailHarness();
+    final p = GmailProvider(
+      _account,
+      h.keychain,
+      MockClient((_) async => _fixture('insufficient_scope')),
+      FakeClock(_now),
+      const GoogleClient('test-client.apps.googleusercontent.com'),
+    );
+    expect(await p.initialSync(), _err<AuthFailure>());
+  });
+
   test('no tokens in the keychain is an AuthFailure', () async {
     final h = GmailHarness()..keychain.values.clear();
     expect(await h.provider.refreshAuth(), _err<AuthFailure>());

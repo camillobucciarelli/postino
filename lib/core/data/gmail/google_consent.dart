@@ -50,7 +50,8 @@ class GoogleWebConsent implements GoogleConsent {
 
   // ponytail: fixed loopback port; pick a free one if it ever clashes.
   static const _loopbackRedirect = 'http://localhost:53682';
-  static const _scopes = 'https://mail.google.com/ openid email';
+  static const _gmailScope = 'https://mail.google.com/';
+  static const _scopes = '$_gmailScope openid email';
 
   @override
   Future<Result<GoogleGrant>> run({String? loginHint}) async {
@@ -101,6 +102,12 @@ class GoogleWebConsent implements GoogleConsent {
         return Err(UnexpectedFailure('code exchange: HTTP ${r.statusCode}'));
       }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
+      // Granular consent: the user can untick the Gmail permission and still get tokens.
+      if (!((body['scope'] as String?) ?? '')
+          .split(' ')
+          .contains(_gmailScope)) {
+        return const Err(MissingPermissionFailure());
+      }
       // The id_token comes straight from Google's token endpoint over TLS: its payload needs no signature check.
       final idToken = (body['id_token'] as String).split('.')[1];
       final claims = jsonDecode(

@@ -28,6 +28,8 @@ void main() {
   late Uri opened;
   late String scheme;
 
+  String token = 'token_exchange';
+
   GoogleWebConsent consent({
     GoogleClient client = _client,
     bool loopback = false,
@@ -35,7 +37,7 @@ void main() {
   }) => GoogleWebConsent(
     MockClient((r) async {
       requests.add(r);
-      return _fixture('token_exchange');
+      return _fixture(token);
     }),
     FakeClock(_now),
     client,
@@ -48,7 +50,10 @@ void main() {
     loopback,
   );
 
-  setUp(() => requests = []);
+  setUp(() {
+    requests = [];
+    token = 'token_exchange';
+  });
 
   test('consent with PKCE, then the code is exchanged for the tokens and the address', () async {
     final r = await consent().run(loginHint: 'ada@gmail.com');
@@ -75,6 +80,19 @@ void main() {
     expect(exchange['redirect_uri'], q['redirect_uri']);
     expect(exchange['client_id'], _client.id);
     expect(exchange['code_verifier'], isNotEmpty);
+  });
+
+  test('a token without the Gmail scope (granular consent) is a MissingPermissionFailure', () async {
+    token = 'token_exchange_no_gmail';
+    final r = await consent().run();
+    expect(
+      r,
+      isA<Err>().having(
+        (e) => e.failure,
+        'failure',
+        isA<MissingPermissionFailure>(),
+      ),
+    );
   });
 
   test('desktop uses a loopback redirect', () async {

@@ -13,6 +13,7 @@
   "connect": {
     "missingSetting": "$setting is missing: start Postino with --dart-define=$setting=… (see README).",
     "offline": "No connection: try again when you are online.",
+    "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
     "failed": "Couldn't connect. Try again."
   }
 }

@@ -63,4 +63,19 @@ void main() {
     expect(find.textContaining('GOOGLE_CLIENT_ID'), findsOneWidget);
     expect(find.text('Collega Gmail'), findsOneWidget);
   });
+
+  testWidgets(
+    'without the Gmail permission the onboarding asks to retry granting it',
+    (tester) async {
+      final h = await Harness.create();
+      h.consent.failure = const MissingPermissionFailure();
+
+      await _start(tester);
+      await tester.tap(find.text('Collega Gmail'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('accesso a Gmail'), findsOneWidget);
+      expect(find.text('Collega Gmail'), findsOneWidget);
+    },
+  );
 }

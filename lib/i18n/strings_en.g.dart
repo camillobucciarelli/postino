@@ -78,6 +78,7 @@ class _Translations$connect$en extends Translations$connect$it {
 	// Translations
 	@override String missingSetting({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).';
 	@override String get offline => 'No connection: try again when you are online.';
+	@override String get missingPermission => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.';
 	@override String get failed => 'Couldn\'t connect. Try again.';
 }
 
@@ -98,6 +99,7 @@ extension on TranslationsEn {
 			'daRicollegare.reconnect' => 'Reconnect',
 			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
 			'connect.offline' => 'No connection: try again when you are online.',
+			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
 			'connect.failed' => 'Couldn\'t connect. Try again.',
 			_ => null,
 		};

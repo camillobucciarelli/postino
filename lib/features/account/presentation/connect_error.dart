@@ -10,5 +10,7 @@ String? connectError(BuildContext context, Result<Object> result) =>
       Err(failure: ConfigurationFailure(:final setting)) =>
         context.t.connect.missingSetting(setting: setting),
       Err(failure: OfflineFailure()) => context.t.connect.offline,
+      Err(failure: MissingPermissionFailure()) =>
+        context.t.connect.missingPermission,
       Err() => context.t.connect.failed,
     };

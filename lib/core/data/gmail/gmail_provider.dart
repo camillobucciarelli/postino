@@ -104,6 +104,11 @@ class GmailProvider implements MailProvider {
     return switch (r.statusCode) {
       200 => Ok(jsonDecode(r.body) as Map<String, dynamic>),
       401 => const Err(AuthFailure()),
+      // Token without the Gmail scope: only a new consent fixes it.
+      403
+          when r.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT') ||
+              r.body.contains('insufficientPermissions') =>
+        const Err(AuthFailure()),
       // ponytail: 404/429 -> NotFound/RateLimit with the calls that meet them (#31).
       _ => Err(UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}')),
     };

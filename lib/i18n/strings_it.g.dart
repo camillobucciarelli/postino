@@ -100,6 +100,9 @@ class Translations$connect$it {
 	/// it: 'Nessuna connessione: riprova quando sei online.'
 	String get offline => 'Nessuna connessione: riprova quando sei online.';
 
+	/// it: 'Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.'
+	String get missingPermission => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.';
+
 	/// it: 'Collegamento non riuscito. Riprova.'
 	String get failed => 'Collegamento non riuscito. Riprova.';
 }
@@ -121,6 +124,7 @@ extension on Translations {
 			'daRicollegare.reconnect' => 'Ricollega',
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
+			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
 			'connect.failed' => 'Collegamento non riuscito. Riprova.',
 			_ => null,
 		};

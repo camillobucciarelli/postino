@@ -30,6 +30,11 @@ final class AuthFailure extends Failure {
   const AuthFailure();
 }
 
+/// The user did not grant the Gmail permission (Google's granular consent let them untick it).
+final class MissingPermissionFailure extends Failure {
+  const MissingPermissionFailure();
+}
+
 /// No network, or the Provider is unreachable.
 final class OfflineFailure extends Failure {
   const OfflineFailure();

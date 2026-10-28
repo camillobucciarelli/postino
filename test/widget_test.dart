@@ -12,4 +12,14 @@ void main() {
     expect(find.text('Postino'), findsOneWidget);
     expect(find.text('Posta in arrivo'), findsOneWidget);
   });
+
+  testWidgets('opens on the Posta route, translated in English', (
+    tester,
+  ) async {
+    LocaleSettings.setLocaleSync(AppLocale.en);
+    await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+    await tester.pumpAndSettle();
+    expect(find.text('Postino'), findsOneWidget);
+    expect(find.text('Inbox'), findsOneWidget);
+  });
 }

@@ -9,5 +9,10 @@
   "daRicollegare": {
     "banner": "$address needs reconnecting: its mail stays readable but no longer updates.",
     "reconnect": "Reconnect"
+  },
+  "connect": {
+    "missingSetting": "$setting is missing: start Postino with --dart-define=$setting=… (see README).",
+    "offline": "No connection: try again when you are online.",
+    "failed": "Couldn't connect. Try again."
   }
 }

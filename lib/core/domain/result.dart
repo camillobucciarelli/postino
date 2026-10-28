@@ -44,3 +44,14 @@ final class NotFoundFailure extends Failure {
 final class RateLimitFailure extends Failure {
   const RateLimitFailure();
 }
+
+/// The app is missing a build-time setting (for example the OAuth client ID).
+final class ConfigurationFailure extends Failure {
+  const ConfigurationFailure(this.setting);
+  final String setting;
+}
+
+/// The user backed out (for example closed the consent page).
+final class CancelledFailure extends Failure {
+  const CancelledFailure();
+}

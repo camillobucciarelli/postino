@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/accounts_service.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
@@ -48,4 +49,18 @@ void main() {
       );
     },
   );
+
+  testWidgets('without a Google client ID the onboarding says so', (
+    tester,
+  ) async {
+    final h = await Harness.create();
+    h.consent.failure = const ConfigurationFailure('GOOGLE_CLIENT_ID');
+
+    await _start(tester);
+    await tester.tap(find.text('Collega Gmail'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('GOOGLE_CLIENT_ID'), findsOneWidget);
+    expect(find.text('Collega Gmail'), findsOneWidget);
+  });
 }

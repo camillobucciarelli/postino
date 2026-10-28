@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/accounts_repository.dart';
 import '../../../i18n/strings.g.dart';
+import 'connect_error.dart';
 
 /// Shows the onboarding while there is no Account, [child] afterwards.
 class OnboardingGate extends StatefulWidget {
@@ -35,8 +36,20 @@ class _OnboardingGateState extends State<OnboardingGate> {
   );
 }
 
-class _Onboarding extends StatelessWidget {
+class _Onboarding extends StatefulWidget {
   const _Onboarding();
+
+  @override
+  State<_Onboarding> createState() => _OnboardingState();
+}
+
+class _OnboardingState extends State<_Onboarding> {
+  String? error;
+
+  Future<void> _connect() async {
+    final r = await GetIt.I<AccountsRepository>().connectGmail();
+    if (mounted) setState(() => error = connectError(context, r));
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -52,9 +65,17 @@ class _Onboarding extends StatelessWidget {
           Text(context.t.onboarding.body),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: () => GetIt.I<AccountsRepository>().connectGmail(),
+            onPressed: _connect,
             child: Text(context.t.onboarding.connectGmail),
           ),
+          if (error case final e?)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                e,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
         ],
       ),
     ),

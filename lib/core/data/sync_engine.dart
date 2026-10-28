@@ -6,6 +6,7 @@ import 'package:injectable/injectable.dart';
 import '../domain/account.dart';
 import '../domain/mail_provider.dart';
 import '../domain/result.dart';
+import 'gmail/gmail_provider.dart';
 import 'mail_store.dart';
 
 /// Minimal sync engine: initial sync of every Account from its Provider into the database.
@@ -20,8 +21,21 @@ class SyncEngine {
       for (final account in await _store.accounts())
         // A Da ricollegare Account stops syncing until the user consents again.
         if (account.status == AccountStatus.attivo)
-          _sync(account.id, GetIt.I<MailProvider>(instanceName: account.id)),
+          _sync(account.id, _provider(account)),
     ]);
+  }
+
+  /// The Account's adapter, created on first use; tests register fakes by Account id beforehand.
+  MailProvider _provider(Account account) {
+    final g = GetIt.I;
+    if (!g.isRegistered<MailProvider>(instanceName: account.id)) {
+      // ponytail: Gmail is the only Provider of step 1; Microsoft and IMAP adapters branch on account.provider at steps 4-5.
+      g.registerLazySingleton<MailProvider>(
+        () => GmailProvider(account.id, g(), g(), g()),
+        instanceName: account.id,
+      );
+    }
+    return g<MailProvider>(instanceName: account.id);
   }
 
   Future<void> _sync(String accountId, MailProvider provider) async {

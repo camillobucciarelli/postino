@@ -9,5 +9,10 @@
   "daRicollegare": {
     "banner": "$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.",
     "reconnect": "Ricollega"
+  },
+  "connect": {
+    "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
+    "offline": "Nessuna connessione: riprova quando sei online.",
+    "failed": "Collegamento non riuscito. Riprova."
   }
 }

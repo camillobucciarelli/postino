@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
 import '../../../i18n/strings.g.dart';
+import 'connect_error.dart';
 
 /// One banner per Da ricollegare Account, offering to consent again.
 class ReconnectBanners extends StatefulWidget {
@@ -25,6 +26,16 @@ class _ReconnectBannersState extends State<ReconnectBanners> {
     super.dispose();
   }
 
+  Future<void> _reconnect(Account a) async {
+    final r = await GetIt.I<AccountsRepository>().connectGmail(
+      loginHint: a.address,
+    );
+    if (!mounted) return;
+    if (connectError(context, r) case final e?) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => Column(
@@ -38,9 +49,7 @@ class _ReconnectBannersState extends State<ReconnectBanners> {
               actions: [
                 TextButton(
                   // ponytail: Gmail only, the one Provider of v1 step 1.
-                  onPressed: () => GetIt.I<AccountsRepository>().connectGmail(
-                    loginHint: a.address,
-                  ),
+                  onPressed: () => _reconnect(a),
                   child: Text(context.t.daRicollegare.reconnect),
                 ),
               ],

@@ -50,6 +50,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
+	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
 }
 
 // Path: onboarding
@@ -85,6 +86,24 @@ class Translations$daRicollegare$it {
 	String get reconnect => 'Ricollega';
 }
 
+// Path: connect
+class Translations$connect$it {
+	Translations$connect$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).'
+	String missingSetting({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).';
+
+	/// it: 'Nessuna connessione: riprova quando sei online.'
+	String get offline => 'Nessuna connessione: riprova quando sei online.';
+
+	/// it: 'Collegamento non riuscito. Riprova.'
+	String get failed => 'Collegamento non riuscito. Riprova.';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -100,6 +119,9 @@ extension on Translations {
 			'onboarding.connectGmail' => 'Collega Gmail',
 			'daRicollegare.banner' => ({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.',
 			'daRicollegare.reconnect' => 'Ricollega',
+			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
+			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
+			'connect.failed' => 'Collegamento non riuscito. Riprova.',
 			_ => null,
 		};
 	}

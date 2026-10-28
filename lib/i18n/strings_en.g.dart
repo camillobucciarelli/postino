@@ -43,6 +43,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override String get postaUnificata => 'All inboxes';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
+	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
 }
 
 // Path: onboarding
@@ -68,6 +69,18 @@ class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
 	@override String get reconnect => 'Reconnect';
 }
 
+// Path: connect
+class _Translations$connect$en extends Translations$connect$it {
+	_Translations$connect$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String missingSetting({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).';
+	@override String get offline => 'No connection: try again when you are online.';
+	@override String get failed => 'Couldn\'t connect. Try again.';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -83,6 +96,9 @@ extension on TranslationsEn {
 			'onboarding.connectGmail' => 'Connect Gmail',
 			'daRicollegare.banner' => ({required Object address}) => '${address} needs reconnecting: its mail stays readable but no longer updates.',
 			'daRicollegare.reconnect' => 'Reconnect',
+			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
+			'connect.offline' => 'No connection: try again when you are online.',
+			'connect.failed' => 'Couldn\'t connect. Try again.',
 			_ => null,
 		};
 	}

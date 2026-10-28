@@ -11,8 +11,10 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'package:get_it/get_it.dart' as _i174;
+import 'package:http/http.dart' as _i519;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
+import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
@@ -31,15 +33,21 @@ extension GetItInjectableX on _i174.GetIt {
     _i526.EnvironmentFilter? environmentFilter,
   }) async {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
+    final httpModule = _$HttpModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
+    gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
     gh.singleton<_i398.Connectivity>(
       () => _i524.AlwaysOnline(),
       registerFor: {_prod},
     );
     gh.singleton<_i398.SecureStore>(
       () => _i524.KeychainStore(),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i902.GoogleConsent>(
+      () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
     );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
@@ -67,6 +75,8 @@ extension GetItInjectableX on _i174.GetIt {
     return this;
   }
 }
+
+class _$HttpModule extends _i524.HttpModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

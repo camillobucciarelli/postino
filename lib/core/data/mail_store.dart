@@ -48,17 +48,27 @@ class MailStore implements InboxRepository {
     _db.execute('BEGIN');
     try {
       if (fullSnapshot) {
-        final keep = [for (final m in batch.messages) m.id];
-        final notKept = keep.isEmpty
-            ? ''
-            : ' AND id NOT IN (${List.filled(keep.length, '?').join(',')})';
-        final args = [accountId, ...keep];
+        // Ids go through a TEMP table, not bound variables: SQLite caps those.
+        _db
+          ..execute(
+            'CREATE TEMP TABLE IF NOT EXISTS snapshot_ids (id TEXT PRIMARY KEY)',
+          )
+          ..execute('DELETE FROM snapshot_ids');
+        final insert = _db.prepare(
+          'INSERT OR IGNORE INTO snapshot_ids VALUES (?)',
+        );
+        for (final m in batch.messages) {
+          insert.execute([m.id]);
+        }
+        insert.close();
+        const gone =
+            'account_id = ? AND id NOT IN (SELECT id FROM snapshot_ids)';
         _db.execute(
           'DELETE FROM message_labels WHERE account_id = ? AND message_id IN '
-          '(SELECT id FROM messages WHERE account_id = ?$notKept)',
-          [accountId, ...args],
+          '(SELECT id FROM messages WHERE $gone)',
+          [accountId, accountId],
         );
-        _db.execute('DELETE FROM messages WHERE account_id = ?$notKept', args);
+        _db.execute('DELETE FROM messages WHERE $gone', [accountId]);
       }
       for (final l in batch.labels) {
         _db.execute('INSERT OR REPLACE INTO labels VALUES (?, ?, ?, ?)', [

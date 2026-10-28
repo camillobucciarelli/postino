@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/main.dart';
@@ -45,4 +46,39 @@ void main() {
     await GetIt.I<SyncEngine>().syncAll();
     expect(await inbox(), ['a:1', 'a:2']);
   });
+
+  test(
+    'an empty initial snapshot clears the Account cache, labels included',
+    () async {
+      a.removeRemotely('1');
+      a.removeRemotely('2');
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(await inbox(), ['b:1']);
+      final db = GetIt.I<PostinoDatabase>().sql;
+      expect(
+        db.select("SELECT 1 FROM messages WHERE account_id = 'a'"),
+        isEmpty,
+      );
+      expect(
+        db.select("SELECT 1 FROM message_labels WHERE account_id = 'a'"),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'a snapshot larger than the SQL variable limit still reconciles',
+    () async {
+      for (var i = 0; i < 40000; i++) {
+        a.deliver(msg('big$i'));
+      }
+      await GetIt.I<SyncEngine>().syncAll();
+      a.removeRemotely('1');
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(
+        (await inbox()).length,
+        40000 + 1 + 1,
+      ); // a: 2 + big - '1', plus b:1
+    },
+  );
 }

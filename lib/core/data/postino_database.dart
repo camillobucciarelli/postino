@@ -26,8 +26,14 @@ class PostinoDatabase {
       ].join();
       await keychain.write(_keyName, key);
     }
-    final sql = sqlite3.open(path)..execute("PRAGMA key = \"x'$key'\"");
-    return PostinoDatabase(sql);
+    final sql = sqlite3.open(path);
+    try {
+      sql.execute("PRAGMA key = \"x'$key'\"");
+      return PostinoDatabase(sql);
+    } catch (_) {
+      sql.close(); // don't leak the native handle on a wrong key
+      rethrow;
+    }
   }
 
   final Database sql;

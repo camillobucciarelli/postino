@@ -43,6 +43,7 @@ class _Row extends StatelessWidget {
     return IntrinsicHeight(
       key: ValueKey('row-${entry.account.id}-${m.id}'),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ColoredBox(
             key: const ValueKey('account-color'),

@@ -94,6 +94,18 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      tester
+          .getSize(
+            find.descendant(
+              of: newRow,
+              matching: find.byKey(const ValueKey('account-color')),
+            ),
+          )
+          .height,
+      greaterThan(0),
+      reason: 'the strip must be visible',
+    );
   });
 
   testWidgets(

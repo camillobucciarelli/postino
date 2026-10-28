@@ -60,6 +60,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i413.AccountsService(
         gh<_i385.MailStore>(),
         gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
       ),
     );

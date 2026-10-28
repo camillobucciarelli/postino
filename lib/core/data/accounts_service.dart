@@ -5,7 +5,9 @@ import 'package:injectable/injectable.dart';
 import '../domain/account.dart';
 import '../domain/accounts_repository.dart';
 import '../domain/google_consent.dart';
+import '../domain/platform_services.dart';
 import '../domain/result.dart';
+import 'gmail/gmail_tokens.dart';
 import 'mail_store.dart';
 import 'sync_engine.dart';
 
@@ -24,9 +26,10 @@ const accountColors = [
 
 @LazySingleton(as: AccountsRepository)
 class AccountsService implements AccountsRepository {
-  AccountsService(this._store, this._consent, this._sync);
+  AccountsService(this._store, this._consent, this._keychain, this._sync);
   final MailStore _store;
   final GoogleConsent _consent;
+  final SecureStore _keychain;
   final SyncEngine _sync;
 
   @override
@@ -43,6 +46,7 @@ class AccountsService implements AccountsRepository {
     }
     // ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.
     final id = 'gmail:${grant.address}';
+    await GmailTokens.of(grant).write(_keychain, id);
     final all = await _store.accounts();
     final known = all.where((a) => a.id == id).firstOrNull;
     final account = Account(

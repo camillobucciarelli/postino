@@ -14,7 +14,7 @@ Postino è usato dall'autore e da pochi tester (meno di 100), senza pubblicazion
 
 ## Conseguenze
 
-- Le notifiche di nuova posta su mobile sono in ritardo o inaffidabili: dipendono dal fetch in background pianificato dal sistema operativo (su iOS, almeno 15 minuti).
+- Le notifiche di nuova posta su mobile sono in ritardo o inaffidabili: dipendono dal fetch in background pianificato dal sistema operativo: su iOS è il sistema a decidere quando eseguirlo, senza frequenza garantita, e se l'utente chiude forzatamente l'app non arriva nessuna notifica.
 - Il desktop compensa restando attivo nella tray / barra dei menu con connessioni aperte.
 - Una Posticipa torna nella posta in arrivo solo quando uno dei dispositivi dell'utente è in esecuzione dopo il momento scelto.
 - Un server push potrà essere aggiunto in seguito senza rifare il resto.

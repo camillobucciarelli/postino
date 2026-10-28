@@ -97,6 +97,12 @@ _Avoid_: Certificato, password, chiave privata
 Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa e mittenti fidati. Possono seguire l'utente tra i dispositivi tramite il suo spazio Google, oppure essere esportate in un file che l'utente conserva, salva o condivide come preferisce.
 _Avoid_: Config, profilo
 
+**Impostazioni del dispositivo**:
+Le preferenze che valgono solo per un dispositivo e non si sincronizzano tra dispositivi, a differenza delle Impostazioni di Postino. Ad esempio le Notifiche immediate e l'avvio al login.
+
+**Notifiche immediate**:
+Su Android, la scelta di ricevere la posta nuova in tempo reale al prezzo di una notifica fissa e dell'esclusione dall'ottimizzazione batteria. Senza, la posta nuova si controlla circa ogni 15 minuti.
+
 **Mittente fidato**:
 Un mittente le cui immagini remote l'utente ha scelto di mostrare sempre. Fa parte delle Impostazioni di Postino.
 _Avoid_: Whitelist, contatto sicuro

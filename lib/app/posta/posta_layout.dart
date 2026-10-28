@@ -17,7 +17,7 @@ class PostaLayout extends StatelessWidget {
     // ponytail: placeholder for Posta unificata, replaced by the posta feature's presentation.
     return Scaffold(
       appBar: AppBar(title: Text(context.t.appTitle)),
-      body: Center(child: Text(context.t.inbox)),
+      body: Center(child: Text(context.t.postaUnificata)),
     );
   }
 }

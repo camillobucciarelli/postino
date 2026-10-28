@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();
     expect(find.text('Postino'), findsOneWidget);
-    expect(find.text('Posta in arrivo'), findsOneWidget);
+    expect(find.text('Posta unificata'), findsOneWidget);
   });
 
   testWidgets('opens on the Posta route, translated in English', (
@@ -20,6 +20,6 @@ void main() {
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();
     expect(find.text('Postino'), findsOneWidget);
-    expect(find.text('Inbox'), findsOneWidget);
+    expect(find.text('All inboxes'), findsOneWidget);
   });
 }

@@ -40,7 +40,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 
 	// Translations
 	@override String get appTitle => 'Postino';
-	@override String get inbox => 'Inbox';
+	@override String get postaUnificata => 'All inboxes';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -52,7 +52,7 @@ extension on TranslationsEn {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
 			'appTitle' => 'Postino',
-			'inbox' => 'Inbox',
+			'postaUnificata' => 'All inboxes',
 			_ => null,
 		};
 	}

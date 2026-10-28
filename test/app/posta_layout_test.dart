@@ -32,7 +32,7 @@ void main() {
     await tester.pumpWidget(_appAt('/posta/figlio'));
     await tester.pumpAndSettle();
     expect(find.text('figlio'), findsOneWidget);
-    expect(find.text('Posta in arrivo'), findsNothing);
+    expect(find.text('Posta unificata'), findsNothing);
   });
 
   testWidgets(
@@ -42,7 +42,7 @@ void main() {
       await tester.pumpAndSettle();
       Routefly.navigate(routePaths.posta);
       await tester.pumpAndSettle();
-      expect(find.text('Posta in arrivo'), findsOneWidget);
+      expect(find.text('Posta unificata'), findsOneWidget);
       expect(find.text('figlio'), findsNothing);
     },
   );

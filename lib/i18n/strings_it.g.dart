@@ -45,8 +45,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// it: 'Postino'
 	String get appTitle => 'Postino';
 
-	/// it: 'Posta in arrivo'
-	String get inbox => 'Posta in arrivo';
+	/// it: 'Posta unificata'
+	String get postaUnificata => 'Posta unificata';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -58,7 +58,7 @@ extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
 			'appTitle' => 'Postino',
-			'inbox' => 'Posta in arrivo',
+			'postaUnificata' => 'Posta unificata',
 			_ => null,
 		};
 	}

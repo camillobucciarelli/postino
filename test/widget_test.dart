@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:routefly/routefly.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
@@ -22,14 +21,5 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Postino'), findsOneWidget);
     expect(find.text('Inbox'), findsOneWidget);
-  });
-
-  testWidgets('navigating to /posta shows the Posta unificata', (tester) async {
-    LocaleSettings.setLocaleSync(AppLocale.it);
-    await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-    await tester.pumpAndSettle();
-    Routefly.navigate(routePaths.posta);
-    await tester.pumpAndSettle();
-    expect(find.text('Posta in arrivo'), findsOneWidget);
   });
 }

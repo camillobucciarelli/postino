@@ -21,20 +21,21 @@ void main() {
       final keychain = KeychainStore();
 
       final db = await PostinoDatabase.open(path, keychain);
-      db.sql.execute(
+      await db.customStatement(
         "INSERT INTO accounts VALUES ('a1', 'a@example.com', 'gmail', 1, 0, 'attivo')",
       );
-      db.sql.close();
+      await db.close();
 
       expect(
         File(path).readAsBytesSync().sublist(0, 15),
         isNot('SQLite format 3'.codeUnits),
       );
       final again = await PostinoDatabase.open(path, keychain);
-      expect(
-        again.sql.select('SELECT count(*) AS n FROM accounts').first['n'],
-        1,
-      );
+      final n = await again
+          .customSelect('SELECT count(*) AS n FROM accounts')
+          .getSingle();
+      expect(n.read<int>('n'), 1);
+      await again.close();
     },
   );
 }

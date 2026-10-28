@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      # Only drift writes `.g.dart` parts; main.g.dart belongs to routefly.
+      source_gen:combining_builder:
+        generate_for:
+          - lib/core/data/postino_database.dart

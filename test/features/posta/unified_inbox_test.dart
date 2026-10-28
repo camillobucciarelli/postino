@@ -17,7 +17,7 @@ void main() {
     tester,
   ) async {
     final h = await Harness.create();
-    final gmail = h.addAccount('a1', color: 0xFFE91E63);
+    final gmail = await h.addAccount('a1', color: 0xFFE91E63);
     gmail.deliver(
       msg(
         'old',
@@ -112,19 +112,14 @@ void main() {
     'merges the inboxes of two Accounts, each row in its Account color',
     (tester) async {
       final h = await Harness.create();
-      h
-          .addAccount('a1', color: 0xFFE91E63)
-          .deliver(
-            msg('x', date: DateTime.utc(2026, 3, 1, 12), subject: 'Da uno'),
-          );
-      h
-          .addAccount('a2', color: 0xFF4CAF50)
-          .deliver(
-            msg('x', date: DateTime.utc(2026, 3, 2, 12), subject: 'Da due'),
-          );
+      (await h.addAccount('a1', color: 0xFFE91E63)).deliver(
+        msg('x', date: DateTime.utc(2026, 3, 1, 12), subject: 'Da uno'),
+      );
+      (await h.addAccount('a2', color: 0xFF4CAF50)).deliver(
+        msg('x', date: DateTime.utc(2026, 3, 2, 12), subject: 'Da due'),
+      );
       // Not in the inbox: must not show up.
-      h
-          .addAccount('a3')
+      (await h.addAccount('a3'))
           .deliver(msg('y', labelIds: const ['SENT'], subject: 'Inviato'));
 
       await _start(tester);

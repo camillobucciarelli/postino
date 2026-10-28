@@ -1,7 +1,5 @@
-import 'dart:async';
-
+import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
-import 'package:sqlite3/sqlite3.dart' show Database;
 
 import '../domain/account.dart';
 import '../domain/inbox_repository.dart';
@@ -11,165 +9,170 @@ import 'postino_database.dart';
 
 @lazySingleton
 class MailStore implements InboxRepository {
-  MailStore(PostinoDatabase db) : _db = db.sql;
-  final Database _db;
-  final _changed = StreamController<void>.broadcast(sync: true);
+  MailStore(this._db);
+  final PostinoDatabase _db;
 
-  void addAccount(Account a) {
-    _db.execute('INSERT OR REPLACE INTO accounts VALUES (?, ?, ?, ?, ?, ?)', [
-      a.id,
-      a.address,
-      a.provider.name,
-      a.color,
-      a.position,
-      a.status.name,
-    ]);
-    _changed.add(null);
-  }
+  Future<void> addAccount(Account a) => _db
+      .into(_db.accounts)
+      .insert(
+        AccountsCompanion.insert(
+          id: a.id,
+          address: a.address,
+          provider: a.provider,
+          color: a.color,
+          position: a.position,
+          status: a.status,
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
 
-  List<Account> accounts() => [
-    for (final r in _db.select('SELECT * FROM accounts ORDER BY position'))
-      Account(
-        id: r['id'] as String,
-        address: r['address'] as String,
-        provider: ProviderKind.values.byName(r['provider'] as String),
-        color: r['color'] as int,
-        position: r['position'] as int,
-        status: AccountStatus.values.byName(r['status'] as String),
-      ),
+  Future<List<Account>> accounts() async => [
+    for (final r in await (_db.select(
+      _db.accounts,
+    )..orderBy([(t) => OrderingTerm.asc(t.position)])).get())
+      _account(r),
   ];
 
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
-  void applySync(
+  Future<void> applySync(
     String accountId,
     SyncBatch batch, {
     bool fullSnapshot = false,
-  }) {
-    _db.execute('BEGIN');
-    try {
+  }) => _db.transaction(() async {
+    if (fullSnapshot) {
+      // Ids go through a TEMP table, not bound variables: SQLite caps those.
+      await _db.customStatement(
+        'CREATE TEMP TABLE IF NOT EXISTS snapshot_ids (id TEXT PRIMARY KEY)',
+      );
+      await _db.customStatement('DELETE FROM snapshot_ids');
+    }
+    await _db.batch((b) {
       if (fullSnapshot) {
-        // Ids go through a TEMP table, not bound variables: SQLite caps those.
-        _db
-          ..execute(
-            'CREATE TEMP TABLE IF NOT EXISTS snapshot_ids (id TEXT PRIMARY KEY)',
-          )
-          ..execute('DELETE FROM snapshot_ids');
-        final insert = _db.prepare(
-          'INSERT OR IGNORE INTO snapshot_ids VALUES (?)',
-        );
         for (final m in batch.messages) {
-          insert.execute([m.id]);
-        }
-        insert.close();
-        const gone =
-            'account_id = ? AND id NOT IN (SELECT id FROM snapshot_ids)';
-        _db.execute(
-          'DELETE FROM message_labels WHERE account_id = ? AND message_id IN '
-          '(SELECT id FROM messages WHERE $gone)',
-          [accountId, accountId],
-        );
-        _db.execute('DELETE FROM messages WHERE $gone', [accountId]);
-      }
-      for (final l in batch.labels) {
-        _db.execute('INSERT OR REPLACE INTO labels VALUES (?, ?, ?, ?)', [
-          accountId,
-          l.id,
-          l.name,
-          l.kind.name,
-        ]);
-      }
-      for (final m in batch.messages) {
-        _db.execute(
-          'INSERT OR REPLACE INTO messages VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            accountId,
+          b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [
             m.id,
-            m.messageId,
-            m.conversationId,
-            m.from,
-            m.to.join(','),
-            m.subject,
-            m.snippet,
-            m.date.millisecondsSinceEpoch,
-            m.isRead ? 1 : 0,
-            m.isStarred ? 1 : 0,
-          ],
-        );
-        _db.execute(
-          'DELETE FROM message_labels WHERE account_id = ? AND message_id = ?',
-          [accountId, m.id],
-        );
-        for (final l in m.labelIds) {
-          _db.execute('INSERT INTO message_labels VALUES (?, ?, ?)', [
-            accountId,
-            m.id,
-            l,
           ]);
         }
+        b
+          ..deleteWhere(
+            _db.messageLabels,
+            (t) =>
+                t.accountId.equals(accountId) &
+                const CustomExpression(
+                  'message_id NOT IN (SELECT id FROM snapshot_ids)',
+                ),
+          )
+          ..deleteWhere(
+            _db.messages,
+            (t) =>
+                t.accountId.equals(accountId) &
+                const CustomExpression(
+                  'id NOT IN (SELECT id FROM snapshot_ids)',
+                ),
+          );
       }
+      // Removals before upserts: an id both removed and upserted in one batch survives.
       for (final id in batch.removedMessageIds) {
-        _db.execute('DELETE FROM messages WHERE account_id = ? AND id = ?', [
-          accountId,
-          id,
-        ]);
-        _db.execute(
-          'DELETE FROM message_labels WHERE account_id = ? AND message_id = ?',
-          [accountId, id],
-        );
+        b
+          ..deleteWhere(
+            _db.messages,
+            (t) => t.accountId.equals(accountId) & t.id.equals(id),
+          )
+          ..deleteWhere(
+            _db.messageLabels,
+            (t) => t.accountId.equals(accountId) & t.messageId.equals(id),
+          );
       }
-      _db.execute('COMMIT');
-    } catch (_) {
-      _db.execute('ROLLBACK');
-      rethrow;
-    }
-    _changed.add(null);
-  }
-
-  List<InboxEntry> _inbox() {
-    final byId = {for (final a in accounts()) a.id: a};
-    return [
-      for (final r in _db.select(
-        'SELECT m.* FROM messages m JOIN message_labels l '
-        'ON l.account_id = m.account_id AND l.message_id = m.id AND l.label_id = ? '
-        'ORDER BY m.date DESC, m.id',
-        [inboxLabelId],
-      ))
-        if (byId[r['account_id']] case final account?)
-          InboxEntry(
-            account: account,
-            message: Message(
-              id: r['id'] as String,
-              messageId: r['message_id'] as String,
-              conversationId: r['conversation_id'] as String,
-              labelIds: const [inboxLabelId],
-              isRead: r['is_read'] == 1,
-              isStarred: r['is_starred'] == 1,
-              from: r['sender'] as String,
-              to: (r['recipients'] as String).split(','),
-              subject: r['subject'] as String,
-              snippet: r['snippet'] as String,
-              date: DateTime.fromMillisecondsSinceEpoch(
-                r['date'] as int,
-                isUtc: true,
-              ),
-            ),
+      b.insertAll(_db.labels, [
+        for (final l in batch.labels)
+          LabelsCompanion.insert(
+            accountId: accountId,
+            id: l.id,
+            name: l.name,
+            kind: l.kind,
           ),
-    ];
-  }
+      ], mode: InsertMode.insertOrReplace);
+      for (final m in batch.messages) {
+        b
+          ..insert(
+            _db.messages,
+            MessagesCompanion.insert(
+              accountId: accountId,
+              id: m.id,
+              messageId: m.messageId,
+              conversationId: m.conversationId,
+              sender: m.from,
+              recipients: m.to.join(','),
+              subject: m.subject,
+              snippet: m.snippet,
+              date: m.date.millisecondsSinceEpoch,
+              isRead: m.isRead,
+              isStarred: m.isStarred,
+            ),
+            mode: InsertMode.insertOrReplace,
+          )
+          ..deleteWhere(
+            _db.messageLabels,
+            (t) => t.accountId.equals(accountId) & t.messageId.equals(m.id),
+          )
+          ..insertAll(_db.messageLabels, [
+            for (final l in m.labelIds)
+              MessageLabelsCompanion.insert(
+                accountId: accountId,
+                messageId: m.id,
+                labelId: l,
+              ),
+          ]);
+      }
+    });
+  });
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() {
-    late StreamController<List<InboxEntry>> out;
-    StreamSubscription<void>? sub;
-    out = StreamController(
-      onListen: () {
-        out.add(_inbox());
-        sub = _changed.stream.listen((_) => out.add(_inbox()));
-      },
-      onCancel: () => sub?.cancel(),
+    final m = _db.messages, l = _db.messageLabels, a = _db.accounts;
+    final query = _db.select(m).join([
+      innerJoin(
+        l,
+        l.accountId.equalsExp(m.accountId) &
+            l.messageId.equalsExp(m.id) &
+            l.labelId.equals(inboxLabelId),
+        useColumns: false,
+      ),
+      innerJoin(a, a.id.equalsExp(m.accountId)),
+    ])..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
+    return query.watch().map(
+      (rows) => [
+        for (final r in rows)
+          InboxEntry(
+            account: _account(r.readTable(a)),
+            message: _message(r.readTable(m)),
+          ),
+      ],
     );
-    return out.stream;
   }
+
+  static Account _account(AccountRow r) => Account(
+    id: r.id,
+    address: r.address,
+    provider: r.provider,
+    color: r.color,
+    position: r.position,
+    status: r.status,
+  );
+
+  static Message _message(MessageRow r) => Message(
+    id: r.id,
+    messageId: r.messageId,
+    conversationId: r.conversationId,
+    labelIds: const [inboxLabelId],
+    isRead: r.isRead,
+    isStarred: r.isStarred,
+    from: r.sender,
+    to: r.recipients.split(','),
+    subject: r.subject,
+    snippet: r.snippet,
+    date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
+  );
 }
 
 @module

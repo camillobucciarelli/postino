@@ -14,19 +14,20 @@ void main() {
   });
   tearDown(() => dir.deleteSync(recursive: true));
 
-  void insertAccount(PostinoDatabase db) => db.sql.execute(
+  Future<void> insertAccount(PostinoDatabase db) => db.customStatement(
     "INSERT INTO accounts VALUES ('a1', 'a@example.com', 'gmail', 1, 0, 'attivo')",
   );
-  int accounts(PostinoDatabase db) =>
-      db.sql.select('SELECT count(*) AS n FROM accounts').first['n'] as int;
+  Future<int> accounts(PostinoDatabase db) async =>
+      (await db.customSelect('SELECT count(*) AS n FROM accounts').getSingle())
+          .read<int>('n');
 
   test(
     'the file is encrypted and reopens with the key kept in the keychain',
     () async {
       final keychain = FakeSecureStore();
       final db = await PostinoDatabase.open(path, keychain);
-      insertAccount(db);
-      db.sql.close();
+      await insertAccount(db);
+      await db.close();
 
       expect(
         File(path).readAsBytesSync().sublist(0, 15),
@@ -34,14 +35,15 @@ void main() {
         reason: 'a plain SQLite file starts with its magic header',
       );
       final again = await PostinoDatabase.open(path, keychain);
-      expect(accounts(again), 1);
+      expect(await accounts(again), 1);
+      await again.close();
     },
   );
 
   test('without the keychain key the file cannot be read', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
-    insertAccount(db);
-    db.sql.close();
+    await insertAccount(db);
+    await db.close();
 
     expect(
       () => PostinoDatabase.open(path, FakeSecureStore()),
@@ -51,6 +53,8 @@ void main() {
 
   test('deleted content is overwritten (secure_delete)', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
-    expect(db.sql.select('PRAGMA secure_delete').first.values.first, 1);
+    final row = await db.customSelect('PRAGMA secure_delete').getSingle();
+    expect(row.data.values.single, 1);
+    await db.close();
   });
 }

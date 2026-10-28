@@ -12,7 +12,10 @@ class Harness {
 
   static Future<Harness> create() async {
     await getIt.reset();
-    getIt.registerSingleton<PostinoDatabase>(PostinoDatabase.inMemory());
+    getIt.registerSingleton<PostinoDatabase>(
+      PostinoDatabase.inMemory(),
+      dispose: (db) => db.close(),
+    );
     await configureDependencies(environment: 'test');
     return Harness._();
   }
@@ -20,8 +23,11 @@ class Harness {
   int _next = 0;
 
   /// Adds an Account backed by a fake Provider registered in get_it.
-  FakeMailProvider addAccount(String id, {int color = 0xFF2196F3}) {
-    getIt<MailStore>().addAccount(
+  Future<FakeMailProvider> addAccount(
+    String id, {
+    int color = 0xFF2196F3,
+  }) async {
+    await getIt<MailStore>().addAccount(
       Account(
         id: id,
         address: '$id@example.com',

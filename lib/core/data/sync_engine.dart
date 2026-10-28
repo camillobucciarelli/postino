@@ -14,14 +14,16 @@ class SyncEngine {
   SyncEngine(this._store);
   final MailStore _store;
 
-  Future<void> syncAll() => Future.wait([
-    for (final account in _store.accounts())
-      _sync(account.id, GetIt.I<MailProvider>(instanceName: account.id)),
-  ]);
+  Future<void> syncAll() async {
+    await Future.wait([
+      for (final account in await _store.accounts())
+        _sync(account.id, GetIt.I<MailProvider>(instanceName: account.id)),
+    ]);
+  }
 
   Future<void> _sync(String accountId, MailProvider provider) async {
     if (await provider.initialSync() case Ok(:final value)) {
-      _store.applySync(accountId, value, fullSnapshot: true);
+      await _store.applySync(accountId, value, fullSnapshot: true);
     }
   }
 }

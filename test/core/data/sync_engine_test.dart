@@ -19,10 +19,10 @@ void main() {
 
   setUp(() async {
     h = await Harness.create();
-    a = h.addAccount('a')
+    a = (await h.addAccount('a'))
       ..deliver(msg('1'))
       ..deliver(msg('2'));
-    b = h.addAccount('b')..deliver(msg('1'));
+    b = (await h.addAccount('b'))..deliver(msg('1'));
     await GetIt.I<SyncEngine>().syncAll();
   });
 
@@ -54,15 +54,15 @@ void main() {
       a.removeRemotely('2');
       await GetIt.I<SyncEngine>().syncAll();
       expect(await inbox(), ['b:1']);
-      final db = GetIt.I<PostinoDatabase>().sql;
-      expect(
-        db.select("SELECT 1 FROM messages WHERE account_id = 'a'"),
-        isEmpty,
-      );
-      expect(
-        db.select("SELECT 1 FROM message_labels WHERE account_id = 'a'"),
-        isEmpty,
-      );
+      final db = GetIt.I<PostinoDatabase>();
+      for (final table in ['messages', 'message_labels']) {
+        expect(
+          await db
+              .customSelect("SELECT 1 FROM $table WHERE account_id = 'a'")
+              .get(),
+          isEmpty,
+        );
+      }
     },
   );
 

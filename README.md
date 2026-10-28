@@ -6,10 +6,11 @@ Postino è un client email multi-account scritto in Flutter.
 
 ```sh
 dart run routefly
+dart run slang
 dart run build_runner build
 ```
 
-`routefly` rigenera le rotte da `lib/app`; `build_runner` rigenera traduzioni (slang) e dependency injection (injectable). Il codice generato è committato. Su un checkout appena clonato `build_runner` rifiuta di sovrascrivere gli output slang ("Asset already exists"): cancellali prima con `rm lib/i18n/strings*.g.dart`, come fa la CI.
+`routefly` rigenera le rotte da `lib/app`; `slang` rigenera le traduzioni (config in `slang.yaml`); `build_runner` rigenera la dependency injection (injectable). Il codice generato è committato.
 
 ## Verifica
 

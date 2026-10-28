@@ -1,0 +1,7 @@
+base_locale: it
+fallback_strategy: base_locale
+lazy: false # en is loaded synchronously at startup (useDeviceLocaleSync)
+input_directory: lib/i18n
+input_file_pattern: .i18n.json
+output_directory: lib/i18n
+timestamp: false # keeps generated code stable for the CI diff check

@@ -3,7 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-final _directive = RegExp(r'^\s*(?:import|export)\s[^;]*;', multiLine: true);
+// Lookbehind, not `(?:^|;)`: the previous match already consumed its `;`.
+final _directive = RegExp(
+  r'(?:^|(?<=;))\s*(?:import|export)\s[^;]*;',
+  multiLine: true,
+);
 final _uri = RegExp(r'''['"]([^'"]+)['"]''');
 
 /// Packages that pull in Flutter; `domain` must stay pure Dart.
@@ -118,10 +122,7 @@ void main() {
       'package:postino/main.dart',
     ]) {
       test('domain may not import non-domain in-repo $uri', () {
-        expect(
-          violations('core/domain/x.dart', "import '$uri';"),
-          isNotEmpty,
-        );
+        expect(violations('core/domain/x.dart', "import '$uri';"), isNotEmpty);
       });
     }
     test('feature domain may import core/domain', () {
@@ -144,6 +145,24 @@ void main() {
         violations(
           'core/domain/x.dart',
           "import 'stub.dart' if (dart.library.ui) 'package:flutter/widgets.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('every directive on a single line is checked', () {
+      expect(
+        violations(
+          'core/domain/x.dart',
+          "import 'dart:async'; import 'package:flutter/widgets.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('multi-line show imports are checked', () {
+      expect(
+        violations(
+          'core/domain/x.dart',
+          "import 'dart:async';\nimport 'package:flutter/widgets.dart'\n    show Widget,\n        State;",
         ),
         isNotEmpty,
       );

@@ -3,10 +3,15 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-final _directive = RegExp(
-  r'''^\s*(?:import|export)\s+['"]([^'"]+)['"]''',
-  multiLine: true,
-);
+final _directive = RegExp(r'^\s*(?:import|export)\s[^;]*;', multiLine: true);
+final _uri = RegExp(r'''['"]([^'"]+)['"]''');
+
+/// Packages that pull in Flutter; `domain` must stay pure Dart.
+// ponytail: name-based denylist, extend when a new Flutter-only package without "flutter" in its name is added.
+bool _flutterDependent(String uri) =>
+    uri == 'dart:ui' ||
+    uri.split('/').first.contains('flutter') ||
+    uri.startsWith('package:routefly/');
 
 /// Resolves a directive to a lib-relative path (`features/x/...`), or returns the raw URI for external ones.
 String _target(String file, String uri) {
@@ -20,24 +25,34 @@ String _target(String file, String uri) {
 String? _feature(String path) =>
     path.startsWith('features/') ? path.split('/')[1] : null;
 
+/// `lib/x/y.dart` or `lib\x\y.dart` -> `x/y.dart`.
+String libPath(String path) =>
+    path.replaceAll(r'\', '/').substring('lib/'.length);
+
 List<String> violations(String file, String source) {
   final out = <String>[];
-  for (final m in _directive.allMatches(source)) {
-    final t = _target(file, m.group(1)!);
+  for (final uri in [
+    for (final d in _directive.allMatches(source))
+      for (final u in _uri.allMatches(d.group(0)!)) u.group(1)!,
+  ]) {
+    final t = _target(file, uri);
     final segments = t.split('/');
-    void bad(String why) => out.add('$file -> ${m.group(1)}: $why');
+    void bad(String why) => out.add('$file -> $uri: $why');
 
     final own = _feature(file);
     if (own != null &&
         !t.contains(':') &&
         _feature(t) != own &&
         !t.startsWith('core/') &&
-        !t.startsWith('design_system/')) {
-      bad('features may import only their own feature, core and design_system');
+        !t.startsWith('design_system/') &&
+        !(t.startsWith('i18n/') && file.split('/').contains('presentation'))) {
+      bad(
+        'features may import only their own feature, core, design_system '
+        '(and i18n from presentation)',
+      );
     }
     if (file.split('/').contains('domain') &&
-        (t.startsWith('package:flutter/') ||
-            t == 'dart:ui' ||
+        (_flutterDependent(t) ||
             segments.contains('data') ||
             segments.contains('presentation'))) {
       bad('domain must be pure Dart');
@@ -50,16 +65,76 @@ List<String> violations(String file, String source) {
 }
 
 void main() {
+  group('violations', () {
+    test('presentation may import i18n', () {
+      expect(
+        violations(
+          'features/posta/presentation/inbox.dart',
+          "import '../../../i18n/strings.g.dart';",
+        ),
+        isEmpty,
+      );
+    });
+    test('domain may not import i18n', () {
+      expect(
+        violations(
+          'features/posta/domain/mail.dart',
+          "import 'package:postino/i18n/strings.g.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('data may not import i18n', () {
+      expect(
+        violations(
+          'features/posta/data/repo.dart',
+          "import '../../../i18n/strings.g.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    for (final uri in [
+      'package:flutter/widgets.dart',
+      'dart:ui',
+      'package:signals_flutter/signals_flutter.dart',
+      'package:flutter_localizations/flutter_localizations.dart',
+      'package:slang_flutter/slang_flutter.dart',
+      'package:routefly/routefly.dart',
+    ]) {
+      test('domain may not import $uri', () {
+        expect(violations('core/domain/x.dart', "import '$uri';"), isNotEmpty);
+      });
+    }
+    test('domain may import pure Dart packages', () {
+      expect(
+        violations('core/domain/x.dart', "import 'package:meta/meta.dart';"),
+        isEmpty,
+      );
+    });
+    test('both branches of a conditional import are checked', () {
+      expect(
+        violations(
+          'core/domain/x.dart',
+          "import 'stub.dart' if (dart.library.ui) 'package:flutter/widgets.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('Windows paths are normalised', () {
+      expect(
+        libPath(r'lib\features\posta\domain\x.dart'),
+        'features/posta/domain/x.dart',
+      );
+    });
+  });
+
   test('lib/ respects the ADR 0006 import rules', () {
     final found = <String>[
       for (final f in Directory(
         'lib',
       ).listSync(recursive: true).whereType<File>())
         if (f.path.endsWith('.dart'))
-          ...violations(
-            f.path.replaceAll(r'\\', '/').substring('lib/'.length),
-            f.readAsStringSync(),
-          ),
+          ...violations(libPath(f.path), f.readAsStringSync()),
     ];
     expect(found, isEmpty);
   });

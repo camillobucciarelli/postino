@@ -68,6 +68,8 @@ void main() {
     final q = opened.queryParameters;
     expect(q['scope']!.split(' '), contains('https://mail.google.com/'));
     expect(q['login_hint'], 'ada@gmail.com');
+    expect(q['prompt'], 'consent');
+    expect(q['access_type'], 'offline');
     expect(q['code_challenge_method'], 'S256');
     expect(scheme, 'com.googleusercontent.apps.123-abc');
     expect(
@@ -94,6 +96,26 @@ void main() {
       ),
     );
   });
+
+  test(
+    'a token without refresh_token is a Failure, not an exception',
+    () async {
+      token = 'token_exchange_no_refresh';
+      final r = await consent().run();
+      expect(
+        r,
+        isA<Err>().having(
+          (e) => e.failure,
+          'failure',
+          isA<UnexpectedFailure>().having(
+            (f) => f.error,
+            'error',
+            'no refresh_token in code exchange',
+          ),
+        ),
+      );
+    },
+  );
 
   test('desktop uses a loopback redirect', () async {
     await consent(loopback: true).run();

@@ -1,0 +1,10 @@
+{
+  "status": 200,
+  "body": {
+    "access_token": "ya29.granted",
+    "expires_in": 3599,
+    "scope": "https://mail.google.com/ openid https://www.googleapis.com/auth/userinfo.email",
+    "token_type": "Bearer",
+    "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJlY29yZGVkIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiJ0ZXN0LWNsaWVudC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6InRlc3QtY2xpZW50LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEwMTY5NDg0NDc0Mzg2Mjc2MzM0IiwiZW1haWwiOiJhZGFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlhdCI6MTc5MzE4ODgwMCwiZXhwIjoxNzkzMTkyNDAwfQ.c2lnbmF0dXJl"
+  }
+}

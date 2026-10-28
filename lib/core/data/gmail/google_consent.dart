@@ -78,6 +78,9 @@ class GoogleWebConsent implements GoogleConsent {
                 .replaceAll('=', ''),
             'code_challenge_method': 'S256',
             'state': state,
+            // Without these Google may skip the refresh_token for an already-authorized client.
+            'access_type': 'offline',
+            'prompt': 'consent',
             'login_hint': ?loginHint,
           }).toString(),
           callbackUrlScheme: scheme,
@@ -108,6 +111,12 @@ class GoogleWebConsent implements GoogleConsent {
           .contains(_gmailScope)) {
         return const Err(MissingPermissionFailure());
       }
+      final refreshToken = body['refresh_token'] as String?;
+      if (refreshToken == null) {
+        return const Err(
+          UnexpectedFailure('no refresh_token in code exchange'),
+        );
+      }
       // The id_token comes straight from Google's token endpoint over TLS: its payload needs no signature check.
       final idToken = (body['id_token'] as String).split('.')[1];
       final claims = jsonDecode(
@@ -117,7 +126,7 @@ class GoogleWebConsent implements GoogleConsent {
         GoogleGrant(
           address: claims['email'] as String,
           accessToken: body['access_token'] as String,
-          refreshToken: body['refresh_token'] as String,
+          refreshToken: refreshToken,
           expiresAt: _clock.now().add(
             Duration(seconds: body['expires_in'] as int),
           ),

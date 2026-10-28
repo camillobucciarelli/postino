@@ -1,4 +1,9 @@
 {
   "appTitle": "Postino",
-  "postaUnificata": "Posta unificata"
+  "postaUnificata": "Posta unificata",
+  "onboarding": {
+    "title": "Benvenuto in Postino",
+    "body": "Collega la tua casella Gmail per iniziare.",
+    "connectGmail": "Collega Gmail"
+  }
 }

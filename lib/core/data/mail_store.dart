@@ -17,16 +17,16 @@ class MailStore implements InboxRepository {
     for (final r in await _db.accountsDao.byPosition()) _account(r),
   ];
 
+  Stream<List<Account>> watchAccounts() => _db.accountsDao
+      .watchByPosition()
+      .map((rows) => [for (final r in rows) _account(r)]);
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   Future<void> applySync(
     String accountId,
     SyncBatch batch, {
     bool fullSnapshot = false,
-  }) => _db.messagesDao.applySync(
-    accountId,
-    batch,
-    fullSnapshot: fullSnapshot,
-  );
+  }) => _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() =>

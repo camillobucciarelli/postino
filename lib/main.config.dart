@@ -12,10 +12,13 @@
 
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/mail_store.dart' as _i385;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
+import 'package:postino/core/domain/accounts_repository.dart' as _i382;
+import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 
@@ -52,6 +55,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i893.SyncEngine>(
       () => _i893.SyncEngine(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i893.SyncEngine>(),
+      ),
     );
     return this;
   }

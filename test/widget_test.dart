@@ -8,7 +8,7 @@ void main() {
   testWidgets('opens on the Posta route, translated in Italian', (
     tester,
   ) async {
-    await Harness.create();
+    await (await Harness.create()).addAccount('a1');
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();
@@ -19,7 +19,7 @@ void main() {
   testWidgets('opens on the Posta route, translated in English', (
     tester,
   ) async {
-    await Harness.create();
+    await (await Harness.create()).addAccount('a1');
     LocaleSettings.setLocaleSync(AppLocale.en);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();

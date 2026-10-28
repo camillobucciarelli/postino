@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/posta/presentation/unified_inbox.dart';
 import '../../i18n/strings.g.dart';
 
@@ -15,17 +16,19 @@ class PostaLayout extends StatelessWidget {
     // Routefly.of subscribes to route changes; the last configuration is the active route.
     final own = Routefly.of(context).route.uri.path;
     if (Routefly.currentOriginalPath != own) return const RouterOutlet();
-    return Scaffold(
-      appBar: AppBar(title: Text(context.t.appTitle)),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(context.t.postaUnificata),
-          ),
-          const Expanded(child: UnifiedInbox()),
-        ],
+    return OnboardingGate(
+      child: Scaffold(
+        appBar: AppBar(title: Text(context.t.appTitle)),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(context.t.postaUnificata),
+            ),
+            const Expanded(child: UnifiedInbox()),
+          ],
+        ),
       ),
     );
   }

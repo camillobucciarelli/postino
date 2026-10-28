@@ -41,6 +41,19 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	// Translations
 	@override String get appTitle => 'Postino';
 	@override String get postaUnificata => 'All inboxes';
+	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
+}
+
+// Path: onboarding
+class _Translations$onboarding$en extends Translations$onboarding$it {
+	_Translations$onboarding$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Welcome to Postino';
+	@override String get body => 'Connect your Gmail mailbox to get started.';
+	@override String get connectGmail => 'Connect Gmail';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -53,6 +66,9 @@ extension on TranslationsEn {
 		return switch (path) {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'All inboxes',
+			'onboarding.title' => 'Welcome to Postino',
+			'onboarding.body' => 'Connect your Gmail mailbox to get started.',
+			'onboarding.connectGmail' => 'Connect Gmail',
 			_ => null,
 		};
 	}

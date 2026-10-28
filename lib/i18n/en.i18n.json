@@ -1,4 +1,9 @@
 {
   "appTitle": "Postino",
-  "postaUnificata": "All inboxes"
+  "postaUnificata": "All inboxes",
+  "onboarding": {
+    "title": "Welcome to Postino",
+    "body": "Connect your Gmail mailbox to get started.",
+    "connectGmail": "Connect Gmail"
+  }
 }

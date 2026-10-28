@@ -47,6 +47,26 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// it: 'Posta unificata'
 	String get postaUnificata => 'Posta unificata';
+
+	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
+}
+
+// Path: onboarding
+class Translations$onboarding$it {
+	Translations$onboarding$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Benvenuto in Postino'
+	String get title => 'Benvenuto in Postino';
+
+	/// it: 'Collega la tua casella Gmail per iniziare.'
+	String get body => 'Collega la tua casella Gmail per iniziare.';
+
+	/// it: 'Collega Gmail'
+	String get connectGmail => 'Collega Gmail';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -59,6 +79,9 @@ extension on Translations {
 		return switch (path) {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'Posta unificata',
+			'onboarding.title' => 'Benvenuto in Postino',
+			'onboarding.body' => 'Collega la tua casella Gmail per iniziare.',
+			'onboarding.connectGmail' => 'Collega Gmail',
 			_ => null,
 		};
 	}

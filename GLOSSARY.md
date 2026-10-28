@@ -98,7 +98,7 @@ Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account
 _Avoid_: Config, profilo
 
 **Impostazioni del dispositivo**:
-Le preferenze che valgono solo per un dispositivo e non si sincronizzano tra dispositivi, a differenza delle Impostazioni di Postino. Ad esempio le Notifiche immediate e l'avvio al login.
+Le preferenze che valgono solo per un dispositivo e non si sincronizzano tra dispositivi, a differenza delle Impostazioni di Postino. Ad esempio le Notifiche immediate, l'avvio al login, il tema e l'Observability.
 
 **Notifiche immediate**:
 Su Android, la scelta di ricevere la posta nuova in tempo reale al prezzo di una notifica fissa e dell'esclusione dall'ottimizzazione batteria. Senza, la posta nuova si controlla circa ogni 15 minuti.

@@ -5,6 +5,8 @@ import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
 
+import '../support/harness.dart';
+
 Widget _appAt(String initialPath) {
   final child = RouteEntity(
     key: '/posta/figlio',
@@ -24,7 +26,10 @@ Widget _appAt(String initialPath) {
 }
 
 void main() {
-  setUp(() => LocaleSettings.setLocaleSync(AppLocale.it));
+  setUp(() async {
+    await Harness.create();
+    LocaleSettings.setLocaleSync(AppLocale.it);
+  });
 
   testWidgets('a child route of /posta renders inside the Posta layout', (
     tester,

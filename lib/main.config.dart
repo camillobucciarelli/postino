@@ -12,14 +12,51 @@
 
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/platform_services.dart' as _i524;
+import 'package:postino/core/data/postino_database.dart' as _i1028;
+import 'package:postino/core/data/sync_engine.dart' as _i893;
+import 'package:postino/core/domain/inbox_repository.dart' as _i845;
+import 'package:postino/core/domain/platform_services.dart' as _i398;
+
+const String _prod = 'prod';
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
-  _i174.GetIt init({
+  Future<_i174.GetIt> init({
     String? environment,
     _i526.EnvironmentFilter? environmentFilter,
-  }) {
-    _i526.GetItHelper(this, environment, environmentFilter);
+  }) async {
+    final gh = _i526.GetItHelper(this, environment, environmentFilter);
+    final databaseModule = _$DatabaseModule();
+    final mailStoreModule = _$MailStoreModule();
+    gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
+    gh.singleton<_i398.Connectivity>(
+      () => _i524.AlwaysOnline(),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i398.SecureStore>(
+      () => _i524.KeychainStore(),
+      registerFor: {_prod},
+    );
+    await gh.singletonAsync<_i1028.PostinoDatabase>(
+      () => databaseModule.database(gh<_i398.SecureStore>()),
+      registerFor: {_prod},
+      preResolve: true,
+    );
+    gh.lazySingleton<_i385.MailStore>(
+      () => _i385.MailStore(gh<_i1028.PostinoDatabase>()),
+    );
+    gh.lazySingleton<_i845.InboxRepository>(
+      () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(gh<_i385.MailStore>()),
+    );
     return this;
   }
 }
+
+class _$DatabaseModule extends _i524.DatabaseModule {}
+
+class _$MailStoreModule extends _i385.MailStoreModule {}

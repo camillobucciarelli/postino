@@ -4,6 +4,10 @@ import 'package:postino/core/domain/result.dart';
 String describe(Result<int> r) => switch (r) {
   Ok(:final value) => 'ok $value',
   Err(failure: UnexpectedFailure(:final error)) => 'err $error',
+  Err(failure: AuthFailure()) => 'auth',
+  Err(failure: OfflineFailure()) => 'offline',
+  Err(failure: NotFoundFailure()) => 'notfound',
+  Err(failure: RateLimitFailure()) => 'ratelimit',
 };
 
 void main() {
@@ -13,5 +17,11 @@ void main() {
 
   test('Err carries the failure', () {
     expect(describe(const Err(UnexpectedFailure('boom'))), 'err boom');
+  });
+  test('every Provider failure is distinguishable', () {
+    expect(describe(const Err(AuthFailure())), 'auth');
+    expect(describe(const Err(OfflineFailure())), 'offline');
+    expect(describe(const Err(NotFoundFailure())), 'notfound');
+    expect(describe(const Err(RateLimitFailure())), 'ratelimit');
   });
 }

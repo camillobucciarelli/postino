@@ -24,3 +24,23 @@ final class UnexpectedFailure extends Failure {
   final Object error;
   final StackTrace? stackTrace;
 }
+
+/// The Provider no longer accepts the Account's credentials: the Account becomes Da ricollegare.
+final class AuthFailure extends Failure {
+  const AuthFailure();
+}
+
+/// No network, or the Provider is unreachable.
+final class OfflineFailure extends Failure {
+  const OfflineFailure();
+}
+
+/// The message, attachment or draft does not exist on the Provider.
+final class NotFoundFailure extends Failure {
+  const NotFoundFailure();
+}
+
+/// The Provider asks to slow down.
+final class RateLimitFailure extends Failure {
+  const RateLimitFailure();
+}

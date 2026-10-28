@@ -53,6 +53,7 @@ List<String> violations(String file, String source) {
     }
     if (file.split('/').contains('domain') &&
         (_flutterDependent(t) ||
+            (!t.contains(':') && !segments.contains('domain')) ||
             segments.contains('data') ||
             segments.contains('presentation'))) {
       bad('domain must be pure Dart');
@@ -108,6 +109,33 @@ void main() {
     test('domain may import pure Dart packages', () {
       expect(
         violations('core/domain/x.dart', "import 'package:meta/meta.dart';"),
+        isEmpty,
+      );
+    });
+    for (final uri in [
+      '../../design_system/tokens/postino_tokens.dart',
+      'package:postino/i18n/strings.g.dart',
+      'package:postino/main.dart',
+    ]) {
+      test('domain may not import non-domain in-repo $uri', () {
+        expect(
+          violations('core/domain/x.dart', "import '$uri';"),
+          isNotEmpty,
+        );
+      });
+    }
+    test('feature domain may import core/domain', () {
+      expect(
+        violations(
+          'features/posta/domain/mail.dart',
+          "import 'package:postino/core/domain/result.dart';",
+        ),
+        isEmpty,
+      );
+    });
+    test('feature domain may import its own domain', () {
+      expect(
+        violations('features/posta/domain/mail.dart', "import 'address.dart';"),
         isEmpty,
       );
     });

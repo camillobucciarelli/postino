@@ -1,4 +1,5 @@
-// postino_tokens.dart — generato da tokens.json (Postino v2). Non modificare a mano.
+// postino_tokens.dart — copiato dal design system Postino (artifact https://claude.ai/artifact/NHTah8veqH7f9q2BbEcBKs,
+// sezione 04-flutter). Nessun generatore nel repo: va tenuto allineato a mano con quella fonte.
 import 'package:flutter/material.dart';
 
 /// Livello 1 — primitivi. Non usarli nei widget: passa da PostinoColors.

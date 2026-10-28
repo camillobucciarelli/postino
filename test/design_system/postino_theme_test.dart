@@ -3,6 +3,122 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/tokens/postino_theme.dart';
 import 'package:postino/design_system/tokens/postino_tokens.dart';
 
+/// Every PostinoColors field name, in the same order as [_all].
+const _names = [
+  'surfaceGround',
+  'surface',
+  'surfaceRaised',
+  'surfaceHover',
+  'surfacePressed',
+  'surfaceSelected',
+  'surfaceInverse',
+  'surfaceDisabled',
+  'scrim',
+  'overlayHover',
+  'overlayPressed',
+  'borderSubtle',
+  'borderStrong',
+  'ink',
+  'inkMuted',
+  'inkSubtle',
+  'inkDisabled',
+  'inkInverse',
+  'brand',
+  'brandHover',
+  'onBrand',
+  'brandSubtle',
+  'brandInverse',
+  'unread',
+  'star',
+  'starFill',
+  'onStar',
+  'focusRing',
+  'danger',
+  'onDanger',
+  'dangerSubtle',
+  'success',
+  'onSuccess',
+  'successSubtle',
+  'warning',
+  'onWarning',
+  'warningSubtle',
+  'accountSky',
+  'accountSkySubtle',
+  'accountBlue',
+  'accountBlueSubtle',
+  'accountViolet',
+  'accountVioletSubtle',
+  'accountMagenta',
+  'accountMagentaSubtle',
+  'accountRose',
+  'accountRoseSubtle',
+  'accountOlive',
+  'accountOliveSubtle',
+  'accountSlate',
+  'accountSlateSubtle',
+  'accountGraphite',
+  'accountGraphiteSubtle',
+  'onAccount',
+  'labelStoneBg',
+  'labelStoneFg',
+  'labelSandBg',
+  'labelSandFg',
+  'labelSageBg',
+  'labelSageFg',
+  'labelSeaBg',
+  'labelSeaFg',
+  'labelLilacBg',
+  'labelLilacFg',
+  'labelBlushBg',
+  'labelBlushFg',
+  'listItemBg',
+  'listItemBgSelected',
+  'listItemFgUnread',
+  'listItemFgRead',
+  'listItemMeta',
+  'listItemDivider',
+  'swipeArchiveBg',
+  'swipeDeleteBg',
+  'swipeSnoozeBg',
+  'swipeReadBg',
+  'swipeStarBg',
+  'swipeStarFg',
+  'swipeNeutralBg',
+  'swipeFg',
+  'swipeFgIdle',
+  'drawerBg',
+  'drawerItemBgActive',
+  'drawerItemFg',
+  'drawerItemIcon',
+  'drawerItemIconActive',
+  'avatarBadgeRing',
+  'composerBg',
+  'composerFieldDivider',
+  'chipBg',
+  'chipFg',
+  'chipBgSelected',
+  'inputBg',
+  'inputBorder',
+  'inputBorderFocus',
+  'inputBorderError',
+  'snackbarBg',
+  'snackbarFg',
+  'snackbarAction',
+  'fabBg',
+  'fabFg',
+  'switchTrackOn',
+  'switchTrackOff',
+  'switchThumbOn',
+  'switchThumbOff',
+  'tabIndicator',
+  'skeletonBase',
+  'skeletonHighlight',
+  'bulkBarBg',
+  'syncOk',
+  'syncRunning',
+  'syncError',
+];
+
 /// Every PostinoColors field, so copyWith/lerp typos (a field wired to another) show up.
 List<Color> _all(PostinoColors c) => [
   c.surfaceGround,
@@ -119,6 +235,17 @@ List<Color> _all(PostinoColors c) => [
   c.syncError,
 ];
 
+/// Distinct color per field (`0xFF000000 + shift + i`), so cross-wired fields differ.
+List<Color> _palette(int shift) => [
+  for (var i = 0; i < _names.length; i++) Color(0xFF000000 + shift + i),
+];
+
+PostinoColors _build(List<Color> colors) => Function.apply(
+  PostinoColors.new,
+  [],
+  {for (var i = 0; i < _names.length; i++) Symbol(_names[i]): colors[i]},
+) as PostinoColors;
+
 void main() {
   test('light and dark themes map the brand token to primary', () {
     expect(PostinoTheme.light().colorScheme.primary, PostinoColors.light.brand);
@@ -126,16 +253,31 @@ void main() {
     expect(PostinoTheme.dark().brightness, Brightness.dark);
   });
 
+  test('fixture covers all fields with distinct colors', () {
+    expect(_names.length, 112);
+    expect(_palette(0).toSet().length, _names.length);
+    expect(_all(_build(_palette(0))), _palette(0));
+  });
+
   test('PostinoColors.copyWith() keeps every field', () {
     expect(_all(PostinoColors.light.copyWith()), _all(PostinoColors.light));
   });
 
-  test(
-    'PostinoColors.lerp maps every field from light (t=0) to dark (t=1)',
-    () {
-      const light = PostinoColors.light, dark = PostinoColors.dark;
-      expect(_all(light.lerp(dark, 0)), _all(light));
-      expect(_all(light.lerp(dark, 1)), _all(dark));
-    },
-  );
+  test('PostinoColors.copyWith maps every parameter to its own field', () {
+    final next = _palette(0x10000);
+    final copy = Function.apply(_build(_palette(0)).copyWith, [], {
+      for (var i = 0; i < _names.length; i++) Symbol(_names[i]): next[i],
+    }) as PostinoColors;
+    expect(_all(copy), next);
+  });
+
+  test('PostinoColors.lerp maps every field from a (t=0) to b (t=1)', () {
+    final a = _palette(0), b = _palette(0x10000);
+    final from = _build(a), to = _build(b);
+    expect(_all(from.lerp(to, 0)), a);
+    expect(_all(from.lerp(to, 1)), b);
+    expect(_all(from.lerp(to, 0.5)), [
+      for (var i = 0; i < a.length; i++) Color.lerp(a[i], b[i], 0.5),
+    ]);
+  });
 }

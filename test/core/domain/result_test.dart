@@ -10,6 +10,7 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: RateLimitFailure()) => 'ratelimit',
   Err(failure: ConfigurationFailure(:final setting)) => 'config $setting',
   Err(failure: CancelledFailure()) => 'cancelled',
+  Err(failure: MissingPermissionFailure()) => 'missing-permission',
 };
 
 void main() {

@@ -66,7 +66,7 @@ _Avoid_: Evento (è la cosa proposta), meeting
 ### Smistamento
 
 **Sessione di smistamento**:
-Una sessione concentrata in cui l'utente elabora i messaggi della posta in arrivo uno alla volta, usando le quattro Azioni configurabili a scorrimento.
+Una sessione concentrata in cui l'utente elabora i messaggi della posta in arrivo uno alla volta, usando le quattro Azioni configurabili a scorrimento. Mostra un messaggio alla volta come una scheda; dopo la stessa Azione applicata due volte allo stesso mittente propone di crearne una Regola, già compilata.
 _Avoid_: Triage, modalità smistamento
 
 **Azione**:

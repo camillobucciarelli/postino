@@ -8,6 +8,8 @@ final _directive = RegExp(
   r'(?:^|(?<=;))\s*(?:import|export)\s[^;]*;',
   multiLine: true,
 );
+// ponytail: regex strip, so a string literal containing `//` or `; import ...` is mis-read; use package:analyzer if that ever matters.
+final _comment = RegExp(r'//.*|/\*[\s\S]*?\*/');
 final _uri = RegExp(r'''['"]([^'"]+)['"]''');
 
 /// Packages that pull in Flutter; `domain` must stay pure Dart.
@@ -38,7 +40,7 @@ String libPath(String path) =>
 List<String> violations(String file, String source) {
   final out = <String>[];
   for (final uri in [
-    for (final d in _directive.allMatches(source))
+    for (final d in _directive.allMatches(source.replaceAll(_comment, ' ')))
       for (final u in _uri.allMatches(d.group(0)!)) u.group(1)!,
   ]) {
     final t = _target(file, uri);
@@ -160,6 +162,24 @@ void main() {
           "import 'dart:async'; import 'package:flutter/widgets.dart';",
         ),
         isNotEmpty,
+      );
+    });
+    test('a block comment before an import does not hide it', () {
+      expect(
+        violations(
+          'core/domain/x.dart',
+          "/* pure */ import 'package:flutter/foundation.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('commented-out imports are ignored', () {
+      expect(
+        violations(
+          'core/domain/x.dart',
+          "// import 'package:flutter/widgets.dart';\n/* import 'dart:ui'; */",
+        ),
+        isEmpty,
       );
     });
     test('multi-line show imports are checked', () {

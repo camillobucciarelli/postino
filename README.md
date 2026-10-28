@@ -1,17 +1,23 @@
-# postino
+# Postino
 
-A new Flutter project.
+Postino è un client email multi-account scritto in Flutter.
 
-## Getting Started
+## Codegen
 
-This project is a starting point for a Flutter application.
+```sh
+dart run routefly
+dart run build_runner build
+```
 
-A few resources to get you started if this is your first Flutter project:
+`routefly` rigenera le rotte da `lib/app`; `build_runner` rigenera traduzioni (slang) e dependency injection (injectable). Il codice generato è committato. Su un checkout appena clonato `build_runner` rifiuta di sovrascrivere gli output slang ("Asset already exists"): cancellali prima con `rm lib/i18n/strings*.g.dart`, come fa la CI.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Verifica
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+flutter analyze && flutter test
+```
+
+## Documentazione
+
+- Decisioni architetturali: [`docs/adr`](docs/adr)
+- Linguaggio di dominio: [`GLOSSARY.md`](GLOSSARY.md)

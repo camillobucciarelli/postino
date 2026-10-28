@@ -13,4 +13,12 @@ Le pagine (`*_page.dart`) stanno in `lib/app`, organizzate per URL (es. `posta/[
 
 ## Conseguenze
 
-- Rischio aperto: il deep link da avvio a freddo dalla notifica non è documentato in routefly; va verificato con un prototipo prima di contarci.
+- Deep link da notifica ad avvio a freddo validato su simulatore iOS ed emulatore Android (build debug); dettagli e limiti in [Deep link dalla notifica ad avvio a freddo con routefly](https://github.com/camillobucciarelli/postino/issues/8).
+
+## Note di implementazione (routefly 3.1.3)
+
+- Il path di un layout è la sua cartella: `posta/posta_layout.dart` → `/posta`. Una pagina con lo stesso path non può esserne figlia, quindi la Posta unificata la disegna il layout stesso quando nessuna rotta figlia è attiva (`Routefly.currentOriginalPath` uguale al path del layout); altrimenti mostra il `RouterOutlet`.
+- Le pagine dei segmenti dinamici prendono il nome del segmento tra parentesi, accanto alla sua cartella: `posta/[accountId]_page.dart` → `/posta/[accountId]`, `posta/[accountId]/conversazione/[id]_page.dart` → `/posta/[accountId]/conversazione/[id]`, con `// ignore_for_file: file_names`. Il collasso del suffisso di routefly costruisce una regex dal segmento grezzo, per cui `[id]/[id]_page.dart` non collassa mai (pare un bug di routefly).
+- I parametri si leggono con `Routefly.query['id']`.
+- I path si costruiscono dall'accessor generato `routePaths`, mai a mano, es. `routePaths.posta.$accountId.path.changes({'accountId': id})`. Una cartella con rotte figlie diventa un record e il suo path è in `.path`: quando `posta` avrà figli, `routePaths.posta` in `main.dart` diventa `routePaths.posta.path`.
+- routefly tiene la configurazione del router in campi statici: nei test una configurazione di rotte diversa va in un file di test a parte.

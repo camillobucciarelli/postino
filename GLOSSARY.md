@@ -111,6 +111,10 @@ _Avoid_: Whitelist, contatto sicuro
 L'email che un utente manda all'autore di Postino con il log degli errori allegato, preparata da Postino al riavvio dopo un crash o su richiesta. L'utente la rilegge e decide se inviarla.
 _Avoid_: Crash report, telemetria
 
+**Observability**:
+L'invio opt-in di errori, metriche tecniche e metriche d'uso a uno stack ospitato dall'autore, dalla v2. Non contiene mai contenuti di posta.
+_Avoid_: Telemetria, analytics
+
 ## Relationships
 
 - Un **Account** appartiene a un solo **Provider**

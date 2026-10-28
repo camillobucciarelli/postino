@@ -9,7 +9,7 @@ Finché l'app è aperta (mobile in primo piano, desktop aperto o nella tray) ogn
 
 Gli scope OAuth si allargano di conseguenza: per Gmail `https://mail.google.com/` (al posto di `gmail.modify`), per Microsoft `IMAP.AccessAsUser.All` in aggiunta a `Mail.ReadWrite` e `Mail.Send`, perché IDLE passa da IMAP.
 
-La coda offline conserva intenti idempotenti (per esempio "assicurati che sia archiviato"), non operazioni. Al replay vince lo stato del Provider: se il messaggio di destinazione non esiste più, l'intento viene scartato in silenzio; solo un invio fallito viene mostrato all'utente.
+La coda offline conserva intenti idempotenti (per esempio "assicurati che sia archiviato"), non operazioni. Al replay l'intento viene riapplicato sopra lo stato del Provider, anche se nel frattempo il messaggio è stato modificato altrove (letto, Stella, Etichetta, Posticipa): la modifica concorrente viene sovrascritta. L'intento viene scartato in silenzio solo se il messaggio di destinazione non esiste più; i messaggi in coda si riconoscono dal Message-ID. Solo un invio fallito viene mostrato all'utente.
 
 Quando un Provider rifiuta l'accesso a un Account (password cambiata, accesso revocato), l'Account diventa **Da ricollegare**: la sua sincronizzazione si ferma da sola, la posta resta leggibile e la coda attende. Un Banner nella sua posta in arrivo e un punto nell'AccountSwitcher portano ad accedere di nuovo.
 

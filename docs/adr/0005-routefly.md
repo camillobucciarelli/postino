@@ -13,7 +13,7 @@ Le pagine (`*_page.dart`) stanno in `lib/app`, organizzate per URL (es. `posta/[
 
 ## Conseguenze
 
-- Rischio aperto: il deep link da avvio a freddo dalla notifica non è documentato in routefly; va verificato con un prototipo prima di contarci.
+- Deep link da notifica ad avvio a freddo validato su simulatore iOS ed emulatore Android (build debug); dettagli e limiti in [Deep link dalla notifica ad avvio a freddo con routefly](https://github.com/camillobucciarelli/postino/issues/8).
 
 ## Note di implementazione (routefly 3.1.3)
 

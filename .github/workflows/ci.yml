@@ -18,6 +18,9 @@ jobs:
       - name: Codegen
         run: |
           dart run routefly
+          # slang outputs are committed and build_runner 2.16 refuses to overwrite them
+          # ("Asset already exists"); regenerate from scratch, the diff check below catches drift.
+          rm lib/i18n/strings*.g.dart
           dart run build_runner build
       - name: Generated code is committed
         run: |

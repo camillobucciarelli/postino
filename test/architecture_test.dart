@@ -20,7 +20,9 @@ bool _flutterDependent(String uri) =>
 /// Resolves a directive to a lib-relative path (`features/x/...`), or returns the raw URI for external ones.
 String _target(String file, String uri) {
   if (uri.startsWith('package:postino/')) {
-    return uri.substring('package:postino/'.length);
+    return Uri.parse(uri.substring('package:postino/'.length))
+        .normalizePath()
+        .path;
   }
   if (uri.contains(':')) return uri;
   return Uri.parse(file).resolve(uri).path;
@@ -120,6 +122,8 @@ void main() {
       '../../design_system/tokens/postino_tokens.dart',
       'package:postino/i18n/strings.g.dart',
       'package:postino/main.dart',
+      'package:postino/core/domain/../../i18n/strings.g.dart',
+      'package:postino/core/domain/../../design_system/tokens/postino_tokens.dart',
     ]) {
       test('domain may not import non-domain in-repo $uri', () {
         expect(violations('core/domain/x.dart', "import '$uri';"), isNotEmpty);

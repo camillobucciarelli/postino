@@ -21,4 +21,4 @@ L'Avatar del mittente mostra il logo BIMI del brand solo se: (a) i risultati di 
 
 ## Nota: suggerimenti dei destinatari
 
-I suggerimenti dei destinatari in composizione vengono dagli indirizzi visti nella posta sincronizzata e, per gli Account Google e Microsoft, dalla rubrica del Provider (scope di sola lettura sui contatti, aggiuntivi). Gli Account IMAP usano solo gli indirizzi visti (CardDAV rimandato).
+I suggerimenti dei destinatari in composizione vengono dagli indirizzi visti nella posta sincronizzata e, per gli Account Google e Microsoft, dalla rubrica del Provider (scope di sola lettura sui contatti, aggiuntivi). Gli Account IMAP usano solo gli indirizzi visti (CardDAV fuori roadmap: [CardDAV per gli Account IMAP](https://github.com/camillobucciarelli/postino/issues/24)).

@@ -17,6 +17,9 @@ class MailStore implements InboxRepository {
     for (final r in await _db.accountsDao.byPosition()) _account(r),
   ];
 
+  Future<void> setStatus(String accountId, AccountStatus status) =>
+      _db.accountsDao.setStatus(accountId, status);
+
   Stream<List<Account>> watchAccounts() => _db.accountsDao
       .watchByPosition()
       .map((rows) => [for (final r in rows) _account(r)]);

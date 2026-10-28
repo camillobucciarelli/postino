@@ -5,5 +5,9 @@
     "title": "Benvenuto in Postino",
     "body": "Collega la tua casella Gmail per iniziare.",
     "connectGmail": "Collega Gmail"
+  },
+  "daRicollegare": {
+    "banner": "$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.",
+    "reconnect": "Ricollega"
   }
 }

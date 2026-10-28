@@ -49,6 +49,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	String get postaUnificata => 'Posta unificata';
 
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
+	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 }
 
 // Path: onboarding
@@ -69,6 +70,21 @@ class Translations$onboarding$it {
 	String get connectGmail => 'Collega Gmail';
 }
 
+// Path: daRicollegare
+class Translations$daRicollegare$it {
+	Translations$daRicollegare$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: '$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.'
+	String banner({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.';
+
+	/// it: 'Ricollega'
+	String get reconnect => 'Ricollega';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -82,6 +98,8 @@ extension on Translations {
 			'onboarding.title' => 'Benvenuto in Postino',
 			'onboarding.body' => 'Collega la tua casella Gmail per iniziare.',
 			'onboarding.connectGmail' => 'Collega Gmail',
+			'daRicollegare.banner' => ({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.',
+			'daRicollegare.reconnect' => 'Ricollega',
 			_ => null,
 		};
 	}

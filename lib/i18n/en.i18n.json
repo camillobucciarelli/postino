@@ -5,5 +5,9 @@
     "title": "Welcome to Postino",
     "body": "Connect your Gmail mailbox to get started.",
     "connectGmail": "Connect Gmail"
+  },
+  "daRicollegare": {
+    "banner": "$address needs reconnecting: its mail stays readable but no longer updates.",
+    "reconnect": "Reconnect"
   }
 }

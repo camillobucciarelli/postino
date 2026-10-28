@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:routefly/routefly.dart';
 
 import '../../features/account/presentation/onboarding_gate.dart';
+import '../../features/account/presentation/reconnect_banners.dart';
 import '../../features/posta/presentation/unified_inbox.dart';
 import '../../i18n/strings.g.dart';
 
@@ -26,6 +27,7 @@ class PostaLayout extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Text(context.t.postaUnificata),
             ),
+            const ReconnectBanners(),
             const Expanded(child: UnifiedInbox()),
           ],
         ),

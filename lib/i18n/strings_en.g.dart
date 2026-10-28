@@ -42,6 +42,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override String get appTitle => 'Postino';
 	@override String get postaUnificata => 'All inboxes';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
+	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 }
 
 // Path: onboarding
@@ -54,6 +55,17 @@ class _Translations$onboarding$en extends Translations$onboarding$it {
 	@override String get title => 'Welcome to Postino';
 	@override String get body => 'Connect your Gmail mailbox to get started.';
 	@override String get connectGmail => 'Connect Gmail';
+}
+
+// Path: daRicollegare
+class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
+	_Translations$daRicollegare$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String banner({required Object address}) => '${address} needs reconnecting: its mail stays readable but no longer updates.';
+	@override String get reconnect => 'Reconnect';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -69,6 +81,8 @@ extension on TranslationsEn {
 			'onboarding.title' => 'Welcome to Postino',
 			'onboarding.body' => 'Connect your Gmail mailbox to get started.',
 			'onboarding.connectGmail' => 'Connect Gmail',
+			'daRicollegare.banner' => ({required Object address}) => '${address} needs reconnecting: its mail stays readable but no longer updates.',
+			'daRicollegare.reconnect' => 'Reconnect',
 			_ => null,
 		};
 	}

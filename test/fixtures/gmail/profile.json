@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "body": {
+    "emailAddress": "ada@gmail.com",
+    "messagesTotal": 1234,
+    "threadsTotal": 987,
+    "historyId": "4242"
+  }
+}

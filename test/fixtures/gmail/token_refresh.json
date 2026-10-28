@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "body": {
+    "access_token": "ya29.refreshed",
+    "expires_in": 3599,
+    "scope": "https://mail.google.com/",
+    "token_type": "Bearer"
+  }
+}

@@ -54,6 +54,7 @@ class FakeMailProvider implements MailProvider {
 
   void goOffline() => _offline = true;
   void breakAuth() => _authBroken = true;
+  void restoreAuth() => _authBroken = false;
 
   Failure? get _failure => _authBroken
       ? const AuthFailure()

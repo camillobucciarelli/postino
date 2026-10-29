@@ -11,6 +11,8 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: ConfigurationFailure(:final setting)) => 'config $setting',
   Err(failure: CancelledFailure()) => 'cancelled',
   Err(failure: MissingPermissionFailure()) => 'missing-permission',
+  Err(failure: WrongAccountFailure(:final expected)) =>
+    'wrong-account $expected',
 };
 
 void main() {

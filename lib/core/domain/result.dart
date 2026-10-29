@@ -60,3 +60,9 @@ final class ConfigurationFailure extends Failure {
 final class CancelledFailure extends Failure {
   const CancelledFailure();
 }
+
+/// Reconnecting an Account, the user picked another Google identity than [expected].
+final class WrongAccountFailure extends Failure {
+  const WrongAccountFailure(this.expected);
+  final String expected;
+}

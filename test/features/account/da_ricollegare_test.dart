@@ -81,4 +81,23 @@ void main() {
       expect(find.byKey(_new), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'reconnecting with another Google account says which one to pick',
+    (tester) async {
+      await start(tester);
+      gmail.breakAuth();
+      await sync(tester);
+
+      h.consent.address = 'bob@gmail.com';
+      await tester.tap(find.text('Ricollega'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('per ricollegare ada@gmail.com'),
+        findsOneWidget,
+      );
+      expect(find.byKey(_banner), findsOneWidget);
+    },
+  );
 }

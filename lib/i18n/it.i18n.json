@@ -14,6 +14,7 @@
     "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
     "offline": "Nessuna connessione: riprova quando sei online.",
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
+    "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
     "failed": "Collegamento non riuscito. Riprova."
   }
 }

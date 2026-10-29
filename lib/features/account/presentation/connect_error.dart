@@ -12,5 +12,7 @@ String? connectError(BuildContext context, Result<Object> result) =>
       Err(failure: OfflineFailure()) => context.t.connect.offline,
       Err(failure: MissingPermissionFailure()) =>
         context.t.connect.missingPermission,
+      Err(failure: WrongAccountFailure(:final expected)) =>
+        context.t.connect.wrongAccount(address: expected),
       Err() => context.t.connect.failed,
     };

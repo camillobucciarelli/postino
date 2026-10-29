@@ -103,6 +103,9 @@ class Translations$connect$it {
 	/// it: 'Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.'
 	String get missingPermission => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.';
 
+	/// it: 'Hai scelto un altro account Google: per ricollegare $address scegli quell'account.'
+	String wrongAccount({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.';
+
 	/// it: 'Collegamento non riuscito. Riprova.'
 	String get failed => 'Collegamento non riuscito. Riprova.';
 }
@@ -125,6 +128,7 @@ extension on Translations {
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
+			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Collegamento non riuscito. Riprova.',
 			_ => null,
 		};

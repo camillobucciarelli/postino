@@ -7,10 +7,10 @@ import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
-enum PostinoBannerTone { danger, warning, offline }
+enum PostinoBannerTone { danger, warning, offline, neutral }
 
-/// A lasting problem at the top of the list: [title] says what happens, [message] why or what to do,
-/// at most one action. With [account] its mark sits in the title.
+/// A lasting problem at the top of the list, or a notice above a message: [title] says what happens,
+/// [message] why or what to do, up to two actions (two sit under the text). With [account] its mark sits in the title.
 class PostinoBanner extends StatelessWidget {
   const PostinoBanner({
     super.key,
@@ -21,6 +21,8 @@ class PostinoBanner extends StatelessWidget {
     this.account,
     this.actionLabel,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   final PostinoBannerTone tone;
@@ -32,6 +34,8 @@ class PostinoBanner extends StatelessWidget {
   final PostinoAccountRef? account;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -39,22 +43,24 @@ class PostinoBanner extends StatelessWidget {
     final a = account;
     // At large text sizes the action moves under the text, or the title has no room.
     final large = MediaQuery.textScalerOf(context).scale(1) > 1.5;
-    final label = actionLabel;
     // The design's banner action: a ghost button in ink, underlined.
-    final action = label == null
-        ? null
-        : TextButtonTheme(
-            data: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: c.ink),
-            ),
-            child: PostinoButton(
-              label: label,
-              onPressed: onAction,
-              variant: PostinoButtonVariant.ghost,
-              size: PostinoButtonSize.sm,
-              underline: true,
-            ),
-          );
+    Widget button(String label, VoidCallback? onPressed) => TextButtonTheme(
+      data: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: c.ink),
+      ),
+      child: PostinoButton(
+        label: label,
+        onPressed: onPressed,
+        variant: PostinoButtonVariant.ghost,
+        size: PostinoButtonSize.sm,
+        underline: true,
+      ),
+    );
+    final actions = [
+      if (actionLabel case final l?) button(l, onAction),
+      if (secondaryActionLabel case final l?) button(l, onSecondaryAction),
+    ];
+    final under = large || actions.length > 1;
     return Padding(
       padding: const EdgeInsets.only(bottom: PostinoSpacing.s2),
       child: Semantics(
@@ -71,7 +77,8 @@ class PostinoBanner extends StatelessWidget {
             color: switch (tone) {
               PostinoBannerTone.danger => c.dangerSubtle,
               PostinoBannerTone.warning => c.warningSubtle,
-              PostinoBannerTone.offline => c.surfacePressed,
+              PostinoBannerTone.offline ||
+              PostinoBannerTone.neutral => c.surfacePressed,
             },
             borderRadius: const BorderRadius.all(
               Radius.circular(PostinoRadius.md),
@@ -120,12 +127,13 @@ class PostinoBanner extends StatelessWidget {
                           m,
                           style: PostinoText.preview.copyWith(color: c.ink),
                         ),
-                      if (large) ?action,
+                      if (under && actions.isNotEmpty)
+                        Wrap(spacing: PostinoSpacing.s2, children: actions),
                     ],
                   ),
                 ),
               ),
-              if (!large) ?action,
+              if (!under) ...actions,
             ],
           ),
         ),

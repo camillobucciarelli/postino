@@ -29,6 +29,7 @@ final _components = <String, Widget Function()>{
         PostinoIcons.menu,
         PostinoIcons.arrowLeft,
         PostinoIcons.chevronLeft,
+        PostinoIcons.image,
       ])
         PostinoIcon(i, size: PostinoSize.iconLg),
       const PostinoIcon(PostinoIcons.star, filled: true, label: 'Stella'),
@@ -182,7 +183,23 @@ final _components = <String, Widget Function()>{
         title: 'Collegamento non riuscito',
         message: 'Nessuna connessione: riprova quando sei online.',
       ),
+      PostinoBanner(
+        tone: PostinoBannerTone.neutral,
+        icon: PostinoIcons.image,
+        title: 'Immagini remote bloccate',
+        actionLabel: 'Mostra immagini',
+        onAction: _noop,
+        secondaryActionLabel: 'Sempre da questo mittente',
+        onSecondaryAction: _noop,
+      ),
     ],
+  ),
+  'html_card': () => PostinoHtmlCard(
+    html:
+        '<h2 style="color: #1a1a1a">Novità</h2><p>Ciao, ecco le '
+        '<a href="https://example.com">notizie</a> della settimana.</p>'
+        '<img alt="Logo">',
+    onTapUrl: (_) {},
   ),
   'sync_status': () => const Wrap(
     spacing: 16,

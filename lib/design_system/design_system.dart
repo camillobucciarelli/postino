@@ -14,6 +14,7 @@ export 'atoms/postino_skeleton.dart';
 
 export 'molecules/postino_banner.dart';
 export 'molecules/postino_empty_state.dart';
+export 'molecules/postino_html_card.dart';
 export 'molecules/postino_message_tile.dart';
 export 'molecules/postino_sync_status.dart';
 

@@ -97,4 +97,21 @@ void main() {
       expect(await db.select(db.intents).get(), isEmpty);
     },
   );
+
+  test('v6 adds the Mittenti fidati, keeping what was there', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute('PRAGMA user_version = 5');
+    raw.execute(
+      "INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')",
+    );
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    await db.trustedSendersDao.add('ada@example.com');
+    expect(await db.trustedSendersDao.watchAll().first, {'ada@example.com'});
+    expect(await db.select(db.accounts).get(), hasLength(1));
+  });
 }

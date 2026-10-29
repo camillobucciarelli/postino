@@ -13,7 +13,7 @@ import '../tokens/postino_tokens.dart';
 
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
-/// everything but the HTML bodies at most 800 wide, centered.
+/// everything but the HTML bodies at most `reading-max-width` wide, centered.
 class PostinoThreadView extends StatelessWidget {
   const PostinoThreadView({
     super.key,
@@ -118,10 +118,7 @@ class PostinoThreadView extends StatelessWidget {
   }
 }
 
-/// The reading column of a Conversazione: wider than the onboarding's `reading-max-width` (680).
-const _readingMaxWidth = 800.0;
-
-/// The reading column: at most [_readingMaxWidth] wide counting the page's 16 padding, centered.
+/// The reading column: at most `reading-max-width` wide counting the page's 16 padding, centered.
 /// Everything but an HTML body goes in it; [PostinoHtmlCard]s take the whole pane.
 class _Reading extends StatelessWidget {
   const _Reading(this.child);
@@ -133,7 +130,7 @@ class _Reading extends StatelessWidget {
     alignment: Alignment.topCenter,
     child: ConstrainedBox(
       constraints: const BoxConstraints(
-        maxWidth: _readingMaxWidth - 2 * PostinoSpacing.s4,
+        maxWidth: PostinoSize.readingMaxWidth - 2 * PostinoSpacing.s4,
       ),
       child: child,
     ),

@@ -201,7 +201,9 @@ void main() {
         tester.view.physicalSize = Size(width, 1600);
         await tester.pumpAndSettle();
         final pane = tester.getRect(find.byType(PostinoThreadView));
-        final reading = math.min(pane.width, 800.0) - 2 * PostinoSpacing.s4;
+        final reading =
+            math.min(pane.width, PostinoSize.readingMaxWidth) -
+            2 * PostinoSpacing.s4;
         for (final id in ['w0', 'w1']) {
           final card = _in(id, find.byType(PostinoHtmlCard));
           expect(

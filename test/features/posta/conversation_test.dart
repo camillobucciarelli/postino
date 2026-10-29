@@ -1,4 +1,4 @@
-// Opening and reading a Conversazione (#33): beside the list from 840, a full page below,
+// Opening and reading a Conversazione (#33): beside the list from 1400, a full page below,
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
 import 'package:flutter/services.dart';
@@ -18,7 +18,7 @@ import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 import '../../support/ui.dart';
 
-const _desktop = Size(1280, 800);
+const _desktop = Size(1600, 900);
 const _phone = Size(390, 844);
 
 DateTime _day(int d) => DateTime.utc(2026, 10, d, 9);
@@ -168,7 +168,7 @@ void main() {
   );
 
   testWidgets(
-    'at 1280×800 a tap opens the Conversazione beside the list, which stays mounted and highlights the row; Esc closes it',
+    'at 1600×900 a tap opens the Conversazione beside the list, which stays mounted and highlights the row; Esc closes it',
     (tester) async {
       await _start(tester, _desktop, _thread);
       final list = tester.state(find.byType(MessageList));
@@ -197,7 +197,7 @@ void main() {
   );
 
   testWidgets(
-    'crossing 840 with a Conversazione open keeps its State, scroll and expansion choices, and the list State',
+    'crossing 1400 with a Conversazione open keeps its State, scroll and expansion choices, and the list State',
     (tester) async {
       // Twelve unread messages: all expanded when they show up, long enough to scroll.
       await _start(tester, _desktop, (p) {
@@ -250,7 +250,7 @@ void main() {
     },
   );
 
-  testWidgets('at 1280×800 Indietro closes the Conversazione too', (
+  testWidgets('at 1600×900 Indietro closes the Conversazione too', (
     tester,
   ) async {
     await _start(tester, _desktop, _thread);

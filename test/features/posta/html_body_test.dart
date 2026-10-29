@@ -84,7 +84,7 @@ void _mailbox(FakeMailProvider p) {
 
 Future<void> _start(WidgetTester tester) async {
   tester.view
-    ..physicalSize = const Size(1280, 1600)
+    ..physicalSize = const Size(1600, 1600)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   h = await Harness.create();

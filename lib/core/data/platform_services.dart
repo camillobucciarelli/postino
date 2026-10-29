@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -45,4 +46,10 @@ abstract class DatabaseModule {
     final dir = await getApplicationSupportDirectory();
     return PostinoDatabase.open('${dir.path}/postino.db', keychain);
   }
+}
+
+@module
+abstract class HttpModule {
+  @Singleton(env: [Environment.prod])
+  http.Client client() => http.Client();
 }

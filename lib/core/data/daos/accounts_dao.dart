@@ -23,6 +23,15 @@ class AccountsDao extends DatabaseAccessor<PostinoDatabase>
     mode: InsertMode.insertOrReplace,
   );
 
-  Future<List<AccountRow>> byPosition() =>
-      (select(accounts)..orderBy([(t) => OrderingTerm.asc(t.position)])).get();
+  Future<void> setStatus(String id, AccountStatus status) =>
+      (update(accounts)..where((t) => t.id.equals(id))).write(
+        AccountsCompanion(status: Value(status)),
+      );
+
+  SimpleSelectStatement<$AccountsTable, AccountRow> _byPosition() =>
+      select(accounts)..orderBy([(t) => OrderingTerm.asc(t.position)]);
+
+  Future<List<AccountRow>> byPosition() => _byPosition().get();
+
+  Stream<List<AccountRow>> watchByPosition() => _byPosition().watch();
 }

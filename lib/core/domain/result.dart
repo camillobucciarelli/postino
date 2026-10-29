@@ -30,6 +30,11 @@ final class AuthFailure extends Failure {
   const AuthFailure();
 }
 
+/// The user did not grant the Gmail permission (Google's granular consent let them untick it).
+final class MissingPermissionFailure extends Failure {
+  const MissingPermissionFailure();
+}
+
 /// No network, or the Provider is unreachable.
 final class OfflineFailure extends Failure {
   const OfflineFailure();
@@ -43,4 +48,21 @@ final class NotFoundFailure extends Failure {
 /// The Provider asks to slow down.
 final class RateLimitFailure extends Failure {
   const RateLimitFailure();
+}
+
+/// The app is missing a build-time setting (for example the OAuth client ID).
+final class ConfigurationFailure extends Failure {
+  const ConfigurationFailure(this.setting);
+  final String setting;
+}
+
+/// The user backed out (for example closed the consent page).
+final class CancelledFailure extends Failure {
+  const CancelledFailure();
+}
+
+/// Reconnecting an Account, the user picked another Google identity than [expected].
+final class WrongAccountFailure extends Failure {
+  const WrongAccountFailure(this.expected);
+  final String expected;
 }

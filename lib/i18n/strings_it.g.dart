@@ -47,6 +47,67 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// it: 'Posta unificata'
 	String get postaUnificata => 'Posta unificata';
+
+	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
+	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
+	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
+}
+
+// Path: onboarding
+class Translations$onboarding$it {
+	Translations$onboarding$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Benvenuto in Postino'
+	String get title => 'Benvenuto in Postino';
+
+	/// it: 'Collega la tua casella Gmail per iniziare.'
+	String get body => 'Collega la tua casella Gmail per iniziare.';
+
+	/// it: 'Collega Gmail'
+	String get connectGmail => 'Collega Gmail';
+}
+
+// Path: daRicollegare
+class Translations$daRicollegare$it {
+	Translations$daRicollegare$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: '$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.'
+	String banner({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.';
+
+	/// it: 'Ricollega'
+	String get reconnect => 'Ricollega';
+}
+
+// Path: connect
+class Translations$connect$it {
+	Translations$connect$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).'
+	String missingSetting({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).';
+
+	/// it: 'Nessuna connessione: riprova quando sei online.'
+	String get offline => 'Nessuna connessione: riprova quando sei online.';
+
+	/// it: 'Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.'
+	String get missingPermission => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.';
+
+	/// it: 'Hai scelto un altro account Google: per ricollegare $address scegli quell'account.'
+	String wrongAccount({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.';
+
+	/// it: 'Collegamento non riuscito. Riprova.'
+	String get failed => 'Collegamento non riuscito. Riprova.';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -59,6 +120,16 @@ extension on Translations {
 		return switch (path) {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'Posta unificata',
+			'onboarding.title' => 'Benvenuto in Postino',
+			'onboarding.body' => 'Collega la tua casella Gmail per iniziare.',
+			'onboarding.connectGmail' => 'Collega Gmail',
+			'daRicollegare.banner' => ({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.',
+			'daRicollegare.reconnect' => 'Ricollega',
+			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
+			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
+			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
+			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
+			'connect.failed' => 'Collegamento non riuscito. Riprova.',
 			_ => null,
 		};
 	}

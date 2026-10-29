@@ -1,4 +1,20 @@
 {
   "appTitle": "Postino",
-  "postaUnificata": "Posta unificata"
+  "postaUnificata": "Posta unificata",
+  "onboarding": {
+    "title": "Benvenuto in Postino",
+    "body": "Collega la tua casella Gmail per iniziare.",
+    "connectGmail": "Collega Gmail"
+  },
+  "daRicollegare": {
+    "banner": "$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.",
+    "reconnect": "Ricollega"
+  },
+  "connect": {
+    "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
+    "offline": "Nessuna connessione: riprova quando sei online.",
+    "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
+    "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
+    "failed": "Collegamento non riuscito. Riprova."
+  }
 }

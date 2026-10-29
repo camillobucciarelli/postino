@@ -27,7 +27,7 @@ Widget _appAt(String initialPath) {
 
 void main() {
   setUp(() async {
-    await Harness.create();
+    await (await Harness.create()).addAccount('a1');
     LocaleSettings.setLocaleSync(AppLocale.it);
   });
 

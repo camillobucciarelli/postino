@@ -8,6 +8,11 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: OfflineFailure()) => 'offline',
   Err(failure: NotFoundFailure()) => 'notfound',
   Err(failure: RateLimitFailure()) => 'ratelimit',
+  Err(failure: ConfigurationFailure(:final setting)) => 'config $setting',
+  Err(failure: CancelledFailure()) => 'cancelled',
+  Err(failure: MissingPermissionFailure()) => 'missing-permission',
+  Err(failure: WrongAccountFailure(:final expected)) =>
+    'wrong-account $expected',
 };
 
 void main() {
@@ -23,5 +28,7 @@ void main() {
     expect(describe(const Err(OfflineFailure())), 'offline');
     expect(describe(const Err(NotFoundFailure())), 'notfound');
     expect(describe(const Err(RateLimitFailure())), 'ratelimit');
+    expect(describe(const Err(ConfigurationFailure('X'))), 'config X');
+    expect(describe(const Err(CancelledFailure())), 'cancelled');
   });
 }

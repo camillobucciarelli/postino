@@ -1,4 +1,20 @@
 {
   "appTitle": "Postino",
-  "postaUnificata": "All inboxes"
+  "postaUnificata": "All inboxes",
+  "onboarding": {
+    "title": "Welcome to Postino",
+    "body": "Connect your Gmail mailbox to get started.",
+    "connectGmail": "Connect Gmail"
+  },
+  "daRicollegare": {
+    "banner": "$address needs reconnecting: its mail stays readable but no longer updates.",
+    "reconnect": "Reconnect"
+  },
+  "connect": {
+    "missingSetting": "$setting is missing: start Postino with --dart-define=$setting=… (see README).",
+    "offline": "No connection: try again when you are online.",
+    "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
+    "wrongAccount": "You picked a different Google account: to reconnect $address, pick that account.",
+    "failed": "Couldn't connect. Try again."
+  }
 }

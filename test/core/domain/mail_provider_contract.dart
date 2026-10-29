@@ -38,7 +38,39 @@ T _ok<T>(Result<T> r) => switch (r) {
   Err(:final failure) => fail('expected Ok, got $failure'),
 };
 
+/// The access part of the contract: what an adapter must honour before it can sync.
+void mailProviderAuthContract(String name, ContractHarness Function() create) {
+  group('MailProvider auth contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
+
+    test('a refused login is an AuthFailure', () async {
+      h.breakAuth();
+      for (final r in [
+        await h.provider.refreshAuth(),
+        await h.provider.initialSync(),
+        await h.provider.incrementalSync('0'),
+      ]) {
+        expect(
+          r,
+          isA<Err>().having((e) => e.failure, 'failure', isA<AuthFailure>()),
+        );
+      }
+    });
+
+    test('no network is an OfflineFailure', () async {
+      h.goOffline();
+      final r = await h.provider.initialSync();
+      expect(
+        r,
+        isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
+      );
+    });
+  });
+}
+
 void mailProviderContract(String name, ContractHarness Function() create) {
+  mailProviderAuthContract(name, create);
   group('MailProvider contract: $name', () {
     late ContractHarness h;
     setUp(() => h = create());
@@ -83,29 +115,6 @@ void mailProviderContract(String name, ContractHarness Function() create) {
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(next.messages.map((m) => m.id), ['a']);
       expect(next.removedMessageIds, ['b']);
-    });
-
-    test('a refused login is an AuthFailure', () async {
-      h.breakAuth();
-      for (final r in [
-        await h.provider.refreshAuth(),
-        await h.provider.initialSync(),
-        await h.provider.incrementalSync('0'),
-      ]) {
-        expect(
-          r,
-          isA<Err>().having((e) => e.failure, 'failure', isA<AuthFailure>()),
-        );
-      }
-    });
-
-    test('no network is an OfflineFailure', () async {
-      h.goOffline();
-      final r = await h.provider.initialSync();
-      expect(
-        r,
-        isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
-      );
     });
 
     test(

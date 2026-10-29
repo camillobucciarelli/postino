@@ -1,8 +1,19 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Google OAuth callback scheme: the reversed client ID, from --dart-define=GOOGLE_CLIENT_ID (never committed).
+val googleClientId = (project.findProperty("dart-defines") as String? ?: "")
+    .split(",")
+    .filter { it.isNotEmpty() }
+    .map { String(Base64.getDecoder().decode(it)) }
+    .firstOrNull { it.startsWith("GOOGLE_CLIENT_ID=") }
+    ?.substringAfter("=")
+    ?.removeSuffix(".apps.googleusercontent.com")
 
 android {
     namespace = "com.cbucciarelli.postino"
@@ -27,6 +38,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["googleAuthScheme"] =
+            googleClientId?.let { "com.googleusercontent.apps.$it" } ?: "com.cbucciarelli.postino.oauth"
     }
 
     buildTypes {

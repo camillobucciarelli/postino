@@ -45,17 +45,19 @@ class AccountsService implements AccountsRepository {
         grant = value;
     }
     if (loginHint != null &&
-        loginHint.toLowerCase() != grant.address.toLowerCase()) {
+        loginHint.trim().toLowerCase() != grant.address.trim().toLowerCase()) {
       return Err(WrongAccountFailure(loginHint));
     }
     // ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.
-    final id = 'gmail:${grant.address}';
+    // Gmail addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
+    final address = grant.address.trim().toLowerCase();
+    final id = 'gmail:$address';
     await GmailTokens.of(grant).write(_keychain, id);
     final all = await _store.accounts();
     final known = all.where((a) => a.id == id).firstOrNull;
     final account = Account(
       id: id,
-      address: grant.address,
+      address: address,
       provider: ProviderKind.gmail,
       color: known?.color ?? accountColors[all.length % accountColors.length],
       // ponytail: no Account removal yet, so the count is the next free position.

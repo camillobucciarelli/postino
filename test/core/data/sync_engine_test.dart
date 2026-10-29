@@ -207,4 +207,23 @@ void main() {
     await pumpEventQueue();
     expect(await inbox(), containsAll(['a:3', 'a:4']));
   });
+
+  test('a read that fails to reach the Provider is retried on the next poll, even with the change signal up and the mail syncing', () async {
+    final engine = GetIt.I<SyncEngine>()..start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.failSetRead = true;
+    await engine.openConversation('a', 't-1');
+    a.deliver(
+      msg('3'),
+    ); // change signal -> sync: mail fetched, replay fails again
+    await pumpEventQueue();
+    expect(await inbox(), contains('a:3'));
+    expect(a.readCalls, isEmpty);
+
+    a.failSetRead = false;
+    h.clock.advance(pollEvery);
+    await pumpEventQueue();
+    expect(a.readCalls.map((c) => (c.$1.join(), c.$2)), [('1', true)]);
+  });
 }

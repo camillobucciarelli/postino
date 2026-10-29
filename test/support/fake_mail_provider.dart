@@ -59,6 +59,9 @@ class FakeMailProvider implements MailProvider {
   Completer<void>? hold;
   final sent = <OutgoingMessage>[];
 
+  /// While set, [setRead] fails as offline even though the syncs work: a passing replay failure.
+  bool failSetRead = false;
+
   /// Every [setRead] that reached the Provider: (ids, read).
   final readCalls = <(List<String>, bool)>[];
 
@@ -218,13 +221,15 @@ class FakeMailProvider implements MailProvider {
   Future<Result<void>> setRead(
     List<String> messageIds, {
     required bool read,
-  }) async => _guard(() {
-    readCalls.add((messageIds, read));
-    for (final id in messageIds) {
-      if (_old[id] case final m?) _old[id] = withRead(m, read);
-      if (_messages[id] case final m?) deliver(withRead(m, read));
-    }
-  });
+  }) async => failSetRead
+      ? const Err(OfflineFailure())
+      : _guard(() {
+          readCalls.add((messageIds, read));
+          for (final id in messageIds) {
+            if (_old[id] case final m?) _old[id] = withRead(m, read);
+            if (_messages[id] case final m?) deliver(withRead(m, read));
+          }
+        });
 
   @override
   Future<Result<Uint8List>> fetchAttachment(

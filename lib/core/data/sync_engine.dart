@@ -90,8 +90,8 @@ class SyncEngine implements MailSync {
     // so the sync replays it after that batch, on its next round.
     if (_running.containsKey(accountId)) {
       _again.add(accountId);
-    } else {
-      await _replay(accountId, provider);
+    } else if (!await _replay(accountId, provider)) {
+      _retry.add(accountId);
     }
     return switch (fetched) {
       Ok() => const Ok(null),
@@ -116,11 +116,12 @@ class SyncEngine implements MailSync {
   Future<Account?> _account(String id) async =>
       (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
-  final _replaying = <String, Future<void>>{};
+  final _replaying = <String, Future<bool>>{};
 
-  /// Sends the offline queue (ADR 0008); what fails stays queued for the next sync.
+  /// Sends the offline queue (ADR 0008); what fails stays queued and the result is false,
+  /// so the poll retries the Account even while its change signal is up.
   /// One replay at a time per Account: a second caller waits for the running one, never resends.
-  Future<void> _replay(String accountId, MailProvider provider) =>
+  Future<bool> _replay(String accountId, MailProvider provider) =>
       _replaying[accountId] ??=
           _replayOnce(
             accountId,
@@ -130,7 +131,8 @@ class SyncEngine implements MailSync {
             _replaying.remove(accountId);
           });
 
-  Future<void> _replayOnce(String accountId, MailProvider provider) async {
+  Future<bool> _replayOnce(String accountId, MailProvider provider) async {
+    var done = true;
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
       if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
@@ -142,8 +144,10 @@ class SyncEngine implements MailSync {
           await _store.readDone(accountId, ids, isRead: read);
         case Err(:final failure):
           debugPrint('[sync] $accountId: replay failed, $failure');
+          done = false;
       }
     }
+    return done;
   }
 
   Future<void> _poll() async {
@@ -227,7 +231,7 @@ class SyncEngine implements MailSync {
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     // The queue first, so the sync brings back what the user did offline.
-    await _replay(accountId, provider);
+    final replayed = await _replay(accountId, provider);
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
@@ -249,7 +253,8 @@ class SyncEngine implements MailSync {
     }
     switch (result) {
       case Ok(:final value):
-        _retry.remove(accountId);
+        // The mail is here, but a queue still waiting keeps the Account on the poll.
+        replayed ? _retry.remove(accountId) : _retry.add(accountId);
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
         debugPrint(

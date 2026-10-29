@@ -141,7 +141,13 @@ class GmailProvider implements MailProvider {
   @override
   Future<Result<String>> fetchBody(String messageId) => _guard(() async {
     final j = await _get('messages/$messageId', {'format': 'full'});
-    return Ok(_body(j['payload'] as Map<String, dynamic>? ?? const {}) ?? '');
+    return Ok(
+      await _body(
+            messageId,
+            j['payload'] as Map<String, dynamic>? ?? const {},
+          ) ??
+          '',
+    );
   });
 
   @override
@@ -233,7 +239,13 @@ class GmailProvider implements MailProvider {
         isUtc: true,
       ),
     );
-    return (message, full ? _body(payload) : null);
+    if (!full) return (message, null);
+    try {
+      return (message, await _body(id, payload));
+    } on _Failed catch (e) {
+      if (e.failure is NotFoundFailure) return null;
+      rethrow;
+    }
   }
 
   static Map<String, String> _inboxBodies(
@@ -244,17 +256,30 @@ class GmailProvider implements MailProvider {
   };
 
   /// The HTML part if there is one, else the plain text one.
-  static String? _body(Map<String, dynamic> payload) =>
-      _part(payload, 'text/html') ?? _part(payload, 'text/plain');
+  Future<String?> _body(String messageId, Map<String, dynamic> payload) async {
+    final part = _part(payload, 'text/html') ?? _part(payload, 'text/plain');
+    if (part == null) return null;
+    final body = part['body'] as Map;
+    // A big part comes as an attachmentId instead of inline data.
+    final data =
+        body['data'] as String? ??
+        (await _get(
+              'messages/$messageId/attachments/${body['attachmentId']}',
+            ))['data']
+            as String;
+    // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
+    return utf8.decode(
+      base64Url.decode(base64Url.normalize(data)),
+      allowMalformed: true,
+    );
+  }
 
-  static String? _part(Map<String, dynamic> part, String mime) {
-    final data = (part['body'] as Map?)?['data'] as String?;
-    if (part['mimeType'] == mime && data != null) {
-      // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
-      return utf8.decode(
-        base64Url.decode(base64Url.normalize(data)),
-        allowMalformed: true,
-      );
+  /// The first [mime] part carrying its content, inline or by attachmentId.
+  static Map<String, dynamic>? _part(Map<String, dynamic> part, String mime) {
+    final body = part['body'] as Map?;
+    if (part['mimeType'] == mime &&
+        (body?['data'] != null || body?['attachmentId'] != null)) {
+      return part;
     }
     for (final p in part['parts'] as List? ?? const []) {
       if (_part(p as Map<String, dynamic>, mime) case final found?) {

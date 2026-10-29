@@ -428,6 +428,31 @@ void main() {
       },
     );
 
+    group('a text part referenced by attachmentId', () {
+      const f5 = '18f3a2b4c5d6e7f5';
+      const text =
+          'Ciao Bruno,\r\nti scrivo il resoconto lungo della riunione di giovedì: il budget è approvato.\r\n';
+      String route(http.Request r, String path) => switch (path) {
+        'profile' => 'profile',
+        'labels' => 'labels',
+        'messages' => 'messages_f5',
+        'messages/$f5' => 'message_f5_attachment_body',
+        'messages/$f5/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nC6' =>
+          'attachment_f5_body',
+        _ => fail('unexpected $path'),
+      };
+
+      test('is fetched when syncing the inbox', () async {
+        final batch = _ok(await _Recorded(route).provider.initialSync());
+        expect(batch.bodies, {f5: text});
+      });
+
+      test('is fetched by fetchBody', () async {
+        final g = _Recorded(route);
+        expect(_ok(await g.provider.fetchBody(f5)), text);
+      });
+    });
+
     test('a 404 on a body is NotFound', () async {
       final g = _Recorded((r, path) => 'not_found');
       expect(await g.provider.fetchBody(_f1), _err<NotFoundFailure>());

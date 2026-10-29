@@ -1664,6 +1664,484 @@ class MessageLabelsCompanion extends UpdateCompanion<MessageLabelRow> {
   }
 }
 
+class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BodiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, messageId, body];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bodies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BodyRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId};
+  @override
+  BodyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BodyRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  $BodiesTable createAlias(String alias) {
+    return $BodiesTable(attachedDatabase, alias);
+  }
+}
+
+class BodyRow extends DataClass implements Insertable<BodyRow> {
+  final String accountId;
+  final String messageId;
+  final String body;
+  const BodyRow({
+    required this.accountId,
+    required this.messageId,
+    required this.body,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['message_id'] = Variable<String>(messageId);
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  BodiesCompanion toCompanion(bool nullToAbsent) {
+    return BodiesCompanion(
+      accountId: Value(accountId),
+      messageId: Value(messageId),
+      body: Value(body),
+    );
+  }
+
+  factory BodyRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BodyRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      body: serializer.fromJson<String>(json['body']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'messageId': serializer.toJson<String>(messageId),
+      'body': serializer.toJson<String>(body),
+    };
+  }
+
+  BodyRow copyWith({String? accountId, String? messageId, String? body}) =>
+      BodyRow(
+        accountId: accountId ?? this.accountId,
+        messageId: messageId ?? this.messageId,
+        body: body ?? this.body,
+      );
+  BodyRow copyWithCompanion(BodiesCompanion data) {
+    return BodyRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BodyRow(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, messageId, body);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BodyRow &&
+          other.accountId == this.accountId &&
+          other.messageId == this.messageId &&
+          other.body == this.body);
+}
+
+class BodiesCompanion extends UpdateCompanion<BodyRow> {
+  final Value<String> accountId;
+  final Value<String> messageId;
+  final Value<String> body;
+  final Value<int> rowid;
+  const BodiesCompanion({
+    this.accountId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BodiesCompanion.insert({
+    required String accountId,
+    required String messageId,
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       messageId = Value(messageId),
+       body = Value(body);
+  static Insertable<BodyRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? messageId,
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (messageId != null) 'message_id': messageId,
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BodiesCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? messageId,
+    Value<String>? body,
+    Value<int>? rowid,
+  }) {
+    return BodiesCompanion(
+      accountId: accountId ?? this.accountId,
+      messageId: messageId ?? this.messageId,
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BodiesCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncCursorsTable extends SyncCursors
+    with TableInfo<$SyncCursorsTable, SyncCursorRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cursorMeta = const VerificationMeta('cursor');
+  @override
+  late final GeneratedColumn<String> cursor = GeneratedColumn<String>(
+    'cursor',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, cursor];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_cursors';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncCursorRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('cursor')) {
+      context.handle(
+        _cursorMeta,
+        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cursorMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId};
+  @override
+  SyncCursorRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncCursorRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      cursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cursor'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncCursorsTable createAlias(String alias) {
+    return $SyncCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncCursorRow extends DataClass implements Insertable<SyncCursorRow> {
+  final String accountId;
+  final String cursor;
+  const SyncCursorRow({required this.accountId, required this.cursor});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['cursor'] = Variable<String>(cursor);
+    return map;
+  }
+
+  SyncCursorsCompanion toCompanion(bool nullToAbsent) {
+    return SyncCursorsCompanion(
+      accountId: Value(accountId),
+      cursor: Value(cursor),
+    );
+  }
+
+  factory SyncCursorRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncCursorRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      cursor: serializer.fromJson<String>(json['cursor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'cursor': serializer.toJson<String>(cursor),
+    };
+  }
+
+  SyncCursorRow copyWith({String? accountId, String? cursor}) => SyncCursorRow(
+    accountId: accountId ?? this.accountId,
+    cursor: cursor ?? this.cursor,
+  );
+  SyncCursorRow copyWithCompanion(SyncCursorsCompanion data) {
+    return SyncCursorRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      cursor: data.cursor.present ? data.cursor.value : this.cursor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursorRow(')
+          ..write('accountId: $accountId, ')
+          ..write('cursor: $cursor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, cursor);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncCursorRow &&
+          other.accountId == this.accountId &&
+          other.cursor == this.cursor);
+}
+
+class SyncCursorsCompanion extends UpdateCompanion<SyncCursorRow> {
+  final Value<String> accountId;
+  final Value<String> cursor;
+  final Value<int> rowid;
+  const SyncCursorsCompanion({
+    this.accountId = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncCursorsCompanion.insert({
+    required String accountId,
+    required String cursor,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       cursor = Value(cursor);
+  static Insertable<SyncCursorRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? cursor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (cursor != null) 'cursor': cursor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncCursorsCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? cursor,
+    Value<int>? rowid,
+  }) {
+    return SyncCursorsCompanion(
+      accountId: accountId ?? this.accountId,
+      cursor: cursor ?? this.cursor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (cursor.present) {
+      map['cursor'] = Variable<String>(cursor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursorsCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('cursor: $cursor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PostinoDatabase extends GeneratedDatabase {
   _$PostinoDatabase(QueryExecutor e) : super(e);
   $PostinoDatabaseManager get managers => $PostinoDatabaseManager(this);
@@ -1671,6 +2149,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $LabelsTable labels = $LabelsTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $MessageLabelsTable messageLabels = $MessageLabelsTable(this);
+  late final $BodiesTable bodies = $BodiesTable(this);
+  late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final AccountsDao accountsDao = AccountsDao(this as PostinoDatabase);
   late final MessagesDao messagesDao = MessagesDao(this as PostinoDatabase);
   @override
@@ -1682,6 +2162,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     labels,
     messages,
     messageLabels,
+    bodies,
+    syncCursors,
   ];
 }
 
@@ -2598,6 +3080,321 @@ typedef $$MessageLabelsTableProcessedTableManager =
       MessageLabelRow,
       PrefetchHooks Function()
     >;
+typedef $$BodiesTableCreateCompanionBuilder = BodiesCompanion Function({
+  required String accountId,
+  required String messageId,
+  required String body,
+  Value<int> rowid,
+});
+typedef $$BodiesTableUpdateCompanionBuilder = BodiesCompanion Function({
+  Value<String> accountId,
+  Value<String> messageId,
+  Value<String> body,
+  Value<int> rowid,
+});
+
+class $$BodiesTableFilterComposer
+    extends Composer<_$PostinoDatabase, $BodiesTable> {
+  $$BodiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BodiesTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $BodiesTable> {
+  $$BodiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BodiesTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $BodiesTable> {
+  $$BodiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $$BodiesTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $BodiesTable,
+          BodyRow,
+          $$BodiesTableFilterComposer,
+          $$BodiesTableOrderingComposer,
+          $$BodiesTableAnnotationComposer,
+          $$BodiesTableCreateCompanionBuilder,
+          $$BodiesTableUpdateCompanionBuilder,
+          (BodyRow, BaseReferences<_$PostinoDatabase, $BodiesTable, BodyRow>),
+          BodyRow,
+          PrefetchHooks Function()
+        > {
+  $$BodiesTableTableManager(_$PostinoDatabase db, $BodiesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BodiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BodiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BodiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> messageId = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BodiesCompanion(
+                accountId: accountId,
+                messageId: messageId,
+                body: body,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String messageId,
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => BodiesCompanion.insert(
+                accountId: accountId,
+                messageId: messageId,
+                body: body,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BodiesTable, BodyRow>(table),
+                  BaseReferences<_$PostinoDatabase, $BodiesTable, BodyRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BodiesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $BodiesTable,
+      BodyRow,
+      $$BodiesTableFilterComposer,
+      $$BodiesTableOrderingComposer,
+      $$BodiesTableAnnotationComposer,
+      $$BodiesTableCreateCompanionBuilder,
+      $$BodiesTableUpdateCompanionBuilder,
+      (BodyRow, BaseReferences<_$PostinoDatabase, $BodiesTable, BodyRow>),
+      BodyRow,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncCursorsTableCreateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      required String accountId,
+      required String cursor,
+      Value<int> rowid,
+    });
+typedef $$SyncCursorsTableUpdateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      Value<String> accountId,
+      Value<String> cursor,
+      Value<int> rowid,
+    });
+
+class $$SyncCursorsTableFilterComposer
+    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncCursorsTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncCursorsTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => column);
+}
+
+class $$SyncCursorsTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $SyncCursorsTable,
+          SyncCursorRow,
+          $$SyncCursorsTableFilterComposer,
+          $$SyncCursorsTableOrderingComposer,
+          $$SyncCursorsTableAnnotationComposer,
+          $$SyncCursorsTableCreateCompanionBuilder,
+          $$SyncCursorsTableUpdateCompanionBuilder,
+          (
+            SyncCursorRow,
+            BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>,
+          ),
+          SyncCursorRow,
+          PrefetchHooks Function()
+        > {
+  $$SyncCursorsTableTableManager(_$PostinoDatabase db, $SyncCursorsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncCursorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncCursorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncCursorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion(
+                accountId: accountId,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String cursor,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion.insert(
+                accountId: accountId,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncCursorsTable, SyncCursorRow>(table),
+                  BaseReferences<
+                    _$PostinoDatabase,
+                    $SyncCursorsTable,
+                    SyncCursorRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncCursorsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $SyncCursorsTable,
+      SyncCursorRow,
+      $$SyncCursorsTableFilterComposer,
+      $$SyncCursorsTableOrderingComposer,
+      $$SyncCursorsTableAnnotationComposer,
+      $$SyncCursorsTableCreateCompanionBuilder,
+      $$SyncCursorsTableUpdateCompanionBuilder,
+      (
+        SyncCursorRow,
+        BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>,
+      ),
+      SyncCursorRow,
+      PrefetchHooks Function()
+    >;
 
 class $PostinoDatabaseManager {
   final _$PostinoDatabase _db;
@@ -2610,4 +3407,8 @@ class $PostinoDatabaseManager {
       $$MessagesTableTableManager(_db, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db, _db.messageLabels);
+  $$BodiesTableTableManager get bodies =>
+      $$BodiesTableTableManager(_db, _db.bodies);
+  $$SyncCursorsTableTableManager get syncCursors =>
+      $$SyncCursorsTableTableManager(_db, _db.syncCursors);
 }

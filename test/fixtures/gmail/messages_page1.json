@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "messages": [
+      {
+        "id": "18f3a2b4c5d6e7f1",
+        "threadId": "18f3a2b4c5d6e7f1"
+      },
+      {
+        "id": "18f3a2b4c5d6e7f2",
+        "threadId": "18f3a2b4c5d6e7f1"
+      }
+    ],
+    "nextPageToken": "08765432109876543210",
+    "resultSizeEstimate": 3
+  }
+}

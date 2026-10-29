@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f3",
+    "threadId": "18f3a2b4c5d6e7f3",
+    "labelIds": [
+      "SENT"
+    ],
+    "snippet": "Buongiorno, potreste inviarmi la fattura dell&#39;ordine 4417?",
+    "payload": {
+      "mimeType": "text/plain",
+      "headers": [
+        {
+          "name": "From",
+          "value": "Ada Rossi <ada@gmail.com>"
+        },
+        {
+          "name": "To",
+          "value": "assistenza@example.net"
+        },
+        {
+          "name": "Subject",
+          "value": "Richiesta fattura ordine 4417"
+        },
+        {
+          "name": "Message-ID",
+          "value": "<CAH3z9Am4d@mail.gmail.com>"
+        }
+      ]
+    },
+    "sizeEstimate": 1450,
+    "historyId": "4198",
+    "internalDate": "1792488000000"
+  }
+}

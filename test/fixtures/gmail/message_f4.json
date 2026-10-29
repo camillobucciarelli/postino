@@ -1,0 +1,86 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f4",
+    "threadId": "18f3a2b4c5d6e7f4",
+    "labelIds": [
+      "UNREAD",
+      "CATEGORY_UPDATES",
+      "INBOX"
+    ],
+    "snippet": "Partenza 30/10 ore 7:45, carrozza 6, posto 12A.",
+    "payload": {
+      "partId": "",
+      "filename": "",
+      "headers": [
+        {
+          "name": "Delivered-To",
+          "value": "ada@gmail.com"
+        },
+        {
+          "name": "Date",
+          "value": "Wed, 28 Oct 2026 08:12:33 +0100"
+        },
+        {
+          "name": "From",
+          "value": "Treni Esempio <noreply@example.com>"
+        },
+        {
+          "name": "To",
+          "value": "ada@gmail.com"
+        },
+        {
+          "name": "Message-ID",
+          "value": "<20261028071233.4f1a@notify.example.com>"
+        },
+        {
+          "name": "Subject",
+          "value": "Il tuo biglietto per Bologna"
+        },
+        {
+          "name": "MIME-Version",
+          "value": "1.0"
+        }
+      ],
+      "mimeType": "multipart/alternative",
+      "body": {
+        "size": 0
+      },
+      "parts": [
+        {
+          "partId": "0",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain; charset=\"UTF-8\""
+            }
+          ],
+          "body": {
+            "size": 25,
+            "data": "UGFydGVuemEgMzAvMTAgb3JlIDc6NDUNCg"
+          }
+        },
+        {
+          "partId": "1",
+          "mimeType": "text/html",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/html; charset=\"UTF-8\""
+            }
+          ],
+          "body": {
+            "size": 30,
+            "data": "PHA-UGFydGVuemEgMzAvMTAgb3JlIDc6NDU8L3A-"
+          }
+        }
+      ]
+    },
+    "sizeEstimate": 5821,
+    "historyId": "4231",
+    "internalDate": "1793171553000"
+  }
+}

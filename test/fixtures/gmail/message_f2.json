@@ -1,0 +1,64 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f2",
+    "threadId": "18f3a2b4c5d6e7f1",
+    "labelIds": [
+      "STARRED",
+      "SENT",
+      "INBOX",
+      "Label_12"
+    ],
+    "snippet": "Perfetto, a venerdì! Il 31 c&#39;è anche Carla.",
+    "payload": {
+      "partId": "",
+      "filename": "",
+      "headers": [
+        {
+          "name": "Delivered-To",
+          "value": "ada@gmail.com"
+        },
+        {
+          "name": "Date",
+          "value": "Mon, 26 Oct 2026 10:02:44 +0100"
+        },
+        {
+          "name": "From",
+          "value": "Ada Rossi <ada@gmail.com>"
+        },
+        {
+          "name": "To",
+          "value": "Bruno Verdi <bruno@example.com>"
+        },
+        {
+          "name": "Message-ID",
+          "value": "<CAG2y8Zl3c@mail.gmail.com>"
+        },
+        {
+          "name": "Subject",
+          "value": "Re: Cena di venerdì"
+        },
+        {
+          "name": "MIME-Version",
+          "value": "1.0"
+        },
+        {
+          "name": "In-Reply-To",
+          "value": "<CAF1x7Yk2b@mail.example.com>"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/plain; charset=\"UTF-8\""
+        }
+      ],
+      "mimeType": "text/plain",
+      "body": {
+        "size": 40,
+        "data": "UGVyZmV0dG8sIGEgdmVuZXJkw6whDQpJbCAzMSBjJ8OoIGFuY2hlIENhcmxhLg0K"
+      }
+    },
+    "sizeEstimate": 5821,
+    "historyId": "4231",
+    "internalDate": "1793005364000"
+  }
+}

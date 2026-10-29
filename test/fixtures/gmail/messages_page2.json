@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "messages": [
+      {
+        "id": "18f3a2b4c5d6e7f3",
+        "threadId": "18f3a2b4c5d6e7f3"
+      }
+    ],
+    "resultSizeEstimate": 3
+  }
+}

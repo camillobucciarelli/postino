@@ -17,61 +17,176 @@ import '../../domain/mail_provider_contract.dart';
 
 const _account = 'gmail:ada@gmail.com';
 final _now = DateTime.utc(2026, 10, 28, 12);
+const _testClient = GoogleClient('test-client.apps.googleusercontent.com');
+const _api = '/gmail/v1/users/me/';
 
 http.Response _fixture(String name) {
   final j = jsonDecode(
     File('test/fixtures/gmail/$name.json').readAsStringSync(),
   );
-  return http.Response(
-    jsonEncode(j['body']),
-    j['status'] as int,
-    headers: {'content-type': 'application/json; charset=utf-8'},
-  );
+  return _json(j['body'], j['status'] as int);
 }
 
-/// Google as seen over HTTP: the token endpoint and the Gmail API, from recorded responses.
+http.Response _json(Object body, [int status = 200]) => http.Response(
+  jsonEncode(body),
+  status,
+  headers: {'content-type': 'application/json; charset=utf-8'},
+);
+
+FakeSecureStore _keychain({
+  String access = 'ya29.initial',
+  Duration validFor = const Duration(hours: 1),
+}) {
+  final keychain = FakeSecureStore();
+  // FakeSecureStore writes synchronously.
+  GmailTokens(
+    access: access,
+    refresh: '1//refresh',
+    expiresAt: _now.add(validFor),
+  ).write(keychain, _account);
+  return keychain;
+}
+
+/// Google as seen over HTTP: the token endpoint and a simulated Gmail API mailbox,
+/// shaped like the recorded responses.
 class GmailHarness implements ContractHarness {
   GmailHarness({
     String access = 'ya29.initial',
     Duration validFor = const Duration(hours: 1),
-  }) {
-    // FakeSecureStore writes synchronously.
-    GmailTokens(
-      access: access,
-      refresh: '1//refresh',
-      expiresAt: _now.add(validFor),
-    ).write(keychain, _account);
-  }
+  }) : keychain = _keychain(access: access, validFor: validFor);
 
-  final keychain = FakeSecureStore();
+  final FakeSecureStore keychain;
   final requests = <http.Request>[];
   final _accepted = {'ya29.initial', 'ya29.refreshed'};
   bool _authBroken = false, _offline = false;
+
+  final _mailbox = <String, Message>{};
+  final _history = <(int, String, String)>[]; // (historyId, kind, message id)
+  var _historyId = 4000;
+  var _oldest = 0;
+
+  /// Gmail may return fewer results than maxResults: tiny pages exercise pagination.
+  static const _page = 2;
 
   @override
   late final MailProvider provider = GmailProvider(
     _account,
     keychain,
-    MockClient((r) async {
-      requests.add(r);
-      if (_offline) throw http.ClientException('Failed host lookup');
-      if (r.url.host == 'oauth2.googleapis.com') {
-        return _fixture(_authBroken ? 'token_invalid_grant' : 'token_refresh');
-      }
-      final bearer = r.headers['authorization']?.substring('Bearer '.length);
-      return _fixture(_accepted.contains(bearer) ? 'profile' : 'unauthorized');
-    }),
+    MockClient(_handle),
     FakeClock(_now),
-    const GoogleClient('test-client.apps.googleusercontent.com'),
+    client: _testClient,
+    sleep: (_) async {},
   );
 
   Future<GmailTokens?> get tokens => GmailTokens.read(keychain, _account);
 
-  // ponytail: mailbox simulation comes with the Gmail sync (#31).
+  Future<http.Response> _handle(http.Request r) async {
+    requests.add(r);
+    if (_offline) throw http.ClientException('Failed host lookup');
+    if (r.url.host == 'oauth2.googleapis.com') {
+      return _fixture(_authBroken ? 'token_invalid_grant' : 'token_refresh');
+    }
+    final bearer = r.headers['authorization']?.substring('Bearer '.length);
+    if (!_accepted.contains(bearer)) return _fixture('unauthorized');
+    final q = r.url.queryParameters;
+    // ponytail: the 90-day `after:` window is not simulated; the recorded-response test checks the query.
+    return switch (r.url.path.substring(_api.length).split('/')) {
+      ['profile'] => _json({
+        'emailAddress': 'ada@gmail.com',
+        'historyId': '$_historyId',
+      }),
+      ['labels'] => _fixture('labels'),
+      ['messages'] => _paged('messages', [
+        for (final m in _mailbox.values)
+          if (q['labelIds'] == null || _labels(m).contains(q['labelIds']))
+            {'id': m.id, 'threadId': m.conversationId},
+      ], q),
+      ['messages', final id] => switch (_mailbox[id]) {
+        null => _fixture('not_found'),
+        final m => _json(_resource(m, full: q['format'] == 'full')),
+      },
+      ['history'] when int.parse(q['startHistoryId']!) < _oldest => _fixture(
+        'not_found',
+      ),
+      ['history'] => _paged(
+        'history',
+        [
+          for (final (hid, kind, id) in _history)
+            if (hid > int.parse(q['startHistoryId']!))
+              {
+                'id': '$hid',
+                kind: [
+                  {
+                    'message': {'id': id},
+                  },
+                ],
+              },
+        ],
+        q,
+        {'historyId': '$_historyId'},
+      ),
+      _ => _fixture('not_found'),
+    };
+  }
+
+  http.Response _paged(
+    String key,
+    List<Object> all,
+    Map<String, String> q, [
+    Map<String, Object> extra = const {},
+  ]) {
+    final from = int.parse(q['pageToken'] ?? '0');
+    final page = all.skip(from).take(_page).toList();
+    return _json({
+      ...extra,
+      if (page.isNotEmpty) key: page,
+      if (from + _page < all.length) 'nextPageToken': '${from + _page}',
+      if (key == 'messages') 'resultSizeEstimate': all.length,
+    });
+  }
+
+  static List<String> _labels(Message m) => [
+    ...m.labelIds,
+    if (!m.isRead) 'UNREAD',
+    if (m.isStarred) 'STARRED',
+  ];
+
+  static Map<String, Object> _resource(Message m, {required bool full}) => {
+    'id': m.id,
+    'threadId': m.conversationId,
+    'labelIds': _labels(m),
+    'snippet': m.snippet,
+    'internalDate': '${m.date.millisecondsSinceEpoch}',
+    'payload': {
+      'mimeType': 'text/html',
+      'headers': [
+        {'name': 'From', 'value': m.from},
+        {'name': 'To', 'value': m.to.join(', ')},
+        {'name': 'Subject', 'value': m.subject},
+        {'name': 'Message-Id', 'value': m.messageId},
+      ],
+      if (full)
+        'body': {
+          'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>')),
+        },
+    },
+  };
+
   @override
-  void deliver(Message m) => throw UnimplementedError('#31');
+  void deliver(Message m) {
+    final kind = _mailbox.containsKey(m.id) ? 'labelsAdded' : 'messagesAdded';
+    _mailbox[m.id] = m;
+    _history.add((++_historyId, kind, m.id));
+  }
+
   @override
-  void removeRemotely(String id) => throw UnimplementedError('#31');
+  void removeRemotely(String id) {
+    _mailbox.remove(id);
+    _history.add((++_historyId, 'messagesDeleted', id));
+  }
+
+  @override
+  void expireCursors() => _oldest = _historyId + 1;
 
   @override
   void goOffline() => _offline = true;
@@ -85,8 +200,42 @@ class GmailHarness implements ContractHarness {
 
 Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
 
+T _ok<T>(Result<T> r) => switch (r) {
+  Ok(:final value) => value,
+  Err(:final failure) => fail('expected Ok, got $failure'),
+};
+
+const _f1 = '18f3a2b4c5d6e7f1',
+    _f2 = '18f3a2b4c5d6e7f2',
+    _f3 = '18f3a2b4c5d6e7f3',
+    _f4 = '18f3a2b4c5d6e7f4';
+
+/// Gmail answering each request with the recorded response [route] names.
+class _Recorded {
+  _Recorded(String Function(http.Request r, String path) route) {
+    provider = GmailProvider(
+      _account,
+      _keychain(),
+      MockClient((r) async {
+        requests.add(r);
+        return _fixture(route(r, r.url.path.substring(_api.length)));
+      }),
+      FakeClock(_now),
+      client: _testClient,
+      sleep: (d) async => sleeps.add(d),
+    );
+  }
+
+  late final GmailProvider provider;
+  final requests = <http.Request>[];
+  final sleeps = <Duration>[];
+
+  Iterable<Uri> get urls => requests.map((r) => r.url);
+}
+
 void main() {
   mailProviderAuthContract('GmailProvider', GmailHarness.new);
+  mailProviderSyncContract('GmailProvider', GmailHarness.new);
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
@@ -107,31 +256,33 @@ void main() {
 
   test('an expired access token is refreshed before calling Gmail', () async {
     final h = GmailHarness(validFor: Duration.zero);
-    expect(await h.provider.initialSync(), isNot(_err<AuthFailure>()));
+    expect(await h.provider.initialSync(), isA<Ok>());
     expect(
-      [for (final r in h.requests) r.url.path],
+      [for (final r in h.requests.take(2)) r.url.path],
       ['/token', '/gmail/v1/users/me/profile'],
     );
-    expect(h.requests.last.headers['authorization'], 'Bearer ya29.refreshed');
+    expect(h.requests[1].headers['authorization'], 'Bearer ya29.refreshed');
   });
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
-    expect(await h.provider.initialSync(), isNot(_err<AuthFailure>()));
+    expect(await h.provider.initialSync(), isA<Ok>());
     expect(
-      [for (final r in h.requests) r.headers['authorization'] ?? r.url.path],
+      [
+        for (final r in h.requests.take(3))
+          r.headers['authorization'] ?? r.url.path,
+      ],
       ['Bearer ya29.stale', '/token', 'Bearer ya29.refreshed'],
     );
   });
 
   test('a 403 for insufficient scope is an AuthFailure, so the Account is Da ricollegare', () async {
-    final h = GmailHarness();
     final p = GmailProvider(
       _account,
-      h.keychain,
+      _keychain(),
       MockClient((_) async => _fixture('insufficient_scope')),
       FakeClock(_now),
-      const GoogleClient('test-client.apps.googleusercontent.com'),
+      client: _testClient,
     );
     expect(await p.initialSync(), _err<AuthFailure>());
   });
@@ -141,5 +292,190 @@ void main() {
     expect(await h.provider.refreshAuth(), _err<AuthFailure>());
     expect(await h.provider.initialSync(), _err<AuthFailure>());
     expect(h.requests, isEmpty);
+  });
+
+  group('recorded responses', () {
+    String initialRoute(http.Request r, String path) => switch (path) {
+      'profile' => 'profile',
+      'labels' => 'labels',
+      'messages' when r.url.queryParameters['labelIds'] == inboxLabelId =>
+        'messages_inbox',
+      'messages' when r.url.queryParameters['pageToken'] == null =>
+        'messages_page1',
+      'messages' => 'messages_page2',
+      'messages/$_f1' => 'message_f1',
+      'messages/$_f2' => 'message_f2',
+      'messages/$_f3' => 'message_f3',
+      _ => fail('unexpected $path'),
+    };
+
+    test('initial sync: 90 days of headers over every page, with Etichette, Conversazioni and the inbox bodies', () async {
+      final g = _Recorded(initialRoute);
+      final batch = _ok(await g.provider.initialSync());
+
+      expect(batch.cursor, '4242');
+      expect(
+        batch.labels.map((l) => (l.id, l.name)),
+        containsAll([(inboxLabelId, 'INBOX'), ('Label_12', 'Viaggi')]),
+      );
+      final after = _now.subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
+      final lists = g.urls.where((u) => u.path.endsWith('/messages'));
+      expect(lists.map((u) => u.queryParameters['q']).toSet(), {
+        'after:$after',
+      });
+      expect(lists.map((u) => u.queryParameters['pageToken']), [
+        null,
+        '08765432109876543210',
+        null,
+      ], reason: 'second page, then the inbox list');
+
+      final byId = {for (final m in batch.messages) m.id: m};
+      expect(byId.keys, unorderedEquals([_f1, _f2, _f3]));
+      final f1 = byId[_f1]!;
+      expect(f1.from, 'Bruno Verdi <bruno@example.com>');
+      expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
+      expect(f1.subject, 'Cena di venerdì');
+      expect(f1.messageId, '<CAF1x7Yk2b@mail.example.com>');
+      expect(f1.conversationId, _f1);
+      expect(f1.snippet, endsWith('Porto io il vino & il dolce.'));
+      expect(f1.date, DateTime.utc(2026, 10, 26, 8, 15, 2));
+      expect((f1.isRead, f1.isStarred), (false, false));
+      final f2 = byId[_f2]!;
+      expect(f2.conversationId, _f1, reason: 'same Conversazione');
+      expect((f2.isRead, f2.isStarred), (true, true));
+      expect(f2.labelIds, contains('Label_12'));
+      expect(f2.snippet, contains("c'è"));
+      expect(byId[_f3]!.labelIds, ['SENT']);
+
+      expect(batch.bodies, {
+        _f1: '<div dir="ltr">Ciao Ada,<br>ci vediamo alle 20 da Mario?</div>\r\n',
+        _f2: "Perfetto, a venerdì!\r\nIl 31 c'è anche Carla.\r\n",
+      });
+      String format(String id) => g.urls
+          .singleWhere((u) => u.path.endsWith(id))
+          .queryParameters['format']!;
+      expect(
+        [format(_f1), format(_f2), format(_f3)],
+        ['full', 'full', 'metadata'],
+      );
+    });
+
+    test(
+      'initial sync of an empty mailbox: no messages, still a cursor',
+      () async {
+        final g = _Recorded(
+          (r, path) => switch (path) {
+            'messages' => 'messages_empty',
+            _ => initialRoute(r, path),
+          },
+        );
+        final batch = _ok(await g.provider.initialSync());
+        expect(batch.messages, isEmpty);
+        expect(batch.bodies, isEmpty);
+        expect(batch.cursor, '4242');
+      },
+    );
+
+    test(
+      'incremental sync from historyId: new, read and starred, deleted',
+      () async {
+        final g = _Recorded(
+          (r, path) => switch (path) {
+            'history' => 'history',
+            'messages/$_f1' => 'message_f1_read',
+            'messages/$_f4' => 'message_f4',
+            _ => fail('unexpected $path'),
+          },
+        );
+        final batch = _ok(await g.provider.incrementalSync('4242'));
+
+        expect(g.urls.first.queryParameters['startHistoryId'], '4242');
+        expect(batch.cursor, '4301');
+        final byId = {for (final m in batch.messages) m.id: m};
+        expect(byId.keys, unorderedEquals([_f1, _f4]));
+        expect((byId[_f1]!.isRead, byId[_f1]!.isStarred), (true, true));
+        expect(byId[_f4]!.subject, 'Il tuo biglietto per Bologna');
+        expect(batch.removedMessageIds, [_f3]);
+        expect(batch.bodies.keys, unorderedEquals([_f1, _f4]));
+      },
+    );
+
+    test('incremental sync with nothing new keeps the cursor moving', () async {
+      final g = _Recorded((r, path) => 'history_empty');
+      final batch = _ok(await g.provider.incrementalSync('4200'));
+      expect(batch.messages, isEmpty);
+      expect(batch.removedMessageIds, isEmpty);
+      expect(batch.cursor, '4242');
+    });
+
+    test('a 404 on history (expired historyId) is NotFound', () async {
+      final g = _Recorded((r, path) => 'not_found');
+      expect(await g.provider.incrementalSync('1'), _err<NotFoundFailure>());
+    });
+
+    test(
+      'a message gone before it could be fetched counts as removed',
+      () async {
+        final g = _Recorded(
+          (r, path) => switch (path) {
+            'history' => 'history',
+            _ => 'not_found',
+          },
+        );
+        final batch = _ok(await g.provider.incrementalSync('4242'));
+        expect(batch.messages, isEmpty);
+        expect(batch.removedMessageIds, unorderedEquals([_f1, _f3, _f4]));
+      },
+    );
+
+    test('a 404 on a body is NotFound', () async {
+      final g = _Recorded((r, path) => 'not_found');
+      expect(await g.provider.fetchBody(_f1), _err<NotFoundFailure>());
+    });
+
+    test('a 429 is retried with backoff, then is a RateLimitFailure', () async {
+      final g = _Recorded((r, path) => 'rate_limited');
+      expect(await g.provider.initialSync(), _err<RateLimitFailure>());
+      expect(g.requests, hasLength(4));
+      expect(g.sleeps, [
+        const Duration(seconds: 1),
+        const Duration(seconds: 2),
+        const Duration(seconds: 4),
+      ]);
+    });
+
+    test('a 429 that clears on retry is not a failure', () async {
+      var limited = true;
+      final g = _Recorded((r, path) {
+        if (path == 'history' && limited) {
+          limited = false;
+          return 'rate_limited';
+        }
+        return 'history_empty';
+      });
+      expect(_ok(await g.provider.incrementalSync('4200')).cursor, '4242');
+      expect(g.sleeps, [const Duration(seconds: 1)]);
+    });
+  });
+
+  test('the change signal is IMAP IDLE on Gmail, as the Account, with a valid token', () async {
+    late (String, String) seen;
+    late Future<String> Function() token;
+    final p = GmailProvider(
+      _account,
+      _keychain(),
+      MockClient((_) async => fail('no HTTP')),
+      FakeClock(_now),
+      client: _testClient,
+      idle:
+          ({required String host, required String user, required accessToken}) {
+            seen = (host, user);
+            token = accessToken;
+            return Stream.value(ChangeSignal.changed);
+          },
+    );
+    expect(await p.changes.toList(), [ChangeSignal.changed]);
+    expect(seen, ('imap.gmail.com', 'ada@gmail.com'));
+    expect(await token(), 'ya29.initial');
   });
 }

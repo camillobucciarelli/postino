@@ -1,0 +1,86 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f1",
+    "threadId": "18f3a2b4c5d6e7f1",
+    "labelIds": [
+      "UNREAD",
+      "CATEGORY_PERSONAL",
+      "INBOX"
+    ],
+    "snippet": "Ciao Ada, ci vediamo alle 20 da Mario? Porto io il vino &amp; il dolce.",
+    "payload": {
+      "partId": "",
+      "filename": "",
+      "headers": [
+        {
+          "name": "Delivered-To",
+          "value": "ada@gmail.com"
+        },
+        {
+          "name": "Date",
+          "value": "Mon, 26 Oct 2026 09:15:02 +0100"
+        },
+        {
+          "name": "From",
+          "value": "Bruno Verdi <bruno@example.com>"
+        },
+        {
+          "name": "To",
+          "value": "ada@gmail.com, carla@example.org"
+        },
+        {
+          "name": "Message-ID",
+          "value": "<CAF1x7Yk2b@mail.example.com>"
+        },
+        {
+          "name": "Subject",
+          "value": "Cena di venerdì"
+        },
+        {
+          "name": "MIME-Version",
+          "value": "1.0"
+        }
+      ],
+      "mimeType": "multipart/alternative",
+      "body": {
+        "size": 0
+      },
+      "parts": [
+        {
+          "partId": "0",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain; charset=\"UTF-8\""
+            }
+          ],
+          "body": {
+            "size": 41,
+            "data": "Q2lhbyBBZGEsDQpjaSB2ZWRpYW1vIGFsbGUgMjAgZGEgTWFyaW8_DQo"
+          }
+        },
+        {
+          "partId": "1",
+          "mimeType": "text/html",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/html; charset=\"UTF-8\""
+            }
+          ],
+          "body": {
+            "size": 64,
+            "data": "PGRpdiBkaXI9Imx0ciI-Q2lhbyBBZGEsPGJyPmNpIHZlZGlhbW8gYWxsZSAyMCBkYSBNYXJpbz88L2Rpdj4NCg"
+          }
+        }
+      ]
+    },
+    "sizeEstimate": 5821,
+    "historyId": "4231",
+    "internalDate": "1793002502000"
+  }
+}

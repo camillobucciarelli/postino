@@ -24,6 +24,8 @@ class MailStore implements InboxRepository {
       .watchByPosition()
       .map((rows) => [for (final r in rows) _account(r)]);
 
+  Future<String?> cursor(String accountId) => _db.messagesDao.cursor(accountId);
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   Future<void> applySync(
     String accountId,

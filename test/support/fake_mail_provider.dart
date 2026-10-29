@@ -28,38 +28,71 @@ Message msg(
   date: date ?? DateTime.utc(2026, 1, 1),
 );
 
-/// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline and AuthFailure.
+/// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
 class FakeMailProvider implements MailProvider {
   final _messages = <String, Message>{};
   final _log = <(int, Message?, String)>[]; // (version, upsert, removedId)
-  final _changes = StreamController<void>.broadcast();
+  late final StreamController<ChangeSignal> _changes =
+      StreamController.broadcast(
+        onListen: () =>
+            _changes.add(_signalUp ? ChangeSignal.up : ChangeSignal.down),
+      );
   int _version = 0;
+
+  /// Cursors older than this have expired.
+  int _oldest = 0;
   bool _offline = false;
   bool _authBroken = false;
+  bool _signalUp = true;
+  bool _rateLimited = false;
+
+  /// While set, syncs wait for it to complete: a slow Provider.
+  Completer<void>? hold;
   final sent = <OutgoingMessage>[];
   final drafts = <String, OutgoingMessage>{};
 
+  /// What the sync engine asked for: initial syncs, and the delta of the last incremental one.
+  int initialSyncs = 0;
+  SyncBatch? lastIncremental;
+
   // --- simulation ---
+  /// A new message, or a change to one (read, Stella, Etichette) made elsewhere.
   void deliver(Message m) {
     _messages[m.id] = m;
     _log.add((++_version, m, ''));
-    _changes.add(null);
+    if (_signalUp) _changes.add(ChangeSignal.changed);
   }
 
   void removeRemotely(String id) {
     _messages.remove(id);
     _log.add((++_version, null, id));
-    _changes.add(null);
+    if (_signalUp) _changes.add(ChangeSignal.changed);
   }
 
   void goOffline() => _offline = true;
+  void goOnline() => _offline = false;
+  void rateLimit([bool on = true]) => _rateLimited = on;
   void breakAuth() => _authBroken = true;
   void restoreAuth() => _authBroken = false;
+
+  /// The Provider forgets the history: every cursor handed out so far has expired.
+  void expireCursors() => _oldest = _version + 1;
+
+  /// IDLE drops: no more change signals until [restoreSignal].
+  void dropSignal() => _signal(ChangeSignal.down);
+  void restoreSignal() => _signal(ChangeSignal.up);
+
+  void _signal(ChangeSignal s) {
+    _signalUp = s == ChangeSignal.up;
+    _changes.add(s);
+  }
 
   Failure? get _failure => _authBroken
       ? const AuthFailure()
       : _offline
       ? const OfflineFailure()
+      : _rateLimited
+      ? const RateLimitFailure()
       : null;
 
   // --- MailProvider ---
@@ -71,39 +104,57 @@ class FakeMailProvider implements MailProvider {
   @override
   Future<Result<void>> refreshAuth() async => _guard(() {});
 
-  @override
-  Future<Result<SyncBatch>> initialSync() async => _guard(
-    () => SyncBatch(
-      cursor: '$_version',
-      messages: _messages.values.toList(),
-      labels: const [
-        Label(id: inboxLabelId, name: 'INBOX', kind: LabelKind.etichetta),
-      ],
-    ),
-  );
+  static Map<String, String> _inboxBodies(Iterable<Message> ms) => {
+    for (final m in ms)
+      if (m.labelIds.contains(inboxLabelId)) m.id: 'Corpo di ${m.id}',
+  };
 
   @override
-  Future<Result<SyncBatch>> incrementalSync(String cursor) async => _guard(() {
-    // Only the latest operation per id counts (a Provider delta is final state).
-    final latest = <String, (int, Message?, String)>{};
-    for (final e in _log) {
-      if (e.$1 > int.parse(cursor)) latest[e.$2?.id ?? e.$3] = e;
+  Future<Result<SyncBatch>> initialSync() async {
+    await hold?.future;
+    return _guard(() {
+      initialSyncs++;
+      return SyncBatch(
+        cursor: '$_version',
+        messages: _messages.values.toList(),
+        labels: const [
+          Label(id: inboxLabelId, name: 'INBOX', kind: LabelKind.etichetta),
+        ],
+        bodies: _inboxBodies(_messages.values),
+      );
+    });
+  }
+
+  @override
+  Future<Result<SyncBatch>> incrementalSync(String cursor) async {
+    await hold?.future;
+    if (_failure == null && int.parse(cursor) < _oldest) {
+      return const Err(NotFoundFailure());
     }
-    return SyncBatch(
-      cursor: '$_version',
-      messages: [
+    return _guard(() {
+      // Only the latest operation per id counts (a Provider delta is final state).
+      final latest = <String, (int, Message?, String)>{};
+      for (final e in _log) {
+        if (e.$1 > int.parse(cursor)) latest[e.$2?.id ?? e.$3] = e;
+      }
+      final messages = [
         for (final e in latest.values)
           if (e.$2 != null) e.$2!,
-      ],
-      removedMessageIds: [
-        for (final e in latest.values)
-          if (e.$2 == null) e.$3,
-      ],
-    );
-  });
+      ];
+      return lastIncremental = SyncBatch(
+        cursor: '$_version',
+        messages: messages,
+        removedMessageIds: [
+          for (final e in latest.values)
+            if (e.$2 == null) e.$3,
+        ],
+        bodies: _inboxBodies(messages),
+      );
+    });
+  }
 
   @override
-  Stream<void> get changes => _changes.stream;
+  Stream<ChangeSignal> get changes => _changes.stream;
 
   @override
   Future<Result<String>> fetchBody(String messageId) async {

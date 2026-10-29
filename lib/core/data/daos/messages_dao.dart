@@ -4,18 +4,28 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
+import '../tables/bodies_table.dart';
 import '../tables/labels_table.dart';
 import '../tables/message_labels_table.dart';
 import '../tables/messages_table.dart';
+import '../tables/sync_cursors_table.dart';
 
 part 'messages_dao.g.dart';
 
-@DriftAccessor(tables: [Accounts, Labels, Messages, MessageLabels])
+@DriftAccessor(
+  tables: [Accounts, Labels, Messages, MessageLabels, Bodies, SyncCursors],
+)
 class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     with _$MessagesDaoMixin {
   MessagesDao(super.attachedDatabase);
 
+  /// Where the Account's next incremental sync starts; null before its first sync.
+  Future<String?> cursor(String accountId) async => (await (select(
+    syncCursors,
+  )..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
+  /// The batch's cursor is saved in the same transaction, so data and cursor never disagree.
   Future<void> applySync(
     String accountId,
     SyncBatch batch, {
@@ -51,6 +61,14 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
                 const CustomExpression(
                   'id NOT IN (SELECT id FROM snapshot_ids)',
                 ),
+          )
+          ..deleteWhere(
+            bodies,
+            (t) =>
+                t.accountId.equals(accountId) &
+                const CustomExpression(
+                  'message_id NOT IN (SELECT id FROM snapshot_ids)',
+                ),
           );
       }
       // Removals before upserts: an id both removed and upserted in one batch survives.
@@ -62,6 +80,10 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           )
           ..deleteWhere(
             messageLabels,
+            (t) => t.accountId.equals(accountId) & t.messageId.equals(id),
+          )
+          ..deleteWhere(
+            bodies,
             (t) => t.accountId.equals(accountId) & t.messageId.equals(id),
           );
       }
@@ -106,6 +128,23 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               ),
           ]);
       }
+      b
+        ..insertAll(bodies, [
+          for (final MapEntry(:key, :value) in batch.bodies.entries)
+            BodiesCompanion.insert(
+              accountId: accountId,
+              messageId: key,
+              body: value,
+            ),
+        ], mode: InsertMode.insertOrReplace)
+        ..insert(
+          syncCursors,
+          SyncCursorsCompanion.insert(
+            accountId: accountId,
+            cursor: batch.cursor,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
     });
   });
 

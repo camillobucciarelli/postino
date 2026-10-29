@@ -27,6 +27,9 @@ class KeychainStore implements SecureStore {
 class SystemClock implements Clock {
   @override
   DateTime now() => DateTime.now();
+
+  @override
+  Stream<void> every(Duration period) => Stream<void>.periodic(period);
 }
 
 // ponytail: always online until the offline indicator needs a real signal (connectivity_plus).

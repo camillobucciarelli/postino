@@ -1,5 +1,9 @@
 // Atoms and molecules: one golden each (light and dark × text 100% and 200%) and the accessibility guidelines.
 // ponytail: the design system fonts are not bundled yet, so goldens render with the test font.
+// ponytail: goldens are recorded and compared only on macOS (developers and the self-hosted Apple runner):
+// Linux CI rasterises text and anti-aliasing differently (1-2% of pixels); the guidelines still run everywhere.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -208,10 +212,12 @@ void main() {
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(_grid(build));
-      await expectLater(
-        find.byKey(_golden),
-        matchesGoldenFile('goldens/$name.png'),
-      );
+      if (Platform.isMacOS) {
+        await expectLater(
+          find.byKey(_golden),
+          matchesGoldenFile('goldens/$name.png'),
+        );
+      }
       await expectLater(tester, meetsGuideline(textContrastGuideline));
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));

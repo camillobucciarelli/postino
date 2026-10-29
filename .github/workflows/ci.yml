@@ -114,5 +114,7 @@ jobs:
           dart run routefly
           dart run slang
           dart run build_runner build
+      # Goldens are compared only on macOS, where they are recorded.
+      - run: flutter test test/design_system
       - run: flutter build macos --debug
       - run: flutter build ios --no-codesign

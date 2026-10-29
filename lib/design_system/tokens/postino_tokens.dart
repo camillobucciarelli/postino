@@ -1563,7 +1563,7 @@ abstract final class PostinoText {
     fontSize: 30.0,
     height: 1.2,
     fontWeight: FontWeight.w400,
-    letterSpacing: -0.3,
+    letterSpacing: -0.45,
   );
 
   /// Oggetto del thread, titoli di sezione delle impostazioni. Flutter: headlineSmall.
@@ -1572,7 +1572,7 @@ abstract final class PostinoText {
     fontSize: 24.0,
     height: 1.25,
     fontWeight: FontWeight.w400,
-    letterSpacing: -0.12,
+    letterSpacing: -0.36,
   );
 
   /// Titolo di dialog e bottom sheet. Flutter: titleLarge.
@@ -1581,14 +1581,16 @@ abstract final class PostinoText {
     fontSize: 20.0,
     height: 1.3,
     fontWeight: FontWeight.w400,
+    letterSpacing: -0.3,
   );
 
-  /// Titolo dell’AppBar compatta: resta sans perché è navigazione. AppBarTheme.titleTextStyle.
+  /// Titolo dell’AppBar compatta, Caprasimo come gli altri titoli. AppBarTheme.titleTextStyle.
   static const appBarTitle = TextStyle(
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 17.0,
     height: 1.2941,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.255,
   );
 
   /// Mittente non letto in lista e header del messaggio. Flutter: titleMedium.

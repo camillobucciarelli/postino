@@ -7,16 +7,20 @@ import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
+import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/result.dart';
+import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import 'body_text.dart';
+import '../domain/safe_html.dart';
 import 'message_time.dart';
 
 /// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
 /// expanded. Opening it marks it read and fetches what is missing; a missing body is downloaded when its
-/// message expands, and retried when the network returns. Routing is the caller's ([onBack]).
+/// message expands, and retried when the network returns. HTML bodies render cleaned, their remote
+/// resources blocked unless shown for the message or its sender is a Mittente fidato (ADR 0007).
+/// Routing is the caller's ([onBack]).
 class ConversationView extends StatefulWidget {
   const ConversationView({
     super.key,
@@ -35,7 +39,14 @@ class ConversationView extends StatefulWidget {
 
 class _ConversationViewState extends State<ConversationView> {
   final _sync = GetIt.I<MailSync>();
+  final _trust = GetIt.I<TrustedSendersRepository>();
   final _subs = <StreamSubscription<Object?>>[];
+
+  /// Empty until the database answers: blocked meanwhile, never loaded too early.
+  Set<String> _trusted = const {};
+
+  /// A body is cleaned once per message and permission, not on every build.
+  final _safe = <(String, bool), SafeHtml>{};
 
   List<ConversationMessage>? _messages;
   Account? _account;
@@ -66,6 +77,7 @@ class _ConversationViewState extends State<ConversationView> {
           ),
         ),
       )
+      ..add(_trust.watchTrusted().listen((t) => setState(() => _trusted = t)))
       ..add(
         GetIt.I<Connectivity>().onChanged.listen((online) {
           if (!online) return;
@@ -143,6 +155,49 @@ class _ConversationViewState extends State<ConversationView> {
     super.dispose();
   }
 
+  Widget _body(
+    Message message,
+    MessageBody body,
+    Translations$conversazione$it t,
+  ) {
+    if (body.kind == BodyKind.testo) {
+      return PostinoMessageBody(text: body.content.trim());
+    }
+    final allow =
+        _trusted.contains(normalizeAddress(message.from)) ||
+        _trust.shownOnce(widget.accountId, message.id);
+    final safe = _safe[(message.id, allow)] ??= prepareHtml(
+      body.content,
+      allowRemote: allow,
+    );
+    final card = PostinoHtmlCard(
+      html: safe.html,
+      contentWidth: safe.width,
+      onTapUrl: (url) {
+        if (Uri.tryParse(url) case final uri?) {
+          unawaited(GetIt.I<LinkOpener>().open(uri));
+        }
+      },
+    );
+    if (!safe.blocked) return card;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PostinoBanner(
+          tone: PostinoBannerTone.neutral,
+          icon: PostinoIcons.image,
+          title: t.imagesBlocked,
+          actionLabel: t.showImages,
+          onAction: () =>
+              setState(() => _trust.showOnce(widget.accountId, message.id)),
+          secondaryActionLabel: t.alwaysFromSender,
+          onSecondaryAction: () => unawaited(_trust.trust(message.from)),
+        ),
+        card,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.t.conversazione;
@@ -178,7 +233,7 @@ class _ConversationViewState extends State<ConversationView> {
                     expanded: _expanded[message.id]!,
                     onToggle: () => _toggle(message.id, body != null),
                     body: switch ((body, _failed[message.id])) {
-                      (final b?, _) => PostinoMessageBody(text: bodyText(b)),
+                      (final b?, _) => _body(message, b, t),
                       (null, final f?) => PostinoMessageBody.missing(
                         key: const ValueKey('body-missing'),
                         note: f is OfflineFailure ? t.offline : t.failed,

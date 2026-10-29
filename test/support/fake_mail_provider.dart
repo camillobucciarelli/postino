@@ -71,6 +71,9 @@ class FakeMailProvider implements MailProvider {
   /// Body kind of [fetchBody]; the sync bodies are plain text.
   BodyKind bodyKind = BodyKind.testo;
 
+  /// Bodies by message id, for the syncs and [fetchBody]; the others are «Corpo di `id`».
+  final bodies = <String, MessageBody>{};
+
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
   final labels = [
     const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
@@ -137,10 +140,10 @@ class FakeMailProvider implements MailProvider {
   @override
   Future<Result<void>> refreshAuth() async => _guard(() {});
 
-  static Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
+  Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
     for (final m in ms)
       if (m.labelIds.contains(inboxLabelId))
-        m.id: MessageBody('Corpo di ${m.id}', BodyKind.testo),
+        m.id: bodies[m.id] ?? MessageBody('Corpo di ${m.id}', BodyKind.testo),
   };
 
   @override
@@ -206,7 +209,7 @@ class FakeMailProvider implements MailProvider {
     final f = _failure;
     if (f != null) return Err(f);
     return _messages.containsKey(messageId) || _old.containsKey(messageId)
-        ? Ok(MessageBody('Corpo di $messageId', bodyKind))
+        ? Ok(bodies[messageId] ?? MessageBody('Corpo di $messageId', bodyKind))
         : const Err(NotFoundFailure());
   }
 

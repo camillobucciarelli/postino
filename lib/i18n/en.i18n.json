@@ -50,6 +50,9 @@
     "loading": "Loading…",
     "offline": "Body not available offline",
     "failed": "Body not available",
-    "retry": "Retry"
+    "retry": "Retry",
+    "imagesBlocked": "Remote images blocked",
+    "showImages": "Show images",
+    "alwaysFromSender": "Always from this sender"
   }
 }

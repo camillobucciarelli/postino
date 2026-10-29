@@ -140,6 +140,9 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get offline => 'Body not available offline';
 	@override String get failed => 'Body not available';
 	@override String get retry => 'Retry';
+	@override String get imagesBlocked => 'Remote images blocked';
+	@override String get showImages => 'Show images';
+	@override String get alwaysFromSender => 'Always from this sender';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -185,6 +188,9 @@ extension on TranslationsEn {
 			'conversazione.offline' => 'Body not available offline',
 			'conversazione.failed' => 'Body not available',
 			'conversazione.retry' => 'Retry',
+			'conversazione.imagesBlocked' => 'Remote images blocked',
+			'conversazione.showImages' => 'Show images',
+			'conversazione.alwaysFromSender' => 'Always from this sender',
 			_ => null,
 		};
 	}

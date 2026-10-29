@@ -50,6 +50,9 @@
     "loading": "Caricamento…",
     "offline": "Corpo non disponibile offline",
     "failed": "Corpo non disponibile",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "imagesBlocked": "Immagini remote bloccate",
+    "showImages": "Mostra immagini",
+    "alwaysFromSender": "Sempre da questo mittente"
   }
 }

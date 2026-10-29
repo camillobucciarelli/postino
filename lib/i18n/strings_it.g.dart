@@ -213,6 +213,15 @@ class Translations$conversazione$it {
 
 	/// it: 'Riprova'
 	String get retry => 'Riprova';
+
+	/// it: 'Immagini remote bloccate'
+	String get imagesBlocked => 'Immagini remote bloccate';
+
+	/// it: 'Mostra immagini'
+	String get showImages => 'Mostra immagini';
+
+	/// it: 'Sempre da questo mittente'
+	String get alwaysFromSender => 'Sempre da questo mittente';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -258,6 +267,9 @@ extension on Translations {
 			'conversazione.offline' => 'Corpo non disponibile offline',
 			'conversazione.failed' => 'Corpo non disponibile',
 			'conversazione.retry' => 'Riprova',
+			'conversazione.imagesBlocked' => 'Immagini remote bloccate',
+			'conversazione.showImages' => 'Mostra immagini',
+			'conversazione.alwaysFromSender' => 'Sempre da questo mittente',
 			_ => null,
 		};
 	}

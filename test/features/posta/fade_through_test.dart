@@ -30,12 +30,19 @@ void main() {
   ) async {
     final h = await Harness.create();
     (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
+    (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
     await _start(tester);
 
     await openDrawer(tester);
     await tester.tap(find.byKey(const ValueKey('account-a1')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 45));
+    // Old content (both Accounts) still there, fading out.
+    expect(find.text('Da due'), findsOneWidget);
+    final out = tester.widget<FadeTransition>(_fade).opacity.value;
+    expect(out, greaterThan(0));
+    expect(out, lessThan(1));
+    await tester.pump(const Duration(milliseconds: 105));
     final mid = tester.widget<FadeTransition>(_fade).opacity.value;
     expect(mid, greaterThan(0));
     expect(mid, lessThan(1));

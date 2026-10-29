@@ -196,6 +196,55 @@ void main() {
     },
   );
 
+  testWidgets(
+    'crossing 840 with a Conversazione open keeps its State, scroll and expansion choices, and the list State',
+    (tester) async {
+      // Twelve unread messages: all expanded when they show up, long enough to scroll.
+      await _start(tester, _desktop, (p) {
+        for (var i = 0; i < 12; i++) {
+          p.deliver(
+            msg('l$i', conversationId: 'l', date: DateTime.utc(2026, 10, 5, i)),
+          );
+        }
+      });
+      // Offstage under the full page on the phone, still mounted.
+      State list() =>
+          tester.state(find.byType(MessageList, skipOffstage: false));
+      final l = list();
+      await _open(tester, 'l11');
+      State conversation() => tester.state(find.byType(ConversationView));
+      final c = conversation();
+      ScrollPosition scroll() => tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(ConversationView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position;
+      // The user collapses the latest one and scrolls down.
+      await tester.tap(_message('l11'));
+      await tester.pumpAndSettle();
+      expect(_expanded(tester, 'l11'), isFalse);
+      expect(scroll().maxScrollExtent, greaterThan(100));
+      scroll().jumpTo(100);
+      await tester.pump();
+
+      for (final size in [_phone, _desktop, _phone]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        expect(conversation(), same(c), reason: 'at $size');
+        expect(list(), same(l), reason: 'at $size');
+        expect(scroll().pixels, 100, reason: 'at $size');
+        // Its choice stays; the others, read by now, stay expanded.
+        expect(_expanded(tester, 'l11'), isFalse, reason: 'at $size');
+        expect(_expanded(tester, 'l10'), isTrue, reason: 'at $size');
+      }
+    },
+  );
+
   testWidgets('at 1280×800 Indietro closes the Conversazione too', (
     tester,
   ) async {

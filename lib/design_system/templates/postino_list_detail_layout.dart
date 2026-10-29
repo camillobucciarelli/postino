@@ -10,7 +10,7 @@ import 'postino_fade_through.dart';
 /// [empty] when nothing is open, a fade through between details.
 /// Below: the detail is a full page over the list, with the Material 3 shared axis X
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
-/// The list keeps its State across both, and across a resize. Esc calls [onClose].
+/// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
 /// With reduced motion every change is instant.
 class PostinoListDetailLayout extends StatefulWidget {
   const PostinoListDetailLayout({
@@ -42,6 +42,15 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
 
   final _listKey = GlobalKey();
 
+  /// One per open item: the two panes and the full page differ in structure, so only a
+  /// GlobalKey carries the detail State (scroll, expansions) across 840.
+  final _detailKeys = <Object?, GlobalKey>{};
+
+  Widget _keyed(Object? key, Widget detail) => KeyedSubtree(
+    key: _detailKeys.putIfAbsent(key, GlobalKey.new),
+    child: detail,
+  );
+
   /// 0: the list; 1: the detail over it (below 840 only).
   late final _axis =
       AnimationController(
@@ -65,6 +74,10 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   @override
   void didUpdateWidget(PostinoListDetailLayout old) {
     super.didUpdateWidget(old);
+    // The outgoing detail may still be on screen; older ones are gone.
+    _detailKeys.removeWhere(
+      (k, _) => k != widget.detailKey && k != old.detailKey,
+    );
     final opened = old.detail == null && widget.detail != null;
     final closed = old.detail != null && widget.detail == null;
     if (!opened && !closed) return;
@@ -115,7 +128,9 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
               type: MaterialType.transparency,
               child: PostinoFadeThrough(
                 transitionKey: widget.detailKey ?? const _Empty(),
-                child: widget.detail ?? widget.empty,
+                child: widget.detail != null
+                    ? _keyed(widget.detailKey, widget.detail!)
+                    : widget.empty,
               ),
             ),
           ),
@@ -152,10 +167,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
             if (detail != null)
               Transform.translate(
                 offset: Offset(_slide * (1 - move), 0),
-                child: Opacity(
-                  opacity: detailIn,
-                  child: KeyedSubtree(key: ValueKey(key), child: detail),
-                ),
+                child: Opacity(opacity: detailIn, child: _keyed(key, detail)),
               ),
           ],
         );

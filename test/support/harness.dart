@@ -45,10 +45,7 @@ class Harness {
   }
 
   /// Adds an Account backed by a fake Provider registered in get_it.
-  Future<FakeMailProvider> addAccount(
-    String id, {
-    int color = 0xFF2196F3,
-  }) async {
+  Future<FakeMailProvider> addAccount(String id, {int color = 0}) async {
     await getIt<MailStore>().addAccount(
       Account(
         id: id,

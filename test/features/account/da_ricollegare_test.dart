@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
@@ -42,6 +43,10 @@ void main() {
 
       expect(find.byKey(_old), findsOneWidget);
       expect(
+        tester.widget<PostinoBanner>(find.byKey(_banner)).tone,
+        PostinoBannerTone.warning,
+      );
+      expect(
         find.descendant(
           of: find.byKey(_banner),
           matching: find.textContaining('ada@gmail.com'),
@@ -49,10 +54,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byKey(_banner),
-          matching: find.text('Ricollega'),
-        ),
+        find.descendant(of: find.byKey(_banner), matching: find.text('Accedi')),
         findsOneWidget,
       );
     },
@@ -72,7 +74,7 @@ void main() {
       await sync(tester);
       expect(find.byKey(_new), findsNothing);
 
-      await tester.tap(find.text('Ricollega'));
+      await tester.tap(find.text('Accedi'));
       await tester.pumpAndSettle();
 
       expect(h.consent.lastLoginHint, 'ada@gmail.com');
@@ -90,7 +92,7 @@ void main() {
       await sync(tester);
 
       h.consent.address = 'bob@gmail.com';
-      await tester.tap(find.text('Ricollega'));
+      await tester.tap(find.text('Accedi'));
       await tester.pumpAndSettle();
 
       expect(

@@ -1,6 +1,7 @@
 // Own file: routefly keeps its router config in statics, so the extra route must be the first config of the isolate.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -17,6 +18,7 @@ Widget _appAt(String initialPath) {
   );
   return TranslationProvider(
     child: MaterialApp.router(
+      theme: PostinoTheme.light(),
       routerConfig: Routefly.routerConfig(
         routes: [...routes, child],
         initialPath: initialPath,

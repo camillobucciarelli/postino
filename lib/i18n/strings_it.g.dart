@@ -51,6 +51,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// it: 'Posta in arrivo'
 	String get postaInArrivo => 'Posta in arrivo';
 
+	/// it: 'Account'
+	String get account => 'Account';
+
+	/// it: '(one) {$n account} (other) {$n account}'
+	String accountCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} account',
+		other: '${n} account',
+	);
+
 	/// it: 'Etichette'
 	String get etichette => 'Etichette';
 
@@ -58,6 +67,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
+	late final Translations$list$it list = Translations$list$it.internal(_root);
 }
 
 // Path: onboarding
@@ -68,11 +78,8 @@ class Translations$onboarding$it {
 
 	// Translations
 
-	/// it: 'Benvenuto in Postino'
-	String get title => 'Benvenuto in Postino';
-
-	/// it: 'Collega la tua casella Gmail per iniziare.'
-	String get body => 'Collega la tua casella Gmail per iniziare.';
+	/// it: 'Tutte le tue caselle in un posto solo.'
+	String get body => 'Tutte le tue caselle in un posto solo.';
 
 	/// it: 'Collega Gmail'
 	String get connectGmail => 'Collega Gmail';
@@ -86,11 +93,17 @@ class Translations$daRicollegare$it {
 
 	// Translations
 
-	/// it: '$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.'
-	String banner({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.';
+	/// it: '$name è da ricollegare'
+	String title({required Object name}) => '${name} è da ricollegare';
 
-	/// it: 'Ricollega'
-	String get reconnect => 'Ricollega';
+	/// it: 'Google non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.'
+	String get message => 'Google non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.';
+
+	/// it: 'Accedi'
+	String get signIn => 'Accedi';
+
+	/// it: 'Da ricollegare'
+	String get status => 'Da ricollegare';
 }
 
 // Path: connect
@@ -100,6 +113,9 @@ class Translations$connect$it {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// it: 'Collegamento non riuscito'
+	String get title => 'Collegamento non riuscito';
 
 	/// it: 'Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).'
 	String missingSetting({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).';
@@ -113,8 +129,8 @@ class Translations$connect$it {
 	/// it: 'Hai scelto un altro account Google: per ricollegare $address scegli quell'account.'
 	String wrongAccount({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.';
 
-	/// it: 'Collegamento non riuscito. Riprova.'
-	String get failed => 'Collegamento non riuscito. Riprova.';
+	/// it: 'Qualcosa è andato storto: riprova.'
+	String get failed => 'Qualcosa è andato storto: riprova.';
 }
 
 // Path: offline
@@ -125,11 +141,41 @@ class Translations$offline$it {
 
 	// Translations
 
-	/// it: 'Offline'
-	String get label => 'Offline';
+	/// it: 'Sei offline'
+	String get title => 'Sei offline';
 
-	/// it: 'Sei offline: la posta si aggiornerà al ritorno della rete.'
-	String get tooltip => 'Sei offline: la posta si aggiornerà al ritorno della rete.';
+	/// it: 'La posta si aggiornerà al ritorno della rete.'
+	String get message => 'La posta si aggiornerà al ritorno della rete.';
+}
+
+// Path: list
+class Translations$list$it {
+	Translations$list$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Caricamento dei messaggi'
+	String get loading => 'Caricamento dei messaggi';
+
+	/// it: 'Niente di nuovo'
+	String get emptyTitle => 'Niente di nuovo';
+
+	/// it: 'I messaggi compaiono qui appena arrivano.'
+	String get emptyBody => 'I messaggi compaiono qui appena arrivano.';
+
+	/// it: 'Ieri'
+	String get yesterday => 'Ieri';
+
+	/// it: 'Non letto'
+	String get unread => 'Non letto';
+
+	/// it: 'con Stella'
+	String get starred => 'con Stella';
+
+	/// it: 'account $name'
+	String account({required Object name}) => 'account ${name}';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -143,19 +189,30 @@ extension on Translations {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'Posta unificata',
 			'postaInArrivo' => 'Posta in arrivo',
+			'account' => 'Account',
+			'accountCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} account', other: '${n} account', ), 
 			'etichette' => 'Etichette',
-			'onboarding.title' => 'Benvenuto in Postino',
-			'onboarding.body' => 'Collega la tua casella Gmail per iniziare.',
+			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',
-			'daRicollegare.banner' => ({required Object address}) => '${address} è da ricollegare: la sua posta resta leggibile ma non si aggiorna.',
-			'daRicollegare.reconnect' => 'Ricollega',
+			'daRicollegare.title' => ({required Object name}) => '${name} è da ricollegare',
+			'daRicollegare.message' => 'Google non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
+			'daRicollegare.signIn' => 'Accedi',
+			'daRicollegare.status' => 'Da ricollegare',
+			'connect.title' => 'Collegamento non riuscito',
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
-			'connect.failed' => 'Collegamento non riuscito. Riprova.',
-			'offline.label' => 'Offline',
-			'offline.tooltip' => 'Sei offline: la posta si aggiornerà al ritorno della rete.',
+			'connect.failed' => 'Qualcosa è andato storto: riprova.',
+			'offline.title' => 'Sei offline',
+			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
+			'list.loading' => 'Caricamento dei messaggi',
+			'list.emptyTitle' => 'Niente di nuovo',
+			'list.emptyBody' => 'I messaggi compaiono qui appena arrivano.',
+			'list.yesterday' => 'Ieri',
+			'list.unread' => 'Non letto',
+			'list.starred' => 'con Stella',
+			'list.account' => ({required Object name}) => 'account ${name}',
 			_ => null,
 		};
 	}

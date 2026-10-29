@@ -2,18 +2,20 @@
 // 60 s polling, network return, pull-to-refresh, app resume.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/ui.dart';
 
 const _id = 'a1';
 const _a = ValueKey('row-$_id-a');
 const _b = ValueKey('row-$_id-b');
-const _offline = ValueKey('offline-indicator');
+const _offline = ValueKey('offline-banner');
 
 Finder _in(ValueKey<String> row, Finder f) =>
     find.descendant(of: find.byKey(row), matching: f);
@@ -36,7 +38,7 @@ void main() {
     (tester) async {
       await start(tester);
       expect(_in(_a, find.byKey(const ValueKey('unread'))), findsOneWidget);
-      expect(_in(_a, find.byIcon(Icons.star)), findsNothing);
+      expect(_in(_a, starIcon), findsNothing);
 
       gmail
         ..deliver(msg('b', subject: 'Arrivato altrove'))
@@ -45,7 +47,7 @@ void main() {
 
       expect(_in(_b, find.text('Arrivato altrove')), findsOneWidget);
       expect(_in(_a, find.byKey(const ValueKey('unread'))), findsNothing);
-      expect(_in(_a, find.byIcon(Icons.star)), findsOneWidget);
+      expect(_in(_a, starIcon), findsOneWidget);
       expect(gmail.initialSyncs, 1, reason: 'incremental from then on');
     },
   );
@@ -69,7 +71,7 @@ void main() {
   });
 
   testWidgets(
-    'offline shows the discreet indicator; back online, the incremental sync fetches only the differences',
+    'offline shows the offline Banner; back online, the incremental sync fetches only the differences',
     (tester) async {
       await start(tester);
       expect(find.byKey(_offline), findsNothing);
@@ -80,7 +82,11 @@ void main() {
         ..deliver(msg('b'));
       await tester.pumpAndSettle();
       expect(find.byKey(_offline), findsOneWidget);
-      expect(find.text('Offline'), findsOneWidget);
+      expect(
+        tester.widget<PostinoBanner>(find.byKey(_offline)).tone,
+        PostinoBannerTone.offline,
+      );
+      expect(find.text('Sei offline'), findsOneWidget);
       expect(find.byKey(_a), findsOneWidget, reason: 'still readable');
       expect(find.byKey(_b), findsNothing);
 

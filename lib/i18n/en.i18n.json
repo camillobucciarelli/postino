@@ -2,25 +2,41 @@
   "appTitle": "Postino",
   "postaUnificata": "All inboxes",
   "postaInArrivo": "Inbox",
+  "account": "Accounts",
+  "accountCount": {
+    "one": "$n account",
+    "other": "$n accounts"
+  },
   "etichette": "Labels",
   "onboarding": {
-    "title": "Welcome to Postino",
-    "body": "Connect your Gmail mailbox to get started.",
+    "body": "All your mailboxes in one place.",
     "connectGmail": "Connect Gmail"
   },
   "daRicollegare": {
-    "banner": "$address needs reconnecting: its mail stays readable but no longer updates.",
-    "reconnect": "Reconnect"
+    "title": "$name needs signing in again",
+    "message": "Google no longer accepts the sign-in. Mail stays readable but won't update until you sign in.",
+    "signIn": "Sign in",
+    "status": "Needs signing in"
   },
   "connect": {
+    "title": "Couldn't connect",
     "missingSetting": "$setting is missing: start Postino with --dart-define=$setting=… (see README).",
     "offline": "No connection: try again when you are online.",
     "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
     "wrongAccount": "You picked a different Google account: to reconnect $address, pick that account.",
-    "failed": "Couldn't connect. Try again."
+    "failed": "Something went wrong: try again."
   },
   "offline": {
-    "label": "Offline",
-    "tooltip": "You're offline: mail will update when the network is back."
+    "title": "You're offline",
+    "message": "Mail will update when the network is back."
+  },
+  "list": {
+    "loading": "Loading messages",
+    "emptyTitle": "Nothing new",
+    "emptyBody": "Messages show up here as they arrive.",
+    "yesterday": "Yesterday",
+    "unread": "Unread",
+    "starred": "starred",
+    "account": "account $name"
   }
 }

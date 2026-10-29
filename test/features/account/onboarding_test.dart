@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/data/accounts_service.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/ui.dart';
 
 Future<void> _start(WidgetTester tester) async {
   LocaleSettings.setLocaleSync(AppLocale.it);
@@ -35,17 +36,10 @@ void main() {
         find.descendant(of: row, matching: find.text('Ciao')),
         findsOneWidget,
       );
+      // The first Account gets the first color of the palette.
       expect(
-        find.descendant(
-          of: row,
-          matching: find.byWidgetPredicate(
-            (w) =>
-                w is ColoredBox &&
-                w.key == const ValueKey('account-color') &&
-                w.color.toARGB32() == accountColors.first,
-          ),
-        ),
-        findsOneWidget,
+        accountBar(tester, row),
+        PostinoColors.light.account(PostinoAccountColor.sky).color,
       );
     },
   );

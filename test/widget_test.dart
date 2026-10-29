@@ -12,8 +12,8 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();
-    expect(find.text('Postino'), findsOneWidget);
     expect(find.text('Posta unificata'), findsOneWidget);
+    expect(find.text('1 account'), findsOneWidget);
   });
 
   testWidgets('opens on the Posta route, translated in English', (
@@ -23,7 +23,7 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.en);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     await tester.pumpAndSettle();
-    expect(find.text('Postino'), findsOneWidget);
     expect(find.text('All inboxes'), findsOneWidget);
+    expect(find.text('1 account'), findsOneWidget);
   });
 }

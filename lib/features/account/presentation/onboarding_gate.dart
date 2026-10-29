@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/accounts_repository.dart';
+import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 
@@ -52,32 +53,21 @@ class _OnboardingState extends State<_Onboarding> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            context.t.onboarding.title,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(context.t.onboarding.body),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _connect,
-            child: Text(context.t.onboarding.connectGmail),
-          ),
-          if (error case final e?)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                e,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-        ],
+  Widget build(BuildContext context) => PostinoOnboardingLayout(
+    title: context.t.appTitle,
+    message: context.t.onboarding.body,
+    error: switch (error) {
+      final e? => PostinoBanner(
+        tone: PostinoBannerTone.danger,
+        title: context.t.connect.title,
+        message: e,
       ),
+      null => null,
+    },
+    primaryAction: PostinoButton(
+      label: context.t.onboarding.connectGmail,
+      onPressed: _connect,
+      size: PostinoButtonSize.lg,
     ),
   );
 }

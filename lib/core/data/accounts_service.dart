@@ -11,19 +11,6 @@ import 'gmail/gmail_tokens.dart';
 import 'mail_store.dart';
 import 'sync_engine.dart';
 
-/// Account colors (ARGB), assigned in turn.
-// ponytail: the design system's light account colors as plain ARGB; store PostinoAccountColor when the swatch must follow the theme.
-const accountColors = [
-  0xFF00779E, // sky
-  0xFF3559C3, // blue
-  0xFF6C3FAF, // violet
-  0xFF95388B, // magenta
-  0xFFB43C6B, // rose
-  0xFF6B6F00, // olive
-  0xFF445465, // slate
-  0xFF403D36, // graphite
-];
-
 @LazySingleton(as: AccountsRepository)
 class AccountsService implements AccountsRepository {
   AccountsService(this._store, this._consent, this._keychain, this._sync);
@@ -59,7 +46,7 @@ class AccountsService implements AccountsRepository {
       id: id,
       address: address,
       provider: ProviderKind.gmail,
-      color: known?.color ?? accountColors[all.length % accountColors.length],
+      color: known?.color ?? all.length % accountColorCount,
       // ponytail: no Account removal yet, so the count is the next free position.
       position: known?.position ?? all.length,
     );

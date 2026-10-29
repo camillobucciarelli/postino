@@ -1,0 +1,28 @@
+import 'package:flutter/material.dart';
+
+import '../tokens/postino_icons.dart';
+import '../tokens/postino_theme.dart';
+import '../tokens/postino_tokens.dart';
+import 'postino_icon.dart';
+
+/// A command with only an icon; [label] is its accessible name and tooltip.
+class PostinoIconButton extends StatelessWidget {
+  const PostinoIconButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final PostinoIconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    onPressed: onPressed,
+    tooltip: label,
+    color: context.pc.inkMuted,
+    icon: PostinoIcon(icon, size: PostinoSize.iconLg),
+  );
+}

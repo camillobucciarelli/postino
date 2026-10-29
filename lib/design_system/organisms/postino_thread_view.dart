@@ -51,9 +51,6 @@ class PostinoThreadView extends StatelessWidget {
           math.max(0, (box.maxWidth - PostinoSize.readingMaxWidth) / 2),
           PostinoSpacing.s4,
         ),
-          right: math.max(0, (box.maxWidth - PostinoSize.readingMaxWidth) / 2),
-          bottom: PostinoSpacing.s4,
-        ),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(

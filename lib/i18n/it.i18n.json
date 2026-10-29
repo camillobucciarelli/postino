@@ -59,6 +59,10 @@
     "toLabel": "A",
     "date": "Data",
     "receivedOn": "Ricevuto su",
-    "imagesBlockedBody": "Caricarle direbbe al mittente che hai aperto il messaggio."
+    "imagesBlockedBody": "Caricarle direbbe al mittente che hai aperto il messaggio.",
+    "toCc": "a $recipients, cc $cc",
+    "cc": "Cc",
+    "showQuoted": "Mostra testo citato",
+    "important": "Importante"
   }
 }

@@ -240,6 +240,18 @@ class Translations$conversazione$it {
 
 	/// it: 'Caricarle direbbe al mittente che hai aperto il messaggio.'
 	String get imagesBlockedBody => 'Caricarle direbbe al mittente che hai aperto il messaggio.';
+
+	/// it: 'a $recipients, cc $cc'
+	String toCc({required Object recipients, required Object cc}) => 'a ${recipients}, cc ${cc}';
+
+	/// it: 'Cc'
+	String get cc => 'Cc';
+
+	/// it: 'Mostra testo citato'
+	String get showQuoted => 'Mostra testo citato';
+
+	/// it: 'Importante'
+	String get important => 'Importante';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -294,6 +306,10 @@ extension on Translations {
 			'conversazione.date' => 'Data',
 			'conversazione.receivedOn' => 'Ricevuto su',
 			'conversazione.imagesBlockedBody' => 'Caricarle direbbe al mittente che hai aperto il messaggio.',
+			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'a ${recipients}, cc ${cc}',
+			'conversazione.cc' => 'Cc',
+			'conversazione.showQuoted' => 'Mostra testo citato',
+			'conversazione.important' => 'Importante',
 			_ => null,
 		};
 	}

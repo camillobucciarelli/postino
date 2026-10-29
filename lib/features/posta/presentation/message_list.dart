@@ -65,7 +65,7 @@ class _MessageListState extends State<MessageList> {
           final time = messageTime(m.date, now, locale, t.yesterday);
           return PostinoMessageTile(
             key: ValueKey('row-${a.id}-${m.id}'),
-            sender: m.from,
+            sender: m.fromName ?? m.from,
             subject: m.subject,
             preview: m.snippet,
             time: time,
@@ -82,7 +82,7 @@ class _MessageListState extends State<MessageList> {
                 : null,
             semanticLabel: [
               if (unread) t.unread,
-              m.from,
+              m.fromName ?? m.from,
               m.subject,
               if (count > 1) t.messages(n: count),
               if (m.isStarred) t.starred,

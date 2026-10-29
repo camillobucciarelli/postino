@@ -149,6 +149,10 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get date => 'Date';
 	@override String get receivedOn => 'Received on';
 	@override String get imagesBlockedBody => 'Loading them would tell the sender you opened the message.';
+	@override String toCc({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}';
+	@override String get cc => 'Cc';
+	@override String get showQuoted => 'Show quoted text';
+	@override String get important => 'Important';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -203,6 +207,10 @@ extension on TranslationsEn {
 			'conversazione.date' => 'Date',
 			'conversazione.receivedOn' => 'Received on',
 			'conversazione.imagesBlockedBody' => 'Loading them would tell the sender you opened the message.',
+			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}',
+			'conversazione.cc' => 'Cc',
+			'conversazione.showQuoted' => 'Show quoted text',
+			'conversazione.important' => 'Important',
 			_ => null,
 		};
 	}

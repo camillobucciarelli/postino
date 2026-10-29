@@ -51,6 +51,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
+	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 }
 
 // Path: onboarding
@@ -110,6 +111,21 @@ class Translations$connect$it {
 	String get failed => 'Collegamento non riuscito. Riprova.';
 }
 
+// Path: offline
+class Translations$offline$it {
+	Translations$offline$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Offline'
+	String get label => 'Offline';
+
+	/// it: 'Sei offline: la posta si aggiornerà al ritorno della rete.'
+	String get tooltip => 'Sei offline: la posta si aggiornerà al ritorno della rete.';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -130,6 +146,8 @@ extension on Translations {
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Collegamento non riuscito. Riprova.',
+			'offline.label' => 'Offline',
+			'offline.tooltip' => 'Sei offline: la posta si aggiornerà al ritorno della rete.',
 			_ => null,
 		};
 	}

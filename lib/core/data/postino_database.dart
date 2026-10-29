@@ -12,15 +12,17 @@ import '../domain/platform_services.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/messages_dao.dart';
 import 'tables/accounts_table.dart';
+import 'tables/bodies_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
 import 'tables/messages_table.dart';
+import 'tables/sync_cursors_table.dart';
 
 part 'postino_database.g.dart';
 
 /// Single local database (ADR 0003). The UI reads only from here; the sync engine writes.
 @DriftDatabase(
-  tables: [Accounts, Labels, Messages, MessageLabels],
+  tables: [Accounts, Labels, Messages, MessageLabels, Bodies, SyncCursors],
   daos: [AccountsDao, MessagesDao],
 )
 class PostinoDatabase extends _$PostinoDatabase {
@@ -70,11 +72,18 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(bodies);
+        await m.createTable(syncCursors);
+      }
+    },
+  );
 }
 
 void _secureDelete(sqlite3.Database sql) =>

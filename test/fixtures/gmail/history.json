@@ -1,0 +1,99 @@
+{
+  "status": 200,
+  "body": {
+    "history": [
+      {
+        "id": "4251",
+        "messages": [
+          {
+            "id": "18f3a2b4c5d6e7f4",
+            "threadId": "18f3a2b4c5d6e7f4"
+          }
+        ],
+        "messagesAdded": [
+          {
+            "message": {
+              "id": "18f3a2b4c5d6e7f4",
+              "threadId": "18f3a2b4c5d6e7f4",
+              "labelIds": [
+                "UNREAD",
+                "CATEGORY_UPDATES",
+                "INBOX"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "4263",
+        "messages": [
+          {
+            "id": "18f3a2b4c5d6e7f1",
+            "threadId": "18f3a2b4c5d6e7f1"
+          }
+        ],
+        "labelsRemoved": [
+          {
+            "message": {
+              "id": "18f3a2b4c5d6e7f1",
+              "threadId": "18f3a2b4c5d6e7f1",
+              "labelIds": [
+                "CATEGORY_PERSONAL",
+                "INBOX"
+              ]
+            },
+            "labelIds": [
+              "UNREAD"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "4264",
+        "messages": [
+          {
+            "id": "18f3a2b4c5d6e7f1",
+            "threadId": "18f3a2b4c5d6e7f1"
+          }
+        ],
+        "labelsAdded": [
+          {
+            "message": {
+              "id": "18f3a2b4c5d6e7f1",
+              "threadId": "18f3a2b4c5d6e7f1",
+              "labelIds": [
+                "STARRED",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+              ]
+            },
+            "labelIds": [
+              "STARRED"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "4270",
+        "messages": [
+          {
+            "id": "18f3a2b4c5d6e7f3",
+            "threadId": "18f3a2b4c5d6e7f3"
+          }
+        ],
+        "messagesDeleted": [
+          {
+            "message": {
+              "id": "18f3a2b4c5d6e7f3",
+              "threadId": "18f3a2b4c5d6e7f3",
+              "labelIds": [
+                "SENT"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "historyId": "4301"
+  }
+}

@@ -24,12 +24,25 @@ class MailStore implements InboxRepository {
       .watchByPosition()
       .map((rows) => [for (final r in rows) _account(r)]);
 
+  Future<String?> cursor(String accountId) => _db.messagesDao.cursor(accountId);
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   Future<void> applySync(
     String accountId,
     SyncBatch batch, {
     bool fullSnapshot = false,
   }) => _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
+
+  /// A page of the initial sync: stored right away, without touching the cursor.
+  Future<void> applyPage(
+    String accountId,
+    List<Message> messages,
+    Map<String, String> bodies,
+  ) => _db.messagesDao.applySync(
+    accountId,
+    SyncBatch(cursor: '', messages: messages, bodies: bodies),
+    saveCursor: false,
+  );
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() =>

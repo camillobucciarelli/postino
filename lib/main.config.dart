@@ -22,6 +22,7 @@ import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
+import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 
 const String _prod = 'prod';
@@ -36,12 +37,13 @@ extension GetItInjectableX on _i174.GetIt {
     final httpModule = _$HttpModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
+    final syncModule = _$SyncModule();
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
-    gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
     gh.singleton<_i398.Connectivity>(
-      () => _i524.AlwaysOnline(),
+      () => _i524.SystemConnectivity(),
       registerFor: {_prod},
     );
+    gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
     gh.singleton<_i398.SecureStore>(
       () => _i524.KeychainStore(),
       registerFor: {_prod},
@@ -58,11 +60,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i385.MailStore>(
       () => _i385.MailStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+      ),
+    );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
-    );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(gh<_i385.MailStore>()),
     );
     gh.lazySingleton<_i382.AccountsRepository>(
       () => _i413.AccountsService(
@@ -71,6 +77,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
       ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     return this;
   }
@@ -81,3 +90,5 @@ class _$HttpModule extends _i524.HttpModule {}
 class _$DatabaseModule extends _i524.DatabaseModule {}
 
 class _$MailStoreModule extends _i385.MailStoreModule {}
+
+class _$SyncModule extends _i893.SyncModule {}

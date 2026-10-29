@@ -44,6 +44,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
+	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 }
 
 // Path: onboarding
@@ -83,6 +84,17 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String get failed => 'Couldn\'t connect. Try again.';
 }
 
+// Path: offline
+class _Translations$offline$en extends Translations$offline$it {
+	_Translations$offline$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Offline';
+	@override String get tooltip => 'You\'re offline: mail will update when the network is back.';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -103,6 +115,8 @@ extension on TranslationsEn {
 			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
 			'connect.wrongAccount' => ({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Couldn\'t connect. Try again.',
+			'offline.label' => 'Offline',
+			'offline.tooltip' => 'You\'re offline: mail will update when the network is back.',
 			_ => null,
 		};
 	}

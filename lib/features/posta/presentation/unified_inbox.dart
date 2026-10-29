@@ -3,8 +3,10 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_sync.dart';
 
 /// Posta unificata list; reads only from the local database through [InboxRepository].
+/// Pull-to-refresh asks for a sync; the rows update when it writes the database.
 class UnifiedInbox extends StatefulWidget {
   const UnifiedInbox({super.key});
 
@@ -25,8 +27,13 @@ class _UnifiedInboxState extends State<UnifiedInbox> {
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) => ListView(
-      children: [for (final e in entries.value.value ?? const []) _Row(e)],
+    builder: (context) => RefreshIndicator(
+      onRefresh: GetIt.I<MailSync>().syncAll,
+      child: ListView(
+        // Pullable even when the list is shorter than the screen.
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [for (final e in entries.value.value ?? const []) _Row(e)],
+      ),
     ),
   );
 }

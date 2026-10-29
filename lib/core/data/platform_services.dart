@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart' as plus;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
@@ -27,15 +30,31 @@ class KeychainStore implements SecureStore {
 class SystemClock implements Clock {
   @override
   DateTime now() => DateTime.now();
+
+  @override
+  Stream<void> every(Duration period) => Stream<void>.periodic(period);
 }
 
-// ponytail: always online until the offline indicator needs a real signal (connectivity_plus).
+/// Network state from the OS (connectivity_plus).
+// ponytail: "has a network interface", not "reaches the Provider"; a captive portal reads as online, and the sync's OfflineFailure covers it.
 @Singleton(as: Connectivity, env: [Environment.prod])
-class AlwaysOnline implements Connectivity {
+class SystemConnectivity implements Connectivity {
+  SystemConnectivity() {
+    unawaited(_plus.checkConnectivity().then(_update, onError: (_) {}));
+  }
+
+  final _plus = plus.Connectivity();
+  bool _online = true;
+
+  bool _update(List<plus.ConnectivityResult> r) =>
+      _online = r.any((c) => c != plus.ConnectivityResult.none);
+
   @override
-  bool get isOnline => true;
+  bool get isOnline => _online;
+
   @override
-  Stream<bool> get onChanged => const Stream.empty();
+  Stream<bool> get onChanged =>
+      _plus.onConnectivityChanged.map(_update).distinct();
 }
 
 @module

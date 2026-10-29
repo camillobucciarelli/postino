@@ -1,28 +1,115 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/mail_provider.dart';
+import '../domain/mail_sync.dart';
+import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import 'gmail/gmail_provider.dart';
 import 'mail_store.dart';
 
-/// Minimal sync engine: initial sync of every Account from its Provider into the database.
-// ponytail: initial sync only, run at app start; cursor storage, incremental sync and IDLE come with the next steps.
-@lazySingleton
-class SyncEngine {
-  SyncEngine(this._store);
-  final MailStore _store;
+/// Polling period while an Account's change signal is down (ADR 0008).
+const pollEvery = Duration(seconds: 60);
 
+/// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
+/// whenever the change signal fires, every [pollEvery] while it is down, and when the network returns.
+@lazySingleton
+class SyncEngine implements MailSync {
+  SyncEngine(this._store, this._clock, this._connectivity);
+  final MailStore _store;
+  final Clock _clock;
+  final Connectivity _connectivity;
+
+  final _subs = <StreamSubscription<Object?>>[];
+  final _signals = <String, StreamSubscription<ChangeSignal>>{};
+
+  /// Accounts whose change signal is up: the poll skips them.
+  final _signalUp = <String>{};
+
+  /// Accounts whose last sync failed for a passing reason (offline, rate limit): the poll retries them.
+  final _retry = <String>{};
+
+  /// Accounts the Provider blocked until a given time: no sync before it.
+  final _pausedUntil = <String, DateTime>{};
+  final _running = <String, Future<void>>{};
+  final _again = <String>{};
+
+  /// Starts listening to change signals, the poll and the network, then syncs everything.
+  void start() {
+    _subs
+      ..add(_store.watchAccounts().listen(_watchSignals))
+      ..add(_clock.every(pollEvery).listen((_) => _poll()))
+      ..add(
+        _connectivity.onChanged.listen((online) {
+          if (online) unawaited(syncAll());
+        }),
+      );
+    unawaited(syncAll());
+  }
+
+  Future<void> stop() async {
+    await Future.wait([
+      for (final s in [..._subs, ..._signals.values]) s.cancel(),
+    ]);
+    _subs.clear();
+    _signals.clear();
+    _signalUp.clear();
+  }
+
+  @override
   Future<void> syncAll() async {
     await Future.wait([
       for (final account in await _store.accounts())
         // A Da ricollegare Account stops syncing until the user consents again.
-        if (account.status == AccountStatus.attivo)
-          _sync(account.id, _provider(account)),
+        if (account.status == AccountStatus.attivo) _sync(account),
     ]);
+  }
+
+  Future<void> _poll() async {
+    await Future.wait([
+      for (final account in await _store.accounts())
+        if (account.status == AccountStatus.attivo &&
+            (!_signalUp.contains(account.id) || _retry.contains(account.id)))
+          _sync(account),
+    ]);
+  }
+
+  /// One change-signal subscription per attivo Account.
+  void _watchSignals(List<Account> accounts) {
+    final attivi = {
+      for (final a in accounts)
+        if (a.status == AccountStatus.attivo) a.id: a,
+    };
+    for (final id in _signals.keys.toList()) {
+      if (!attivi.containsKey(id)) {
+        unawaited(_signals.remove(id)!.cancel());
+        _signalUp.remove(id);
+      }
+    }
+    for (final a in attivi.values) {
+      if (_signals.containsKey(a.id)) continue;
+      void down() => _signalUp.remove(a.id);
+      _signals[a.id] = _provider(a).changes.listen(
+        (signal) {
+          switch (signal) {
+            case ChangeSignal.up:
+              _signalUp.add(a.id);
+              // Whatever changed while it was down.
+              unawaited(_sync(a));
+            case ChangeSignal.changed:
+              unawaited(_sync(a));
+            case ChangeSignal.down:
+              down();
+          }
+        },
+        onError: (_) => down(),
+        onDone: down,
+      );
+    }
   }
 
   /// The Account's adapter, created on first use; tests register fakes by Account id beforehand.
@@ -38,14 +125,78 @@ class SyncEngine {
     return g<MailProvider>(instanceName: account.id);
   }
 
-  Future<void> _sync(String accountId, MailProvider provider) async {
-    switch (await provider.initialSync()) {
+  /// One sync at a time per Account; a request while one runs makes it run once more afterwards.
+  Future<void> _sync(Account account) {
+    final id = account.id;
+    if (_pausedUntil[id] case final until?) {
+      if (_clock.now().isBefore(until)) return Future.value();
+      _pausedUntil.remove(id);
+    }
+    if (_running[id] case final running?) {
+      _again.add(id);
+      return running;
+    }
+    return _running[id] = () async {
+      try {
+        do {
+          _again.remove(id);
+          await _syncOnce(id, _provider(account));
+        } while (_again.contains(id));
+      } finally {
+        _running.remove(id);
+      }
+    }();
+  }
+
+  Future<void> _syncOnce(String accountId, MailProvider provider) async {
+    final cursor = await _store.cursor(accountId);
+    var full = cursor == null;
+    Future<Result<SyncBatch>> initial() {
+      debugPrint('[sync] $accountId: initial sync start');
+      return provider.initialSync(
+        onPage: (messages, bodies) =>
+            _store.applyPage(accountId, messages, bodies),
+      );
+    }
+
+    if (!full) debugPrint('[sync] $accountId: incremental sync start');
+    var result = full
+        ? await initial()
+        : await provider.incrementalSync(cursor);
+    if (result case Err(failure: NotFoundFailure())) {
+      // Expired cursor: start over.
+      full = true;
+      result = await initial();
+    }
+    switch (result) {
       case Ok(:final value):
-        await _store.applySync(accountId, value, fullSnapshot: true);
-      case Err(failure: AuthFailure()):
-        await _store.setStatus(accountId, AccountStatus.daRicollegare);
-      case Err():
-        break;
+        _retry.remove(accountId);
+        // The cursor is saved here, from the complete batch: pages alone never save it.
+        await _store.applySync(accountId, value, fullSnapshot: full);
+        debugPrint(
+          '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
+          '${value.messages.length} messages, ${value.removedMessageIds.length} removed',
+        );
+      case Err(:final failure):
+        debugPrint('[sync] $accountId: failed, $failure');
+        if (failure case RateLimitFailure(:final retryAfter?)) {
+          _pausedUntil[accountId] = retryAfter;
+          debugPrint('[sync] $accountId: paused until $retryAfter');
+        }
+        if (failure is AuthFailure) {
+          _retry.remove(accountId);
+          await _store.setStatus(accountId, AccountStatus.daRicollegare);
+        } else {
+          // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
+          _retry.add(accountId);
+        }
     }
   }
+}
+
+@module
+abstract class SyncModule {
+  /// The UI sees the engine only through [MailSync].
+  @lazySingleton
+  MailSync mailSync(SyncEngine engine) => engine;
 }

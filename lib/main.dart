@@ -37,10 +37,22 @@ class PostinoApp extends StatefulWidget {
 }
 
 class _PostinoAppState extends State<PostinoApp> {
+  late final AppLifecycleListener _lifecycle;
+
   @override
   void initState() {
     super.initState();
-    unawaited(getIt<SyncEngine>().syncAll());
+    getIt<SyncEngine>().start();
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(getIt<SyncEngine>().syncAll()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    unawaited(getIt<SyncEngine>().stop());
+    super.dispose();
   }
 
   @override

@@ -50,6 +50,8 @@ dependencies:
   http: ^1.6.0
   flutter_web_auth_2: ^5.1.0
   crypto: ^3.0.8
+  enough_mail: ^3.0.0
+  connectivity_plus: ^7.3.2
 
 dev_dependencies:
   flutter_test:

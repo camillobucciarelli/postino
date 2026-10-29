@@ -1,5 +1,5 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -110,9 +110,13 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
             child: ColoredBox(color: context.pc.borderSubtle),
           ),
           Expanded(
-            child: PostinoFadeThrough(
-              transitionKey: widget.detailKey ?? const _Empty(),
-              child: widget.detail ?? widget.empty,
+            // The empty state has no Scaffold of its own: without a Material its Text gets the debug yellow underline.
+            child: Material(
+              type: MaterialType.transparency,
+              child: PostinoFadeThrough(
+                transitionKey: widget.detailKey ?? const _Empty(),
+                child: widget.detail ?? widget.empty,
+              ),
             ),
           ),
         ],

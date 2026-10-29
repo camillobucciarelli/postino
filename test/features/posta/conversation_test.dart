@@ -2,6 +2,7 @@
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' show Material;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -108,7 +109,36 @@ Future<void> _open(WidgetTester tester, String latest) async {
   await tester.pumpAndSettle();
 }
 
+/// Every Text sits under a Material (else Flutter draws the debug yellow underline).
+void _expectAllTextInMaterial(WidgetTester tester) {
+  final texts = find.byType(Text).evaluate().toList();
+  expect(texts, isNotEmpty);
+  for (final e in texts) {
+    expect(
+      find.ancestor(
+        of: find.byWidget(e.widget),
+        matching: find.byType(Material),
+      ),
+      findsWidgets,
+      reason: 'Text "${(e.widget as Text).data}" has no Material ancestor',
+    );
+  }
+}
+
 void main() {
+  for (final size in [_desktop, _phone]) {
+    testWidgets(
+      'at ${size.width.toInt()}×${size.height.toInt()} all text of the Conversazione is under a Material',
+      (tester) async {
+        await _start(tester, size, _thread);
+        _expectAllTextInMaterial(tester);
+        await _open(tester, 'm3');
+        expect(find.byType(ConversationView), findsOneWidget);
+        _expectAllTextInMaterial(tester);
+      },
+    );
+  }
+
   testWidgets(
     'the list has one row per Conversazione, with its count and unread state',
     (tester) async {

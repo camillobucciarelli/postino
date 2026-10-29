@@ -1381,11 +1381,11 @@ abstract final class PostinoSize {
   /// Da qui: lista + dettaglio (tablet). Window size class “medium”.
   static const double breakpointMedium = 600.0;
 
-  /// Da qui: drawer fisso + lista + dettaglio. Size class “expanded”.
+  /// Da qui: drawer fisso + lista. Size class “expanded”.
   static const double breakpointExpanded = 840.0;
 
-  /// Da qui: lista larga e dettaglio a misura piena.
-  static const double breakpointLarge = 1200.0;
+  /// Da qui: drawer fisso + lista + dettaglio affiancato.
+  static const double breakpointLarge = 1400.0;
 }
 
 abstract final class PostinoBorder {

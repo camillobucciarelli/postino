@@ -60,7 +60,7 @@ class _PostinoAppState extends State<PostinoApp> {
     return MaterialApp.router(
       routerConfig: Routefly.routerConfig(
         routes: routes,
-        initialPath: routePaths.posta,
+        initialPath: routePaths.posta.path,
       ),
       theme: PostinoTheme.light(),
       darkTheme: PostinoTheme.dark(),

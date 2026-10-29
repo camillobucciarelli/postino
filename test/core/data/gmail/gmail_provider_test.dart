@@ -316,7 +316,8 @@ void main() {
       expect(batch.cursor, '4242');
       expect(
         batch.labels.map((l) => (l.id, l.name)),
-        containsAll([(inboxLabelId, 'INBOX'), ('Label_12', 'Viaggi')]),
+        [('Label_12', 'Viaggi')],
+        reason: 'user labels only: INBOX and the other system ones are not Etichette',
       );
       final after = _now.subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
       final lists = g.urls.where((u) => u.path.endsWith('/messages'));

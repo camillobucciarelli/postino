@@ -1,6 +1,8 @@
 {
   "appTitle": "Postino",
   "postaUnificata": "All inboxes",
+  "postaInArrivo": "Inbox",
+  "etichette": "Labels",
   "onboarding": {
     "title": "Welcome to Postino",
     "body": "Connect your Gmail mailbox to get started.",

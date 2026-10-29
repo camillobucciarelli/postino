@@ -54,6 +54,11 @@ class FakeMailProvider implements MailProvider {
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
   final sent = <OutgoingMessage>[];
+
+  /// The Account's Etichette; same as the recorded Gmail fixture by default.
+  final labels = [
+    const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
+  ];
   final drafts = <String, OutgoingMessage>{};
 
   /// What the sync engine asked for: initial syncs, and the delta of the last incremental one.
@@ -80,6 +85,7 @@ class FakeMailProvider implements MailProvider {
     _rateLimited = on;
     _retryAfter = retryAfter;
   }
+
   void breakAuth() => _authBroken = true;
   void restoreAuth() => _authBroken = false;
 
@@ -135,9 +141,7 @@ class FakeMailProvider implements MailProvider {
       return SyncBatch(
         cursor: '$_version',
         messages: _messages.values.toList(),
-        labels: const [
-          Label(id: inboxLabelId, name: 'INBOX', kind: LabelKind.etichetta),
-        ],
+        labels: labels,
         bodies: _inboxBodies(_messages.values),
       );
     });

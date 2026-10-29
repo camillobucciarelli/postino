@@ -1,6 +1,8 @@
 {
   "appTitle": "Postino",
   "postaUnificata": "Posta unificata",
+  "postaInArrivo": "Posta in arrivo",
+  "etichette": "Etichette",
   "onboarding": {
     "title": "Benvenuto in Postino",
     "body": "Collega la tua casella Gmail per iniziare.",

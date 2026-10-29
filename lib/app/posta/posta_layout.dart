@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../main.dart' show routePaths;
 import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
 import '../../features/posta/presentation/offline_indicator.dart';
-import '../../features/posta/presentation/unified_inbox.dart';
+import '../../features/posta/presentation/account_list.dart';
+import '../../features/posta/presentation/message_list.dart';
 import '../../i18n/strings.g.dart';
 
 /// Layout of `/posta`: child routes render in the [RouterOutlet]; with no child
@@ -32,7 +34,12 @@ class PostaLayout extends StatelessWidget {
               child: Text(context.t.postaUnificata),
             ),
             const ReconnectBanners(),
-            const Expanded(child: UnifiedInbox()),
+            AccountList(
+              onOpen: (id) => Routefly.push(
+                routePaths.posta.$accountId.path.changes({'accountId': id}),
+              ),
+            ),
+            Expanded(child: MessageList(watch: (r) => r.watchUnifiedInbox())),
           ],
         ),
       ),

@@ -11,4 +11,10 @@ class InboxEntry {
 abstract interface class InboxRepository {
   /// Posta unificata: inbox of every Account, newest first; re-emits after each write.
   Stream<List<InboxEntry>> watchUnifiedInbox();
+
+  /// Messages of one Account carrying [labelId] ([inboxLabelId] for its inbox), newest first.
+  Stream<List<InboxEntry>> watchMessages(String accountId, String labelId);
+
+  /// The Etichette of one Account, by name; never those of another.
+  Stream<List<Label>> watchLabels(String accountId);
 }

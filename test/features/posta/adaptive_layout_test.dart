@@ -46,7 +46,7 @@ void main() {
   testWidgets(
     'from 840 the drawer is docked beside the list, with no menu, and still navigates',
     (tester) async {
-      await _start(tester, const Size(1280, 800));
+      await _start(tester, const Size(1600, 900));
       final sidebar = find.byType(PostinoNavigationDrawer);
       expect(sidebar, findsOneWidget);
       expect(tester.getSize(sidebar).width, PostinoSize.sidebarWidth);
@@ -72,7 +72,7 @@ void main() {
   testWidgets(
     'docked, navigating replaces only the content: the drawer State survives',
     (tester) async {
-      await _start(tester, const Size(1280, 800));
+      await _start(tester, const Size(1600, 900));
       State drawer() => tester.state(find.byType(PostaDrawer));
       final first = drawer();
       Future<void> go(String key) async {

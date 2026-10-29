@@ -57,6 +57,9 @@ class FakeMailProvider implements MailProvider {
 
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
+
+  /// While set, [fetchConversation] and [setRead] answer only once it completes: in-flight requests.
+  Completer<void>? holdConversation, holdRead;
   final sent = <OutgoingMessage>[];
 
   /// While set, [setRead] fails as offline even though the syncs work: a passing replay failure.
@@ -208,28 +211,34 @@ class FakeMailProvider implements MailProvider {
   }
 
   @override
-  Future<Result<List<Message>>> fetchConversation(
-    String conversationId,
-  ) async => _guard(
-    () => [
-      for (final m in [..._old.values, ..._messages.values])
-        if (m.conversationId == conversationId) m,
-    ],
-  );
+  Future<Result<List<Message>>> fetchConversation(String conversationId) async {
+    // Answered now, delivered after [holdConversation]: an in-flight snapshot.
+    final result = _guard(
+      () => [
+        for (final m in [..._old.values, ..._messages.values])
+          if (m.conversationId == conversationId) m,
+      ],
+    );
+    await holdConversation?.future;
+    return result;
+  }
 
   @override
   Future<Result<void>> setRead(
     List<String> messageIds, {
     required bool read,
-  }) async => failSetRead
-      ? const Err(OfflineFailure())
-      : _guard(() {
-          readCalls.add((messageIds, read));
-          for (final id in messageIds) {
-            if (_old[id] case final m?) _old[id] = withRead(m, read);
-            if (_messages[id] case final m?) deliver(withRead(m, read));
-          }
-        });
+  }) async {
+    await holdRead?.future;
+    return failSetRead
+        ? const Err(OfflineFailure())
+        : _guard(() {
+            readCalls.add((messageIds, read));
+            for (final id in messageIds) {
+              if (_old[id] case final m?) _old[id] = withRead(m, read);
+              if (_messages[id] case final m?) deliver(withRead(m, read));
+            }
+          });
+  }
 
   @override
   Future<Result<Uint8List>> fetchAttachment(

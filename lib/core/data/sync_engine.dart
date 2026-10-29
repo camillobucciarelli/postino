@@ -35,8 +35,13 @@ class SyncEngine implements MailSync {
 
   /// Accounts the Provider blocked until a given time: no sync before it.
   final _pausedUntil = <String, DateTime>{};
-  final _running = <String, Future<void>>{};
-  final _again = <String>{};
+
+  /// Per Account, the tail of its serial queue: syncs, Conversazione hydrations and replays
+  /// run one after the other, so none applies a Provider answer older than one already applied.
+  final _tail = <String, Future<void>>{};
+
+  /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
+  final _queuedSync = <String, Future<void>>{};
 
   /// Starts listening to change signals, the poll and the network, then syncs everything.
   void start() {
@@ -79,20 +84,20 @@ class SyncEngine implements MailSync {
     final provider = _provider(account);
     // Read here at once, offline too; the Provider hears it from the queue.
     await _store.markConversationRead(accountId, conversationId);
-    // Inviati and messages older than the sync window are not in the database yet.
-    // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-    final fetched = await provider.fetchConversation(conversationId);
-    if (fetched case Ok(:final value)) {
-      await _store.applyPage(accountId, value, const {});
-      await _store.markConversationRead(accountId, conversationId);
-    }
-    // A running sync may still apply a batch fetched before the read: the intent must outlive it,
-    // so the sync replays it after that batch, on its next round.
-    if (_running.containsKey(accountId)) {
-      _again.add(accountId);
-    } else if (!await _replay(accountId, provider)) {
-      _retry.add(accountId);
-    }
+    // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
+    // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
+    final fetched = await _serial(accountId, () async {
+      // Inviati and messages older than the sync window are not in the database yet.
+      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
+      final fetched = await provider.fetchConversation(conversationId);
+      if (fetched case Ok(:final value)) {
+        await _store.applyPage(accountId, value, const {});
+        await _store.markConversationRead(accountId, conversationId);
+      }
+      // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
+      if (!await _replay(accountId, provider)) _retry.add(accountId);
+      return fetched;
+    });
     return switch (fetched) {
       Ok() => const Ok(null),
       Err(:final failure) => Err(failure),
@@ -116,22 +121,17 @@ class SyncEngine implements MailSync {
   Future<Account?> _account(String id) async =>
       (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
-  final _replaying = <String, Future<bool>>{};
+  /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
+  Future<T> _serial<T>(String accountId, Future<T> Function() op) {
+    final run = (_tail[accountId] ?? Future<void>.value()).then((_) => op());
+    _tail[accountId] = run.then<void>((_) {}, onError: (_) {});
+    return run;
+  }
 
   /// Sends the offline queue (ADR 0008); what fails stays queued and the result is false,
   /// so the poll retries the Account even while its change signal is up.
-  /// One replay at a time per Account: a second caller waits for the running one, never resends.
-  Future<bool> _replay(String accountId, MailProvider provider) =>
-      _replaying[accountId] ??=
-          _replayOnce(
-            accountId,
-            provider,
-            // A block body: returning the removed future would make whenComplete wait on itself.
-          ).whenComplete(() {
-            _replaying.remove(accountId);
-          });
-
-  Future<bool> _replayOnce(String accountId, MailProvider provider) async {
+  /// Called only from inside the Account's serial queue.
+  Future<bool> _replay(String accountId, MailProvider provider) async {
     var done = true;
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
@@ -206,27 +206,17 @@ class SyncEngine implements MailSync {
     return g<MailProvider>(instanceName: account.id);
   }
 
-  /// One sync at a time per Account; a request while one runs makes it run once more afterwards.
+  /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
   Future<void> _sync(Account account) {
     final id = account.id;
     if (_pausedUntil[id] case final until?) {
       if (_clock.now().isBefore(until)) return Future.value();
       _pausedUntil.remove(id);
     }
-    if (_running[id] case final running?) {
-      _again.add(id);
-      return running;
-    }
-    return _running[id] = () async {
-      try {
-        do {
-          _again.remove(id);
-          await _syncOnce(id, _provider(account));
-        } while (_again.contains(id));
-      } finally {
-        _running.remove(id);
-      }
-    }();
+    return _queuedSync[id] ??= _serial(id, () {
+      _queuedSync.remove(id);
+      return _syncOnce(id, _provider(account));
+    });
   }
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {

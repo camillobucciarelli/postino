@@ -36,10 +36,12 @@ void main() {
     final sync = engine.syncAll();
     await pumpEventQueue();
 
-    await engine.openConversation('a', 't-1');
+    // The hydration queues behind the sync; the read is local at once.
+    final open = engine.openConversation('a', 't-1');
+    await pumpEventQueue();
     a.hold = null;
     slow.complete();
-    await sync;
+    await (sync, open).wait;
 
     final [(:message, body: _)] = await getIt<InboxRepository>()
         .watchConversation('a', 't-1')
@@ -225,5 +227,38 @@ void main() {
     h.clock.advance(pollEvery);
     await pumpEventQueue();
     expect(a.readCalls.map((c) => (c.$1.join(), c.$2)), [('1', true)]);
+  });
+
+  test('a Conversazione opened while another one\'s read is being sent is read on the Provider too, without a poll', () async {
+    final engine = GetIt.I<SyncEngine>();
+    final sending = a.holdRead = Completer<void>();
+    final first = engine.openConversation('a', 't-1');
+    await pumpEventQueue();
+    expect(a.readCalls, isEmpty); // the read of t-1 is in flight
+
+    final second = engine.openConversation('a', 't-2');
+    await pumpEventQueue();
+    a.holdRead = null;
+    sending.complete();
+    await (first, second).wait;
+
+    expect(a.readCalls.map((c) => c.$1.join()), ['1', '2']);
+    expect(await GetIt.I<MailStore>().pendingIntents('a'), isEmpty);
+  });
+
+  test('a Conversazione snapshot fetched before a deletion does not bring the message back', () async {
+    final engine = GetIt.I<SyncEngine>();
+    final fetching = a.holdConversation = Completer<void>();
+    final open = engine.openConversation('a', 't-2'); // snapshot still has 2
+    await pumpEventQueue();
+
+    a.removeRemotely('2');
+    final sync = engine.syncAll();
+    await pumpEventQueue();
+    a.holdConversation = null;
+    fetching.complete();
+    await (open, sync).wait;
+
+    expect(await inbox(), ['a:1', 'b:1']);
   });
 }

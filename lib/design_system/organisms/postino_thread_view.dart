@@ -6,14 +6,13 @@ import '../atoms/postino_avatar.dart';
 import '../atoms/postino_button.dart';
 import '../atoms/postino_icon.dart';
 import '../atoms/postino_label_chip.dart';
-import '../molecules/postino_html_card.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
-/// everything but the HTML bodies at most `reading-max-width` wide, centered.
+/// at most `reading-max-width` wide.
 class PostinoThreadView extends StatelessWidget {
   const PostinoThreadView({
     super.key,
@@ -40,101 +39,88 @@ class PostinoThreadView extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     final important = importantLabel;
-    return ListView(
-      padding: const EdgeInsets.only(bottom: PostinoSpacing.s4),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PostinoSpacing.s4,
-            PostinoSpacing.s4,
-            PostinoSpacing.s4,
-            PostinoSpacing.s3,
-          ),
-          child: _Reading(
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: PostinoSpacing.s2,
-              children: [
-                Semantics(
-                  header: true,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(text: subject),
-                        if (important != null) ...[
-                          const TextSpan(text: ' '),
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: PostinoIcon(
-                              PostinoIcons.important,
-                              key: const ValueKey('important'),
-                              color: c.star,
-                              filled: true,
-                              label: important,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: PostinoSize.readingMaxWidth,
+        ),
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: PostinoSpacing.s4),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                PostinoSpacing.s4,
+                PostinoSpacing.s4,
+                PostinoSpacing.s4,
+                PostinoSpacing.s3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: PostinoSpacing.s2,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: subject),
+                          if (important != null) ...[
+                            const TextSpan(text: ' '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: PostinoIcon(
+                                PostinoIcons.important,
+                                key: const ValueKey('important'),
+                                color: c.star,
+                                filled: true,
+                                label: important,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      style: PostinoText.title.copyWith(color: c.ink),
+                    ),
+                  ),
+                  Wrap(
+                    spacing: PostinoSpacing.s2,
+                    runSpacing: PostinoSpacing.s2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: PostinoSpacing.s2,
+                        children: [
+                          PostinoAccountMark(
+                            color: account.color,
+                            initial: account.initial,
+                            size: PostinoSize.accountBadge,
+                          ),
+                          Flexible(
+                            child: Text(
+                              accountName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: PostinoText.labelSm.copyWith(
+                                color: c.inkMuted,
+                              ),
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                    style: PostinoText.title.copyWith(color: c.ink),
+                      ),
+                      for (final l in labels) PostinoLabelChip(name: l),
+                    ],
                   ),
-                ),
-                Wrap(
-                  spacing: PostinoSpacing.s2,
-                  runSpacing: PostinoSpacing.s2,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: PostinoSpacing.s2,
-                      children: [
-                        PostinoAccountMark(
-                          color: account.color,
-                          initial: account.initial,
-                          size: PostinoSize.accountBadge,
-                        ),
-                        Flexible(
-                          child: Text(
-                            accountName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: PostinoText.labelSm.copyWith(
-                              color: c.inkMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    for (final l in labels) PostinoLabelChip(name: l),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            ...messages,
+          ],
         ),
-        ...messages,
-      ],
+      ),
     );
   }
-}
-
-/// The reading column: at most `reading-max-width` wide counting the page's 16 padding, centered.
-/// Everything but an HTML body goes in it; [PostinoHtmlCard]s take the whole pane.
-class _Reading extends StatelessWidget {
-  const _Reading(this.child);
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.topCenter,
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: PostinoSize.readingMaxWidth - 2 * PostinoSpacing.s4,
-      ),
-      child: child,
-    ),
-  );
 }
 
 /// One row of the details of a message (“Da”, “A”, “Data”, “Ricevuto su”); [account] puts its mark before [value].
@@ -216,9 +202,6 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
     final expanded = w.expanded;
     final avatar = expanded ? PostinoSize.avatarMd : PostinoSize.controlSm;
     final recipients = w.recipients;
-    // An HTML part takes the whole pane; text, controls and the header stay in the reading column.
-    Widget lane(Widget part, [Widget? framed]) =>
-        part is PostinoHtmlCard ? (framed ?? part) : _Reading(framed ?? part);
     final header = InkWell(
       onTap: w.onToggle,
       child: ConstrainedBox(
@@ -232,66 +215,62 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                   horizontal: PostinoSpacing.s4,
                   vertical: PostinoSpacing.s3,
                 ),
-          child: _Reading(
-            Row(
-              crossAxisAlignment: expanded
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.center,
-              spacing: PostinoSpacing.s3,
-              children: [
-                PostinoAvatar(name: w.sender, size: avatar),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: w.sender),
-                            if (expanded && w.address != null)
-                              TextSpan(
-                                text: ' ${w.address}',
-                                style: PostinoText.caption.copyWith(
-                                  color: c.inkMuted,
-                                ),
+          child: Row(
+            crossAxisAlignment: expanded
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            spacing: PostinoSpacing.s3,
+            children: [
+              PostinoAvatar(name: w.sender, size: avatar),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: w.sender),
+                          if (expanded && w.address != null)
+                            TextSpan(
+                              text: ' ${w.address}',
+                              style: PostinoText.caption.copyWith(
+                                color: c.inkMuted,
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: PostinoText.sender.copyWith(color: c.ink),
+                    ),
+                    if (!expanded)
+                      Text(
+                        w.preview,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: PostinoText.sender.copyWith(color: c.ink),
+                        style: PostinoText.preview.copyWith(color: c.inkMuted),
+                      )
+                    else if (recipients != null)
+                      _Recipients(
+                        label: recipients,
+                        open: _details,
+                        onTap: w.details.isEmpty
+                            ? null
+                            : () => setState(() => _details = !_details),
                       ),
-                      if (!expanded)
-                        Text(
-                          w.preview,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: PostinoText.preview.copyWith(
-                            color: c.inkMuted,
-                          ),
-                        )
-                      else if (recipients != null)
-                        _Recipients(
-                          label: recipients,
-                          open: _details,
-                          onTap: w.details.isEmpty
-                              ? null
-                              : () => setState(() => _details = !_details),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: expanded ? PostinoSpacing.s0_5 : 0,
-                  ),
-                  child: Text(
-                    w.time,
-                    style: PostinoText.meta.copyWith(color: c.inkSubtle),
-                  ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  top: expanded ? PostinoSpacing.s0_5 : 0,
                 ),
-              ],
-            ),
+                child: Text(
+                  w.time,
+                  style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -324,46 +303,41 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       header,
-                      if (_details && w.details.isNotEmpty)
-                        _Reading(_Details(w.details)),
+                      if (_details && w.details.isNotEmpty) _Details(w.details),
                       if (w.notices.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(
                             top: PostinoSpacing.s4,
                           ),
-                          child: _Reading(
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              spacing: PostinoSpacing.s3,
-                              children: w.notices,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: PostinoSpacing.s3,
+                            children: w.notices,
                           ),
                         ),
                       Padding(
                         padding: const EdgeInsets.only(top: PostinoSpacing.s4),
-                        child: lane(w.body),
+                        child: w.body,
                       ),
                       if (w.signature case final signature?)
                         Padding(
                           padding: const EdgeInsets.only(
                             top: PostinoSpacing.s4,
                           ),
-                          child: lane(signature),
+                          child: signature,
                         ),
                       if (w.quote case final quote?) ...[
                         Padding(
                           padding: const EdgeInsets.only(
                             top: PostinoSpacing.s2,
                           ),
-                          child: _Reading(
-                            _QuoteToggle(
-                              label: w.quoteLabel,
-                              open: _quote,
-                              onTap: () => setState(() => _quote = !_quote),
-                            ),
+                          child: _QuoteToggle(
+                            label: w.quoteLabel,
+                            open: _quote,
+                            onTap: () => setState(() => _quote = !_quote),
                           ),
                         ),
-                        if (_quote) lane(quote, _Quote(quote)),
+                        if (_quote) _Quote(quote),
                       ],
                     ],
                   ),

@@ -192,7 +192,7 @@ void main() {
   );
 
   _test(
-    'HTML bodies take the whole pane, header and text stay in the reading column',
+    'the Conversazione is one column of at most reading-max-width, centered',
     (tester) async {
       await _start(tester);
       await _open(tester, 'w1');
@@ -201,28 +201,20 @@ void main() {
         tester.view.physicalSize = Size(width, 1600);
         await tester.pumpAndSettle();
         final pane = tester.getRect(find.byType(PostinoThreadView));
-        final reading =
-            math.min(pane.width, PostinoSize.readingMaxWidth) -
-            2 * PostinoSpacing.s4;
+        final column = math.min(pane.width, PostinoSize.readingMaxWidth);
         for (final id in ['w0', 'w1']) {
           final card = _in(id, find.byType(PostinoHtmlCard));
           expect(
             tester.getSize(card).width,
-            pane.width - 2 * PostinoSpacing.s4,
+            column - 2 * PostinoSpacing.s4,
+            reason: '$id at $width',
+          );
+          expect(
+            tester.getCenter(card).dx,
+            pane.center.dx,
             reason: '$id at $width',
           );
         }
-        // The header (sender row) is the reading column, centered.
-        final header = tester.getRect(
-          find
-              .descendant(
-                of: find.byKey(const ValueKey('message-w1')),
-                matching: find.byType(Row),
-              )
-              .first,
-        );
-        expect(header.width, reading, reason: 'header at $width');
-        expect(header.center.dx, pane.center.dx, reason: 'header at $width');
         // The newsletter scales to fit: never wider than its card.
         final text = tester.getRect(
           find.textContaining('Newsletter larga', findRichText: true),

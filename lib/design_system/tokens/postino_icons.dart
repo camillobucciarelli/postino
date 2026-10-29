@@ -54,6 +54,12 @@ abstract final class PostinoIcons {
   static const arrowLeft = PostinoIconData(['M20 12H4', 'M10 6l-6 6 6 6']);
   static const chevronDown = PostinoIconData(['M6 9.5l6 6 6-6']);
   static const chevronLeft = PostinoIconData(['M14.5 6l-6 6 6 6']);
+  static const important = PostinoIconData(['M4 5h11l5 7-5 7H4l4-7z']);
+  static const more = PostinoIconData([
+    'M5.5 12h.01',
+    'M12 12h.01',
+    'M18.5 12h.01',
+  ]);
   // ponytail: drawn here in the set's style, not copied from the Icon card; swap in the card's when it differs.
   static const image = PostinoIconData([
     'M4 5h16v14H4z',

@@ -162,15 +162,26 @@ final _components = <String, Widget Function()>{
       ),
       PostinoThreadMessage(
         sender: 'Ada Okafor',
+        address: 'ada@okafor-legal.it',
         time: '09:42',
         preview: 'Sì, alle 20.',
-        recipients: 'a bruno@example.com',
+        recipients: 'a Bruno Verdi, cc Marco Lenti',
         unread: true,
         expanded: true,
         onToggle: () {},
         body: const PostinoMessageBody(
           text: 'Ciao Bruno,\nsì, alle 20 da Mario. Porto io il dolce.',
         ),
+        signature: const PostinoMessageBody(
+          text: '-- \nAda Okafor\nOkafor Legal · Via Dante 12, Milano',
+          quiet: true,
+        ),
+        quote: const PostinoMessageBody(
+          text:
+              'Il giorno lun 5 ott, Bruno Verdi ha scritto:\n> Ti va una cena?',
+          quiet: true,
+        ),
+        quoteLabel: 'Mostra testo citato',
       ),
       PostinoThreadMessage(
         sender: 'Bruno Verdi',
@@ -186,6 +197,7 @@ final _components = <String, Widget Function()>{
     height: 220,
     child: PostinoThreadView(
       subject: 'Revisione trimestrale: numeri finali',
+      importantLabel: 'Importante',
       account: _sky,
       accountName: 'lavoro@example.com',
       labels: const ['Progetti', 'Fatture'],

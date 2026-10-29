@@ -17,11 +17,15 @@ class PostinoHtmlCard extends StatelessWidget {
     required this.html,
     required this.onTapUrl,
     this.contentWidth,
+    this.quiet = false,
   });
 
   final String html;
   final ValueChanged<String> onTapUrl;
   final double? contentWidth;
+
+  /// A signature or a quote: `body-quote` in `ink-muted` where the sender set no style.
+  final bool quiet;
 
   static final _paper = PostinoTheme.light();
 
@@ -33,7 +37,9 @@ class PostinoHtmlCard extends StatelessWidget {
         final c = context.pc;
         final content = HtmlWidget(
           html,
-          textStyle: PostinoText.body.copyWith(color: c.ink),
+          textStyle: quiet
+              ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
+              : PostinoText.body.copyWith(color: c.ink),
           onTapUrl: (url) {
             onTapUrl(url);
             return true;

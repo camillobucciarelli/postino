@@ -10,8 +10,9 @@ import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
-/// A Conversazione: [subject] in `title`, the Account that received it, then its [messages]
-/// (newest first, [PostinoThreadMessage]); at most `reading-max-width` wide.
+/// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
+/// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
+/// at most `reading-max-width` wide.
 class PostinoThreadView extends StatelessWidget {
   const PostinoThreadView({
     super.key,
@@ -20,6 +21,7 @@ class PostinoThreadView extends StatelessWidget {
     required this.accountName,
     required this.messages,
     this.labels = const [],
+    this.importantLabel,
   });
 
   final String subject;
@@ -30,9 +32,13 @@ class PostinoThreadView extends StatelessWidget {
   /// Names of the etichette of the Conversazione, as [PostinoLabelChip]s after the Account.
   final List<String> labels;
 
+  /// «Importante»: the Conversazione is important; the mark after the subject says it to screen readers.
+  final String? importantLabel;
+
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
+    final important = importantLabel;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -55,8 +61,25 @@ class PostinoThreadView extends StatelessWidget {
                 children: [
                   Semantics(
                     header: true,
-                    child: Text(
-                      subject,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: subject),
+                          if (important != null) ...[
+                            const TextSpan(text: ' '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: PostinoIcon(
+                                PostinoIcons.important,
+                                key: const ValueKey('important'),
+                                color: c.star,
+                                filled: true,
+                                label: important,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       style: PostinoText.title.copyWith(color: c.ink),
                     ),
                   ),
@@ -110,9 +133,10 @@ class PostinoMessageDetail {
 }
 
 /// One message of a Conversazione. Collapsed: avatar 32, sender, one line of [preview], time, at least 48 high.
-/// Expanded: avatar 40, sender, [recipients] (a tap opens the [details]), time, then the [notices]
-/// (Banner…) and the [body]. A tap on the header toggles, in `duration-thread-expand` with
-/// `easing-emphasized-decelerate`.
+/// Expanded: avatar 40, sender and its [address], [recipients] (a tap opens the [details]), time,
+/// then the [notices] (Banner…), the [body], the [signature] and the [quote] folded behind «…»
+/// ([quoteLabel] for screen readers; a tap shows it, another hides it). A tap on the header toggles,
+/// in `duration-thread-expand` with `easing-emphasized-decelerate`.
 class PostinoThreadMessage extends StatefulWidget {
   const PostinoThreadMessage({
     super.key,
@@ -126,9 +150,16 @@ class PostinoThreadMessage extends StatefulWidget {
     this.details = const [],
     this.notices = const [],
     this.unread = false,
+    this.address,
+    this.signature,
+    this.quote,
+    this.quoteLabel = '',
   });
 
   final String sender;
+
+  /// Beside the sender when expanded, in `ink-muted`; null when [sender] is already the address.
+  final String? address;
 
   /// Already formatted, like the list's.
   final String time;
@@ -147,12 +178,22 @@ class PostinoThreadMessage extends StatefulWidget {
   final List<Widget> notices;
   final bool unread;
 
+  /// Under the body, in `body-quote` `ink-muted` ([PostinoMessageBody.quiet], [PostinoHtmlCard.quiet]).
+  final Widget? signature;
+
+  /// The quoted text (and a signature seen before), hidden until «…» is tapped.
+  final Widget? quote;
+  final String quoteLabel;
+
   @override
   State<PostinoThreadMessage> createState() => _PostinoThreadMessageState();
 }
 
 class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
   bool _details = false;
+
+  /// The quote shown: per message, in memory.
+  bool _quote = false;
 
   @override
   Widget build(BuildContext context) {
@@ -185,8 +226,19 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      w.sender,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: w.sender),
+                          if (expanded && w.address != null)
+                            TextSpan(
+                              text: ' ${w.address}',
+                              style: PostinoText.caption.copyWith(
+                                color: c.inkMuted,
+                              ),
+                            ),
+                        ],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: PostinoText.sender.copyWith(color: c.ink),
@@ -267,6 +319,26 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                         padding: const EdgeInsets.only(top: PostinoSpacing.s4),
                         child: w.body,
                       ),
+                      if (w.signature case final signature?)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: PostinoSpacing.s4,
+                          ),
+                          child: signature,
+                        ),
+                      if (w.quote case final quote?) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: PostinoSpacing.s2,
+                          ),
+                          child: _QuoteToggle(
+                            label: w.quoteLabel,
+                            open: _quote,
+                            onTap: () => setState(() => _quote = !_quote),
+                          ),
+                        ),
+                        if (_quote) _Quote(quote),
+                      ],
                     ],
                   ),
                 )
@@ -275,6 +347,88 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
       ),
     );
   }
+}
+
+/// «…»: shows or hides the quoted text. A `surface-pressed` pill 32×20, in a 48 high target.
+class _QuoteToggle extends StatelessWidget {
+  const _QuoteToggle({
+    required this.label,
+    required this.open,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.pc;
+    return Semantics(
+      button: true,
+      expanded: open,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const ValueKey('quote-toggle'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: PostinoSize.touchTargetAndroid,
+          height: PostinoSize.touchTargetAndroid,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: c.surfacePressed,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(PostinoRadius.xs),
+                ),
+              ),
+              child: SizedBox(
+                width: PostinoSize.controlSm,
+                height: PostinoSize.iconMd,
+                child: Center(
+                  child: PostinoIcon(
+                    PostinoIcons.more,
+                    size: PostinoSize.iconSm,
+                    color: c.inkMuted,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The quoted text once shown: a `border-strong` rule on its left, `body-quote` in `ink-muted`.
+class _Quote extends StatelessWidget {
+  const _Quote(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: PostinoSpacing.s1),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: context.pc.borderStrong,
+            // The DS card's 2px rule: the focus ring is the system's 2px stroke.
+            width: PostinoBorder.borderWidthFocus,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(left: PostinoSpacing.s3),
+        child: child,
+      ),
+    ),
+  );
 }
 
 /// “a me, cc Marco”: opens the details when there are some.
@@ -406,10 +560,13 @@ class _Details extends StatelessWidget {
 /// The body of an expanded message: its [text] in `body`, selectable;
 /// or, while it is not there, a quiet note and maybe a retry.
 class PostinoMessageBody extends StatelessWidget {
-  const PostinoMessageBody({super.key, required String this.text})
-    : note = null,
-      actionLabel = null,
-      onAction = null;
+  const PostinoMessageBody({
+    super.key,
+    required String this.text,
+    this.quiet = false,
+  }) : note = null,
+       actionLabel = null,
+       onAction = null;
 
   /// No body yet: [note] says why (“Caricamento…”, “Corpo non disponibile offline”), [actionLabel] retries.
   const PostinoMessageBody.missing({
@@ -417,18 +574,27 @@ class PostinoMessageBody extends StatelessWidget {
     required String this.note,
     this.actionLabel,
     this.onAction,
-  }) : text = null;
+  }) : text = null,
+       quiet = false;
 
   final String? text;
   final String? note;
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// A signature or a quote: `body-quote` in `ink-muted`.
+  final bool quiet;
+
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
     if (text case final t?) {
-      return SelectableText(t, style: PostinoText.body.copyWith(color: c.ink));
+      return SelectableText(
+        t,
+        style: quiet
+            ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
+            : PostinoText.body.copyWith(color: c.ink),
+      );
     }
     final label = actionLabel;
     return Row(

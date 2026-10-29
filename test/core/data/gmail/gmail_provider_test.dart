@@ -453,6 +453,28 @@ void main() {
       });
     });
 
+    group('an HTML attachment next to a plain text body', () {
+      const f6 = '18f3a2b4c5d6e7f6';
+      const text =
+          'Ciao Bruno,\r\nil verbale della riunione è in allegato.\r\n';
+      String route(http.Request r, String path) => switch (path) {
+        'profile' => 'profile',
+        'labels' => 'labels',
+        'messages' => 'messages_f6',
+        'messages/$f6' => 'message_f6_html_attachment',
+        _ => fail('unexpected $path'),
+      };
+
+      test('is not the body when syncing the inbox', () async {
+        final batch = _ok(await _Recorded(route).provider.initialSync());
+        expect(batch.bodies, {f6: text});
+      });
+
+      test('is not the body from fetchBody', () async {
+        expect(_ok(await _Recorded(route).provider.fetchBody(f6)), text);
+      });
+    });
+
     test('a 404 on a body is NotFound', () async {
       final g = _Recorded((r, path) => 'not_found');
       expect(await g.provider.fetchBody(_f1), _err<NotFoundFailure>());

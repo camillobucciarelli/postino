@@ -298,8 +298,9 @@ class GmailProvider implements MailProvider {
     );
   }
 
-  /// The first [mime] part carrying its content, inline or by attachmentId.
+  /// The first [mime] part carrying its content, inline or by attachmentId; attachments are skipped.
   static Map<String, dynamic>? _part(Map<String, dynamic> part, String mime) {
+    if (_isAttachment(part)) return null;
     final body = part['body'] as Map?;
     if (part['mimeType'] == mime &&
         (body?['data'] != null || body?['attachmentId'] != null)) {
@@ -312,6 +313,14 @@ class GmailProvider implements MailProvider {
     }
     return null;
   }
+
+  static bool _isAttachment(Map<String, dynamic> part) =>
+      (part['filename'] as String? ?? '').isNotEmpty ||
+      [
+        for (final h in part['headers'] as List? ?? const [])
+          if ((h['name'] as String).toLowerCase() == 'content-disposition')
+            (h['value'] as String).toLowerCase(),
+      ].any((v) => v.startsWith('attachment'));
 
   /// Gmail HTML-escapes snippets.
   static String _unescape(String s) => s

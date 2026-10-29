@@ -1,0 +1,84 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f6",
+    "threadId": "18f3a2b4c5d6e7f6",
+    "labelIds": [
+      "INBOX"
+    ],
+    "snippet": "Ciao Bruno, il verbale della riunione è in allegato.",
+    "payload": {
+      "partId": "",
+      "filename": "",
+      "headers": [
+        {
+          "name": "From",
+          "value": "Ada Rossi <ada@gmail.com>"
+        },
+        {
+          "name": "To",
+          "value": "Bruno Verdi <bruno@example.com>"
+        },
+        {
+          "name": "Message-ID",
+          "value": "<CAG2y8Zl4d@mail.gmail.com>"
+        },
+        {
+          "name": "Subject",
+          "value": "Verbale riunione"
+        },
+        {
+          "name": "MIME-Version",
+          "value": "1.0"
+        },
+        {
+          "name": "Content-Type",
+          "value": "multipart/mixed; boundary=\"b1\""
+        }
+      ],
+      "mimeType": "multipart/mixed",
+      "body": {
+        "size": 0
+      },
+      "parts": [
+        {
+          "partId": "0",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain; charset=\"UTF-8\""
+            }
+          ],
+          "body": {
+            "size": 56,
+            "data": "Q2lhbyBCcnVubywNCmlsIHZlcmJhbGUgZGVsbGEgcml1bmlvbmUgw6ggaW4gYWxsZWdhdG8uDQo="
+          }
+        },
+        {
+          "partId": "1",
+          "mimeType": "text/html",
+          "filename": "verbale.html",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/html; charset=\"UTF-8\"; name=\"verbale.html\""
+            },
+            {
+              "name": "Content-Disposition",
+              "value": "attachment; filename=\"verbale.html\""
+            }
+          ],
+          "body": {
+            "size": 66,
+            "data": "PGh0bWw-PGJvZHk-PGgxPlZlcmJhbGU8L2gxPjxwPkJ1ZGdldCBhcHByb3ZhdG8uPC9wPjwvYm9keT48L2h0bWw-"
+          }
+        }
+      ]
+    },
+    "sizeEstimate": 2100,
+    "historyId": "4232",
+    "internalDate": "1793005364000"
+  }
+}

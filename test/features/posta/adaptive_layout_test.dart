@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
+import 'package:postino/features/posta/presentation/posta_drawer.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -15,7 +16,9 @@ Future<void> _start(WidgetTester tester, Size size) async {
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final h = await Harness.create();
-  (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
+  (await h.addAccount('a1'))
+    ..deliver(msg('x', subject: 'Da uno'))
+    ..deliver(msg('l', subject: 'In viaggio', labelIds: const ['Label_12']));
   (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
@@ -62,6 +65,25 @@ void main() {
       expect(find.text('Da uno'), findsOneWidget);
       expect(find.text('Da due'), findsNothing);
       expect(find.byType(PostinoNavigationDrawer), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'docked, navigating replaces only the content: the drawer State survives',
+    (tester) async {
+      await _start(tester, const Size(1280, 800));
+      State drawer() => tester.state(find.byType(PostaDrawer));
+      final first = drawer();
+      Future<void> go(String key) async {
+        await tester.tap(find.byKey(ValueKey(key)));
+        await tester.pumpAndSettle();
+        expect(drawer(), same(first), reason: 'after $key');
+      }
+
+      await go('account-a1');
+      await go('label-Label_12');
+      await go('account-a2');
+      await go('drawer-posta-unificata');
     },
   );
 }

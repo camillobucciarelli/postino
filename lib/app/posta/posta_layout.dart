@@ -20,16 +20,27 @@ class PostaLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     // Routefly.of subscribes to route changes; the last configuration is the active route.
     final own = Routefly.of(context).route.uri.path;
-    if (Routefly.currentOriginalPath != own) return const RouterOutlet();
+    final unified = Routefly.currentOriginalPath == own;
+    final uri = Routefly.currentUri;
+    // /posta/<account>[/etichetta/<label>]: the docked drawer reads its selection from the URL.
+    final seg = uri.pathSegments;
+    final accountId = !unified && seg.length > 1 ? seg[1] : null;
+    final labelId = !unified && seg.length > 3 ? seg[3] : null;
+    // One shell above the outlet: only its content is replaced on navigation.
     return OnboardingGate(
-      child: PostinoAdaptiveLayout(
-        appBar: const UnifiedAppBar(),
-        drawer: postaDrawer(),
-        banners: postaBanners,
-        body: MessageList(
-          watch: (r) => r.watchUnifiedInbox(),
-          showAccount: true,
-        ),
+      child: PostinoSidebarShell(
+        drawer: postaDrawer(accountId: accountId, labelId: labelId),
+        child: unified
+            ? PostinoAdaptiveLayout(
+                appBar: const UnifiedAppBar(),
+                drawer: postaDrawer(),
+                banners: postaBanners,
+                body: MessageList(
+                  watch: (r) => r.watchUnifiedInbox(),
+                  showAccount: true,
+                ),
+              )
+            : const RouterOutlet(),
       ),
     );
   }

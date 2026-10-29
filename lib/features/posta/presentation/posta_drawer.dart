@@ -35,12 +35,20 @@ class _PostaDrawerState extends State<PostaDrawer> {
   late final accounts = streamSignal(
     () => GetIt.I<AccountsRepository>().watchAccounts(),
   );
+  // The docked drawer outlives navigation: the open Account is a signal, the Etichette follow it.
+  late final openAccount = signal(widget.accountId);
   late final labels = streamSignal(
-    () => switch (widget.accountId) {
+    () => switch (openAccount.value) {
       final id? => GetIt.I<InboxRepository>().watchLabels(id),
       null => Stream.value(const <Label>[]),
     },
   );
+
+  @override
+  void didUpdateWidget(PostaDrawer old) {
+    super.didUpdateWidget(old);
+    openAccount.value = widget.accountId;
+  }
 
   @override
   void dispose() {

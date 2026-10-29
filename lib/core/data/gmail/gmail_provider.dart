@@ -401,7 +401,7 @@ class GmailProvider implements MailProvider {
     });
   }
 
-  /// The end of a temporary block: "Retry after <ISO timestamp>" in the body, else the Retry-After header in seconds.
+  /// The end of a temporary block: "Retry after" plus an ISO timestamp in the body, else the Retry-After header in seconds.
   DateTime? _retryAfter(http.Response r) {
     final at = RegExp(r'Retry after (\S+?Z)').firstMatch(r.body)?.group(1);
     if (at != null) return DateTime.tryParse(at);

@@ -103,4 +103,46 @@ void main() {
       expect(box.color, theme.extension<PostinoColors>()!.surface);
     }
   });
+
+  testWidgets('outgoing page keeps its State while fading out', (tester) async {
+    var inits = 0;
+    Widget host(String k) => MaterialApp(
+      theme: PostinoTheme.light(),
+      home: PostinoFadeThrough(
+        transitionKey: k,
+        child: _Probe(key: ValueKey('probe-$k'), onInit: () => inits++),
+      ),
+    );
+
+    await tester.pumpWidget(host('a'));
+    expect(inits, 1);
+    final state = tester.state(find.byKey(const ValueKey('probe-a')));
+
+    await tester.pumpWidget(host('b'));
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(inits, 1);
+    expect(tester.state(find.byKey(const ValueKey('probe-a'))), same(state));
+
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('probe-a')), findsNothing);
+    expect(inits, 2);
+  });
+}
+
+class _Probe extends StatefulWidget {
+  const _Probe({super.key, required this.onInit});
+  final VoidCallback onInit;
+  @override
+  State<_Probe> createState() => _ProbeState();
+}
+
+class _ProbeState extends State<_Probe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

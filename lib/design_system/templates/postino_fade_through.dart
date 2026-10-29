@@ -64,27 +64,29 @@ class _PostinoFadeThroughState extends State<PostinoFadeThrough>
       builder: (context, _) {
         final t = _controller.value;
         final out = _outgoing;
-        if (out != null && t < _split) {
-          final k = PostinoMotion.standardAccelerate.transform(t / _split);
-          return FadeTransition(
-            opacity: AlwaysStoppedAnimation(1 - k),
-            child: out,
-          );
-        }
-        final k = PostinoMotion.emphasizedDecelerate.transform(
-          ((t - _split) / (1 - _split)).clamp(0.0, 1.0),
-        );
+        final fadingOut = out != null && t < _split;
+        final k = fadingOut
+            ? 1 - PostinoMotion.standardAccelerate.transform(t / _split)
+            : PostinoMotion.emphasizedDecelerate.transform(
+                ((t - _split) / (1 - _split)).clamp(0.0, 1.0),
+              );
+        // Same widget types in both phases, so the outgoing page keeps its State
+        // (scroll, subscriptions) while it fades out.
         return FadeTransition(
           opacity: AlwaysStoppedAnimation(k),
           child: ScaleTransition(
             scale: AlwaysStoppedAnimation(
-              PostinoMotion.fadeThroughScaleBegin +
-                  (1 - PostinoMotion.fadeThroughScaleBegin) * k,
+              fadingOut
+                  ? 1.0
+                  : PostinoMotion.fadeThroughScaleBegin +
+                        (1 - PostinoMotion.fadeThroughScaleBegin) * k,
             ),
-            child: KeyedSubtree(
-              key: ValueKey(widget.transitionKey),
-              child: widget.child,
-            ),
+            child: out != null && fadingOut
+                ? out
+                : KeyedSubtree(
+                    key: ValueKey(widget.transitionKey),
+                    child: widget.child,
+                  ),
           ),
         );
       },

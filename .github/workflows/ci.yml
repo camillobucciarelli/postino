@@ -28,11 +28,11 @@ jobs:
           dart run slang
           dart run build_runner build
       # routefly numbers routes in directory-listing order, which differs on
-      # Linux; lib/main.route.dart is checked on macOS (apple job) instead.
+      # Linux; lib/main.route.dart and lib/main.g.dart are checked on macOS (apple job) instead.
       - name: Generated code is committed
         run: |
-          git diff --exit-code -- . ':!lib/main.route.dart'
-          test -z "$(git status --porcelain -- . ':!lib/main.route.dart')"
+          git diff --exit-code -- . ':!lib/main.route.dart' ':!lib/main.g.dart'
+          test -z "$(git status --porcelain -- . ':!lib/main.route.dart' ':!lib/main.g.dart')"
       - run: flutter analyze
       - run: flutter test
 

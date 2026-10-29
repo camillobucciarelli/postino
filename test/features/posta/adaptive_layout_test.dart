@@ -52,13 +52,14 @@ void main() {
       expect(tester.getSize(sidebar).width, PostinoSize.sidebarWidth);
       expect(tester.getTopLeft(sidebar).dx, 0);
       expect(icon(PostinoIcons.menu), findsNothing);
-      // The list fills the rest, right of the sidebar.
+      // The list sits right of the sidebar at list-width, the detail pane after it.
       final row = find.byKey(const ValueKey('row-a1-x'));
+      expect(tester.getTopLeft(row).dx, PostinoSize.sidebarWidth);
       expect(
-        tester.getTopLeft(row).dx,
-        greaterThanOrEqualTo(PostinoSize.sidebarWidth),
+        tester.getTopRight(row).dx,
+        PostinoSize.sidebarWidth + PostinoSize.listWidth,
       );
-      expect(tester.getTopRight(row).dx, 1280);
+      expect(find.text('Seleziona una Conversazione'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('account-a1')));
       await tester.pumpAndSettle();

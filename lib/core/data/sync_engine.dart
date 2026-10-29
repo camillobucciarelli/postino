@@ -74,17 +74,17 @@ class SyncEngine implements MailSync {
     final account = await _account(accountId);
     if (account == null) return;
     final provider = _provider(account);
+    // Read here at once, offline too; the Provider hears it from the queue.
     await _store.markConversationRead(accountId, conversationId);
-    await Future.wait([
-      _replay(accountId, provider),
-      // Inviati and messages older than the sync window are not in the database yet.
-      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      provider.fetchConversation(conversationId).then((r) async {
-        if (r case Ok(:final value)) {
-          await _store.applyPage(accountId, value, const {});
-        }
-      }),
-    ]);
+    // Inviati and messages older than the sync window are not in the database yet.
+    // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
+    if (await provider.fetchConversation(conversationId) case Ok(
+      :final value,
+    )) {
+      await _store.applyPage(accountId, value, const {});
+      await _store.markConversationRead(accountId, conversationId);
+    }
+    await _replay(accountId, provider);
   }
 
   @override
@@ -104,8 +104,21 @@ class SyncEngine implements MailSync {
   Future<Account?> _account(String id) async =>
       (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
+  final _replaying = <String, Future<void>>{};
+
   /// Sends the offline queue (ADR 0008); what fails stays queued for the next sync.
-  Future<void> _replay(String accountId, MailProvider provider) async {
+  /// One replay at a time per Account: a second caller waits for the running one, never resends.
+  Future<void> _replay(String accountId, MailProvider provider) =>
+      _replaying[accountId] ??=
+          _replayOnce(
+            accountId,
+            provider,
+            // A block body: returning the removed future would make whenComplete wait on itself.
+          ).whenComplete(() {
+            _replaying.remove(accountId);
+          });
+
+  Future<void> _replayOnce(String accountId, MailProvider provider) async {
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
       if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);

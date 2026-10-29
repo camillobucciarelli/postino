@@ -7,8 +7,9 @@ import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
-/// A message in the list (Comfortable). With [account] (Posta unificata) it carries the Account's
-/// bar and the badge on the avatar; inside one Account the AppBar already says where you are.
+/// A Conversazione in the list (Comfortable): its latest message, and the thread [count] from 2.
+/// With [account] (Posta unificata) it carries the Account's bar and the badge on the avatar;
+/// inside one Account the AppBar already says where you are. [selected]: open in the detail pane.
 class PostinoMessageTile extends StatelessWidget {
   const PostinoMessageTile({
     super.key,
@@ -20,6 +21,9 @@ class PostinoMessageTile extends StatelessWidget {
     required this.starred,
     required this.semanticLabel,
     this.account,
+    this.count = 1,
+    this.selected = false,
+    this.onTap,
   });
 
   final String sender;
@@ -34,6 +38,9 @@ class PostinoMessageTile extends StatelessWidget {
   /// The whole row read out as one node: state, sender, subject, Stella, Account, time.
   final String semanticLabel;
   final PostinoAccountRef? account;
+  final int count;
+  final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -52,122 +59,156 @@ class PostinoMessageTile extends StatelessWidget {
     return Semantics(
       container: true,
       label: semanticLabel,
+      button: onTap != null,
+      selected: selected,
+      onTap: onTap,
       excludeSemantics: true,
-      child: Container(
-        constraints: BoxConstraints(minHeight: d.rowHeight),
-        decoration: BoxDecoration(
-          color: c.listItemBg,
-          border: Border(
-            bottom: BorderSide(
-              color: c.listItemDivider,
-              width: PostinoBorder.borderWidthHairline,
+      child: Material(
+        color: selected ? c.listItemBgSelected : c.listItemBg,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: BoxConstraints(minHeight: d.rowHeight),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: c.listItemDivider,
+                  width: PostinoBorder.borderWidthHairline,
+                ),
+              ),
             ),
-          ),
-        ),
-        child: Stack(
-          children: [
-            if (a != null)
-              Positioned(
-                key: const ValueKey('account-bar'),
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: PostinoBorder.accountBarWidth,
-                child: ColoredBox(color: c.account(a.color).color),
-              ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: PostinoSpacing.s4,
-                vertical: d.padY,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: d.gap,
-                children: [
-                  PostinoAvatar(
-                    name: sender,
-                    size: d.avatar,
-                    badge: a == null
-                        ? null
-                        : PostinoAccountMark(
-                            color: a.color,
-                            initial: a.initial,
-                            size: PostinoSize.accountBadge,
-                          ),
+            child: Stack(
+              children: [
+                if (a != null)
+                  Positioned(
+                    key: const ValueKey('account-bar'),
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: PostinoBorder.accountBarWidth,
+                    child: ColoredBox(color: c.account(a.color).color),
                   ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          spacing: PostinoSpacing.s2,
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: PostinoSpacing.s4,
+                    vertical: d.padY,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: d.gap,
+                    children: [
+                      PostinoAvatar(
+                        name: sender,
+                        size: d.avatar,
+                        badge: a == null
+                            ? null
+                            : PostinoAccountMark(
+                                color: a.color,
+                                initial: a.initial,
+                                size: PostinoSize.accountBadge,
+                              ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (unread)
-                              Container(
-                                key: const ValueKey('unread'),
-                                width: PostinoSpacing.s2,
-                                height: PostinoSpacing.s2,
-                                decoration: BoxDecoration(
-                                  color: c.unread,
-                                  shape: BoxShape.circle,
+                            Row(
+                              spacing: PostinoSpacing.s2,
+                              children: [
+                                if (unread)
+                                  Container(
+                                    key: const ValueKey('unread'),
+                                    width: PostinoSpacing.s2,
+                                    height: PostinoSpacing.s2,
+                                    decoration: BoxDecoration(
+                                      color: c.unread,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    sender,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        (unread
+                                                ? PostinoText.sender
+                                                : PostinoText.senderRead)
+                                            .copyWith(color: fg),
+                                  ),
+                                ),
+                                if (count > 1)
+                                  Container(
+                                    key: const ValueKey('count'),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: PostinoSpacing.s1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: c.borderSubtle,
+                                        width:
+                                            PostinoBorder.borderWidthHairline,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        PostinoRadius.xs,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '$count',
+                                      style: PostinoText.meta.copyWith(
+                                        color: c.listItemMeta,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (!large) timeText,
+                              ],
+                            ),
+                            if (large) timeText,
+                            Row(
+                              spacing: PostinoSpacing.s1,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    subject,
+                                    maxLines: large ? 2 : 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        (unread
+                                                ? PostinoText.subject
+                                                : PostinoText.subjectRead)
+                                            .copyWith(color: fg),
+                                  ),
+                                ),
+                                if (starred)
+                                  PostinoIcon(
+                                    PostinoIcons.star,
+                                    size: PostinoSize.iconSm,
+                                    color: c.star,
+                                    filled: true,
+                                  ),
+                              ],
+                            ),
+                            if (d.previewLines > 0)
+                              Text(
+                                preview,
+                                maxLines: d.previewLines,
+                                overflow: TextOverflow.ellipsis,
+                                style: PostinoText.preview.copyWith(
+                                  color: c.listItemFgRead,
                                 ),
                               ),
-                            Expanded(
-                              child: Text(
-                                sender,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style:
-                                    (unread
-                                            ? PostinoText.sender
-                                            : PostinoText.senderRead)
-                                        .copyWith(color: fg),
-                              ),
-                            ),
-                            if (!large) timeText,
                           ],
                         ),
-                        if (large) timeText,
-                        Row(
-                          spacing: PostinoSpacing.s1,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                subject,
-                                maxLines: large ? 2 : 1,
-                                overflow: TextOverflow.ellipsis,
-                                style:
-                                    (unread
-                                            ? PostinoText.subject
-                                            : PostinoText.subjectRead)
-                                        .copyWith(color: fg),
-                              ),
-                            ),
-                            if (starred)
-                              PostinoIcon(
-                                PostinoIcons.star,
-                                size: PostinoSize.iconSm,
-                                color: c.star,
-                                filled: true,
-                              ),
-                          ],
-                        ),
-                        if (d.previewLines > 0)
-                          Text(
-                            preview,
-                            maxLines: d.previewLines,
-                            overflow: TextOverflow.ellipsis,
-                            style: PostinoText.preview.copyWith(
-                              color: c.listItemFgRead,
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

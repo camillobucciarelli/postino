@@ -7,18 +7,20 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// The bar on top of a list: `menu` opening the drawer, title and a `meta` subtitle saying where you are.
-/// Inside one Account its mark sits next to the title.
+/// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead.
 class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PostinoAppBar({
     super.key,
     required this.title,
     this.subtitle,
     this.account,
+    this.onBack,
   });
 
   final String title;
   final String? subtitle;
   final PostinoAccountRef? account;
+  final VoidCallback? onBack;
 
   @override
   Size get preferredSize => const Size.fromHeight(PostinoSize.appBarHeight);
@@ -29,17 +31,26 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
     final a = account;
     // No `menu` where the drawer is docked beside the list.
     final scaffold = Scaffold.maybeOf(context);
-    final menu = scaffold != null && scaffold.hasDrawer;
+    final menu = onBack == null && scaffold != null && scaffold.hasDrawer;
+    final back = onBack;
     return AppBar(
       automaticallyImplyLeading: false,
-      leading: menu
+      leading: back != null
+          ? PostinoIconButton(
+              icon: PostinoIcons.arrowLeft,
+              label: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: back,
+            )
+          : menu
           ? PostinoIconButton(
               icon: PostinoIcons.menu,
               label: MaterialLocalizations.of(context).openAppDrawerTooltip,
               onPressed: scaffold.openDrawer,
             )
           : null,
-      titleSpacing: menu ? PostinoSpacing.s1 : PostinoSpacing.s4,
+      titleSpacing: menu || back != null
+          ? PostinoSpacing.s1
+          : PostinoSpacing.s4,
       // ponytail: the compact bar is 56 tall, so its text stops growing at 130%; a growing bar when 200% needs it.
       title: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.3,

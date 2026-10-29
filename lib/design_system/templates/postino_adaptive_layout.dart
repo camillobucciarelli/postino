@@ -8,8 +8,8 @@ import 'postino_single_pane_layout.dart';
 /// below `breakpoint-expanded` (840) one pane with a modal [drawer];
 /// from 840 the [drawer] is not shown here: the caller docks it once with [PostinoSidebarShell],
 /// outside the pages, so it survives navigation.
-// ponytail: no detail pane yet (Conversazione, #33), so the list takes the rest of the width and
-// 600–839 stays one pane; add the `list-width` list + detail (LayoutTablet / LayoutDesktop) with it.
+/// The list + detail split is [PostinoListDetailLayout]'s, around this.
+// ponytail: 600–839 stays one pane (the Conversazione a full page); LayoutTablet's two panes if tablets need them.
 class PostinoAdaptiveLayout extends StatelessWidget {
   const PostinoAdaptiveLayout({
     super.key,

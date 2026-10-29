@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
 const _golden = ValueKey('golden');
+void _noop() {}
 const _sky = (color: PostinoAccountColor.sky, initial: 'L');
 
 final _components = <String, Widget Function()>{
@@ -108,6 +109,55 @@ final _components = <String, Widget Function()>{
         unread: false,
         starred: false,
         semanticLabel: 'Luca Neri',
+      ),
+      PostinoMessageTile(
+        sender: 'Bruno Verdi',
+        subject: 'Re: Cena di venerdì',
+        preview: 'Alle 20 da Mario, porto io il vino.',
+        time: 'lun',
+        unread: false,
+        starred: false,
+        count: 3,
+        selected: true,
+        onTap: _noop,
+        semanticLabel: 'Bruno Verdi, 3 messaggi',
+      ),
+    ],
+  ),
+  'thread_message': () => Column(
+    children: [
+      PostinoThreadMessage(
+        sender: 'Bruno Verdi',
+        time: 'lun',
+        preview: 'Ti va una cena venerdì?',
+        expanded: false,
+        onToggle: () {},
+        body: const SizedBox(),
+      ),
+      PostinoThreadMessage(
+        sender: 'Ada Okafor',
+        time: '09:42',
+        preview: 'Sì, alle 20.',
+        recipients: 'a bruno@example.com',
+        unread: true,
+        expanded: true,
+        onToggle: () {},
+        body: const PostinoMessageBody(
+          text: 'Ciao Bruno,\nsì, alle 20 da Mario. Porto io il dolce.',
+        ),
+      ),
+      PostinoThreadMessage(
+        sender: 'Bruno Verdi',
+        time: '10:05',
+        preview: 'Perfetto',
+        recipients: 'a me',
+        expanded: true,
+        onToggle: () {},
+        body: PostinoMessageBody.missing(
+          note: 'Corpo non disponibile offline',
+          actionLabel: 'Riprova',
+          onAction: () {},
+        ),
       ),
     ],
   ),

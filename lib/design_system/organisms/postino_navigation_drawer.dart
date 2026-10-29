@@ -191,6 +191,13 @@ class _DrawerItem extends StatelessWidget {
         child: InkWell(
           key: item.key,
           borderRadius: radius,
+          // Only the sliding box marks the active item: no hover/press/splash pill of our own.
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.focused)
+                ? c.drawerItemBgActive
+                : Colors.transparent,
+          ),
           onTap: () {
             Scaffold.maybeOf(context)?.closeDrawer();
             item.onTap();

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/posta_app_bars.dart';
@@ -78,5 +78,29 @@ void main() {
     }
     await tester.pumpAndSettle();
     expect(find.text('Da due'), findsOneWidget);
+  });
+
+  testWidgets('an opaque surface sits under the fade, in light and dark', (
+    tester,
+  ) async {
+    for (final theme in [PostinoTheme.light(), PostinoTheme.dark()]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: const PostinoFadeThrough(transitionKey: 1, child: SizedBox()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final box = tester.widget<ColoredBox>(
+        find
+            .descendant(
+              of: find.byType(PostinoFadeThrough),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
+      );
+      expect(box.color.a, 1);
+      expect(box.color, theme.extension<PostinoColors>()!.surface);
+    }
   });
 }

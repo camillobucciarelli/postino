@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// Material 3 "fade through" when [transitionKey] changes: the previous child fades out (90ms),
@@ -55,34 +56,38 @@ class _PostinoFadeThroughState extends State<PostinoFadeThrough>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    builder: (context, _) {
-      final t = _controller.value;
-      final out = _outgoing;
-      if (out != null && t < _split) {
-        final k = PostinoMotion.standardAccelerate.transform(t / _split);
-        return FadeTransition(
-          opacity: AlwaysStoppedAnimation(1 - k),
-          child: out,
+  Widget build(BuildContext context) => ColoredBox(
+    // Opaque page background: the fade lands on it, never on black.
+    color: context.pc.surface,
+    child: AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value;
+        final out = _outgoing;
+        if (out != null && t < _split) {
+          final k = PostinoMotion.standardAccelerate.transform(t / _split);
+          return FadeTransition(
+            opacity: AlwaysStoppedAnimation(1 - k),
+            child: out,
+          );
+        }
+        final k = PostinoMotion.emphasizedDecelerate.transform(
+          ((t - _split) / (1 - _split)).clamp(0.0, 1.0),
         );
-      }
-      final k = PostinoMotion.emphasizedDecelerate.transform(
-        ((t - _split) / (1 - _split)).clamp(0.0, 1.0),
-      );
-      return FadeTransition(
-        opacity: AlwaysStoppedAnimation(k),
-        child: ScaleTransition(
-          scale: AlwaysStoppedAnimation(
-            PostinoMotion.fadeThroughScaleBegin +
-                (1 - PostinoMotion.fadeThroughScaleBegin) * k,
+        return FadeTransition(
+          opacity: AlwaysStoppedAnimation(k),
+          child: ScaleTransition(
+            scale: AlwaysStoppedAnimation(
+              PostinoMotion.fadeThroughScaleBegin +
+                  (1 - PostinoMotion.fadeThroughScaleBegin) * k,
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(widget.transitionKey),
+              child: widget.child,
+            ),
           ),
-          child: KeyedSubtree(
-            key: ValueKey(widget.transitionKey),
-            child: widget.child,
-          ),
-        ),
-      );
-    },
+        );
+      },
+    ),
   );
 }

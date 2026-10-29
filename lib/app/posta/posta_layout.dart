@@ -3,6 +3,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
+import '../../features/posta/presentation/offline_indicator.dart';
 import '../../features/posta/presentation/unified_inbox.dart';
 import '../../i18n/strings.g.dart';
 
@@ -19,7 +20,10 @@ class PostaLayout extends StatelessWidget {
     if (Routefly.currentOriginalPath != own) return const RouterOutlet();
     return OnboardingGate(
       child: Scaffold(
-        appBar: AppBar(title: Text(context.t.appTitle)),
+        appBar: AppBar(
+          title: Text(context.t.appTitle),
+          actions: const [OfflineIndicator()],
+        ),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

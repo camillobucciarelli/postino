@@ -16,5 +16,9 @@
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
     "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
     "failed": "Collegamento non riuscito. Riprova."
+  },
+  "offline": {
+    "label": "Offline",
+    "tooltip": "Sei offline: la posta si aggiornerà al ritorno della rete."
   }
 }

@@ -3,6 +3,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/message.dart';
 
 import '../../support/fake_mail_provider.dart';
 
@@ -23,6 +24,32 @@ Future<MailStore> _store() async {
 }
 
 void main() {
+  test('sender name, To, Cc and labels are stored and read back in the Conversazione', () async {
+    final store = await _store();
+    await store.applySync(
+      'a',
+      SyncBatch(
+        cursor: '1',
+        messages: [
+          msg(
+            '1',
+            conversationId: 't',
+            from: 'ada@example.com',
+            fromName: 'Ada Okafor',
+            to: const ['Rossi, Carla <c@x.it>', 'me@example.com'],
+            cc: const ['Marco Lenti <marco@example.com>'],
+            labelIds: const [inboxLabelId, 'IMPORTANT'],
+          ),
+        ],
+      ),
+    );
+    final m = (await store.watchConversation('a', 't').first).single.message;
+    expect((m.from, m.fromName), ('ada@example.com', 'Ada Okafor'));
+    expect(m.to, ['Rossi, Carla <c@x.it>', 'me@example.com']);
+    expect(m.cc, ['Marco Lenti <marco@example.com>']);
+    expect(m.labelIds, unorderedEquals([inboxLabelId, 'IMPORTANT']));
+  });
+
   test('an id both upserted and removed in one batch is kept', () async {
     final store = await _store();
     await store.applySync(

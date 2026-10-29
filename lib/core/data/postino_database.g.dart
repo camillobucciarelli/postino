@@ -787,6 +787,17 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _senderNameMeta = const VerificationMeta(
+    'senderName',
+  );
+  @override
+  late final GeneratedColumn<String> senderName = GeneratedColumn<String>(
+    'sender_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _recipientsMeta = const VerificationMeta(
     'recipients',
   );
@@ -797,6 +808,16 @@ class $MessagesTable extends Messages
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ccMeta = const VerificationMeta('cc');
+  @override
+  late final GeneratedColumn<String> cc = GeneratedColumn<String>(
+    'cc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _subjectMeta = const VerificationMeta(
     'subject',
@@ -862,7 +883,9 @@ class $MessagesTable extends Messages
     messageId,
     conversationId,
     sender,
+    senderName,
     recipients,
+    cc,
     subject,
     snippet,
     date,
@@ -921,6 +944,12 @@ class $MessagesTable extends Messages
     } else if (isInserting) {
       context.missing(_senderMeta);
     }
+    if (data.containsKey('sender_name')) {
+      context.handle(
+        _senderNameMeta,
+        senderName.isAcceptableOrUnknown(data['sender_name']!, _senderNameMeta),
+      );
+    }
     if (data.containsKey('recipients')) {
       context.handle(
         _recipientsMeta,
@@ -928,6 +957,9 @@ class $MessagesTable extends Messages
       );
     } else if (isInserting) {
       context.missing(_recipientsMeta);
+    }
+    if (data.containsKey('cc')) {
+      context.handle(_ccMeta, cc.isAcceptableOrUnknown(data['cc']!, _ccMeta));
     }
     if (data.containsKey('subject')) {
       context.handle(
@@ -998,9 +1030,17 @@ class $MessagesTable extends Messages
         DriftSqlType.string,
         data['${effectivePrefix}sender'],
       )!,
+      senderName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_name'],
+      ),
       recipients: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}recipients'],
+      )!,
+      cc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cc'],
       )!,
       subject: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1036,8 +1076,14 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
   final String id;
   final String messageId;
   final String conversationId;
+
+  /// The sender's address; [senderName] its display name, if the `From` header has one (v7).
   final String sender;
+  final String? senderName;
+
+  /// To and Cc, one `Name <address>` or bare address per line (v7: they were comma separated).
   final String recipients;
+  final String cc;
   final String subject;
   final String snippet;
 
@@ -1051,7 +1097,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     required this.messageId,
     required this.conversationId,
     required this.sender,
+    this.senderName,
     required this.recipients,
+    required this.cc,
     required this.subject,
     required this.snippet,
     required this.date,
@@ -1066,7 +1114,11 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     map['message_id'] = Variable<String>(messageId);
     map['conversation_id'] = Variable<String>(conversationId);
     map['sender'] = Variable<String>(sender);
+    if (!nullToAbsent || senderName != null) {
+      map['sender_name'] = Variable<String>(senderName);
+    }
     map['recipients'] = Variable<String>(recipients);
+    map['cc'] = Variable<String>(cc);
     map['subject'] = Variable<String>(subject);
     map['snippet'] = Variable<String>(snippet);
     map['date'] = Variable<int>(date);
@@ -1082,7 +1134,11 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       messageId: Value(messageId),
       conversationId: Value(conversationId),
       sender: Value(sender),
+      senderName: senderName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(senderName),
       recipients: Value(recipients),
+      cc: Value(cc),
       subject: Value(subject),
       snippet: Value(snippet),
       date: Value(date),
@@ -1102,7 +1158,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       messageId: serializer.fromJson<String>(json['messageId']),
       conversationId: serializer.fromJson<String>(json['conversationId']),
       sender: serializer.fromJson<String>(json['sender']),
+      senderName: serializer.fromJson<String?>(json['senderName']),
       recipients: serializer.fromJson<String>(json['recipients']),
+      cc: serializer.fromJson<String>(json['cc']),
       subject: serializer.fromJson<String>(json['subject']),
       snippet: serializer.fromJson<String>(json['snippet']),
       date: serializer.fromJson<int>(json['date']),
@@ -1119,7 +1177,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       'messageId': serializer.toJson<String>(messageId),
       'conversationId': serializer.toJson<String>(conversationId),
       'sender': serializer.toJson<String>(sender),
+      'senderName': serializer.toJson<String?>(senderName),
       'recipients': serializer.toJson<String>(recipients),
+      'cc': serializer.toJson<String>(cc),
       'subject': serializer.toJson<String>(subject),
       'snippet': serializer.toJson<String>(snippet),
       'date': serializer.toJson<int>(date),
@@ -1134,7 +1194,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     String? messageId,
     String? conversationId,
     String? sender,
+    Value<String?> senderName = const Value.absent(),
     String? recipients,
+    String? cc,
     String? subject,
     String? snippet,
     int? date,
@@ -1146,7 +1208,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     messageId: messageId ?? this.messageId,
     conversationId: conversationId ?? this.conversationId,
     sender: sender ?? this.sender,
+    senderName: senderName.present ? senderName.value : this.senderName,
     recipients: recipients ?? this.recipients,
+    cc: cc ?? this.cc,
     subject: subject ?? this.subject,
     snippet: snippet ?? this.snippet,
     date: date ?? this.date,
@@ -1162,9 +1226,13 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ? data.conversationId.value
           : this.conversationId,
       sender: data.sender.present ? data.sender.value : this.sender,
+      senderName: data.senderName.present
+          ? data.senderName.value
+          : this.senderName,
       recipients: data.recipients.present
           ? data.recipients.value
           : this.recipients,
+      cc: data.cc.present ? data.cc.value : this.cc,
       subject: data.subject.present ? data.subject.value : this.subject,
       snippet: data.snippet.present ? data.snippet.value : this.snippet,
       date: data.date.present ? data.date.value : this.date,
@@ -1181,7 +1249,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ..write('messageId: $messageId, ')
           ..write('conversationId: $conversationId, ')
           ..write('sender: $sender, ')
+          ..write('senderName: $senderName, ')
           ..write('recipients: $recipients, ')
+          ..write('cc: $cc, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -1198,7 +1268,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     messageId,
     conversationId,
     sender,
+    senderName,
     recipients,
+    cc,
     subject,
     snippet,
     date,
@@ -1214,7 +1286,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           other.messageId == this.messageId &&
           other.conversationId == this.conversationId &&
           other.sender == this.sender &&
+          other.senderName == this.senderName &&
           other.recipients == this.recipients &&
+          other.cc == this.cc &&
           other.subject == this.subject &&
           other.snippet == this.snippet &&
           other.date == this.date &&
@@ -1228,7 +1302,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
   final Value<String> messageId;
   final Value<String> conversationId;
   final Value<String> sender;
+  final Value<String?> senderName;
   final Value<String> recipients;
+  final Value<String> cc;
   final Value<String> subject;
   final Value<String> snippet;
   final Value<int> date;
@@ -1241,7 +1317,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     this.messageId = const Value.absent(),
     this.conversationId = const Value.absent(),
     this.sender = const Value.absent(),
+    this.senderName = const Value.absent(),
     this.recipients = const Value.absent(),
+    this.cc = const Value.absent(),
     this.subject = const Value.absent(),
     this.snippet = const Value.absent(),
     this.date = const Value.absent(),
@@ -1255,7 +1333,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     required String messageId,
     required String conversationId,
     required String sender,
+    this.senderName = const Value.absent(),
     required String recipients,
+    this.cc = const Value.absent(),
     required String subject,
     required String snippet,
     required int date,
@@ -1279,7 +1359,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Expression<String>? messageId,
     Expression<String>? conversationId,
     Expression<String>? sender,
+    Expression<String>? senderName,
     Expression<String>? recipients,
+    Expression<String>? cc,
     Expression<String>? subject,
     Expression<String>? snippet,
     Expression<int>? date,
@@ -1293,7 +1375,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       if (messageId != null) 'message_id': messageId,
       if (conversationId != null) 'conversation_id': conversationId,
       if (sender != null) 'sender': sender,
+      if (senderName != null) 'sender_name': senderName,
       if (recipients != null) 'recipients': recipients,
+      if (cc != null) 'cc': cc,
       if (subject != null) 'subject': subject,
       if (snippet != null) 'snippet': snippet,
       if (date != null) 'date': date,
@@ -1309,7 +1393,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Value<String>? messageId,
     Value<String>? conversationId,
     Value<String>? sender,
+    Value<String?>? senderName,
     Value<String>? recipients,
+    Value<String>? cc,
     Value<String>? subject,
     Value<String>? snippet,
     Value<int>? date,
@@ -1323,7 +1409,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       messageId: messageId ?? this.messageId,
       conversationId: conversationId ?? this.conversationId,
       sender: sender ?? this.sender,
+      senderName: senderName ?? this.senderName,
       recipients: recipients ?? this.recipients,
+      cc: cc ?? this.cc,
       subject: subject ?? this.subject,
       snippet: snippet ?? this.snippet,
       date: date ?? this.date,
@@ -1351,8 +1439,14 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     if (sender.present) {
       map['sender'] = Variable<String>(sender.value);
     }
+    if (senderName.present) {
+      map['sender_name'] = Variable<String>(senderName.value);
+    }
     if (recipients.present) {
       map['recipients'] = Variable<String>(recipients.value);
+    }
+    if (cc.present) {
+      map['cc'] = Variable<String>(cc.value);
     }
     if (subject.present) {
       map['subject'] = Variable<String>(subject.value);
@@ -1383,7 +1477,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
           ..write('messageId: $messageId, ')
           ..write('conversationId: $conversationId, ')
           ..write('sender: $sender, ')
+          ..write('senderName: $senderName, ')
           ..write('recipients: $recipients, ')
+          ..write('cc: $cc, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -3089,7 +3185,9 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   required String messageId,
   required String conversationId,
   required String sender,
+  Value<String?> senderName,
   required String recipients,
+  Value<String> cc,
   required String subject,
   required String snippet,
   required int date,
@@ -3103,7 +3201,9 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<String> messageId,
   Value<String> conversationId,
   Value<String> sender,
+  Value<String?> senderName,
   Value<String> recipients,
+  Value<String> cc,
   Value<String> subject,
   Value<String> snippet,
   Value<int> date,
@@ -3146,8 +3246,18 @@ class $$MessagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get senderName => $composableBuilder(
+    column: $table.senderName,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get recipients => $composableBuilder(
     column: $table.recipients,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cc => $composableBuilder(
+    column: $table.cc,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3211,8 +3321,18 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get senderName => $composableBuilder(
+    column: $table.senderName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get recipients => $composableBuilder(
     column: $table.recipients,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cc => $composableBuilder(
+    column: $table.cc,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3268,10 +3388,18 @@ class $$MessagesTableAnnotationComposer
   GeneratedColumn<String> get sender =>
       $composableBuilder(column: $table.sender, builder: (column) => column);
 
+  GeneratedColumn<String> get senderName => $composableBuilder(
+    column: $table.senderName,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get recipients => $composableBuilder(
     column: $table.recipients,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get cc =>
+      $composableBuilder(column: $table.cc, builder: (column) => column);
 
   GeneratedColumn<String> get subject =>
       $composableBuilder(column: $table.subject, builder: (column) => column);
@@ -3325,7 +3453,9 @@ class $$MessagesTableTableManager
                 Value<String> messageId = const Value.absent(),
                 Value<String> conversationId = const Value.absent(),
                 Value<String> sender = const Value.absent(),
+                Value<String?> senderName = const Value.absent(),
                 Value<String> recipients = const Value.absent(),
+                Value<String> cc = const Value.absent(),
                 Value<String> subject = const Value.absent(),
                 Value<String> snippet = const Value.absent(),
                 Value<int> date = const Value.absent(),
@@ -3338,7 +3468,9 @@ class $$MessagesTableTableManager
                 messageId: messageId,
                 conversationId: conversationId,
                 sender: sender,
+                senderName: senderName,
                 recipients: recipients,
+                cc: cc,
                 subject: subject,
                 snippet: snippet,
                 date: date,
@@ -3353,7 +3485,9 @@ class $$MessagesTableTableManager
                 required String messageId,
                 required String conversationId,
                 required String sender,
+                Value<String?> senderName = const Value.absent(),
                 required String recipients,
+                Value<String> cc = const Value.absent(),
                 required String subject,
                 required String snippet,
                 required int date,
@@ -3366,7 +3500,9 @@ class $$MessagesTableTableManager
                 messageId: messageId,
                 conversationId: conversationId,
                 sender: sender,
+                senderName: senderName,
                 recipients: recipients,
+                cc: cc,
                 subject: subject,
                 snippet: snippet,
                 date: date,

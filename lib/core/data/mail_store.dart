@@ -80,9 +80,9 @@ class MailStore implements InboxRepository {
       .watchConversation(accountId, conversationId)
       .map(
         (rows) => [
-          for (final (m, b) in rows)
+          for (final (m, b, labelIds) in rows)
             (
-              message: _message(m),
+              message: _message(m, labelIds),
               body: b == null ? null : MessageBody(b.body, b.kind),
             ),
         ],
@@ -112,6 +112,11 @@ class MailStore implements InboxRepository {
         ],
       );
 
+  static List<String> _lines(String s) => [
+    for (final l in s.split('\n'))
+      if (l.isNotEmpty) l,
+  ];
+
   static Account _account(AccountRow r) => Account(
     id: r.id,
     address: r.address,
@@ -121,15 +126,21 @@ class MailStore implements InboxRepository {
     status: r.status,
   );
 
-  static Message _message(MessageRow r) => Message(
+  /// [labelIds]: only where they are read (an open Conversazione); lists pass the inbox.
+  static Message _message(
+    MessageRow r, [
+    List<String> labelIds = const [inboxLabelId],
+  ]) => Message(
     id: r.id,
     messageId: r.messageId,
     conversationId: r.conversationId,
-    labelIds: const [inboxLabelId],
+    labelIds: labelIds,
     isRead: r.isRead,
     isStarred: r.isStarred,
     from: r.sender,
-    to: r.recipients.split(','),
+    fromName: r.senderName,
+    to: _lines(r.recipients),
+    cc: _lines(r.cc),
     subject: r.subject,
     snippet: r.snippet,
     date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),

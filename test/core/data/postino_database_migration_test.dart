@@ -114,4 +114,39 @@ void main() {
     expect(await db.trustedSendersDao.watchAll().first, {'ada@example.com'});
     expect(await db.select(db.accounts).get(), hasLength(1));
   });
+
+  test('v7 splits the stored sender into address and name, adds Cc, one recipient per line', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute('PRAGMA user_version = 6');
+    for (final (id, sender, recipients) in [
+      ('m1', 'Ada Okafor <ada@example.com>', 'me@example.com,Bruno <b@x.it>'),
+      ('m2', 'news@shop.example', 'me@example.com'),
+      ('m3', '=?UTF-8?Q?Nicol=C3=B2?= <n@x.it>', ''),
+    ]) {
+      raw.execute(
+        "INSERT INTO messages VALUES ('a1', '$id', '<$id>', 't', '$sender', "
+        "'$recipients', 'Oggetto', 'Anteprima', 0, 0, 0)",
+      );
+    }
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    final rows = {
+      for (final m in await db.select(db.messages).get())
+        m.id: (m.sender, m.senderName, m.recipients, m.cc),
+    };
+    expect(rows, {
+      'm1': (
+        'ada@example.com',
+        'Ada Okafor',
+        'me@example.com\nBruno <b@x.it>',
+        '',
+      ),
+      'm2': ('news@shop.example', null, 'me@example.com', ''),
+      'm3': ('n@x.it', 'Nicolò', '', ''),
+    });
+  });
 }

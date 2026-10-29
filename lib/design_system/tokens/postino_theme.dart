@@ -1,5 +1,4 @@
 // postino_theme.dart — costruisce ThemeData dai token. Scritto a mano, usa postino_tokens.dart.
-// ponytail: font families (Newsreader, Instrument Sans, IBM Plex Mono) are not bundled yet, so text falls back to the platform font; add them as assets in pubspec.yaml with the first real screen.
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 

@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
@@ -23,6 +25,12 @@ Future<void> configureDependencies({String? environment}) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(const [
+      'Caprasimo',
+      'Figtree',
+    ], await rootBundle.loadString('assets/fonts/OFL.txt'));
+  });
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));

@@ -41,7 +41,10 @@ class PostinoSyncStatus extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            style: PostinoText.caption.copyWith(color: c.inkMuted),
+            style: PostinoText.caption.copyWith(
+              color: c.inkMuted,
+              fontWeight: FontWeight.w600, // thin glyphs sample under 4.5:1
+            ),
           ),
         ),
       ],

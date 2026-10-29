@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../domain/mail_provider.dart';
 
@@ -60,8 +61,9 @@ Stream<ChangeSignal> imapIdle({
           if (stopped || lost.isCompleted) break;
           await c.idleDone();
         }
-      } catch (_) {
+      } catch (e) {
         // Down below, and retried.
+        debugPrint('[idle] $user: $e');
       } finally {
         await events?.cancel();
         unawaited(c.disconnect().catchError((_) {}));

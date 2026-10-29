@@ -48,6 +48,9 @@ class GmailProvider implements MailProvider {
   // ponytail: one GET per message, 10 at a time; the batch endpoint if large mailboxes sync too slowly.
   static const _chunk = 10;
 
+  /// Messages per page of the initial sync.
+  static const _page = 100;
+
   @override
   Future<Result<void>> refreshAuth() => _guard(() async {
     await _refresh(await _tokens());
@@ -55,7 +58,7 @@ class GmailProvider implements MailProvider {
   });
 
   @override
-  Future<Result<SyncBatch>> initialSync() => _guard(() async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => _guard(() async {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
     final cursor = (await _get('profile'))['historyId'] as String;
     final labels = [
@@ -71,7 +74,19 @@ class GmailProvider implements MailProvider {
     final ids = await _list({'q': 'after:$after'});
     final inbox = (await _list({'q': 'after:$after', 'labelIds': inboxLabelId}))
         .toSet();
-    final fetched = await _fetchAll(ids, full: inbox.contains);
+    // Page by page: each one is handed over (and stored) before the next is fetched.
+    // ponytail: a retry refetches pages already stored; skip stored ids if big mailboxes keep failing late.
+    final fetched = <String, (Message, String?)?>{};
+    for (var i = 0; i < ids.length; i += _page) {
+      final page = await _fetchAll(
+        ids.skip(i).take(_page),
+        full: inbox.contains,
+      );
+      fetched.addAll(page);
+      await onPage?.call([
+        for (final (m, _) in page.values.nonNulls) m,
+      ], _inboxBodies(page));
+    }
     return Ok(
       SyncBatch(
         cursor: cursor,

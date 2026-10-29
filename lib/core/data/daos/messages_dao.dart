@@ -25,11 +25,13 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
   )..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;
 
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
-  /// The batch's cursor is saved in the same transaction, so data and cursor never disagree.
+  /// The batch's cursor is saved in the same transaction, so data and cursor never disagree;
+  /// [saveCursor] false stores a partial page of the initial sync, whose cursor must wait for the end.
   Future<void> applySync(
     String accountId,
     SyncBatch batch, {
     bool fullSnapshot = false,
+    bool saveCursor = true,
   }) => transaction(() async {
     if (fullSnapshot) {
       // Ids go through a TEMP table, not bound variables: SQLite caps those.
@@ -128,16 +130,16 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               ),
           ]);
       }
-      b
-        ..insertAll(bodies, [
-          for (final MapEntry(:key, :value) in batch.bodies.entries)
-            BodiesCompanion.insert(
-              accountId: accountId,
-              messageId: key,
-              body: value,
-            ),
-        ], mode: InsertMode.insertOrReplace)
-        ..insert(
+      b.insertAll(bodies, [
+        for (final MapEntry(:key, :value) in batch.bodies.entries)
+          BodiesCompanion.insert(
+            accountId: accountId,
+            messageId: key,
+            body: value,
+          ),
+      ], mode: InsertMode.insertOrReplace);
+      if (saveCursor) {
+        b.insert(
           syncCursors,
           SyncCursorsCompanion.insert(
             accountId: accountId,
@@ -145,6 +147,7 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           ),
           mode: InsertMode.insertOrReplace,
         );
+      }
     });
   });
 

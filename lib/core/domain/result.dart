@@ -23,6 +23,9 @@ final class UnexpectedFailure extends Failure {
   const UnexpectedFailure(this.error, [this.stackTrace]);
   final Object error;
   final StackTrace? stackTrace;
+
+  @override
+  String toString() => 'UnexpectedFailure($error)';
 }
 
 /// The Provider no longer accepts the Account's credentials: the Account becomes Da ricollegare.

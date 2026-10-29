@@ -33,6 +33,17 @@ class MailStore implements InboxRepository {
     bool fullSnapshot = false,
   }) => _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
 
+  /// A page of the initial sync: stored right away, without touching the cursor.
+  Future<void> applyPage(
+    String accountId,
+    List<Message> messages,
+    Map<String, String> bodies,
+  ) => _db.messagesDao.applySync(
+    accountId,
+    SyncBatch(cursor: '', messages: messages, bodies: bodies),
+    saveCursor: false,
+  );
+
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() =>
       _db.messagesDao.watchUnifiedInbox().map(

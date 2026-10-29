@@ -21,6 +21,12 @@ class SyncBatch {
   final Map<String, String> bodies;
 }
 
+/// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.
+typedef SyncPage = Future<void> Function(
+  List<Message> messages,
+  Map<String, String> bodies,
+);
+
 /// What the change signal reports: it came [up], something [changed], or it went [down].
 /// While it is down the sync engine falls back to polling (ADR 0008).
 enum ChangeSignal { up, changed, down }
@@ -32,7 +38,9 @@ abstract interface class MailProvider {
   Future<Result<void>> refreshAuth();
 
   /// Headers of the last 90 days with Labels and Conversations, plus the inbox bodies.
-  Future<Result<SyncBatch>> initialSync();
+  /// [onPage] gets each page as soon as it is fetched (newest first); the returned batch is still the whole
+  /// snapshot, with the cursor: the caller saves the cursor only from it, so an interrupted run never skips messages.
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage});
 
   /// Changes since [cursor]; an expired cursor is [NotFoundFailure], and the caller redoes the initial sync.
   Future<Result<SyncBatch>> incrementalSync(String cursor);

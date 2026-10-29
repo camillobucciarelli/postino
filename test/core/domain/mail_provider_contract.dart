@@ -91,6 +91,22 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       expect(batch.cursor, isNotEmpty);
     });
 
+    test('initial sync hands over every message in pages too', () async {
+      for (final id in ['a', 'b', 'c']) {
+        h.deliver(msg(id));
+      }
+      final paged = <String>[];
+      final batch = _ok(
+        await h.provider.initialSync(
+          onPage: (messages, bodies) async {
+            paged.addAll(messages.map((m) => m.id));
+            expect(bodies.keys, everyElement(isIn(paged)));
+          },
+        ),
+      );
+      expect(paged, unorderedEquals(batch.messages.map((m) => m.id)));
+    });
+
     test('initial sync of an empty mailbox still returns a cursor', () async {
       final batch = _ok(await h.provider.initialSync());
       expect(batch.messages, isEmpty);

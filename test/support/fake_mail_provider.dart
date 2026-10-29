@@ -46,6 +46,10 @@ class FakeMailProvider implements MailProvider {
   bool _signalUp = true;
   bool _rateLimited = false;
 
+  /// Messages per page of the initial sync, and, when set, the number of pages after which it fails.
+  int pageSize = 1000;
+  int? failAfterPages;
+
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
   final sent = <OutgoingMessage>[];
@@ -110,8 +114,18 @@ class FakeMailProvider implements MailProvider {
   };
 
   @override
-  Future<Result<SyncBatch>> initialSync() async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) async {
     await hold?.future;
+    if (_failure == null && onPage != null) {
+      final all = _messages.values.toList();
+      for (var i = 0; i < all.length; i += pageSize) {
+        if (failAfterPages == i ~/ pageSize) {
+          return const Err(UnexpectedFailure('boom'));
+        }
+        final page = all.skip(i).take(pageSize).toList();
+        await onPage(page, _inboxBodies(page));
+      }
+    }
     return _guard(() {
       initialSyncs++;
       return SyncBatch(

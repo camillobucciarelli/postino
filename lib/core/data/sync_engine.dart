@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
@@ -143,24 +144,41 @@ class SyncEngine implements MailSync {
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
+    Future<Result<SyncBatch>> initial() {
+      debugPrint('[sync] $accountId: initial sync start');
+      return provider.initialSync(
+        onPage: (messages, bodies) =>
+            _store.applyPage(accountId, messages, bodies),
+      );
+    }
+
+    if (!full) debugPrint('[sync] $accountId: incremental sync start');
     var result = full
-        ? await provider.initialSync()
+        ? await initial()
         : await provider.incrementalSync(cursor);
     if (result case Err(failure: NotFoundFailure())) {
       // Expired cursor: start over.
       full = true;
-      result = await provider.initialSync();
+      result = await initial();
     }
     switch (result) {
       case Ok(:final value):
         _retry.remove(accountId);
+        // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
-      case Err(failure: AuthFailure()):
-        _retry.remove(accountId);
-        await _store.setStatus(accountId, AccountStatus.daRicollegare);
-      // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
-      case Err():
-        _retry.add(accountId);
+        debugPrint(
+          '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
+          '${value.messages.length} messages, ${value.removedMessageIds.length} removed',
+        );
+      case Err(:final failure):
+        debugPrint('[sync] $accountId: failed, $failure');
+        if (failure is AuthFailure) {
+          _retry.remove(accountId);
+          await _store.setStatus(accountId, AccountStatus.daRicollegare);
+        } else {
+          // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
+          _retry.add(accountId);
+        }
     }
   }
 }

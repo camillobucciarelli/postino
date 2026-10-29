@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
@@ -31,6 +32,25 @@ void main() {
     a.removeRemotely('2');
     await GetIt.I<SyncEngine>().syncAll();
     expect(await inbox(), ['a:1', 'b:1']);
+  });
+
+  test('an initial sync that fails mid-way keeps the stored pages, no cursor, and the next run completes', () async {
+    final c = (await h.addAccount('c'))
+      ..pageSize = 2
+      ..failAfterPages = 1;
+    for (final id in ['1', '2', '3', '4']) {
+      c.deliver(msg(id));
+    }
+    final store = GetIt.I<MailStore>();
+    await GetIt.I<SyncEngine>().syncAll();
+    // The first page is in the DB although the second was never fetched.
+    expect((await inbox()).where((e) => e.startsWith('c:')), hasLength(2));
+    expect(await store.cursor('c'), isNull);
+
+    c.failAfterPages = null;
+    await GetIt.I<SyncEngine>().syncAll();
+    expect((await inbox()).where((e) => e.startsWith('c:')), hasLength(4));
+    expect(await store.cursor('c'), isNotNull);
   });
 
   test('a failed sync deletes nothing', () async {

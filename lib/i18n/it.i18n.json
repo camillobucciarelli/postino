@@ -2,25 +2,41 @@
   "appTitle": "Postino",
   "postaUnificata": "Posta unificata",
   "postaInArrivo": "Posta in arrivo",
+  "account": "Account",
+  "accountCount": {
+    "one": "$n account",
+    "other": "$n account"
+  },
   "etichette": "Etichette",
   "onboarding": {
-    "title": "Benvenuto in Postino",
-    "body": "Collega la tua casella Gmail per iniziare.",
+    "body": "Tutte le tue caselle in un posto solo.",
     "connectGmail": "Collega Gmail"
   },
   "daRicollegare": {
-    "banner": "$address è da ricollegare: la sua posta resta leggibile ma non si aggiorna.",
-    "reconnect": "Ricollega"
+    "title": "$name è da ricollegare",
+    "message": "Google non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.",
+    "signIn": "Accedi",
+    "status": "Da ricollegare"
   },
   "connect": {
+    "title": "Collegamento non riuscito",
     "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
     "offline": "Nessuna connessione: riprova quando sei online.",
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
     "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
-    "failed": "Collegamento non riuscito. Riprova."
+    "failed": "Qualcosa è andato storto: riprova."
   },
   "offline": {
-    "label": "Offline",
-    "tooltip": "Sei offline: la posta si aggiornerà al ritorno della rete."
+    "title": "Sei offline",
+    "message": "La posta si aggiornerà al ritorno della rete."
+  },
+  "list": {
+    "loading": "Caricamento dei messaggi",
+    "emptyTitle": "Niente di nuovo",
+    "emptyBody": "I messaggi compaiono qui appena arrivano.",
+    "yesterday": "Ieri",
+    "unread": "Non letto",
+    "starred": "con Stella",
+    "account": "account $name"
   }
 }

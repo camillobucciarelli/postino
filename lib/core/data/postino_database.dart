@@ -72,7 +72,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -89,6 +89,17 @@ class PostinoDatabase extends _$PostinoDatabase {
           "'STARRED','UNREAD','IMPORTANT','CHAT') OR id LIKE 'CATEGORY\\_%' ESCAPE '\\'",
         );
       }
+      if (from < 4) {
+        // Account color: its place in the palette instead of the light-theme ARGB, so dark mode has its own.
+        final cases = [
+          for (final (i, argb) in _v3AccountColors.indexed)
+            'WHEN $argb THEN $i',
+        ].join(' ');
+        await customStatement(
+          'UPDATE accounts SET color = CASE color $cases '
+          'ELSE position % $accountColorCount END',
+        );
+      }
     },
   );
 }
@@ -97,3 +108,15 @@ void _secureDelete(sqlite3.Database sql) =>
     sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
+
+/// The light-theme ARGB colors v1-v3 stored, in palette order (sky … graphite).
+const _v3AccountColors = [
+  0xFF00779E,
+  0xFF3559C3,
+  0xFF6C3FAF,
+  0xFF95388B,
+  0xFFB43C6B,
+  0xFF6B6F00,
+  0xFF445465,
+  0xFF403D36,
+];

@@ -1,0 +1,85 @@
+import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+
+import '../../../core/domain/accounts_repository.dart';
+import '../../../core/domain/inbox_repository.dart';
+import '../../../design_system/design_system.dart';
+import '../../../i18n/strings.g.dart';
+
+/// “Posta unificata”, with how many Accounts it merges.
+class UnifiedAppBar extends StatefulWidget {
+  const UnifiedAppBar({super.key});
+
+  @override
+  State<UnifiedAppBar> createState() => _UnifiedAppBarState();
+}
+
+class _UnifiedAppBarState extends State<UnifiedAppBar> {
+  late final accounts = streamSignal(
+    () => GetIt.I<AccountsRepository>().watchAccounts(),
+  );
+
+  @override
+  void dispose() {
+    accounts.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SignalBuilder(
+    builder: (context) => PostinoAppBar(
+      title: context.t.postaUnificata,
+      subtitle: switch (accounts.value.value) {
+        final list? => context.t.accountCount(n: list.length),
+        null => null,
+      },
+    ),
+  );
+}
+
+/// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's.
+class AccountAppBar extends StatefulWidget {
+  const AccountAppBar({super.key, required this.accountId, this.labelId});
+  final String accountId;
+  final String? labelId;
+
+  @override
+  State<AccountAppBar> createState() => _AccountAppBarState();
+}
+
+class _AccountAppBarState extends State<AccountAppBar> {
+  late final accounts = streamSignal(
+    () => GetIt.I<AccountsRepository>().watchAccounts(),
+  );
+  late final labels = streamSignal(
+    () => GetIt.I<InboxRepository>().watchLabels(widget.accountId),
+  );
+
+  @override
+  void dispose() {
+    accounts.dispose();
+    labels.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SignalBuilder(
+    builder: (context) {
+      final a = accounts.value.value
+          ?.where((a) => a.id == widget.accountId)
+          .firstOrNull;
+      final label = labels.value.value
+          ?.where((l) => l.id == widget.labelId)
+          .firstOrNull;
+      final name = a?.name ?? '';
+      return PostinoAppBar(
+        title: widget.labelId == null ? name : label?.name ?? '',
+        subtitle: widget.labelId == null ? context.t.postaInArrivo : name,
+        account: a == null
+            ? null
+            : (color: PostinoAccountColor.values[a.color], initial: a.initial),
+      );
+    },
+  );
+}

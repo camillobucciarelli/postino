@@ -1494,6 +1494,18 @@ abstract final class PostinoMotion {
   /// Entrata/uscita di snackbar e banner. Flutter: Durations.short4.
   static const Duration snackbar = Durations.short4;
 
+  /// Cambio di vista (fade through, Material 3): uscita, di cui il contenuto non ha più nulla da mostrare (resta il vuoto).
+  static const Duration fadeThroughOut = Duration(milliseconds: 90);
+
+  /// Cambio di vista: il contenuto entra con dissolvenza e scala da [fadeThroughScaleBegin] a 1.
+  static const Duration fadeThroughIn = Duration(milliseconds: 210);
+
+  /// Scala iniziale del contenuto che entra.
+  static const double fadeThroughScaleBegin = 0.96;
+
+  /// L’evidenziazione della voce attiva del menu scorre da una voce all’altra. Curva: PostinoMotion.emphasized.
+  static const Duration menuIndicator = Duration(milliseconds: 250);
+
   /// Ciclo del riflesso dello skeleton. Flutter: Duration(milliseconds: 1200).
   static const Duration skeleton = Duration(milliseconds: 1200);
 
@@ -1508,6 +1520,9 @@ abstract final class PostinoMotion {
 
   /// Elementi che escono. Flutter: Easing.standardAccelerate.
   static const Curve standardAccelerate = Easing.standardAccelerate;
+
+  /// Elementi che si spostano sullo schermo (indicatore del menu). Flutter: Curves.easeInOutCubicEmphasized.
+  static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 
   /// Lista → dettaglio, apertura thread, sheet che sale. Flutter: Easing.emphasizedDecelerate.
   static const Curve emphasizedDecelerate = Easing.emphasizedDecelerate;
@@ -1526,18 +1541,19 @@ abstract final class PostinoMotion {
       MediaQuery.disableAnimationsOf(context) ? Duration.zero : d;
 }
 
-/// Scala tipografica: Newsreader per i titoli, Instrument Sans per il testo, IBM Plex Mono per header grezzi. Il colore viene dal tema.
+/// Scala tipografica (come KeyVault): Caprasimo per i titoli, Figtree per il testo, monospace di sistema per header grezzi. Il colore viene dal tema.
 abstract final class PostinoText {
-  static const serif = 'Newsreader';
-  static const sans = 'Instrument Sans';
-  static const mono = 'IBM Plex Mono';
+  static const serif = 'Caprasimo';
+  static const sans = 'Figtree';
+  static const mono = 'monospace';
+  static const monoFallback = ['SFMono-Regular', 'Menlo', 'Consolas'];
 
   /// Titolo grande della schermata, onboarding. Flutter: textTheme.displaySmall.
   static const largeTitle = TextStyle(
     fontFamily: serif,
     fontSize: 34.0,
     height: 1.1765,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     letterSpacing: -0.51,
   );
 
@@ -1546,8 +1562,8 @@ abstract final class PostinoText {
     fontFamily: serif,
     fontSize: 30.0,
     height: 1.2,
-    fontWeight: FontWeight.w500,
-    letterSpacing: -0.3,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.45,
   );
 
   /// Oggetto del thread, titoli di sezione delle impostazioni. Flutter: headlineSmall.
@@ -1555,8 +1571,8 @@ abstract final class PostinoText {
     fontFamily: serif,
     fontSize: 24.0,
     height: 1.25,
-    fontWeight: FontWeight.w600,
-    letterSpacing: -0.12,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.36,
   );
 
   /// Titolo di dialog e bottom sheet. Flutter: titleLarge.
@@ -1564,15 +1580,17 @@ abstract final class PostinoText {
     fontFamily: serif,
     fontSize: 20.0,
     height: 1.3,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.3,
   );
 
-  /// Titolo dell’AppBar compatta: resta sans perché è navigazione. AppBarTheme.titleTextStyle.
+  /// Titolo dell’AppBar compatta, Caprasimo come gli altri titoli. AppBarTheme.titleTextStyle.
   static const appBarTitle = TextStyle(
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 17.0,
     height: 1.2941,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.255,
   );
 
   /// Mittente non letto in lista e header del messaggio. Flutter: titleMedium.
@@ -1636,7 +1654,7 @@ abstract final class PostinoText {
     fontFamily: sans,
     fontSize: 12.0,
     height: 1.3333,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
@@ -1654,7 +1672,7 @@ abstract final class PostinoText {
     fontFamily: sans,
     fontSize: 15.0,
     height: 1.3333,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
 
   /// Chip, badge, bottoni piccoli. Flutter: labelMedium.
@@ -1662,7 +1680,7 @@ abstract final class PostinoText {
     fontFamily: sans,
     fontSize: 13.0,
     height: 1.3846,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
 
   /// Testo di aiuto sotto i campi, stati di sync. Flutter: bodySmall.
@@ -1685,6 +1703,7 @@ abstract final class PostinoText {
   /// Header grezzi, codice nel corpo. Famiglia mono. Flutter: PostinoText.code.
   static const code = TextStyle(
     fontFamily: mono,
+    fontFamilyFallback: monoFallback,
     fontSize: 13.0,
     height: 1.5385,
     fontWeight: FontWeight.w400,

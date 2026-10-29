@@ -42,11 +42,17 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override String get appTitle => 'Postino';
 	@override String get postaUnificata => 'All inboxes';
 	@override String get postaInArrivo => 'Inbox';
+	@override String get account => 'Accounts';
+	@override String accountCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} account',
+		other: '${n} accounts',
+	);
 	@override String get etichette => 'Labels';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
+	@override late final _Translations$list$en list = _Translations$list$en._(_root);
 }
 
 // Path: onboarding
@@ -56,8 +62,7 @@ class _Translations$onboarding$en extends Translations$onboarding$it {
 	final TranslationsEn _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Welcome to Postino';
-	@override String get body => 'Connect your Gmail mailbox to get started.';
+	@override String get body => 'All your mailboxes in one place.';
 	@override String get connectGmail => 'Connect Gmail';
 }
 
@@ -68,8 +73,10 @@ class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
 	final TranslationsEn _root; // ignore: unused_field
 
 	// Translations
-	@override String banner({required Object address}) => '${address} needs reconnecting: its mail stays readable but no longer updates.';
-	@override String get reconnect => 'Reconnect';
+	@override String title({required Object name}) => '${name} needs signing in again';
+	@override String get message => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
+	@override String get signIn => 'Sign in';
+	@override String get status => 'Needs signing in';
 }
 
 // Path: connect
@@ -79,11 +86,12 @@ class _Translations$connect$en extends Translations$connect$it {
 	final TranslationsEn _root; // ignore: unused_field
 
 	// Translations
+	@override String get title => 'Couldn\'t connect';
 	@override String missingSetting({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).';
 	@override String get offline => 'No connection: try again when you are online.';
 	@override String get missingPermission => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.';
 	@override String wrongAccount({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.';
-	@override String get failed => 'Couldn\'t connect. Try again.';
+	@override String get failed => 'Something went wrong: try again.';
 }
 
 // Path: offline
@@ -93,8 +101,24 @@ class _Translations$offline$en extends Translations$offline$it {
 	final TranslationsEn _root; // ignore: unused_field
 
 	// Translations
-	@override String get label => 'Offline';
-	@override String get tooltip => 'You\'re offline: mail will update when the network is back.';
+	@override String get title => 'You\'re offline';
+	@override String get message => 'Mail will update when the network is back.';
+}
+
+// Path: list
+class _Translations$list$en extends Translations$list$it {
+	_Translations$list$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get loading => 'Loading messages';
+	@override String get emptyTitle => 'Nothing new';
+	@override String get emptyBody => 'Messages show up here as they arrive.';
+	@override String get yesterday => 'Yesterday';
+	@override String get unread => 'Unread';
+	@override String get starred => 'starred';
+	@override String account({required Object name}) => 'account ${name}';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -108,19 +132,30 @@ extension on TranslationsEn {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'All inboxes',
 			'postaInArrivo' => 'Inbox',
+			'account' => 'Accounts',
+			'accountCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} account', other: '${n} accounts', ), 
 			'etichette' => 'Labels',
-			'onboarding.title' => 'Welcome to Postino',
-			'onboarding.body' => 'Connect your Gmail mailbox to get started.',
+			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',
-			'daRicollegare.banner' => ({required Object address}) => '${address} needs reconnecting: its mail stays readable but no longer updates.',
-			'daRicollegare.reconnect' => 'Reconnect',
+			'daRicollegare.title' => ({required Object name}) => '${name} needs signing in again',
+			'daRicollegare.message' => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
+			'daRicollegare.signIn' => 'Sign in',
+			'daRicollegare.status' => 'Needs signing in',
+			'connect.title' => 'Couldn\'t connect',
 			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
 			'connect.offline' => 'No connection: try again when you are online.',
 			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
 			'connect.wrongAccount' => ({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.',
-			'connect.failed' => 'Couldn\'t connect. Try again.',
-			'offline.label' => 'Offline',
-			'offline.tooltip' => 'You\'re offline: mail will update when the network is back.',
+			'connect.failed' => 'Something went wrong: try again.',
+			'offline.title' => 'You\'re offline',
+			'offline.message' => 'Mail will update when the network is back.',
+			'list.loading' => 'Loading messages',
+			'list.emptyTitle' => 'Nothing new',
+			'list.emptyBody' => 'Messages show up here as they arrive.',
+			'list.yesterday' => 'Yesterday',
+			'list.unread' => 'Unread',
+			'list.starred' => 'starred',
+			'list.account' => ({required Object name}) => 'account ${name}',
 			_ => null,
 		};
 	}

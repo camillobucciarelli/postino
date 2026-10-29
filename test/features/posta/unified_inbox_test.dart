@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/ui.dart';
 
 Future<void> _start(WidgetTester tester) async {
   LocaleSettings.setLocaleSync(AppLocale.it);
@@ -17,7 +19,7 @@ void main() {
     tester,
   ) async {
     final h = await Harness.create();
-    final gmail = await h.addAccount('a1', color: 0xFFE91E63);
+    final gmail = await h.addAccount('a1', color: 4); // rose
     gmail.deliver(
       msg(
         'old',
@@ -53,7 +55,7 @@ void main() {
       'new@example.com',
       'Nuovo',
       'anteprima nuova',
-      '2026-03-02',
+      '2 mar',
     ]) {
       expect(
         find.descendant(of: newRow, matching: find.text(text)),
@@ -74,37 +76,28 @@ void main() {
       ),
       findsNothing,
     );
+    expect(find.descendant(of: newRow, matching: starIcon), findsOneWidget);
+    expect(find.descendant(of: oldRow, matching: starIcon), findsNothing);
+    // Account bar and badge: the Accounts mix here.
     expect(
-      find.descendant(of: newRow, matching: find.byIcon(Icons.star)),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: oldRow, matching: find.byIcon(Icons.star)),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: newRow,
-        matching: find.byWidgetPredicate(
-          (w) =>
-              w is ColoredBox &&
-              w.key == const ValueKey('account-color') &&
-              w.color == const Color(0xFFE91E63),
-        ),
-      ),
-      findsOneWidget,
+      accountBar(tester, newRow),
+      PostinoColors.light.account(PostinoAccountColor.rose).color,
     );
     expect(
       tester
           .getSize(
             find.descendant(
               of: newRow,
-              matching: find.byKey(const ValueKey('account-color')),
+              matching: find.byKey(const ValueKey('account-bar')),
             ),
           )
           .height,
       greaterThan(0),
-      reason: 'the strip must be visible',
+      reason: 'the bar must be visible',
+    );
+    expect(
+      find.descendant(of: newRow, matching: find.byType(PostinoAccountMark)),
+      findsOneWidget,
     );
   });
 
@@ -112,10 +105,10 @@ void main() {
     'merges the inboxes of two Accounts, each row in its Account color',
     (tester) async {
       final h = await Harness.create();
-      (await h.addAccount('a1', color: 0xFFE91E63)).deliver(
+      (await h.addAccount('a1', color: 4)).deliver(
         msg('x', date: DateTime.utc(2026, 3, 1, 12), subject: 'Da uno'),
       );
-      (await h.addAccount('a2', color: 0xFF4CAF50)).deliver(
+      (await h.addAccount('a2', color: 5)).deliver(
         msg('x', date: DateTime.utc(2026, 3, 2, 12), subject: 'Da due'),
       );
       // Not in the inbox: must not show up.
@@ -124,14 +117,10 @@ void main() {
 
       await _start(tester);
 
-      Finder colorOf(String row, int argb) => find.descendant(
-        of: find.byKey(ValueKey(row)),
-        matching: find.byWidgetPredicate(
-          (w) => w is ColoredBox && w.color == Color(argb),
-        ),
-      );
-      expect(colorOf('row-a1-x', 0xFFE91E63), findsOneWidget);
-      expect(colorOf('row-a2-x', 0xFF4CAF50), findsOneWidget);
+      Color? bar(String row) => accountBar(tester, find.byKey(ValueKey(row)));
+      final light = PostinoColors.light;
+      expect(bar('row-a1-x'), light.account(PostinoAccountColor.rose).color);
+      expect(bar('row-a2-x'), light.account(PostinoAccountColor.olive).color);
       expect(
         tester.getTopLeft(find.byKey(const ValueKey('row-a2-x'))).dy <
             tester.getTopLeft(find.byKey(const ValueKey('row-a1-x'))).dy,
@@ -140,4 +129,31 @@ void main() {
       expect(find.text('Inviato'), findsNothing);
     },
   );
+
+  testWidgets('in dark mode the Account color follows the theme', (
+    tester,
+  ) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    final h = await Harness.create();
+    (await h.addAccount('a1', color: 4)).deliver(msg('x'));
+
+    await _start(tester);
+
+    final rose = PostinoAccountColor.rose;
+    expect(
+      accountBar(tester, find.byKey(const ValueKey('row-a1-x'))),
+      allOf(
+        PostinoColors.dark.account(rose).color,
+        isNot(PostinoColors.light.account(rose).color),
+      ),
+    );
+  });
+
+  testWidgets('an empty inbox shows the EmptyState', (tester) async {
+    await (await Harness.create()).addAccount('a1');
+    await _start(tester);
+    expect(find.byType(PostinoEmptyState), findsOneWidget);
+    expect(find.text('Niente di nuovo'), findsOneWidget);
+  });
 }

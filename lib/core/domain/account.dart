@@ -16,8 +16,15 @@ class Account {
   final String address;
   final ProviderKind provider;
 
-  /// ARGB value; `dart:ui` Color is not available in the pure-Dart domain.
+  /// Position in the palette of [accountColorCount] Account colors; the theme gives the actual color.
   final int color;
   final int position;
   final AccountStatus status;
+
+  // ponytail: no name nor chosen initial in the domain yet, both come from the address.
+  String get name => address;
+  String get initial => address.isEmpty ? '?' : address[0].toUpperCase();
 }
+
+/// Colors of the Account palette, assigned in turn to new Accounts.
+const accountColorCount = 8;

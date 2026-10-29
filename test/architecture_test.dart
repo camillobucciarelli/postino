@@ -1,4 +1,5 @@
-// Enforces ADR 0006 import rules by scanning every import/export under lib/.
+// Enforces ADR 0006 import rules by scanning every import/export under lib/,
+// plus the design system's: its levels, and no raw styling in features and pages.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,16 @@ String _target(String file, String uri) {
   }
   if (uri.contains(':')) return uri;
   return Uri.parse(file).resolve(uri).path;
+}
+
+/// Design system levels, bottom up: a level imports only those below it.
+const _levels = ['tokens', 'atoms', 'molecules', 'organisms', 'templates'];
+
+int _level(String path) {
+  final s = path.split('/');
+  return s.length > 2 && s.first == 'design_system'
+      ? _levels.indexOf(s[1])
+      : -1;
 }
 
 String? _feature(String path) =>
@@ -66,6 +77,13 @@ List<String> violations(String file, String source) {
             segments.contains('presentation'))) {
       bad('domain must be pure Dart');
     }
+    if (file.startsWith('design_system/') &&
+        ['core/', 'features/', 'app/'].any(t.startsWith)) {
+      bad('the design system knows no app code');
+    }
+    if (_level(file) >= 0 && _level(t) > _level(file)) {
+      bad('a design system level imports only the levels below it');
+    }
     if (file.startsWith('app/') && segments.contains('data')) {
       bad('pages must not import data');
     }
@@ -77,6 +95,18 @@ List<String> violations(String file, String source) {
   }
   return out;
 }
+
+final _rawStyle = RegExp(
+  r'\bColors\.|\bColor\(|\bIcons\.|\bCupertinoIcons\.|\bTextStyle\(|\bFontWeight\.|\bfontSize:',
+);
+
+/// Features and pages draw only through the design system: no raw colors, icons or type.
+List<String> styleViolations(String file, String source) => [
+  if ((file.startsWith('features/') || file.startsWith('app/')) &&
+      !file.endsWith('.g.dart'))
+    for (final m in _rawStyle.allMatches(source.replaceAll(_comment, ' ')))
+      '$file: ${m.group(0)} outside the design system',
+];
 
 void main() {
   group('violations', () {
@@ -218,6 +248,53 @@ void main() {
         isEmpty,
       );
     });
+    for (final uri in [
+      'package:postino/core/domain/account.dart',
+      '../../features/posta/presentation/x.dart',
+      'package:postino/app/posta/posta_layout.dart',
+    ]) {
+      test('the design system may not import $uri', () {
+        expect(
+          violations('design_system/atoms/x.dart', "import '$uri';"),
+          isNotEmpty,
+        );
+      });
+    }
+    test('an atom may not import a molecule', () {
+      expect(
+        violations(
+          'design_system/atoms/x.dart',
+          "import '../molecules/postino_banner.dart';",
+        ),
+        isNotEmpty,
+      );
+    });
+    test('a molecule may import atoms and tokens', () {
+      expect(
+        violations(
+          'design_system/molecules/x.dart',
+          "import '../atoms/postino_icon.dart';\nimport '../tokens/postino_theme.dart';",
+        ),
+        isEmpty,
+      );
+    });
+    for (final code in [
+      'Colors.red',
+      'Color(0xFF000000)',
+      'Icons.star',
+      'CupertinoIcons.star',
+      'TextStyle(color: c)',
+      'FontWeight.bold',
+      'Text(s, style: s.copyWith(fontSize: 3))',
+    ]) {
+      test('features may not draw with $code', () {
+        expect(
+          styleViolations('features/posta/presentation/x.dart', code),
+          isNotEmpty,
+        );
+        expect(styleViolations('design_system/atoms/x.dart', code), isEmpty);
+      });
+    }
     test('Windows paths are normalised', () {
       expect(
         libPath(r'lib\features\posta\domain\x.dart'),
@@ -231,8 +308,10 @@ void main() {
       for (final f in Directory(
         'lib',
       ).listSync(recursive: true).whereType<File>())
-        if (f.path.endsWith('.dart'))
+        if (f.path.endsWith('.dart')) ...[
           ...violations(libPath(f.path), f.readAsStringSync()),
+          ...styleViolations(libPath(f.path), f.readAsStringSync()),
+        ],
     ];
     expect(found, isEmpty);
   });

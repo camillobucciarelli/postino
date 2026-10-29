@@ -493,6 +493,36 @@ void main() {
       },
     );
 
+    test('the temporary block end is parsed from the body, else the header', () async {
+      final g = _Recorded((r, path) => 'rate_limited');
+      expect(
+        await g.provider.initialSync(),
+        isA<Err<SyncBatch>>().having(
+          (e) => e.failure,
+          'failure',
+          isA<RateLimitFailure>().having(
+            (f) => f.retryAfter,
+            'retryAfter',
+            DateTime.utc(2026, 10, 28, 12, 0, 5),
+          ),
+        ),
+      );
+      final h = GmailProvider(
+        _account,
+        _keychain(),
+        MockClient(
+          (r) async => http.Response('{}', 429, headers: {'retry-after': '90'}),
+        ),
+        FakeClock(_now),
+        client: _testClient,
+        sleep: (d) async {},
+      );
+      expect(
+        (await h.initialSync() as Err).failure.toString(),
+        'RateLimitFailure(retryAfter: ${_now.add(const Duration(seconds: 90))})',
+      );
+    });
+
     test('Retry-After is honoured, capped at 32 s', () async {
       for (final (header, expected) in [('7', 7), ('120', 32)]) {
         var limited = true;

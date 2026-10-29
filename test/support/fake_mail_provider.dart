@@ -45,6 +45,7 @@ class FakeMailProvider implements MailProvider {
   bool _authBroken = false;
   bool _signalUp = true;
   bool _rateLimited = false;
+  DateTime? _retryAfter;
 
   /// Messages per page of the initial sync, and, when set, the number of pages after which it fails.
   int pageSize = 1000;
@@ -75,7 +76,10 @@ class FakeMailProvider implements MailProvider {
 
   void goOffline() => _offline = true;
   void goOnline() => _offline = false;
-  void rateLimit([bool on = true]) => _rateLimited = on;
+  void rateLimit([bool on = true, DateTime? retryAfter]) {
+    _rateLimited = on;
+    _retryAfter = retryAfter;
+  }
   void breakAuth() => _authBroken = true;
   void restoreAuth() => _authBroken = false;
 
@@ -96,7 +100,7 @@ class FakeMailProvider implements MailProvider {
       : _offline
       ? const OfflineFailure()
       : _rateLimited
-      ? const RateLimitFailure()
+      ? RateLimitFailure(retryAfter: _retryAfter)
       : null;
 
   // --- MailProvider ---

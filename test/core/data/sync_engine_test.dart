@@ -164,4 +164,26 @@ void main() {
     await pumpEventQueue();
     expect(await inbox(), contains('a:3'));
   });
+
+  test('a block with retryAfter pauses polls and signals until then', () async {
+    final engine = GetIt.I<SyncEngine>()..start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    final until = h.clock.now().add(const Duration(minutes: 5));
+    a.rateLimit(true, until);
+    a.deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
+    await pumpEventQueue();
+    final syncs = a.initialSyncs;
+
+    a.rateLimit(false);
+    a.deliver(msg('4')); // signal while paused: skipped
+    h.clock.advance(pollEvery); // poll while paused: skipped
+    await pumpEventQueue();
+    expect(await inbox(), isNot(contains('a:3')));
+    expect(a.initialSyncs, syncs);
+
+    h.clock.advance(const Duration(minutes: 5));
+    await pumpEventQueue();
+    expect(await inbox(), containsAll(['a:3', 'a:4']));
+  });
 }

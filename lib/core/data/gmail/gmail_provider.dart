@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../domain/mail_provider.dart';
@@ -379,6 +380,13 @@ class GmailProvider implements MailProvider {
       r = await send();
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;
+    if (_rateLimited(r)) {
+      // Never the Authorization header or the query: only method, path, status and the start of the body.
+      debugPrint(
+        '[gmail] rate limited: GET $path ${r.statusCode} '
+        '${r.body.length > 300 ? r.body.substring(0, 300) : r.body}',
+      );
+    }
     throw _Failed(switch (r.statusCode) {
       401 => const AuthFailure(),
       // Token without the Gmail scope: only a new consent fixes it.
@@ -388,9 +396,17 @@ class GmailProvider implements MailProvider {
         const AuthFailure(),
       // An expired history cursor, or a message that no longer exists.
       404 => const NotFoundFailure(),
-      _ when _rateLimited(r) => const RateLimitFailure(),
+      _ when _rateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
       _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
     });
+  }
+
+  /// The end of a temporary block: "Retry after <ISO timestamp>" in the body, else the Retry-After header in seconds.
+  DateTime? _retryAfter(http.Response r) {
+    final at = RegExp(r'Retry after (\S+?Z)').firstMatch(r.body)?.group(1);
+    if (at != null) return DateTime.tryParse(at);
+    final secs = int.tryParse(r.headers['retry-after'] ?? '');
+    return secs == null ? null : _clock.now().add(Duration(seconds: secs));
   }
 
   /// Gmail answers a quota hit with 429, or with 403 and a rate-limit reason.

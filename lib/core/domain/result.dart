@@ -50,7 +50,13 @@ final class NotFoundFailure extends Failure {
 
 /// The Provider asks to slow down.
 final class RateLimitFailure extends Failure {
-  const RateLimitFailure();
+  const RateLimitFailure({this.retryAfter});
+
+  /// When the Provider says the block ends, if it does.
+  final DateTime? retryAfter;
+
+  @override
+  String toString() => 'RateLimitFailure(retryAfter: $retryAfter)';
 }
 
 /// The app is missing a build-time setting (for example the OAuth client ID).

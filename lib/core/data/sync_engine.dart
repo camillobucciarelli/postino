@@ -32,6 +32,9 @@ class SyncEngine implements MailSync {
 
   /// Accounts whose last sync failed for a passing reason (offline, rate limit): the poll retries them.
   final _retry = <String>{};
+
+  /// Accounts the Provider blocked until a given time: no sync before it.
+  final _pausedUntil = <String, DateTime>{};
   final _running = <String, Future<void>>{};
   final _again = <String>{};
 
@@ -125,6 +128,10 @@ class SyncEngine implements MailSync {
   /// One sync at a time per Account; a request while one runs makes it run once more afterwards.
   Future<void> _sync(Account account) {
     final id = account.id;
+    if (_pausedUntil[id] case final until?) {
+      if (_clock.now().isBefore(until)) return Future.value();
+      _pausedUntil.remove(id);
+    }
     if (_running[id] case final running?) {
       _again.add(id);
       return running;
@@ -172,6 +179,10 @@ class SyncEngine implements MailSync {
         );
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
+        if (failure case RateLimitFailure(:final retryAfter?)) {
+          _pausedUntil[accountId] = retryAfter;
+          debugPrint('[sync] $accountId: paused until $retryAfter');
+        }
         if (failure is AuthFailure) {
           _retry.remove(accountId);
           await _store.setStatus(accountId, AccountStatus.daRicollegare);

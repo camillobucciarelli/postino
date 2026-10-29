@@ -115,6 +115,49 @@ void main() {
     );
   });
 
+  testWidgets('from an Account, the drawer opens another Account', (
+    tester,
+  ) async {
+    final h = await Harness.create();
+    (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
+    (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
+
+    await _start(tester);
+    await _tap(tester, 'account-a1');
+    expect(find.text('Da uno'), findsOneWidget);
+    await _tap(tester, 'account-a2');
+    expect(find.text('Da due'), findsOneWidget);
+    expect(find.text('Da uno'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(PostinoAppBar),
+        matching: find.text('a2@example.com'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('from an Etichetta, the drawer opens another Etichetta', (
+    tester,
+  ) async {
+    final h = await Harness.create();
+    final a1 = await h.addAccount('a1');
+    a1.labels.add(
+      const Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta),
+    );
+    a1
+      ..deliver(msg('l', subject: 'In viaggio', labelIds: const [_viaggi]))
+      ..deliver(msg('w', subject: 'Al lavoro', labelIds: const ['Label_7']));
+
+    await _start(tester);
+    await _tap(tester, 'account-a1');
+    await _tap(tester, 'label-$_viaggi');
+    expect(find.text('In viaggio'), findsOneWidget);
+    await _tap(tester, 'label-Label_7');
+    expect(find.text('Al lavoro'), findsOneWidget);
+    expect(find.text('In viaggio'), findsNothing);
+  });
+
   testWidgets('a message starred on the Provider shows the star everywhere', (
     tester,
   ) async {

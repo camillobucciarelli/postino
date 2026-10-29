@@ -43,13 +43,19 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
   accountId: accountId,
   labelId: labelId,
   onOpenUnified: () => Routefly.navigate(routePaths.posta.path),
-  onOpenAccount: (id) => Routefly.navigate(
+  onOpenAccount: (id) => _openFromPosta(
     routePaths.posta.$accountId.path.changes({'accountId': id}),
   ),
-  onOpenLabel: (id) => Routefly.navigate(
+  onOpenLabel: (id) => _openFromPosta(
     routePaths.posta.$accountId.etichetta.$labelId.changes({
       'accountId': accountId!,
       'labelId': id,
     }),
   ),
 );
+
+void _openFromPosta(String path) {
+  // ponytail: routefly 3.1.3 navigate() reuses the entry of the same route template with its old params; going through /posta drops it.
+  Routefly.navigate(routePaths.posta.path);
+  Routefly.navigate(path);
+}

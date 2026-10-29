@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../domain/mail_provider.dart';
+import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
@@ -284,7 +285,7 @@ class GmailProvider implements MailProvider {
     }
   }
 
-  static const _headers = ['From', 'To', 'Subject', 'Message-ID'];
+  static const _headers = ['From', 'To', 'Cc', 'Subject', 'Message-ID'];
 
   /// A Gmail message resource (`full` or `metadata`) as a [Message].
   static Message _parse(Map<String, dynamic> j) {
@@ -296,6 +297,7 @@ class GmailProvider implements MailProvider {
     final labels = [
       for (final l in j['labelIds'] as List? ?? const []) l as String,
     ];
+    final from = parseMailbox(headers['from'] ?? '');
     return Message(
       id: j['id'] as String,
       messageId: headers['message-id'] ?? '',
@@ -303,13 +305,15 @@ class GmailProvider implements MailProvider {
       labelIds: labels,
       isRead: !labels.contains('UNREAD'),
       isStarred: labels.contains('STARRED'),
-      from: headers['from'] ?? '',
-      // ponytail: naive split; a quoted display name with a comma ("Rossi, Ada") breaks in two.
+      from: from.address,
+      fromName: from.name,
       to: [
-        for (final a in (headers['to'] ?? '').split(','))
-          if (a.trim().isNotEmpty) a.trim(),
+        for (final m in parseMailboxes(headers['to'] ?? '')) formatMailbox(m),
       ],
-      subject: headers['subject'] ?? '',
+      cc: [
+        for (final m in parseMailboxes(headers['cc'] ?? '')) formatMailbox(m),
+      ],
+      subject: decodeWords(headers['subject'] ?? ''),
       snippet: _unescape(j['snippet'] as String? ?? ''),
       date: DateTime.fromMillisecondsSinceEpoch(
         int.parse(j['internalDate'] as String),

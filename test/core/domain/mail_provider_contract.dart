@@ -141,6 +141,20 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       },
     );
 
+    test('the sender name and the Cc come back with the message', () async {
+      h.deliver(
+        msg(
+          'a',
+          from: 'ada@example.com',
+          fromName: 'Ada Okafor',
+          cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org'],
+        ),
+      );
+      final a = _ok(await h.provider.initialSync()).messages.single;
+      expect((a.from, a.fromName), ('ada@example.com', 'Ada Okafor'));
+      expect(a.cc, ['Marco Lenti <marco@example.com>', 'carla@example.org']);
+    });
+
     test('incremental sync from a cursor returns only what changed', () async {
       h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());

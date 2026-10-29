@@ -48,6 +48,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           ]);
         }
         b
+          // Labels come with the snapshot: those gone from the Provider go too.
+          ..deleteWhere(labels, (t) => t.accountId.equals(accountId))
           ..deleteWhere(
             messageLabels,
             (t) =>
@@ -151,21 +153,37 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     });
   });
 
-  /// Inbox messages of every Account, newest first, each with its Account.
-  Stream<List<(AccountRow, MessageRow)>> watchUnifiedInbox() {
+  /// Messages carrying [labelId] (by default the inbox), newest first, each with its Account;
+  /// of every Account, or only of [accountId].
+  Stream<List<(AccountRow, MessageRow)>> watchMessages({
+    String? accountId,
+    String labelId = inboxLabelId,
+  }) {
     final m = messages, l = messageLabels, a = accounts;
     final query = select(m).join([
       innerJoin(
         l,
         l.accountId.equalsExp(m.accountId) &
             l.messageId.equalsExp(m.id) &
-            l.labelId.equals(inboxLabelId),
+            l.labelId.equals(labelId),
         useColumns: false,
       ),
       innerJoin(a, a.id.equalsExp(m.accountId)),
     ])..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
+    if (accountId != null) query.where(m.accountId.equals(accountId));
     return query.watch().map(
       (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m))],
     );
   }
+
+  /// The Account's own Etichette, by name.
+  Stream<List<LabelRow>> watchLabels(String accountId) =>
+      (select(labels)
+            ..where(
+              (t) =>
+                  t.accountId.equals(accountId) &
+                  t.kind.equalsValue(LabelKind.etichetta),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .watch();
 }

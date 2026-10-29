@@ -48,6 +48,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// it: 'Posta unificata'
 	String get postaUnificata => 'Posta unificata';
 
+	/// it: 'Posta in arrivo'
+	String get postaInArrivo => 'Posta in arrivo';
+
+	/// it: 'Etichette'
+	String get etichette => 'Etichette';
+
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
@@ -136,6 +142,8 @@ extension on Translations {
 		return switch (path) {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'Posta unificata',
+			'postaInArrivo' => 'Posta in arrivo',
+			'etichette' => 'Etichette',
 			'onboarding.title' => 'Benvenuto in Postino',
 			'onboarding.body' => 'Collega la tua casella Gmail per iniziare.',
 			'onboarding.connectGmail' => 'Collega Gmail',

@@ -4,6 +4,30 @@ part of 'main.dart';
 
 List<RouteEntity> get routes => [
   RouteEntity(key: '/posta', uri: Uri.parse('/posta'), routeBuilder: b0Builder),
+  RouteEntity(
+    key: '/posta/[accountId]/etichetta/[labelId]',
+    parent: '/posta',
+    uri: Uri.parse('/posta/[accountId]/etichetta/[labelId]'),
+    routeBuilder: b1Builder,
+  ),
+  RouteEntity(
+    key: '/posta/[accountId]',
+    parent: '/posta',
+    uri: Uri.parse('/posta/[accountId]'),
+    routeBuilder: b2Builder,
+  ),
 ];
 
-const routePaths = (path: '/', posta: '/posta');
+const routePaths = (
+  path: '/',
+  posta: (
+    path: '/posta',
+    $accountId: (
+      path: '/posta/[accountId]',
+      etichetta: (
+        path: '/posta/[accountId]/etichetta',
+        $labelId: '/posta/[accountId]/etichetta/[labelId]',
+      ),
+    ),
+  ),
+);

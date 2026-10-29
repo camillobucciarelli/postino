@@ -72,11 +72,13 @@ class GmailProvider implements MailProvider {
     final cursor = (await _get('profile'))['historyId'] as String;
     final labels = [
       for (final l in (await _get('labels'))['labels'] as List? ?? const [])
-        Label(
-          id: l['id'] as String,
-          name: l['name'] as String,
-          kind: LabelKind.etichetta,
-        ),
+        // System labels (INBOX, STARRED, UNREAD...) are inbox, Stella and read state, not Etichette.
+        if (l['type'] == 'user')
+          Label(
+            id: l['id'] as String,
+            name: l['name'] as String,
+            kind: LabelKind.etichetta,
+          ),
     ];
     final after =
         _clock.now().subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;

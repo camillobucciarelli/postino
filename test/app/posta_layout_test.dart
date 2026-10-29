@@ -11,7 +11,7 @@ Widget _appAt(String initialPath) {
   final child = RouteEntity(
     key: '/posta/figlio',
     uri: Uri.parse('/posta/figlio'),
-    parent: routePaths.posta,
+    parent: routePaths.posta.path,
     routeBuilder: (ctx, settings) =>
         Routefly.defaultRouteBuilder(ctx, settings, const Text('figlio')),
   );
@@ -45,7 +45,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_appAt('/posta/figlio'));
       await tester.pumpAndSettle();
-      Routefly.navigate(routePaths.posta);
+      Routefly.navigate(routePaths.posta.path);
       await tester.pumpAndSettle();
       expect(find.text('Posta unificata'), findsOneWidget);
       expect(find.text('figlio'), findsNothing);

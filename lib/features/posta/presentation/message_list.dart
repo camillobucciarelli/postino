@@ -5,18 +5,21 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
 
-/// Posta unificata list; reads only from the local database through [InboxRepository].
+/// List of messages (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database through [InboxRepository].
 /// Pull-to-refresh asks for a sync; the rows update when it writes the database.
-class UnifiedInbox extends StatefulWidget {
-  const UnifiedInbox({super.key});
+class MessageList extends StatefulWidget {
+  const MessageList({super.key, required this.watch});
+
+  /// Which messages to show, e.g. `repo.watchUnifiedInbox`.
+  final Stream<List<InboxEntry>> Function(InboxRepository repo) watch;
 
   @override
-  State<UnifiedInbox> createState() => _UnifiedInboxState();
+  State<MessageList> createState() => _MessageListState();
 }
 
-class _UnifiedInboxState extends State<UnifiedInbox> {
+class _MessageListState extends State<MessageList> {
   late final entries = streamSignal(
-    () => GetIt.I<InboxRepository>().watchUnifiedInbox(),
+    () => widget.watch(GetIt.I<InboxRepository>()),
   );
 
   @override

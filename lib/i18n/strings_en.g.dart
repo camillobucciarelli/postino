@@ -41,6 +41,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	// Translations
 	@override String get appTitle => 'Postino';
 	@override String get postaUnificata => 'All inboxes';
+	@override String get postaInArrivo => 'Inbox';
+	@override String get etichette => 'Labels';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
@@ -105,6 +107,8 @@ extension on TranslationsEn {
 		return switch (path) {
 			'appTitle' => 'Postino',
 			'postaUnificata' => 'All inboxes',
+			'postaInArrivo' => 'Inbox',
+			'etichette' => 'Labels',
 			'onboarding.title' => 'Welcome to Postino',
 			'onboarding.body' => 'Connect your Gmail mailbox to get started.',
 			'onboarding.connectGmail' => 'Connect Gmail',

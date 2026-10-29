@@ -45,11 +45,28 @@ class MailStore implements InboxRepository {
   );
 
   @override
-  Stream<List<InboxEntry>> watchUnifiedInbox() =>
-      _db.messagesDao.watchUnifiedInbox().map(
+  Stream<List<InboxEntry>> watchUnifiedInbox() => _entries(null, inboxLabelId);
+
+  @override
+  Stream<List<InboxEntry>> watchMessages(String accountId, String labelId) =>
+      _entries(accountId, labelId);
+
+  Stream<List<InboxEntry>> _entries(String? accountId, String labelId) => _db
+      .messagesDao
+      .watchMessages(accountId: accountId, labelId: labelId)
+      .map(
         (rows) => [
           for (final (a, m) in rows)
             InboxEntry(account: _account(a), message: _message(m)),
+        ],
+      );
+
+  @override
+  Stream<List<Label>> watchLabels(String accountId) => _db.messagesDao
+      .watchLabels(accountId)
+      .map(
+        (rows) => [
+          for (final r in rows) Label(id: r.id, name: r.name, kind: r.kind),
         ],
       );
 

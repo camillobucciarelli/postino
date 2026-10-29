@@ -119,7 +119,9 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
         h.deliver(msg('a', isRead: true, isStarred: true));
         h.deliver(msg('s', labelIds: const ['SENT']));
         final batch = _ok(await h.provider.initialSync());
-        expect(batch.labels.map((l) => l.id), contains(inboxLabelId));
+        expect(batch.labels.map((l) => (l.id, l.name)), [
+          ('Label_12', 'Viaggi'),
+        ]);
         final a = batch.messages.singleWhere((m) => m.id == 'a');
         expect(a.conversationId, 't-a');
         expect(a.labelIds, contains(inboxLabelId));

@@ -72,7 +72,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +81,13 @@ class PostinoDatabase extends _$PostinoDatabase {
       if (from < 2) {
         await m.createTable(bodies);
         await m.createTable(syncCursors);
+      }
+      if (from < 3) {
+        // Only user labels are Etichette: drop the Gmail system ones cached as such by v1-v2 syncs.
+        await customStatement(
+          "DELETE FROM labels WHERE id IN ('INBOX','SENT','DRAFT','SPAM','TRASH',"
+          "'STARRED','UNREAD','IMPORTANT','CHAT') OR id LIKE 'CATEGORY\\_%' ESCAPE '\\'",
+        );
       }
     },
   );

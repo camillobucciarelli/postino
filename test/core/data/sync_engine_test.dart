@@ -50,8 +50,10 @@ void main() {
   test(
     'an empty initial snapshot clears the Account cache, labels included',
     () async {
-      a.removeRemotely('1');
-      a.removeRemotely('2');
+      a
+        ..removeRemotely('1')
+        ..removeRemotely('2')
+        ..expireCursors(); // forces the initial sync, i.e. a full snapshot
       await GetIt.I<SyncEngine>().syncAll();
       expect(await inbox(), ['b:1']);
       final db = GetIt.I<PostinoDatabase>();
@@ -73,7 +75,9 @@ void main() {
         a.deliver(msg('big$i'));
       }
       await GetIt.I<SyncEngine>().syncAll();
-      a.removeRemotely('1');
+      a
+        ..removeRemotely('1')
+        ..expireCursors(); // full snapshot again
       await GetIt.I<SyncEngine>().syncAll();
       expect(
         (await inbox()).length,
@@ -81,4 +85,63 @@ void main() {
       ); // a: 2 + big - '1', plus b:1
     },
   );
+
+  test(
+    'after the first sync, only the changes since the saved cursor are fetched',
+    () async {
+      a.deliver(msg('3'));
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(a.initialSyncs, 1);
+      expect(a.lastIncremental!.messages.map((m) => m.id), ['3']);
+      expect(await inbox(), ['a:1', 'a:2', 'a:3', 'b:1']);
+    },
+  );
+
+  test(
+    'an expired cursor redoes the initial sync, which drops what is gone',
+    () async {
+      a
+        ..removeRemotely('2')
+        ..deliver(msg('3'))
+        ..expireCursors();
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(a.initialSyncs, 2);
+      expect(await inbox(), ['a:1', 'a:3', 'b:1']);
+    },
+  );
+
+  test(
+    'the inbox bodies are stored with the sync, and removed with their message',
+    () async {
+      final db = GetIt.I<PostinoDatabase>();
+      Future<List<String>> bodies() async => [
+        for (final r
+            in await db
+                .customSelect(
+                  "SELECT body FROM bodies WHERE account_id = 'a' ORDER BY message_id",
+                )
+                .get())
+          r.read<String>('body'),
+      ];
+      expect(await bodies(), ['Corpo di 1', 'Corpo di 2']);
+      a.removeRemotely('2');
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(await bodies(), ['Corpo di 1']);
+    },
+  );
+
+  test('a rate-limited sync is retried on the next poll, even with the change signal up', () async {
+    final engine = GetIt.I<SyncEngine>()..start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.rateLimit();
+    a.deliver(msg('3')); // change signal -> sync -> RateLimitFailure
+    await pumpEventQueue();
+    expect(await inbox(), isNot(contains('a:3')));
+
+    a.rateLimit(false);
+    h.clock.advance(pollEvery);
+    await pumpEventQueue();
+    expect(await inbox(), contains('a:3'));
+  });
 }

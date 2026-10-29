@@ -294,7 +294,7 @@ void main() {
   );
 
   testWidgets(
-    'messages in order; only the latest and the unread expanded; a tap expands a collapsed one',
+    'messages newest first; only the latest and the unread expanded; a tap expands a collapsed one',
     (tester) async {
       await _start(tester, _phone, (p) {
         _thread(p);
@@ -318,7 +318,11 @@ void main() {
       final ys = [
         for (final id in ['m1', 'm2', 'm3']) tester.getTopLeft(_message(id)).dy,
       ];
-      expect(ys, orderedEquals([...ys]..sort()), reason: 'oldest first');
+      expect(
+        ys,
+        orderedEquals([...ys]..sort((a, b) => b.compareTo(a))),
+        reason: 'newest first',
+      );
       expect(_expanded(tester, 'm1'), isFalse);
       expect(_expanded(tester, 'm2'), isTrue, reason: 'unread');
       expect(_expanded(tester, 'm3'), isTrue, reason: 'latest');
@@ -363,8 +367,8 @@ void main() {
       expect(_message('s0'), findsOneWidget);
       expect(
         tester.getTopLeft(_message('s0')).dy,
-        lessThan(tester.getTopLeft(_message('m1')).dy),
-        reason: 'the oldest',
+        greaterThan(tester.getTopLeft(_message('m1')).dy),
+        reason: 'the oldest, at the bottom',
       );
       // It stays in the database: the list counts it now.
       await tester.tap(icon(PostinoIcons.arrowLeft));

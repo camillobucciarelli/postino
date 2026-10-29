@@ -128,11 +128,16 @@ final _components = <String, Widget Function()>{
     children: [
       PostinoThreadMessage(
         sender: 'Bruno Verdi',
-        time: 'lun',
-        preview: 'Ti va una cena venerdì?',
-        expanded: false,
+        time: '10:05',
+        preview: 'Perfetto',
+        recipients: 'a me',
+        expanded: true,
         onToggle: () {},
-        body: const SizedBox(),
+        body: PostinoMessageBody.missing(
+          note: 'Corpo non disponibile offline',
+          actionLabel: 'Riprova',
+          onAction: () {},
+        ),
       ),
       PostinoThreadMessage(
         sender: 'Ada Okafor',
@@ -148,16 +153,11 @@ final _components = <String, Widget Function()>{
       ),
       PostinoThreadMessage(
         sender: 'Bruno Verdi',
-        time: '10:05',
-        preview: 'Perfetto',
-        recipients: 'a me',
-        expanded: true,
+        time: 'lun',
+        preview: 'Ti va una cena venerdì?',
+        expanded: false,
         onToggle: () {},
-        body: PostinoMessageBody.missing(
-          note: 'Corpo non disponibile offline',
-          actionLabel: 'Riprova',
-          onAction: () {},
-        ),
+        body: const SizedBox(),
       ),
     ],
   ),

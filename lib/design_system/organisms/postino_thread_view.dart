@@ -7,7 +7,7 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// A Conversazione: [subject] in `title`, the Account that received it, then its [messages]
-/// (oldest first, [PostinoThreadMessage]); at most `reading-max-width` wide.
+/// (newest first, [PostinoThreadMessage]); at most `reading-max-width` wide.
 class PostinoThreadView extends StatelessWidget {
   const PostinoThreadView({
     super.key,

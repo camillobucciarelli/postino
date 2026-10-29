@@ -14,7 +14,7 @@ import '../../../i18n/strings.g.dart';
 import 'body_text.dart';
 import 'message_time.dart';
 
-/// An open Conversazione, read from the database: every message oldest first, the latest and the unread ones
+/// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
 /// expanded. Opening it marks it read and fetches what is missing; a missing body is downloaded when its
 /// message expands, and retried when the network returns. Routing is the caller's ([onBack]).
 class ConversationView extends StatefulWidget {
@@ -154,7 +154,7 @@ class _ConversationViewState extends State<ConversationView> {
               ),
               accountName: a.name,
               messages: [
-                for (final (:message, :body) in messages)
+                for (final (:message, :body) in messages.reversed)
                   PostinoThreadMessage(
                     key: ValueKey('message-${message.id}'),
                     sender: message.from,

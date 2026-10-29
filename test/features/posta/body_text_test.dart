@@ -21,4 +21,12 @@ void main() {
       'Ciao,\r\nscrivi a <bruno@example.com>',
     );
   });
+
+  test('out-of-range numeric entities become U+FFFD instead of throwing', () {
+    const html = '<p>a&#x110000;b&#xD800;c&#0;d&#99999999999;e</p>';
+    expect(
+      bodyText(const MessageBody(html, BodyKind.html)),
+      'a\uFFFDb\uFFFDc\uFFFDd\uFFFDe',
+    );
+  });
 }

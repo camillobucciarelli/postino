@@ -38,7 +38,11 @@ String? _entity(String e) {
     final code = e[1] == 'x' || e[1] == 'X'
         ? int.tryParse(e.substring(2), radix: 16)
         : int.tryParse(e.substring(1));
-    return code == null ? null : String.fromCharCode(code);
+    if (code == null) return null;
+    // NUL, surrogates and beyond U+10FFFF are no character: the replacement one, as HTML does.
+    final valid =
+        code > 0 && code <= 0x10FFFF && (code < 0xD800 || code > 0xDFFF);
+    return String.fromCharCode(valid ? code : 0xFFFD);
   }
   return const {
     'amp': '&',

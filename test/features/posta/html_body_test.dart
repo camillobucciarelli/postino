@@ -2,6 +2,7 @@
 // «Mostra immagini» (that message only) or «Sempre da questo mittente» (that exact address), links.
 
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,7 +81,19 @@ void _mailbox(FakeMailProvider p) {
     4,
   );
   html('c1', 'c', 'ada@example.com', '<h1>Ciao</h1><p>Niente di remoto</p>', 5);
+  // A 600px newsletter and a fluid reply, in one Conversazione.
+  html('w0', 'w', 'promo@shop.example', _wide, 6);
+  html(
+    'w1',
+    'w',
+    'ada@example.com',
+    '<p>${'Una risposta lunga. ' * 40}</p>',
+    7,
+  );
 }
+
+const _wide =
+    '<table width="600"><tr><td>Newsletter larga seicento pixel</td></tr></table>';
 
 Future<void> _start(WidgetTester tester) async {
   tester.view
@@ -175,6 +188,34 @@ void main() {
       await _open(tester, 'p1');
       expect(_in('p1', _showImages), findsOneWidget);
       expect(_images.urls, isNot(contains('https://img.shop.example/3.png')));
+    },
+  );
+
+  _test(
+    'the bodies follow the column width when the window widens and narrows',
+    (tester) async {
+      await _start(tester);
+      await _open(tester, 'w1');
+      // Docked drawer, a full page (900); beside the list (1400); phone-like (700).
+      for (final width in [900.0, 1400.0, 700.0]) {
+        tester.view.physicalSize = Size(width, 1600);
+        await tester.pumpAndSettle();
+        final column = tester.getSize(find.byType(PostinoThreadView)).width;
+        final expected =
+            math.min(column, PostinoSize.readingMaxWidth) -
+            2 * PostinoSpacing.s4;
+        for (final id in ['w0', 'w1']) {
+          final card = _in(id, find.byType(PostinoHtmlCard));
+          expect(tester.getSize(card).width, expected, reason: '$id at $width');
+        }
+        // The newsletter scales to fit: never wider than its card.
+        final text = tester.getRect(
+          find.textContaining('Newsletter larga', findRichText: true),
+        );
+        final card = tester.getRect(_in('w0', find.byType(PostinoHtmlCard)));
+        expect(text.right, lessThanOrEqualTo(card.right), reason: '$width');
+        expect(text.left, greaterThanOrEqualTo(card.left), reason: '$width');
+      }
     },
   );
 

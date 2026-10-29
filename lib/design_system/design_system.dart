@@ -22,5 +22,6 @@ export 'organisms/postino_message_list.dart';
 export 'organisms/postino_navigation_drawer.dart';
 
 export 'templates/postino_adaptive_layout.dart';
+export 'templates/postino_fade_through.dart';
 export 'templates/postino_onboarding_layout.dart';
 export 'templates/postino_single_pane_layout.dart';

@@ -1494,6 +1494,18 @@ abstract final class PostinoMotion {
   /// Entrata/uscita di snackbar e banner. Flutter: Durations.short4.
   static const Duration snackbar = Durations.short4;
 
+  /// Cambio di vista (fade through, Material 3): uscita, di cui il contenuto non ha più nulla da mostrare (resta il vuoto).
+  static const Duration fadeThroughOut = Duration(milliseconds: 90);
+
+  /// Cambio di vista: il contenuto entra con dissolvenza e scala da [fadeThroughScaleBegin] a 1.
+  static const Duration fadeThroughIn = Duration(milliseconds: 210);
+
+  /// Scala iniziale del contenuto che entra.
+  static const double fadeThroughScaleBegin = 0.96;
+
+  /// L’evidenziazione della voce attiva del menu scorre da una voce all’altra. Curva: PostinoMotion.emphasized.
+  static const Duration menuIndicator = Duration(milliseconds: 250);
+
   /// Ciclo del riflesso dello skeleton. Flutter: Duration(milliseconds: 1200).
   static const Duration skeleton = Duration(milliseconds: 1200);
 
@@ -1508,6 +1520,9 @@ abstract final class PostinoMotion {
 
   /// Elementi che escono. Flutter: Easing.standardAccelerate.
   static const Curve standardAccelerate = Easing.standardAccelerate;
+
+  /// Elementi che si spostano sullo schermo (indicatore del menu). Flutter: Curves.easeInOutCubicEmphasized.
+  static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 
   /// Lista → dettaglio, apertura thread, sheet che sale. Flutter: Easing.emphasizedDecelerate.
   static const Curve emphasizedDecelerate = Easing.emphasizedDecelerate;

@@ -30,17 +30,22 @@ class PostaLayout extends StatelessWidget {
     return OnboardingGate(
       child: PostinoSidebarShell(
         drawer: postaDrawer(accountId: accountId, labelId: labelId),
-        child: unified
-            ? PostinoAdaptiveLayout(
-                appBar: const UnifiedAppBar(),
-                drawer: postaDrawer(),
-                banners: postaBanners,
-                body: MessageList(
-                  watch: (r) => r.watchUnifiedInbox(),
-                  showAccount: true,
-                ),
-              )
-            : const RouterOutlet(),
+        // Keyed on the full URI, read at build time: the /posta hop of _openFromPosta lands in the
+        // same frame as its target, so only the target is seen.
+        child: PostinoFadeThrough(
+          transitionKey: uri.toString(),
+          child: unified
+              ? PostinoAdaptiveLayout(
+                  appBar: const UnifiedAppBar(),
+                  drawer: postaDrawer(),
+                  banners: postaBanners,
+                  body: MessageList(
+                    watch: (r) => r.watchUnifiedInbox(),
+                    showAccount: true,
+                  ),
+                )
+              : const RouterOutlet(),
+        ),
       ),
     );
   }

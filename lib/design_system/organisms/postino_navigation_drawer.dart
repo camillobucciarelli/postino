@@ -36,14 +36,54 @@ class PostinoDrawerSection {
 }
 
 /// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar.
-class PostinoNavigationDrawer extends StatelessWidget {
+/// The highlight of the active item is one box under the list that slides to the new item.
+class PostinoNavigationDrawer extends StatefulWidget {
   const PostinoNavigationDrawer({super.key, required this.sections});
 
   final List<PostinoDrawerSection> sections;
 
   @override
+  State<PostinoNavigationDrawer> createState() =>
+      _PostinoNavigationDrawerState();
+}
+
+class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
+  final _stack = GlobalKey();
+  final _itemKeys = <int, GlobalKey>{};
+  Rect? _active;
+  var _slide = false;
+
+  void _measure(int? index) {
+    if (!mounted) return;
+    final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
+    final item = index == null
+        ? null
+        : _itemKeys[index]?.currentContext?.findRenderObject() as RenderBox?;
+    final rect = stack == null || item == null || !item.attached
+        ? null
+        : item.localToGlobal(Offset.zero, ancestor: stack) & item.size;
+    if (rect == _active) return;
+    // The first position (or one after no active item) is placed, not slid to.
+    setState(() {
+      _slide = _active != null && rect != null;
+      _active = rect;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.pc;
+    final sections = widget.sections;
+    var n = 0;
+    int? activeIndex;
+    for (final s in sections) {
+      for (final item in s.items) {
+        if (item.active) activeIndex = n;
+        n++;
+      }
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeIndex));
+    n = 0;
     // Width and shape come from the DrawerTheme: modal by default, docked in PostinoAdaptiveLayout.
     return Drawer(
       backgroundColor: c.drawerBg,
@@ -51,46 +91,82 @@ class PostinoNavigationDrawer extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(PostinoSpacing.s3),
           children: [
-            for (final (i, s) in sections.indexed)
-              Container(
-                margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
-                padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                decoration: i == 0
-                    ? null
-                    : BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: c.borderSubtle,
-                            width: PostinoBorder.borderWidthHairline,
-                          ),
+            Stack(
+              key: _stack,
+              fit: StackFit.passthrough,
+              children: [
+                if (_active case final r?)
+                  AnimatedPositioned(
+                    left: r.left,
+                    top: r.top,
+                    width: r.width,
+                    height: r.height,
+                    duration: PostinoMotion.of(
+                      context,
+                      _slide ? PostinoMotion.menuIndicator : Duration.zero,
+                    ),
+                    curve: PostinoMotion.emphasized,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: c.drawerItemBgActive,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(PostinoRadius.sm),
                         ),
                       ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: PostinoSpacing.s0_5,
+                    ),
+                  ),
+                Column(
                   children: [
-                    if (s.title case final t?)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          PostinoSpacing.s3,
-                          PostinoSpacing.s2,
-                          PostinoSpacing.s3,
-                          PostinoSpacing.s1,
+                    for (final (i, s) in sections.indexed)
+                      Container(
+                        margin: EdgeInsets.only(
+                          top: i == 0 ? 0 : PostinoSpacing.s2,
                         ),
-                        child: Semantics(
-                          header: true,
-                          child: Text(
-                            t.toUpperCase(),
-                            style: PostinoText.overline.copyWith(
-                              color: c.inkSubtle,
-                            ),
-                          ),
+                        padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                        decoration: i == 0
+                            ? null
+                            : BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(
+                                    color: c.borderSubtle,
+                                    width: PostinoBorder.borderWidthHairline,
+                                  ),
+                                ),
+                              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          spacing: PostinoSpacing.s0_5,
+                          children: [
+                            if (s.title case final t?)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  PostinoSpacing.s3,
+                                  PostinoSpacing.s2,
+                                  PostinoSpacing.s3,
+                                  PostinoSpacing.s1,
+                                ),
+                                child: Semantics(
+                                  header: true,
+                                  child: Text(
+                                    t.toUpperCase(),
+                                    style: PostinoText.overline.copyWith(
+                                      color: c.inkSubtle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            for (final item in s.items)
+                              _DrawerItem(
+                                item,
+                                key: _itemKeys.putIfAbsent(n++, GlobalKey.new),
+                              ),
+                          ],
                         ),
                       ),
-                    for (final item in s.items) _DrawerItem(item),
                   ],
                 ),
-              ),
+              ],
+            ),
           ],
         ),
       ),
@@ -99,7 +175,7 @@ class PostinoNavigationDrawer extends StatelessWidget {
 }
 
 class _DrawerItem extends StatelessWidget {
-  const _DrawerItem(this.item);
+  const _DrawerItem(this.item, {super.key});
   final PostinoDrawerItem item;
 
   @override
@@ -110,7 +186,7 @@ class _DrawerItem extends StatelessWidget {
     return Semantics(
       selected: item.active,
       child: Material(
-        color: item.active ? c.drawerItemBgActive : Colors.transparent,
+        color: Colors.transparent,
         borderRadius: radius,
         child: InkWell(
           key: item.key,

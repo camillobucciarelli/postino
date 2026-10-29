@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
@@ -39,85 +41,89 @@ class PostinoThreadView extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     final important = importantLabel;
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: PostinoSize.readingMaxWidth,
+    // The list spans the pane (its scrollbar at the pane's edge); the margins center a column
+    // of at most `reading-max-width`.
+    return LayoutBuilder(
+      builder: (context, box) => ListView(
+        padding: EdgeInsets.fromLTRB(
+          math.max(0, (box.maxWidth - PostinoSize.readingMaxWidth) / 2),
+          0,
+          math.max(0, (box.maxWidth - PostinoSize.readingMaxWidth) / 2),
+          PostinoSpacing.s4,
         ),
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: PostinoSpacing.s4),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                PostinoSpacing.s4,
-                PostinoSpacing.s4,
-                PostinoSpacing.s4,
-                PostinoSpacing.s3,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: PostinoSpacing.s2,
-                children: [
-                  Semantics(
-                    header: true,
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(text: subject),
-                          if (important != null) ...[
-                            const TextSpan(text: ' '),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: PostinoIcon(
-                                PostinoIcons.important,
-                                key: const ValueKey('important'),
-                                color: c.star,
-                                filled: true,
-                                label: important,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      style: PostinoText.title.copyWith(color: c.ink),
-                    ),
-                  ),
-                  Wrap(
-                    spacing: PostinoSpacing.s2,
-                    runSpacing: PostinoSpacing.s2,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: PostinoSpacing.s2,
-                        children: [
-                          PostinoAccountMark(
-                            color: account.color,
-                            initial: account.initial,
-                            size: PostinoSize.accountBadge,
-                          ),
-                          Flexible(
-                            child: Text(
-                              accountName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: PostinoText.labelSm.copyWith(
-                                color: c.inkMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      for (final l in labels) PostinoLabelChip(name: l),
-                    ],
-                  ),
-                ],
-              ),
+          right: math.max(0, (box.maxWidth - PostinoSize.readingMaxWidth) / 2),
+          bottom: PostinoSpacing.s4,
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              PostinoSpacing.s4,
+              PostinoSpacing.s4,
+              PostinoSpacing.s4,
+              PostinoSpacing.s3,
             ),
-            ...messages,
-          ],
-        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: PostinoSpacing.s2,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: subject),
+                        if (important != null) ...[
+                          const TextSpan(text: ' '),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: PostinoIcon(
+                              PostinoIcons.important,
+                              key: const ValueKey('important'),
+                              color: c.star,
+                              filled: true,
+                              label: important,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    style: PostinoText.title.copyWith(color: c.ink),
+                  ),
+                ),
+                Wrap(
+                  spacing: PostinoSpacing.s2,
+                  runSpacing: PostinoSpacing.s2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: PostinoSpacing.s2,
+                      children: [
+                        PostinoAccountMark(
+                          color: account.color,
+                          initial: account.initial,
+                          size: PostinoSize.accountBadge,
+                        ),
+                        Flexible(
+                          child: Text(
+                            accountName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: PostinoText.labelSm.copyWith(
+                              color: c.inkMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    for (final l in labels) PostinoLabelChip(name: l),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          ...messages,
+        ],
       ),
     );
   }

@@ -201,6 +201,21 @@ void main() {
         tester.view.physicalSize = Size(width, 1600);
         await tester.pumpAndSettle();
         final pane = tester.getRect(find.byType(PostinoThreadView));
+        // The list spans the pane, so its scrollbar sits at the window's edge.
+        expect(
+          tester
+              .getSize(
+                find
+                    .descendant(
+                      of: find.byType(PostinoThreadView),
+                      matching: find.byType(Scrollable),
+                    )
+                    .first,
+              )
+              .width,
+          pane.width,
+          reason: 'list at $width',
+        );
         final column = math.min(pane.width, PostinoSize.readingMaxWidth);
         for (final id in ['w0', 'w1']) {
           final card = _in(id, find.byType(PostinoHtmlCard));

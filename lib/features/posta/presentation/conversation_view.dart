@@ -45,6 +45,9 @@ class _ConversationViewState extends State<ConversationView> {
   final _loading = <String>{};
   final _failed = <String, Failure>{};
 
+  /// Set when the missing messages could not be fetched: retried when the network returns.
+  bool _hydrationFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -65,7 +68,9 @@ class _ConversationViewState extends State<ConversationView> {
       )
       ..add(
         GetIt.I<Connectivity>().onChanged.listen((online) {
-          if (online) _failed.keys.toList().forEach(_fetchBody);
+          if (!online) return;
+          if (_hydrationFailed) _open();
+          _failed.keys.toList().forEach(_fetchBody);
         }),
       );
   }
@@ -77,17 +82,13 @@ class _ConversationViewState extends State<ConversationView> {
       for (final (i, (:message, body: _)) in messages.indexed) {
         _expanded.putIfAbsent(
           message.id,
-          // The latest, at first sight only: messages fetched later are older ones.
-          () => !message.isRead || (first && i == messages.length - 1),
+          // The latest when it shows up, a deep-linked one fetched later or a newer reply too.
+          () => !message.isRead || i == messages.length - 1,
         );
       }
     });
     // Only now: the expansion above saw which messages were unread.
-    if (first) {
-      unawaited(
-        _sync.openConversation(widget.accountId, widget.conversationId),
-      );
-    }
+    if (first) _open();
     for (final (:message, :body) in messages) {
       if (body == null &&
           _expanded[message.id]! &&
@@ -95,6 +96,15 @@ class _ConversationViewState extends State<ConversationView> {
         _fetchBody(message.id);
       }
     }
+  }
+
+  void _open() {
+    _hydrationFailed = false;
+    unawaited(
+      _sync.openConversation(widget.accountId, widget.conversationId).then((r) {
+        if (r is Err) _hydrationFailed = true;
+      }),
+    );
   }
 
   void _fetchBody(String id) {

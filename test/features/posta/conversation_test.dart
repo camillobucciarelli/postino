@@ -373,6 +373,98 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a deep link to a Conversazione not in the database shows its latest message, read, expanded with its body',
+    (tester) async {
+      await _start(tester, _phone, (p) {
+        for (final (id, d) in [('x1', 1), ('x2', 2)]) {
+          p.deliverOutsideWindow(
+            msg(id, conversationId: 'x', date: _day(d), isRead: true),
+          );
+        }
+      });
+      Routefly.navigate(
+        routePaths.posta.$accountId.conversazione.$conversationId.changes({
+          'accountId': 'a1',
+          'conversationId': 'x',
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_expanded(tester, 'x1'), isFalse);
+      expect(_expanded(tester, 'x2'), isTrue, reason: 'latest');
+      expect(find.text('Corpo di x2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a newer read reply fetched from the Provider becomes the latest, expanded; a message the user collapsed stays so',
+    (tester) async {
+      await _start(tester, _phone, (p) {
+        _thread(p);
+        p.deliverOutsideWindow(
+          msg(
+            's4',
+            conversationId: 't',
+            from: 'a1@example.com',
+            subject: 'Re: Cena',
+            snippet: 'Perfetto',
+            date: _day(5),
+            isRead: true,
+            labelIds: const ['SENT'],
+          ),
+        );
+      });
+      await _open(tester, 'm3');
+
+      expect(_expanded(tester, 's4'), isTrue, reason: 'the latest now');
+      expect(find.text('Corpo di s4'), findsOneWidget);
+      expect(_expanded(tester, 'm3'), isTrue, reason: 'was unread');
+
+      await tester.tap(
+        find.descendant(
+          of: _message('m3'),
+          matching: find.text('bruno@example.com'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(_expanded(tester, 'm3'), isFalse);
+      gmail.deliver(
+        msg('m3', conversationId: 't', date: _day(3), isStarred: true),
+      );
+      await tester.pumpAndSettle();
+      expect(_expanded(tester, 'm3'), isFalse);
+    },
+  );
+
+  testWidgets(
+    'opened offline, the messages missing from the database are fetched when the network returns',
+    (tester) async {
+      await _start(tester, _phone, (p) {
+        _thread(p);
+        p.deliverOutsideWindow(
+          msg(
+            's0',
+            conversationId: 't',
+            subject: 'Cena',
+            date: DateTime.utc(2026, 6, 1),
+            isRead: true,
+            labelIds: const ['SENT'],
+          ),
+        );
+      });
+      gmail.goOffline();
+      h.connectivity.online = false;
+      await _open(tester, 'm3');
+      expect(_message('s0'), findsNothing);
+
+      gmail.goOnline();
+      h.connectivity.online = true;
+      await tester.pumpAndSettle();
+      expect(_message('s0'), findsOneWidget);
+    },
+  );
+
   group('a body missing from the database', () {
     /// Conversazione t: an inbox message (body synced) and a later one only in an Etichetta (no body).
     void mailbox(FakeMailProvider p) => p

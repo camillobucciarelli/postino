@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -25,6 +27,25 @@ void main() {
       ..deliver(msg('2'));
     b = (await h.addAccount('b'))..deliver(msg('1'));
     await GetIt.I<SyncEngine>().syncAll();
+  });
+
+  test('opening a Conversazione during a sync: the older in-flight batch does not undo the read', () async {
+    final engine = GetIt.I<SyncEngine>();
+    final slow = a.hold = Completer<void>();
+    a.deliver(msg('1')); // still unread in the batch the sync is fetching
+    final sync = engine.syncAll();
+    await pumpEventQueue();
+
+    await engine.openConversation('a', 't-1');
+    a.hold = null;
+    slow.complete();
+    await sync;
+
+    final [(:message, body: _)] = await getIt<InboxRepository>()
+        .watchConversation('a', 't-1')
+        .first;
+    expect(message.isRead, isTrue);
+    expect(a.readCalls.map((c) => (c.$1.join(), c.$2)), [('1', true)]);
   });
 
   test('a message removed on the Provider disappears after re-sync', () async {

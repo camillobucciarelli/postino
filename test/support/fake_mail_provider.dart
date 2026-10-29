@@ -163,11 +163,12 @@ class FakeMailProvider implements MailProvider {
 
   @override
   Future<Result<SyncBatch>> incrementalSync(String cursor) async {
-    await hold?.future;
     if (_failure == null && int.parse(cursor) < _oldest) {
+      await hold?.future;
       return const Err(NotFoundFailure());
     }
-    return _guard(() {
+    // Answered now, delivered after [hold]: an in-flight response.
+    final result = _guard(() {
       // Only the latest operation per id counts (a Provider delta is final state).
       final latest = <String, (int, Message?, String)>{};
       for (final e in _log) {
@@ -187,6 +188,8 @@ class FakeMailProvider implements MailProvider {
         bodies: _inboxBodies(messages),
       );
     });
+    await hold?.future;
+    return result;
   }
 
   @override

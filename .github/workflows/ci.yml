@@ -27,10 +27,12 @@ jobs:
           dart run routefly
           dart run slang
           dart run build_runner build
+      # routefly numbers routes in directory-listing order, which differs on
+      # Linux; lib/main.route.dart is checked on macOS (apple job) instead.
       - name: Generated code is committed
         run: |
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
+          git diff --exit-code -- . ':!lib/main.route.dart'
+          test -z "$(git status --porcelain -- . ':!lib/main.route.dart')"
       - run: flutter analyze
       - run: flutter test
 
@@ -114,6 +116,10 @@ jobs:
           dart run routefly
           dart run slang
           dart run build_runner build
+      - name: Generated code is committed
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
       # Goldens are compared only on macOS, where they are recorded.
       - run: flutter test test/design_system
       - run: flutter build macos --debug

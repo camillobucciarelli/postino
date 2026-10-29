@@ -70,21 +70,33 @@ class SyncEngine implements MailSync {
   }
 
   @override
-  Future<void> openConversation(String accountId, String conversationId) async {
+  Future<Result<void>> openConversation(
+    String accountId,
+    String conversationId,
+  ) async {
     final account = await _account(accountId);
-    if (account == null) return;
+    if (account == null) return const Err(NotFoundFailure());
     final provider = _provider(account);
     // Read here at once, offline too; the Provider hears it from the queue.
     await _store.markConversationRead(accountId, conversationId);
     // Inviati and messages older than the sync window are not in the database yet.
     // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-    if (await provider.fetchConversation(conversationId) case Ok(
-      :final value,
-    )) {
+    final fetched = await provider.fetchConversation(conversationId);
+    if (fetched case Ok(:final value)) {
       await _store.applyPage(accountId, value, const {});
       await _store.markConversationRead(accountId, conversationId);
     }
-    await _replay(accountId, provider);
+    // A running sync may still apply a batch fetched before the read: the intent must outlive it,
+    // so the sync replays it after that batch, on its next round.
+    if (_running.containsKey(accountId)) {
+      _again.add(accountId);
+    } else {
+      await _replay(accountId, provider);
+    }
+    return switch (fetched) {
+      Ok() => const Ok(null),
+      Err(:final failure) => Err(failure),
+    };
   }
 
   @override

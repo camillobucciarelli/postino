@@ -207,13 +207,17 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
     final recipients = w.recipients;
     final header = InkWell(
       onTap: w.onToggle,
+      // Expanded: the highlight gets room via s2 inside; the outer padding gives it back, so content stays aligned.
+      borderRadius: expanded
+          ? const BorderRadius.all(Radius.circular(PostinoRadius.sm))
+          : null,
       child: ConstrainedBox(
         constraints: const BoxConstraints(
           minHeight: PostinoSize.touchTargetAndroid,
         ),
         child: Padding(
           padding: expanded
-              ? EdgeInsets.zero
+              ? const EdgeInsets.all(PostinoSpacing.s2)
               : const EdgeInsets.symmetric(
                   horizontal: PostinoSpacing.s4,
                   vertical: PostinoSpacing.s3,
@@ -301,47 +305,68 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
           alignment: Alignment.topCenter,
           child: expanded
               ? Padding(
-                  padding: const EdgeInsets.all(PostinoSpacing.s4),
+                  padding: const EdgeInsets.fromLTRB(
+                    PostinoSpacing.s2,
+                    PostinoSpacing.s2,
+                    PostinoSpacing.s2,
+                    PostinoSpacing.s4,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       header,
-                      if (_details && w.details.isNotEmpty) _Details(w.details),
-                      if (w.notices.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: PostinoSpacing.s4,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            spacing: PostinoSpacing.s3,
-                            children: w.notices,
-                          ),
-                        ),
                       Padding(
-                        padding: const EdgeInsets.only(top: PostinoSpacing.s4),
-                        child: w.body,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: PostinoSpacing.s2,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (_details && w.details.isNotEmpty)
+                              _Details(w.details),
+                            if (w.notices.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: PostinoSpacing.s2,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  spacing: PostinoSpacing.s3,
+                                  children: w.notices,
+                                ),
+                              ),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: w.notices.isEmpty
+                                    ? PostinoSpacing.s2
+                                    : PostinoSpacing.s4,
+                              ),
+                              child: w.body,
+                            ),
+                            if (w.signature case final signature?)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: PostinoSpacing.s4,
+                                ),
+                                child: signature,
+                              ),
+                            if (w.quote case final quote?) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: PostinoSpacing.s2,
+                                ),
+                                child: _QuoteToggle(
+                                  label: w.quoteLabel,
+                                  open: _quote,
+                                  onTap: () => setState(() => _quote = !_quote),
+                                ),
+                              ),
+                              if (_quote) _Quote(quote),
+                            ],
+                          ],
+                        ),
                       ),
-                      if (w.signature case final signature?)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: PostinoSpacing.s4,
-                          ),
-                          child: signature,
-                        ),
-                      if (w.quote case final quote?) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: PostinoSpacing.s2,
-                          ),
-                          child: _QuoteToggle(
-                            label: w.quoteLabel,
-                            open: _quote,
-                            onTap: () => setState(() => _quote = !_quote),
-                          ),
-                        ),
-                        if (_quote) _Quote(quote),
-                      ],
                     ],
                   ),
                 )

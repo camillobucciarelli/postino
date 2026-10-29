@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -92,5 +93,20 @@ void main() {
     await _tap(tester, 'account-a1');
     expect(star('s'), findsOneWidget);
     expect(star('n'), findsNothing);
+  });
+
+  testWidgets('an Account Da ricollegare is announced in its own view', (
+    tester,
+  ) async {
+    final h = await Harness.create();
+    final a1 = await h.addAccount('a1');
+    a1.deliver(msg('x'));
+
+    await _start(tester);
+    await _tap(tester, 'account-a1');
+    a1.breakAuth();
+    await getIt<SyncEngine>().syncAll();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('da-ricollegare-a1')), findsOneWidget);
   });
 }

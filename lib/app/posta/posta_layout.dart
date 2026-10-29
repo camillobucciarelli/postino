@@ -19,7 +19,20 @@ class PostaLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     // Routefly.of subscribes to route changes; the last configuration is the active route.
     final own = Routefly.of(context).route.uri.path;
-    if (Routefly.currentOriginalPath != own) return const RouterOutlet();
+    if (Routefly.currentOriginalPath != own) {
+      // Account and Etichetta views also tell about a Da ricollegare Account.
+      return const Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              ReconnectBanners(),
+              Expanded(child: RouterOutlet()),
+            ],
+          ),
+        ),
+      );
+    }
     return OnboardingGate(
       child: Scaffold(
         appBar: AppBar(

@@ -39,9 +39,11 @@ class _AccountViewState extends State<AccountView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SignalBuilder(
-          builder: (context) => Padding(
+          // One scrolling row: many Etichette never push the messages out.
+          builder: (context) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
+            child: Row(
               spacing: 8,
               children: [
                 for (final l in labels.value.value ?? const <Label>[])

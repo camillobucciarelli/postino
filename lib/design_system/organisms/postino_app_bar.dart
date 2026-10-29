@@ -27,18 +27,19 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     final a = account;
+    // No `menu` where the drawer is docked beside the list.
+    final scaffold = Scaffold.maybeOf(context);
+    final menu = scaffold != null && scaffold.hasDrawer;
     return AppBar(
       automaticallyImplyLeading: false,
-      leading: Builder(
-        builder: (context) => PostinoIconButton(
-          icon: PostinoIcons.menu,
-          label: MaterialLocalizations.of(context).openAppDrawerTooltip,
-          onPressed: Scaffold.of(context).hasDrawer
-              ? Scaffold.of(context).openDrawer
-              : null,
-        ),
-      ),
-      titleSpacing: PostinoSpacing.s1,
+      leading: menu
+          ? PostinoIconButton(
+              icon: PostinoIcons.menu,
+              label: MaterialLocalizations.of(context).openAppDrawerTooltip,
+              onPressed: scaffold.openDrawer,
+            )
+          : null,
+      titleSpacing: menu ? PostinoSpacing.s1 : PostinoSpacing.s4,
       // ponytail: the compact bar is 56 tall, so its text stops growing at 130%; a growing bar when 200% needs it.
       title: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.3,

@@ -24,34 +24,42 @@ class PostinoOnboardingLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     return Scaffold(
+      // On wide windows the step keeps a readable width, centered.
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.all(PostinoSpacing.s6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: PostinoSpacing.s16),
-                    Text(
-                      title,
-                      style: PostinoText.display.copyWith(color: c.ink),
-                    ),
-                    const SizedBox(height: PostinoSpacing.s2),
-                    Text(
-                      message,
-                      style: PostinoText.body.copyWith(color: c.inkMuted),
-                    ),
-                    const Spacer(),
-                    ?error,
-                    primaryAction,
-                  ],
-                ),
-              ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: PostinoSize.readingMaxWidth,
             ),
-          ],
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(PostinoSpacing.s6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: PostinoSpacing.s16),
+                        Text(
+                          title,
+                          style: PostinoText.display.copyWith(color: c.ink),
+                        ),
+                        const SizedBox(height: PostinoSpacing.s2),
+                        Text(
+                          message,
+                          style: PostinoText.body.copyWith(color: c.inkMuted),
+                        ),
+                        const Spacer(),
+                        ?error,
+                        primaryAction,
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

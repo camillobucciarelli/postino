@@ -35,7 +35,7 @@ class PostinoDrawerSection {
   final List<PostinoDrawerItem> items;
 }
 
-/// Mailboxes and Etichette, as a modal drawer from the left; tapping an item closes it.
+/// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar.
 class PostinoNavigationDrawer extends StatelessWidget {
   const PostinoNavigationDrawer({super.key, required this.sections});
 
@@ -44,14 +44,9 @@ class PostinoNavigationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
+    // Width and shape come from the DrawerTheme: modal by default, docked in PostinoAdaptiveLayout.
     return Drawer(
-      width: PostinoSize.drawerWidth,
       backgroundColor: c.drawerBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(
-          right: Radius.circular(PostinoRadius.lg),
-        ),
-      ),
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(PostinoSpacing.s3),

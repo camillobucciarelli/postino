@@ -81,6 +81,14 @@ abstract final class PostinoTheme {
         toolbarHeight: PostinoSize.appBarHeight,
         titleTextStyle: PostinoText.appBarTitle.copyWith(color: c.ink),
       ),
+      drawerTheme: const DrawerThemeData(
+        width: PostinoSize.drawerWidth,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(
+            right: Radius.circular(PostinoRadius.lg),
+          ),
+        ),
+      ),
       navigationDrawerTheme: NavigationDrawerThemeData(
         backgroundColor: c.drawerBg,
         indicatorColor: c.drawerItemBgActive,

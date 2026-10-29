@@ -15,7 +15,7 @@ class LabelPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final String accountId = Routefly.query['accountId'];
     final String labelId = Routefly.query['labelId'];
-    return PostinoSinglePaneLayout(
+    return PostinoAdaptiveLayout(
       key: ValueKey('$accountId/$labelId'),
       appBar: AccountAppBar(accountId: accountId, labelId: labelId),
       drawer: postaDrawer(accountId: accountId, labelId: labelId),

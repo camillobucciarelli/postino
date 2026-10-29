@@ -15,7 +15,7 @@ class AccountPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String id = Routefly.query['accountId'];
-    return PostinoSinglePaneLayout(
+    return PostinoAdaptiveLayout(
       // A new Account is a new view: its streams start over.
       key: ValueKey(id),
       appBar: AccountAppBar(accountId: id),

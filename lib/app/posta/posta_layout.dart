@@ -22,7 +22,7 @@ class PostaLayout extends StatelessWidget {
     final own = Routefly.of(context).route.uri.path;
     if (Routefly.currentOriginalPath != own) return const RouterOutlet();
     return OnboardingGate(
-      child: PostinoSinglePaneLayout(
+      child: PostinoAdaptiveLayout(
         appBar: const UnifiedAppBar(),
         drawer: postaDrawer(),
         banners: postaBanners,

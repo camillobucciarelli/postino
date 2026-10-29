@@ -1,7 +1,19 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:sqlite3/sqlite3.dart';
+
+/// The v2-v4 bodies table, before it said HTML or text.
+const _v4Bodies =
+    'CREATE TABLE bodies (account_id TEXT NOT NULL, message_id TEXT NOT NULL, '
+    'body TEXT NOT NULL, PRIMARY KEY (account_id, message_id))';
+
+const _v4Messages =
+    'CREATE TABLE messages (account_id TEXT NOT NULL, id TEXT NOT NULL, message_id TEXT NOT NULL, '
+    'conversation_id TEXT NOT NULL, sender TEXT NOT NULL, recipients TEXT NOT NULL, '
+    'subject TEXT NOT NULL, snippet TEXT NOT NULL, date INTEGER NOT NULL, '
+    'is_read INTEGER NOT NULL, is_starred INTEGER NOT NULL, PRIMARY KEY (account_id, id))';
 
 const _v3Accounts =
     'CREATE TABLE accounts (id TEXT NOT NULL PRIMARY KEY, address TEXT NOT NULL, '
@@ -16,6 +28,8 @@ void main() {
         'name TEXT NOT NULL, kind TEXT NOT NULL, PRIMARY KEY (account_id, id))',
       )
       ..execute(_v3Accounts)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 2');
     for (final id in ['INBOX', 'STARRED', 'CATEGORY_PERSONAL', 'Label_12']) {
       raw.execute(
@@ -32,6 +46,8 @@ void main() {
   test('v4 stores the Account color as its place in the palette', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 3');
     // sky, olive, and a color no version ever assigned (falls back to the position).
     for (final (id, argb, position) in [
@@ -51,4 +67,34 @@ void main() {
     };
     expect(colors, {'a1': 0, 'a2': 5, 'a3': 2});
   });
+
+  test(
+    'v5 says which stored bodies are HTML and adds the offline queue',
+    () async {
+      final raw = sqlite3.openInMemory()
+        ..execute(_v3Accounts)
+        ..execute(_v4Bodies)
+        ..execute(_v4Messages)
+        ..execute('PRAGMA user_version = 4');
+      for (final (id, body) in [
+        ('h', '<div dir="ltr">Ciao<br>Ada</div>'),
+        ('p', '<p>Ciao</p>'),
+        ('t', 'Ciao Ada,\r\nscrivi a <bruno@example.com>'),
+      ]) {
+        raw.execute("INSERT INTO bodies VALUES ('a1', '$id', '$body')");
+      }
+      final db = PostinoDatabase(NativeDatabase.opened(raw));
+      addTearDown(db.close);
+
+      final kinds = {
+        for (final b in await db.select(db.bodies).get()) b.messageId: b.kind,
+      };
+      expect(kinds, {
+        'h': BodyKind.html,
+        'p': BodyKind.html,
+        't': BodyKind.testo,
+      });
+      expect(await db.select(db.intents).get(), isEmpty);
+    },
+  );
 }

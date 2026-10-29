@@ -53,6 +53,15 @@ class Message {
   final List<Attachment> attachments;
 }
 
+enum BodyKind { html, testo }
+
+/// A downloaded message body, with whether it is HTML or plain text.
+class MessageBody {
+  const MessageBody(this.content, this.kind);
+  final String content;
+  final BodyKind kind;
+}
+
 /// Always inside a single Account.
 class Conversation {
   const Conversation({

@@ -68,6 +68,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
+	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
 }
 
 // Path: onboarding
@@ -176,6 +177,42 @@ class Translations$list$it {
 
 	/// it: 'account $name'
 	String account({required Object name}) => 'account ${name}';
+
+	/// it: '(one) {$n messaggio} (other) {$n messaggi}'
+	String messages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} messaggio',
+		other: '${n} messaggi',
+	);
+}
+
+// Path: conversazione
+class Translations$conversazione$it {
+	Translations$conversazione$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Seleziona una Conversazione'
+	String get selectTitle => 'Seleziona una Conversazione';
+
+	/// it: 'Scegli una Conversazione dalla lista per leggerla qui.'
+	String get selectBody => 'Scegli una Conversazione dalla lista per leggerla qui.';
+
+	/// it: 'a $recipients'
+	String to({required Object recipients}) => 'a ${recipients}';
+
+	/// it: 'Caricamento…'
+	String get loading => 'Caricamento…';
+
+	/// it: 'Corpo non disponibile offline'
+	String get offline => 'Corpo non disponibile offline';
+
+	/// it: 'Corpo non disponibile'
+	String get failed => 'Corpo non disponibile';
+
+	/// it: 'Riprova'
+	String get retry => 'Riprova';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -213,6 +250,14 @@ extension on Translations {
 			'list.unread' => 'Non letto',
 			'list.starred' => 'con Stella',
 			'list.account' => ({required Object name}) => 'account ${name}',
+			'list.messages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} messaggio', other: '${n} messaggi', ), 
+			'conversazione.selectTitle' => 'Seleziona una Conversazione',
+			'conversazione.selectBody' => 'Scegli una Conversazione dalla lista per leggerla qui.',
+			'conversazione.to' => ({required Object recipients}) => 'a ${recipients}',
+			'conversazione.loading' => 'Caricamento…',
+			'conversazione.offline' => 'Corpo non disponibile offline',
+			'conversazione.failed' => 'Corpo non disponibile',
+			'conversazione.retry' => 'Riprova',
 			_ => null,
 		};
 	}

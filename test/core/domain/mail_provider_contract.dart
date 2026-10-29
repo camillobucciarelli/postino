@@ -57,6 +57,7 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.refreshAuth(),
         await h.provider.initialSync(),
         await h.provider.incrementalSync('0'),
+        await h.provider.setRead(['a'], read: true),
       ]) {
         expect(
           r,
@@ -67,11 +68,17 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
 
     test('no network is an OfflineFailure', () async {
       h.goOffline();
-      final r = await h.provider.initialSync();
-      expect(
-        r,
-        isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
-      );
+      for (final r in [
+        await h.provider.initialSync(),
+        await h.provider.fetchBody('a'),
+        await h.provider.fetchConversation('t-a'),
+        await h.provider.setRead(['a'], read: true),
+      ]) {
+        expect(
+          r,
+          isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
+        );
+      }
     });
   });
 }
@@ -193,10 +200,28 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       'fetches a body on request and NotFound for an unknown message',
       () async {
         h.deliver(msg('a'));
-        expect(_ok(await h.provider.fetchBody('a')), isNotEmpty);
+        expect(_ok(await h.provider.fetchBody('a')).content, isNotEmpty);
         expect(await h.provider.fetchBody('zzz'), _err<NotFoundFailure>());
       },
     );
+
+    test('fetches every message of a Conversazione, Inviati too', () async {
+      h.deliver(msg('a', conversationId: 't'));
+      h.deliver(msg('b', conversationId: 't', labelIds: const ['SENT']));
+      h.deliver(msg('c'));
+      final messages = _ok(await h.provider.fetchConversation('t'));
+      expect(messages.map((m) => m.id), unorderedEquals(['a', 'b']));
+      expect(messages.map((m) => m.conversationId).toSet(), {'t'});
+    });
+
+    test('a message marked read comes back read with the next sync', () async {
+      h.deliver(msg('a'));
+      final first = _ok(await h.provider.initialSync());
+      _ok(await h.provider.setRead(['a'], read: true));
+      final next = _ok(await h.provider.incrementalSync(first.cursor));
+      expect(next.messages.single.isRead, isTrue);
+      _ok(await h.provider.setRead(['a'], read: true));
+    });
   });
 }
 

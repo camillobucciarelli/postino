@@ -35,8 +35,13 @@ class SyncEngine implements MailSync {
 
   /// Accounts the Provider blocked until a given time: no sync before it.
   final _pausedUntil = <String, DateTime>{};
-  final _running = <String, Future<void>>{};
-  final _again = <String>{};
+
+  /// Per Account, the tail of its serial queue: syncs, Conversazione hydrations and replays
+  /// run one after the other, so none applies a Provider answer older than one already applied.
+  final _tail = <String, Future<void>>{};
+
+  /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
+  final _queuedSync = <String, Future<void>>{};
 
   /// Starts listening to change signals, the poll and the network, then syncs everything.
   void start() {
@@ -67,6 +72,82 @@ class SyncEngine implements MailSync {
         // A Da ricollegare Account stops syncing until the user consents again.
         if (account.status == AccountStatus.attivo) _sync(account),
     ]);
+  }
+
+  @override
+  Future<Result<void>> openConversation(
+    String accountId,
+    String conversationId,
+  ) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    final provider = _provider(account);
+    // Read here at once, offline too; the Provider hears it from the queue.
+    await _store.markConversationRead(accountId, conversationId);
+    // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
+    // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
+    final fetched = await _serial(accountId, () async {
+      // Inviati and messages older than the sync window are not in the database yet.
+      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
+      final fetched = await provider.fetchConversation(conversationId);
+      if (fetched case Ok(:final value)) {
+        await _store.applyPage(accountId, value, const {});
+        await _store.markConversationRead(accountId, conversationId);
+      }
+      // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
+      if (!await _replay(accountId, provider)) _retry.add(accountId);
+      return fetched;
+    });
+    return switch (fetched) {
+      Ok() => const Ok(null),
+      Err(:final failure) => Err(failure),
+    };
+  }
+
+  @override
+  Future<Result<void>> fetchBody(String accountId, String messageId) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    switch (await _provider(account).fetchBody(messageId)) {
+      case Ok(:final value):
+        await _store.saveBody(accountId, messageId, value);
+        return const Ok(null);
+      case Err(:final failure):
+        debugPrint('[sync] $accountId: body $messageId failed, $failure');
+        return Err(failure);
+    }
+  }
+
+  Future<Account?> _account(String id) async =>
+      (await _store.accounts()).where((a) => a.id == id).firstOrNull;
+
+  /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
+  Future<T> _serial<T>(String accountId, Future<T> Function() op) {
+    final run = (_tail[accountId] ?? Future<void>.value()).then((_) => op());
+    _tail[accountId] = run.then<void>((_) {}, onError: (_) {});
+    return run;
+  }
+
+  /// Sends the offline queue (ADR 0008); what fails stays queued and the result is false,
+  /// so the poll retries the Account even while its change signal is up.
+  /// Called only from inside the Account's serial queue.
+  Future<bool> _replay(String accountId, MailProvider provider) async {
+    var done = true;
+    final byValue = <bool, List<String>>{};
+    for (final i in await _store.pendingIntents(accountId)) {
+      if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
+    }
+    for (final MapEntry(key: read, value: ids) in byValue.entries) {
+      switch (await provider.setRead(ids, read: read)) {
+        // Gone from the Provider: the intent is dropped in silence.
+        case Ok() || Err(failure: NotFoundFailure()):
+          await _store.readDone(accountId, ids, isRead: read);
+        case Err(:final failure):
+          debugPrint('[sync] $accountId: replay failed, $failure');
+          done = false;
+      }
+    }
+    return done;
   }
 
   Future<void> _poll() async {
@@ -125,30 +206,22 @@ class SyncEngine implements MailSync {
     return g<MailProvider>(instanceName: account.id);
   }
 
-  /// One sync at a time per Account; a request while one runs makes it run once more afterwards.
+  /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
   Future<void> _sync(Account account) {
     final id = account.id;
     if (_pausedUntil[id] case final until?) {
       if (_clock.now().isBefore(until)) return Future.value();
       _pausedUntil.remove(id);
     }
-    if (_running[id] case final running?) {
-      _again.add(id);
-      return running;
-    }
-    return _running[id] = () async {
-      try {
-        do {
-          _again.remove(id);
-          await _syncOnce(id, _provider(account));
-        } while (_again.contains(id));
-      } finally {
-        _running.remove(id);
-      }
-    }();
+    return _queuedSync[id] ??= _serial(id, () {
+      _queuedSync.remove(id);
+      return _syncOnce(id, _provider(account));
+    });
   }
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
+    // The queue first, so the sync brings back what the user did offline.
+    final replayed = await _replay(accountId, provider);
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
@@ -170,7 +243,8 @@ class SyncEngine implements MailSync {
     }
     switch (result) {
       case Ok(:final value):
-        _retry.remove(accountId);
+        // The mail is here, but a queue still waiting keeps the Account on the poll.
+        replayed ? _retry.remove(accountId) : _retry.add(accountId);
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
         debugPrint(

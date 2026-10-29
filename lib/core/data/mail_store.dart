@@ -37,7 +37,7 @@ class MailStore implements InboxRepository {
   Future<void> applyPage(
     String accountId,
     List<Message> messages,
-    Map<String, String> bodies,
+    Map<String, MessageBody> bodies,
   ) => _db.messagesDao.applySync(
     accountId,
     SyncBatch(cursor: '', messages: messages, bodies: bodies),
@@ -51,15 +51,57 @@ class MailStore implements InboxRepository {
   Stream<List<InboxEntry>> watchMessages(String accountId, String labelId) =>
       _entries(accountId, labelId);
 
+  /// Rows come newest first: the first of each Conversazione is its latest message, and keeps the order.
+  // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
   Stream<List<InboxEntry>> _entries(String? accountId, String labelId) => _db
       .messagesDao
       .watchMessages(accountId: accountId, labelId: labelId)
+      .map((rows) {
+        final groups = <(String, String), List<(AccountRow, MessageRow)>>{};
+        for (final r in rows) {
+          (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
+        }
+        return [
+          for (final g in groups.values)
+            InboxEntry(
+              account: _account(g.first.$1),
+              message: _message(g.first.$2),
+              count: g.length,
+              unread: g.any((r) => !r.$2.isRead),
+            ),
+        ];
+      });
+
+  @override
+  Stream<List<ConversationMessage>> watchConversation(
+    String accountId,
+    String conversationId,
+  ) => _db.messagesDao
+      .watchConversation(accountId, conversationId)
       .map(
         (rows) => [
-          for (final (a, m) in rows)
-            InboxEntry(account: _account(a), message: _message(m)),
+          for (final (m, b) in rows)
+            (
+              message: _message(m),
+              body: b == null ? null : MessageBody(b.body, b.kind),
+            ),
         ],
       );
+
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
+      _db.messagesDao.saveBody(accountId, messageId, body);
+
+  Future<void> markConversationRead(String accountId, String conversationId) =>
+      _db.messagesDao.markConversationRead(accountId, conversationId);
+
+  Future<List<IntentRow>> pendingIntents(String accountId) =>
+      _db.intentsDao.pending(accountId);
+
+  Future<void> readDone(
+    String accountId,
+    List<String> messageIds, {
+    required bool isRead,
+  }) => _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
   @override
   Stream<List<Label>> watchLabels(String accountId) => _db.messagesDao

@@ -87,7 +87,7 @@ class GmailProvider implements MailProvider {
         .toSet();
     // Page by page: each one is handed over (and stored) before the next is fetched.
     // ponytail: a retry refetches pages already stored; skip stored ids if big mailboxes keep failing late.
-    final fetched = <String, (Message, String?)?>{};
+    final fetched = <String, (Message, MessageBody?)?>{};
     for (var i = 0; i < ids.length; i += _page) {
       final page = await _fetchAll(
         ids.skip(i).take(_page),
@@ -165,16 +165,46 @@ class GmailProvider implements MailProvider {
   );
 
   @override
-  Future<Result<String>> fetchBody(String messageId) => _guard(() async {
+  Future<Result<MessageBody>> fetchBody(String messageId) => _guard(() async {
     final j = await _get('messages/$messageId', {'format': 'full'});
     return Ok(
       await _body(
             messageId,
             j['payload'] as Map<String, dynamic>? ?? const {},
           ) ??
-          '',
+          const MessageBody('', BodyKind.testo),
     );
   });
+
+  @override
+  Future<Result<List<Message>>> fetchConversation(String conversationId) =>
+      _guard(() async {
+        final j = await _get('threads/$conversationId', {
+          'format': 'metadata',
+          'metadataHeaders': _headers,
+        });
+        return Ok([
+          for (final m in j['messages'] as List? ?? const [])
+            _parse(m as Map<String, dynamic>),
+        ]);
+      });
+
+  /// One batchModify call per 1000 ids, Gmail's cap.
+  @override
+  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) =>
+      _guard(() async {
+        for (var i = 0; i < messageIds.length; i += 1000) {
+          await _request(
+            'POST',
+            'messages/batchModify',
+            body: {
+              'ids': messageIds.skip(i).take(1000).toList(),
+              read ? 'removeLabelIds' : 'addLabelIds': ['UNREAD'],
+            },
+          );
+        }
+        return const Ok(null);
+      });
 
   @override
   Future<Result<AttachmentBytes>> fetchAttachment(
@@ -211,11 +241,11 @@ class GmailProvider implements MailProvider {
 
   /// Fetches [ids], [_chunk] at a time; null for a message gone in the meantime.
   /// [full] says which ones come with their body.
-  Future<Map<String, (Message, String?)?>> _fetchAll(
+  Future<Map<String, (Message, MessageBody?)?>> _fetchAll(
     Iterable<String> ids, {
     required bool Function(String id) full,
   }) async {
-    final out = <String, (Message, String?)?>{};
+    final out = <String, (Message, MessageBody?)?>{};
     final all = ids.toList();
     for (var i = 0; i < all.length; i += _chunk) {
       if (i > 0) await _sleep(_pace);
@@ -227,17 +257,37 @@ class GmailProvider implements MailProvider {
     return out;
   }
 
-  Future<(Message, String?)?> _fetch(String id, {required bool full}) async {
+  Future<(Message, MessageBody?)?> _fetch(
+    String id, {
+    required bool full,
+  }) async {
     final Map<String, dynamic> j;
     try {
       j = await _get('messages/$id', {
         'format': full ? 'full' : 'metadata',
-        if (!full) 'metadataHeaders': ['From', 'To', 'Subject', 'Message-ID'],
+        if (!full) 'metadataHeaders': _headers,
       });
     } on _Failed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }
+    final message = _parse(j);
+    if (!full) return (message, null);
+    try {
+      return (
+        message,
+        await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}),
+      );
+    } on _Failed catch (e) {
+      if (e.failure is NotFoundFailure) return null;
+      rethrow;
+    }
+  }
+
+  static const _headers = ['From', 'To', 'Subject', 'Message-ID'];
+
+  /// A Gmail message resource (`full` or `metadata`) as a [Message].
+  static Message _parse(Map<String, dynamic> j) {
     final payload = j['payload'] as Map<String, dynamic>? ?? const {};
     final headers = {
       for (final h in payload['headers'] as List? ?? const [])
@@ -246,8 +296,8 @@ class GmailProvider implements MailProvider {
     final labels = [
       for (final l in j['labelIds'] as List? ?? const []) l as String,
     ];
-    final message = Message(
-      id: id,
+    return Message(
+      id: j['id'] as String,
       messageId: headers['message-id'] ?? '',
       conversationId: j['threadId'] as String,
       labelIds: labels,
@@ -266,25 +316,22 @@ class GmailProvider implements MailProvider {
         isUtc: true,
       ),
     );
-    if (!full) return (message, null);
-    try {
-      return (message, await _body(id, payload));
-    } on _Failed catch (e) {
-      if (e.failure is NotFoundFailure) return null;
-      rethrow;
-    }
   }
 
-  static Map<String, String> _inboxBodies(
-    Map<String, (Message, String?)?> fetched,
+  static Map<String, MessageBody> _inboxBodies(
+    Map<String, (Message, MessageBody?)?> fetched,
   ) => {
     for (final (m, body) in fetched.values.nonNulls)
       if (body != null && m.labelIds.contains(inboxLabelId)) m.id: body,
   };
 
   /// The HTML part if there is one, else the plain text one.
-  Future<String?> _body(String messageId, Map<String, dynamic> payload) async {
-    final part = _part(payload, 'text/html') ?? _part(payload, 'text/plain');
+  Future<MessageBody?> _body(
+    String messageId,
+    Map<String, dynamic> payload,
+  ) async {
+    final html = _part(payload, 'text/html');
+    final part = html ?? _part(payload, 'text/plain');
     if (part == null) return null;
     final body = part['body'] as Map;
     // A big part comes as an attachmentId instead of inline data.
@@ -295,9 +342,12 @@ class GmailProvider implements MailProvider {
             ))['data']
             as String;
     // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
-    return utf8.decode(
-      base64Url.decode(base64Url.normalize(data)),
-      allowMalformed: true,
+    return MessageBody(
+      utf8.decode(
+        base64Url.decode(base64Url.normalize(data)),
+        allowMalformed: true,
+      ),
+      html != null ? BodyKind.html : BodyKind.testo,
     );
   }
 
@@ -347,19 +397,36 @@ class GmailProvider implements MailProvider {
     return _refresh(tokens);
   }
 
-  /// GET on the Gmail API: refreshes an expired token first and once more on a 401; retries a quota hit with backoff.
-  /// Failures are thrown as [_Failed], which [_guard] turns into an [Err].
   Future<Map<String, dynamic>> _get(
     String path, [
     Map<String, Object> query = const {},
-  ]) async {
+  ]) => _request('GET', path, query: query);
+
+  /// A call to the Gmail API: refreshes an expired token first and once more on a 401; retries a quota hit with backoff.
+  /// [body] goes as JSON. Failures are thrown as [_Failed], which [_guard] turns into an [Err].
+  Future<Map<String, dynamic>> _request(
+    String method,
+    String path, {
+    Map<String, Object> query = const {},
+    Object? body,
+  }) async {
     var tokens = await _validTokens();
     final url = _api
         .resolve(path)
         .replace(queryParameters: query.isEmpty ? null : query);
-    Future<http.Response> send() => _http
-        .get(url, headers: {'authorization': 'Bearer ${tokens.access}'})
-        .timeout(const Duration(seconds: 30));
+    Future<http.Response> attempt() async {
+      final request = http.Request(method, url)
+        ..headers['authorization'] = 'Bearer ${tokens.access}';
+      if (body != null) {
+        request
+          ..headers['content-type'] = 'application/json'
+          ..body = jsonEncode(body);
+      }
+      return http.Response.fromStream(await _http.send(request));
+    }
+
+    Future<http.Response> send() =>
+        attempt().timeout(const Duration(seconds: 30));
 
     var r = await send();
     if (r.statusCode == 401) {
@@ -382,10 +449,12 @@ class GmailProvider implements MailProvider {
       r = await send();
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;
+    // batchModify answers with an empty body.
+    if (r.statusCode == 204) return const {};
     if (_rateLimited(r)) {
       // Never the Authorization header or the query: only method, path, status and the start of the body.
       debugPrint(
-        '[gmail] rate limited: GET $path ${r.statusCode} '
+        '[gmail] rate limited: $method $path ${r.statusCode} '
         '${r.body.length > 300 ? r.body.substring(0, 300) : r.body}',
       );
     }

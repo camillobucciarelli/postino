@@ -14,10 +14,11 @@ Message msg(
   bool isRead = false,
   bool isStarred = false,
   List<String> labelIds = const [inboxLabelId],
+  String? conversationId,
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
-  conversationId: 't-$id',
+  conversationId: conversationId ?? 't-$id',
   labelIds: labelIds,
   isRead: isRead,
   isStarred: isStarred,
@@ -31,6 +32,9 @@ Message msg(
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
 class FakeMailProvider implements MailProvider {
   final _messages = <String, Message>{};
+
+  /// Outside the sync window (older than 90 days): only [fetchConversation] and [fetchBody] see them.
+  final _old = <String, Message>{};
   final _log = <(int, Message?, String)>[]; // (version, upsert, removedId)
   late final StreamController<ChangeSignal> _changes =
       StreamController.broadcast(
@@ -53,7 +57,19 @@ class FakeMailProvider implements MailProvider {
 
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
+
+  /// While set, [fetchConversation] and [setRead] answer only once it completes: in-flight requests.
+  Completer<void>? holdConversation, holdRead;
   final sent = <OutgoingMessage>[];
+
+  /// While set, [setRead] fails as offline even though the syncs work: a passing replay failure.
+  bool failSetRead = false;
+
+  /// Every [setRead] that reached the Provider: (ids, read).
+  final readCalls = <(List<String>, bool)>[];
+
+  /// Body kind of [fetchBody]; the sync bodies are plain text.
+  BodyKind bodyKind = BodyKind.testo;
 
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
   final labels = [
@@ -72,6 +88,9 @@ class FakeMailProvider implements MailProvider {
     _log.add((++_version, m, ''));
     if (_signalUp) _changes.add(ChangeSignal.changed);
   }
+
+  /// A message older than the sync window: the syncs never bring it.
+  void deliverOutsideWindow(Message m) => _old[m.id] = m;
 
   void removeRemotely(String id) {
     _messages.remove(id);
@@ -118,9 +137,10 @@ class FakeMailProvider implements MailProvider {
   @override
   Future<Result<void>> refreshAuth() async => _guard(() {});
 
-  static Map<String, String> _inboxBodies(Iterable<Message> ms) => {
+  static Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
     for (final m in ms)
-      if (m.labelIds.contains(inboxLabelId)) m.id: 'Corpo di ${m.id}',
+      if (m.labelIds.contains(inboxLabelId))
+        m.id: MessageBody('Corpo di ${m.id}', BodyKind.testo),
   };
 
   @override
@@ -149,11 +169,12 @@ class FakeMailProvider implements MailProvider {
 
   @override
   Future<Result<SyncBatch>> incrementalSync(String cursor) async {
-    await hold?.future;
     if (_failure == null && int.parse(cursor) < _oldest) {
+      await hold?.future;
       return const Err(NotFoundFailure());
     }
-    return _guard(() {
+    // Answered now, delivered after [hold]: an in-flight response.
+    final result = _guard(() {
       // Only the latest operation per id counts (a Provider delta is final state).
       final latest = <String, (int, Message?, String)>{};
       for (final e in _log) {
@@ -173,18 +194,50 @@ class FakeMailProvider implements MailProvider {
         bodies: _inboxBodies(messages),
       );
     });
+    await hold?.future;
+    return result;
   }
 
   @override
   Stream<ChangeSignal> get changes => _changes.stream;
 
   @override
-  Future<Result<String>> fetchBody(String messageId) async {
+  Future<Result<MessageBody>> fetchBody(String messageId) async {
     final f = _failure;
     if (f != null) return Err(f);
-    return _messages.containsKey(messageId)
-        ? Ok('Corpo di $messageId')
+    return _messages.containsKey(messageId) || _old.containsKey(messageId)
+        ? Ok(MessageBody('Corpo di $messageId', bodyKind))
         : const Err(NotFoundFailure());
+  }
+
+  @override
+  Future<Result<List<Message>>> fetchConversation(String conversationId) async {
+    // Answered now, delivered after [holdConversation]: an in-flight snapshot.
+    final result = _guard(
+      () => [
+        for (final m in [..._old.values, ..._messages.values])
+          if (m.conversationId == conversationId) m,
+      ],
+    );
+    await holdConversation?.future;
+    return result;
+  }
+
+  @override
+  Future<Result<void>> setRead(
+    List<String> messageIds, {
+    required bool read,
+  }) async {
+    await holdRead?.future;
+    return failSetRead
+        ? const Err(OfflineFailure())
+        : _guard(() {
+            readCalls.add((messageIds, read));
+            for (final id in messageIds) {
+              if (_old[id] case final m?) _old[id] = withRead(m, read);
+              if (_messages[id] case final m?) deliver(withRead(m, read));
+            }
+          });
   }
 
   @override
@@ -220,3 +273,19 @@ class FakeMailProvider implements MailProvider {
         : const Err(NotFoundFailure());
   }
 }
+
+/// [m] read (or unread) elsewhere.
+Message withRead(Message m, bool read) => Message(
+  id: m.id,
+  messageId: m.messageId,
+  conversationId: m.conversationId,
+  labelIds: m.labelIds,
+  isRead: read,
+  isStarred: m.isStarred,
+  from: m.from,
+  to: m.to,
+  subject: m.subject,
+  snippet: m.snippet,
+  date: m.date,
+  attachments: m.attachments,
+);

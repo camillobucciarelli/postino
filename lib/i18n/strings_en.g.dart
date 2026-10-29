@@ -53,6 +53,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
+	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
 }
 
 // Path: onboarding
@@ -119,6 +120,26 @@ class _Translations$list$en extends Translations$list$it {
 	@override String get unread => 'Unread';
 	@override String get starred => 'starred';
 	@override String account({required Object name}) => 'account ${name}';
+	@override String messages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} message',
+		other: '${n} messages',
+	);
+}
+
+// Path: conversazione
+class _Translations$conversazione$en extends Translations$conversazione$it {
+	_Translations$conversazione$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get selectTitle => 'Select a conversation';
+	@override String get selectBody => 'Pick a conversation from the list to read it here.';
+	@override String to({required Object recipients}) => 'to ${recipients}';
+	@override String get loading => 'Loading…';
+	@override String get offline => 'Body not available offline';
+	@override String get failed => 'Body not available';
+	@override String get retry => 'Retry';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -156,6 +177,14 @@ extension on TranslationsEn {
 			'list.unread' => 'Unread',
 			'list.starred' => 'starred',
 			'list.account' => ({required Object name}) => 'account ${name}',
+			'list.messages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} message', other: '${n} messages', ), 
+			'conversazione.selectTitle' => 'Select a conversation',
+			'conversazione.selectBody' => 'Pick a conversation from the list to read it here.',
+			'conversazione.to' => ({required Object recipients}) => 'to ${recipients}',
+			'conversazione.loading' => 'Loading…',
+			'conversazione.offline' => 'Body not available offline',
+			'conversazione.failed' => 'Body not available',
+			'conversazione.retry' => 'Retry',
 			_ => null,
 		};
 	}

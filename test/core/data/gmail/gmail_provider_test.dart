@@ -12,6 +12,7 @@ import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
+import '../../../support/fake_mail_provider.dart' show withRead;
 import '../../../support/fake_platform.dart';
 import '../../domain/mail_provider_contract.dart';
 
@@ -24,7 +25,11 @@ http.Response _fixture(String name) {
   final j = jsonDecode(
     File('test/fixtures/gmail/$name.json').readAsStringSync(),
   );
-  return _json(j['body'], j['status'] as int);
+  final status = j['status'] as int;
+  // A 204 (batchModify) has no body.
+  return j['body'] == null
+      ? http.Response('', status)
+      : _json(j['body'], status);
 }
 
 http.Response _json(Object body, [int status = 200]) => http.Response(
@@ -101,6 +106,16 @@ class GmailHarness implements ContractHarness {
           if (q['labelIds'] == null || _labels(m).contains(q['labelIds']))
             {'id': m.id, 'threadId': m.conversationId},
       ], q),
+      ['messages', 'batchModify'] => _modify(
+        jsonDecode(r.body) as Map<String, dynamic>,
+      ),
+      ['threads', final id] => switch ([
+        for (final m in _mailbox.values)
+          if (m.conversationId == id) _resource(m, full: false),
+      ]) {
+        [] => _fixture('not_found'),
+        final messages => _json({'id': id, 'messages': messages}),
+      },
       ['messages', final id] => switch (_mailbox[id]) {
         null => _fixture('not_found'),
         final m => _json(_resource(m, full: q['format'] == 'full')),
@@ -143,6 +158,18 @@ class GmailHarness implements ContractHarness {
       if (from + _page < all.length) 'nextPageToken': '${from + _page}',
       if (key == 'messages') 'resultSizeEstimate': all.length,
     });
+  }
+
+  /// batchModify of the UNREAD label only, as the adapter uses it.
+  http.Response _modify(Map<String, dynamic> body) {
+    final read = (body['removeLabelIds'] as List?)?.contains('UNREAD') ?? false;
+    for (final id in body['ids'] as List) {
+      if (_mailbox[id] case final m?) {
+        _mailbox[id as String] = withRead(m, read);
+        _history.add((++_historyId, 'labelsRemoved', id));
+      }
+    }
+    return http.Response('', 204);
   }
 
   static List<String> _labels(Message m) => [
@@ -199,6 +226,11 @@ class GmailHarness implements ContractHarness {
 }
 
 Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
+
+Map<String, (String, BodyKind)> _contents(Map<String, MessageBody> bodies) => {
+  for (final MapEntry(:key, :value) in bodies.entries)
+    key: (value.content, value.kind),
+};
 
 T _ok<T>(Result<T> r) => switch (r) {
   Ok(:final value) => value,
@@ -348,9 +380,15 @@ void main() {
       expect(f2.snippet, contains("c'è"));
       expect(byId[_f3]!.labelIds, ['SENT']);
 
-      expect(batch.bodies, {
-        _f1: '<div dir="ltr">Ciao Ada,<br>ci vediamo alle 20 da Mario?</div>\r\n',
-        _f2: "Perfetto, a venerdì!\r\nIl 31 c'è anche Carla.\r\n",
+      expect(_contents(batch.bodies), {
+        _f1: (
+          '<div dir="ltr">Ciao Ada,<br>ci vediamo alle 20 da Mario?</div>\r\n',
+          BodyKind.html,
+        ),
+        _f2: (
+          "Perfetto, a venerdì!\r\nIl 31 c'è anche Carla.\r\n",
+          BodyKind.testo,
+        ),
       });
       String format(String id) => g.urls
           .singleWhere((u) => u.path.endsWith(id))
@@ -445,12 +483,13 @@ void main() {
 
       test('is fetched when syncing the inbox', () async {
         final batch = _ok(await _Recorded(route).provider.initialSync());
-        expect(batch.bodies, {f5: text});
+        expect(_contents(batch.bodies), {f5: (text, BodyKind.testo)});
       });
 
       test('is fetched by fetchBody', () async {
         final g = _Recorded(route);
-        expect(_ok(await g.provider.fetchBody(f5)), text);
+        final body = _ok(await g.provider.fetchBody(f5));
+        expect((body.content, body.kind), (text, BodyKind.testo));
       });
     });
 
@@ -468,11 +507,75 @@ void main() {
 
       test('is not the body when syncing the inbox', () async {
         final batch = _ok(await _Recorded(route).provider.initialSync());
-        expect(batch.bodies, {f6: text});
+        expect(_contents(batch.bodies), {f6: (text, BodyKind.testo)});
       });
 
       test('is not the body from fetchBody', () async {
-        expect(_ok(await _Recorded(route).provider.fetchBody(f6)), text);
+        expect(
+          _ok(await _Recorded(route).provider.fetchBody(f6)).content,
+          text,
+        );
+      });
+    });
+
+    test('fetchBody: the HTML part, saying it is HTML', () async {
+      final g = _Recorded((r, path) => 'message_f1');
+      final body = _ok(await g.provider.fetchBody(_f1));
+      expect(body.kind, BodyKind.html);
+      expect(body.content, startsWith('<div dir="ltr">Ciao Ada,'));
+      expect(g.urls.single.path, '${_api}messages/$_f1');
+      expect(g.urls.single.queryParameters['format'], 'full');
+    });
+
+    test('threads.get: the whole Conversazione, with the Sent message older than 90 days', () async {
+      final g = _Recorded((r, path) => 'thread_f1');
+      final messages = _ok(await g.provider.fetchConversation(_f1));
+
+      final url = g.urls.single;
+      expect(url.path, '${_api}threads/$_f1');
+      expect(url.queryParameters['format'], 'metadata');
+      expect(url.queryParametersAll['metadataHeaders'], [
+        'From',
+        'To',
+        'Subject',
+        'Message-ID',
+      ]);
+      expect(messages.map((m) => m.id), ['18f3a2b4c5d6e7f0', _f1, _f2]);
+      expect(messages.map((m) => m.conversationId).toSet(), {_f1});
+      final sent = messages.first;
+      expect(sent.labelIds, ['SENT']);
+      expect(sent.from, 'Ada Rossi <ada@gmail.com>');
+      expect(sent.subject, 'Cena di venerdì');
+      expect(sent.date.isBefore(_now.subtract(syncWindow)), isTrue);
+      expect(messages[1].isRead, isFalse);
+    });
+
+    test('a 404 on threads.get is NotFound', () async {
+      final g = _Recorded((r, path) => 'not_found');
+      expect(await g.provider.fetchConversation(_f1), _err<NotFoundFailure>());
+    });
+
+    test('marking read is one batchModify removing UNREAD', () async {
+      final g = _Recorded((r, path) => 'batch_modify');
+      _ok(await g.provider.setRead([_f1, _f2], read: true));
+
+      final r = g.requests.single;
+      expect(r.method, 'POST');
+      expect(r.url.path, '${_api}messages/batchModify');
+      expect(r.headers['content-type'], startsWith('application/json'));
+      expect(r.headers['authorization'], 'Bearer ya29.initial');
+      expect(jsonDecode(r.body), {
+        'ids': [_f1, _f2],
+        'removeLabelIds': ['UNREAD'],
+      });
+    });
+
+    test('marking unread adds UNREAD back', () async {
+      final g = _Recorded((r, path) => 'batch_modify');
+      _ok(await g.provider.setRead([_f1], read: false));
+      expect(jsonDecode(g.requests.single.body), {
+        'ids': [_f1],
+        'addLabelIds': ['UNREAD'],
       });
     });
 

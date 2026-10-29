@@ -37,6 +37,19 @@
     "yesterday": "Ieri",
     "unread": "Non letto",
     "starred": "con Stella",
-    "account": "account $name"
+    "account": "account $name",
+    "messages": {
+      "one": "$n messaggio",
+      "other": "$n messaggi"
+    }
+  },
+  "conversazione": {
+    "selectTitle": "Seleziona una Conversazione",
+    "selectBody": "Scegli una Conversazione dalla lista per leggerla qui.",
+    "to": "a $recipients",
+    "loading": "Caricamento…",
+    "offline": "Corpo non disponibile offline",
+    "failed": "Corpo non disponibile",
+    "retry": "Riprova"
   }
 }

@@ -9,16 +9,27 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'message_time.dart';
 
-/// List of messages (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database through [InboxRepository].
-/// Pull-to-refresh asks for a sync; the rows update when it writes the database.
+/// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
+/// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
+/// Routing is the caller's: a tap calls [onOpen], and [selected] is the Conversazione open beside the list.
 class MessageList extends StatefulWidget {
-  const MessageList({super.key, required this.watch, this.showAccount = false});
+  const MessageList({
+    super.key,
+    required this.watch,
+    required this.onOpen,
+    this.showAccount = false,
+    this.selected,
+  });
 
   /// Which messages to show, e.g. `repo.watchUnifiedInbox`.
   final Stream<List<InboxEntry>> Function(InboxRepository repo) watch;
 
   /// Marks each row with its Account (bar and badge): only where Accounts mix.
   final bool showAccount;
+  final void Function(String accountId, String conversationId) onOpen;
+
+  /// (accountId, conversationId).
+  final (String, String)? selected;
 
   @override
   State<MessageList> createState() => _MessageListState();
@@ -50,7 +61,7 @@ class _MessageListState extends State<MessageList> {
         emptyTitle: t.emptyTitle,
         emptyBody: t.emptyBody,
         itemBuilder: (context, i) {
-          final InboxEntry(message: m, account: a) = list![i];
+          final InboxEntry(message: m, account: a, :count, :unread) = list![i];
           final time = messageTime(m.date, now, locale, t.yesterday);
           return PostinoMessageTile(
             key: ValueKey('row-${a.id}-${m.id}'),
@@ -58,8 +69,11 @@ class _MessageListState extends State<MessageList> {
             subject: m.subject,
             preview: m.snippet,
             time: time,
-            unread: !m.isRead,
+            unread: unread,
             starred: m.isStarred,
+            count: count,
+            selected: widget.selected == (a.id, m.conversationId),
+            onTap: () => widget.onOpen(a.id, m.conversationId),
             account: widget.showAccount
                 ? (
                     color: PostinoAccountColor.values[a.color],
@@ -67,9 +81,10 @@ class _MessageListState extends State<MessageList> {
                   )
                 : null,
             semanticLabel: [
-              if (!m.isRead) t.unread,
+              if (unread) t.unread,
               m.from,
               m.subject,
+              if (count > 1) t.messages(n: count),
               if (m.isStarred) t.starred,
               if (widget.showAccount) t.account(name: a.name),
               time,

@@ -14,10 +14,11 @@ Message msg(
   bool isRead = false,
   bool isStarred = false,
   List<String> labelIds = const [inboxLabelId],
+  String? conversationId,
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
-  conversationId: 't-$id',
+  conversationId: conversationId ?? 't-$id',
   labelIds: labelIds,
   isRead: isRead,
   isStarred: isStarred,
@@ -31,6 +32,9 @@ Message msg(
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
 class FakeMailProvider implements MailProvider {
   final _messages = <String, Message>{};
+
+  /// Outside the sync window (older than 90 days): only [fetchConversation] and [fetchBody] see them.
+  final _old = <String, Message>{};
   final _log = <(int, Message?, String)>[]; // (version, upsert, removedId)
   late final StreamController<ChangeSignal> _changes =
       StreamController.broadcast(
@@ -55,6 +59,12 @@ class FakeMailProvider implements MailProvider {
   Completer<void>? hold;
   final sent = <OutgoingMessage>[];
 
+  /// Every [setRead] that reached the Provider: (ids, read).
+  final readCalls = <(List<String>, bool)>[];
+
+  /// Body kind of [fetchBody]; the sync bodies are plain text.
+  BodyKind bodyKind = BodyKind.testo;
+
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
   final labels = [
     const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
@@ -72,6 +82,9 @@ class FakeMailProvider implements MailProvider {
     _log.add((++_version, m, ''));
     if (_signalUp) _changes.add(ChangeSignal.changed);
   }
+
+  /// A message older than the sync window: the syncs never bring it.
+  void deliverOutsideWindow(Message m) => _old[m.id] = m;
 
   void removeRemotely(String id) {
     _messages.remove(id);
@@ -118,9 +131,10 @@ class FakeMailProvider implements MailProvider {
   @override
   Future<Result<void>> refreshAuth() async => _guard(() {});
 
-  static Map<String, String> _inboxBodies(Iterable<Message> ms) => {
+  static Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
     for (final m in ms)
-      if (m.labelIds.contains(inboxLabelId)) m.id: 'Corpo di ${m.id}',
+      if (m.labelIds.contains(inboxLabelId))
+        m.id: MessageBody('Corpo di ${m.id}', BodyKind.testo),
   };
 
   @override
@@ -179,13 +193,35 @@ class FakeMailProvider implements MailProvider {
   Stream<ChangeSignal> get changes => _changes.stream;
 
   @override
-  Future<Result<String>> fetchBody(String messageId) async {
+  Future<Result<MessageBody>> fetchBody(String messageId) async {
     final f = _failure;
     if (f != null) return Err(f);
-    return _messages.containsKey(messageId)
-        ? Ok('Corpo di $messageId')
+    return _messages.containsKey(messageId) || _old.containsKey(messageId)
+        ? Ok(MessageBody('Corpo di $messageId', bodyKind))
         : const Err(NotFoundFailure());
   }
+
+  @override
+  Future<Result<List<Message>>> fetchConversation(
+    String conversationId,
+  ) async => _guard(
+    () => [
+      for (final m in [..._old.values, ..._messages.values])
+        if (m.conversationId == conversationId) m,
+    ],
+  );
+
+  @override
+  Future<Result<void>> setRead(
+    List<String> messageIds, {
+    required bool read,
+  }) async => _guard(() {
+    readCalls.add((messageIds, read));
+    for (final id in messageIds) {
+      if (_old[id] case final m?) _old[id] = withRead(m, read);
+      if (_messages[id] case final m?) deliver(withRead(m, read));
+    }
+  });
 
   @override
   Future<Result<Uint8List>> fetchAttachment(
@@ -220,3 +256,19 @@ class FakeMailProvider implements MailProvider {
         : const Err(NotFoundFailure());
   }
 }
+
+/// [m] read (or unread) elsewhere.
+Message withRead(Message m, bool read) => Message(
+  id: m.id,
+  messageId: m.messageId,
+  conversationId: m.conversationId,
+  labelIds: m.labelIds,
+  isRead: read,
+  isStarred: m.isStarred,
+  from: m.from,
+  to: m.to,
+  subject: m.subject,
+  snippet: m.snippet,
+  date: m.date,
+  attachments: m.attachments,
+);

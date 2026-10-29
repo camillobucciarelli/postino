@@ -5,6 +5,7 @@ import '../../domain/message.dart';
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
 import '../tables/bodies_table.dart';
+import '../tables/intents_table.dart';
 import '../tables/labels_table.dart';
 import '../tables/message_labels_table.dart';
 import '../tables/messages_table.dart';
@@ -13,7 +14,15 @@ import '../tables/sync_cursors_table.dart';
 part 'messages_dao.g.dart';
 
 @DriftAccessor(
-  tables: [Accounts, Labels, Messages, MessageLabels, Bodies, SyncCursors],
+  tables: [
+    Accounts,
+    Labels,
+    Messages,
+    MessageLabels,
+    Bodies,
+    SyncCursors,
+    Intents,
+  ],
 )
 class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     with _$MessagesDaoMixin {
@@ -137,7 +146,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           BodiesCompanion.insert(
             accountId: accountId,
             messageId: key,
-            body: value,
+            body: value.content,
+            kind: Value(value.kind),
           ),
       ], mode: InsertMode.insertOrReplace);
       if (saveCursor) {
@@ -151,30 +161,111 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
         );
       }
     });
+    await _keepIntents(accountId);
   });
 
-  /// Messages carrying [labelId] (by default the inbox), newest first, each with its Account;
-  /// of every Account, or only of [accountId].
+  /// What the user did here wins over what the Provider still says, until the intent is replayed.
+  Future<void> _keepIntents(String accountId) => customUpdate(
+    'UPDATE messages SET is_read = (SELECT i.is_read FROM intents i '
+    'WHERE i.account_id = messages.account_id AND i.message_id = messages.id) '
+    'WHERE account_id = ?1 AND id IN '
+    '(SELECT message_id FROM intents WHERE account_id = ?1 AND is_read IS NOT NULL)',
+    variables: [Variable(accountId)],
+    updates: {messages},
+  );
+
+  /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox), each with its Account;
+  /// of every Account, or only of [accountId]. Grouping is the caller's.
   Stream<List<(AccountRow, MessageRow)>> watchMessages({
     String? accountId,
     String labelId = inboxLabelId,
   }) {
-    final m = messages, l = messageLabels, a = accounts;
-    final query = select(m).join([
-      innerJoin(
-        l,
-        l.accountId.equalsExp(m.accountId) &
-            l.messageId.equalsExp(m.id) &
-            l.labelId.equals(labelId),
-        useColumns: false,
-      ),
-      innerJoin(a, a.id.equalsExp(m.accountId)),
-    ])..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
+    final m = messages, a = accounts;
+    final t = alias(messages, 't'), l = alias(messageLabels, 'l');
+    final withLabel =
+        select(t).join([
+          innerJoin(
+            l,
+            l.accountId.equalsExp(t.accountId) &
+                l.messageId.equalsExp(t.id) &
+                l.labelId.equals(labelId),
+            useColumns: false,
+          ),
+        ])..where(
+          t.accountId.equalsExp(m.accountId) &
+              t.conversationId.equalsExp(m.conversationId),
+        );
+    final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
+      ..where(existsQuery(withLabel))
+      ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (accountId != null) query.where(m.accountId.equals(accountId));
     return query.watch().map(
       (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m))],
     );
   }
+
+  /// The stored messages of one Conversazione, oldest first, with their body if downloaded.
+  Stream<List<(MessageRow, BodyRow?)>> watchConversation(
+    String accountId,
+    String conversationId,
+  ) {
+    final m = messages, b = bodies;
+    final query =
+        select(m).join([
+            leftOuterJoin(
+              b,
+              b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id),
+            ),
+          ])
+          ..where(
+            m.accountId.equals(accountId) &
+                m.conversationId.equals(conversationId),
+          )
+          ..orderBy([OrderingTerm.asc(m.date), OrderingTerm.asc(m.id)]);
+    return query.watch().map(
+      (rows) => [for (final r in rows) (r.readTable(m), r.readTableOrNull(b))],
+    );
+  }
+
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
+      into(bodies).insert(
+        BodiesCompanion.insert(
+          accountId: accountId,
+          messageId: messageId,
+          body: body.content,
+          kind: Value(body.kind),
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
+
+  /// Marks the Conversazione's unread messages read here and queues the same intent for the Provider.
+  Future<void> markConversationRead(String accountId, String conversationId) =>
+      transaction(() async {
+        final unread =
+            await (selectOnly(messages)
+                  ..addColumns([messages.id])
+                  ..where(
+                    messages.accountId.equals(accountId) &
+                        messages.conversationId.equals(conversationId) &
+                        messages.isRead.equals(false),
+                  ))
+                .map((r) => r.read(messages.id)!)
+                .get();
+        if (unread.isEmpty) return;
+        await (update(messages)
+              ..where((t) => t.accountId.equals(accountId) & t.id.isIn(unread)))
+            .write(const MessagesCompanion(isRead: Value(true)));
+        await batch(
+          (b) => b.insertAllOnConflictUpdate(intents, [
+            for (final id in unread)
+              IntentsCompanion.insert(
+                accountId: accountId,
+                messageId: id,
+                isRead: const Value(true),
+              ),
+          ]),
+        );
+      });
 
   /// The Account's own Etichette, by name.
   Stream<List<LabelRow>> watchLabels(String accountId) =>

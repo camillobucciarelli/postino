@@ -18,13 +18,13 @@ class SyncBatch {
   final List<String> removedMessageIds;
 
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
-  final Map<String, String> bodies;
+  final Map<String, MessageBody> bodies;
 }
 
 /// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.
 typedef SyncPage = Future<void> Function(
   List<Message> messages,
-  Map<String, String> bodies,
+  Map<String, MessageBody> bodies,
 );
 
 /// What the change signal reports: it came [up], something [changed], or it went [down].
@@ -48,7 +48,14 @@ abstract interface class MailProvider {
   /// "Something changed" signal (IMAP IDLE on the inbox); data comes from [incrementalSync].
   Stream<ChangeSignal> get changes;
 
-  Future<Result<String>> fetchBody(String messageId);
+  Future<Result<MessageBody>> fetchBody(String messageId);
+
+  /// Every message of the Conversazione, also those outside the sync window (Inviati, older than 90 days);
+  /// headers only, bodies come from [fetchBody].
+  Future<Result<List<Message>>> fetchConversation(String conversationId);
+
+  /// Marks [messageIds] read (or unread); idempotent, so a replayed intent is harmless.
+  Future<Result<void>> setRead(List<String> messageIds, {required bool read});
 
   Future<Result<AttachmentBytes>> fetchAttachment(
     String messageId,

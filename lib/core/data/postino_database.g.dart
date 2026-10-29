@@ -1701,7 +1701,17 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [accountId, messageId, body];
+  late final GeneratedColumnWithTypeConverter<BodyKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: Constant(BodyKind.testo.name),
+      ).withConverter<BodyKind>($BodiesTable.$converterkind);
+  @override
+  List<GeneratedColumn> get $columns => [accountId, messageId, body, kind];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1759,6 +1769,12 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
         DriftSqlType.string,
         data['${effectivePrefix}body'],
       )!,
+      kind: $BodiesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
     );
   }
 
@@ -1766,16 +1782,23 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
   $BodiesTable createAlias(String alias) {
     return $BodiesTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<BodyKind, String, String> $converterkind =
+      const EnumNameConverter<BodyKind>(BodyKind.values);
 }
 
 class BodyRow extends DataClass implements Insertable<BodyRow> {
   final String accountId;
   final String messageId;
   final String body;
+
+  /// HTML or plain text; the default only fills the rows of v1-v4, which the migration then sorts.
+  final BodyKind kind;
   const BodyRow({
     required this.accountId,
     required this.messageId,
     required this.body,
+    required this.kind,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1783,6 +1806,9 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
     map['account_id'] = Variable<String>(accountId);
     map['message_id'] = Variable<String>(messageId);
     map['body'] = Variable<String>(body);
+    {
+      map['kind'] = Variable<String>($BodiesTable.$converterkind.toSql(kind));
+    }
     return map;
   }
 
@@ -1791,6 +1817,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       accountId: Value(accountId),
       messageId: Value(messageId),
       body: Value(body),
+      kind: Value(kind),
     );
   }
 
@@ -1803,6 +1830,9 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       accountId: serializer.fromJson<String>(json['accountId']),
       messageId: serializer.fromJson<String>(json['messageId']),
       body: serializer.fromJson<String>(json['body']),
+      kind: $BodiesTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
     );
   }
   @override
@@ -1812,20 +1842,29 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       'accountId': serializer.toJson<String>(accountId),
       'messageId': serializer.toJson<String>(messageId),
       'body': serializer.toJson<String>(body),
+      'kind': serializer.toJson<String>(
+        $BodiesTable.$converterkind.toJson(kind),
+      ),
     };
   }
 
-  BodyRow copyWith({String? accountId, String? messageId, String? body}) =>
-      BodyRow(
-        accountId: accountId ?? this.accountId,
-        messageId: messageId ?? this.messageId,
-        body: body ?? this.body,
-      );
+  BodyRow copyWith({
+    String? accountId,
+    String? messageId,
+    String? body,
+    BodyKind? kind,
+  }) => BodyRow(
+    accountId: accountId ?? this.accountId,
+    messageId: messageId ?? this.messageId,
+    body: body ?? this.body,
+    kind: kind ?? this.kind,
+  );
   BodyRow copyWithCompanion(BodiesCompanion data) {
     return BodyRow(
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
       body: data.body.present ? data.body.value : this.body,
+      kind: data.kind.present ? data.kind.value : this.kind,
     );
   }
 
@@ -1834,37 +1873,42 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
     return (StringBuffer('BodyRow(')
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
-          ..write('body: $body')
+          ..write('body: $body, ')
+          ..write('kind: $kind')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(accountId, messageId, body);
+  int get hashCode => Object.hash(accountId, messageId, body, kind);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is BodyRow &&
           other.accountId == this.accountId &&
           other.messageId == this.messageId &&
-          other.body == this.body);
+          other.body == this.body &&
+          other.kind == this.kind);
 }
 
 class BodiesCompanion extends UpdateCompanion<BodyRow> {
   final Value<String> accountId;
   final Value<String> messageId;
   final Value<String> body;
+  final Value<BodyKind> kind;
   final Value<int> rowid;
   const BodiesCompanion({
     this.accountId = const Value.absent(),
     this.messageId = const Value.absent(),
     this.body = const Value.absent(),
+    this.kind = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BodiesCompanion.insert({
     required String accountId,
     required String messageId,
     required String body,
+    this.kind = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -1873,12 +1917,14 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     Expression<String>? accountId,
     Expression<String>? messageId,
     Expression<String>? body,
+    Expression<String>? kind,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (accountId != null) 'account_id': accountId,
       if (messageId != null) 'message_id': messageId,
       if (body != null) 'body': body,
+      if (kind != null) 'kind': kind,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1887,12 +1933,14 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     Value<String>? accountId,
     Value<String>? messageId,
     Value<String>? body,
+    Value<BodyKind>? kind,
     Value<int>? rowid,
   }) {
     return BodiesCompanion(
       accountId: accountId ?? this.accountId,
       messageId: messageId ?? this.messageId,
       body: body ?? this.body,
+      kind: kind ?? this.kind,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1909,6 +1957,11 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $BodiesTable.$converterkind.toSql(kind.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1921,6 +1974,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
           ..write('body: $body, ')
+          ..write('kind: $kind, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2142,6 +2196,276 @@ class SyncCursorsCompanion extends UpdateCompanion<SyncCursorRow> {
   }
 }
 
+class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IntentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isReadMeta = const VerificationMeta('isRead');
+  @override
+  late final GeneratedColumn<bool> isRead = GeneratedColumn<bool>(
+    'is_read',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_read" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, messageId, isRead];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'intents';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IntentRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('is_read')) {
+      context.handle(
+        _isReadMeta,
+        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId};
+  @override
+  IntentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IntentRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      )!,
+      isRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_read'],
+      ),
+    );
+  }
+
+  @override
+  $IntentsTable createAlias(String alias) {
+    return $IntentsTable(attachedDatabase, alias);
+  }
+}
+
+class IntentRow extends DataClass implements Insertable<IntentRow> {
+  final String accountId;
+  final String messageId;
+  final bool? isRead;
+  const IntentRow({
+    required this.accountId,
+    required this.messageId,
+    this.isRead,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['message_id'] = Variable<String>(messageId);
+    if (!nullToAbsent || isRead != null) {
+      map['is_read'] = Variable<bool>(isRead);
+    }
+    return map;
+  }
+
+  IntentsCompanion toCompanion(bool nullToAbsent) {
+    return IntentsCompanion(
+      accountId: Value(accountId),
+      messageId: Value(messageId),
+      isRead: isRead == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isRead),
+    );
+  }
+
+  factory IntentRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IntentRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      isRead: serializer.fromJson<bool?>(json['isRead']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'messageId': serializer.toJson<String>(messageId),
+      'isRead': serializer.toJson<bool?>(isRead),
+    };
+  }
+
+  IntentRow copyWith({
+    String? accountId,
+    String? messageId,
+    Value<bool?> isRead = const Value.absent(),
+  }) => IntentRow(
+    accountId: accountId ?? this.accountId,
+    messageId: messageId ?? this.messageId,
+    isRead: isRead.present ? isRead.value : this.isRead,
+  );
+  IntentRow copyWithCompanion(IntentsCompanion data) {
+    return IntentRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      isRead: data.isRead.present ? data.isRead.value : this.isRead,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntentRow(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('isRead: $isRead')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, messageId, isRead);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IntentRow &&
+          other.accountId == this.accountId &&
+          other.messageId == this.messageId &&
+          other.isRead == this.isRead);
+}
+
+class IntentsCompanion extends UpdateCompanion<IntentRow> {
+  final Value<String> accountId;
+  final Value<String> messageId;
+  final Value<bool?> isRead;
+  final Value<int> rowid;
+  const IntentsCompanion({
+    this.accountId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.isRead = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IntentsCompanion.insert({
+    required String accountId,
+    required String messageId,
+    this.isRead = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       messageId = Value(messageId);
+  static Insertable<IntentRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? messageId,
+    Expression<bool>? isRead,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (messageId != null) 'message_id': messageId,
+      if (isRead != null) 'is_read': isRead,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IntentsCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? messageId,
+    Value<bool?>? isRead,
+    Value<int>? rowid,
+  }) {
+    return IntentsCompanion(
+      accountId: accountId ?? this.accountId,
+      messageId: messageId ?? this.messageId,
+      isRead: isRead ?? this.isRead,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (isRead.present) {
+      map['is_read'] = Variable<bool>(isRead.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntentsCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('isRead: $isRead, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PostinoDatabase extends GeneratedDatabase {
   _$PostinoDatabase(QueryExecutor e) : super(e);
   $PostinoDatabaseManager get managers => $PostinoDatabaseManager(this);
@@ -2151,8 +2475,14 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $MessageLabelsTable messageLabels = $MessageLabelsTable(this);
   late final $BodiesTable bodies = $BodiesTable(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
+  late final $IntentsTable intents = $IntentsTable(this);
+  late final Index messagesConversation = Index(
+    'messages_conversation',
+    'CREATE INDEX messages_conversation ON messages (account_id, conversation_id)',
+  );
   late final AccountsDao accountsDao = AccountsDao(this as PostinoDatabase);
   late final MessagesDao messagesDao = MessagesDao(this as PostinoDatabase);
+  late final IntentsDao intentsDao = IntentsDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2164,6 +2494,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     messageLabels,
     bodies,
     syncCursors,
+    intents,
+    messagesConversation,
   ];
 }
 
@@ -3084,12 +3416,14 @@ typedef $$BodiesTableCreateCompanionBuilder = BodiesCompanion Function({
   required String accountId,
   required String messageId,
   required String body,
+  Value<BodyKind> kind,
   Value<int> rowid,
 });
 typedef $$BodiesTableUpdateCompanionBuilder = BodiesCompanion Function({
   Value<String> accountId,
   Value<String> messageId,
   Value<String> body,
+  Value<BodyKind> kind,
   Value<int> rowid,
 });
 
@@ -3116,6 +3450,12 @@ class $$BodiesTableFilterComposer
     column: $table.body,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<BodyKind, BodyKind, String> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$BodiesTableOrderingComposer
@@ -3141,6 +3481,11 @@ class $$BodiesTableOrderingComposer
     column: $table.body,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BodiesTableAnnotationComposer
@@ -3160,6 +3505,9 @@ class $$BodiesTableAnnotationComposer
 
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<BodyKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
 }
 
 class $$BodiesTableTableManager
@@ -3193,11 +3541,13 @@ class $$BodiesTableTableManager
                 Value<String> accountId = const Value.absent(),
                 Value<String> messageId = const Value.absent(),
                 Value<String> body = const Value.absent(),
+                Value<BodyKind> kind = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BodiesCompanion(
                 accountId: accountId,
                 messageId: messageId,
                 body: body,
+                kind: kind,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3205,11 +3555,13 @@ class $$BodiesTableTableManager
                 required String accountId,
                 required String messageId,
                 required String body,
+                Value<BodyKind> kind = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BodiesCompanion.insert(
                 accountId: accountId,
                 messageId: messageId,
                 body: body,
+                kind: kind,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3395,6 +3747,172 @@ typedef $$SyncCursorsTableProcessedTableManager =
       SyncCursorRow,
       PrefetchHooks Function()
     >;
+typedef $$IntentsTableCreateCompanionBuilder = IntentsCompanion Function({
+  required String accountId,
+  required String messageId,
+  Value<bool?> isRead,
+  Value<int> rowid,
+});
+typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
+  Value<String> accountId,
+  Value<String> messageId,
+  Value<bool?> isRead,
+  Value<int> rowid,
+});
+
+class $$IntentsTableFilterComposer
+    extends Composer<_$PostinoDatabase, $IntentsTable> {
+  $$IntentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$IntentsTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $IntentsTable> {
+  $$IntentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IntentsTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $IntentsTable> {
+  $$IntentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => column);
+}
+
+class $$IntentsTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $IntentsTable,
+          IntentRow,
+          $$IntentsTableFilterComposer,
+          $$IntentsTableOrderingComposer,
+          $$IntentsTableAnnotationComposer,
+          $$IntentsTableCreateCompanionBuilder,
+          $$IntentsTableUpdateCompanionBuilder,
+          (
+            IntentRow,
+            BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>,
+          ),
+          IntentRow,
+          PrefetchHooks Function()
+        > {
+  $$IntentsTableTableManager(_$PostinoDatabase db, $IntentsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IntentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IntentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IntentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> messageId = const Value.absent(),
+                Value<bool?> isRead = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IntentsCompanion(
+                accountId: accountId,
+                messageId: messageId,
+                isRead: isRead,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String messageId,
+                Value<bool?> isRead = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IntentsCompanion.insert(
+                accountId: accountId,
+                messageId: messageId,
+                isRead: isRead,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$IntentsTable, IntentRow>(table),
+                  BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$IntentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $IntentsTable,
+      IntentRow,
+      $$IntentsTableFilterComposer,
+      $$IntentsTableOrderingComposer,
+      $$IntentsTableAnnotationComposer,
+      $$IntentsTableCreateCompanionBuilder,
+      $$IntentsTableUpdateCompanionBuilder,
+      (IntentRow, BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>),
+      IntentRow,
+      PrefetchHooks Function()
+    >;
 
 class $PostinoDatabaseManager {
   final _$PostinoDatabase _db;
@@ -3411,4 +3929,6 @@ class $PostinoDatabaseManager {
       $$BodiesTableTableManager(_db, _db.bodies);
   $$SyncCursorsTableTableManager get syncCursors =>
       $$SyncCursorsTableTableManager(_db, _db.syncCursors);
+  $$IntentsTableTableManager get intents =>
+      $$IntentsTableTableManager(_db, _db.intents);
 }

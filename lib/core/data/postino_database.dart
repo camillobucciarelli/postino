@@ -10,9 +10,11 @@ import '../domain/account.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'daos/accounts_dao.dart';
+import 'daos/intents_dao.dart';
 import 'daos/messages_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
+import 'tables/intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
 import 'tables/messages_table.dart';
@@ -22,8 +24,16 @@ part 'postino_database.g.dart';
 
 /// Single local database (ADR 0003). The UI reads only from here; the sync engine writes.
 @DriftDatabase(
-  tables: [Accounts, Labels, Messages, MessageLabels, Bodies, SyncCursors],
-  daos: [AccountsDao, MessagesDao],
+  tables: [
+    Accounts,
+    Labels,
+    Messages,
+    MessageLabels,
+    Bodies,
+    SyncCursors,
+    Intents,
+  ],
+  daos: [AccountsDao, MessagesDao, IntentsDao],
 )
 class PostinoDatabase extends _$PostinoDatabase {
   PostinoDatabase(super.executor);
@@ -72,7 +82,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -99,6 +109,20 @@ class PostinoDatabase extends _$PostinoDatabase {
           'UPDATE accounts SET color = CASE color $cases '
           'ELSE position % $accountColorCount END',
         );
+      }
+      if (from < 5) {
+        // From v1 the bodies table was just created above, already with its kind.
+        if (from >= 2) {
+          await m.addColumn(bodies, bodies.kind);
+          // v2-v4 kept the HTML part when there was one, without saying so.
+          // ponytail: tag sniffing; a plain text body quoting HTML reads as HTML until it is downloaded again.
+          await customStatement(
+            "UPDATE bodies SET kind = 'html' WHERE body LIKE '%</%' "
+            "OR body LIKE '%<br>%' OR body LIKE '%<br/%' OR body LIKE '%<br /%'",
+          );
+        }
+        await m.createTable(intents);
+        await m.createIndex(messagesConversation);
       }
     },
   );

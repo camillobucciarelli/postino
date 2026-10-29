@@ -69,6 +69,58 @@ class SyncEngine implements MailSync {
     ]);
   }
 
+  @override
+  Future<void> openConversation(String accountId, String conversationId) async {
+    final account = await _account(accountId);
+    if (account == null) return;
+    final provider = _provider(account);
+    await _store.markConversationRead(accountId, conversationId);
+    await Future.wait([
+      _replay(accountId, provider),
+      // Inviati and messages older than the sync window are not in the database yet.
+      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
+      provider.fetchConversation(conversationId).then((r) async {
+        if (r case Ok(:final value)) {
+          await _store.applyPage(accountId, value, const {});
+        }
+      }),
+    ]);
+  }
+
+  @override
+  Future<Result<void>> fetchBody(String accountId, String messageId) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    switch (await _provider(account).fetchBody(messageId)) {
+      case Ok(:final value):
+        await _store.saveBody(accountId, messageId, value);
+        return const Ok(null);
+      case Err(:final failure):
+        debugPrint('[sync] $accountId: body $messageId failed, $failure');
+        return Err(failure);
+    }
+  }
+
+  Future<Account?> _account(String id) async =>
+      (await _store.accounts()).where((a) => a.id == id).firstOrNull;
+
+  /// Sends the offline queue (ADR 0008); what fails stays queued for the next sync.
+  Future<void> _replay(String accountId, MailProvider provider) async {
+    final byValue = <bool, List<String>>{};
+    for (final i in await _store.pendingIntents(accountId)) {
+      if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
+    }
+    for (final MapEntry(key: read, value: ids) in byValue.entries) {
+      switch (await provider.setRead(ids, read: read)) {
+        // Gone from the Provider: the intent is dropped in silence.
+        case Ok() || Err(failure: NotFoundFailure()):
+          await _store.readDone(accountId, ids, isRead: read);
+        case Err(:final failure):
+          debugPrint('[sync] $accountId: replay failed, $failure');
+      }
+    }
+  }
+
   Future<void> _poll() async {
     await Future.wait([
       for (final account in await _store.accounts())
@@ -149,6 +201,8 @@ class SyncEngine implements MailSync {
   }
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
+    // The queue first, so the sync brings back what the user did offline.
+    await _replay(accountId, provider);
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {

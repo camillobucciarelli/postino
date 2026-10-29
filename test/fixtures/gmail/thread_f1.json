@@ -1,0 +1,116 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f1",
+    "historyId": "4242",
+    "messages": [
+      {
+        "id": "18f3a2b4c5d6e7f0",
+        "threadId": "18f3a2b4c5d6e7f1",
+        "labelIds": [
+          "SENT"
+        ],
+        "snippet": "Bruno, ti va una cena a fine ottobre? Scegli tu il posto.",
+        "sizeEstimate": 1320,
+        "historyId": "3011",
+        "internalDate": "1784140200000",
+        "payload": {
+          "partId": "",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "From",
+              "value": "Ada Rossi <ada@gmail.com>"
+            },
+            {
+              "name": "To",
+              "value": "Bruno Verdi <bruno@example.com>"
+            },
+            {
+              "name": "Message-ID",
+              "value": "<CAA0q2Wm9d@mail.gmail.com>"
+            },
+            {
+              "name": "Subject",
+              "value": "Cena di venerdì"
+            }
+          ]
+        }
+      },
+      {
+        "id": "18f3a2b4c5d6e7f1",
+        "threadId": "18f3a2b4c5d6e7f1",
+        "labelIds": [
+          "UNREAD",
+          "CATEGORY_PERSONAL",
+          "INBOX"
+        ],
+        "snippet": "Ciao Ada, ci vediamo alle 20 da Mario? Porto io il vino &amp; il dolce.",
+        "sizeEstimate": 5821,
+        "historyId": "4231",
+        "internalDate": "1793002502000",
+        "payload": {
+          "partId": "",
+          "mimeType": "multipart/alternative",
+          "filename": "",
+          "headers": [
+            {
+              "name": "From",
+              "value": "Bruno Verdi <bruno@example.com>"
+            },
+            {
+              "name": "To",
+              "value": "ada@gmail.com, carla@example.org"
+            },
+            {
+              "name": "Message-ID",
+              "value": "<CAF1x7Yk2b@mail.example.com>"
+            },
+            {
+              "name": "Subject",
+              "value": "Cena di venerdì"
+            }
+          ]
+        }
+      },
+      {
+        "id": "18f3a2b4c5d6e7f2",
+        "threadId": "18f3a2b4c5d6e7f1",
+        "labelIds": [
+          "STARRED",
+          "SENT",
+          "INBOX",
+          "Label_12"
+        ],
+        "snippet": "Perfetto, a venerdì! Il 31 c&#39;è anche Carla.",
+        "sizeEstimate": 5821,
+        "historyId": "4231",
+        "internalDate": "1793005364000",
+        "payload": {
+          "partId": "",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "From",
+              "value": "Ada Rossi <ada@gmail.com>"
+            },
+            {
+              "name": "To",
+              "value": "Bruno Verdi <bruno@example.com>"
+            },
+            {
+              "name": "Message-ID",
+              "value": "<CAG2y8Zl3c@mail.gmail.com>"
+            },
+            {
+              "name": "Subject",
+              "value": "Re: Cena di venerdì"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -10,6 +10,7 @@ mixin _$MessagesDaoMixin on DatabaseAccessor<PostinoDatabase> {
   $MessageLabelsTable get messageLabels => attachedDatabase.messageLabels;
   $BodiesTable get bodies => attachedDatabase.bodies;
   $SyncCursorsTable get syncCursors => attachedDatabase.syncCursors;
+  $IntentsTable get intents => attachedDatabase.intents;
   MessagesDaoManager get managers => MessagesDaoManager(this);
 }
 
@@ -28,4 +29,6 @@ class MessagesDaoManager {
       $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
   $$SyncCursorsTableTableManager get syncCursors =>
       $$SyncCursorsTableTableManager(_db.attachedDatabase, _db.syncCursors);
+  $$IntentsTableTableManager get intents =>
+      $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
 }

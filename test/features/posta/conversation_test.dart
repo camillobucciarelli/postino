@@ -645,4 +645,49 @@ void main() {
       expect(_tile(tester, 'm3').unread, isFalse);
     });
   });
+
+  group('an unread message shown in the open Conversazione is marked read', () {
+    void other(FakeMailProvider p) => p.deliver(
+      msg('u1', conversationId: 'u', subject: 'Nuova', date: _day(6)),
+    );
+
+    for (final size in [_desktop, _phone]) {
+      testWidgets(
+        'at ${size.width.toInt()}: moving from one Conversazione to another',
+        (tester) async {
+          await _start(tester, size, (p) {
+            _thread(p);
+            other(p);
+          });
+          if (size == _phone) {
+            await _open(tester, 'm3');
+            Routefly.navigate(
+              routePaths.posta.$accountId.conversazione.$conversationId.changes(
+                {'accountId': 'a1', 'conversationId': 'u'},
+              ),
+            );
+            await tester.pumpAndSettle();
+          } else {
+            await _open(tester, 'm3');
+            await _open(tester, 'u1');
+          }
+          expect(_readCalls, containsAll([('m3', true), ('u1', true)]));
+          if (size == _desktop) expect(_tile(tester, 'u1').unread, isFalse);
+        },
+      );
+    }
+
+    testWidgets('a new message arriving while it is open', (tester) async {
+      await _start(tester, _desktop, _thread);
+      await _open(tester, 'm3');
+      gmail.deliver(
+        msg('m4', conversationId: 't', date: _day(7), from: 'ada@example.com'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_expanded(tester, 'm4'), isTrue);
+      expect(_readCalls, contains(('m4', true)));
+      expect(_tile(tester, 'm4').unread, isFalse);
+    });
+  });
 }

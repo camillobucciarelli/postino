@@ -87,8 +87,12 @@ class _ConversationViewState extends State<ConversationView> {
         );
       }
     });
-    // Only now: the expansion above saw which messages were unread.
-    if (first) _open();
+    // Only now: the expansion above saw which messages were unread. An unread one shown expanded
+    // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones.
+    if (first ||
+        messages.any((m) => !m.message.isRead && _expanded[m.message.id]!)) {
+      _open();
+    }
     for (final (:message, :body) in messages) {
       if (body == null &&
           _expanded[message.id]! &&
@@ -125,6 +129,10 @@ class _ConversationViewState extends State<ConversationView> {
     final open = !_expanded[id]!;
     setState(() => _expanded[id] = open);
     if (open && !hasBody) _fetchBody(id);
+    final unread = _messages!.any(
+      (m) => m.message.id == id && !m.message.isRead,
+    );
+    if (open && unread) _open();
   }
 
   @override

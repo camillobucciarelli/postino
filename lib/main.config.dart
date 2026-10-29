@@ -54,6 +54,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
     );
+    gh.singleton<_i398.LinkOpener>(
+      () => _i524.SystemLinkOpener(),
+      registerFor: {_prod},
+    );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
       () => databaseModule.database(gh<_i398.SecureStore>()),
       registerFor: {_prod},

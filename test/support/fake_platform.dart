@@ -57,3 +57,10 @@ class FakeConnectivity implements Connectivity {
   @override
   Stream<bool> get onChanged => _changes.stream;
 }
+
+/// Records every link Postino asked to open, instead of opening it.
+class FakeLinkOpener implements LinkOpener {
+  final opened = <Uri>[];
+  @override
+  Future<void> open(Uri url) async => opened.add(url);
+}

@@ -10,6 +10,7 @@ export 'atoms/postino_avatar.dart';
 export 'atoms/postino_button.dart';
 export 'atoms/postino_icon.dart';
 export 'atoms/postino_icon_button.dart';
+export 'atoms/postino_label_chip.dart';
 export 'atoms/postino_skeleton.dart';
 
 export 'molecules/postino_banner.dart';

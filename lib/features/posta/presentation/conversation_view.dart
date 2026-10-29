@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
@@ -50,6 +51,7 @@ class _ConversationViewState extends State<ConversationView> {
 
   List<ConversationMessage>? _messages;
   Account? _account;
+  List<Label> _labels = const [];
 
   /// Decided once per message, when it first shows up: reading it does not collapse it.
   final _expanded = <String, bool>{};
@@ -76,6 +78,11 @@ class _ConversationViewState extends State<ConversationView> {
                 .firstOrNull,
           ),
         ),
+      )
+      ..add(
+        GetIt.I<InboxRepository>()
+            .watchLabels(widget.accountId)
+            .listen((l) => setState(() => _labels = l)),
       )
       ..add(_trust.watchTrusted().listen((t) => setState(() => _trusted = t)))
       ..add(
@@ -155,22 +162,22 @@ class _ConversationViewState extends State<ConversationView> {
     super.dispose();
   }
 
-  Widget _body(
-    Message message,
-    MessageBody body,
-    Translations$conversazione$it t,
-  ) {
-    if (body.kind == BodyKind.testo) {
-      return PostinoMessageBody(text: body.content.trim());
-    }
+  /// The cleaned HTML of a message, null for plain text.
+  SafeHtml? _html(Message message, MessageBody body) {
+    if (body.kind == BodyKind.testo) return null;
     final allow =
         _trusted.contains(normalizeAddress(message.from)) ||
         _trust.shownOnce(widget.accountId, message.id);
-    final safe = _safe[(message.id, allow)] ??= prepareHtml(
+    return _safe[(message.id, allow)] ??= prepareHtml(
       body.content,
       allowRemote: allow,
     );
-    final card = PostinoHtmlCard(
+  }
+
+  Widget _body(Message message, MessageBody body) {
+    final safe = _html(message, body);
+    if (safe == null) return PostinoMessageBody(text: body.content.trim());
+    return PostinoHtmlCard(
       html: safe.html,
       contentWidth: safe.width,
       onTapUrl: (url) {
@@ -179,23 +186,31 @@ class _ConversationViewState extends State<ConversationView> {
         }
       },
     );
-    if (!safe.blocked) return card;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        PostinoBanner(
-          tone: PostinoBannerTone.neutral,
-          icon: PostinoIcons.image,
-          title: t.imagesBlocked,
-          actionLabel: t.showImages,
-          onAction: () =>
-              setState(() => _trust.showOnce(widget.accountId, message.id)),
-          secondaryActionLabel: t.alwaysFromSender,
-          onSecondaryAction: () => unawaited(_trust.trust(message.from)),
-        ),
-        card,
-      ],
-    );
+  }
+
+  /// Under the header, above the body (not for a Mittente fidato: nothing is blocked then).
+  List<Widget> _notices(
+    Message message,
+    MessageBody? body,
+    Translations$conversazione$it t,
+  ) {
+    if (body == null || !(_html(message, body)?.blocked ?? false)) {
+      return const [];
+    }
+    return [
+      PostinoBanner(
+        tone: PostinoBannerTone.info,
+        icon: PostinoIcons.image,
+        title: t.imagesBlocked,
+        message: t.imagesBlockedBody,
+        spaced: false,
+        actionLabel: t.showImages,
+        onAction: () =>
+            setState(() => _trust.showOnce(widget.accountId, message.id)),
+        secondaryActionLabel: t.alwaysFromSender,
+        onSecondaryAction: () => unawaited(_trust.trust(message.from)),
+      ),
+    ];
   }
 
   @override
@@ -204,6 +219,11 @@ class _ConversationViewState extends State<ConversationView> {
     final messages = _messages;
     final a = _account;
     final now = GetIt.I<Clock>().now();
+    final accountRef = a == null
+        ? null
+        : (color: PostinoAccountColor.values[a.color], initial: a.initial);
+    String who(String address) =>
+        address.toLowerCase() == a?.address.toLowerCase() ? t.me : address;
     final locale = Localizations.localeOf(context).languageCode;
     return PostinoSinglePaneLayout(
       appBar: PostinoAppBar(title: '', onBack: widget.onBack),
@@ -216,6 +236,12 @@ class _ConversationViewState extends State<ConversationView> {
                 initial: a.initial,
               ),
               accountName: a.name,
+              labels: [
+                for (final l in _labels)
+                  if (l.kind == LabelKind.etichetta &&
+                      messages.any((m) => m.message.labelIds.contains(l.id)))
+                    l.name,
+              ],
               messages: [
                 for (final (:message, :body) in messages.reversed)
                   PostinoThreadMessage(
@@ -228,12 +254,30 @@ class _ConversationViewState extends State<ConversationView> {
                       context.t.list.yesterday,
                     ),
                     preview: message.snippet,
-                    recipients: t.to(recipients: message.to.join(', ')),
+                    recipients: t.to(
+                      recipients: message.to.map(who).join(', '),
+                    ),
+                    details: [
+                      PostinoMessageDetail(t.from, message.from),
+                      PostinoMessageDetail(t.toLabel, message.to.join(', ')),
+                      PostinoMessageDetail(
+                        t.date,
+                        DateFormat.yMMMMEEEEd(locale)
+                            .add_Hm()
+                            .format(message.date.toLocal()),
+                      ),
+                      PostinoMessageDetail(
+                        t.receivedOn,
+                        a.address,
+                        account: accountRef,
+                      ),
+                    ],
+                    notices: _notices(message, body, t),
                     unread: !message.isRead,
                     expanded: _expanded[message.id]!,
                     onToggle: () => _toggle(message.id, body != null),
                     body: switch ((body, _failed[message.id])) {
-                      (final b?, _) => _body(message, b, t),
+                      (final b?, _) => _body(message, b),
                       (null, final f?) => PostinoMessageBody.missing(
                         key: const ValueKey('body-missing'),
                         note: f is OfflineFailure ? t.offline : t.failed,

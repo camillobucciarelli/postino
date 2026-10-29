@@ -53,6 +53,12 @@
     "retry": "Riprova",
     "imagesBlocked": "Immagini remote bloccate",
     "showImages": "Mostra immagini",
-    "alwaysFromSender": "Sempre da questo mittente"
+    "alwaysFromSender": "Sempre da questo mittente",
+    "me": "me",
+    "from": "Da",
+    "toLabel": "A",
+    "date": "Data",
+    "receivedOn": "Ricevuto su",
+    "imagesBlockedBody": "Caricarle direbbe al mittente che hai aperto il messaggio."
   }
 }

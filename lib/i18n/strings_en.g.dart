@@ -143,6 +143,12 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get imagesBlocked => 'Remote images blocked';
 	@override String get showImages => 'Show images';
 	@override String get alwaysFromSender => 'Always from this sender';
+	@override String get me => 'me';
+	@override String get from => 'From';
+	@override String get toLabel => 'To';
+	@override String get date => 'Date';
+	@override String get receivedOn => 'Received on';
+	@override String get imagesBlockedBody => 'Loading them would tell the sender you opened the message.';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -191,6 +197,12 @@ extension on TranslationsEn {
 			'conversazione.imagesBlocked' => 'Remote images blocked',
 			'conversazione.showImages' => 'Show images',
 			'conversazione.alwaysFromSender' => 'Always from this sender',
+			'conversazione.me' => 'me',
+			'conversazione.from' => 'From',
+			'conversazione.toLabel' => 'To',
+			'conversazione.date' => 'Date',
+			'conversazione.receivedOn' => 'Received on',
+			'conversazione.imagesBlockedBody' => 'Loading them would tell the sender you opened the message.',
 			_ => null,
 		};
 	}

@@ -224,8 +224,13 @@ void main() {
                 .first,
           )
           .position;
-      // The user collapses the latest one and scrolls down.
-      await tester.tap(_message('l11'));
+      // The user collapses the latest one (a tap on its header) and scrolls down.
+      await tester.tap(
+        find.descendant(
+          of: _message('l11'),
+          matching: find.byType(PostinoAvatar),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'l11'), isFalse);
       expect(scroll().maxScrollExtent, greaterThan(100));

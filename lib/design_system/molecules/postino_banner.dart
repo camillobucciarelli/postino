@@ -7,10 +7,11 @@ import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
-enum PostinoBannerTone { danger, warning, offline, neutral }
+enum PostinoBannerTone { danger, warning, info, offline }
 
 /// A lasting problem at the top of the list, or a notice above a message: [title] says what happens,
-/// [message] why or what to do, up to two actions (two sit under the text). With [account] its mark sits in the title.
+/// [message] why or what to do, up to two actions (two sit under the text, wrapping). With [account] its mark sits in the title.
+/// [spaced] adds the gap under it, for a list of banners; off inside a message, whose own layout spaces it.
 class PostinoBanner extends StatelessWidget {
   const PostinoBanner({
     super.key,
@@ -23,6 +24,7 @@ class PostinoBanner extends StatelessWidget {
     this.onAction,
     this.secondaryActionLabel,
     this.onSecondaryAction,
+    this.spaced = true,
   });
 
   final PostinoBannerTone tone;
@@ -36,6 +38,7 @@ class PostinoBanner extends StatelessWidget {
   final VoidCallback? onAction;
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
+  final bool spaced;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +65,7 @@ class PostinoBanner extends StatelessWidget {
     ];
     final under = large || actions.length > 1;
     return Padding(
-      padding: const EdgeInsets.only(bottom: PostinoSpacing.s2),
+      padding: EdgeInsets.only(bottom: spaced ? PostinoSpacing.s2 : 0),
       child: Semantics(
         container: true,
         liveRegion: true,
@@ -77,8 +80,8 @@ class PostinoBanner extends StatelessWidget {
             color: switch (tone) {
               PostinoBannerTone.danger => c.dangerSubtle,
               PostinoBannerTone.warning => c.warningSubtle,
-              PostinoBannerTone.offline ||
-              PostinoBannerTone.neutral => c.surfacePressed,
+              PostinoBannerTone.info => c.brandSubtle,
+              PostinoBannerTone.offline => c.surfacePressed,
             },
             borderRadius: const BorderRadius.all(
               Radius.circular(PostinoRadius.md),
@@ -94,7 +97,12 @@ class PostinoBanner extends StatelessWidget {
                         ? PostinoIcons.cloudOff
                         : PostinoIcons.alert),
                 size: PostinoSize.iconLg,
-                color: c.ink,
+                color: switch (tone) {
+                  PostinoBannerTone.danger => c.danger,
+                  PostinoBannerTone.warning => c.warning,
+                  PostinoBannerTone.info => c.brand,
+                  PostinoBannerTone.offline => c.inkMuted,
+                },
               ),
               Expanded(
                 child: Padding(
@@ -128,7 +136,15 @@ class PostinoBanner extends StatelessWidget {
                           style: PostinoText.preview.copyWith(color: c.ink),
                         ),
                       if (under && actions.isNotEmpty)
-                        Wrap(spacing: PostinoSpacing.s2, children: actions),
+                        // The buttons' own padding is not part of the text's edge.
+                        Transform.translate(
+                          offset: const Offset(-PostinoSpacing.s3, 0),
+                          child: Wrap(
+                            spacing: PostinoSpacing.s3,
+                            runSpacing: PostinoSpacing.s1,
+                            children: actions,
+                          ),
+                        ),
                     ],
                   ),
                 ),

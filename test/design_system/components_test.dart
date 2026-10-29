@@ -131,7 +131,27 @@ final _components = <String, Widget Function()>{
         sender: 'Bruno Verdi',
         time: '10:05',
         preview: 'Perfetto',
-        recipients: 'a me',
+        recipients: 'a me, cc Marco Lenti',
+        details: const [
+          PostinoMessageDetail('Da', 'bruno@example.com'),
+          PostinoMessageDetail('A', 'me@example.com'),
+          PostinoMessageDetail('Data', 'lunedì 5 ottobre 2026, 09:42'),
+          PostinoMessageDetail('Ricevuto su', 'me@example.com', account: _sky),
+        ],
+        notices: [
+          PostinoBanner(
+            tone: PostinoBannerTone.info,
+            icon: PostinoIcons.image,
+            title: 'Immagini remote bloccate',
+            message:
+                'Caricarle direbbe al mittente che hai aperto il messaggio.',
+            spaced: false,
+            actionLabel: 'Mostra immagini',
+            onAction: _noop,
+            secondaryActionLabel: 'Sempre da questo mittente',
+            onSecondaryAction: _noop,
+          ),
+        ],
         expanded: true,
         onToggle: () {},
         body: PostinoMessageBody.missing(
@@ -162,6 +182,25 @@ final _components = <String, Widget Function()>{
       ),
     ],
   ),
+  'thread_view': () => SizedBox(
+    height: 220,
+    child: PostinoThreadView(
+      subject: 'Revisione trimestrale: numeri finali',
+      account: _sky,
+      accountName: 'lavoro@example.com',
+      labels: const ['Progetti', 'Fatture'],
+      messages: [
+        PostinoThreadMessage(
+          sender: 'Bruno Verdi',
+          time: '10:05',
+          preview: 'Perfetto',
+          expanded: false,
+          onToggle: () {},
+          body: const SizedBox(),
+        ),
+      ],
+    ),
+  ),
   'banner': () => Column(
     children: [
       PostinoBanner(
@@ -184,7 +223,7 @@ final _components = <String, Widget Function()>{
         message: 'Nessuna connessione: riprova quando sei online.',
       ),
       PostinoBanner(
-        tone: PostinoBannerTone.neutral,
+        tone: PostinoBannerTone.info,
         icon: PostinoIcons.image,
         title: 'Immagini remote bloccate',
         actionLabel: 'Mostra immagini',
@@ -291,6 +330,33 @@ void main() {
       semantics.dispose();
     });
   }
+
+  testWidgets('the recipients open the details of a message', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoThreadMessage(
+            sender: 'bruno@example.com',
+            time: '10:05',
+            preview: 'Perfetto',
+            recipients: 'a me',
+            details: const [
+              PostinoMessageDetail('Ricevuto su', 'me@example.com'),
+            ],
+            expanded: true,
+            onToggle: () {},
+            body: const SizedBox(),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Ricevuto su'), findsNothing);
+    await tester.tap(find.text('a me'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ricevuto su'), findsOneWidget);
+    expect(find.text('me@example.com', findRichText: true), findsOneWidget);
+  });
 
   group('PostinoMessageList', () {
     Widget list({required bool loading, int count = 0}) => MaterialApp(

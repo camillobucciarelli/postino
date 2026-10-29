@@ -222,6 +222,24 @@ class Translations$conversazione$it {
 
 	/// it: 'Sempre da questo mittente'
 	String get alwaysFromSender => 'Sempre da questo mittente';
+
+	/// it: 'me'
+	String get me => 'me';
+
+	/// it: 'Da'
+	String get from => 'Da';
+
+	/// it: 'A'
+	String get toLabel => 'A';
+
+	/// it: 'Data'
+	String get date => 'Data';
+
+	/// it: 'Ricevuto su'
+	String get receivedOn => 'Ricevuto su';
+
+	/// it: 'Caricarle direbbe al mittente che hai aperto il messaggio.'
+	String get imagesBlockedBody => 'Caricarle direbbe al mittente che hai aperto il messaggio.';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -270,6 +288,12 @@ extension on Translations {
 			'conversazione.imagesBlocked' => 'Immagini remote bloccate',
 			'conversazione.showImages' => 'Mostra immagini',
 			'conversazione.alwaysFromSender' => 'Sempre da questo mittente',
+			'conversazione.me' => 'me',
+			'conversazione.from' => 'Da',
+			'conversazione.toLabel' => 'A',
+			'conversazione.date' => 'Data',
+			'conversazione.receivedOn' => 'Ricevuto su',
+			'conversazione.imagesBlockedBody' => 'Caricarle direbbe al mittente che hai aperto il messaggio.',
 			_ => null,
 		};
 	}

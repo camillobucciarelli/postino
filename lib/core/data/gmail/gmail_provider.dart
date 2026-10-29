@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
@@ -44,9 +45,16 @@ class GmailProvider implements MailProvider {
 
   static const _todo = Err<Never>(UnexpectedFailure('Gmail: not yet'));
 
-  /// Parallel message GETs; Gmail allows about 50 per second per user.
-  // ponytail: one GET per message, 10 at a time; the batch endpoint if large mailboxes sync too slowly.
-  static const _chunk = 10;
+  /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.
+  /// Gmail allows 250 units per second per user and a message GET costs 5, so about 50.
+  // ponytail: one GET per message; the batch endpoint if large mailboxes sync too slowly.
+  static const _chunk = 5;
+  static const _pace = Duration(milliseconds: 125);
+
+  /// Retries per request on a quota hit: 1, 2, 4, 8, 16 s (plus jitter), or the server's Retry-After.
+  static const _retries = 5;
+  static const _maxWait = 32;
+  static final _random = Random();
 
   /// Messages per page of the initial sync.
   static const _page = 100;
@@ -207,6 +215,7 @@ class GmailProvider implements MailProvider {
     final out = <String, (Message, String?)?>{};
     final all = ids.toList();
     for (var i = 0; i < all.length; i += _chunk) {
+      if (i > 0) await _sleep(_pace);
       await Future.wait([
         for (final id in all.skip(i).take(_chunk))
           _fetch(id, full: full(id)).then((m) => out[id] = m),
@@ -326,7 +335,7 @@ class GmailProvider implements MailProvider {
     return _refresh(tokens);
   }
 
-  /// GET on the Gmail API: refreshes an expired token first and once more on a 401; retries a 429.
+  /// GET on the Gmail API: refreshes an expired token first and once more on a 401; retries a quota hit with backoff.
   /// Failures are thrown as [_Failed], which [_guard] turns into an [Err].
   Future<Map<String, dynamic>> _get(
     String path, [
@@ -345,9 +354,19 @@ class GmailProvider implements MailProvider {
       tokens = await _refresh(tokens);
       r = await send();
     }
-    // ponytail: three retries 1-2-4 s apart, then RateLimitFailure and the engine retries on its next poll.
-    for (var wait = 1; _rateLimited(r) && wait <= 4; wait *= 2) {
-      await _sleep(Duration(seconds: wait));
+    // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
+    for (var n = 0; _rateLimited(r) && n < _retries; n++) {
+      final after = int.tryParse(r.headers['retry-after'] ?? '');
+      final wait = after != null
+          ? Duration(seconds: min(after, _maxWait))
+          : Duration(
+              milliseconds:
+                  (min(1 << n, _maxWait) *
+                          1000 *
+                          (1 + _random.nextDouble() / 4))
+                      .round(),
+            );
+      await _sleep(wait);
       r = await send();
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;

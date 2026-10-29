@@ -458,16 +458,137 @@ void main() {
       expect(await g.provider.fetchBody(_f1), _err<NotFoundFailure>());
     });
 
-    test('a 429 is retried with backoff, then is a RateLimitFailure', () async {
-      final g = _Recorded((r, path) => 'rate_limited');
-      expect(await g.provider.initialSync(), _err<RateLimitFailure>());
-      expect(g.requests, hasLength(4));
-      expect(g.sleeps, [
-        const Duration(seconds: 1),
-        const Duration(seconds: 2),
-        const Duration(seconds: 4),
-      ]);
+    test(
+      'a 429 is retried with backoff and jitter, then is a RateLimitFailure',
+      () async {
+        final g = _Recorded((r, path) => 'rate_limited');
+        expect(await g.provider.initialSync(), _err<RateLimitFailure>());
+        expect(g.requests, hasLength(6));
+        for (var n = 0; n < 5; n++) {
+          final ms = g.sleeps[n].inMilliseconds;
+          expect(ms, inInclusiveRange((1 << n) * 1000, (1 << n) * 1250));
+        }
+      },
+    );
+
+    test('Retry-After is honoured, capped at 32 s', () async {
+      for (final (header, expected) in [('7', 7), ('120', 32)]) {
+        var limited = true;
+        final sleeps = <Duration>[];
+        final p = GmailProvider(
+          _account,
+          _keychain(),
+          MockClient((r) async {
+            if (limited) {
+              limited = false;
+              return http.Response('{}', 429, headers: {'retry-after': header});
+            }
+            return _fixture('history_empty');
+          }),
+          FakeClock(_now),
+          client: _testClient,
+          sleep: (d) async => sleeps.add(d),
+        );
+        expect(_ok(await p.incrementalSync('4200')).cursor, '4242');
+        expect(sleeps, [Duration(seconds: expected)]);
+      }
     });
+
+    test(
+      'a 429 on one message mid-page is retried and the sync completes',
+      () async {
+        final ids = [for (var i = 0; i < 12; i++) 'm$i'];
+        var failedOnce = false;
+        final sleeps = <Duration>[];
+        final stored = <int>[];
+        final p = GmailProvider(
+          _account,
+          _keychain(),
+          MockClient((r) async {
+            final path = r.url.path.substring(_api.length);
+            if (path == 'messages/m7' && !failedOnce) {
+              failedOnce = true;
+              return _fixture('rate_limited');
+            }
+            if (path == 'messages') {
+              return _json({
+                'messages': [
+                  for (final id in ids) {'id': id, 'threadId': 't$id'},
+                ],
+              });
+            }
+            if (path.startsWith('messages/')) {
+              return _json({
+                'id': path.substring(9),
+                'threadId': 't',
+                'labelIds': <String>[],
+                'snippet': '',
+                'internalDate': '1000',
+                'payload': {'headers': []},
+              });
+            }
+            return path == 'profile'
+                ? _json({'historyId': '1'})
+                : _json({'labels': []});
+          }),
+          FakeClock(_now),
+          client: _testClient,
+          sleep: (d) async => sleeps.add(d),
+        );
+        final batch = _ok(
+          await p.initialSync(onPage: (m, _) async => stored.add(m.length)),
+        );
+        expect(batch.messages, hasLength(12));
+        expect(stored, [12]);
+        expect(
+          sleeps.where((d) => d >= const Duration(seconds: 1)),
+          hasLength(1),
+        );
+        expect(
+          sleeps.where((d) => d == const Duration(milliseconds: 125)),
+          hasLength(2),
+        );
+      },
+    );
+
+    test(
+      'persistent 429s on page two still fail, with page one stored',
+      () async {
+        final stored = <int>[];
+        final p = GmailProvider(
+          _account,
+          _keychain(),
+          MockClient((r) async {
+            final path = r.url.path.substring(_api.length);
+            return switch (path) {
+              'messages/m120' => _fixture('rate_limited'),
+              'messages' => _json({
+                'messages': [
+                  for (var i = 0; i < 150; i++) {'id': 'm$i', 'threadId': 't'},
+                ],
+              }),
+              'profile' => _json({'historyId': '1'}),
+              'labels' => _json({'labels': []}),
+              _ => _json({
+                'id': path.substring(9),
+                'threadId': 't',
+                'labelIds': <String>[],
+                'internalDate': '1000',
+                'payload': {'headers': []},
+              }),
+            };
+          }),
+          FakeClock(_now),
+          client: _testClient,
+          sleep: (_) async {},
+        );
+        expect(
+          await p.initialSync(onPage: (m, _) async => stored.add(m.length)),
+          _err<RateLimitFailure>(),
+        );
+        expect(stored, [100]);
+      },
+    );
 
     test('a 429 that clears on retry is not a failure', () async {
       var limited = true;
@@ -479,7 +600,7 @@ void main() {
         return 'history_empty';
       });
       expect(_ok(await g.provider.incrementalSync('4200')).cursor, '4242');
-      expect(g.sleeps, [const Duration(seconds: 1)]);
+      expect(g.sleeps.single.inMilliseconds, inInclusiveRange(1000, 1250));
     });
   });
 

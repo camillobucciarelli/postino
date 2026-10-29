@@ -15,3 +15,7 @@ Single-context: `GLOSSARY.md` nella root e ADR in `docs/adr/`. See `docs/agents/
 ### External peers
 
 Modalità `auto` (adapter Claude/Codex scelto dall'host, effort high). See `docs/agents/cross-model.json`.
+
+### Merge delle PR
+
+Una PR si unisce solo se tutti i check CI sono verdi sull'ultimo commit (nessuno fallito, in attesa o saltato). La regola è imposta anche da un ruleset su `main`.

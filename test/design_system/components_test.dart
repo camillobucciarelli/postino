@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
@@ -368,6 +369,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ricevuto su'), findsOneWidget);
     expect(find.text('me@example.com', findRichText: true), findsOneWidget);
+  });
+
+  testWidgets(
+    'the recipients toggle is a focusable button: Enter and semantic tap open the details',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoThreadMessage(
+              sender: 'bruno@example.com',
+              time: '10:05',
+              preview: 'Perfetto',
+              recipients: 'a me',
+              details: const [
+                PostinoMessageDetail('Ricevuto su', 'me@example.com'),
+              ],
+              expanded: true,
+              onToggle: () {},
+              body: const SizedBox(),
+            ),
+          ),
+        ),
+      );
+      final toggle = find.byKey(const ValueKey('recipients-toggle'));
+      // Tab reaches it, Enter opens.
+      // The header takes the first Tab, the toggle the second.
+      for (var i = 0; i < 2; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      final focused = FocusManager.instance.primaryFocus!.context!;
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate((e) => e == focused),
+          matching: toggle,
+        ),
+        findsOneWidget,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Ricevuto su'), findsOneWidget);
+      // Semantic tap closes it again.
+      tester.semantics.tap(find.semantics.byLabel('a me'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ricevuto su'), findsNothing);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('the quote toggle exposes a semantic tap action', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoThreadMessage(
+            sender: 'bruno@example.com',
+            time: '10:05',
+            preview: 'Perfetto',
+            expanded: true,
+            onToggle: () {},
+            body: const SizedBox(),
+            quote: const Text('citato'),
+            quoteLabel: 'Mostra testo citato',
+          ),
+        ),
+      ),
+    );
+    tester.semantics.tap(find.semantics.byLabel('Mostra testo citato'));
+    await tester.pumpAndSettle();
+    expect(find.text('citato'), findsOneWidget);
+    semantics.dispose();
   });
 
   group('PostinoMessageList', () {

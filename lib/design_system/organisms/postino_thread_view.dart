@@ -396,6 +396,7 @@ class _QuoteToggle extends StatelessWidget {
       button: true,
       expanded: open,
       label: label,
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         key: const ValueKey('quote-toggle'),
@@ -481,27 +482,41 @@ class _Recipients extends StatelessWidget {
       style: PostinoText.caption.copyWith(color: c.inkMuted),
     );
     if (onTap == null) return text;
-    // Not its own semantics node (too small a target): the message offers it as a custom action.
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      excludeFromSemantics: true,
+    // Focusable (Tab, Enter/Space via InkWell) and announced as a button; the message also offers it as a custom action.
+    return Semantics(
+      button: true,
+      expanded: open,
+      label: label,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s1),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: PostinoSpacing.s1,
-          children: [
-            Flexible(child: text),
-            RotatedBox(
-              quarterTurns: open ? 2 : 0,
-              child: PostinoIcon(
-                PostinoIcons.chevronDown,
-                size: PostinoSize.iconSm,
-                color: c.inkMuted,
-              ),
+      excludeSemantics: true,
+      child: InkWell(
+        key: const ValueKey('recipients-toggle'),
+        onTap: onTap,
+        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minWidth: PostinoSize.touchTargetAndroid,
+            minHeight: PostinoSize.touchTargetAndroid,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: PostinoSpacing.s1,
+              children: [
+                Flexible(child: text),
+                RotatedBox(
+                  quarterTurns: open ? 2 : 0,
+                  child: PostinoIcon(
+                    PostinoIcons.chevronDown,
+                    size: PostinoSize.iconSm,
+                    color: c.inkMuted,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

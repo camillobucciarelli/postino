@@ -90,8 +90,8 @@ void main() {
   group('collapse threshold', () {
     for (final (w, collapsed) in [
       (900.0, true),
-      (1099.0, true),
-      (1100.0, false),
+      (999.0, true),
+      (1000.0, false),
       (1399.0, false),
     ]) {
       testWidgets(
@@ -229,29 +229,29 @@ void main() {
   });
 
   group('the manual choice', () {
-    testWidgets('a saved choice holds until the window crosses 1100', (
+    testWidgets('a saved choice holds until the window crosses 1000', (
       tester,
     ) async {
-      await _start(tester, 1000, stored: true);
+      await _start(tester, 950, stored: true);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       await _resize(tester, 900);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       await _resize(tester, 800); // modal below 840: no docked bar to measure
-      await _resize(tester, 1099);
+      await _resize(tester, 999);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
     });
 
-    testWidgets('a saved icons choice holds above 1100 too', (tester) async {
+    testWidgets('a saved icons choice holds above 1000 too', (tester) async {
       await _start(tester, 1300, stored: false);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
       await _resize(tester, 1500);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
     });
 
-    testWidgets('crossing 1100 either way clears it, in the state too', (
+    testWidgets('crossing 1000 either way clears it, in the state too', (
       tester,
     ) async {
-      await _start(tester, 1000, stored: true);
+      await _start(tester, 950, stored: true);
       await _resize(tester, 1200);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isNull);
@@ -259,7 +259,7 @@ void main() {
       await tester.tap(find.byTooltip(_close));
       await tester.pumpAndSettle();
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isFalse);
-      await _resize(tester, 1000);
+      await _resize(tester, 999);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isNull);
 
@@ -268,7 +268,7 @@ void main() {
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       await _resize(tester, 1200);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
-      await _resize(tester, 1000);
+      await _resize(tester, 999);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
     });
 
@@ -292,7 +292,7 @@ void main() {
     testWidgets(
       'shows the AccountMark of every Account and the icons, unread as a dot',
       (tester) async {
-        await _start(tester, 1000);
+        await _start(tester, 950);
         expect(
           find.descendant(
             of: find.byType(PostinoNavigationDrawer),
@@ -323,7 +323,7 @@ void main() {
       'tooltip and semantics name every icon, with unread and selected',
       (tester) async {
         final handle = tester.ensureSemantics();
-        await _start(tester, 1000);
+        await _start(tester, 950);
         expect(find.byTooltip('Posta unificata'), findsOneWidget);
         expect(find.byTooltip('a1@example.com'), findsOneWidget);
         expect(find.byTooltip('a2@example.com'), findsOneWidget);
@@ -374,7 +374,7 @@ void main() {
     ) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await _start(tester, 1000);
+      await _start(tester, 950);
       expect(tester.takeException(), isNull);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
       expect(find.byTooltip('Posta unificata'), findsOneWidget);

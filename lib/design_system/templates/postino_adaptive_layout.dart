@@ -45,9 +45,9 @@ class ToggleSidebarIntent extends Intent {
 
 /// From `breakpoint-expanded` (840) docks [drawer] beside [child]; below it just [child], in the same
 /// tree so its State survives the resize. Built once above the pages, so the [drawer] State outlives navigation.
-/// Docked, the sidebar is `sidebar-width` (280) from `breakpoint-sidebar-collapse` (1100) and icons only
+/// Docked, the sidebar is `sidebar-width` (280) from `breakpoint-sidebar-collapse` (1000) and icons only
 /// (`sidebar-collapsed-width`, 72) below it. A manual choice ([expanded] at the start, then the button or
-/// [ToggleSidebarIntent]) holds until the window crosses 1100 either way; each change goes to [onExpandedChanged]
+/// [ToggleSidebarIntent]) holds until the window crosses 1000 either way; each change goes to [onExpandedChanged]
 /// (null: no choice, the width decides).
 class PostinoSidebarShell extends StatefulWidget {
   const PostinoSidebarShell({

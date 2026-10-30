@@ -125,6 +125,20 @@ bool _focusOnBackButton(WidgetTester tester) {
 
 void main() {
   group('review fixes', () {
+    testWidgets(
+      'scrolling a fresh list with the mouse keeps the list reachable with Tab',
+      (tester) async {
+        await _start(tester, _phone, n: 40);
+        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(_row(39), findsNothing);
+        for (var i = 0; i < 10 && _focusedRow() == null; i++) {
+          await _press(tester, LogicalKeyboardKey.tab);
+        }
+        expect(_focusedRow(), 40);
+      },
+    );
+
     testWidgets('Tab into the list then j / arrow goes to the second row', (
       tester,
     ) async {

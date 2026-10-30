@@ -153,7 +153,12 @@ class _MessageListState extends State<MessageList> {
   /// place, or the last one; an empty list has no cursor.
   void _realign(List<InboxEntry>? list) {
     final cursor = _cursor;
-    if (list == null || cursor == null) return;
+    if (list == null || list.isEmpty && cursor == null) return;
+    // No row focused yet: the first is the Tab stop, so it is the cursor (and stays built).
+    if (cursor == null) {
+      _cursor = (list.first.account.id, list.first.message.conversationId);
+      return;
+    }
     bool at(InboxEntry e) => (e.account.id, e.message.conversationId) == cursor;
     if (list.any(at)) return;
     final was = _list?.indexWhere(at) ?? -1;

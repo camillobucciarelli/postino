@@ -191,6 +191,40 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a card table has its border outside the padding, rounded (#63)',
+    (tester) async {
+      const html =
+          '<table width="100%" style="padding:16px;border:1px solid #F0F1F2;'
+          'border-radius:16px"><tr><td>Offerta</td></tr></table>';
+      await _pump(
+        tester,
+        PostinoHtmlCard(
+          html: prepareHtml(html, allowRemote: false).html,
+          onTapUrl: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+      final box = find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).borderRadius ==
+                BorderRadius.circular(16) &&
+            (w.decoration as BoxDecoration).border != null,
+      );
+      expect(box, findsOneWidget);
+      // The text is at least 16px (padding) + 1px (border) in from the box.
+      expect(
+        tester
+                .getTopLeft(find.textContaining('Offerta', findRichText: true))
+                .dx -
+            tester.getTopLeft(box).dx,
+        greaterThanOrEqualTo(17),
+      );
+    },
+  );
+
   group('<img srcset> without src', () {
     const srcset = '<img srcset="https://shop.example/logo.png 1x" alt="logo">';
     final placeholder = find.byWidgetPredicate(

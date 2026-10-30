@@ -194,13 +194,57 @@ body { background-image: url(//t.example/bg.png); }
       },
     );
 
+    group('card tables (#63)', () {
+      const card =
+          '<table width="100%" border="0" style="padding:16px; border:1px solid #F0F1F2; '
+          'border-radius:16px;border-collapse:collapse"><tr><td>testo</td></tr></table>';
+
+      test('the box moves to a wrapping div, the table keeps its width', () {
+        final div = parse(_blocked(card).html).querySelector('div')!;
+        expect(div.attributes['style'], contains('border:1px solid #F0F1F2'));
+        expect(div.attributes['style'], contains('padding:16px'));
+        expect(div.attributes['style'], contains('border-radius:16px'));
+        expect(div.attributes['style'], isNot(contains('collapse')));
+        final table = div.querySelector('table')!;
+        expect(table.parent, div);
+        expect(table.attributes['style'], startsWith('width:100%'));
+        expect(table.attributes['style'], contains('border-collapse'));
+        expect(table.attributes['style'], isNot(contains('padding')));
+        expect(table.attributes['style'], isNot(contains('border:')));
+        expect(table.attributes['style'], isNot(contains('radius')));
+      });
+
+      test('radius, padding and background alone wrap too', () {
+        final div = parse(
+          _blocked(
+            '<table style="border-radius:8px;padding:4px;background:#eee">'
+            '<tr><td>x</td></tr></table>',
+          ).html,
+        ).querySelector('div')!;
+        expect(div.attributes['style'], contains('background:#eee'));
+        expect(div.querySelector('table')!.attributes['style'], '');
+      });
+
+      for (final t in [
+        '<table style="width:600px;border:1px solid red"><tr><td>x</td></tr></table>',
+        '<table width="600" style="padding:8px"><tr><td>x</td></tr></table>',
+        '<table style="width:50%;padding:8px"><tr><td>x</td></tr></table>',
+        '<table style="color:red;border:0;border-collapse:collapse"><tr><td>x</td></tr></table>',
+        '<table style="border:none"><tr><td>x</td></tr></table>',
+      ]) {
+        test('left alone: $t', () {
+          expect(parse(_blocked(t).html).querySelector('div'), isNull);
+        });
+      }
+    });
+
     test('a one-column table keeps its percentage width (#63)', () {
       expect(
         style(
-          '<table style="width:100%;background:#eee"><tr><td>x</td></tr></table>',
+          '<table style="width:100%;color:red"><tr><td>x</td></tr></table>',
           'table',
         ),
-        'width:100%;background:#eee',
+        'width:100%;color:red',
       );
     });
 

@@ -93,6 +93,43 @@ final _cssWidthDecl = RegExp(r'(^|;)\s*width\s*:', caseSensitive: false);
 String _without(String style, RegExp drop) =>
     style.split(';').where((d) => !drop.hasMatch(d)).join(';');
 
+/// The declarations that make a table a card: they move to a wrapping `<div>`.
+final _box = RegExp(
+  r'^\s*(border(?!-(collapse|spacing))|padding|background)[\w-]*\s*:',
+  caseSensitive: false,
+);
+
+/// A visible border, any padding or a radius (not `0`/`none`).
+final _hasBox = RegExp(
+  r'(^|;)\s*(border(-(top|right|bottom|left))?(-width)?|padding[\w-]*|border-radius)\s*:\s*(?!0(px)?\s*(;|$|!)|none)',
+  caseSensitive: false,
+);
+
+/// fwfh 0.17.4 draws a table's border inside its padding and drops its radius. A full-width table
+/// styled as a card gets its box on a `<div>` (laid out like a browser): the table keeps its width.
+void _boxTables(Document doc) {
+  for (final t in doc.querySelectorAll('table')) {
+    final style = t.attributes['style'] ?? '';
+    final width =
+        RegExp(
+          r'(?:^|;)\s*width\s*:\s*([^;]*)',
+          caseSensitive: false,
+        ).firstMatch(style)?[1] ??
+        t.attributes['width'];
+    if (!_hasBox.hasMatch(style) ||
+        (width != null &&
+            !RegExp(r'^\s*100(\.0+)?%\s*(!important)?\s*$').hasMatch(width))) {
+      continue;
+    }
+    final decls = style.split(';');
+    t.attributes['style'] = decls.where((d) => !_box.hasMatch(d)).join(';');
+    final div = Element.tag('div')
+      ..attributes['style'] = decls.where(_box.hasMatch).join(';');
+    t.replaceWith(div);
+    div.append(t);
+  }
+}
+
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
 bool _script(String url) => RegExp(
   r'^(javascript|vbscript):',
@@ -181,6 +218,7 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       }
     }
   }
+  _boxTables(doc);
   dropHeadContent(doc);
   return (html: doc.outerHtml, blocked: blocked, width: width);
 }

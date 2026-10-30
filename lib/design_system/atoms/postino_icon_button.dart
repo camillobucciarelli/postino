@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
+import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
 /// A command with only an icon; [label] is its accessible name and tooltip.
@@ -23,6 +24,12 @@ class PostinoIconButton extends StatelessWidget {
     onPressed: onPressed,
     tooltip: label,
     color: context.pc.inkMuted,
+    style: ButtonStyle(
+      backgroundBuilder: (context, states, child) => PostinoFocusRing(
+        borderRadius: BorderRadius.circular(PostinoRadius.full),
+        child: child!,
+      ),
+    ),
     icon: PostinoIcon(icon, size: PostinoSize.iconLg),
   );
 }

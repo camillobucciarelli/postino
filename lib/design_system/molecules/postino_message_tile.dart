@@ -25,6 +25,7 @@ class PostinoMessageTile extends StatelessWidget {
     this.count = 1,
     this.selected = false,
     this.onTap,
+    this.focusNode,
   });
 
   final String sender;
@@ -42,6 +43,9 @@ class PostinoMessageTile extends StatelessWidget {
   final int count;
   final bool selected;
   final VoidCallback? onTap;
+
+  /// The row's focus, owned by the list so it can move it with the keyboard.
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +74,7 @@ class PostinoMessageTile extends StatelessWidget {
       child: Material(
         color: selected ? c.listItemBgSelected : c.listItemBg,
         child: InkWell(
+          focusNode: focusNode,
           onTap: onTap,
           child: PostinoFocusRing(
             inset: true,

@@ -141,6 +141,33 @@ void _boxTables(Document doc) {
   }
 }
 
+final _hidden = RegExp(r'display\s*:\s*none', caseSensitive: false);
+
+/// Patches for what fwfh 0.17.4 ignores, before `_boxTables` moves a card's background.
+// ponytail: all three go away with the litehtml renderer.
+void _patchFwfh(Document doc) {
+  for (final e in doc.querySelectorAll('*').toList()) {
+    final style = e.attributes['style'] ?? '';
+    // A hidden tracking pixel: customWidgetBuilder (postino_html_card.dart) bypasses display:none.
+    if (e.localName == 'img' && _hidden.hasMatch(style)) {
+      e.remove();
+      continue;
+    }
+    // fwfh ignores `bgcolor`; put it first so an inline background still wins.
+    final bg = e.attributes['bgcolor'];
+    if (bg != null) e.attributes['style'] = 'background-color:$bg;$style';
+    // fwfh ignores cell `height`, and `height:` in CSS is rigid: `min-height` is not.
+    final h = e.attributes['height'];
+    if ((e.localName == 'td' || e.localName == 'th') &&
+        h != null &&
+        _pixels.hasMatch(h)) {
+      final px = _pixels.firstMatch(h)![1];
+      e.attributes['style'] =
+          '${e.attributes['style'] ?? ''};min-height:${px}px';
+    }
+  }
+}
+
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
 bool _script(String url) => RegExp(
   r'^(javascript|vbscript):',
@@ -152,6 +179,7 @@ bool _script(String url) => RegExp(
 /// (fonts too), `<link>`. `data:` stays; `cid:` and local schemes lose their `src` (a placeholder).
 SafeHtml prepareHtml(String html, {required bool allowRemote}) {
   final doc = parse(html);
+  _patchFwfh(doc);
   var blocked = false;
   double? width;
 

@@ -314,4 +314,64 @@ body { background-image: url(//t.example/bg.png); }
       );
     });
   });
+
+  group('newsletter patches (#67)', () {
+    String style(String html, String sel) =>
+        parse(_blocked(html).html).querySelector(sel)!.attributes['style'] ??
+        '';
+
+    test('bgcolor becomes background-color, inline style wins', () {
+      expect(
+        style('<table bgcolor="#112233"><tr><td>a</td></tr></table>', 'table'),
+        startsWith('background-color:#112233;'),
+      );
+      expect(
+        style(
+          '<table><tr><td bgcolor="#112233" style="background-color:red">'
+              'a</td></tr></table>',
+          'td',
+        ),
+        'background-color:#112233;background-color:red',
+      );
+    });
+
+    test('bgcolor of a card table moves to the box div', () {
+      final doc = parse(
+        _blocked(
+          '<table width="100%" bgcolor="#112233" '
+          'style="border:1px solid red"><tr><td>a</td></tr></table>',
+        ).html,
+      );
+      final div = doc.querySelector('div')!;
+      expect(div.attributes['style'], contains('background-color:#112233'));
+      expect(
+        doc.querySelector('table')!.attributes['style'],
+        isNot(contains('background')),
+      );
+    });
+
+    test('td height becomes min-height', () {
+      final s = style(
+        '<table><tr><td height="16" style="font-size:0">&nbsp;</td></tr></table>',
+        'td',
+      );
+      expect(s, contains('min-height:16px'));
+      expect(s, isNot(contains(RegExp(r'(^|;)\s*height'))));
+    });
+
+    for (final style in [
+      'display:none',
+      'display:none!important',
+      'color:red; DISPLAY : NONE !important',
+    ]) {
+      test('hidden img is removed: $style', () {
+        final doc = parse(
+          _blocked(
+            '<p>x<img style="$style"><img src="data:image/gif;base64,R0lG"></p>',
+          ).html,
+        );
+        expect(doc.querySelectorAll('img'), hasLength(1));
+      });
+    }
+  });
 }

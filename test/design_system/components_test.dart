@@ -396,6 +396,14 @@ void main() {
           ),
         ),
       );
+      final target = tester.getRect(
+        find.byKey(const ValueKey('recipients-target')),
+      );
+      expect(target.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getCenter(find.text('a me')).dy,
+        moreOrLessEquals(target.center.dy, epsilon: 1),
+      );
       final toggle = find.byKey(const ValueKey('recipients-toggle'));
       // Tab reaches it, Enter opens.
       // The header takes the first Tab, the toggle the second.

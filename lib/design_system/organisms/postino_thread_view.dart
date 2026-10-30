@@ -414,34 +414,41 @@ class _QuoteToggle extends StatelessWidget {
       label: label,
       onTap: onTap,
       excludeSemantics: true,
-      child: InkWell(
-        key: const ValueKey('quote-toggle'),
+      // The 48 box is the tap area; hover and focus hug the pill.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         child: SizedBox(
           width: PostinoSize.touchTargetAndroid,
           height: PostinoSize.touchTargetAndroid,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: PostinoFocusRing(
+            child: InkWell(
+              key: const ValueKey('quote-toggle'),
+              onTap: onTap,
               borderRadius: const BorderRadius.all(
                 Radius.circular(PostinoRadius.xs),
               ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: c.surfacePressed,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(PostinoRadius.xs),
-                  ),
+              child: PostinoFocusRing(
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(PostinoRadius.xs),
                 ),
-                child: SizedBox(
-                  width: PostinoSize.controlSm,
-                  height: PostinoSize.iconMd,
-                  child: Center(
-                    child: PostinoIcon(
-                      PostinoIcons.more,
-                      size: PostinoSize.iconSm,
-                      color: c.inkMuted,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: c.surfacePressed,
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(PostinoRadius.xs),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: PostinoSize.controlSm,
+                    height: PostinoSize.iconMd,
+                    child: Center(
+                      child: PostinoIcon(
+                        PostinoIcons.more,
+                        size: PostinoSize.iconSm,
+                        color: c.inkMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -511,36 +518,53 @@ class _Recipients extends StatelessWidget {
       label: label,
       onTap: onTap,
       excludeSemantics: true,
-      child: InkWell(
-        key: const ValueKey('recipients-toggle'),
+      // The 48 high tap area is the outer box; hover and focus hug the content (radius-sm).
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         child: ConstrainedBox(
+          key: const ValueKey('recipients-target'),
           constraints: const BoxConstraints(
-            minWidth: PostinoSize.touchTargetAndroid,
             minHeight: PostinoSize.touchTargetAndroid,
           ),
           child: Align(
             alignment: Alignment.centerLeft,
             widthFactor: 1,
-            child: PostinoFocusRing(
-              borderRadius: const BorderRadius.all(
-                Radius.circular(PostinoRadius.xs),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: PostinoSpacing.s1,
-                children: [
-                  Flexible(child: text),
-                  RotatedBox(
-                    quarterTurns: open ? 2 : 0,
-                    child: PostinoIcon(
-                      PostinoIcons.chevronDown,
-                      size: PostinoSize.iconSm,
-                      color: c.inkMuted,
+            // Compensates the padding so the text lines up with the sender above.
+            child: Transform.translate(
+              offset: const Offset(-PostinoSpacing.s2, 0),
+              child: InkWell(
+                key: const ValueKey('recipients-toggle'),
+                onTap: onTap,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(PostinoRadius.sm),
+                ),
+                child: PostinoFocusRing(
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(PostinoRadius.sm),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PostinoSpacing.s2,
+                      vertical: PostinoSpacing.s1,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: PostinoSpacing.s1,
+                      children: [
+                        Flexible(child: text),
+                        RotatedBox(
+                          quarterTurns: open ? 2 : 0,
+                          child: PostinoIcon(
+                            PostinoIcons.chevronDown,
+                            size: PostinoSize.iconSm,
+                            color: c.inkMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

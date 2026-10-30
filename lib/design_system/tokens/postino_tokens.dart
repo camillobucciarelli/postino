@@ -1378,6 +1378,22 @@ abstract final class PostinoSize {
   /// Colonna lista su tablet/desktop (min 320).
   static const double listWidth = 380.0;
 
+  /// Larghezza minima della lista ridimensionabile (list-width-min).
+  static const double listWidthMin = 280.0;
+
+  /// Massimo della lista: questa frazione della finestra (list-width-max-fraction).
+  static const double listWidthMaxFraction = 0.5;
+
+  /// Passo del divisore da tastiera e VoiceOver (list-width-step).
+  static const double listWidthStep = 16.0;
+
+  /// Area attiva del divisore tra lista e dettaglio (resize-handle-width).
+  static const double resizeHandleWidth = 8.0;
+
+  /// Maniglia visibile al centro del divisore (resize-grip).
+  static const double resizeGripWidth = 4.0;
+  static const double resizeGripHeight = 32.0;
+
   /// Larghezza massima della colonna di lettura (testata e testo; i corpi HTML la superano).
   static const double readingMaxWidth = 800.0;
 

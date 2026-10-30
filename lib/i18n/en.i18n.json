@@ -11,6 +11,10 @@
     "close": "Close the sidebar",
     "open": "Open the sidebar"
   },
+  "listWidth": {
+    "label": "List width",
+    "value": "$px pixels"
+  },
   "etichette": "Labels",
   "onboarding": {
     "body": "All your mailboxes in one place.",

@@ -11,6 +11,10 @@
     "close": "Chiudi la barra laterale",
     "open": "Apri la barra laterale"
   },
+  "listWidth": {
+    "label": "Larghezza lista",
+    "value": "$px pixel"
+  },
   "etichette": "Etichette",
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",

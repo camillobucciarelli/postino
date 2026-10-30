@@ -190,9 +190,14 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     _text,
   ),
   (
-    'strong borders (outlined button, checkbox, switch, drag handle)',
+    'strong borders (outlined button, checkbox, switch, drag handle, list resize handle)',
     (c) => c.borderStrong,
-    [(c) => c.surface, (c) => c.surfaceRaised],
+    [
+      (c) => c.surface,
+      (c) => c.surfaceRaised,
+      (c) => c.surfaceGround,
+      (c) => c.listItemBg,
+    ],
     _ui,
   ),
   (

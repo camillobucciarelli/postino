@@ -33,9 +33,15 @@ class _PostaLayoutState extends State<PostaLayout> {
   /// What the keyboard shortcuts move: the list in front plugs itself in.
   final _cursor = ListCursor();
 
-  /// The sidebar choice saved by an earlier run (null: none); the layout waits for it, so the bar does not jump.
-  late final Future<bool?> _sidebar = GetIt.I<SettingsRepository>()
-      .sidebarExpanded();
+  /// The sidebar choice and the list width saved by an earlier run (null: none); the layout waits for it, so the bar does not jump.
+  late final Future<(bool?, double?)> _saved = () async {
+    final settings = GetIt.I<SettingsRepository>();
+    final expanded = await settings.sidebarExpanded();
+    return (expanded, _width = await settings.listWidth());
+  }();
+
+  /// The current preferred list width: the list is recreated on every Account/Etichetta, so it must outlive it.
+  double? _width;
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +75,8 @@ class _PostaLayoutState extends State<PostaLayout> {
     void back() => Routefly.navigate(list);
     // One shell above the content: only the content is replaced on navigation.
     return OnboardingGate(
-      child: FutureBuilder<bool?>(
-        future: _sidebar,
+      child: FutureBuilder<(bool?, double?)>(
+        future: _saved,
         builder: (context, saved) =>
             saved.connectionState != ConnectionState.done
             ? const SizedBox.shrink()
@@ -80,12 +86,20 @@ class _PostaLayoutState extends State<PostaLayout> {
                   drawer: postaDrawer(accountId: accountId, labelId: labelId),
                   closeLabel: context.t.sidebar.close,
                   openLabel: context.t.sidebar.open,
-                  expanded: saved.data,
+                  expanded: saved.data!.$1,
                   onExpandedChanged:
                       GetIt.I<SettingsRepository>().setSidebarExpanded,
                   child: PostinoFadeThrough(
                     transitionKey: list,
                     child: PostinoListDetailLayout(
+                      listWidth: _width,
+                      onListWidthChanged: (w) {
+                        _width = w;
+                        GetIt.I<SettingsRepository>().setListWidth(w);
+                      },
+                      resizeLabel: context.t.listWidth.label,
+                      resizeValueLabel: (w) =>
+                          context.t.listWidth.value(px: w.round()),
                       list: switch ((accountId, labelId)) {
                         (final a?, final l?) => postaLabelView(
                           a,

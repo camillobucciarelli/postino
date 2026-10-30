@@ -1,13 +1,25 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../tokens/postino_theme.dart';
+import '../atoms/postino_resize_handle.dart';
 import '../tokens/postino_tokens.dart';
 import 'postino_fade_through.dart';
 
+/// The width the list shows: the [preferred] one limited to the window, `list-width-min` (280) up to
+/// `list-width-max-fraction` (50%) of [window]. If the two cross (a narrow window) the minimum wins.
+double shownListWidth(double preferred, double window) => preferred.clamp(
+  PostinoSize.listWidthMin,
+  math.max(PostinoSize.listWidthMin, window * PostinoSize.listWidthMaxFraction),
+);
+
 /// A list and the item opened from it ([detail], identified by [detailKey]).
-/// From `breakpoint-list-detail` (900): the list at `list-width` (380) and the detail beside it,
-/// [empty] when nothing is open, a fade through between details.
+/// From `breakpoint-list-detail` (900): the list and the detail beside it, [empty] when nothing is open,
+/// a fade through between details. A [PostinoResizeHandle] divides them: the user drags it (or uses the keyboard)
+/// to set the list width, the preferred one (default `list-width`, 380, or [listWidth] saved earlier); what is shown is
+/// [shownListWidth] of it, so a narrow window never changes the preference. Only the user's actions call [onListWidthChanged],
+/// once per drag, at its end.
 /// Below 900: the detail is a full page over the list, with the Material 3 shared axis X
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
 /// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
@@ -20,6 +32,10 @@ class PostinoListDetailLayout extends StatefulWidget {
     required this.onClose,
     this.detail,
     this.detailKey,
+    this.listWidth,
+    this.onListWidthChanged,
+    required this.resizeLabel,
+    required this.resizeValueLabel,
   });
 
   final Widget list;
@@ -29,6 +45,16 @@ class PostinoListDetailLayout extends StatefulWidget {
   final Object? detailKey;
   final Widget empty;
   final VoidCallback onClose;
+
+  /// The preferred list width saved by an earlier run; null: the default.
+  final double? listWidth;
+
+  /// The user chose a new preferred width (end of a drag, key, double click): save it.
+  final ValueChanged<double>? onListWidthChanged;
+
+  /// Accessible name and value of the divider ("Larghezza lista", "380 pixel").
+  final String resizeLabel;
+  final String Function(double width) resizeValueLabel;
 
   @override
   State<PostinoListDetailLayout> createState() =>
@@ -45,6 +71,18 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   /// Marks the open detail, to hand it the focus when it is the only thing on screen.
   final _detailFocus = FocusNode(canRequestFocus: false, skipTraversal: true);
   bool? _wasLarge;
+
+  /// What the user chose (never limited), and the width of a drag in progress (limited).
+  late double _preferred = widget.listWidth ?? PostinoSize.listWidth;
+  double? _dragging;
+
+  void _choose(double shown) {
+    setState(() {
+      _preferred = shown;
+      _dragging = null;
+    });
+    widget.onListWidthChanged?.call(shown);
+  }
 
   /// One per open item: the two panes and the full page differ in structure, so only a
   /// GlobalKey carries the detail State (scroll, expansions) across 900.
@@ -143,14 +181,27 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   @override
   Widget build(BuildContext context) {
     final list = KeyedSubtree(key: _listKey, child: widget.list);
-    if (MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
+    final window = MediaQuery.sizeOf(context).width;
+    if (window >= PostinoSize.breakpointListDetail) {
+      final max = math.max(
+        PostinoSize.listWidthMin,
+        window * PostinoSize.listWidthMaxFraction,
+      );
+      final shown = _dragging ?? shownListWidth(_preferred, window);
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(width: PostinoSize.listWidth, child: list),
-          SizedBox(
-            width: PostinoBorder.borderWidthHairline,
-            child: ColoredBox(color: context.pc.borderSubtle),
+          SizedBox(width: shown, child: list),
+          PostinoResizeHandle(
+            value: shown,
+            min: PostinoSize.listWidthMin,
+            max: max,
+            label: widget.resizeLabel,
+            valueLabel: widget.resizeValueLabel,
+            onChanged: (w) => setState(() => _dragging = w),
+            onChangeEnd: _choose,
+            onDragEnd: () => setState(() => _dragging = null),
+            onReset: () => _choose(PostinoSize.listWidth),
           ),
           Expanded(
             // The empty state has no Scaffold of its own: without a Material its Text gets the debug yellow underline.

@@ -104,6 +104,10 @@ class MailStore implements InboxRepository {
   }) => _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
   @override
+  Stream<Set<(String, String)>> watchUnreadFolders() =>
+      _db.messagesDao.watchUnreadFolders();
+
+  @override
   Stream<List<Label>> watchLabels(String accountId) => _db.messagesDao
       .watchLabels(accountId)
       .map(

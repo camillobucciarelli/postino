@@ -283,6 +283,26 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
         );
       });
 
+  /// The (Account, label) pairs that hold an unread message, system labels included (the inbox is [inboxLabelId]).
+  Stream<Set<(String, String)>> watchUnreadFolders() {
+    final m = messages, l = messageLabels;
+    final query =
+        selectOnly(l, distinct: true).join([
+            innerJoin(
+              m,
+              m.accountId.equalsExp(l.accountId) & m.id.equalsExp(l.messageId),
+              useColumns: false,
+            ),
+          ])
+          ..addColumns([l.accountId, l.labelId])
+          ..where(m.isRead.equals(false));
+    return query.watch().map(
+      (rows) => {
+        for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!),
+      },
+    );
+  }
+
   /// The Account's own Etichette, by name.
   Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)

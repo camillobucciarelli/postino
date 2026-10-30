@@ -200,6 +200,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
             valueLabel: widget.resizeValueLabel,
             onChanged: (w) => setState(() => _dragging = w),
             onChangeEnd: _choose,
+            onDragEnd: () => setState(() => _dragging = null),
             onReset: () => _choose(PostinoSize.listWidth),
           ),
           Expanded(

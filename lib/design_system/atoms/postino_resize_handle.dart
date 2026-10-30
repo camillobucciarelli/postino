@@ -23,6 +23,7 @@ class PostinoResizeHandle extends StatefulWidget {
     required this.onChanged,
     required this.onChangeEnd,
     required this.onReset,
+    this.onDragEnd,
   });
 
   final double value;
@@ -37,6 +38,9 @@ class PostinoResizeHandle extends StatefulWidget {
   final ValueChanged<double> onChanged;
   final ValueChanged<double> onChangeEnd;
   final VoidCallback onReset;
+
+  /// Every drag that started ends here, after [onChangeEnd] if the width changed: the parent drops its live override.
+  final VoidCallback? onDragEnd;
 
   @override
   State<PostinoResizeHandle> createState() => _PostinoResizeHandleState();
@@ -102,6 +106,7 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
   void _dragEnd([Object? _]) {
     setState(() => _dragging = false);
     if (_current != _from) widget.onChangeEnd(_current);
+    widget.onDragEnd?.call();
   }
 
   @override

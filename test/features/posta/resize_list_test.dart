@@ -188,6 +188,38 @@ void main() {
     expect(s.writes, isEmpty);
   });
 
+  testWidgets('a drag back to where it began frees the live width', (
+    tester,
+  ) async {
+    final s = await _start(tester, 1000, stored: 700);
+    expect(_listWidth(tester), 500);
+    final g = await tester.startGesture(tester.getCenter(_handle));
+    await g.moveBy(const Offset(-100, 0));
+    await tester.pump();
+    await g.moveBy(const Offset(400, 0));
+    await tester.pump();
+    expect(_listWidth(tester), 500);
+    await g.up();
+    await tester.pumpAndSettle();
+    await _resize(tester, 1600);
+    expect(_listWidth(tester), 700);
+    expect(s.writes, isEmpty);
+    expect(s.saved, 700);
+  });
+
+  testWidgets('the width survives switching list', (tester) async {
+    final s = await _start(tester, 1200);
+    await _drag(tester, 100);
+    final w = _listWidth(tester);
+    expect(w, isNot(380));
+    expect(s.saved, w);
+    Routefly.navigate(
+      routePaths.posta.$accountId.path.changes({'accountId': 'a1'}),
+    );
+    await tester.pumpAndSettle();
+    expect(_listWidth(tester), w);
+  });
+
   group('persistence', () {
     testWidgets('starts at the saved width, limited to the window', (
       tester,

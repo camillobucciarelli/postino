@@ -36,8 +36,12 @@ class _PostaLayoutState extends State<PostaLayout> {
   /// The sidebar choice and the list width saved by an earlier run (null: none); the layout waits for it, so the bar does not jump.
   late final Future<(bool?, double?)> _saved = () async {
     final settings = GetIt.I<SettingsRepository>();
-    return (await settings.sidebarExpanded(), await settings.listWidth());
+    final expanded = await settings.sidebarExpanded();
+    return (expanded, _width = await settings.listWidth());
   }();
+
+  /// The current preferred list width: the list is recreated on every Account/Etichetta, so it must outlive it.
+  double? _width;
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +92,11 @@ class _PostaLayoutState extends State<PostaLayout> {
                   child: PostinoFadeThrough(
                     transitionKey: list,
                     child: PostinoListDetailLayout(
-                      listWidth: saved.data!.$2,
-                      onListWidthChanged:
-                          GetIt.I<SettingsRepository>().setListWidth,
+                      listWidth: _width,
+                      onListWidthChanged: (w) {
+                        _width = w;
+                        GetIt.I<SettingsRepository>().setListWidth(w);
+                      },
                       resizeLabel: context.t.listWidth.label,
                       resizeValueLabel: (w) =>
                           context.t.listWidth.value(px: w.round()),

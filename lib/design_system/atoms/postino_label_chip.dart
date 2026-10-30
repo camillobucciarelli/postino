@@ -16,6 +16,7 @@ class PostinoLabelChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = postinoTint(context.pc, name);
+    final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
     return Semantics(
       label: name,
       excludeSemantics: true,
@@ -26,8 +27,9 @@ class PostinoLabelChip extends StatelessWidget {
             Radius.circular(PostinoRadius.xs),
           ),
         ),
-        child: SizedBox(
-          height: 22,
+        // At least 22 high: enlarged text grows it and wraps.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 22),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
             child: Row(
@@ -42,8 +44,10 @@ class PostinoLabelChip extends StatelessWidget {
                 Flexible(
                   child: Text(
                     name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: wrap ? null : 1,
+                    overflow: wrap
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: PostinoText.meta.copyWith(color: fg),
                   ),
                 ),

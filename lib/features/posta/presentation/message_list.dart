@@ -59,8 +59,16 @@ class _MessageListState extends State<MessageList> {
   bool get _twoPane =>
       MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge;
 
-  FocusNode _node((String, String) key) =>
-      _nodes.putIfAbsent(key, () => FocusNode(skipTraversal: true));
+  FocusNode _node((String, String) key) => _nodes.putIfAbsent(key, () {
+    final node = FocusNode(skipTraversal: true);
+    // Focus got there some other way (Tab, a click): the cursor follows.
+    node.addListener(() {
+      if (node.hasPrimaryFocus && _cursor != key && mounted) {
+        setState(() => _cursor = key);
+      }
+    });
+    return node;
+  });
 
   @override
   void initState() {
@@ -141,6 +149,22 @@ class _MessageListState extends State<MessageList> {
     });
   }
 
+  /// The list changed: a cursor row that is gone (archived elsewhere) moves to the row now at its
+  /// place, or the last one; an empty list has no cursor.
+  void _realign(List<InboxEntry>? list) {
+    final cursor = _cursor;
+    if (list == null || cursor == null) return;
+    bool at(InboxEntry e) => (e.account.id, e.message.conversationId) == cursor;
+    if (list.any(at)) return;
+    final was = _list?.indexWhere(at) ?? -1;
+    if (list.isEmpty) {
+      _cursor = null;
+    } else {
+      final e = list[(was < 0 ? 0 : was).clamp(0, list.length - 1)];
+      _cursor = (e.account.id, e.message.conversationId);
+    }
+  }
+
   /// Moves focus and selection together by [delta] rows; opens the row where selection is opening
   /// (two panes, or a Conversazione already open), else only the focus moves.
   void _move(int delta) {
@@ -154,6 +178,8 @@ class _MessageListState extends State<MessageList> {
     final to = from < 0 ? 0 : (from + delta).clamp(0, list.length - 1);
     final e = list[to];
     final key = (e.account.id, e.message.conversationId);
+    // At the edge: nothing moves, and the focus stays where it is (maybe in the Conversazione).
+    if (key == _cursor) return;
     setState(() => _cursor = key);
     _reveal(key, delta);
     if ((_twoPane || widget.selected != null) && key != widget.selected) {
@@ -165,6 +191,7 @@ class _MessageListState extends State<MessageList> {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final list = entries.value.value;
+      _realign(list);
       _list = list;
       final t = context.t.list;
       final now = GetIt.I<Clock>().now();

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/features/posta/presentation/posta_shortcuts.dart';
@@ -19,7 +20,11 @@ const _narrow = Size(1000, 800);
 const _phone = Size(390, 844);
 
 /// Rows `m1` to `mN`, newest first: `mN` is the first row.
-Future<void> _start(WidgetTester tester, Size size, {int n = 5}) async {
+Future<FakeMailProvider> _start(
+  WidgetTester tester,
+  Size size, {
+  int n = 5,
+}) async {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;
@@ -41,6 +46,7 @@ Future<void> _start(WidgetTester tester, Size size, {int n = 5}) async {
   // Routefly keeps the last navigation in statics.
   Routefly.navigate(routePaths.posta.path);
   await tester.pumpAndSettle();
+  return p;
 }
 
 Finder _row(int i) => find.byKey(ValueKey('row-a1-m$i'), skipOffstage: false);
@@ -118,6 +124,70 @@ bool _focusOnBackButton(WidgetTester tester) {
 }
 
 void main() {
+  group('review fixes', () {
+    testWidgets('Tab into the list then j / arrow goes to the second row', (
+      tester,
+    ) async {
+      await _start(tester, _desktop);
+      for (var i = 0; i < 10 && _focusedRow() == null; i++) {
+        await _press(tester, LogicalKeyboardKey.tab);
+      }
+      expect(_focusedRow(), 5);
+      await _press(tester, LogicalKeyboardKey.keyJ);
+      expect(_focusedRow(), 4);
+      expect(_conversation(4), findsOneWidget);
+      expect(_conversation(5), findsNothing);
+    });
+
+    testWidgets('one pane: Tab then arrow down moves the focus at once', (
+      tester,
+    ) async {
+      await _start(tester, _phone);
+      for (var i = 0; i < 10 && _focusedRow() == null; i++) {
+        await _press(tester, LogicalKeyboardKey.tab);
+      }
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_focusedRow(), 4);
+    });
+
+    testWidgets(
+      'the cursor row disappears from the list: the list stays a Tab stop and Esc focuses a row that exists',
+      (tester) async {
+        final p = await _start(tester, _desktop);
+        await _tapRow(tester, 3);
+        p.removeRemotely('m3');
+        await getIt<SyncEngine>().syncAll();
+        await tester.pumpAndSettle();
+        expect(_row(3), findsNothing);
+        await _press(tester, LogicalKeyboardKey.escape);
+        expect(_focusedRow(), 2);
+        await _press(tester, LogicalKeyboardKey.tab, shift: true);
+        expect(_focusedRow(), isNull);
+        await _press(tester, LogicalKeyboardKey.tab);
+        expect(_focusedRow(), 2);
+      },
+    );
+
+    for (final (name, row, key) in [
+      ('last', 1, LogicalKeyboardKey.keyJ),
+      ('first', 5, LogicalKeyboardKey.keyK),
+    ]) {
+      testWidgets('one pane, $name Conversazione open: $key does nothing', (
+        tester,
+      ) async {
+        await _start(tester, _phone);
+        await _tapRow(tester, row);
+        expect(_focusOnBackButton(tester), isTrue);
+        await _press(tester, key);
+        expect(_conversation(row), findsOneWidget);
+        expect(_focusOnBackButton(tester), isTrue);
+        await _press(tester, LogicalKeyboardKey.enter);
+        expect(find.byType(ConversationView), findsNothing);
+        expect(_focusedRow(), row);
+      });
+    }
+  });
+
   group('back button', () {
     testWidgets('two panes show none; Esc still closes the Conversazione', (
       tester,

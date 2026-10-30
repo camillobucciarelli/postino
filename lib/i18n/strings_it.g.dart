@@ -60,6 +60,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 		other: '${n} account',
 	);
 
+	late final Translations$sidebar$it sidebar = Translations$sidebar$it.internal(_root);
+
 	/// it: 'Etichette'
 	String get etichette => 'Etichette';
 
@@ -69,6 +71,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
 	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
+}
+
+// Path: sidebar
+class Translations$sidebar$it {
+	Translations$sidebar$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Chiudi la barra laterale'
+	String get close => 'Chiudi la barra laterale';
+
+	/// it: 'Apri la barra laterale'
+	String get open => 'Apri la barra laterale';
 }
 
 // Path: onboarding
@@ -267,6 +284,8 @@ extension on Translations {
 			'postaInArrivo' => 'Posta in arrivo',
 			'account' => 'Account',
 			'accountCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} account', other: '${n} account', ), 
+			'sidebar.close' => 'Chiudi la barra laterale',
+			'sidebar.open' => 'Apri la barra laterale',
 			'etichette' => 'Etichette',
 			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',

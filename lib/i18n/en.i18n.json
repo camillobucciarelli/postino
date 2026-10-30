@@ -7,6 +7,10 @@
     "one": "$n account",
     "other": "$n accounts"
   },
+  "sidebar": {
+    "close": "Close the sidebar",
+    "open": "Open the sidebar"
+  },
   "etichette": "Labels",
   "onboarding": {
     "body": "All your mailboxes in one place.",

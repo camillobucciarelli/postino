@@ -16,7 +16,7 @@ import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
 const _desktop = Size(1600, 900);
-const _narrow = Size(1000, 800);
+const _narrow = Size(800, 800);
 const _phone = Size(390, 844);
 
 /// Rows `m1` to `mN`, newest first: `mN` is the first row.
@@ -552,7 +552,7 @@ void main() {
   });
 
   test('the registry has no two actions on the same key', () {
-    final keys = postaShortcuts.map((s) => s.key).toList();
+    final keys = postaShortcuts.map((s) => (s.key, s.command)).toList();
     expect(keys.toSet().length, keys.length);
     expect(
       postaShortcuts.map((s) => s.action).toSet(),

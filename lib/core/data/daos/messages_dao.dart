@@ -283,6 +283,35 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
         );
       });
 
+  /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
+  /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
+  /// any of its messages carries it, and is unread if any of its messages is, even another one.
+  Stream<Set<(String, String)>> watchUnreadFolders() {
+    final m = messages, l = messageLabels, u = alias(messages, 'u');
+    final unreadInConversation = select(u)
+      ..where(
+        (u) =>
+            u.accountId.equalsExp(m.accountId) &
+            u.conversationId.equalsExp(m.conversationId) &
+            u.isRead.equals(false),
+      );
+    final query =
+        selectOnly(l, distinct: true).join([
+            innerJoin(
+              m,
+              m.accountId.equalsExp(l.accountId) & m.id.equalsExp(l.messageId),
+              useColumns: false,
+            ),
+          ])
+          ..addColumns([l.accountId, l.labelId])
+          ..where(existsQuery(unreadInConversation));
+    return query.watch().map(
+      (rows) => {
+        for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!),
+      },
+    );
+  }
+
   /// The Account's own Etichette, by name.
   Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)

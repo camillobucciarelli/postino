@@ -7,6 +7,8 @@ class MainFlutterWindow: NSWindow {
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
+    // postino: two panes and the icon sidebar need 900 (breakpoint-list-detail); the window cannot be narrower. 600 is the minimum height.
+    self.contentMinSize = NSSize(width: 900, height: 600)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 

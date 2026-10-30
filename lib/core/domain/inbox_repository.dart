@@ -26,6 +26,10 @@ abstract interface class InboxRepository {
   /// One row per Conversazione of one Account with a message carrying [labelId] ([inboxLabelId] for its inbox), newest first.
   Stream<List<InboxEntry>> watchMessages(String accountId, String labelId);
 
+  /// The (Account id, label id) pairs with an unread message: the dots of the icon sidebar
+  /// (the inbox is [inboxLabelId], system labels included).
+  Stream<Set<(String, String)>> watchUnreadFolders();
+
   /// The Etichette of one Account, by name; never those of another.
   Stream<List<Label>> watchLabels(String accountId);
 

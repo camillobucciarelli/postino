@@ -57,7 +57,7 @@ class _MessageListState extends State<MessageList> {
 
   /// Side by side with the Conversazione: moving opens it (ADR 0014).
   bool get _twoPane =>
-      MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge;
+      MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
 
   FocusNode _node((String, String) key) => _nodes.putIfAbsent(key, () {
     final node = FocusNode(skipTraversal: true);

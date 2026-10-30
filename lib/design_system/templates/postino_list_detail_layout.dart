@@ -6,9 +6,9 @@ import '../tokens/postino_tokens.dart';
 import 'postino_fade_through.dart';
 
 /// A list and the item opened from it ([detail], identified by [detailKey]).
-/// From `breakpoint-large` (1400): the list at `list-width` (380) and the detail beside it,
+/// From `breakpoint-list-detail` (900): the list at `list-width` (380) and the detail beside it,
 /// [empty] when nothing is open, a fade through between details.
-/// Below: the detail is a full page over the list, with the Material 3 shared axis X
+/// Below 900: the detail is a full page over the list, with the Material 3 shared axis X
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
 /// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
 /// With reduced motion every change is instant.
@@ -47,7 +47,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   bool? _wasLarge;
 
   /// One per open item: the two panes and the full page differ in structure, so only a
-  /// GlobalKey carries the detail State (scroll, expansions) across 1400.
+  /// GlobalKey carries the detail State (scroll, expansions) across 900.
   final _detailKeys = <Object?, GlobalKey>{};
 
   Widget _keyed(Object? key, Widget detail) => KeyedSubtree(
@@ -55,7 +55,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     child: detail,
   );
 
-  /// 0: the list; 1: the detail over it (below 1400 only).
+  /// 0: the list; 1: the detail over it (below 900 only).
   late final _axis =
       AnimationController(
         vsync: this,
@@ -79,7 +79,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final large =
-        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge;
+        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
     // Narrowed with a detail open: it becomes the full page, so the focus goes to it.
     if (_wasLarge == true && !large && widget.detail != null) _focusDetail();
     _wasLarge = large;
@@ -90,7 +90,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   void _focusDetail() => WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!mounted ||
         widget.detail == null ||
-        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge) {
+        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
       return;
     }
     _detailFocus.traversalDescendants.firstOrNull?.requestFocus();
@@ -143,7 +143,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   @override
   Widget build(BuildContext context) {
     final list = KeyedSubtree(key: _listKey, child: widget.list);
-    if (MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge) {
+    if (MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

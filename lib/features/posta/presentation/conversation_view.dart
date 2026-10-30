@@ -271,7 +271,8 @@ class _ConversationViewState extends State<ConversationView> {
       // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
       appBar: PostinoAppBar(
         title: '',
-        onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge
+        onBack:
+            MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail
             ? null
             : widget.onBack,
       ),

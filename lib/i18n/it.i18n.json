@@ -7,6 +7,10 @@
     "one": "$n account",
     "other": "$n account"
   },
+  "sidebar": {
+    "close": "Chiudi la barra laterale",
+    "open": "Apri la barra laterale"
+  },
   "etichette": "Etichette",
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",

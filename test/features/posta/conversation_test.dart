@@ -1,4 +1,4 @@
-// Opening and reading a Conversazione (#33): beside the list from 1400, a full page below,
+// Opening and reading a Conversazione (#33): beside the list from 900, a full page below,
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
 import 'package:flutter/services.dart';
@@ -197,7 +197,7 @@ void main() {
   );
 
   testWidgets(
-    'crossing 1400 with a Conversazione open keeps its State, scroll and expansion choices, and the list State',
+    'crossing 900 with a Conversazione open keeps its State, scroll and expansion choices, and the list State',
     (tester) async {
       // Twelve unread messages: all expanded when they show up, long enough to scroll.
       await _start(tester, _desktop, (p) {

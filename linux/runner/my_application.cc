@@ -53,6 +53,11 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+  // postino: two panes and the icon sidebar need 900 (breakpoint-list-detail); the window cannot be narrower; 600 is the minimum height.
+  GdkGeometry min_size = {};
+  min_size.min_width = 900;
+  min_size.min_height = 600;
+  gtk_window_set_geometry_hints(window, nullptr, &min_size, GDK_HINT_MIN_SIZE);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

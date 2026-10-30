@@ -176,4 +176,47 @@ void main() {
       }
     },
   );
+
+  group('<img srcset> without src', () {
+    const srcset = '<img srcset="https://shop.example/logo.png 1x" alt="logo">';
+    final placeholder = find.byWidgetPredicate(
+      (w) => w is PostinoIcon && w.icon == PostinoIcons.image,
+    );
+
+    testWidgets(
+      'allowed: the image is built from its candidate, no placeholder',
+      (tester) async {
+        await _pump(
+          tester,
+          PostinoHtmlCard(
+            html: prepareHtml(srcset, allowRemote: true).html,
+            onTapUrl: (_) {},
+          ),
+        );
+        await tester.pump();
+        expect(placeholder, findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Image &&
+                w.image is NetworkImage &&
+                (w.image as NetworkImage).url ==
+                    'https://shop.example/logo.png',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('blocked: the placeholder stays', (tester) async {
+      await _pump(
+        tester,
+        PostinoHtmlCard(
+          html: prepareHtml(srcset, allowRemote: false).html,
+          onTapUrl: (_) {},
+        ),
+      );
+      expect(placeholder, findsOneWidget);
+    });
+  });
 }

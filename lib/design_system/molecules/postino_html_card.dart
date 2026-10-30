@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
+import 'package:html/dom.dart' as dom;
 
 import '../atoms/postino_icon.dart';
 import '../tokens/postino_icons.dart';
@@ -46,8 +47,7 @@ class PostinoHtmlCard extends StatelessWidget {
             onTapUrl(url);
             return true;
           },
-          customWidgetBuilder: (e) =>
-              e.localName == 'img' && !e.attributes.containsKey('src')
+          customWidgetBuilder: (e) => e.localName == 'img' && !_hasSource(e)
               ? InlineCustomWidget(
                   child: _BottomBaseline(
                     child: Semantics(
@@ -92,6 +92,22 @@ class PostinoHtmlCard extends StatelessWidget {
           : body,
     );
   }
+}
+
+/// fwfh ignores `srcset`: a `src`-less `<img>` whose `srcset` survived `prepareHtml` (it is allowed)
+/// gets its first candidate as `src`; without either, its sources were removed.
+bool _hasSource(dom.Element e) {
+  final a = e.attributes;
+  if (a.containsKey('src')) return true;
+  final first = a['srcset']
+      ?.split(',')
+      .first
+      .trim()
+      .split(RegExp(r'\s+'))
+      .first;
+  if (first == null || first.isEmpty) return false;
+  a['src'] = first;
+  return true;
 }
 
 /// fwfh 0.17.4 sizes a crowded table by its cells' min intrinsic width (html_table.dart:500), which

@@ -397,10 +397,10 @@ class _QuoteToggle extends StatelessWidget {
       expanded: open,
       label: label,
       excludeSemantics: true,
-      child: GestureDetector(
+      child: InkWell(
         key: const ValueKey('quote-toggle'),
-        behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         child: SizedBox(
           width: PostinoSize.touchTargetAndroid,
           height: PostinoSize.touchTargetAndroid,

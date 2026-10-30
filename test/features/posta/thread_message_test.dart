@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -216,6 +217,53 @@ void main() {
           _in('q2', find.byType(PostinoHtmlCard)),
         );
         expect([for (final c in cards) c.quiet], [false, true]);
+      },
+    );
+
+    testWidgets(
+      'the «…» toggle is focusable: Enter and Space open and close it',
+      (tester) async {
+        await _start(tester, mailbox);
+        await _open(tester, 'q3');
+        final toggle = _in('q2', find.byKey(const ValueKey('quote-toggle')));
+        expect(_in('q2', _text('modifiche del cliente')), findsNothing);
+
+        Future<void> press(LogicalKeyboardKey k) async {
+          await tester.sendKeyEvent(k);
+          await tester.pumpAndSettle();
+        }
+
+        // Tab until the toggle has focus.
+        bool focused() =>
+            find
+                .descendant(
+                  of: toggle,
+                  matching: find.byWidgetPredicate(
+                    (w) =>
+                        w is Focus && w.focusNode?.hasPrimaryFocus == true ||
+                        false,
+                  ),
+                )
+                .evaluate()
+                .isNotEmpty ||
+            FocusManager.instance.primaryFocus?.context != null &&
+                find
+                    .ancestor(
+                      of: find.byElementPredicate(
+                        (e) => e == FocusManager.instance.primaryFocus!.context,
+                      ),
+                      matching: toggle,
+                    )
+                    .evaluate()
+                    .isNotEmpty;
+        for (var i = 0; i < 60 && !focused(); i++) {
+          await press(LogicalKeyboardKey.tab);
+        }
+        expect(focused(), isTrue);
+        await press(LogicalKeyboardKey.enter);
+        expect(_in('q2', _text('modifiche del cliente')), findsOneWidget);
+        await press(LogicalKeyboardKey.space);
+        expect(_in('q2', _text('modifiche del cliente')), findsNothing);
       },
     );
   });

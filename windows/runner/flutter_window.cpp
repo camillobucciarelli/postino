@@ -51,15 +51,18 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
-  // postino: two panes and the icon sidebar need 900 (breakpoint-list-detail) of client width;
-  // the window cannot be narrower (the minimum is the outer width that leaves a 900 logical pixel client area).
+  // postino: two panes and the icon sidebar need 900 (breakpoint-list-detail) of client width and 600 of client height;
+  // the window cannot be smaller (the minimum is the outer size that leaves a 900x600 logical pixel client area).
   if (message == WM_GETMINMAXINFO) {
     const UINT dpi = GetDpiForWindow(hwnd);
-    RECT frame = {0, 0, MulDiv(900, dpi, USER_DEFAULT_SCREEN_DPI), 0};
+    RECT frame = {0, 0, MulDiv(900, dpi, USER_DEFAULT_SCREEN_DPI),
+                  MulDiv(600, dpi, USER_DEFAULT_SCREEN_DPI)};
     AdjustWindowRectExForDpi(&frame, GetWindowLong(hwnd, GWL_STYLE), FALSE,
                              GetWindowLong(hwnd, GWL_EXSTYLE), dpi);
     reinterpret_cast<MINMAXINFO*>(lparam)->ptMinTrackSize.x =
         frame.right - frame.left;
+    reinterpret_cast<MINMAXINFO*>(lparam)->ptMinTrackSize.y =
+        frame.bottom - frame.top;
     return 0;
   }
 

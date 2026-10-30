@@ -11,11 +11,13 @@ import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'daos/accounts_dao.dart';
+import 'daos/device_settings_dao.dart';
 import 'daos/intents_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
+import 'tables/device_settings_table.dart';
 import 'tables/intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
@@ -36,8 +38,15 @@ part 'postino_database.g.dart';
     SyncCursors,
     Intents,
     TrustedSenders,
+    DeviceSettings,
   ],
-  daos: [AccountsDao, MessagesDao, IntentsDao, TrustedSendersDao],
+  daos: [
+    AccountsDao,
+    MessagesDao,
+    IntentsDao,
+    TrustedSendersDao,
+    DeviceSettingsDao,
+  ],
 )
 class PostinoDatabase extends _$PostinoDatabase {
   PostinoDatabase(super.executor);
@@ -86,7 +95,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -129,6 +138,7 @@ class PostinoDatabase extends _$PostinoDatabase {
         await m.createIndex(messagesConversation);
       }
       if (from < 6) await m.createTable(trustedSenders);
+      if (from < 8) await m.createTable(deviceSettings);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

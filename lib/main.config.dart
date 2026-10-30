@@ -14,6 +14,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:http/http.dart' as _i519;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
+import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
 import 'package:postino/core/data/platform_services.dart' as _i524;
@@ -25,6 +26,7 @@ import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
 
 const String _prod = 'prod';
@@ -75,6 +77,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
         gh<_i398.Connectivity>(),
       ),
+    );
+    gh.lazySingleton<_i307.SettingsRepository>(
+      () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),

@@ -90,9 +90,9 @@ void main() {
   group('collapse threshold', () {
     for (final (w, collapsed) in [
       (900.0, true),
-      (999.0, true),
-      (1000.0, false),
-      (1399.0, false),
+      (1439.0, true),
+      (1440.0, false),
+      (1600.0, false),
     ]) {
       testWidgets(
         'at ${w.toInt()} the bar is ${collapsed ? 'icons only' : 'extended'}',
@@ -117,7 +117,7 @@ void main() {
     testWidgets(
       'the button closes and opens the bar, and says what it will do',
       (tester) async {
-        await _start(tester, 1300);
+        await _start(tester, 1600);
         expect(_barWidth(tester), PostinoSize.sidebarWidth);
         await tester.tap(find.byTooltip(_close));
         await tester.pumpAndSettle();
@@ -133,7 +133,7 @@ void main() {
     testWidgets(
       'the shortcut toggles both ways with the focus in the list, in the Conversazione and in the bar',
       (tester) async {
-        await _start(tester, 1300);
+        await _start(tester, 1600);
         await tester.tap(find.byKey(const ValueKey('row-a1-x')));
         await tester.pumpAndSettle();
         expect(find.byType(ConversationView), findsOneWidget);
@@ -182,7 +182,7 @@ void main() {
     ) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
       try {
-        await _start(tester, 1300);
+        await _start(tester, 1600);
         await tester.tap(find.byKey(const ValueKey('row-a1-x')));
         await tester.pumpAndSettle();
         await _ctrlB(tester);
@@ -229,7 +229,7 @@ void main() {
   });
 
   group('the manual choice', () {
-    testWidgets('a saved choice holds until the window crosses 1000', (
+    testWidgets('a saved choice holds until the window crosses 1440', (
       tester,
     ) async {
       await _start(tester, 950, stored: true);
@@ -237,45 +237,45 @@ void main() {
       await _resize(tester, 900);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       await _resize(tester, 800); // modal below 840: no docked bar to measure
-      await _resize(tester, 999);
+      await _resize(tester, 1439);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
     });
 
-    testWidgets('a saved icons choice holds above 1000 too', (tester) async {
-      await _start(tester, 1300, stored: false);
+    testWidgets('a saved icons choice holds above 1440 too', (tester) async {
+      await _start(tester, 1600, stored: false);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
-      await _resize(tester, 1500);
+      await _resize(tester, 1800);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
     });
 
-    testWidgets('crossing 1000 either way clears it, in the state too', (
+    testWidgets('crossing 1440 either way clears it, in the state too', (
       tester,
     ) async {
       await _start(tester, 950, stored: true);
-      await _resize(tester, 1200);
+      await _resize(tester, 1600);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isNull);
 
       await tester.tap(find.byTooltip(_close));
       await tester.pumpAndSettle();
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isFalse);
-      await _resize(tester, 999);
+      await _resize(tester, 1439);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
       expect(await getIt<SettingsRepository>().sidebarExpanded(), isNull);
 
       await tester.tap(find.byTooltip(_open));
       await tester.pumpAndSettle();
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
-      await _resize(tester, 1200);
+      await _resize(tester, 1600);
       expect(_barWidth(tester), PostinoSize.sidebarWidth);
-      await _resize(tester, 999);
+      await _resize(tester, 1439);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
     });
 
     testWidgets('a restart applies the saved choice at the same width', (
       tester,
     ) async {
-      await _start(tester, 1300);
+      await _start(tester, 1600);
       await tester.tap(find.byTooltip(_close));
       await tester.pumpAndSettle();
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
@@ -354,7 +354,7 @@ void main() {
     testWidgets('the focus survives switching between extended and icons', (
       tester,
     ) async {
-      await _start(tester, 1300);
+      await _start(tester, 1600);
       _focusItem(tester, 'account-a2');
       await tester.pump();
       final node = FocusManager.instance.primaryFocus;
@@ -378,14 +378,14 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
       expect(find.byTooltip('Posta unificata'), findsOneWidget);
-      await _resize(tester, 1300);
+      await _resize(tester, 1600);
       expect(tester.takeException(), isNull);
       expect(_inBar('Posta unificata'), findsOneWidget);
     });
   });
 
   group('two panes from 900', () {
-    for (final w in [900.0, 1399.0]) {
+    for (final w in [900.0, 1439.0]) {
       testWidgets(
         'at ${w.toInt()}: list and detail together, with the empty state and with a Conversazione',
         (tester) async {
@@ -422,9 +422,9 @@ void main() {
     );
 
     testWidgets(
-      '1500 to 900 keeps the open Conversazione and the list scroll',
+      '1600 to 900 keeps the open Conversazione and the list scroll',
       (tester) async {
-        await _start(tester, 1500, many: 30);
+        await _start(tester, 1600, many: 30);
         State list() => tester.state(find.byType(MessageList));
         final l = list();
         await tester.drag(find.byType(MessageList), const Offset(0, -600));

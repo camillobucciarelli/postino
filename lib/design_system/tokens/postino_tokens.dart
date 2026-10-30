@@ -1391,7 +1391,7 @@ abstract final class PostinoSize {
   static const double breakpointListDetail = 900.0;
 
   /// Da qui la barra laterale è estesa (280); sotto, a sole icone (72).
-  static const double breakpointSidebarCollapse = 1000.0;
+  static const double breakpointSidebarCollapse = 1440.0;
 }
 
 abstract final class PostinoBorder {

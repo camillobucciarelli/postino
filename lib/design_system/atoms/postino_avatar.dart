@@ -30,14 +30,16 @@ class PostinoAvatar extends StatelessWidget {
             Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              child: Text(
-                _initials(name),
-                textScaler: TextScaler.noScaling,
-                style: PostinoText.label.copyWith(
-                  color: fg,
-                  fontSize: (size * .36).roundToDouble(),
-                  fontWeight: FontWeight.w600,
-                  height: 1,
+              child: SelectionContainer.disabled(
+                child: Text(
+                  _initials(name),
+                  textScaler: TextScaler.noScaling,
+                  style: PostinoText.label.copyWith(
+                    color: fg,
+                    fontSize: (size * .36).roundToDouble(),
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                  ),
                 ),
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../atoms/postino_resize_handle.dart';
+import '../atoms/postino_selectable.dart';
 import '../tokens/postino_tokens.dart';
 import 'postino_fade_through.dart';
 
@@ -131,7 +132,14 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
         MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
       return;
     }
-    _detailFocus.traversalDescendants.firstOrNull?.requestFocus();
+    // The first one on screen (the back button), not the first attached: the tree order of the
+    // focus nodes follows when each was attached, which a reparented detail shuffles.
+    final nodes = _detailFocus.traversalDescendants.toList()
+      ..sort((a, b) {
+        final byTop = a.rect.top.compareTo(b.rect.top);
+        return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);
+      });
+    nodes.firstOrNull?.requestFocus();
   });
 
   @override
@@ -165,6 +173,16 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
         e.logicalKey != LogicalKeyboardKey.escape ||
         widget.detail == null) {
       return false;
+    }
+    // A selection in the Conversazione takes the first Esc.
+    final focus = primaryFocus?.context;
+    if (focus != null) {
+      const clear = PostinoClearSelectionIntent();
+      if (Actions.maybeFind<PostinoClearSelectionIntent>(focus)
+          case final action? when action.isEnabled(clear)) {
+        Actions.invoke(focus, clear);
+        return true;
+      }
     }
     widget.onClose();
     return true;

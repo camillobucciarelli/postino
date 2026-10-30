@@ -511,11 +511,14 @@ void main() {
       expect(find.text('Corpo di s4'), findsOneWidget);
       expect(_expanded(tester, 'm3'), isTrue, reason: 'was unread');
 
+      // The avatar collapses; the text is for selecting.
       await tester.tap(
-        find.descendant(
-          of: _message('m3'),
-          matching: find.text('bruno@example.com'),
-        ),
+        find
+            .descendant(
+              of: _message('m3'),
+              matching: find.byType(PostinoAvatar),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'm3'), isFalse);

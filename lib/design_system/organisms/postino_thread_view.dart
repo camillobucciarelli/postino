@@ -9,6 +9,7 @@ import '../atoms/postino_button.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../atoms/postino_label_chip.dart';
+import '../atoms/postino_selectable.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -16,7 +17,7 @@ import '../tokens/postino_tokens.dart';
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
 /// at most `reading-max-width` wide.
-class PostinoThreadView extends StatelessWidget {
+class PostinoThreadView extends StatefulWidget {
   const PostinoThreadView({
     super.key,
     required this.subject,
@@ -39,10 +40,57 @@ class PostinoThreadView extends StatelessWidget {
   final String? importantLabel;
 
   @override
+  State<PostinoThreadView> createState() => _PostinoThreadViewState();
+}
+
+class _PostinoThreadViewState extends State<PostinoThreadView> {
+  final _area = GlobalKey<SelectionAreaState>();
+  bool _selected = false;
+
+  /// Out of the Tab order, so Tab and the first focus (the back button) stay as before; a click still focuses it.
+  final _focus = FocusNode(debugLabel: 'Conversazione', skipTraversal: true);
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.pc;
-    final important = importantLabel;
+    final important = widget.importantLabel;
     final wrap = _wraps(context);
+    final subject = widget.subject;
+    // One SelectionArea for the whole Conversazione: a selection crosses subject, headers and bodies,
+    // and Cmd+A stays inside it. Controls opt out with SelectionContainer.disabled.
+    // ponytail: the ListView builds lazily, so Cmd+A copies the messages built so far, not the off-screen ones.
+    return Actions(
+      actions: {
+        PostinoClearSelectionIntent: _ClearSelection(() => _selected, () {
+          _area.currentState?.selectableRegion.clearSelection();
+          // A programmatic clear does not call onSelectionChanged.
+          _selected = false;
+        }),
+      },
+      child: SelectionArea(
+        key: _area,
+        focusNode: _focus,
+        onSelectionChanged: (content) =>
+            _selected = content != null && content.plainText.isNotEmpty,
+        child: _content(context, c, important, wrap, subject),
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    PostinoColors c,
+    String? important,
+    bool wrap,
+    String subject,
+  ) {
+    final w = widget;
     // The list spans the pane (its scrollbar at the pane's edge); the margins center a column
     // of at most `reading-max-width`.
     return LayoutBuilder(
@@ -99,13 +147,13 @@ class PostinoThreadView extends StatelessWidget {
                       spacing: PostinoSpacing.s2,
                       children: [
                         PostinoAccountMark(
-                          color: account.color,
-                          initial: account.initial,
+                          color: w.account.color,
+                          initial: w.account.initial,
                           size: PostinoSize.accountBadge,
                         ),
                         Flexible(
                           child: Text(
-                            accountName,
+                            w.accountName,
                             maxLines: wrap ? null : 1,
                             overflow: wrap
                                 ? TextOverflow.visible
@@ -117,16 +165,33 @@ class PostinoThreadView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    for (final l in labels) PostinoLabelChip(name: l),
+                    for (final l in w.labels) PostinoLabelChip(name: l),
                   ],
                 ),
               ],
             ),
           ),
-          ...messages,
+          ...w.messages,
         ],
       ),
     );
+  }
+}
+
+/// Esc over a selection clears it; with none it is off, so the layout closes the Conversazione.
+class _ClearSelection extends Action<PostinoClearSelectionIntent> {
+  _ClearSelection(this.selected, this.clear);
+
+  final bool Function() selected;
+  final VoidCallback clear;
+
+  @override
+  bool isEnabled(PostinoClearSelectionIntent intent) => selected();
+
+  @override
+  Object? invoke(PostinoClearSelectionIntent intent) {
+    clear();
+    return null;
   }
 }
 
@@ -242,24 +307,27 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: w.sender),
-                            if (expanded && w.address != null)
-                              TextSpan(
-                                text: ' ${w.address}',
-                                style: PostinoText.caption.copyWith(
-                                  color: c.inkMuted,
+                      _TextHit(
+                        enabled: expanded,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(text: w.sender),
+                              if (expanded && w.address != null)
+                                TextSpan(
+                                  text: ' ${w.address}',
+                                  style: PostinoText.caption.copyWith(
+                                    color: c.inkMuted,
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
+                          maxLines: wrap ? null : 1,
+                          overflow: wrap
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: PostinoText.sender.copyWith(color: c.ink),
                         ),
-                        maxLines: wrap ? null : 1,
-                        overflow: wrap
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                        style: PostinoText.sender.copyWith(color: c.ink),
                       ),
                       if (!expanded)
                         Text(
@@ -287,9 +355,12 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                   padding: EdgeInsets.only(
                     top: expanded ? PostinoSpacing.s0_5 : 0,
                   ),
-                  child: Text(
-                    w.time,
-                    style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                  child: _TextHit(
+                    enabled: expanded,
+                    child: Text(
+                      w.time,
+                      style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                    ),
                   ),
                 ),
               ],
@@ -386,11 +457,27 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                     ],
                   ),
                 )
-              : header,
+              // A collapsed message is a tap-to-expand control, like a list row.
+              : SelectionContainer.disabled(child: header),
         ),
       ),
     );
   }
+}
+
+/// Text in an expanded header: a tap on it does not collapse the message (the SelectionArea takes
+/// it: a click places the caret, a double click picks a word, a drag selects); the avatar and the
+/// empty space around it still collapse.
+class _TextHit extends StatelessWidget {
+  const _TextHit({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => enabled
+      ? GestureDetector(onTap: () {}, excludeFromSemantics: true, child: child)
+      : child;
 }
 
 /// «…»: shows or hides the quoted text. A `surface-pressed` pill 32×20, in a 48 high target.
@@ -406,7 +493,10 @@ class _QuoteToggle extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      SelectionContainer.disabled(child: _toggle(context));
+
+  Widget _toggle(BuildContext context) {
     final c = context.pc;
     return Semantics(
       button: true,
@@ -500,8 +590,12 @@ class _Recipients extends StatelessWidget {
   final bool open;
   final VoidCallback? onTap;
 
+  // The compact row is a button (it opens the details): out of any selection.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      SelectionContainer.disabled(child: _row(context));
+
+  Widget _row(BuildContext context) {
     final c = context.pc;
     final wrap = _wraps(context);
     final text = Text(
@@ -651,7 +745,7 @@ class _Details extends StatelessWidget {
   }
 }
 
-/// The body of an expanded message: its [text] in `body`, selectable;
+/// The body of an expanded message: its [text] in `body` (selectable through the Conversazione's SelectionArea);
 /// or, while it is not there, a quiet note and maybe a retry.
 class PostinoMessageBody extends StatelessWidget {
   const PostinoMessageBody({
@@ -683,7 +777,7 @@ class PostinoMessageBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     if (text case final t?) {
-      return SelectableText(
+      return Text(
         t,
         style: quiet
             ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)

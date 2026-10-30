@@ -16,26 +16,39 @@ class PostinoLabelChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = postinoTint(context.pc, name);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
-      ),
-      child: SizedBox(
-        height: 22,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: PostinoSpacing.s1,
-            children: [
-              PostinoIcon(
-                PostinoIcons.tag,
-                size: PostinoSize.iconSm,
-                color: fg,
-              ),
-              Text(name, style: PostinoText.meta.copyWith(color: fg)),
-            ],
+    return Semantics(
+      label: name,
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.all(
+            Radius.circular(PostinoRadius.xs),
+          ),
+        ),
+        child: SizedBox(
+          height: 22,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: PostinoSpacing.s1,
+              children: [
+                PostinoIcon(
+                  PostinoIcons.tag,
+                  size: PostinoSize.iconSm,
+                  color: fg,
+                ),
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: PostinoText.meta.copyWith(color: fg),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

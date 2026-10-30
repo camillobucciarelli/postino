@@ -8,6 +8,7 @@ import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'message_time.dart';
+import 'posta_shortcuts.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
@@ -19,6 +20,7 @@ class MessageList extends StatefulWidget {
     required this.onOpen,
     this.showAccount = false,
     this.selected,
+    this.cursor,
   });
 
   /// Which messages to show, e.g. `repo.watchUnifiedInbox`.
@@ -31,6 +33,9 @@ class MessageList extends StatefulWidget {
   /// (accountId, conversationId).
   final (String, String)? selected;
 
+  /// Plugs the list into the keyboard shortcuts ([PostaShortcuts]).
+  final ListCursor? cursor;
+
   @override
   State<MessageList> createState() => _MessageListState();
 }
@@ -39,21 +44,133 @@ class _MessageListState extends State<MessageList> {
   late final entries = streamSignal(
     () => widget.watch(GetIt.I<InboxRepository>()),
   );
+  final _scroll = ScrollController();
+
+  /// One focus per row; only the cursor row is a Tab stop, so the list is one stop.
+  // ponytail: nodes of rows that left the list live until dispose; prune if lists churn a lot.
+  final _nodes = <(String, String), FocusNode>{};
+
+  /// The row with the focus (or that had it last): the open one, or the one the arrows reached.
+  (String, String)? _cursor;
+  List<InboxEntry>? _list;
+  bool? _wasTwoPane;
+
+  /// Side by side with the Conversazione: moving opens it (ADR 0014).
+  bool get _twoPane =>
+      MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge;
+
+  FocusNode _node((String, String) key) =>
+      _nodes.putIfAbsent(key, () => FocusNode(skipTraversal: true));
+
+  @override
+  void initState() {
+    super.initState();
+    _cursor = widget.selected;
+    widget.cursor
+      ?..move = _move
+      ..listFocused = _listFocused;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final two = _twoPane;
+    // Widened with a Conversazione open: the focus goes to its row; the Conversazione stays.
+    if (_wasTwoPane == false && two && widget.selected != null) _focusSoon();
+    _wasTwoPane = two;
+  }
+
+  @override
+  void didUpdateWidget(MessageList old) {
+    super.didUpdateWidget(old);
+    final open = widget.selected;
+    if (open != null) _cursor = open;
+    // The Conversazione closed: the focus returns to the row just closed.
+    if (open == null && old.selected != null) _focusSoon();
+  }
 
   @override
   void dispose() {
+    final cursor = widget.cursor;
+    if (cursor?.move == _move) {
+      cursor!
+        ..move = null
+        ..listFocused = null;
+    }
+    for (final n in _nodes.values) {
+      n.dispose();
+    }
+    _scroll.dispose();
     entries.dispose();
     super.dispose();
+  }
+
+  /// Focus on the list, and the list is in front (not under a full-page Conversazione).
+  bool _listFocused() =>
+      _nodes.values.any((n) => n.hasFocus) &&
+      (_twoPane || widget.selected == null);
+
+  void _focusSoon() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted && _cursor != null) _reveal(_cursor!, 0);
+  });
+
+  /// Focus on [key]'s row and scroll it into view; a row not built yet is reached by jumping near it first.
+  void _reveal((String, String) key, int delta, {int tries = 3}) {
+    final node = _node(key);
+    // A row that scrolled away is detached from the focus tree (its context is stale).
+    if (node.enclosingScope != null) {
+      FocusTraversalPolicy.defaultTraversalRequestFocusCallback(
+        node,
+        alignmentPolicy: delta >= 0
+            ? ScrollPositionAlignmentPolicy.keepVisibleAtEnd
+            : ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      );
+      return;
+    }
+    final list = _list;
+    if (tries == 0 || list == null || !_scroll.hasClients) return;
+    final at = list.indexWhere(
+      (e) => (e.account.id, e.message.conversationId) == key,
+    );
+    if (at < 0) return;
+    final p = _scroll.position;
+    final rowExtent = (p.maxScrollExtent + p.viewportDimension) / list.length;
+    _scroll.jumpTo((at * rowExtent).clamp(0, p.maxScrollExtent));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _reveal(key, delta, tries: tries - 1);
+    });
+  }
+
+  /// Moves focus and selection together by [delta] rows; opens the row where selection is opening
+  /// (two panes, or a Conversazione already open), else only the focus moves.
+  void _move(int delta) {
+    final list = _list;
+    if (list == null || list.isEmpty) return;
+    final from = _cursor == null
+        ? -1
+        : list.indexWhere(
+            (e) => (e.account.id, e.message.conversationId) == _cursor,
+          );
+    final to = from < 0 ? 0 : (from + delta).clamp(0, list.length - 1);
+    final e = list[to];
+    final key = (e.account.id, e.message.conversationId);
+    setState(() => _cursor = key);
+    _reveal(key, delta);
+    if ((_twoPane || widget.selected != null) && key != widget.selected) {
+      widget.onOpen(key.$1, key.$2);
+    }
   }
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final list = entries.value.value;
+      _list = list;
       final t = context.t.list;
       final now = GetIt.I<Clock>().now();
       final locale = Localizations.localeOf(context).languageCode;
       return PostinoMessageList(
+        controller: _scroll,
         loading: list == null,
         itemCount: list?.length ?? 0,
         onRefresh: GetIt.I<MailSync>().syncAll,
@@ -63,35 +180,77 @@ class _MessageListState extends State<MessageList> {
         itemBuilder: (context, i) {
           final InboxEntry(message: m, account: a, :count, :unread) = list![i];
           final time = messageTime(m.date, now, locale, t.yesterday);
-          return PostinoMessageTile(
-            key: ValueKey('row-${a.id}-${m.id}'),
-            sender: m.fromName ?? m.from,
-            subject: m.subject,
-            preview: m.snippet,
-            time: time,
-            unread: unread,
-            starred: m.isStarred,
-            count: count,
-            selected: widget.selected == (a.id, m.conversationId),
-            onTap: () => widget.onOpen(a.id, m.conversationId),
-            account: widget.showAccount
-                ? (
-                    color: PostinoAccountColor.values[a.color],
-                    initial: a.initial,
-                  )
-                : null,
-            semanticLabel: [
-              if (unread) t.unread,
-              m.fromName ?? m.from,
-              m.subject,
-              if (count > 1) t.messages(n: count),
-              if (m.isStarred) t.starred,
-              if (widget.showAccount) t.account(name: a.name),
-              time,
-            ].join(', '),
+          final key = (a.id, m.conversationId);
+          final node = _node(key)
+            ..skipTraversal = key != (_cursor ?? _firstKey(list));
+          return _KeepAlive(
+            keep: key == _cursor,
+            child: PostinoMessageTile(
+              key: ValueKey('row-${a.id}-${m.id}'),
+              focusNode: node,
+              sender: m.fromName ?? m.from,
+              subject: m.subject,
+              preview: m.snippet,
+              time: time,
+              unread: unread,
+              starred: m.isStarred,
+              count: count,
+              selected: widget.selected == key,
+              onTap: () {
+                setState(() => _cursor = key);
+                node.requestFocus();
+                widget.onOpen(a.id, m.conversationId);
+              },
+              account: widget.showAccount
+                  ? (
+                      color: PostinoAccountColor.values[a.color],
+                      initial: a.initial,
+                    )
+                  : null,
+              semanticLabel: [
+                if (unread) t.unread,
+                m.fromName ?? m.from,
+                m.subject,
+                if (count > 1) t.messages(n: count),
+                if (m.isStarred) t.starred,
+                if (widget.showAccount) t.account(name: a.name),
+                time,
+              ].join(', '),
+            ),
           );
         },
       );
     },
   );
+}
+
+(String, String) _firstKey(List<InboxEntry> list) =>
+    (list.first.account.id, list.first.message.conversationId);
+
+/// Keeps the cursor row built when it scrolls out of sight, so Tab still finds it.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.keep, required this.child});
+  final bool keep;
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => widget.keep;
+
+  @override
+  void didUpdateWidget(_KeepAlive old) {
+    super.didUpdateWidget(old);
+    if (old.keep != widget.keep) updateKeepAlive();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
 }

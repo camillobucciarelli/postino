@@ -89,6 +89,14 @@ Future<void> _focusConversation(WidgetTester tester, int i) async {
   await tester.pump();
 }
 
+/// Whether the focus is inside the open Conversazione [i].
+bool _focusInConversation(WidgetTester tester, int i) {
+  final ctx = FocusManager.instance.primaryFocus?.context;
+  return ctx != null &&
+      ctx.findAncestorWidgetOfExactType<ConversationView>()?.conversationId ==
+          't$i';
+}
+
 void main() {
   group('two panes', () {
     testWidgets(
@@ -166,6 +174,37 @@ void main() {
       expect(find.byType(ConversationView), findsNothing);
       expect(_focusedRow(), 2);
     });
+  });
+
+  group('one pane, opening', () {
+    testWidgets(
+      'Enter, a click and j / k put the focus in the Conversazione; Esc and back return to the row, and the arrows work again',
+      (tester) async {
+        await _start(tester, _phone);
+        await _tapRow(tester, 4);
+        expect(_focusInConversation(tester, 4), isTrue, reason: 'click');
+        await _press(tester, LogicalKeyboardKey.keyJ);
+        expect(_focusInConversation(tester, 3), isTrue, reason: 'j');
+        await _press(tester, LogicalKeyboardKey.escape);
+        expect(_focusedRow(), 3);
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+        expect(_focusedRow(), 2);
+        await _press(tester, LogicalKeyboardKey.enter);
+        expect(_focusInConversation(tester, 2), isTrue, reason: 'Enter');
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(ConversationView),
+                matching: find.byType(InkWell),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+        expect(_focusedRow(), 2);
+        await _press(tester, LogicalKeyboardKey.arrowUp);
+        expect(_focusedRow(), 3);
+      },
+    );
   });
 
   group('one cursor, one Tab stop', () {
@@ -295,7 +334,7 @@ void main() {
 
   group('layout change', () {
     testWidgets(
-      'widening moves the focus to the selected row with the Conversazione still open; shrinking keeps it there',
+      'widening moves the focus to the selected row with the Conversazione still open; shrinking moves it to the Conversazione',
       (tester) async {
         await _start(tester, _narrow);
         await _tapRow(tester, 3);
@@ -311,7 +350,8 @@ void main() {
 
         tester.view.physicalSize = _narrow;
         await tester.pumpAndSettle();
-        expect(_focusedRow(), 3);
+        expect(_focusedRow(), isNull);
+        expect(_focusInConversation(tester, 3), isTrue);
         expect(_conversation(3), findsOneWidget);
       },
     );

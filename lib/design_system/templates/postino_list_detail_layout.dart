@@ -42,6 +42,10 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
 
   final _listKey = GlobalKey();
 
+  /// Marks the open detail, to hand it the focus when it is the only thing on screen.
+  final _detailFocus = FocusNode(canRequestFocus: false, skipTraversal: true);
+  bool? _wasLarge;
+
   /// One per open item: the two panes and the full page differ in structure, so only a
   /// GlobalKey carries the detail State (scroll, expansions) across 1400.
   final _detailKeys = <Object?, GlobalKey>{};
@@ -72,8 +76,33 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final large =
+        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge;
+    // Narrowed with a detail open: it becomes the full page, so the focus goes to it.
+    if (_wasLarge == true && !large && widget.detail != null) _focusDetail();
+    _wasLarge = large;
+  }
+
+  /// One pane only: the full-page detail takes the focus, not the list hidden under it.
+  /// Two panes leave the focus where it is (on the list's selected row).
+  void _focusDetail() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted ||
+        widget.detail == null ||
+        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge) {
+      return;
+    }
+    _detailFocus.traversalDescendants.firstOrNull?.requestFocus();
+  });
+
+  @override
   void didUpdateWidget(PostinoListDetailLayout old) {
     super.didUpdateWidget(old);
+    if (widget.detail != null &&
+        (old.detail == null || old.detailKey != widget.detailKey)) {
+      _focusDetail();
+    }
     // The outgoing detail may still be on screen; older ones are gone.
     _detailKeys.removeWhere(
       (k, _) => k != widget.detailKey && k != old.detailKey,
@@ -107,6 +136,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _axis.dispose();
+    _detailFocus.dispose();
     super.dispose();
   }
 
@@ -167,7 +197,13 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
             if (detail != null)
               Transform.translate(
                 offset: Offset(_slide * (1 - move), 0),
-                child: Opacity(opacity: detailIn, child: _keyed(key, detail)),
+                child: Opacity(
+                  opacity: detailIn,
+                  child: Focus(
+                    focusNode: _detailFocus,
+                    child: _keyed(key, detail),
+                  ),
+                ),
               ),
           ],
         );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_account_mark.dart';
+import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../molecules/postino_sync_status.dart';
 import '../tokens/postino_icons.dart';
@@ -183,6 +184,7 @@ class _DrawerItem extends StatelessWidget {
     final c = context.pc;
     final a = item.account;
     const radius = BorderRadius.all(Radius.circular(PostinoRadius.sm));
+    final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
     return Semantics(
       selected: item.active,
       child: Material(
@@ -202,46 +204,56 @@ class _DrawerItem extends StatelessWidget {
             Scaffold.maybeOf(context)?.closeDrawer();
             item.onTap();
           },
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: PostinoSize.touchTargetAndroid,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s3),
-            child: Row(
-              spacing: PostinoSpacing.s3,
-              children: [
-                if (a != null)
-                  PostinoAccountMark(
-                    color: a.color,
-                    initial: a.initial,
-                    size: 22,
-                  )
-                else
-                  PostinoIcon(
-                    item.icon ?? PostinoIcons.tag,
-                    size: PostinoSize.iconLg,
-                    color: item.active
-                        ? c.drawerItemIconActive
-                        : c.drawerItemIcon,
-                  ),
-                Expanded(
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: PostinoText.label.copyWith(
-                      color: c.drawerItemFg,
-                      fontWeight: item.active ? FontWeight.w600 : null,
+          // The ring, not the fill, shows focus on the active item, whose box has the same color.
+          child: PostinoFocusRing(
+            inset: true,
+            borderRadius: radius,
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: PostinoSize.touchTargetAndroid,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: PostinoSpacing.s3,
+              ),
+              child: Row(
+                spacing: PostinoSpacing.s3,
+                children: [
+                  if (a != null)
+                    PostinoAccountMark(
+                      color: a.color,
+                      initial: a.initial,
+                      size: 22,
+                    )
+                  else
+                    PostinoIcon(
+                      item.icon ?? PostinoIcons.tag,
+                      size: PostinoSize.iconLg,
+                      color: item.active
+                          ? c.drawerItemIconActive
+                          : c.drawerItemIcon,
+                    ),
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      // Enlarged text wraps instead of being cut.
+                      maxLines: wrap ? null : 1,
+                      overflow: wrap
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      style: PostinoText.label.copyWith(
+                        color: c.drawerItemFg,
+                        fontWeight: item.active ? FontWeight.w600 : null,
+                      ),
                     ),
                   ),
-                ),
-                if (item.reconnectLabel case final l?)
-                  PostinoSyncStatus(
-                    state: PostinoSyncState.reconnect,
-                    label: l,
-                    compact: true,
-                  ),
-              ],
+                  if (item.reconnectLabel case final l?)
+                    PostinoSyncStatus(
+                      state: PostinoSyncState.reconnect,
+                      label: l,
+                      compact: true,
+                    ),
+                ],
+              ),
             ),
           ),
         ),

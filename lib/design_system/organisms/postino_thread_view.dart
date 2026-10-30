@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_button.dart';
+import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../atoms/postino_label_chip.dart';
 import '../tokens/postino_icons.dart';
@@ -41,6 +42,7 @@ class PostinoThreadView extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     final important = importantLabel;
+    final wrap = _wraps(context);
     // The list spans the pane (its scrollbar at the pane's edge); the margins center a column
     // of at most `reading-max-width`.
     return LayoutBuilder(
@@ -104,8 +106,10 @@ class PostinoThreadView extends StatelessWidget {
                         Flexible(
                           child: Text(
                             accountName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: wrap ? null : 1,
+                            overflow: wrap
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: PostinoText.labelSm.copyWith(
                               color: c.inkMuted,
                             ),
@@ -205,79 +209,91 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
     final expanded = w.expanded;
     final avatar = expanded ? PostinoSize.avatarMd : PostinoSize.controlSm;
     final recipients = w.recipients;
+    final wrap = _wraps(context);
+    final radius = expanded
+        ? const BorderRadius.all(Radius.circular(PostinoRadius.sm))
+        : BorderRadius.zero;
     final header = InkWell(
       onTap: w.onToggle,
       // Expanded: the highlight gets room via s2 inside; the outer padding gives it back, so content stays aligned.
-      borderRadius: expanded
-          ? const BorderRadius.all(Radius.circular(PostinoRadius.sm))
-          : null,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: PostinoSize.touchTargetAndroid,
-        ),
-        child: Padding(
-          padding: expanded
-              ? const EdgeInsets.all(PostinoSpacing.s2)
-              : const EdgeInsets.symmetric(
-                  horizontal: PostinoSpacing.s4,
-                  vertical: PostinoSpacing.s3,
-                ),
-          child: Row(
-            crossAxisAlignment: expanded
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
-            spacing: PostinoSpacing.s3,
-            children: [
-              PostinoAvatar(name: w.sender, size: avatar),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(text: w.sender),
-                          if (expanded && w.address != null)
-                            TextSpan(
-                              text: ' ${w.address}',
-                              style: PostinoText.caption.copyWith(
-                                color: c.inkMuted,
+      borderRadius: radius,
+      child: PostinoFocusRing(
+        inset: true,
+        borderRadius: radius,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: PostinoSize.touchTargetAndroid,
+          ),
+          child: Padding(
+            padding: expanded
+                ? const EdgeInsets.all(PostinoSpacing.s2)
+                : const EdgeInsets.symmetric(
+                    horizontal: PostinoSpacing.s4,
+                    vertical: PostinoSpacing.s3,
+                  ),
+            child: Row(
+              crossAxisAlignment: expanded
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              spacing: PostinoSpacing.s3,
+              children: [
+                PostinoAvatar(name: w.sender, size: avatar),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: w.sender),
+                            if (expanded && w.address != null)
+                              TextSpan(
+                                text: ' ${w.address}',
+                                style: PostinoText.caption.copyWith(
+                                  color: c.inkMuted,
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
+                        maxLines: wrap ? null : 1,
+                        overflow: wrap
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        style: PostinoText.sender.copyWith(color: c.ink),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: PostinoText.sender.copyWith(color: c.ink),
-                    ),
-                    if (!expanded)
-                      Text(
-                        w.preview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: PostinoText.preview.copyWith(color: c.inkMuted),
-                      )
-                    else if (recipients != null)
-                      _Recipients(
-                        label: recipients,
-                        open: _details,
-                        onTap: w.details.isEmpty
-                            ? null
-                            : () => setState(() => _details = !_details),
-                      ),
-                  ],
+                      if (!expanded)
+                        Text(
+                          w.preview,
+                          maxLines: wrap ? null : 1,
+                          overflow: wrap
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: PostinoText.preview.copyWith(
+                            color: c.inkMuted,
+                          ),
+                        )
+                      else if (recipients != null)
+                        _Recipients(
+                          label: recipients,
+                          open: _details,
+                          onTap: w.details.isEmpty
+                              ? null
+                              : () => setState(() => _details = !_details),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(
-                  top: expanded ? PostinoSpacing.s0_5 : 0,
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: expanded ? PostinoSpacing.s0_5 : 0,
+                  ),
+                  child: Text(
+                    w.time,
+                    style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                  ),
                 ),
-                child: Text(
-                  w.time,
-                  style: PostinoText.meta.copyWith(color: c.inkSubtle),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -398,30 +414,42 @@ class _QuoteToggle extends StatelessWidget {
       label: label,
       onTap: onTap,
       excludeSemantics: true,
-      child: InkWell(
-        key: const ValueKey('quote-toggle'),
+      // The 48 box is the tap area; hover and focus hug the pill.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         child: SizedBox(
           width: PostinoSize.touchTargetAndroid,
           height: PostinoSize.touchTargetAndroid,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: c.surfacePressed,
+            child: InkWell(
+              key: const ValueKey('quote-toggle'),
+              onTap: onTap,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(PostinoRadius.xs),
+              ),
+              child: PostinoFocusRing(
                 borderRadius: const BorderRadius.all(
                   Radius.circular(PostinoRadius.xs),
                 ),
-              ),
-              child: SizedBox(
-                width: PostinoSize.controlSm,
-                height: PostinoSize.iconMd,
-                child: Center(
-                  child: PostinoIcon(
-                    PostinoIcons.more,
-                    size: PostinoSize.iconSm,
-                    color: c.inkMuted,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: c.surfacePressed,
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(PostinoRadius.xs),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: PostinoSize.controlSm,
+                    height: PostinoSize.iconMd,
+                    child: Center(
+                      child: PostinoIcon(
+                        PostinoIcons.more,
+                        size: PostinoSize.iconSm,
+                        color: c.inkMuted,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -475,10 +503,11 @@ class _Recipients extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
+    final wrap = _wraps(context);
     final text = Text(
       label,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+      maxLines: wrap ? null : 1,
+      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
       style: PostinoText.caption.copyWith(color: c.inkMuted),
     );
     if (onTap == null) return text;
@@ -489,32 +518,54 @@ class _Recipients extends StatelessWidget {
       label: label,
       onTap: onTap,
       excludeSemantics: true,
-      child: InkWell(
-        key: const ValueKey('recipients-toggle'),
+      // The 48 high tap area is the outer box; hover and focus hug the content (radius-sm).
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         child: ConstrainedBox(
+          key: const ValueKey('recipients-target'),
           constraints: const BoxConstraints(
-            minWidth: PostinoSize.touchTargetAndroid,
             minHeight: PostinoSize.touchTargetAndroid,
           ),
           child: Align(
             alignment: Alignment.centerLeft,
             widthFactor: 1,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: PostinoSpacing.s1,
-              children: [
-                Flexible(child: text),
-                RotatedBox(
-                  quarterTurns: open ? 2 : 0,
-                  child: PostinoIcon(
-                    PostinoIcons.chevronDown,
-                    size: PostinoSize.iconSm,
-                    color: c.inkMuted,
+            // Compensates the padding so the text lines up with the sender above.
+            child: Transform.translate(
+              offset: const Offset(-PostinoSpacing.s2, 0),
+              child: InkWell(
+                key: const ValueKey('recipients-toggle'),
+                onTap: onTap,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(PostinoRadius.sm),
+                ),
+                child: PostinoFocusRing(
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(PostinoRadius.sm),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PostinoSpacing.s2,
+                      vertical: PostinoSpacing.s1,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: PostinoSpacing.s1,
+                      children: [
+                        Flexible(child: text),
+                        RotatedBox(
+                          quarterTurns: open ? 2 : 0,
+                          child: PostinoIcon(
+                            PostinoIcons.chevronDown,
+                            size: PostinoSize.iconSm,
+                            color: c.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -660,3 +711,7 @@ class PostinoMessageBody extends StatelessWidget {
     );
   }
 }
+
+/// Enlarged text wraps instead of being cut: no line limit, no ellipsis.
+bool _wraps(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(1) > 1;

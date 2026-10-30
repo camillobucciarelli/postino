@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../tokens/postino_tokens.dart';
+import 'postino_focus_ring.dart';
 
 enum PostinoButtonVariant { primary, ghost }
 
@@ -39,6 +40,15 @@ class PostinoButton extends StatelessWidget {
       textStyle: WidgetStatePropertyAll(
         (size == PostinoButtonSize.sm ? PostinoText.labelSm : PostinoText.label)
             .copyWith(decoration: underline ? TextDecoration.underline : null),
+      ),
+      // The filled button is `radius-sm` (theme), the ghost a stadium (M3 TextButton).
+      backgroundBuilder: (context, states, child) => PostinoFocusRing(
+        borderRadius: BorderRadius.circular(
+          variant == PostinoButtonVariant.primary
+              ? PostinoRadius.sm
+              : PostinoRadius.full,
+        ),
+        child: child!,
       ),
     );
     final child = Text(label);

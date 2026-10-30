@@ -65,7 +65,8 @@ abstract final class PostinoTheme {
         thickness: PostinoBorder.borderWidthHairline,
         space: PostinoBorder.borderWidthHairline,
       ),
-      focusColor: c.focusRing.withValues(alpha: 0.24),
+      // A light veil under the focus ring; with hover or pressed over it the row texts keep 4.5:1.
+      focusColor: c.focusRing.withValues(alpha: 0.06),
       hoverColor: c.overlayHover,
       splashColor: c.overlayPressed,
       highlightColor: Colors.transparent,

@@ -250,16 +250,18 @@ void main() {
     },
   );
 
-  testWidgets('at 1600×900 Indietro closes the Conversazione too', (
-    tester,
-  ) async {
-    await _start(tester, _desktop, _thread);
-    await _open(tester, 'm3');
-    await tester.tap(icon(PostinoIcons.arrowLeft));
-    await tester.pumpAndSettle();
-    expect(find.byType(ConversationView), findsNothing);
-    expect(find.text('Seleziona una Conversazione'), findsOneWidget);
-  });
+  testWidgets(
+    'at 1600×900 there is no Indietro; Esc closes the Conversazione',
+    (tester) async {
+      await _start(tester, _desktop, _thread);
+      await _open(tester, 'm3');
+      expect(icon(PostinoIcons.arrowLeft), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(ConversationView), findsNothing);
+      expect(find.text('Seleziona una Conversazione'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'at 390×844 a tap opens a full page; Indietro comes back to the list with its scroll unchanged',

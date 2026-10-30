@@ -20,16 +20,22 @@ class PostinoIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => IconButton(
-    onPressed: onPressed,
-    tooltip: label,
-    color: context.pc.inkMuted,
-    style: ButtonStyle(
-      backgroundBuilder: (context, states, child) => PostinoFocusRing(
-        borderRadius: BorderRadius.circular(PostinoRadius.full),
-        child: child!,
+  Widget build(BuildContext context) => Center(
+    // A bar hands its leading and actions the full toolbar square (tight): the button would fill it
+    // and its ring, `focus-offset` outside, would fall outside the bar and be clipped.
+    widthFactor: 1,
+    heightFactor: 1,
+    child: IconButton(
+      onPressed: onPressed,
+      tooltip: label,
+      color: context.pc.inkMuted,
+      style: ButtonStyle(
+        backgroundBuilder: (context, states, child) => PostinoFocusRing(
+          borderRadius: BorderRadius.circular(PostinoRadius.full),
+          child: child!,
+        ),
       ),
+      icon: PostinoIcon(icon, size: PostinoSize.iconLg),
     ),
-    icon: PostinoIcon(icon, size: PostinoSize.iconLg),
   );
 }

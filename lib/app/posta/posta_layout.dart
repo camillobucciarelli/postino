@@ -11,6 +11,7 @@ import '../../features/posta/presentation/message_list.dart';
 import '../../features/posta/presentation/offline_banner.dart';
 import '../../features/posta/presentation/posta_app_bars.dart';
 import '../../features/posta/presentation/posta_drawer.dart';
+import '../../features/posta/presentation/posta_shortcuts.dart';
 import '../../i18n/strings.g.dart';
 
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
@@ -26,6 +27,9 @@ class PostaLayout extends StatefulWidget {
 class _PostaLayoutState extends State<PostaLayout> {
   /// The last list shown: a Conversazione stays beside it. Null before any (a deep link).
   String? _list;
+
+  /// What the keyboard shortcuts move: the list in front plugs itself in.
+  final _cursor = ListCursor();
 
   @override
   Widget build(BuildContext context) {
@@ -63,24 +67,36 @@ class _PostaLayoutState extends State<PostaLayout> {
         drawer: postaDrawer(accountId: accountId, labelId: labelId),
         child: PostinoFadeThrough(
           transitionKey: list,
-          child: PostinoListDetailLayout(
-            list: switch ((accountId, labelId)) {
-              (final a?, final l?) => postaLabelView(a, l, selected: open),
-              (final a?, null) => postaAccountView(a, selected: open),
-              _ => postaUnifiedView(selected: open),
-            },
-            detail: open == null
-                ? null
-                : postaConversationView(open.$1, open.$2, onBack: back),
-            detailKey: open,
-            empty: Builder(
-              builder: (context) => PostinoEmptyState(
-                title: context.t.conversazione.selectTitle,
-                body: context.t.conversazione.selectBody,
-                icon: PostinoIcons.inbox,
+          child: PostaShortcuts(
+            cursor: _cursor,
+            child: PostinoListDetailLayout(
+              list: switch ((accountId, labelId)) {
+                (final a?, final l?) => postaLabelView(
+                  a,
+                  l,
+                  selected: open,
+                  cursor: _cursor,
+                ),
+                (final a?, null) => postaAccountView(
+                  a,
+                  selected: open,
+                  cursor: _cursor,
+                ),
+                _ => postaUnifiedView(selected: open, cursor: _cursor),
+              },
+              detail: open == null
+                  ? null
+                  : postaConversationView(open.$1, open.$2, onBack: back),
+              detailKey: open,
+              empty: Builder(
+                builder: (context) => PostinoEmptyState(
+                  title: context.t.conversazione.selectTitle,
+                  body: context.t.conversazione.selectBody,
+                  icon: PostinoIcons.inbox,
+                ),
               ),
+              onClose: back,
             ),
-            onClose: back,
           ),
         ),
       ),
@@ -89,38 +105,45 @@ class _PostaLayoutState extends State<PostaLayout> {
 }
 
 /// The Posta unificata; [selected] is the Conversazione open beside it.
-Widget postaUnifiedView({(String, String)? selected}) => PostinoAdaptiveLayout(
-  appBar: const UnifiedAppBar(),
-  drawer: postaDrawer(),
-  banners: postaBanners,
-  body: MessageList(
-    watch: (r) => r.watchUnifiedInbox(),
-    showAccount: true,
-    selected: selected,
-    onOpen: _openConversation,
-  ),
-);
-
-/// An Account's inbox.
-Widget postaAccountView(String id, {(String, String)? selected}) =>
+Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) =>
     PostinoAdaptiveLayout(
-      // A new Account is a new view: its streams start over.
-      key: ValueKey(id),
-      appBar: AccountAppBar(accountId: id),
-      drawer: postaDrawer(accountId: id),
+      appBar: const UnifiedAppBar(),
+      drawer: postaDrawer(),
       banners: postaBanners,
       body: MessageList(
-        watch: (r) => r.watchMessages(id, inboxLabelId),
+        watch: (r) => r.watchUnifiedInbox(),
+        showAccount: true,
         selected: selected,
+        cursor: cursor,
         onOpen: _openConversation,
       ),
     );
+
+/// An Account's inbox.
+Widget postaAccountView(
+  String id, {
+  (String, String)? selected,
+  ListCursor? cursor,
+}) => PostinoAdaptiveLayout(
+  // A new Account is a new view: its streams start over.
+  key: ValueKey(id),
+  appBar: AccountAppBar(accountId: id),
+  drawer: postaDrawer(accountId: id),
+  banners: postaBanners,
+  body: MessageList(
+    watch: (r) => r.watchMessages(id, inboxLabelId),
+    selected: selected,
+    cursor: cursor,
+    onOpen: _openConversation,
+  ),
+);
 
 /// The Conversazioni of one Etichetta of an Account.
 Widget postaLabelView(
   String accountId,
   String labelId, {
   (String, String)? selected,
+  ListCursor? cursor,
 }) => PostinoAdaptiveLayout(
   key: ValueKey('$accountId/$labelId'),
   appBar: AccountAppBar(accountId: accountId, labelId: labelId),
@@ -129,6 +152,7 @@ Widget postaLabelView(
   body: MessageList(
     watch: (r) => r.watchMessages(accountId, labelId),
     selected: selected,
+    cursor: cursor,
     onOpen: _openConversation,
   ),
 );

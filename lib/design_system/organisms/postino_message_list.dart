@@ -14,6 +14,7 @@ class PostinoMessageList extends StatelessWidget {
     required this.loadingLabel,
     required this.emptyTitle,
     this.emptyBody,
+    this.controller,
   });
 
   final bool loading;
@@ -24,6 +25,9 @@ class PostinoMessageList extends StatelessWidget {
   final String emptyTitle;
   final String? emptyBody;
 
+  /// Lets the caller scroll the rows (keeping the selected one visible).
+  final ScrollController? controller;
+
   @override
   Widget build(BuildContext context) {
     // Pullable even when shorter than the screen.
@@ -32,6 +36,7 @@ class PostinoMessageList extends StatelessWidget {
       onRefresh: onRefresh,
       child: loading || itemCount == 0
           ? ListView(
+              controller: controller,
               physics: physics,
               children: [
                 if (loading)
@@ -41,6 +46,7 @@ class PostinoMessageList extends StatelessWidget {
               ],
             )
           : ListView.builder(
+              controller: controller,
               physics: physics,
               itemCount: itemCount,
               itemBuilder: itemBuilder,

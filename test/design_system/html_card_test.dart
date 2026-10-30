@@ -57,6 +57,20 @@ bool _onPaper(WidgetTester tester) => find
     .evaluate()
     .isNotEmpty;
 
+/// Anonymized Cerberus-style newsletter: banner header, bordered card, centered banner, footer,
+/// all one-column tables with `width="100%"` or `width:100%`.
+String _newsletter() =>
+    '<html><head><title>Titolo segreto della newsletter</title></head><body>'
+    '<table role="presentation" width="100%" style="background:#ddd"><tr><td>'
+    '<table role="presentation" width="100%" style="background:#036"><tr>'
+    '<td style="padding:8px;color:#fff">Testata</td></tr></table>'
+    '<table role="presentation" style="width:100%;border:1px solid #999"><tr>'
+    '<td style="padding:8px">Corpo della card</td></tr></table>'
+    '<table role="presentation" width="100%" style="margin:0 auto;background:#fc0"><tr>'
+    '<td style="padding:8px">Banner</td></tr></table>'
+    '<table role="presentation" width="100%"><tr><td>Piede</td></tr></table>'
+    '</td></tr></table></body></html>';
+
 void main() {
   testWidgets('in dark theme the HTML sits on the light cartoncino', (
     tester,
@@ -177,6 +191,40 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a card table has its border outside the padding, rounded (#63)',
+    (tester) async {
+      const html =
+          '<table width="100%" style="padding:16px;border:1px solid #F0F1F2;'
+          'border-radius:16px"><tr><td>Offerta</td></tr></table>';
+      await _pump(
+        tester,
+        PostinoHtmlCard(
+          html: prepareHtml(html, allowRemote: false).html,
+          onTapUrl: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+      final box = find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).borderRadius ==
+                BorderRadius.circular(16) &&
+            (w.decoration as BoxDecoration).border != null,
+      );
+      expect(box, findsOneWidget);
+      // The text is at least 16px (padding) + 1px (border) in from the box.
+      expect(
+        tester
+                .getTopLeft(find.textContaining('Offerta', findRichText: true))
+                .dx -
+            tester.getTopLeft(box).dx,
+        greaterThanOrEqualTo(17),
+      );
+    },
+  );
+
   group('<img srcset> without src', () {
     const srcset = '<img srcset="https://shop.example/logo.png 1x" alt="logo">';
     final placeholder = find.byWidgetPredicate(
@@ -219,4 +267,50 @@ void main() {
       expect(placeholder, findsOneWidget);
     });
   });
+
+  testWidgets(
+    'a one-column newsletter fills the column, the title stays hidden (#63)',
+    (tester) async {
+      final safe = prepareHtml(_newsletter(), allowRemote: false);
+      await _pump(
+        tester,
+        PostinoHtmlCard(
+          html: safe.html,
+          contentWidth: safe.width,
+          onTapUrl: (_) {},
+        ),
+        width: 400,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Titolo segreto', findRichText: true),
+        findsNothing,
+      );
+      final card = tester.getRect(find.byType(PostinoHtmlCard));
+      for (final label in ['Testata', 'Corpo della card', 'Banner', 'Piede']) {
+        final text = tester.getRect(
+          find.textContaining(label, findRichText: true).first,
+        );
+        expect(text.left, lessThan(card.left + 40), reason: label);
+      }
+      // The header and banner backgrounds reach the card's width, not their text's.
+      final boxes = find.descendant(
+        of: find.byType(PostinoHtmlCard),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              ((w.decoration as BoxDecoration).color ==
+                      const Color(0xFF003366) ||
+                  (w.decoration as BoxDecoration).color ==
+                      const Color(0xFFFFCC00)),
+        ),
+      );
+      expect(boxes, findsNWidgets(2));
+      for (final b in boxes.evaluate()) {
+        final w = tester.getSize(find.byWidget(b.widget)).width;
+        expect(w, greaterThan(card.width - 40));
+      }
+    },
+  );
 }

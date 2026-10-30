@@ -61,6 +61,23 @@ void main() {
       expect(_text(p.quote), contains('<ada@example.com>'));
     });
 
+    test('<title> in no part, whatever the cleaning did (#63)', () {
+      const raw =
+          '<html><head><title>Oggetto segreto</title><style>p{color:red}</style></head>'
+          '<body><p>Ok</p><div class="gmail_quote">Citato</div>'
+          '<div class="gmail_signature">Firma</div></body></html>';
+      for (final p in [
+        splitHtml(raw),
+        splitHtml(prepareHtml(raw, allowRemote: false).html),
+      ]) {
+        for (final part in [p.body, p.quote, p.signature]) {
+          expect(part, isNotNull);
+          expect(part, isNot(contains('Oggetto segreto')));
+        }
+        expect(p.quote, contains('p{color:red}'));
+      }
+    });
+
     test('Yahoo: yahoo_quoted', () {
       final p = _html('yahoo.html');
       expect(
@@ -197,5 +214,27 @@ void main() {
       final p = splitText('-- \nAda Okafor');
       expect(foldBody(p, repeated: true).body, '-- \nAda Okafor');
     });
+  });
+
+  group('card tables with a marker (#63)', () {
+    for (final (attr, pick) in [
+      ('class="gmail_quote"', (BodyParts p) => p.original),
+      ('id="Signature"', (BodyParts p) => p.signature),
+    ]) {
+      test('$attr takes the decorated div, not the bare table', () {
+        final p = splitHtml(
+          prepareHtml(
+            '<p>ciao</p><table $attr style="width:100%;border:1px solid red">'
+            '<tr><td>x</td></tr></table>',
+            allowRemote: false,
+          ).html,
+        );
+        final taken = pick(p)!;
+        expect(taken, contains('<div'));
+        expect(taken, contains('border:1px solid red'));
+        expect(p.body, isNot(contains('border:1px')));
+        expect(p.body, isNot(contains('<div')));
+      });
+    }
   });
 }

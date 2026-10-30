@@ -1,6 +1,8 @@
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
+import 'quoted_text.dart' show quoteSelectors, signatureSelectors;
+
 /// An HTML body ready to render (ADR 0007): cleaned, remote resources blocked unless [prepareHtml]
 /// was told otherwise. [blocked]: something remote was taken out. [width]: the widest fixed width
 /// the HTML asks for, in px, if any (a 600px newsletter), so the view can scale it down.
@@ -60,9 +62,84 @@ final _tablePercent = RegExp(
   caseSensitive: false,
 );
 
+/// A table with a row of 2+ cells of its own (nested tables don't count).
+bool _multiColumn(Element table) => table
+    .querySelectorAll('tr')
+    .any(
+      (r) =>
+          _tableOf(r) == table &&
+          r.children
+                  .where((c) => c.localName == 'td' || c.localName == 'th')
+                  .length >
+              1,
+    );
+
+Element? _tableOf(Element e) {
+  for (var p = e.parent; p != null; p = p.parent) {
+    if (p.localName == 'table') return p;
+  }
+  return null;
+}
+
+/// Keeps only `<style>` in the head: fwfh shows a `<title>`.
+void dropHeadContent(Document doc) {
+  for (final e in doc.head?.children.toList() ?? <Element>[]) {
+    if (e.localName != 'style') e.remove();
+  }
+}
+
+final _percent = RegExp(r'^\s*\d+(\.\d+)?%\s*$');
+final _cssWidthDecl = RegExp(r'(^|;)\s*width\s*:', caseSensitive: false);
+
 /// [style] without the declarations matching [drop].
 String _without(String style, RegExp drop) =>
     style.split(';').where((d) => !drop.hasMatch(d)).join(';');
+
+/// The declarations that make a table a card: they move to a wrapping `<div>`.
+final _box = RegExp(
+  r'^\s*(border(?!-(collapse|spacing))|padding|background|margin|max-width)[\w-]*\s*:',
+  caseSensitive: false,
+);
+
+/// A visible border, any padding or a radius (not `0`/`none`).
+final _hasBox = RegExp(
+  r'(^|;)\s*(border(-(top|right|bottom|left))?(-width)?|padding[\w-]*|border-radius)\s*:\s*(?!0(px)?\s*(;|$|!)|none)',
+  caseSensitive: false,
+);
+
+/// fwfh 0.17.4 draws a table's border inside its padding and drops its radius. A full-width table
+/// styled as a card gets its box on a `<div>` (laid out like a browser): the table keeps its width.
+/// `max-width` and `margin` go with it, so the card is constrained and centred like the table was.
+void _boxTables(Document doc) {
+  for (final t in doc.querySelectorAll('table')) {
+    final style = t.attributes['style'] ?? '';
+    final width =
+        RegExp(
+          r'(?:^|;)\s*width\s*:\s*([^;]*)',
+          caseSensitive: false,
+        ).firstMatch(style)?[1] ??
+        t.attributes['width'];
+    if (!_hasBox.hasMatch(style) ||
+        (width != null &&
+            !RegExp(r'^\s*100(\.0+)?%\s*(!important)?\s*$').hasMatch(width))) {
+      continue;
+    }
+    final decls = style.split(';');
+    t.attributes['style'] = decls.where((d) => !_box.hasMatch(d)).join(';');
+    final div = Element.tag('div')
+      ..attributes['style'] = decls.where(_box.hasMatch).join(';');
+    // A quote/signature marker goes with the card, or splitHtml would take the bare table.
+    final marker = [...quoteSelectors, ...signatureSelectors].join(',');
+    if (t.parent!.querySelectorAll(marker).contains(t)) {
+      for (final a in ['class', 'id']) {
+        final v = t.attributes.remove(a);
+        if (v != null) div.attributes[a] = v;
+      }
+    }
+    t.replaceWith(div);
+    div.append(t);
+  }
+}
 
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
 bool _script(String url) => RegExp(
@@ -124,13 +201,22 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
         // mid-word) and a `width:100%` table splits columns evenly (html_table.dart:369-396).
         // Browsers treat the first as a minimum and size by content: so drop both, after the
         // measure above. Tables in px stay (scaled down by the card).
+        // A one-column table keeps its percentage: fwfh has no columns to split, and without it
+        // the table shrinks to its content.
         final cell = tag == 'td' || tag == 'th';
+        final strip = cell || (tag == 'table' && _multiColumn(e));
         e.attributes[key] = css(
-          cell || tag == 'table'
-              ? _without(value, cell ? _cellWidth : _tablePercent)
-              : value,
+          strip ? _without(value, cell ? _cellWidth : _tablePercent) : value,
         );
       } else if (name == 'width') {
+        // fwfh ignores the attribute on a table: a one-column one gets it as style.
+        if (tag == 'table' &&
+            _percent.hasMatch(value) &&
+            !_multiColumn(e) &&
+            !_cssWidthDecl.hasMatch(e.attributes['style'] ?? '')) {
+          e.attributes['style'] =
+              'width:${value.trim()};${e.attributes['style'] ?? ''}';
+        }
         if (_pixels.firstMatch(value) case final m?) {
           width = _max(width, double.parse(m[1]!));
         }
@@ -143,6 +229,8 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       }
     }
   }
+  _boxTables(doc);
+  dropHeadContent(doc);
   return (html: doc.outerHtml, blocked: blocked, width: width);
 }
 

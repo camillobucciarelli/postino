@@ -207,6 +207,22 @@ void main() {
     expect(s.saved, 700);
   });
 
+  testWidgets('a click on the divider keeps the width set from the keyboard', (
+    tester,
+  ) async {
+    final s = await _start(tester, 1200);
+    await _drag(tester, 100);
+    await _focusHandle(tester);
+    await _key(tester, LogicalKeyboardKey.arrowRight);
+    final w = _listWidth(tester);
+    final writes = s.writes.length;
+    await tester.tap(_handle);
+    await tester.pumpAndSettle();
+    expect(_listWidth(tester), w);
+    expect(s.saved, w);
+    expect(s.writes.length, writes);
+  });
+
   testWidgets('the width survives switching list', (tester) async {
     final s = await _start(tester, 1200);
     await _drag(tester, 100);

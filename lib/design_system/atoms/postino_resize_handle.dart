@@ -104,6 +104,8 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
   }
 
   void _dragEnd([Object? _]) {
+    // A click cancels a drag that never started: nothing to save.
+    if (!_dragging) return;
     setState(() => _dragging = false);
     if (_current != _from) widget.onChangeEnd(_current);
     widget.onDragEnd?.call();

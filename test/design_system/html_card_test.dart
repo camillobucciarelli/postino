@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
+import 'package:postino/features/posta/domain/safe_html.dart';
 
 Future<void> _pump(
   WidgetTester tester,
@@ -23,6 +24,23 @@ Future<void> _pump(
     ),
   ),
 );
+
+const _png =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+/// A GitHub Actions notification: `width:100%` table, a 24px status column.
+String _actionsEmail() {
+  final rows = [
+    for (final j in ['apple', 'android', 'web'])
+      '<tr><td style="width:24px"><img src="$_png" width="16" height="16"></td>'
+          '<td>CI / $j — Succeeded in 2 minutes and 52 seconds</td>'
+          '<td>1 warning</td></tr>',
+  ];
+  // In a div, as in the real email: a table straight under tight constraints is always equal.
+  return '<div><table style="width:100%;border-collapse:collapse">'
+      '<tr><th style="width:24px">Status</th><th>Job</th><th>Annotations</th></tr>'
+      '${rows.join()}</table></div>';
+}
 
 bool _onPaper(WidgetTester tester) => find
     .descendant(
@@ -105,4 +123,24 @@ void main() {
     await tester.tapOnText(find.textRange.ofSubstring('Scrivi'));
     expect(tapped, ['https://example.com/vero', 'mailto:ada@example.com']);
   });
+
+  testWidgets(
+    'a GitHub Actions table: «Status» on one line, columns by content',
+    (tester) async {
+      final card = PostinoHtmlCard(
+        html: prepareHtml(_actionsEmail(), allowRemote: false).html,
+        onTapUrl: (_) {},
+      );
+      for (final w in [600.0, 520.0]) {
+        await _pump(tester, card, width: w);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final status = find.text('Status', findRichText: true);
+        expect(tester.getSize(status).height, lessThan(30));
+        final job = find.textContaining('Succeeded', findRichText: true).first;
+        expect(tester.getSize(job).width, greaterThan(w / 3));
+        expect(tester.getSize(job).height, lessThan(60)); // at most 2 lines
+      }
+    },
+  );
 }

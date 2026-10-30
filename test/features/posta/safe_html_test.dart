@@ -1,6 +1,7 @@
 // Cleaning and remote blocking of HTML bodies (#47, ADR 0007).
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:postino/features/posta/domain/safe_html.dart';
 
 SafeHtml _blocked(String html) => prepareHtml(html, allowRemote: false);
@@ -147,5 +148,49 @@ body { background-image: url(//t.example/bg.png); }
       ).width,
       640,
     );
+  });
+
+  group('table widths (fwfh sizes them badly)', () {
+    String style(String html, String tag) =>
+        parse(_blocked(html).html).querySelector(tag)!.attributes['style']!;
+
+    test('td and th lose width, min-width, max-width, keep the rest', () {
+      for (final tag in ['td', 'th']) {
+        expect(
+          style(
+            '<table><tr><$tag style="color:red;width:24px;min-width: 1px;'
+            'MAX-WIDTH:9px;padding:0">x</$tag></tr></table>',
+            tag,
+          ),
+          'color:red;padding:0',
+        );
+      }
+    });
+
+    test('a table loses a percentage width, keeps px and the rest', () {
+      expect(
+        style(
+          '<table style="width:100%;background:#eee"><tr><td>x</td></tr></table>',
+          'table',
+        ),
+        'background:#eee',
+      );
+      expect(
+        style('<table style="width: 50% !important"></table>', 'table'),
+        '',
+      );
+      expect(
+        style('<table style="width:600px;color:red"></table>', 'table'),
+        'width:600px;color:red',
+      );
+    });
+
+    test('contentWidth is measured before stripping', () {
+      expect(
+        _blocked('<table><tr><td style="width:640px">x</td></tr></table>')
+            .width,
+        640,
+      );
+    });
   });
 }

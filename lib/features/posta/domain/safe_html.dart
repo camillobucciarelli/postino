@@ -54,6 +54,16 @@ final _cssWidth = RegExp(
   caseSensitive: false,
 );
 
+final _cellWidth = RegExp(r'^\s*(min-|max-)?width\s*:', caseSensitive: false);
+final _tablePercent = RegExp(
+  r'^\s*width\s*:\s*\d+(\.\d+)?%\s*(!important)?\s*$',
+  caseSensitive: false,
+);
+
+/// [style] without the declarations matching [drop].
+String _without(String style, RegExp drop) =>
+    style.split(';').where((d) => !drop.hasMatch(d)).join(';');
+
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
 bool _script(String url) => RegExp(
   r'^(javascript|vbscript):',
@@ -108,10 +118,19 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
           (_urlAttributes.contains(name) && _script(value))) {
         e.attributes.remove(key);
       } else if (name == 'style') {
-        e.attributes[key] = css(value);
         for (final m in _cssWidth.allMatches(value)) {
           width = _max(width, double.parse(m[1]!));
         }
+        // fwfh 0.17.4 breaks tables: a cell width stays hard (css_sizing.dart:127, so «Status» breaks
+        // mid-word) and a `width:100%` table splits columns evenly (html_table.dart:369-396).
+        // Browsers treat the first as a minimum and size by content: so drop both, after the
+        // measure above. Tables in px stay (scaled down by the card).
+        final cell = tag == 'td' || tag == 'th';
+        e.attributes[key] = css(
+          cell || tag == 'table'
+              ? _without(value, cell ? _cellWidth : _tablePercent)
+              : value,
+        );
       } else if (name == 'width') {
         if (_pixels.firstMatch(value) case final m?) {
           width = _max(width, double.parse(m[1]!));

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
@@ -24,6 +26,7 @@ Future<void> _start(
   double width, {
   bool? stored,
   int many = 0,
+  bool reconnect = false,
 }) async {
   tester.view
     ..physicalSize = Size(width, 900)
@@ -44,6 +47,9 @@ Future<void> _start(
     );
   }
   (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due', isRead: true));
+  if (reconnect) {
+    await getIt<MailStore>().setStatus('a2', AccountStatus.daRicollegare);
+  }
   if (stored != null) {
     await getIt<SettingsRepository>().setSidebarExpanded(stored);
   }
@@ -351,6 +357,34 @@ void main() {
       },
     );
 
+    testWidgets(
+      'an Account Da ricollegare shows a warning badge, apart from the unread dot',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await _start(tester, 950, reconnect: true);
+        Finder inItem(String item, String key) => find.descendant(
+          of: find.byKey(ValueKey(item)),
+          matching: find.byKey(ValueKey(key)),
+        );
+        expect(inItem('account-a2', 'reconnect-badge'), findsOneWidget);
+        expect(inItem('account-a1', 'reconnect-badge'), findsNothing);
+        expect(icon(PostinoIcons.alert), findsOneWidget);
+        expect(find.byTooltip('a2@example.com'), findsOneWidget);
+        expect(
+          tester.getSemantics(find.byKey(const ValueKey('account-a2'))).label,
+          'a2@example.com, Da ricollegare',
+        );
+        // a1 has unread mail and a2 is Da ricollegare: opposite corners.
+        final dot = tester.getRect(inItem('account-a1', 'unread-dot'));
+        final badge = tester.getRect(inItem('account-a2', 'reconnect-badge'));
+        final item1 = tester.getRect(find.byKey(const ValueKey('account-a1')));
+        final item2 = tester.getRect(find.byKey(const ValueKey('account-a2')));
+        expect(dot.center.dy - item1.top, lessThan(item1.height / 2));
+        expect(badge.center.dy - item2.top, greaterThan(item2.height / 2));
+        handle.dispose();
+      },
+    );
+
     testWidgets('the focus survives switching between extended and icons', (
       tester,
     ) async {
@@ -381,6 +415,36 @@ void main() {
       await _resize(tester, 1600);
       expect(tester.takeException(), isNull);
       expect(_inBar('Posta unificata'), findsOneWidget);
+    });
+  });
+
+  group('the extended bar', () {
+    testWidgets('shows the unread dot next to the name and reads it out', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _start(tester, 1600);
+      Finder dot(String key) => find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byKey(const ValueKey('unread-dot')),
+      );
+      expect(dot('account-a1'), findsOneWidget);
+      expect(dot('account-a2'), findsNothing);
+      expect(dot('drawer-posta-unificata'), findsOneWidget);
+      expect(tester.getSize(dot('account-a1')), const Size(8, 8));
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('account-a1'))).label,
+        contains('Non letto'),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('at 200% text the dot does not cut the name', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _start(tester, 1600);
+      expect(tester.takeException(), isNull);
+      expect(_inBar('a1@example.com'), findsOneWidget);
     });
   });
 

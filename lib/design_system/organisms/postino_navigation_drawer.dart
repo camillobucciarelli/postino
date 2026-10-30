@@ -35,7 +35,7 @@ class PostinoSidebarScope extends InheritedWidget {
 
 /// A destination of the drawer: an [icon] or an [account] mark, and, for an Account Da ricollegare,
 /// the compact SyncStatus named [reconnectLabel]. [unreadLabel] ("Non letto") is set when it holds unread mail:
-/// the icon sidebar shows it as a dot and reads it out.
+/// both sidebars show it as a dot and read it out.
 class PostinoDrawerItem {
   const PostinoDrawerItem({
     required this.label,
@@ -244,17 +244,28 @@ class _DrawerItem extends StatelessWidget {
               color: item.active ? c.drawerItemIconActive : c.drawerItemIcon,
             ),
           if (item.unreadLabel != null)
-            Positioned(
+            const Positioned(
               top: PostinoSpacing.s1 + 2,
               right: PostinoSpacing.s1 + 2,
+              child: _UnreadDot(),
+            ),
+          if (item.reconnectLabel != null)
+            Positioned(
+              bottom: PostinoSpacing.s1,
+              right: PostinoSpacing.s1,
               child: ExcludeSemantics(
+                // A shape, not only a color; the ground keeps it apart from the mark.
                 child: Container(
-                  key: const ValueKey('unread-dot'),
-                  width: PostinoSpacing.s2,
-                  height: PostinoSpacing.s2,
+                  key: const ValueKey('reconnect-badge'),
+                  padding: const EdgeInsets.all(1),
                   decoration: BoxDecoration(
-                    color: c.unread,
+                    color: c.drawerBg,
                     shape: BoxShape.circle,
+                  ),
+                  child: PostinoIcon(
+                    PostinoIcons.alert,
+                    size: PostinoSize.iconSm - 2,
+                    color: c.warning,
                   ),
                 ),
               ),
@@ -345,6 +356,8 @@ class _DrawerItem extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (item.unreadLabel case final l?)
+                          _UnreadDot(label: l),
                         if (item.reconnectLabel case final l?)
                           PostinoSyncStatus(
                             state: PostinoSyncState.reconnect,
@@ -358,5 +371,28 @@ class _DrawerItem extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The unread dot (8 px, `unread`): in the icon sidebar the item's semantics already say it,
+/// in the extended one it reads [label] itself.
+class _UnreadDot extends StatelessWidget {
+  const _UnreadDot({this.label});
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = Container(
+      key: const ValueKey('unread-dot'),
+      width: PostinoSpacing.s2,
+      height: PostinoSpacing.s2,
+      decoration: BoxDecoration(
+        color: context.pc.unread,
+        shape: BoxShape.circle,
+      ),
+    );
+    return label == null
+        ? ExcludeSemantics(child: dot)
+        : Semantics(label: label, child: dot);
   }
 }

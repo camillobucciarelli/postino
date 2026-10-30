@@ -56,6 +56,12 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     _ui,
   ),
   (
+    'Da ricollegare badge of the icon sidebar',
+    (c) => c.warning,
+    [(c) => c.drawerBg],
+    _ui,
+  ),
+  (
     'star in the list, Importante in the Conversazione',
     (c) => c.star,
     [(c) => c.listItemBg, (c) => c.listItemBgSelected, (c) => c.surface],

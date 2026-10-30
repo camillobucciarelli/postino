@@ -19,3 +19,7 @@ Modalità `auto` (adapter Claude/Codex scelto dall'host, effort high). See `docs
 ### Merge delle PR
 
 Una PR si unisce solo se tutti i check CI sono verdi sull'ultimo commit (nessuno fallito, in attesa o saltato). La regola è imposta anche da un ruleset su `main`.
+
+### Accessibilità
+
+Ogni ticket che crea o modifica componenti UI include nei criteri di accettazione le etichette semantiche per lo screen reader e la navigazione da tastiera secondo `docs/adr/0014-navigazione-da-tastiera.md`, verificate in QA con VoiceOver su macOS. Contrasto WCAG 2.2 AA e testo fino al 200% seguono le regole del design system (#53).

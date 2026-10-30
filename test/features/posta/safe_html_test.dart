@@ -373,5 +373,36 @@ body { background-image: url(//t.example/bg.png); }
         expect(doc.querySelectorAll('img'), hasLength(1));
       });
     }
+
+    test(
+      'bgcolor is converted even with a <style> background (fwfh ignores it)',
+      () {
+        expect(
+          style(
+            '<style>td{background-color:black}</style>'
+                '<table><tr><td bgcolor="white">a</td></tr></table>',
+            'td',
+          ),
+          startsWith('background-color:white;'),
+        );
+      },
+    );
+
+    for (final c in {
+      'display:none;display:block': 2,
+      '/* display:none */color:red': 2,
+      'display:block!important;display:none': 2,
+      'display:none!important;display:block': 1,
+      'display:block;display:none': 1,
+    }.entries) {
+      test('effective display of img: ${c.key}', () {
+        final doc = parse(
+          _blocked(
+            '<p><img style="${c.key}"><img src="data:image/gif;base64,R0lG"></p>',
+          ).html,
+        );
+        expect(doc.querySelectorAll('img'), hasLength(c.value));
+      });
+    }
   });
 }

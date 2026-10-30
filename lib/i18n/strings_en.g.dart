@@ -48,6 +48,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 		other: '${n} accounts',
 	);
 	@override late final _Translations$sidebar$en sidebar = _Translations$sidebar$en._(_root);
+	@override late final _Translations$listWidth$en listWidth = _Translations$listWidth$en._(_root);
 	@override String get etichette => 'Labels';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
@@ -66,6 +67,17 @@ class _Translations$sidebar$en extends Translations$sidebar$it {
 	// Translations
 	@override String get close => 'Close the sidebar';
 	@override String get open => 'Open the sidebar';
+}
+
+// Path: listWidth
+class _Translations$listWidth$en extends Translations$listWidth$it {
+	_Translations$listWidth$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'List width';
+	@override String value({required Object px}) => '${px} pixels';
 }
 
 // Path: onboarding
@@ -182,6 +194,8 @@ extension on TranslationsEn {
 			'accountCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} account', other: '${n} accounts', ), 
 			'sidebar.close' => 'Close the sidebar',
 			'sidebar.open' => 'Open the sidebar',
+			'listWidth.label' => 'List width',
+			'listWidth.value' => ({required Object px}) => '${px} pixels',
 			'etichette' => 'Labels',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',

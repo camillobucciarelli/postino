@@ -22,6 +22,7 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
   final PostinoAccountRef? account;
   final VoidCallback? onBack;
 
+  /// The height at 100%; with enlarged text the bar grows, up to [PostinoSinglePaneLayout]'s room.
   @override
   Size get preferredSize => const Size.fromHeight(PostinoSize.appBarHeight);
 
@@ -33,60 +34,103 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
     final scaffold = Scaffold.maybeOf(context);
     final menu = onBack == null && scaffold != null && scaffold.hasDrawer;
     final back = onBack;
-    return AppBar(
-      automaticallyImplyLeading: false,
-      leading: back != null
-          ? PostinoIconButton(
-              icon: PostinoIcons.arrowLeft,
-              label: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: back,
-            )
-          : menu
-          ? PostinoIconButton(
-              icon: PostinoIcons.menu,
-              label: MaterialLocalizations.of(context).openAppDrawerTooltip,
-              onPressed: scaffold.openDrawer,
-            )
-          : null,
-      titleSpacing: menu || back != null
-          ? PostinoSpacing.s1
-          : PostinoSpacing.s4,
-      // ponytail: the compact bar is 56 tall, so its text stops growing at 130%; a growing bar when 200% needs it.
-      title: MediaQuery.withClampedTextScaling(
-        maxScaleFactor: 1.3,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              spacing: PostinoSpacing.s2,
-              children: [
-                if (a != null)
-                  PostinoAccountMark(
-                    color: a.color,
-                    initial: a.initial,
-                    size: 22,
+    final leading = back != null || menu;
+    final spacing = leading ? PostinoSpacing.s1 : PostinoSpacing.s4;
+    final scaler = MediaQuery.textScalerOf(context);
+    // Enlarged text wraps instead of being cut, and the bar grows to hold it.
+    final wrap = scaler.scale(1) > 1;
+    final titleStyle = PostinoText.appBarTitle.copyWith(color: c.ink);
+    // The title's DefaultTextStyle is the AppBar's, so the subtitle inherits what `meta` leaves out.
+    final subtitleStyle = PostinoText.appBarTitle.merge(
+      PostinoText.meta.copyWith(color: c.inkSubtle),
+    );
+    return LayoutBuilder(
+      builder: (context, box) {
+        // The title's room in the NavigationToolbar: no leading square, spacing on both sides.
+        final room =
+            box.maxWidth -
+            MediaQuery.paddingOf(context).horizontal -
+            (leading ? kToolbarHeight : 0) -
+            2 * spacing;
+        double height(String text, TextStyle style, double width) {
+          final p = TextPainter(
+            text: TextSpan(text: text, style: style),
+            textScaler: scaler,
+            textDirection: Directionality.of(context),
+            maxLines: wrap ? null : 1,
+          )..layout(maxWidth: width);
+          final h = p.height;
+          p.dispose();
+          return h;
+        }
+
+        final content =
+            height(
+              title,
+              titleStyle,
+              room - (a == null ? 0 : _markSize + PostinoSpacing.s2),
+            ) +
+            (subtitle == null ? 0 : height(subtitle!, subtitleStyle, room));
+        return AppBar(
+          automaticallyImplyLeading: false,
+          toolbarHeight: wrap
+              ? (content + 2 * PostinoSpacing.s2).clamp(
+                  PostinoSize.appBarHeight,
+                  double.infinity,
+                )
+              : PostinoSize.appBarHeight,
+          leading: back != null
+              ? PostinoIconButton(
+                  icon: PostinoIcons.arrowLeft,
+                  label: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: back,
+                )
+              : menu
+              ? PostinoIconButton(
+                  icon: PostinoIcons.menu,
+                  label: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                  onPressed: scaffold.openDrawer,
+                )
+              : null,
+          titleSpacing: spacing,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                spacing: PostinoSpacing.s2,
+                children: [
+                  if (a != null)
+                    PostinoAccountMark(
+                      color: a.color,
+                      initial: a.initial,
+                      size: _markSize,
+                    ),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: wrap ? null : 1,
+                      overflow: wrap
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      style: titleStyle,
+                    ),
                   ),
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: PostinoText.appBarTitle.copyWith(color: c.ink),
-                  ),
-                ),
-              ],
-            ),
-            if (subtitle case final s?)
-              Text(
-                s,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                ],
               ),
-          ],
-        ),
-      ),
+              if (subtitle case final s?)
+                Text(
+                  s,
+                  maxLines: wrap ? null : 1,
+                  overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                  style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
+
+const double _markSize = 22;

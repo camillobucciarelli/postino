@@ -98,7 +98,7 @@ body { background-image: url(//t.example/bg.png); }
       final r = _blocked(
         '<link rel="stylesheet" href="https://t.example/a.css"><p>x</p>',
       );
-      expect(r.blocked, isTrue);
+      expect(r.blocked, isFalse);
       expect(r.html, isNot(contains('<link')));
     });
 

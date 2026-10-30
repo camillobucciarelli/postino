@@ -103,8 +103,7 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       continue;
     }
     if (tag == 'link') {
-      if (_remote.hasMatch(e.attributes['href'] ?? '')) blocked = true;
-      e.remove();
+      e.remove(); // dropped whatever the consent: not something «Mostra immagini» unlocks
       continue;
     }
     if (tag == 'style') {

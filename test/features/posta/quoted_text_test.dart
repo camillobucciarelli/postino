@@ -53,6 +53,14 @@ void main() {
       expect(_text(p.body), 'Grazie, ricevuto.');
     });
 
+    test('Outlook: an address as text after the header stays escaped', () {
+      final p = splitHtml(
+        '<p>Ok</p><div id="divRplyFwdMsg">Da:</div>Ada &lt;ada@example.com&gt;',
+      );
+      expect(p.quote, contains('&lt;ada@example.com&gt;'));
+      expect(_text(p.quote), contains('<ada@example.com>'));
+    });
+
     test('Yahoo: yahoo_quoted', () {
       final p = _html('yahoo.html');
       expect(
@@ -135,6 +143,15 @@ void main() {
       final p = _html('thunderbird.html');
       expect(_text(p.signature), '-- Luca Neri Enoteca Neri');
       expect(p.signatureKey, 'luca neri enoteca neri');
+    });
+
+    test('a forward without own signature does not take the original one', () {
+      final p = splitHtml(
+        '<p>Ciao</p><div class="gmail_quote">---------- Forwarded message ---------'
+        '<div class="gmail_signature">Ada</div></div>',
+      );
+      expect(p.signature, isNull);
+      expect(p.quote, isNull);
     });
 
     test('Outlook: #Signature', () {

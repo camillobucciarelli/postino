@@ -1,3 +1,5 @@
+import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
+
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
@@ -33,6 +35,8 @@ class BodyParts {
     return key.isEmpty ? null : key;
   }
 }
+
+const _escape = HtmlEscape(HtmlEscapeMode.element);
 
 bool _looksLikeHtml(String s) => s.trimLeft().startsWith('<');
 
@@ -126,7 +130,11 @@ BodyParts splitHtml(String html) {
   final quote = _takeQuote(root);
   final signature = _takeSignature(root);
   String part(List<Node> nodes) =>
-      '$head${nodes.map((n) => n is Element ? n.outerHtml : n.text).join()}';
+      '$head${nodes.map((n) => switch (n) {
+        Element() => n.outerHtml,
+        Text() => _escape.convert(n.data),
+        _ => n.text,
+      }).join()}';
   return BodyParts(
     original: html,
     body: doc.outerHtml,
@@ -218,9 +226,14 @@ String _previousText(Element e) {
   return text.length > 200 ? text.substring(text.length - 200) : text;
 }
 
-/// Takes the first signature out of [root], with Gmail's «-- » prefix before it.
+/// Takes the first signature out of [root], with Gmail's «-- » prefix before it. One inside a quote
+/// left in place (a forward) is the original sender's, not the author's.
 List<Node>? _takeSignature(Element root) {
-  final sig = root.querySelector(_signatureSelectors.join(','));
+  final quotes = root.querySelectorAll(_quoteSelectors.join(',')).toSet();
+  final sig = root
+      .querySelectorAll(_signatureSelectors.join(','))
+      .where((e) => !_hasAncestorIn(e, quotes))
+      .firstOrNull;
   if (sig == null) return null;
   final prefix = sig.parent?.querySelector('.gmail_signature_prefix');
   prefix?.remove();

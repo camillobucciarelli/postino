@@ -97,7 +97,71 @@ bool _focusInConversation(WidgetTester tester, int i) {
           't$i';
 }
 
+Finder get _backButton => find.descendant(
+  of: find.byType(ConversationView),
+  matching: find.byWidgetPredicate(
+    (w) => w is PostinoIcon && w.icon == PostinoIcons.arrowLeft,
+  ),
+);
+
+bool _focusOnBackButton(WidgetTester tester) {
+  final ctx = FocusManager.instance.primaryFocus?.context;
+  return ctx != null &&
+      find
+          .descendant(
+            of: find.byElementPredicate((e) => e == ctx),
+            matching: find.byType(PostinoIcon),
+          )
+          .evaluate()
+          .isNotEmpty &&
+      ctx.findAncestorWidgetOfExactType<ConversationView>() != null;
+}
+
 void main() {
+  group('back button', () {
+    testWidgets('two panes show none; Esc still closes the Conversazione', (
+      tester,
+    ) async {
+      await _start(tester, _desktop);
+      await _tapRow(tester, 3);
+      expect(find.byType(ConversationView), findsOneWidget);
+      expect(_backButton, findsNothing);
+      await _press(tester, LogicalKeyboardKey.keyJ);
+      expect(_backButton, findsNothing);
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.byType(ConversationView), findsNothing);
+      expect(_focusedRow(), 2);
+    });
+
+    testWidgets(
+      'one pane shows it and focuses it on opening; it follows the window size',
+      (tester) async {
+        await _start(tester, _narrow);
+        await _tapRow(tester, 3);
+        expect(_backButton, findsOneWidget);
+        expect(_focusOnBackButton(tester), isTrue);
+
+        tester.view.physicalSize = _desktop;
+        await tester.pumpAndSettle();
+        expect(_backButton, findsNothing);
+        expect(_focusedRow(), 3);
+        expect(_conversation(3), findsOneWidget);
+        // Nothing odd without the button: j / k and arrows still work.
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+        expect(_conversation(2), findsOneWidget);
+        expect(_focusedRow(), 2);
+
+        tester.view.physicalSize = _narrow;
+        await tester.pumpAndSettle();
+        expect(_backButton, findsOneWidget);
+        expect(_focusOnBackButton(tester), isTrue);
+        await _press(tester, LogicalKeyboardKey.enter);
+        expect(find.byType(ConversationView), findsNothing);
+        expect(_focusedRow(), 2);
+      },
+    );
+  });
+
   group('two panes', () {
     testWidgets(
       'arrow down / j open the next Conversazione, focus it and mark it read; arrow up / k the previous',

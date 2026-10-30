@@ -268,7 +268,13 @@ class _ConversationViewState extends State<ConversationView> {
         key: foldBody(value, repeated: flags[i]),
     };
     return PostinoSinglePaneLayout(
-      appBar: PostinoAppBar(title: '', onBack: widget.onBack),
+      // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
+      appBar: PostinoAppBar(
+        title: '',
+        onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointLarge
+            ? null
+            : widget.onBack,
+      ),
       body: messages == null || messages.isEmpty || a == null
           ? const SizedBox.shrink()
           : PostinoThreadView(

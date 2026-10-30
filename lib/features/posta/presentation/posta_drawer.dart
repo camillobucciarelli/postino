@@ -37,6 +37,9 @@ class _PostaDrawerState extends State<PostaDrawer> {
   );
   // The docked drawer outlives navigation: the open Account is a signal, the Etichette follow it.
   late final openAccount = signal(widget.accountId);
+  late final unread = streamSignal(
+    () => GetIt.I<InboxRepository>().watchUnreadFolders(),
+  );
   late final labels = streamSignal(
     () => switch (openAccount.value) {
       final id? => GetIt.I<InboxRepository>().watchLabels(id),
@@ -54,6 +57,7 @@ class _PostaDrawerState extends State<PostaDrawer> {
   void dispose() {
     accounts.dispose();
     labels.dispose();
+    unread.dispose();
     super.dispose();
   }
 
@@ -63,6 +67,8 @@ class _PostaDrawerState extends State<PostaDrawer> {
       final t = context.t;
       final open = widget.accountId;
       final etichette = labels.value.value ?? const <Label>[];
+      final folders = unread.value.value ?? const <(String, String)>{};
+      String? unreadLabel(bool any) => any ? t.list.unread : null;
       return PostinoNavigationDrawer(
         sections: [
           PostinoDrawerSection(
@@ -72,6 +78,9 @@ class _PostaDrawerState extends State<PostaDrawer> {
                 label: t.postaUnificata,
                 icon: PostinoIcons.inboxAll,
                 active: open == null,
+                unreadLabel: unreadLabel(
+                  folders.any((f) => f.$2 == inboxLabelId),
+                ),
                 onTap: widget.onOpenUnified,
               ),
             ],
@@ -88,6 +97,9 @@ class _PostaDrawerState extends State<PostaDrawer> {
                     initial: a.initial,
                   ),
                   active: a.id == open && widget.labelId == null,
+                  unreadLabel: unreadLabel(
+                    folders.contains((a.id, inboxLabelId)),
+                  ),
                   reconnectLabel: a.status == AccountStatus.daRicollegare
                       ? t.daRicollegare.status
                       : null,
@@ -105,6 +117,7 @@ class _PostaDrawerState extends State<PostaDrawer> {
                     label: l.name,
                     icon: PostinoIcons.tag,
                     active: l.id == widget.labelId,
+                    unreadLabel: unreadLabel(folders.contains((open!, l.id))),
                     onTap: () => widget.onOpenLabel(l.id),
                   ),
               ],

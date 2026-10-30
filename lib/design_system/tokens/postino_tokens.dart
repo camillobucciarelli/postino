@@ -1372,6 +1372,9 @@ abstract final class PostinoSize {
   /// Drawer fisso su desktop.
   static const double sidebarWidth = 280.0;
 
+  /// Barra laterale ridotta a sole icone (sotto breakpoint-sidebar-collapse).
+  static const double sidebarCollapsedWidth = 72.0;
+
   /// Colonna lista su tablet/desktop (min 320).
   static const double listWidth = 380.0;
 
@@ -1384,8 +1387,11 @@ abstract final class PostinoSize {
   /// Da qui: drawer fisso + lista. Size class “expanded”.
   static const double breakpointExpanded = 840.0;
 
-  /// Da qui: drawer fisso + lista + dettaglio affiancato.
-  static const double breakpointLarge = 1400.0;
+  /// Da qui: lista + dettaglio affiancati (desktop e tablet). È anche la larghezza minima della finestra desktop.
+  static const double breakpointListDetail = 900.0;
+
+  /// Da qui la barra laterale è estesa (280); sotto, a sole icone (72).
+  static const double breakpointSidebarCollapse = 1100.0;
 }
 
 abstract final class PostinoBorder {

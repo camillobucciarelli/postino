@@ -47,6 +47,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 		one: '${n} account',
 		other: '${n} accounts',
 	);
+	@override late final _Translations$sidebar$en sidebar = _Translations$sidebar$en._(_root);
 	@override String get etichette => 'Labels';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
@@ -54,6 +55,17 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
 	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
+}
+
+// Path: sidebar
+class _Translations$sidebar$en extends Translations$sidebar$it {
+	_Translations$sidebar$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get close => 'Close the sidebar';
+	@override String get open => 'Open the sidebar';
 }
 
 // Path: onboarding
@@ -168,6 +180,8 @@ extension on TranslationsEn {
 			'postaInArrivo' => 'Inbox',
 			'account' => 'Accounts',
 			'accountCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} account', other: '${n} accounts', ), 
+			'sidebar.close' => 'Close the sidebar',
+			'sidebar.open' => 'Open the sidebar',
 			'etichette' => 'Labels',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',

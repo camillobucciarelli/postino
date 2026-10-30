@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
 
 import '../../core/domain/message.dart' show inboxLabelId;
+import '../../core/domain/settings_repository.dart';
 import '../../main.dart' show routePaths;
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/onboarding_gate.dart';
@@ -16,7 +18,7 @@ import '../../i18n/strings.g.dart';
 
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
 /// so the outgoing view can fade out with its own params. The child route pages just delegate here.
-/// A Conversazione opens beside (from 1400) or over its list, which stays mounted: the list it was opened from.
+/// A Conversazione opens beside (from 900) or over its list, which stays mounted: the list it was opened from.
 class PostaLayout extends StatefulWidget {
   const PostaLayout({super.key});
 
@@ -30,6 +32,10 @@ class _PostaLayoutState extends State<PostaLayout> {
 
   /// What the keyboard shortcuts move: the list in front plugs itself in.
   final _cursor = ListCursor();
+
+  /// The sidebar choice saved by an earlier run (null: none); the layout waits for it, so the bar does not jump.
+  late final Future<bool?> _sidebar = GetIt.I<SettingsRepository>()
+      .sidebarExpanded();
 
   @override
   Widget build(BuildContext context) {
@@ -63,42 +69,57 @@ class _PostaLayoutState extends State<PostaLayout> {
     void back() => Routefly.navigate(list);
     // One shell above the content: only the content is replaced on navigation.
     return OnboardingGate(
-      child: PostinoSidebarShell(
-        drawer: postaDrawer(accountId: accountId, labelId: labelId),
-        child: PostinoFadeThrough(
-          transitionKey: list,
-          child: PostaShortcuts(
-            cursor: _cursor,
-            child: PostinoListDetailLayout(
-              list: switch ((accountId, labelId)) {
-                (final a?, final l?) => postaLabelView(
-                  a,
-                  l,
-                  selected: open,
-                  cursor: _cursor,
-                ),
-                (final a?, null) => postaAccountView(
-                  a,
-                  selected: open,
-                  cursor: _cursor,
-                ),
-                _ => postaUnifiedView(selected: open, cursor: _cursor),
-              },
-              detail: open == null
-                  ? null
-                  : postaConversationView(open.$1, open.$2, onBack: back),
-              detailKey: open,
-              empty: Builder(
-                builder: (context) => PostinoEmptyState(
-                  title: context.t.conversazione.selectTitle,
-                  body: context.t.conversazione.selectBody,
-                  icon: PostinoIcons.inbox,
+      child: FutureBuilder<bool?>(
+        future: _sidebar,
+        builder: (context, saved) =>
+            saved.connectionState != ConnectionState.done
+            ? const SizedBox.shrink()
+            : PostaShortcuts(
+                cursor: _cursor,
+                child: PostinoSidebarShell(
+                  drawer: postaDrawer(accountId: accountId, labelId: labelId),
+                  closeLabel: context.t.sidebar.close,
+                  openLabel: context.t.sidebar.open,
+                  expanded: saved.data,
+                  onExpandedChanged:
+                      GetIt.I<SettingsRepository>().setSidebarExpanded,
+                  child: PostinoFadeThrough(
+                    transitionKey: list,
+                    child: PostinoListDetailLayout(
+                      list: switch ((accountId, labelId)) {
+                        (final a?, final l?) => postaLabelView(
+                          a,
+                          l,
+                          selected: open,
+                          cursor: _cursor,
+                        ),
+                        (final a?, null) => postaAccountView(
+                          a,
+                          selected: open,
+                          cursor: _cursor,
+                        ),
+                        _ => postaUnifiedView(selected: open, cursor: _cursor),
+                      },
+                      detail: open == null
+                          ? null
+                          : postaConversationView(
+                              open.$1,
+                              open.$2,
+                              onBack: back,
+                            ),
+                      detailKey: open,
+                      empty: Builder(
+                        builder: (context) => PostinoEmptyState(
+                          title: context.t.conversazione.selectTitle,
+                          body: context.t.conversazione.selectBody,
+                          icon: PostinoIcons.inbox,
+                        ),
+                      ),
+                      onClose: back,
+                    ),
+                  ),
                 ),
               ),
-              onClose: back,
-            ),
-          ),
-        ),
       ),
     );
   }

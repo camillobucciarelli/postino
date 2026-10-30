@@ -3,13 +3,39 @@ import 'package:flutter/material.dart';
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
+import '../atoms/postino_icon_button.dart';
 import '../molecules/postino_sync_status.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
+/// What the drawer docked by `PostinoSidebarShell` knows: whether it shows icons only,
+/// and the button that opens or closes it (named [toggleLabel], what it will do).
+class PostinoSidebarScope extends InheritedWidget {
+  const PostinoSidebarScope({
+    super.key,
+    required this.collapsed,
+    required this.toggleLabel,
+    required this.toggle,
+    required super.child,
+  });
+
+  final bool collapsed;
+  final String toggleLabel;
+  final VoidCallback toggle;
+
+  /// Null for a modal drawer: always extended, no button.
+  static PostinoSidebarScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PostinoSidebarScope>();
+
+  @override
+  bool updateShouldNotify(PostinoSidebarScope old) =>
+      collapsed != old.collapsed || toggleLabel != old.toggleLabel;
+}
+
 /// A destination of the drawer: an [icon] or an [account] mark, and, for an Account Da ricollegare,
-/// the compact SyncStatus named [reconnectLabel].
+/// the compact SyncStatus named [reconnectLabel]. [unreadLabel] ("Non letto") is set when it holds unread mail:
+/// the icon sidebar shows it as a dot and reads it out.
 class PostinoDrawerItem {
   const PostinoDrawerItem({
     required this.label,
@@ -19,6 +45,7 @@ class PostinoDrawerItem {
     this.icon,
     this.account,
     this.reconnectLabel,
+    this.unreadLabel,
   });
 
   final String label;
@@ -28,6 +55,7 @@ class PostinoDrawerItem {
   final PostinoIconData? icon;
   final PostinoAccountRef? account;
   final String? reconnectLabel;
+  final String? unreadLabel;
 }
 
 class PostinoDrawerSection {
@@ -36,7 +64,8 @@ class PostinoDrawerSection {
   final List<PostinoDrawerItem> items;
 }
 
-/// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar.
+/// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar,
+/// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
 /// The highlight of the active item is one box under the list that slides to the new item.
 class PostinoNavigationDrawer extends StatefulWidget {
   const PostinoNavigationDrawer({super.key, required this.sections});
@@ -75,6 +104,8 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
   Widget build(BuildContext context) {
     final c = context.pc;
     final sections = widget.sections;
+    final scope = PostinoSidebarScope.maybeOf(context);
+    final collapsed = scope?.collapsed ?? false;
     var n = 0;
     int? activeIndex;
     for (final s in sections) {
@@ -92,9 +123,23 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
         child: ListView(
           padding: const EdgeInsets.all(PostinoSpacing.s3),
           children: [
+            if (scope != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: PostinoSpacing.s2),
+                  child: PostinoIconButton(
+                    icon: PostinoIcons.sidebar,
+                    label: scope.toggleLabel,
+                    onPressed: scope.toggle,
+                  ),
+                ),
+              ),
             Stack(
               key: _stack,
               fit: StackFit.passthrough,
+              // The outer focus ring of a rail icon is drawn outside its box.
+              clipBehavior: Clip.none,
               children: [
                 if (_active case final r?)
                   AnimatedPositioned(
@@ -138,7 +183,7 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           spacing: PostinoSpacing.s0_5,
                           children: [
-                            if (s.title case final t?)
+                            if (s.title case final t? when !collapsed)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   PostinoSpacing.s3,
@@ -159,6 +204,7 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                             for (final item in s.items)
                               _DrawerItem(
                                 item,
+                                collapsed: collapsed,
                                 key: _itemKeys.putIfAbsent(n++, GlobalKey.new),
                               ),
                           ],
@@ -176,8 +222,47 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
 }
 
 class _DrawerItem extends StatelessWidget {
-  const _DrawerItem(this.item, {super.key});
+  const _DrawerItem(this.item, {required this.collapsed, super.key});
   final PostinoDrawerItem item;
+
+  /// Icon sidebar: only the icon or mark, a dot for unread, the name in a tooltip and the semantics.
+  final bool collapsed;
+
+  Widget _railIcon(PostinoColors c) {
+    final a = item.account;
+    return SizedBox.square(
+      dimension: PostinoSize.touchTargetAndroid,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (a != null)
+            PostinoAccountMark(color: a.color, initial: a.initial)
+          else
+            PostinoIcon(
+              item.icon ?? PostinoIcons.tag,
+              size: PostinoSize.iconLg,
+              color: item.active ? c.drawerItemIconActive : c.drawerItemIcon,
+            ),
+          if (item.unreadLabel != null)
+            Positioned(
+              top: PostinoSpacing.s1 + 2,
+              right: PostinoSpacing.s1 + 2,
+              child: ExcludeSemantics(
+                child: Container(
+                  key: const ValueKey('unread-dot'),
+                  width: PostinoSpacing.s2,
+                  height: PostinoSpacing.s2,
+                  decoration: BoxDecoration(
+                    color: c.unread,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,8 +270,15 @@ class _DrawerItem extends StatelessWidget {
     final a = item.account;
     const radius = BorderRadius.all(Radius.circular(PostinoRadius.sm));
     final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
+    final name = [
+      item.label,
+      item.reconnectLabel,
+      item.unreadLabel,
+    ].nonNulls.join(', ');
     return Semantics(
       selected: item.active,
+      button: collapsed ? true : null,
+      label: collapsed ? name : null,
       child: Material(
         color: Colors.transparent,
         borderRadius: radius,
@@ -206,55 +298,62 @@ class _DrawerItem extends StatelessWidget {
           },
           // The ring, not the fill, shows focus on the active item, whose box has the same color.
           child: PostinoFocusRing(
-            inset: true,
+            // A rail icon is a control with a shape of its own; a row spans the width.
+            inset: !collapsed,
             borderRadius: radius,
-            child: Container(
-              constraints: const BoxConstraints(
-                minHeight: PostinoSize.touchTargetAndroid,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: PostinoSpacing.s3,
-              ),
-              child: Row(
-                spacing: PostinoSpacing.s3,
-                children: [
-                  if (a != null)
-                    PostinoAccountMark(
-                      color: a.color,
-                      initial: a.initial,
-                      size: 22,
-                    )
-                  else
-                    PostinoIcon(
-                      item.icon ?? PostinoIcons.tag,
-                      size: PostinoSize.iconLg,
-                      color: item.active
-                          ? c.drawerItemIconActive
-                          : c.drawerItemIcon,
+            child: collapsed
+                ? Tooltip(
+                    message: item.label,
+                    excludeFromSemantics: true,
+                    child: _railIcon(c),
+                  )
+                : Container(
+                    constraints: const BoxConstraints(
+                      minHeight: PostinoSize.touchTargetAndroid,
                     ),
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      // Enlarged text wraps instead of being cut.
-                      maxLines: wrap ? null : 1,
-                      overflow: wrap
-                          ? TextOverflow.visible
-                          : TextOverflow.ellipsis,
-                      style: PostinoText.label.copyWith(
-                        color: c.drawerItemFg,
-                        fontWeight: item.active ? FontWeight.w600 : null,
-                      ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PostinoSpacing.s3,
+                    ),
+                    child: Row(
+                      spacing: PostinoSpacing.s3,
+                      children: [
+                        if (a != null)
+                          PostinoAccountMark(
+                            color: a.color,
+                            initial: a.initial,
+                            size: 22,
+                          )
+                        else
+                          PostinoIcon(
+                            item.icon ?? PostinoIcons.tag,
+                            size: PostinoSize.iconLg,
+                            color: item.active
+                                ? c.drawerItemIconActive
+                                : c.drawerItemIcon,
+                          ),
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            // Enlarged text wraps instead of being cut.
+                            maxLines: wrap ? null : 1,
+                            overflow: wrap
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                            style: PostinoText.label.copyWith(
+                              color: c.drawerItemFg,
+                              fontWeight: item.active ? FontWeight.w600 : null,
+                            ),
+                          ),
+                        ),
+                        if (item.reconnectLabel case final l?)
+                          PostinoSyncStatus(
+                            state: PostinoSyncState.reconnect,
+                            label: l,
+                            compact: true,
+                          ),
+                      ],
                     ),
                   ),
-                  if (item.reconnectLabel case final l?)
-                    PostinoSyncStatus(
-                      state: PostinoSyncState.reconnect,
-                      label: l,
-                      compact: true,
-                    ),
-                ],
-              ),
-            ),
           ),
         ),
       ),

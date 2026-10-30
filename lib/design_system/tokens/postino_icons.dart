@@ -51,6 +51,7 @@ abstract final class PostinoIcons {
   ]);
   static const check = PostinoIconData(['M5 12.5l4.5 4.5L19 7.5']);
   static const menu = PostinoIconData(['M4 7h16', 'M4 12h16', 'M4 17h16']);
+  static const sidebar = PostinoIconData(['M4 5h16v14H4z', 'M9 5v14']);
   static const arrowLeft = PostinoIconData(['M20 12H4', 'M10 6l-6 6 6 6']);
   static const chevronDown = PostinoIconData(['M6 9.5l6 6 6-6']);
   static const chevronLeft = PostinoIconData(['M14.5 6l-6 6 6 6']);

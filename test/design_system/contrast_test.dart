@@ -50,6 +50,12 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     _ui,
   ),
   (
+    'unread dot of the icon sidebar',
+    (c) => c.unread,
+    [(c) => c.drawerBg, (c) => c.drawerItemBgActive],
+    _ui,
+  ),
+  (
     'star in the list, Importante in the Conversazione',
     (c) => c.star,
     [(c) => c.listItemBg, (c) => c.listItemBgSelected, (c) => c.surface],

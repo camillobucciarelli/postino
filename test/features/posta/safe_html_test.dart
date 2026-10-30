@@ -214,6 +214,21 @@ body { background-image: url(//t.example/bg.png); }
         expect(table.attributes['style'], isNot(contains('radius')));
       });
 
+      test('max-width and margin move to the div with the box', () {
+        final div = parse(
+          _blocked(
+            '<table style="width:100%;max-width:600px;margin:0 auto;border:1px solid red;background:white">'
+            '<tr><td>x</td></tr></table>',
+          ).html,
+        ).querySelector('div')!;
+        expect(div.attributes['style'], contains('max-width:600px'));
+        expect(div.attributes['style'], contains('margin:0 auto'));
+        final t = div.querySelector('table')!.attributes['style'];
+        expect(t, isNot(contains('max-width')));
+        expect(t, isNot(contains('margin')));
+        expect(t, contains('width:100%'));
+      });
+
       test('radius, padding and background alone wrap too', () {
         final div = parse(
           _blocked(

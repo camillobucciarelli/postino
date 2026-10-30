@@ -1,6 +1,8 @@
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
+import 'quoted_text.dart' show quoteSelectors, signatureSelectors;
+
 /// An HTML body ready to render (ADR 0007): cleaned, remote resources blocked unless [prepareHtml]
 /// was told otherwise. [blocked]: something remote was taken out. [width]: the widest fixed width
 /// the HTML asks for, in px, if any (a 600px newsletter), so the view can scale it down.
@@ -95,7 +97,7 @@ String _without(String style, RegExp drop) =>
 
 /// The declarations that make a table a card: they move to a wrapping `<div>`.
 final _box = RegExp(
-  r'^\s*(border(?!-(collapse|spacing))|padding|background)[\w-]*\s*:',
+  r'^\s*(border(?!-(collapse|spacing))|padding|background|margin|max-width)[\w-]*\s*:',
   caseSensitive: false,
 );
 
@@ -107,6 +109,7 @@ final _hasBox = RegExp(
 
 /// fwfh 0.17.4 draws a table's border inside its padding and drops its radius. A full-width table
 /// styled as a card gets its box on a `<div>` (laid out like a browser): the table keeps its width.
+/// `max-width` and `margin` go with it, so the card is constrained and centred like the table was.
 void _boxTables(Document doc) {
   for (final t in doc.querySelectorAll('table')) {
     final style = t.attributes['style'] ?? '';
@@ -125,6 +128,14 @@ void _boxTables(Document doc) {
     t.attributes['style'] = decls.where((d) => !_box.hasMatch(d)).join(';');
     final div = Element.tag('div')
       ..attributes['style'] = decls.where(_box.hasMatch).join(';');
+    // A quote/signature marker goes with the card, or splitHtml would take the bare table.
+    final marker = [...quoteSelectors, ...signatureSelectors].join(',');
+    if (t.parent!.querySelectorAll(marker).contains(t)) {
+      for (final a in ['class', 'id']) {
+        final v = t.attributes.remove(a);
+        if (v != null) div.attributes[a] = v;
+      }
+    }
     t.replaceWith(div);
     div.append(t);
   }

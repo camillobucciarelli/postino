@@ -104,7 +104,7 @@ final _outlookForward = RegExp(
   caseSensitive: false,
 );
 
-const _quoteSelectors = [
+const quoteSelectors = [
   '.gmail_quote', // Gmail, its gmail_attr header inside
   '.gmail_attr', // a Gmail header left outside its quote
   '.moz-cite-prefix', // Thunderbird's header, before its blockquote
@@ -114,7 +114,7 @@ const _quoteSelectors = [
   '.yahoo_quoted',
 ];
 
-const _signatureSelectors = [
+const signatureSelectors = [
   '.gmail_signature',
   '.moz-signature',
   '#Signature', // Outlook
@@ -150,7 +150,7 @@ BodyParts splitHtml(String html) {
 /// Takes the quote out of [root]: the outermost candidate, the last one if there are several
 /// (an inline reply keeps what follows it); for Outlook everything after it too.
 List<Node>? _takeQuote(Element root) {
-  final all = root.querySelectorAll(_quoteSelectors.join(','));
+  final all = root.querySelectorAll(quoteSelectors.join(','));
   final set = all.toSet();
   final candidates = [
     for (final e in all)
@@ -232,9 +232,9 @@ String _previousText(Element e) {
 /// Takes the first signature out of [root], with Gmail's «-- » prefix before it. One inside a quote
 /// left in place (a forward) is the original sender's, not the author's.
 List<Node>? _takeSignature(Element root) {
-  final quotes = root.querySelectorAll(_quoteSelectors.join(',')).toSet();
+  final quotes = root.querySelectorAll(quoteSelectors.join(',')).toSet();
   final sig = root
-      .querySelectorAll(_signatureSelectors.join(','))
+      .querySelectorAll(signatureSelectors.join(','))
       .where((e) => !_hasAncestorIn(e, quotes))
       .firstOrNull;
   if (sig == null) return null;

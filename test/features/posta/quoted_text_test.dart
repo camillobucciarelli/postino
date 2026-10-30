@@ -215,4 +215,26 @@ void main() {
       expect(foldBody(p, repeated: true).body, '-- \nAda Okafor');
     });
   });
+
+  group('card tables with a marker (#63)', () {
+    for (final (attr, pick) in [
+      ('class="gmail_quote"', (BodyParts p) => p.original),
+      ('id="Signature"', (BodyParts p) => p.signature),
+    ]) {
+      test('$attr takes the decorated div, not the bare table', () {
+        final p = splitHtml(
+          prepareHtml(
+            '<p>ciao</p><table $attr style="width:100%;border:1px solid red">'
+            '<tr><td>x</td></tr></table>',
+            allowRemote: false,
+          ).html,
+        );
+        final taken = pick(p)!;
+        expect(taken, contains('<div'));
+        expect(taken, contains('border:1px solid red'));
+        expect(p.body, isNot(contains('border:1px')));
+        expect(p.body, isNot(contains('<div')));
+      });
+    }
+  });
 }

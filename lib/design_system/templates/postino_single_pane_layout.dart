@@ -19,21 +19,13 @@ class PostinoSinglePaneLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    // The Scaffold only caps the bar: unconstrained in height it is as tall as its content
-    // (56, more with enlarged text), and the body starts under it.
-    // ponytail: the cap holds a 3-line title and a subtitle at 200%; raise it if titles get longer.
-    appBar: PreferredSize(
-      preferredSize: const Size.fromHeight(PostinoSize.appBarHeight * 4),
-      child: UnconstrainedBox(
-        constrainedAxis: Axis.horizontal,
-        alignment: Alignment.topCenter,
-        child: appBar,
-      ),
-    ),
     drawer: drawer,
+    // The bar sits in the body, not in `Scaffold.appBar`: it takes the height of its content
+    // (56, more with enlarged text) and the rest starts under it, with no fixed cap.
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        appBar,
         Padding(
           // Side margins: space-4 on the phone, space-6 from the tablet up.
           padding: EdgeInsets.symmetric(

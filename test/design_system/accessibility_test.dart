@@ -262,5 +262,29 @@ void main() {
         PostinoSize.appBarHeight,
       );
     });
+
+    testWidgets('a very long title does not overflow nor cover the body', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 2400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final long = List.filled(200, 'a').join();
+      await tester.pumpWidget(
+        _app(
+          PostinoSinglePaneLayout(
+            appBar: PostinoAppBar(title: long, subtitle: long, account: _sky),
+            body: const SizedBox(key: ValueKey('body')),
+          ),
+          scale: 2,
+        ),
+      );
+      // A layout overflow fails the test on its own.
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('body'))).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppBar)).dy),
+      );
+    });
   });
 }

@@ -22,7 +22,7 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
   final PostinoAccountRef? account;
   final VoidCallback? onBack;
 
-  /// The height at 100%; with enlarged text the bar grows, up to [PostinoSinglePaneLayout]'s room.
+  /// The height at 100%; with enlarged text the bar grows.
   @override
   Size get preferredSize => const Size.fromHeight(PostinoSize.appBarHeight);
 

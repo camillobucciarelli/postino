@@ -140,6 +140,19 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get offline => 'Body not available offline';
 	@override String get failed => 'Body not available';
 	@override String get retry => 'Retry';
+	@override String get imagesBlocked => 'Remote images blocked';
+	@override String get showImages => 'Show images';
+	@override String get alwaysFromSender => 'Always from this sender';
+	@override String get me => 'me';
+	@override String get from => 'From';
+	@override String get toLabel => 'To';
+	@override String get date => 'Date';
+	@override String get receivedOn => 'Received on';
+	@override String get imagesBlockedBody => 'Loading them would tell the sender you opened the message.';
+	@override String toCc({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}';
+	@override String get cc => 'Cc';
+	@override String get showQuoted => 'Show quoted text';
+	@override String get important => 'Important';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -185,6 +198,19 @@ extension on TranslationsEn {
 			'conversazione.offline' => 'Body not available offline',
 			'conversazione.failed' => 'Body not available',
 			'conversazione.retry' => 'Retry',
+			'conversazione.imagesBlocked' => 'Remote images blocked',
+			'conversazione.showImages' => 'Show images',
+			'conversazione.alwaysFromSender' => 'Always from this sender',
+			'conversazione.me' => 'me',
+			'conversazione.from' => 'From',
+			'conversazione.toLabel' => 'To',
+			'conversazione.date' => 'Date',
+			'conversazione.receivedOn' => 'Received on',
+			'conversazione.imagesBlockedBody' => 'Loading them would tell the sender you opened the message.',
+			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}',
+			'conversazione.cc' => 'Cc',
+			'conversazione.showQuoted' => 'Show quoted text',
+			'conversazione.important' => 'Important',
 			_ => null,
 		};
 	}

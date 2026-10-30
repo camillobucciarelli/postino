@@ -11,8 +11,14 @@ class Messages extends Table {
   TextColumn get id => text()();
   TextColumn get messageId => text()();
   TextColumn get conversationId => text()();
+
+  /// The sender's address; [senderName] its display name, if the `From` header has one (v7).
   TextColumn get sender => text()();
+  TextColumn get senderName => text().nullable()();
+
+  /// To and Cc, one `Name <address>` or bare address per line (v7: they were comma separated).
   TextColumn get recipients => text()();
+  TextColumn get cc => text().withDefault(const Constant(''))();
   TextColumn get subject => text()();
   TextColumn get snippet => text()();
 

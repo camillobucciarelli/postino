@@ -1,4 +1,4 @@
-/// Thin platform services (keychain, clock, connectivity); real ones in core/data, fakes in tests.
+/// Thin platform services (keychain, clock, connectivity, links); real ones in core/data, fakes in tests.
 abstract interface class SecureStore {
   Future<String?> read(String key);
   Future<void> write(String key, String value);
@@ -16,4 +16,9 @@ abstract interface class Connectivity {
 
   /// The new state, each time it changes.
   Stream<bool> get onChanged;
+}
+
+/// Opens a link outside Postino: the system browser, or the mail client for `mailto:`.
+abstract interface class LinkOpener {
+  Future<void> open(Uri url);
 }

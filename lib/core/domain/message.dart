@@ -33,6 +33,8 @@ class Message {
     required this.subject,
     required this.snippet,
     required this.date,
+    this.fromName,
+    this.cc = const [],
     this.attachments = const [],
   });
 
@@ -45,8 +47,14 @@ class Message {
   final List<String> labelIds;
   final bool isRead;
   final bool isStarred;
+
+  /// The sender's address; [fromName] is its display name from the `From` header, if any.
   final String from;
+  final String? fromName;
+
+  /// `Name <address>` or a bare address each ([formatMailbox]).
   final List<String> to;
+  final List<String> cc;
   final String subject;
   final String snippet;
   final DateTime date;

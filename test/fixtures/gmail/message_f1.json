@@ -6,6 +6,7 @@
     "labelIds": [
       "UNREAD",
       "CATEGORY_PERSONAL",
+      "IMPORTANT",
       "INBOX"
     ],
     "snippet": "Ciao Ada, ci vediamo alle 20 da Mario? Porto io il vino &amp; il dolce.",
@@ -28,6 +29,10 @@
         {
           "name": "To",
           "value": "ada@gmail.com, carla@example.org"
+        },
+        {
+          "name": "Cc",
+          "value": "\"Rossi, Carla\" <carla.rossi@example.org>, =?ISO-8859-1?Q?Nicol=F2_Neri?= <nicolo@example.com>"
         },
         {
           "name": "Message-ID",

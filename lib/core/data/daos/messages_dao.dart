@@ -119,7 +119,9 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               messageId: m.messageId,
               conversationId: m.conversationId,
               sender: m.from,
-              recipients: m.to.join(','),
+              senderName: Value(m.fromName),
+              recipients: m.to.join('\n'),
+              cc: Value(m.cc.join('\n')),
               subject: m.subject,
               snippet: m.snippet,
               date: m.date.millisecondsSinceEpoch,
@@ -204,12 +206,18 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     );
   }
 
-  /// The stored messages of one Conversazione, oldest first, with their body if downloaded.
-  Stream<List<(MessageRow, BodyRow?)>> watchConversation(
+  /// The stored messages of one Conversazione, oldest first, with their body if downloaded
+  /// and their label ids (system ones too: IMPORTANT, STARRED…).
+  Stream<List<(MessageRow, BodyRow?, List<String>)>> watchConversation(
     String accountId,
     String conversationId,
   ) {
     final m = messages, b = bodies;
+    final labelIds = CustomExpression<String>(
+      '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
+      'WHERE l.account_id = messages.account_id AND l.message_id = messages.id)',
+      watchedTables: [messageLabels],
+    );
     final query =
         select(m).join([
             leftOuterJoin(
@@ -217,13 +225,21 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id),
             ),
           ])
+          ..addColumns([labelIds])
           ..where(
             m.accountId.equals(accountId) &
                 m.conversationId.equals(conversationId),
           )
           ..orderBy([OrderingTerm.asc(m.date), OrderingTerm.asc(m.id)]);
     return query.watch().map(
-      (rows) => [for (final r in rows) (r.readTable(m), r.readTableOrNull(b))],
+      (rows) => [
+        for (final r in rows)
+          (
+            r.readTable(m),
+            r.readTableOrNull(b),
+            r.read(labelIds)?.split('\n') ?? const [],
+          ),
+      ],
     );
   }
 

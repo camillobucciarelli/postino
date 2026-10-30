@@ -50,6 +50,19 @@
     "loading": "Caricamento…",
     "offline": "Corpo non disponibile offline",
     "failed": "Corpo non disponibile",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "imagesBlocked": "Immagini remote bloccate",
+    "showImages": "Mostra immagini",
+    "alwaysFromSender": "Sempre da questo mittente",
+    "me": "me",
+    "from": "Da",
+    "toLabel": "A",
+    "date": "Data",
+    "receivedOn": "Ricevuto su",
+    "imagesBlockedBody": "Caricarle direbbe al mittente che hai aperto il messaggio.",
+    "toCc": "a $recipients, cc $cc",
+    "cc": "Cc",
+    "showQuoted": "Mostra testo citato",
+    "important": "Importante"
   }
 }

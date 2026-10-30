@@ -1375,8 +1375,8 @@ abstract final class PostinoSize {
   /// Colonna lista su tablet/desktop (min 320).
   static const double listWidth = 380.0;
 
-  /// Larghezza massima del corpo messaggio (circa 70 caratteri).
-  static const double readingMaxWidth = 680.0;
+  /// Larghezza massima della colonna di lettura (testata e testo; i corpi HTML la superano).
+  static const double readingMaxWidth = 800.0;
 
   /// Da qui: lista + dettaglio (tablet). Window size class “medium”.
   static const double breakpointMedium = 600.0;

@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/platform_services.dart';
 import 'postino_database.dart';
@@ -55,6 +56,17 @@ class SystemConnectivity implements Connectivity {
   @override
   Stream<bool> get onChanged =>
       _plus.onConnectivityChanged.map(_update).distinct();
+}
+
+@Singleton(as: LinkOpener, env: [Environment.prod])
+class SystemLinkOpener implements LinkOpener {
+  // ponytail: a link nothing can open does nothing; a Snackbar if users ever ask why.
+  @override
+  Future<void> open(Uri url) async {
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
 }
 
 @module

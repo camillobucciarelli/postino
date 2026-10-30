@@ -10,7 +10,7 @@ import 'fake_google_consent.dart';
 import 'fake_mail_provider.dart';
 import 'fake_platform.dart';
 
-/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock and network.
+/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network and links.
 class Harness {
   Harness._();
 
@@ -18,6 +18,7 @@ class Harness {
   final keychain = FakeSecureStore();
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));
   final connectivity = FakeConnectivity();
+  final links = FakeLinkOpener();
 
   static Future<Harness> create() async {
     await getIt.reset();
@@ -30,7 +31,8 @@ class Harness {
       ..registerSingleton<GoogleConsent>(h.consent)
       ..registerSingleton<SecureStore>(h.keychain)
       ..registerSingleton<Clock>(h.clock)
-      ..registerSingleton<Connectivity>(h.connectivity);
+      ..registerSingleton<Connectivity>(h.connectivity)
+      ..registerSingleton<LinkOpener>(h.links);
     await configureDependencies(environment: 'test');
     return h;
   }

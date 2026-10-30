@@ -187,8 +187,12 @@ class GmailHarness implements ContractHarness {
     'payload': {
       'mimeType': 'text/html',
       'headers': [
-        {'name': 'From', 'value': m.from},
+        {
+          'name': 'From',
+          'value': m.fromName == null ? m.from : '"${m.fromName}" <${m.from}>',
+        },
         {'name': 'To', 'value': m.to.join(', ')},
+        if (m.cc.isNotEmpty) {'name': 'Cc', 'value': m.cc.join(', ')},
         {'name': 'Subject', 'value': m.subject},
         {'name': 'Message-Id', 'value': m.messageId},
       ],
@@ -365,8 +369,13 @@ void main() {
       final byId = {for (final m in batch.messages) m.id: m};
       expect(byId.keys, unorderedEquals([_f1, _f2, _f3]));
       final f1 = byId[_f1]!;
-      expect(f1.from, 'Bruno Verdi <bruno@example.com>');
+      expect((f1.from, f1.fromName), ('bruno@example.com', 'Bruno Verdi'));
       expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
+      expect(f1.cc, [
+        'Rossi, Carla <carla.rossi@example.org>',
+        'Nicolò Neri <nicolo@example.com>',
+      ], reason: 'a quoted name keeps its comma; an RFC 2047 one is decoded');
+      expect(f1.labelIds, contains('IMPORTANT'));
       expect(f1.subject, 'Cena di venerdì');
       expect(f1.messageId, '<CAF1x7Yk2b@mail.example.com>');
       expect(f1.conversationId, _f1);
@@ -378,6 +387,7 @@ void main() {
       expect((f2.isRead, f2.isStarred), (true, true));
       expect(f2.labelIds, contains('Label_12'));
       expect(f2.snippet, contains("c'è"));
+      expect((f2.from, f2.fromName), ('ada@gmail.com', 'Ada Rossi – Studio'));
       expect(byId[_f3]!.labelIds, ['SENT']);
 
       expect(_contents(batch.bodies), {
@@ -537,6 +547,7 @@ void main() {
       expect(url.queryParametersAll['metadataHeaders'], [
         'From',
         'To',
+        'Cc',
         'Subject',
         'Message-ID',
       ]);
@@ -544,7 +555,7 @@ void main() {
       expect(messages.map((m) => m.conversationId).toSet(), {_f1});
       final sent = messages.first;
       expect(sent.labelIds, ['SENT']);
-      expect(sent.from, 'Ada Rossi <ada@gmail.com>');
+      expect((sent.from, sent.fromName), ('ada@gmail.com', 'Ada Rossi'));
       expect(sent.subject, 'Cena di venerdì');
       expect(sent.date.isBefore(_now.subtract(syncWindow)), isTrue);
       expect(messages[1].isRead, isFalse);

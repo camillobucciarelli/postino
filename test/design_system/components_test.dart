@@ -1,10 +1,13 @@
 // Atoms and molecules: one golden each (light and dark × text 100% and 200%) and the accessibility guidelines.
 // ponytail: the design system fonts are not bundled yet, so goldens render with the test font.
 // ponytail: goldens are recorded and compared only on macOS (developers and the self-hosted Apple runner):
-// Linux CI rasterises text and anti-aliasing differently (1-2% of pixels); the guidelines still run everywhere.
+// Linux CI rasterises text and anti-aliasing differently (1-2% of pixels); the tap target guidelines still run everywhere.
+// The text contrast guideline samples the rendered pixels too (the most frequent light and dark colour around
+// each text): on Linux a small caption has no solid ink pixel winning over its anti-aliasing, so it runs on macOS only.
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
@@ -29,6 +32,7 @@ final _components = <String, Widget Function()>{
         PostinoIcons.menu,
         PostinoIcons.arrowLeft,
         PostinoIcons.chevronLeft,
+        PostinoIcons.image,
       ])
         PostinoIcon(i, size: PostinoSize.iconLg),
       const PostinoIcon(PostinoIcons.star, filled: true, label: 'Stella'),
@@ -130,7 +134,27 @@ final _components = <String, Widget Function()>{
         sender: 'Bruno Verdi',
         time: '10:05',
         preview: 'Perfetto',
-        recipients: 'a me',
+        recipients: 'a me, cc Marco Lenti',
+        details: const [
+          PostinoMessageDetail('Da', 'bruno@example.com'),
+          PostinoMessageDetail('A', 'me@example.com'),
+          PostinoMessageDetail('Data', 'lunedì 5 ottobre 2026, 09:42'),
+          PostinoMessageDetail('Ricevuto su', 'me@example.com', account: _sky),
+        ],
+        notices: [
+          PostinoBanner(
+            tone: PostinoBannerTone.info,
+            icon: PostinoIcons.image,
+            title: 'Immagini remote bloccate',
+            message:
+                'Caricarle direbbe al mittente che hai aperto il messaggio.',
+            spaced: false,
+            actionLabel: 'Mostra immagini',
+            onAction: _noop,
+            secondaryActionLabel: 'Sempre da questo mittente',
+            onSecondaryAction: _noop,
+          ),
+        ],
         expanded: true,
         onToggle: () {},
         body: PostinoMessageBody.missing(
@@ -141,15 +165,26 @@ final _components = <String, Widget Function()>{
       ),
       PostinoThreadMessage(
         sender: 'Ada Okafor',
+        address: 'ada@okafor-legal.it',
         time: '09:42',
         preview: 'Sì, alle 20.',
-        recipients: 'a bruno@example.com',
+        recipients: 'a Bruno Verdi, cc Marco Lenti',
         unread: true,
         expanded: true,
         onToggle: () {},
         body: const PostinoMessageBody(
           text: 'Ciao Bruno,\nsì, alle 20 da Mario. Porto io il dolce.',
         ),
+        signature: const PostinoMessageBody(
+          text: '-- \nAda Okafor\nOkafor Legal · Via Dante 12, Milano',
+          quiet: true,
+        ),
+        quote: const PostinoMessageBody(
+          text:
+              'Il giorno lun 5 ott, Bruno Verdi ha scritto:\n> Ti va una cena?',
+          quiet: true,
+        ),
+        quoteLabel: 'Mostra testo citato',
       ),
       PostinoThreadMessage(
         sender: 'Bruno Verdi',
@@ -160,6 +195,26 @@ final _components = <String, Widget Function()>{
         body: const SizedBox(),
       ),
     ],
+  ),
+  'thread_view': () => SizedBox(
+    height: 220,
+    child: PostinoThreadView(
+      subject: 'Revisione trimestrale: numeri finali',
+      importantLabel: 'Importante',
+      account: _sky,
+      accountName: 'lavoro@example.com',
+      labels: const ['Progetti', 'Fatture'],
+      messages: [
+        PostinoThreadMessage(
+          sender: 'Bruno Verdi',
+          time: '10:05',
+          preview: 'Perfetto',
+          expanded: false,
+          onToggle: () {},
+          body: const SizedBox(),
+        ),
+      ],
+    ),
   ),
   'banner': () => Column(
     children: [
@@ -182,7 +237,23 @@ final _components = <String, Widget Function()>{
         title: 'Collegamento non riuscito',
         message: 'Nessuna connessione: riprova quando sei online.',
       ),
+      PostinoBanner(
+        tone: PostinoBannerTone.info,
+        icon: PostinoIcons.image,
+        title: 'Immagini remote bloccate',
+        actionLabel: 'Mostra immagini',
+        onAction: _noop,
+        secondaryActionLabel: 'Sempre da questo mittente',
+        onSecondaryAction: _noop,
+      ),
     ],
+  ),
+  'html_card': () => PostinoHtmlCard(
+    html:
+        '<h2 style="color: #1a1a1a">Novità</h2><p>Ciao, ecco le '
+        '<a href="https://example.com">notizie</a> della settimana.</p>'
+        '<img alt="Logo">',
+    onTapUrl: (_) {},
   ),
   'sync_status': () => const Wrap(
     spacing: 16,
@@ -267,13 +338,114 @@ void main() {
           find.byKey(_golden),
           matchesGoldenFile('goldens/$name.png'),
         );
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
       }
-      await expectLater(tester, meetsGuideline(textContrastGuideline));
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
       semantics.dispose();
     });
   }
+
+  testWidgets('the recipients open the details of a message', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoThreadMessage(
+            sender: 'bruno@example.com',
+            time: '10:05',
+            preview: 'Perfetto',
+            recipients: 'a me',
+            details: const [
+              PostinoMessageDetail('Ricevuto su', 'me@example.com'),
+            ],
+            expanded: true,
+            onToggle: () {},
+            body: const SizedBox(),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Ricevuto su'), findsNothing);
+    await tester.tap(find.text('a me'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ricevuto su'), findsOneWidget);
+    expect(find.text('me@example.com', findRichText: true), findsOneWidget);
+  });
+
+  testWidgets(
+    'the recipients toggle is a focusable button: Enter and semantic tap open the details',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoThreadMessage(
+              sender: 'bruno@example.com',
+              time: '10:05',
+              preview: 'Perfetto',
+              recipients: 'a me',
+              details: const [
+                PostinoMessageDetail('Ricevuto su', 'me@example.com'),
+              ],
+              expanded: true,
+              onToggle: () {},
+              body: const SizedBox(),
+            ),
+          ),
+        ),
+      );
+      final toggle = find.byKey(const ValueKey('recipients-toggle'));
+      // Tab reaches it, Enter opens.
+      // The header takes the first Tab, the toggle the second.
+      for (var i = 0; i < 2; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      final focused = FocusManager.instance.primaryFocus!.context!;
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate((e) => e == focused),
+          matching: toggle,
+        ),
+        findsOneWidget,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Ricevuto su'), findsOneWidget);
+      // Semantic tap closes it again.
+      tester.semantics.tap(find.semantics.byLabel('a me'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ricevuto su'), findsNothing);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('the quote toggle exposes a semantic tap action', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoThreadMessage(
+            sender: 'bruno@example.com',
+            time: '10:05',
+            preview: 'Perfetto',
+            expanded: true,
+            onToggle: () {},
+            body: const SizedBox(),
+            quote: const Text('citato'),
+            quoteLabel: 'Mostra testo citato',
+          ),
+        ),
+      ),
+    );
+    tester.semantics.tap(find.semantics.byLabel('Mostra testo citato'));
+    await tester.pumpAndSettle();
+    expect(find.text('citato'), findsOneWidget);
+    semantics.dispose();
+  });
 
   group('PostinoMessageList', () {
     Widget list({required bool loading, int count = 0}) => MaterialApp(

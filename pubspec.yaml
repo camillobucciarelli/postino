@@ -52,6 +52,9 @@ dependencies:
   crypto: ^3.0.8
   enough_mail: ^3.0.0
   connectivity_plus: ^7.3.2
+  flutter_widget_from_html_core: ^0.17.4
+  html: ^0.15.7
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

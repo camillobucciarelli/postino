@@ -20,15 +20,7 @@ class PostinoAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
-    final tints = [
-      (c.labelStoneBg, c.labelStoneFg),
-      (c.labelSandBg, c.labelSandFg),
-      (c.labelSageBg, c.labelSageFg),
-      (c.labelSeaBg, c.labelSeaFg),
-      (c.labelLilacBg, c.labelLilacFg),
-      (c.labelBlushBg, c.labelBlushFg),
-    ];
-    final (bg, fg) = tints[_hash(name) % tints.length];
+    final (bg, fg) = postinoTint(c, name);
     return ExcludeSemantics(
       child: SizedBox.square(
         dimension: size,
@@ -67,6 +59,19 @@ class PostinoAvatar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The `label-*` tint a [name] gets, shared by the Avatar and the LabelChip.
+(Color, Color) postinoTint(PostinoColors c, String name) {
+  final tints = [
+    (c.labelStoneBg, c.labelStoneFg),
+    (c.labelSandBg, c.labelSandFg),
+    (c.labelSageBg, c.labelSageFg),
+    (c.labelSeaBg, c.labelSeaFg),
+    (c.labelLilacBg, c.labelLilacFg),
+    (c.labelBlushBg, c.labelBlushFg),
+  ];
+  return tints[_hash(name) % tints.length];
 }
 
 /// Same hash as the design system's preview, so a name gets the same tint.

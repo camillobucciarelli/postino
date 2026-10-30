@@ -50,6 +50,19 @@
     "loading": "Loading…",
     "offline": "Body not available offline",
     "failed": "Body not available",
-    "retry": "Retry"
+    "retry": "Retry",
+    "imagesBlocked": "Remote images blocked",
+    "showImages": "Show images",
+    "alwaysFromSender": "Always from this sender",
+    "me": "me",
+    "from": "From",
+    "toLabel": "To",
+    "date": "Date",
+    "receivedOn": "Received on",
+    "imagesBlockedBody": "Loading them would tell the sender you opened the message.",
+    "toCc": "to $recipients, cc $cc",
+    "cc": "Cc",
+    "showQuoted": "Show quoted text",
+    "important": "Important"
   }
 }

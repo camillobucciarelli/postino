@@ -213,6 +213,45 @@ class Translations$conversazione$it {
 
 	/// it: 'Riprova'
 	String get retry => 'Riprova';
+
+	/// it: 'Immagini remote bloccate'
+	String get imagesBlocked => 'Immagini remote bloccate';
+
+	/// it: 'Mostra immagini'
+	String get showImages => 'Mostra immagini';
+
+	/// it: 'Sempre da questo mittente'
+	String get alwaysFromSender => 'Sempre da questo mittente';
+
+	/// it: 'me'
+	String get me => 'me';
+
+	/// it: 'Da'
+	String get from => 'Da';
+
+	/// it: 'A'
+	String get toLabel => 'A';
+
+	/// it: 'Data'
+	String get date => 'Data';
+
+	/// it: 'Ricevuto su'
+	String get receivedOn => 'Ricevuto su';
+
+	/// it: 'Caricarle direbbe al mittente che hai aperto il messaggio.'
+	String get imagesBlockedBody => 'Caricarle direbbe al mittente che hai aperto il messaggio.';
+
+	/// it: 'a $recipients, cc $cc'
+	String toCc({required Object recipients, required Object cc}) => 'a ${recipients}, cc ${cc}';
+
+	/// it: 'Cc'
+	String get cc => 'Cc';
+
+	/// it: 'Mostra testo citato'
+	String get showQuoted => 'Mostra testo citato';
+
+	/// it: 'Importante'
+	String get important => 'Importante';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -258,6 +297,19 @@ extension on Translations {
 			'conversazione.offline' => 'Corpo non disponibile offline',
 			'conversazione.failed' => 'Corpo non disponibile',
 			'conversazione.retry' => 'Riprova',
+			'conversazione.imagesBlocked' => 'Immagini remote bloccate',
+			'conversazione.showImages' => 'Mostra immagini',
+			'conversazione.alwaysFromSender' => 'Sempre da questo mittente',
+			'conversazione.me' => 'me',
+			'conversazione.from' => 'Da',
+			'conversazione.toLabel' => 'A',
+			'conversazione.date' => 'Data',
+			'conversazione.receivedOn' => 'Ricevuto su',
+			'conversazione.imagesBlockedBody' => 'Caricarle direbbe al mittente che hai aperto il messaggio.',
+			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'a ${recipients}, cc ${cc}',
+			'conversazione.cc' => 'Cc',
+			'conversazione.showQuoted' => 'Mostra testo citato',
+			'conversazione.important' => 'Importante',
 			_ => null,
 		};
 	}

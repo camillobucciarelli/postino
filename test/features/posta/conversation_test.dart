@@ -224,8 +224,13 @@ void main() {
                 .first,
           )
           .position;
-      // The user collapses the latest one and scrolls down.
-      await tester.tap(_message('l11'));
+      // The user collapses the latest one (a tap on its header) and scrolls down.
+      await tester.tap(
+        find.descendant(
+          of: _message('l11'),
+          matching: find.byType(PostinoAvatar),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'l11'), isFalse);
       expect(scroll().maxScrollExtent, greaterThan(100));
@@ -572,7 +577,7 @@ void main() {
       expect((await bodies()).map((b) => b.messageId), ['i1']);
 
       await _open(tester, 'e2');
-      expect(find.text('Corpo di e2'), findsOneWidget);
+      expect(find.text('Corpo di e2', findRichText: true), findsOneWidget);
       final e2 = (await bodies()).singleWhere((b) => b.messageId == 'e2');
       expect((e2.body, e2.kind), ('Corpo di e2', BodyKind.html));
     });
@@ -589,7 +594,7 @@ void main() {
       gmail.goOnline();
       await tester.tap(find.text('Riprova'));
       await tester.pumpAndSettle();
-      expect(find.text('Corpo di e2'), findsOneWidget);
+      expect(find.text('Corpo di e2', findRichText: true), findsOneWidget);
       expect(find.text('Corpo non disponibile offline'), findsNothing);
     });
 
@@ -605,7 +610,7 @@ void main() {
       gmail.goOnline();
       h.connectivity.online = true;
       await tester.pumpAndSettle();
-      expect(find.text('Corpo di e2'), findsOneWidget);
+      expect(find.text('Corpo di e2', findRichText: true), findsOneWidget);
     });
   });
 

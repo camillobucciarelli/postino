@@ -167,22 +167,84 @@ body { background-image: url(//t.example/bg.png); }
       }
     });
 
-    test('a table loses a percentage width, keeps px and the rest', () {
+    test(
+      'a multi-column table loses a percentage width, keeps px and the rest',
+      () {
+        expect(
+          style(
+            '<table style="width:100%;background:#eee"><tr><td>x</td><td>y</td></tr></table>',
+            'table',
+          ),
+          'background:#eee',
+        );
+        expect(
+          style(
+            '<table style="width: 50% !important"><tr><th>a</th><td>b</td></tr></table>',
+            'table',
+          ),
+          '',
+        );
+        expect(
+          style(
+            '<table style="width:600px;color:red"><tr><td>a</td><td>b</td></tr></table>',
+            'table',
+          ),
+          'width:600px;color:red',
+        );
+      },
+    );
+
+    test('a one-column table keeps its percentage width (#63)', () {
       expect(
         style(
           '<table style="width:100%;background:#eee"><tr><td>x</td></tr></table>',
           'table',
         ),
-        'background:#eee',
+        'width:100%;background:#eee',
+      );
+    });
+
+    test('a one-column table with nested multi-column one keeps its width', () {
+      final doc = parse(
+        _blocked(
+          '<table style="width:100%"><tr><td>'
+          '<table style="width:100%"><tr><td>a</td><td>b</td></tr></table>'
+          '</td></tr></table>',
+        ).html,
+      );
+      final tables = doc.querySelectorAll('table');
+      expect(tables[0].attributes['style'], 'width:100%');
+      expect(tables[1].attributes['style'], '');
+    });
+
+    test('width="100%" on a one-column table becomes style width (#63)', () {
+      expect(
+        style('<table width="100%"><tr><td>x</td></tr></table>', 'table'),
+        startsWith('width:100%'),
       );
       expect(
-        style('<table style="width: 50% !important"></table>', 'table'),
-        '',
+        style(
+          '<table width="80%" style="color:red"><tr><td>x</td></tr></table>',
+          'table',
+        ),
+        'width:80%;color:red',
       );
       expect(
-        style('<table style="width:600px;color:red"></table>', 'table'),
-        'width:600px;color:red',
+        parse(
+          _blocked('<table width="100%"><tr><td>a</td><td>b</td></tr></table>')
+              .html,
+        ).querySelector('table')!.attributes.containsKey('style'),
+        isFalse,
       );
+    });
+
+    test('<title> is gone, <style> stays (#63)', () {
+      final out = _blocked(
+        '<html><head><title>Oggetto</title><meta charset="utf-8">'
+        '<style>p{color:red}</style></head><body><p>Ciao</p></body></html>',
+      ).html;
+      expect(out, isNot(contains('Oggetto')));
+      expect(out, contains('p{color:red}'));
     });
 
     test('contentWidth is measured before stripping', () {

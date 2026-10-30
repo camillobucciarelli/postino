@@ -3,6 +3,8 @@ import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
+import 'safe_html.dart' show dropHeadContent;
+
 /// A message body split for the Conversazione (ThreadView): what it says, its signature and the text it
 /// quotes. Every part is in the body's own format (cleaned HTML or plain text); [original] is the whole.
 class BodyParts {
@@ -126,6 +128,7 @@ BodyParts splitHtml(String html) {
   if (root == null) {
     return BodyParts(original: html, body: html, bodyVisible: true);
   }
+  dropHeadContent(doc);
   final head = doc.head?.innerHtml ?? '';
   final quote = _takeQuote(root);
   final signature = _takeSignature(root);

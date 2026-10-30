@@ -61,6 +61,23 @@ void main() {
       expect(_text(p.quote), contains('<ada@example.com>'));
     });
 
+    test('<title> in no part, whatever the cleaning did (#63)', () {
+      const raw =
+          '<html><head><title>Oggetto segreto</title><style>p{color:red}</style></head>'
+          '<body><p>Ok</p><div class="gmail_quote">Citato</div>'
+          '<div class="gmail_signature">Firma</div></body></html>';
+      for (final p in [
+        splitHtml(raw),
+        splitHtml(prepareHtml(raw, allowRemote: false).html),
+      ]) {
+        for (final part in [p.body, p.quote, p.signature]) {
+          expect(part, isNotNull);
+          expect(part, isNot(contains('Oggetto segreto')));
+        }
+        expect(p.quote, contains('p{color:red}'));
+      }
+    });
+
     test('Yahoo: yahoo_quoted', () {
       final p = _html('yahoo.html');
       expect(

@@ -60,6 +60,35 @@ final _tablePercent = RegExp(
   caseSensitive: false,
 );
 
+/// A table with a row of 2+ cells of its own (nested tables don't count).
+bool _multiColumn(Element table) => table
+    .querySelectorAll('tr')
+    .any(
+      (r) =>
+          _tableOf(r) == table &&
+          r.children
+                  .where((c) => c.localName == 'td' || c.localName == 'th')
+                  .length >
+              1,
+    );
+
+Element? _tableOf(Element e) {
+  for (var p = e.parent; p != null; p = p.parent) {
+    if (p.localName == 'table') return p;
+  }
+  return null;
+}
+
+/// Keeps only `<style>` in the head: fwfh shows a `<title>`.
+void dropHeadContent(Document doc) {
+  for (final e in doc.head?.children.toList() ?? <Element>[]) {
+    if (e.localName != 'style') e.remove();
+  }
+}
+
+final _percent = RegExp(r'^\s*\d+(\.\d+)?%\s*$');
+final _cssWidthDecl = RegExp(r'(^|;)\s*width\s*:', caseSensitive: false);
+
 /// [style] without the declarations matching [drop].
 String _without(String style, RegExp drop) =>
     style.split(';').where((d) => !drop.hasMatch(d)).join(';');
@@ -124,13 +153,22 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
         // mid-word) and a `width:100%` table splits columns evenly (html_table.dart:369-396).
         // Browsers treat the first as a minimum and size by content: so drop both, after the
         // measure above. Tables in px stay (scaled down by the card).
+        // A one-column table keeps its percentage: fwfh has no columns to split, and without it
+        // the table shrinks to its content.
         final cell = tag == 'td' || tag == 'th';
+        final strip = cell || (tag == 'table' && _multiColumn(e));
         e.attributes[key] = css(
-          cell || tag == 'table'
-              ? _without(value, cell ? _cellWidth : _tablePercent)
-              : value,
+          strip ? _without(value, cell ? _cellWidth : _tablePercent) : value,
         );
       } else if (name == 'width') {
+        // fwfh ignores the attribute on a table: a one-column one gets it as style.
+        if (tag == 'table' &&
+            _percent.hasMatch(value) &&
+            !_multiColumn(e) &&
+            !_cssWidthDecl.hasMatch(e.attributes['style'] ?? '')) {
+          e.attributes['style'] =
+              'width:${value.trim()};${e.attributes['style'] ?? ''}';
+        }
         if (_pixels.firstMatch(value) case final m?) {
           width = _max(width, double.parse(m[1]!));
         }
@@ -143,6 +181,7 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       }
     }
   }
+  dropHeadContent(doc);
   return (html: doc.outerHtml, blocked: blocked, width: width);
 }
 

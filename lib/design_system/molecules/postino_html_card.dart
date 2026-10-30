@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 import '../atoms/postino_icon.dart';
@@ -37,6 +38,7 @@ class PostinoHtmlCard extends StatelessWidget {
         final c = context.pc;
         final content = HtmlWidget(
           html,
+          factoryBuilder: _Factory.new,
           textStyle: quiet
               ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
               : PostinoText.body.copyWith(color: c.ink),
@@ -47,13 +49,15 @@ class PostinoHtmlCard extends StatelessWidget {
           customWidgetBuilder: (e) =>
               e.localName == 'img' && !e.attributes.containsKey('src')
               ? InlineCustomWidget(
-                  child: Semantics(
-                    label: e.attributes['alt'],
-                    image: true,
-                    child: PostinoIcon(
-                      PostinoIcons.image,
-                      size: PostinoSize.iconLg,
-                      color: c.inkSubtle,
+                  child: _BottomBaseline(
+                    child: Semantics(
+                      label: e.attributes['alt'],
+                      image: true,
+                      child: PostinoIcon(
+                        PostinoIcons.image,
+                        size: PostinoSize.iconLg,
+                        color: c.inkSubtle,
+                      ),
                     ),
                   ),
                 )
@@ -88,4 +92,45 @@ class PostinoHtmlCard extends StatelessWidget {
           : body,
     );
   }
+}
+
+/// fwfh 0.17.4 sizes a crowded table by its cells' min intrinsic width (html_table.dart:500), which
+/// asks every inline widget for a dry baseline. An image, an icon or a scroll view (`<pre>`) has
+/// none, and in debug that throws (box.dart:2184, proxy_box.dart:106): fwfh swallows it, but the
+/// throw leaves `_computingThisDryBaseline` set along the chain (box.dart:2134, no `finally`), so
+/// every later paint and hover throws again: the lag on opening a message.
+class _Factory extends WidgetFactory {
+  @override
+  Widget? buildImage(BuildTree tree, ImageMetadata data) =>
+      switch (super.buildImage(tree, data)) {
+        final w? => _BottomBaseline(child: w),
+        null => null,
+      };
+
+  @override
+  Widget? buildHorizontalScrollView(BuildTree tree, Widget child) =>
+      _BottomBaseline(
+        child: super.buildHorizontalScrollView(tree, child) ?? child,
+      );
+}
+
+/// Its baseline at its bottom, where text already puts a box without one (`getDistanceToBaseline`
+/// falls back to the height): the same answer dry and laid out, as Flutter checks (box.dart:2127).
+class _BottomBaseline extends SingleChildRenderObjectWidget {
+  const _BottomBaseline({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderBottomBaseline();
+}
+
+class _RenderBottomBaseline extends RenderProxyBox {
+  @override
+  double computeDistanceToActualBaseline(TextBaseline baseline) => size.height;
+
+  @override
+  double computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) => getDryLayout(constraints).height;
 }

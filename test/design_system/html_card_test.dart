@@ -1,6 +1,7 @@
 // PostinoHtmlCard (#47): the cartoncino in dark theme, wide newsletters scaled down, links.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/domain/safe_html.dart';
@@ -140,6 +141,38 @@ void main() {
         final job = find.textContaining('Succeeded', findRichText: true).first;
         expect(tester.getSize(job).width, greaterThan(w / 3));
         expect(tester.getSize(job).height, lessThan(60)); // at most 2 lines
+      }
+    },
+  );
+
+  testWidgets(
+    'a crowded table with inline images and code: cells measurable, no exception storm',
+    (tester) async {
+      final words = 'parola lunga ' * 30;
+      // In a div, so fwfh's table measures each cell's min intrinsic width: that asks every
+      // inline widget for a dry baseline, which an image, an icon or a scroll view cannot give.
+      final html =
+          '<div><table><tr>'
+          '<td><img src="$_png" width="16" height="16"> <img alt="logo"> '
+          '<span style="display:inline-block"><pre>codice</pre></span> $words</td>'
+          '<td>$words</td></tr></table></div>';
+      await _pump(
+        tester,
+        PostinoHtmlCard(
+          html: prepareHtml(html, allowRemote: false).html,
+          onTapUrl: (_) {},
+        ),
+        width: 800,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      // What fwfh's table does: a failure there is swallowed but leaves debug flags set, and
+      // then every paint and hover throws (the lag on opening a message).
+      for (final p in tester.allRenderObjects.whereType<RenderParagraph>()) {
+        p.getMinIntrinsicWidth(double.infinity);
+      }
+      for (final b in tester.allRenderObjects.whereType<RenderBox>()) {
+        expect(() => b.size, returnsNormally);
       }
     },
   );

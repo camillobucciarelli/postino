@@ -182,8 +182,9 @@ void _patchFwfh(Document doc) {
         h != null &&
         _pixels.hasMatch(h)) {
       final px = _pixels.firstMatch(h)![1];
+      // First, so an explicit inline min-height still wins.
       e.attributes['style'] =
-          '${e.attributes['style'] ?? ''};min-height:${px}px';
+          'min-height:${px}px;${e.attributes['style'] ?? ''}';
     }
   }
 }

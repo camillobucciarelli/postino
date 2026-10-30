@@ -359,6 +359,17 @@ body { background-image: url(//t.example/bg.png); }
       expect(s, isNot(contains(RegExp(r'(^|;)\s*height'))));
     });
 
+    test('an explicit inline min-height wins over the height attribute', () {
+      final s = style(
+        '<table><tr><td height="16" style="min-height:48px">a</td></tr></table>',
+        'td',
+      );
+      expect(
+        s.lastIndexOf('min-height:48px'),
+        greaterThan(s.indexOf('min-height:16px')),
+      );
+    });
+
     for (final style in [
       'display:none',
       'display:none!important',

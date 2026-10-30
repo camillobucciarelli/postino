@@ -281,30 +281,42 @@ void main() {
         ('focus + pressed', [data.focusColor, data.splashColor]),
       ];
       for (final (row, bgs, texts) in _rows) {
-        test(
-          '$row texts stay readable under focus, hover and pressed',
-          () {
-            for (final bg in bgs) {
-              for (final (state, layers) in overlays) {
-                final lit = layers.fold(
-                  bg(c),
-                  (b, o) => Color.alphaBlend(o, b),
+        test('$row texts stay readable under focus, hover and pressed', () {
+          for (final bg in bgs) {
+            for (final (state, layers) in overlays) {
+              final lit = layers.fold(bg(c), (b, o) => Color.alphaBlend(o, b));
+              for (final (name, fg, min) in texts) {
+                expect(
+                  _ratio(fg(c), lit),
+                  greaterThanOrEqualTo(min),
+                  reason: '$name on ${bg(c)} + $state',
                 );
-                for (final (name, fg, min) in texts) {
-                  expect(
-                    _ratio(fg(c), lit),
-                    greaterThanOrEqualTo(min),
-                    reason: '$name on ${bg(c)} + $state',
-                  );
-                }
               }
             }
-          },
-          // ponytail: blocked on #53 decision 1, see the PR: no overlay opacity still visible
-          // keeps list-item-meta at 4.5:1 on list-item-bg-selected.
-          skip: 'Bloccato: overlay hover/pressed e riempimento di focus in attesa di decisione (#53)',
-        );
+          }
+        });
       }
+
+      test('the inset focus ring stands out from the rows it lights up', () {
+        for (final bg in [
+          c.listItemBg,
+          c.listItemBgSelected,
+          c.surface,
+          c.drawerBg,
+          c.drawerItemBgActive,
+        ]) {
+          for (final (state, layers) in overlays.where(
+            (o) => o.$1.startsWith('focus'),
+          )) {
+            final lit = layers.fold(bg, (b, o) => Color.alphaBlend(o, b));
+            expect(
+              _ratio(c.focusRing, lit),
+              greaterThanOrEqualTo(_ui),
+              reason: 'focus-ring on $bg + $state',
+            );
+          }
+        }
+      });
     });
   }
 }

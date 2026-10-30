@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
@@ -438,6 +439,43 @@ void main() {
       );
       handle.dispose();
     });
+
+    testWidgets(
+      'a Conversazione with an unread message elsewhere makes its folders unread',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1600, 900)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final h = await Harness.create();
+        // Read message in the inbox and in Label_12, unread one of the same thread without them.
+        (await h.addAccount('a1'))
+          ..deliver(
+            msg(
+              'r',
+              conversationId: 'c',
+              isRead: true,
+              labelIds: const [inboxLabelId, 'Label_12'],
+            ),
+          )
+          ..deliver(msg('u', conversationId: 'c', labelIds: const ['SENT']));
+        LocaleSettings.setLocaleSync(AppLocale.it);
+        await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+        Routefly.navigate(routePaths.posta.path);
+        await tester.pumpAndSettle();
+        Finder dot(String key) => find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byKey(const ValueKey('unread-dot')),
+        );
+        expect(dot('account-a1'), findsOneWidget);
+        expect(dot('drawer-posta-unificata'), findsOneWidget);
+        final unread = await tester.runAsync(
+          () => getIt<MailStore>().watchUnreadFolders().first,
+        );
+        expect(unread, contains(('a1', 'Label_12')));
+        expect(unread, contains(('a1', inboxLabelId)));
+      },
+    );
 
     testWidgets('at 200% text the dot does not cut the name', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2;

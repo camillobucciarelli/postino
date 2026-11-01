@@ -1,6 +1,7 @@
 // Attachments of a Conversazione (#34): name and size, a tap downloads (then opens from the cache, offline too),
 // progress and Annulla, the offline note, Salva… from the menu, keyboard, screen reader and selectable text.
 import 'dart:async';
+import 'dart:ui' show ViewFocusDirection, ViewFocusEvent, ViewFocusState;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -399,4 +400,42 @@ void main() {
       'Allegato senza nome.pdf',
     );
   });
+
+  // QA saw the menu open on its own after a download and after a cancelled Save As: the window loses and
+  // regains focus in both cases (another app, the system sheet). Not reproduced here; pinned all the same.
+  for (final (what, act) in [
+    ('a download', (WidgetTester t) => _tap(t, _chip('Contratto.pdf'))),
+    (
+      'a cancelled Save As',
+      (WidgetTester t) async {
+        await _tap(t, _in('Contratto.pdf', const ValueKey('attachment-more')));
+        await _tap(t, find.text('Salva…'));
+      },
+    ),
+  ]) {
+    testWidgets(
+      'the menu stays closed after $what, when the window regains focus',
+      (tester) async {
+        await _start(tester);
+        await act(tester);
+        expect(find.text('Salva…'), findsNothing);
+        for (final direction in ViewFocusDirection.values) {
+          for (final state in [
+            ViewFocusState.unfocused,
+            ViewFocusState.focused,
+          ]) {
+            tester.binding.handleViewFocusChanged(
+              ViewFocusEvent(
+                viewId: tester.view.viewId,
+                state: state,
+                direction: direction,
+              ),
+            );
+            await tester.pumpAndSettle();
+          }
+          expect(find.text('Salva…'), findsNothing, reason: '$direction');
+        }
+      },
+    );
+  }
 }

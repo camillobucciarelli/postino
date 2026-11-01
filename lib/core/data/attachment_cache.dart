@@ -110,6 +110,8 @@ class AttachmentCache implements AttachmentRepository {
         await cached.setLastModified(_clock.now());
       }
     }
+    // Set once this call put the attachment in the cache: Annulla pressed later takes it out again.
+    var stored = false;
     if (plain == null) {
       final r = await _sync.fetchAttachment(
         accountId,
@@ -124,7 +126,8 @@ class AttachmentCache implements AttachmentRepository {
         case Ok(:final value):
           plain = value;
       }
-      // Annulla may land after the Provider's last abortable moment: the result is dropped all the same.
+      // Annulla may land after the Provider's last abortable moment, or during encryption and writes:
+      // checked after each step, the result is dropped all the same.
       if (cancelled()) return const Err(CancelledFailure());
       // Bigger than the whole cache: opened from the temporary copy only.
       // ponytail: whole attachment in memory (download, base64, encryption): Gmail caps an attachment at 25 MB
@@ -132,9 +135,7 @@ class AttachmentCache implements AttachmentRepository {
       // ever serves files of hundreds of MB.
       if (plain.length + overhead <= _storage.cap) {
         final sealed = (await _crypt(_encrypt, plain, keys))!;
-        // Encrypting a big file takes a moment: Annulla pressed meanwhile still wins.
         if (cancelled()) return const Err(CancelledFailure());
-
         // Written aside then renamed: a crash never leaves half a file under the real name.
         // A name of its own per write: two downloads of the same attachment never share a staging file.
         final part = _storage.cache.childFile(
@@ -142,7 +143,9 @@ class AttachmentCache implements AttachmentRepository {
         );
         try {
           await part.writeAsBytes(sealed, flush: true);
+          if (cancelled()) return const Err(CancelledFailure());
           await part.rename(cached.path);
+          stored = true;
         } finally {
           if (await part.exists()) await part.delete();
         }
@@ -150,17 +153,19 @@ class AttachmentCache implements AttachmentRepository {
         await (_evicting = _evicting.then((_) => _evict()));
       }
     }
-    if (cancelled()) return const Err(CancelledFailure());
     // One folder per copy, so the file keeps its own name and two of the same name do not clash.
     final dir = await _storage.temp.createTemp();
-    final copy = dir.childFile(safeFileName(attachment.name));
     try {
-      await copy.writeAsBytes(plain, flush: true);
-    } catch (_) {
+      final copy = dir.childFile(safeFileName(attachment.name));
+      if (!cancelled()) await copy.writeAsBytes(plain, flush: true);
+      if (!cancelled()) return Ok(copy.path);
+      if (stored && await cached.exists()) await cached.delete();
       await dir.delete(recursive: true);
+      return const Err(CancelledFailure());
+    } catch (_) {
+      if (await dir.exists()) await dir.delete(recursive: true);
       rethrow;
     }
-    return Ok(copy.path);
   }
 
   /// One eviction at a time: two at once would pick, and delete, the same file.
@@ -272,7 +277,10 @@ String safeFileName(String name) {
   if (s.length > 150) {
     final dot = s.lastIndexOf('.');
     final ext = dot > 0 && s.length - dot <= 10 ? s.substring(dot) : '';
-    s = s.substring(0, 150 - ext.length) + ext;
+    s = (s.substring(0, 150 - ext.length) + ext).replaceAll(
+      RegExp(r'[. ]+$'),
+      '',
+    );
   }
   if (s.isEmpty) return 'allegato';
   final stem = s.split('.').first.trim().toUpperCase();

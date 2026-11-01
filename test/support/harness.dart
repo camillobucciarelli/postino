@@ -25,7 +25,11 @@ class Harness {
   final saver = FakeFileSaver();
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
-  final fs = MemoryFileSystem();
+  /// [onFileOp] sees (and may fail, by throwing) every operation on them.
+  late final fs = MemoryFileSystem(
+    opHandle: (path, op) => onFileOp?.call(path, op),
+  );
+  void Function(String path, FileSystemOp op)? onFileOp;
 
   /// [attachmentCap]: the attachment cache's cap in bytes, small to test eviction.
   static Future<Harness> create({int? attachmentCap}) async {

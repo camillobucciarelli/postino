@@ -72,9 +72,10 @@ class _ConversationViewState extends State<ConversationView> {
   final _downloads =
       <(String, String), ({double done, Completer<void> cancel})>{};
 
-  /// The failure, and whether it was a Save As: Riprova repeats the same action.
+  /// The failure, whether it was a Save As (Riprova repeats the same action) and whether the save itself
+  /// failed, not the download before it.
   final _attachmentFailed =
-      <(String, String), ({Failure failure, bool save})>{};
+      <(String, String), ({Failure failure, bool save, bool saving})>{};
 
   @override
   void initState() {
@@ -178,7 +179,13 @@ class _ConversationViewState extends State<ConversationView> {
       r = await GetIt.I<AttachmentRepository>().file(
         widget.accountId,
         messageId,
-        attachment,
+        // The opened copy carries the name the chip shows.
+        Attachment(
+          id: attachment.id,
+          name: _name(attachment),
+          size: attachment.size,
+          mimeType: attachment.mimeType,
+        ),
         onProgress: (done) {
           if (mounted && _downloads.containsKey(key)) {
             setState(() => _downloads[key] = (done: done, cancel: cancel));
@@ -192,7 +199,11 @@ class _ConversationViewState extends State<ConversationView> {
         setState(() {
           _downloads.remove(key);
           if (r case Err(:final failure) when failure is! CancelledFailure) {
-            _attachmentFailed[key] = (failure: failure, save: save);
+            _attachmentFailed[key] = (
+              failure: failure,
+              save: save,
+              saving: false,
+            );
           }
         });
       }
@@ -200,7 +211,6 @@ class _ConversationViewState extends State<ConversationView> {
     if (!mounted) return;
     if (r case Ok(value: final path)) {
       if (!save) {
-        // ponytail: url_launcher opens file: URIs on desktop only; Android/iOS need a native "open with" (e.g. open_filex) when mobile ships.
         return GetIt.I<LinkOpener>().open(Uri.file(path));
       }
       try {
@@ -212,6 +222,7 @@ class _ConversationViewState extends State<ConversationView> {
             () => _attachmentFailed[key] = (
               failure: UnexpectedFailure(e, s),
               save: true,
+              saving: true,
             ),
           );
         }
@@ -220,8 +231,10 @@ class _ConversationViewState extends State<ConversationView> {
   }
 
   /// The attachment's name, or «Allegato senza nome» when the message gives none.
-  String _name(Attachment a) =>
-      a.name.isEmpty ? context.t.conversazione.attachmentUntitled : a.name;
+  /// The same name everywhere (chip, opened copy, Save As), with an extension from its type so it opens right.
+  String _name(Attachment a) => a.name.isEmpty
+      ? '${context.t.conversazione.attachmentUntitled}${a.fallbackExtension}'
+      : a.name;
 
   void _toggle(String id, bool hasBody) {
     final open = !_expanded[id]!;
@@ -270,8 +283,9 @@ class _ConversationViewState extends State<ConversationView> {
           },
           error: switch (_attachmentFailed[(message.id, a.id)]) {
             null => null,
-            (failure: OfflineFailure(), save: _) => t.attachmentOffline,
-            (failure: _, save: true) => t.attachmentSaveFailed,
+            (failure: OfflineFailure(), save: _, saving: _) =>
+              t.attachmentOffline,
+            (failure: _, save: _, saving: true) => t.attachmentSaveFailed,
             _ => t.attachmentFailed,
           },
           retryLabel: t.retry,

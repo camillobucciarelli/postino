@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file/file.dart';
+import 'package:file/memory.dart' show FileSystemOp;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
@@ -230,29 +231,23 @@ void main() {
     expect(_cached, isEmpty);
   });
 
-  test(
-    'Annulla while a big attachment is being encrypted caches nothing',
-    () async {
+  for (final (step, where) in [
+    ('the cache file is written', '.part'),
+    ('the temporary copy is written', '/tmp/postino-attachments/'),
+  ]) {
+    test('Annulla while $step leaves nothing behind', () async {
       await _start();
-      final big = gmail.attach('m1', 'big.bin', List.filled(2 << 20, 7));
+      final a = gmail.attach('m1', 'a.pdf', _content('a'));
       final cancel = Completer<void>();
-      final r = cache.file(
-        'a1',
-        'm1',
-        big,
-        cancel: cancel.future,
-        // Downloaded: the encryption (in an isolate, past 1 MB) starts now.
-        onProgress: (done) {
-          if (done == 1) {
-            Future<void>.delayed(
-              const Duration(milliseconds: 1),
-              cancel.complete,
-            );
-          }
-        },
-      );
+      h.onFileOp = (path, op) {
+        if (op == FileSystemOp.write &&
+            path.contains(where) &&
+            !cancel.isCompleted) {
+          cancel.complete();
+        }
+      };
       expect(
-        await r,
+        await _file(a, cancel: cancel.future),
         isA<Err<String>>().having(
           (e) => e.failure,
           'failure',
@@ -260,6 +255,29 @@ void main() {
         ),
       );
       expect(_cached, isEmpty);
+      expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
+    });
+  }
+
+  test(
+    'a temporary copy that cannot be written is a failure, and leaves nothing',
+    () async {
+      await _start();
+      final a = gmail.attach('m1', 'a.pdf', _content('a'));
+      h.onFileOp = (path, op) {
+        if (op == FileSystemOp.write && path.startsWith('/tmp/')) {
+          throw const FileSystemException('disk full');
+        }
+      };
+      expect(
+        await _file(a),
+        isA<Err<String>>().having(
+          (e) => e.failure,
+          'failure',
+          isA<UnexpectedFailure>(),
+        ),
+      );
+      h.onFileOp = null;
       expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
     },
   );
@@ -277,6 +295,8 @@ void main() {
     expect(safeFileName('lpt1'), '_lpt1');
     expect(safeFileName('console.txt'), 'console.txt');
     expect(safeFileName('report. . '), 'report');
+    // Cut at 150, no trailing dot or space left by the cut.
+    expect(safeFileName('${'a' * 149} xxxxx'), 'a' * 149);
     expect(safeFileName('a?b*c<d>|"e.pdf'), 'a_b_c_d___e.pdf');
     final long = safeFileName('${'x' * 300}.pdf');
     expect(long, hasLength(150));

@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -64,13 +65,43 @@ class SystemConnectivity implements Connectivity {
 
 @Singleton(as: LinkOpener, env: [Environment.prod])
 class SystemLinkOpener implements LinkOpener {
-  // ponytail: a link nothing can open does nothing; a Snackbar if users ever ask why.
+  SystemLinkOpener()
+    : _launch = _launchExternal,
+      _openFile = _openFilex,
+      _platform = null;
+
+  /// [platform] stands for [defaultTargetPlatform].
+  @visibleForTesting
+  SystemLinkOpener.test({
+    required this._launch,
+    required this._openFile,
+    required TargetPlatform this._platform,
+  });
+
+  final Future<void> Function(Uri url) _launch;
+  final Future<void> Function(String path) _openFile;
+  final TargetPlatform? _platform;
+
+  /// A local file (an attachment) opens in the system's app: url_launcher does it on desktop,
+  /// Android and iOS need open_filex (its FileProvider; Quick Look and "Open in").
   @override
   Future<void> open(Uri url) async {
+    final mobile = switch (_platform ?? defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
+    // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+      await (url.isScheme('file') && mobile && !kIsWeb
+          ? _openFile(url.toFilePath())
+          : _launch(url));
     } catch (_) {}
   }
+
+  static Future<void> _launchExternal(Uri url) =>
+      launchUrl(url, mode: LaunchMode.externalApplication);
+
+  static Future<void> _openFilex(String path) => OpenFilex.open(path);
 }
 
 /// The system Save As dialog (file_selector), on desktop only.

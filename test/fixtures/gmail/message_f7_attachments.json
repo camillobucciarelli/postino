@@ -114,12 +114,12 @@
         },
         {
           "partId": "2",
-          "mimeType": "application/octet-stream",
+          "mimeType": "text/plain",
           "filename": "",
           "headers": [
             {
               "name": "Content-Type",
-              "value": "application/octet-stream"
+              "value": "text/plain"
             },
             {
               "name": "Content-Disposition",
@@ -129,6 +129,20 @@
           "body": {
             "size": 3,
             "data": "YWJj"
+          }
+        },
+        {
+          "partId": "3",
+          "mimeType": "text/plain",
+          "filename": "vuoto.txt",
+          "headers": [
+            {
+              "name": "Content-Disposition",
+              "value": "attachment; filename=\"vuoto.txt\""
+            }
+          ],
+          "body": {
+            "size": 0
           }
         }
       ]

@@ -227,6 +227,10 @@ class GmailProvider implements MailProvider {
     ).where((p) => p['partId'] == attachmentId).firstOrNull;
     if (part == null) throw const _Failed(NotFoundFailure());
     final body = part['body'] as Map;
+    // An empty file has neither.
+    if (body['data'] == null && body['attachmentId'] == null) {
+      return Ok(Uint8List(0));
+    }
     final data =
         body['data'] as String? ??
         (await _request(
@@ -397,6 +401,7 @@ class GmailProvider implements MailProvider {
         id: p['partId'] as String,
         name: p['filename'] as String? ?? '',
         size: (p['body'] as Map?)?['size'] as int? ?? 0,
+        mimeType: p['mimeType'] as String?,
       ),
   ];
 
@@ -407,9 +412,12 @@ class GmailProvider implements MailProvider {
   ) sync* {
     final headers = _partHeaders(part);
     final body = part['body'] as Map?;
-    // A filename, or `Content-Disposition: attachment` even without one (its name is then empty).
+    // A filename (an empty file too), or `Content-Disposition: attachment` with content even without one
+    // (its name is then empty).
     if (_isAttachment(part) &&
-        (body?['attachmentId'] != null || body?['data'] != null) &&
+        ((part['filename'] as String? ?? '').isNotEmpty ||
+            body?['attachmentId'] != null ||
+            body?['data'] != null) &&
         (headers['content-id'] == null ||
             (headers['content-disposition'] ?? '').startsWith('attachment'))) {
       yield part;

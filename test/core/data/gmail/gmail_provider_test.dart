@@ -588,11 +588,16 @@ void main() {
       test('fetchBody lists the PDF and the nameless part, not the logo the HTML shows by cid:', () async {
         final body = _ok(await _Recorded(route).provider.fetchBody(f7));
         expect(body.content, startsWith('Ciao Bruno,'));
-        expect(body.attachments!.map((a) => (a.id, a.name, a.size)), [
-          ('1', 'Preventivo 2027.pdf', 49),
-          // `Content-Disposition: attachment` without a filename: listed, nameless.
-          ('2', '', 3),
-        ]);
+        expect(
+          body.attachments!.map((a) => (a.id, a.name, a.size, a.mimeType)),
+          [
+            ('1', 'Preventivo 2027.pdf', 49, 'application/pdf'),
+            // `Content-Disposition: attachment` without a filename: listed, nameless, with its type.
+            ('2', '', 3, 'text/plain'),
+            // An empty file: listed all the same.
+            ('3', 'vuoto.txt', 0, 'text/plain'),
+          ],
+        );
       });
 
       test('fetchAttachment finds the part, then downloads its data', () async {
@@ -639,6 +644,15 @@ void main() {
         );
         expect(g.urls, hasLength(1));
       });
+
+      test(
+        'an empty file downloads as no bytes, without a second request',
+        () async {
+          final g = _Recorded(route);
+          expect(_ok(await g.provider.fetchAttachment(f7, '3')), isEmpty);
+          expect(g.urls, hasLength(1));
+        },
+      );
 
       test('the inline logo is not an attachment to download', () async {
         expect(

@@ -2,7 +2,12 @@ import 'dart:typed_data' show Uint8List;
 
 /// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
 class Attachment {
-  const Attachment({required this.id, required this.name, required this.size});
+  const Attachment({
+    required this.id,
+    required this.name,
+    required this.size,
+    this.mimeType,
+  });
   final String id;
 
   /// Empty when the message gives none.
@@ -10,6 +15,26 @@ class Attachment {
 
   /// Bytes, as the Provider reports it.
   final int size;
+
+  /// `application/pdf`…, if the Provider says it.
+  final String? mimeType;
+
+  /// `.pdf` for a nameless attachment of a well-known type, else empty: its file still opens in the right app.
+  String get fallbackExtension => _extensions[mimeType?.toLowerCase()] ?? '';
+
+  // ponytail: the common types only; add one when a nameless attachment of another type shows up.
+  static const _extensions = {
+    'application/pdf': '.pdf',
+    'text/plain': '.txt',
+    'text/html': '.html',
+    'text/calendar': '.ics',
+    'text/csv': '.csv',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'application/zip': '.zip',
+    'message/rfc822': '.eml',
+  };
 }
 
 enum LabelKind { etichetta, cartella }

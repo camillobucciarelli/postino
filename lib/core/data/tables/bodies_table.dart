@@ -34,11 +34,18 @@ class AttachmentsConverter extends TypeConverter<List<Attachment>, String> {
         id: a['id'] as String,
         name: a['name'] as String,
         size: a['size'] as int,
+        mimeType: a['mimeType'] as String?,
       ),
   ];
 
   @override
   String toSql(List<Attachment> value) => jsonEncode([
-    for (final a in value) {'id': a.id, 'name': a.name, 'size': a.size},
+    for (final a in value)
+      {
+        'id': a.id,
+        'name': a.name,
+        'size': a.size,
+        if (a.mimeType != null) 'mimeType': a.mimeType,
+      },
   ]);
 }

@@ -343,6 +343,23 @@ void main() {
     expect(h.links.opened, isEmpty);
   });
 
+  testWidgets(
+    'a download that fails before Salva… is a failed download, not a failed save',
+    (tester) async {
+      await _start(tester);
+      h.keychain.failure = Exception('keychain locked');
+      await _tap(tester, _in('note.txt', const ValueKey('attachment-more')));
+      await _tap(tester, find.text('Salva…'));
+      expect(
+        find.textContaining('Scaricamento non riuscito', findRichText: true),
+        findsOneWidget,
+      );
+      h.keychain.failure = null;
+      await _tap(tester, _in('note.txt', const ValueKey('attachment-retry')));
+      expect(h.saver.saved.single.$2, 'note.txt');
+    },
+  );
+
   testWidgets('a Save As that fails says so, and Riprova saves again', (
     tester,
   ) async {
@@ -368,12 +385,16 @@ void main() {
   ) async {
     await _start(tester);
     gmail
-      ..attach('m2', '', [1, 2])
+      ..attach('m2', '', [1, 2], mimeType: 'application/pdf')
       ..deliver(msg('m2', conversationId: 't2', subject: 'Senza nome'));
     await tester.pumpAndSettle();
     await _tap(tester, find.byKey(const ValueKey('row-a1-m2')));
-    expect(find.text('Allegato senza nome'), findsOneWidget);
+    // Named by its type, so it opens in the right app.
+    expect(find.text('Allegato senza nome.pdf'), findsOneWidget);
     await _tap(tester, find.byKey(const ValueKey('attachment-m2-att-')));
-    expect(h.links.opened.single.pathSegments.last, 'allegato');
+    expect(
+      Uri.decodeComponent(h.links.opened.single.pathSegments.last),
+      'Allegato senza nome.pdf',
+    );
   });
 }

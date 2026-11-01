@@ -100,8 +100,18 @@ class FakeMailProvider implements MailProvider {
 
   // --- simulation ---
   /// Gives message [messageId] an attachment [name] holding [bytes]; its id is `att-<name>`.
-  Attachment attach(String messageId, String name, List<int> bytes) {
-    final a = Attachment(id: 'att-$name', name: name, size: bytes.length);
+  Attachment attach(
+    String messageId,
+    String name,
+    List<int> bytes, {
+    String? mimeType,
+  }) {
+    final a = Attachment(
+      id: 'att-$name',
+      name: name,
+      size: bytes.length,
+      mimeType: mimeType,
+    );
     attachmentData[(messageId, a.id)] = Uint8List.fromList(bytes);
     final old = bodies[messageId] ?? _defaultBody(messageId);
     bodies[messageId] = MessageBody(

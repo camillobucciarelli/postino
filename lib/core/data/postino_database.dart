@@ -95,7 +95,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -138,6 +138,8 @@ class PostinoDatabase extends _$PostinoDatabase {
         await m.createIndex(messagesConversation);
       }
       if (from < 6) await m.createTable(trustedSenders);
+      // From v1 the bodies table was just created above, already with it.
+      if (from >= 2 && from < 9) await m.addColumn(bodies, bodies.attachments);
       if (from < 8) await m.createTable(deviceSettings);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);

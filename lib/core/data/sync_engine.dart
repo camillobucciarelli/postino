@@ -7,6 +7,7 @@ import 'package:injectable/injectable.dart';
 import '../domain/account.dart';
 import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
+import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import 'gmail/gmail_provider.dart';
@@ -116,6 +117,24 @@ class SyncEngine implements MailSync {
         debugPrint('[sync] $accountId: body $messageId failed, $failure');
         return Err(failure);
     }
+  }
+
+  /// Straight from the Provider, outside the Account's serial queue: a download never waits behind a sync.
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String accountId,
+    String messageId,
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    return _provider(account).fetchAttachment(
+      messageId,
+      attachmentId,
+      onProgress: onProgress,
+      cancel: cancel,
+    );
   }
 
   Future<Account?> _account(String id) async =>

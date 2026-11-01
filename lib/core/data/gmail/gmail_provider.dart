@@ -18,7 +18,7 @@ import 'google_client.dart';
 const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
-// ponytail: send, drafts and attachments stay stubs until the tickets that need them (#32 and following).
+// ponytail: send and drafts stay stubs until the tickets that need them (#32 and following).
 class GmailProvider implements MailProvider {
   GmailProvider(
     this._accountId,
@@ -207,11 +207,44 @@ class GmailProvider implements MailProvider {
         return const Ok(null);
       });
 
+  /// [attachmentId] is the part id ([_attachments]): the message comes first, then the part's data,
+  /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.
   @override
   Future<Result<AttachmentBytes>> fetchAttachment(
     String messageId,
-    String attachmentId,
-  ) async => _todo;
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) => _guard(() async {
+    final j = await _request(
+      'GET',
+      'messages/$messageId',
+      query: {'format': 'full'},
+      cancel: cancel,
+    );
+    final part = _attachmentParts(
+      j['payload'] as Map<String, dynamic>? ?? const {},
+    ).where((p) => p['partId'] == attachmentId).firstOrNull;
+    if (part == null) throw const _Failed(NotFoundFailure());
+    final body = part['body'] as Map;
+    // An empty file has neither.
+    if (body['data'] == null && body['attachmentId'] == null) {
+      return Ok(Uint8List(0));
+    }
+    final data =
+        body['data'] as String? ??
+        (await _request(
+              'GET',
+              'messages/$messageId/attachments/${body['attachmentId']}',
+              // Base64 in JSON: about 4/3 of the file.
+              expected: (body['size'] as int? ?? 0) * 4 ~/ 3,
+              onProgress: onProgress,
+              cancel: cancel,
+            ))['data']
+            as String;
+    onProgress?.call(1);
+    return Ok(base64Url.decode(base64Url.normalize(data)));
+  });
 
   @override
   Future<Result<void>> send(OutgoingMessage message) async => _todo;
@@ -329,14 +362,20 @@ class GmailProvider implements MailProvider {
       if (body != null && m.labelIds.contains(inboxLabelId)) m.id: body,
   };
 
-  /// The HTML part if there is one, else the plain text one.
+  /// The HTML part if there is one, else the plain text one, with the attachments;
+  /// null for a message with neither.
   Future<MessageBody?> _body(
     String messageId,
     Map<String, dynamic> payload,
   ) async {
     final html = _part(payload, 'text/html');
     final part = html ?? _part(payload, 'text/plain');
-    if (part == null) return null;
+    final attachments = _attachments(payload);
+    if (part == null) {
+      return attachments.isEmpty
+          ? null
+          : MessageBody('', BodyKind.testo, attachments: attachments);
+    }
     final body = part['body'] as Map;
     // A big part comes as an attachmentId instead of inline data.
     final data =
@@ -352,8 +391,47 @@ class GmailProvider implements MailProvider {
         allowMalformed: true,
       ),
       html != null ? BodyKind.html : BodyKind.testo,
+      attachments: attachments,
     );
   }
+
+  static List<Attachment> _attachments(Map<String, dynamic> payload) => [
+    for (final p in _attachmentParts(payload))
+      Attachment(
+        id: p['partId'] as String,
+        name: p['filename'] as String? ?? '',
+        size: (p['body'] as Map?)?['size'] as int? ?? 0,
+        mimeType: p['mimeType'] as String?,
+      ),
+  ];
+
+  /// The parts the user sees as attachments, depth first; a part without a filename has an empty name. An image the HTML shows through `cid:`
+  /// (a Content-ID, not marked `attachment`) is part of the body, not an attachment.
+  static Iterable<Map<String, dynamic>> _attachmentParts(
+    Map<String, dynamic> part,
+  ) sync* {
+    final headers = _partHeaders(part);
+    final body = part['body'] as Map?;
+    // A filename (an empty file too), or `Content-Disposition: attachment` with content even without one
+    // (its name is then empty).
+    if (_isAttachment(part) &&
+        ((part['filename'] as String? ?? '').isNotEmpty ||
+            body?['attachmentId'] != null ||
+            body?['data'] != null) &&
+        (headers['content-id'] == null ||
+            (headers['content-disposition'] ?? '').startsWith('attachment'))) {
+      yield part;
+    }
+    for (final p in part['parts'] as List? ?? const []) {
+      yield* _attachmentParts(p as Map<String, dynamic>);
+    }
+  }
+
+  /// A part's headers by lowercase name, values lowercased.
+  static Map<String, String> _partHeaders(Map<String, dynamic> part) => {
+    for (final h in part['headers'] as List? ?? const [])
+      (h['name'] as String).toLowerCase(): (h['value'] as String).toLowerCase(),
+  };
 
   /// The first [mime] part carrying its content, inline or by attachmentId; attachments are skipped.
   static Map<String, dynamic>? _part(Map<String, dynamic> part, String mime) {
@@ -373,11 +451,9 @@ class GmailProvider implements MailProvider {
 
   static bool _isAttachment(Map<String, dynamic> part) =>
       (part['filename'] as String? ?? '').isNotEmpty ||
-      [
-        for (final h in part['headers'] as List? ?? const [])
-          if ((h['name'] as String).toLowerCase() == 'content-disposition')
-            (h['value'] as String).toLowerCase(),
-      ].any((v) => v.startsWith('attachment'));
+      (_partHeaders(part)['content-disposition'] ?? '').startsWith(
+        'attachment',
+      );
 
   /// Gmail HTML-escapes snippets.
   static String _unescape(String s) => s
@@ -408,29 +484,50 @@ class GmailProvider implements MailProvider {
 
   /// A call to the Gmail API: refreshes an expired token first and once more on a 401; retries a quota hit with backoff.
   /// [body] goes as JSON. Failures are thrown as [_Failed], which [_guard] turns into an [Err].
+  /// [onProgress] gets the share of the response read, out of its length or else [expected] bytes;
+  /// completing [cancel] aborts it.
   Future<Map<String, dynamic>> _request(
     String method,
     String path, {
     Map<String, Object> query = const {},
     Object? body,
+    int expected = 0,
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
   }) async {
     var tokens = await _validTokens();
     final url = _api
         .resolve(path)
         .replace(queryParameters: query.isEmpty ? null : query);
-    Future<http.Response> attempt() async {
-      final request = http.Request(method, url)
-        ..headers['authorization'] = 'Bearer ${tokens.access}';
+    // 30 s for the answer to start, then 30 s at most between two chunks: a long download is fine, a stalled one is not.
+    const stall = Duration(seconds: 30);
+    Future<http.Response> send() async {
+      final request = cancel == null
+          ? http.Request(method, url)
+          : http.AbortableRequest(method, url, abortTrigger: cancel);
+      request.headers['authorization'] = 'Bearer ${tokens.access}';
       if (body != null) {
         request
           ..headers['content-type'] = 'application/json'
           ..body = jsonEncode(body);
       }
-      return http.Response.fromStream(await _http.send(request));
+      final r = await _http.send(request).timeout(stall);
+      final total = r.contentLength ?? expected;
+      var read = 0;
+      final bytes = await http.ByteStream(
+        r.stream.timeout(stall).map((chunk) {
+          read += chunk.length;
+          if (total > 0) onProgress?.call(min(1, read / total));
+          return chunk;
+        }),
+      ).toBytes();
+      return http.Response.bytes(
+        bytes,
+        r.statusCode,
+        headers: r.headers,
+        request: r.request,
+      );
     }
-
-    Future<http.Response> send() =>
-        attempt().timeout(const Duration(seconds: 30));
 
     var r = await send();
     if (r.statusCode == 401) {
@@ -525,6 +622,8 @@ class GmailProvider implements MailProvider {
       return await body();
     } on _Failed catch (e) {
       return Err(e.failure);
+    } on http.RequestAbortedException {
+      return const Err(CancelledFailure());
     } on http.ClientException {
       return const Err(OfflineFailure());
     } on TimeoutException {

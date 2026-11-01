@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
+import '../../../core/domain/attachment_repository.dart';
 import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
@@ -23,6 +24,7 @@ import 'message_time.dart';
 /// expanded. Opening it marks it read and fetches what is missing; a missing body is downloaded when its
 /// message expands, and retried when the network returns. HTML bodies render cleaned, their remote
 /// resources blocked unless shown for the message or its sender is a Mittente fidato (ADR 0007).
+/// A tap on an attachment downloads it (unless cached) and opens it in the system's app; its menu saves it (#34).
 /// Routing is the caller's ([onBack]).
 class ConversationView extends StatefulWidget {
   const ConversationView({
@@ -64,6 +66,16 @@ class _ConversationViewState extends State<ConversationView> {
 
   /// Set when the missing messages could not be fetched: retried when the network returns.
   bool _hydrationFailed = false;
+
+  /// By (message id, attachment id): the downloads running, with their progress and their Annulla,
+  /// and why the last one failed.
+  final _downloads =
+      <(String, String), ({double done, Completer<void> cancel})>{};
+
+  /// The failure, whether it was a Save As (Riprova repeats the same action) and whether the save itself
+  /// failed, not the download before it.
+  final _attachmentFailed =
+      <(String, String), ({Failure failure, bool save, bool saving})>{};
 
   @override
   void initState() {
@@ -117,7 +129,8 @@ class _ConversationViewState extends State<ConversationView> {
       _open();
     }
     for (final (:message, :body) in messages) {
-      if (body == null &&
+      // A body stored before attachments were known is downloaded again, shown meanwhile.
+      if ((body == null || body.attachments == null) &&
           _expanded[message.id]! &&
           !_failed.containsKey(message.id)) {
         _fetchBody(message.id);
@@ -148,6 +161,84 @@ class _ConversationViewState extends State<ConversationView> {
     );
   }
 
+  /// Downloads (unless cached) then opens it in the system's app, or with [save] offers Save As.
+  Future<void> _attachment(
+    String messageId,
+    Attachment attachment, {
+    bool save = false,
+  }) async {
+    final key = (messageId, attachment.id);
+    if (_downloads.containsKey(key)) return;
+    final cancel = Completer<void>();
+    setState(() {
+      _downloads[key] = (done: 0, cancel: cancel);
+      _attachmentFailed.remove(key);
+    });
+    Result<String> r = const Err(UnexpectedFailure('attachment'));
+    try {
+      r = await GetIt.I<AttachmentRepository>().file(
+        widget.accountId,
+        messageId,
+        // The opened copy carries the name the chip shows.
+        Attachment(
+          id: attachment.id,
+          name: _name(attachment),
+          size: attachment.size,
+          mimeType: attachment.mimeType,
+        ),
+        onProgress: (done) {
+          if (mounted && _downloads.containsKey(key)) {
+            setState(() => _downloads[key] = (done: done, cancel: cancel));
+          }
+        },
+        cancel: cancel.future,
+      );
+    } finally {
+      // Whatever happens, the chip leaves the download: never stuck on it.
+      if (mounted) {
+        setState(() {
+          _downloads.remove(key);
+          if (r case Err(:final failure) when failure is! CancelledFailure) {
+            _attachmentFailed[key] = (
+              failure: failure,
+              save: save,
+              saving: false,
+            );
+          }
+        });
+      }
+    }
+    if (!mounted) return;
+    if (r case Ok(value: final path)) {
+      if (!save) {
+        return GetIt.I<LinkOpener>().open(Uri.file(path));
+      }
+      try {
+        await GetIt.I<FileSaver>().save(path, _name(attachment));
+      } on Exception catch (e, s) {
+        // A full disk, a folder it may not write to: said on the attachment, Riprova saves again.
+        if (mounted) {
+          setState(
+            () => _attachmentFailed[key] = (
+              failure: UnexpectedFailure(e, s),
+              save: true,
+              saving: true,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// The attachment's name, or «Allegato senza nome» when the message gives none.
+  /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
+  /// so it opens in the right app (open_filex picks the app by extension only).
+  String _name(Attachment a) => switch (a.name) {
+    '' => '${context.t.conversazione.attachmentUntitled}${a.fallbackExtension}',
+    final n when !n.contains('.') => '$n${a.fallbackExtension}',
+    final n => n,
+  };
+
   void _toggle(String id, bool hasBody) {
     final open = !_expanded[id]!;
     setState(() => _expanded[id] = open);
@@ -163,8 +254,56 @@ class _ConversationViewState extends State<ConversationView> {
     for (final s in _subs) {
       unawaited(s.cancel());
     }
+    for (final d in _downloads.values) {
+      if (!d.cancel.isCompleted) d.cancel.complete();
+    }
     super.dispose();
   }
+
+  List<PostinoAttachmentChip> _attachments(
+    Message message,
+    MessageBody? body,
+    Translations$conversazione$it t,
+    String locale,
+  ) => [
+    for (final a in body?.attachments ?? const <Attachment>[])
+      if (_downloads[(message.id, a.id)] case final d)
+        PostinoAttachmentChip(
+          key: ValueKey('attachment-${message.id}-${a.id}'),
+          name: _name(a),
+          size: _fileSize(a.size, locale),
+          openLabel: t.attachmentOpen,
+          onOpen: () => _attachment(message.id, a),
+          progress: d?.done,
+          progressLabel: d == null
+              ? null
+              : t.attachmentDownloading(percent: (d.done * 100).round()),
+          cancelLabel: t.attachmentCancel,
+          onCancel: () {
+            if (d case (done: _, :final cancel) when !cancel.isCompleted) {
+              cancel.complete();
+            }
+          },
+          error: switch (_attachmentFailed[(message.id, a.id)]) {
+            null => null,
+            (failure: OfflineFailure(), save: _, saving: _) =>
+              t.attachmentOffline,
+            (failure: _, save: _, saving: true) => t.attachmentSaveFailed,
+            _ => t.attachmentFailed,
+          },
+          retryLabel: t.retry,
+          onRetry: () => _attachment(
+            message.id,
+            a,
+            save: _attachmentFailed[(message.id, a.id)]?.save ?? false,
+          ),
+          moreLabel: t.attachmentMore,
+          saveLabel: t.attachmentSave,
+          onSave: GetIt.I<FileSaver>().available
+              ? () => _attachment(message.id, a, save: true)
+              : null,
+        ),
+  ];
 
   bool _allowRemote(Message message) =>
       _trusted.contains(normalizeAddress(message.from)) ||
@@ -208,7 +347,9 @@ class _ConversationViewState extends State<ConversationView> {
       contentWidth: part.width,
       quiet: quiet,
       onTapUrl: (url) {
-        if (Uri.tryParse(url) case final uri?) {
+        // Web and mail only: a `file:` link in a message must never open (or hand out) a local file.
+        if (Uri.tryParse(url) case final uri?
+            when ['http', 'https', 'mailto'].contains(uri.scheme)) {
           unawaited(GetIt.I<LinkOpener>().open(uri));
         }
       },
@@ -340,8 +481,13 @@ class _ConversationViewState extends State<ConversationView> {
                     notices: _notices(message, body, t),
                     unread: !message.isRead,
                     expanded: _expanded[message.id]!,
-                    onToggle: () => _toggle(message.id, body != null),
+                    // A body without its attachments known (stored before v9) is downloaded again too.
+                    onToggle: () => _toggle(
+                      message.id,
+                      body != null && body.attachments != null,
+                    ),
                     quoteLabel: t.showQuoted,
+                    attachments: _attachments(message, body, t, locale),
                     signature: switch ((body, shown[message.id]?.signature)) {
                       (final b?, final s?) => _part(
                         s,
@@ -381,4 +527,18 @@ class _ConversationViewState extends State<ConversationView> {
             ),
     );
   }
+}
+
+/// «980 B», «88 KB», «1,2 MB»: binary units, one decimal from MB, in the reader's [locale].
+String _fileSize(int bytes, String locale) {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  var value = bytes.toDouble();
+  var unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  final f = NumberFormat.decimalPattern(locale)
+    ..maximumFractionDigits = unit >= 2 ? 1 : 0;
+  return '${f.format(value)} ${units[unit]}';
 }

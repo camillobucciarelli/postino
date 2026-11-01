@@ -35,6 +35,13 @@ PostinoThreadMessage _message({bool expanded = true}) => PostinoThreadMessage(
   body: const PostinoMessageBody(text: 'Ciao'),
   quote: const Text('citato'),
   quoteLabel: 'Mostra testo citato',
+  attachments: const [
+    PostinoAttachmentChip(
+      name: 'Preventivo ristrutturazione cucina e bagno piano terra.pdf',
+      size: '1,2 MB',
+      onOpen: _noop,
+    ),
+  ],
 );
 
 final _drawer = PostinoNavigationDrawer(
@@ -135,6 +142,14 @@ void main() {
         find.byKey(const ValueKey('recipients-toggle')),
       ),
       'quote toggle': (_message(), find.byKey(const ValueKey('quote-toggle'))),
+      'attachment chip': (
+        const PostinoAttachmentChip(
+          name: 'Contratto.pdf',
+          size: '88 KB',
+          onOpen: _noop,
+        ),
+        find.byKey(const ValueKey('attachment-open')),
+      ),
       'drawer item': (_drawer, find.byKey(const ValueKey('other'))),
       'active drawer item': (_drawer, find.byKey(const ValueKey('active'))),
     };

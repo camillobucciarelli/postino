@@ -1,10 +1,40 @@
 import 'dart:typed_data' show Uint8List;
 
+/// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
 class Attachment {
-  const Attachment({required this.id, required this.name, required this.size});
+  const Attachment({
+    required this.id,
+    required this.name,
+    required this.size,
+    this.mimeType,
+  });
   final String id;
+
+  /// Empty when the message gives none.
   final String name;
+
+  /// Bytes, as the Provider reports it.
   final int size;
+
+  /// `application/pdf`…, if the Provider says it.
+  final String? mimeType;
+
+  /// `.pdf` for a nameless attachment of a well-known type, else empty: its file still opens in the right app.
+  String get fallbackExtension => _extensions[mimeType?.toLowerCase()] ?? '';
+
+  // ponytail: the common types only; add one when a nameless attachment of another type shows up.
+  static const _extensions = {
+    'application/pdf': '.pdf',
+    'text/plain': '.txt',
+    'text/html': '.html',
+    'text/calendar': '.ics',
+    'text/csv': '.csv',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'application/zip': '.zip',
+    'message/rfc822': '.eml',
+  };
 }
 
 enum LabelKind { etichetta, cartella }
@@ -35,7 +65,6 @@ class Message {
     required this.date,
     this.fromName,
     this.cc = const [],
-    this.attachments = const [],
   });
 
   /// Provider-side id.
@@ -58,16 +87,19 @@ class Message {
   final String subject;
   final String snippet;
   final DateTime date;
-  final List<Attachment> attachments;
 }
 
 enum BodyKind { html, testo }
 
-/// A downloaded message body, with whether it is HTML or plain text.
+/// A downloaded message body, with whether it is HTML or plain text, and its attachments
+/// (they come with the full message, as the body does).
 class MessageBody {
-  const MessageBody(this.content, this.kind);
+  const MessageBody(this.content, this.kind, {this.attachments = const []});
   final String content;
   final BodyKind kind;
+
+  /// Null for a body stored before attachments were (database v8 and older): not known until downloaded again.
+  final List<Attachment>? attachments;
 }
 
 /// Always inside a single Account.

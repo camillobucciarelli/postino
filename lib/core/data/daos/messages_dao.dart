@@ -150,6 +150,7 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
             messageId: key,
             body: value.content,
             kind: Value(value.kind),
+            attachments: Value(value.attachments),
           ),
       ], mode: InsertMode.insertOrReplace);
       if (saveCursor) {
@@ -250,6 +251,7 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           messageId: messageId,
           body: body.content,
           kind: Value(body.kind),
+          attachments: Value(body.attachments),
         ),
         mode: InsertMode.insertOrReplace,
       );

@@ -71,6 +71,15 @@
     "toCc": "a $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Mostra testo citato",
-    "important": "Importante"
+    "important": "Importante",
+    "attachmentOpen": "Apri",
+    "attachmentDownloading": "Scaricamento… $percent%",
+    "attachmentCancel": "Annulla scaricamento",
+    "attachmentOffline": "Offline: allegato non ancora scaricato",
+    "attachmentFailed": "Scaricamento non riuscito",
+    "attachmentMore": "Altre azioni",
+    "attachmentSave": "Salva…",
+    "attachmentSaveFailed": "Salvataggio non riuscito",
+    "attachmentUntitled": "Allegato senza nome"
   }
 }

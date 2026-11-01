@@ -285,6 +285,33 @@ class Translations$conversazione$it {
 
 	/// it: 'Importante'
 	String get important => 'Importante';
+
+	/// it: 'Apri'
+	String get attachmentOpen => 'Apri';
+
+	/// it: 'Scaricamento… $percent%'
+	String attachmentDownloading({required Object percent}) => 'Scaricamento… ${percent}%';
+
+	/// it: 'Annulla scaricamento'
+	String get attachmentCancel => 'Annulla scaricamento';
+
+	/// it: 'Offline: allegato non ancora scaricato'
+	String get attachmentOffline => 'Offline: allegato non ancora scaricato';
+
+	/// it: 'Scaricamento non riuscito'
+	String get attachmentFailed => 'Scaricamento non riuscito';
+
+	/// it: 'Altre azioni'
+	String get attachmentMore => 'Altre azioni';
+
+	/// it: 'Salva…'
+	String get attachmentSave => 'Salva…';
+
+	/// it: 'Salvataggio non riuscito'
+	String get attachmentSaveFailed => 'Salvataggio non riuscito';
+
+	/// it: 'Allegato senza nome'
+	String get attachmentUntitled => 'Allegato senza nome';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -347,6 +374,15 @@ extension on Translations {
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Mostra testo citato',
 			'conversazione.important' => 'Importante',
+			'conversazione.attachmentOpen' => 'Apri',
+			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Scaricamento… ${percent}%',
+			'conversazione.attachmentCancel' => 'Annulla scaricamento',
+			'conversazione.attachmentOffline' => 'Offline: allegato non ancora scaricato',
+			'conversazione.attachmentFailed' => 'Scaricamento non riuscito',
+			'conversazione.attachmentMore' => 'Altre azioni',
+			'conversazione.attachmentSave' => 'Salva…',
+			'conversazione.attachmentSaveFailed' => 'Salvataggio non riuscito',
+			'conversazione.attachmentUntitled' => 'Allegato senza nome',
 			_ => null,
 		};
 	}

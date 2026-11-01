@@ -71,6 +71,15 @@
     "toCc": "to $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Show quoted text",
-    "important": "Important"
+    "important": "Important",
+    "attachmentOpen": "Open",
+    "attachmentDownloading": "Downloading… $percent%",
+    "attachmentCancel": "Cancel download",
+    "attachmentOffline": "Offline: attachment not downloaded yet",
+    "attachmentFailed": "Download failed",
+    "attachmentMore": "More actions",
+    "attachmentSave": "Save…",
+    "attachmentSaveFailed": "Save failed",
+    "attachmentUntitled": "Untitled attachment"
   }
 }

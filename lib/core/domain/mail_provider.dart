@@ -57,10 +57,14 @@ abstract interface class MailProvider {
   /// Marks [messageIds] read (or unread); idempotent, so a replayed intent is harmless.
   Future<Result<void>> setRead(List<String> messageIds, {required bool read});
 
+  /// One attachment of [messageId] ([Attachment.id]); [onProgress] gets the share downloaded so far (0–1),
+  /// and completing [cancel] stops the download with [CancelledFailure].
   Future<Result<AttachmentBytes>> fetchAttachment(
     String messageId,
-    String attachmentId,
-  );
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  });
 
   /// Idempotent on [OutgoingMessage.messageId].
   Future<Result<void>> send(OutgoingMessage message);

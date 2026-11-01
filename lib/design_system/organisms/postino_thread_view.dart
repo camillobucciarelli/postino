@@ -10,6 +10,7 @@ import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../atoms/postino_label_chip.dart';
 import '../atoms/postino_selectable.dart';
+import '../molecules/postino_attachment_chip.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -207,7 +208,7 @@ class PostinoMessageDetail {
 /// One message of a Conversazione. Collapsed: avatar 32, sender, one line of [preview], time, at least 48 high.
 /// Expanded: avatar 40, sender and its [address], [recipients] (a tap opens the [details]), time,
 /// then the [notices] (Banner…), the [body], the [signature] and the [quote] folded behind «…»
-/// ([quoteLabel] for screen readers; a tap shows it, another hides it). A tap on the header toggles,
+/// ([quoteLabel] for screen readers; a tap shows it, another hides it), and last the [attachments]. A tap on the header toggles,
 /// in `duration-thread-expand` with `easing-emphasized-decelerate`.
 class PostinoThreadMessage extends StatefulWidget {
   const PostinoThreadMessage({
@@ -226,6 +227,7 @@ class PostinoThreadMessage extends StatefulWidget {
     this.signature,
     this.quote,
     this.quoteLabel = '',
+    this.attachments = const [],
   });
 
   final String sender;
@@ -256,6 +258,9 @@ class PostinoThreadMessage extends StatefulWidget {
   /// The quoted text (and a signature seen before), hidden until «…» is tapped.
   final Widget? quote;
   final String quoteLabel;
+
+  /// At the bottom, wrapping.
+  final List<PostinoAttachmentChip> attachments;
 
   @override
   State<PostinoThreadMessage> createState() => _PostinoThreadMessageState();
@@ -451,6 +456,17 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                               ),
                               if (_quote) _Quote(quote),
                             ],
+                            if (w.attachments.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: PostinoSpacing.s4,
+                                ),
+                                child: Wrap(
+                                  spacing: PostinoSpacing.s2,
+                                  runSpacing: PostinoSpacing.s2,
+                                  children: w.attachments,
+                                ),
+                              ),
                           ],
                         ),
                       ),

@@ -216,7 +216,12 @@ class GmailProvider implements MailProvider {
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) => _guard(() async {
-    final j = await _get('messages/$messageId', {'format': 'full'});
+    final j = await _request(
+      'GET',
+      'messages/$messageId',
+      query: {'format': 'full'},
+      cancel: cancel,
+    );
     final part = _attachmentParts(
       j['payload'] as Map<String, dynamic>? ?? const {},
     ).where((p) => p['partId'] == attachmentId).firstOrNull;

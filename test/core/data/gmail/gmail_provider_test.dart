@@ -1,4 +1,5 @@
 // Gmail adapter on recorded HTTP responses (test/fixtures/gmail): no network.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -610,6 +611,27 @@ void main() {
         expect(progress.last, 1);
       });
 
+      test('Annulla aborts the download in flight', () async {
+        final started = Completer<void>();
+        final cancel = Completer<void>();
+        final provider = GmailProvider(
+          _account,
+          _keychain(),
+          _Hanging(
+            (path) => path.contains('/attachments/')
+                ? null
+                : _fixture('message_f7_attachments'),
+            started,
+          ),
+          FakeClock(_now),
+          client: _testClient,
+        );
+        final r = provider.fetchAttachment(f7, '1', cancel: cancel.future);
+        await started.future;
+        cancel.complete();
+        expect(await r, _err<CancelledFailure>());
+      });
+
       test('the inline logo is not an attachment to download', () async {
         expect(
           await _Recorded(route).provider.fetchAttachment(f7, '0.1'),
@@ -881,4 +903,25 @@ void main() {
     expect(seen, ('imap.gmail.com', 'ada@gmail.com'));
     expect(await token(), 'ya29.initial');
   });
+}
+
+/// Answers with [answer], or (null) hangs until the request is aborted, as a stalled download would.
+class _Hanging extends http.BaseClient {
+  _Hanging(this.answer, this.started);
+  final http.Response? Function(String path) answer;
+  final Completer<void> started;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (answer(request.url.path) case final r?) {
+      return http.StreamedResponse(
+        Stream.value(r.bodyBytes),
+        r.statusCode,
+        contentLength: r.bodyBytes.length,
+      );
+    }
+    started.complete();
+    await (request as http.Abortable).abortTrigger;
+    throw http.RequestAbortedException(request.url);
+  }
 }

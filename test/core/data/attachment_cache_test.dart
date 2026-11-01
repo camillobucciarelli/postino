@@ -166,7 +166,75 @@ void main() {
     expect(_cached, isEmpty);
   });
 
+  test(
+    'downloads crossing the cap together all open, and the cache fits',
+    () async {
+      await _start(cap: 2 * (60 + AttachmentCache.overhead) + 10);
+      final all = [
+        for (final n in ['a', 'b', 'c', 'd', 'e', 'f'])
+          gmail.attach('m1', '$n.pdf', _content(n)),
+      ];
+      _ok(await _file(all[0]));
+      _ok(await _file(all[1]));
+      final results = await Future.wait([
+        for (final a in all.skip(2)) _file(a),
+      ]);
+      expect(results, everyElement(isA<Ok<String>>()));
+      expect(_cached, hasLength(2));
+    },
+  );
+
+  test('Annulla after the Provider\'s last abortable moment still drops the result', () async {
+    await _start();
+    final a = gmail.attach('m1', 'a.pdf', _content('a'));
+    final hold = gmail.holdAttachment = Completer<void>();
+    final cancel = Completer<void>();
+    final r = _file(a, cancel: cancel.future);
+    // The Provider answers, then the user cancels before the cache gets the answer.
+    hold.complete();
+    cancel.complete();
+    expect(
+      await r,
+      isA<Err<String>>().having(
+        (e) => e.failure,
+        'failure',
+        isA<CancelledFailure>(),
+      ),
+    );
+    expect(_cached, isEmpty);
+  });
+
+  test('a keychain error fails one try, not the ones after it', () async {
+    await _start();
+    final a = gmail.attach('m1', 'a.pdf', _content('a'));
+    h.keychain.failure = Exception('keychain locked');
+    expect(
+      await _file(a),
+      isA<Err<String>>().having(
+        (e) => e.failure,
+        'failure',
+        isA<UnexpectedFailure>(),
+      ),
+    );
+    h.keychain.failure = null;
+    expect(await _file(a), isA<Ok<String>>());
+  });
+
+  test('a file half written by a crash is gone at the next launch', () async {
+    await _start();
+    _cacheDir.childFile('abc.part').writeAsBytesSync([1, 2, 3]);
+    await AttachmentStorage.open(
+      _cacheDir,
+      h.fs.directory('/tmp/postino-attachments'),
+    );
+    expect(_cached, isEmpty);
+  });
+
   test('an attachment name never leaves its folder', () {
+    expect(safeFileName('a?b*c<d>|"e.pdf'), 'a_b_c_d___e.pdf');
+    final long = safeFileName('${'x' * 300}.pdf');
+    expect(long, hasLength(150));
+    expect(long, endsWith('x.pdf'));
     expect(safeFileName('../../etc/passwd'), '.._.._etc_passwd');
     expect(safeFileName('..'), 'allegato');
     expect(safeFileName('  '), 'allegato');

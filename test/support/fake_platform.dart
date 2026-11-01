@@ -4,8 +4,15 @@ import 'package:postino/core/domain/platform_services.dart';
 
 class FakeSecureStore implements SecureStore {
   final values = <String, String>{};
+
+  /// While set, every read throws it: a locked keychain, access denied.
+  Exception? failure;
   @override
-  Future<String?> read(String key) async => values[key];
+  Future<String?> read(String key) async {
+    if (failure case final f?) throw f;
+    return values[key];
+  }
+
   @override
   Future<void> write(String key, String value) async => values[key] = value;
 }

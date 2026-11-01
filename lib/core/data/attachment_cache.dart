@@ -24,7 +24,7 @@ class AttachmentStorage {
   final Directory temp;
   final int cap;
 
-  /// Empties [temp]: the decrypted copies of the previous launch go.
+  /// Empties [temp]: the decrypted copies of the previous launch go, with any half-written cache file.
   static Future<AttachmentStorage> open(
     Directory cache,
     Directory temp, {
@@ -33,6 +33,9 @@ class AttachmentStorage {
     if (await temp.exists()) await temp.delete(recursive: true);
     await temp.create(recursive: true);
     await cache.create(recursive: true);
+    await for (final e in cache.list()) {
+      if (e.basename.endsWith('.part')) await e.delete();
+    }
     return AttachmentStorage._(cache, temp, cap);
   }
 }
@@ -55,8 +58,10 @@ class AttachmentCache implements AttachmentRepository {
   /// What encryption adds to a file.
   static const overhead = _ivLength + _macLength;
 
-  late final Future<_Keys> _keys = _loadKeys();
+  /// Loaded once; a keychain error is not remembered, so the next try asks again.
+  Future<_Keys>? _keys;
 
+  /// Never throws: a file system or keychain error is an [UnexpectedFailure].
   @override
   Future<Result<String>> file(
     String accountId,
@@ -65,7 +70,31 @@ class AttachmentCache implements AttachmentRepository {
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) async {
-    final keys = await _keys;
+    var cancelled = false;
+    unawaited(cancel?.then((_) => cancelled = true));
+    try {
+      return await _file(
+        accountId,
+        messageId,
+        attachment,
+        onProgress,
+        cancel,
+        () => cancelled,
+      );
+    } on Exception catch (e, s) {
+      return Err(UnexpectedFailure(e, s));
+    }
+  }
+
+  Future<Result<String>> _file(
+    String accountId,
+    String messageId,
+    Attachment attachment,
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+    bool Function() cancelled,
+  ) async {
+    final keys = await (_keys ??= _loadKeys());
     final cached = _storage.cache.childFile(
       sha256
           .convert(utf8.encode('$accountId\n$messageId\n${attachment.id}'))
@@ -95,6 +124,8 @@ class AttachmentCache implements AttachmentRepository {
         case Ok(:final value):
           plain = value;
       }
+      // Annulla may land after the Provider's last abortable moment: the result is dropped all the same.
+      if (cancelled()) return const Err(CancelledFailure());
       // Bigger than the whole cache: opened from the temporary copy only.
       if (plain.length + overhead <= _storage.cap) {
         final sealed = (await _crypt(_encrypt, plain, keys))!;
@@ -103,7 +134,7 @@ class AttachmentCache implements AttachmentRepository {
         await part.writeAsBytes(sealed, flush: true);
         await part.rename(cached.path);
         await cached.setLastModified(_clock.now());
-        await _evict();
+        await (_evicting = _evicting.then((_) => _evict()));
       }
     }
     // One folder per copy, so the file keeps its own name and two of the same name do not clash.
@@ -112,6 +143,9 @@ class AttachmentCache implements AttachmentRepository {
     await copy.writeAsBytes(plain, flush: true);
     return Ok(copy.path);
   }
+
+  /// One eviction at a time: two at once would pick, and delete, the same file.
+  Future<void> _evicting = Future.value();
 
   /// Drops the least recently used files until the cache fits its cap.
   Future<void> _evict() async {
@@ -122,26 +156,35 @@ class AttachmentCache implements AttachmentRepository {
     var total = files.fold(0, (sum, f) => sum + f.$2.size);
     for (final (f, stat) in files) {
       if (total <= _storage.cap) break;
-      await f.delete();
+      // Gone already (a read found it damaged): nothing to free.
+      if (await f.exists()) await f.delete();
       total -= stat.size;
     }
   }
 
   Future<_Keys> _loadKeys() async {
-    var hex = await _keychain.read(_keyName);
-    if (hex == null) {
-      final random = Random.secure();
-      hex = [
-        for (var i = 0; i < 64; i++)
-          random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-      ].join();
-      await _keychain.write(_keyName, hex);
+    final String hex;
+    try {
+      hex = await _readOrCreateKey();
+    } catch (_) {
+      _keys = null;
+      rethrow;
     }
     final bytes = Uint8List.fromList([
       for (var i = 0; i < hex.length; i += 2)
         int.parse(hex.substring(i, i + 2), radix: 16),
     ]);
     return (enc: bytes.sublist(0, 32), mac: bytes.sublist(32));
+  }
+
+  Future<String> _readOrCreateKey() async {
+    var hex = await _keychain.read(_keyName);
+    if (hex == null) {
+      hex = [for (final b in _random(64)) b.toRadixString(16).padLeft(2, '0')]
+          .join();
+      await _keychain.write(_keyName, hex);
+    }
+    return hex;
   }
 
   /// In a background isolate past 1 MB: pure Dart AES would stall the UI.
@@ -197,8 +240,14 @@ class AttachmentCache implements AttachmentRepository {
 
 typedef _Keys = ({Uint8List enc, Uint8List mac});
 
-/// [name] as a file name: no folders (a hostile `../../x` stays inside the temporary folder), never empty.
+/// [name] as a file name on every desktop: no folders (a hostile `../../x` stays inside the temporary folder),
+/// none of the characters Windows refuses, at most 150 characters keeping the extension, never empty.
 String safeFileName(String name) {
-  final s = name.replaceAll(RegExp(r'[/\\:\x00-\x1f]'), '_').trim();
+  var s = name.replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '_').trim();
+  if (s.length > 150) {
+    final dot = s.lastIndexOf('.');
+    final ext = dot > 0 && s.length - dot <= 10 ? s.substring(dot) : '';
+    s = s.substring(0, 150 - ext.length) + ext;
+  }
   return s.isEmpty || s == '.' || s == '..' ? 'allegato' : s;
 }

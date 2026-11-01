@@ -170,27 +170,35 @@ class _ConversationViewState extends State<ConversationView> {
       _downloads[key] = (done: 0, cancel: cancel);
       _attachmentFailed.remove(key);
     });
-    final r = await GetIt.I<AttachmentRepository>().file(
-      widget.accountId,
-      messageId,
-      attachment,
-      onProgress: (done) {
-        if (mounted && _downloads.containsKey(key)) {
-          setState(() => _downloads[key] = (done: done, cancel: cancel));
-        }
-      },
-      cancel: cancel.future,
-    );
-    if (!mounted) return;
-    setState(() {
-      _downloads.remove(key);
-      if (r case Err(:final failure) when failure is! CancelledFailure) {
-        _attachmentFailed[key] = failure;
+    Result<String> r = const Err(UnexpectedFailure('attachment'));
+    try {
+      r = await GetIt.I<AttachmentRepository>().file(
+        widget.accountId,
+        messageId,
+        attachment,
+        onProgress: (done) {
+          if (mounted && _downloads.containsKey(key)) {
+            setState(() => _downloads[key] = (done: done, cancel: cancel));
+          }
+        },
+        cancel: cancel.future,
+      );
+    } finally {
+      // Whatever happens, the chip leaves the download: never stuck on it.
+      if (mounted) {
+        setState(() {
+          _downloads.remove(key);
+          if (r case Err(:final failure) when failure is! CancelledFailure) {
+            _attachmentFailed[key] = failure;
+          }
+        });
       }
-    });
+    }
+    if (!mounted) return;
     if (r case Ok(value: final path)) {
       await (save
           ? GetIt.I<FileSaver>().save(path, attachment.name)
+          // ponytail: url_launcher opens file: URIs on desktop only; Android/iOS need a native "open with" (e.g. open_filex) when mobile ships.
           : GetIt.I<LinkOpener>().open(Uri.file(path)));
     }
   }
@@ -211,7 +219,7 @@ class _ConversationViewState extends State<ConversationView> {
       unawaited(s.cancel());
     }
     for (final d in _downloads.values) {
-      d.cancel.complete();
+      if (!d.cancel.isCompleted) d.cancel.complete();
     }
     super.dispose();
   }
@@ -428,7 +436,11 @@ class _ConversationViewState extends State<ConversationView> {
                     notices: _notices(message, body, t),
                     unread: !message.isRead,
                     expanded: _expanded[message.id]!,
-                    onToggle: () => _toggle(message.id, body != null),
+                    // A body without its attachments known (stored before v9) is downloaded again too.
+                    onToggle: () => _toggle(
+                      message.id,
+                      body != null && body.attachments != null,
+                    ),
                     quoteLabel: t.showQuoted,
                     attachments: _attachments(message, body, t, locale),
                     signature: switch ((body, shown[message.id]?.signature)) {

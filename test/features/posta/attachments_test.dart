@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -274,4 +275,51 @@ void main() {
     // Buttons and the type badge stay out of the selection.
     expect(_clipboard, isNot(contains('PDF\n')));
   });
+
+  testWidgets('a download that fails says so, and the chip can try again', (
+    tester,
+  ) async {
+    await _start(tester);
+    h.keychain.failure = Exception('keychain locked');
+    await _tap(tester, _chip('note.txt'));
+    expect(
+      find.textContaining('Scaricamento non riuscito', findRichText: true),
+      findsOneWidget,
+    );
+    h.keychain.failure = null;
+    await _tap(tester, _chip('note.txt'));
+    expect(h.links.opened, hasLength(1));
+  });
+
+  testWidgets(
+    'a body stored before attachments were known is downloaded again on expanding',
+    (tester) async {
+      await _start(tester);
+      // m0: an older, read message whose body came from database v8 (attachments unknown).
+      gmail
+        ..attach('m0', 'vecchio.pdf', List.filled(10, 1))
+        ..deliver(
+          msg(
+            'm0',
+            conversationId: 't',
+            isRead: true,
+            date: DateTime.utc(2025, 12, 1),
+          ),
+        );
+      await tester.pumpAndSettle();
+      await getIt<MailStore>().saveBody(
+        'a1',
+        'm0',
+        const MessageBody('Corpo di m0', BodyKind.testo, attachments: null),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('vecchio.pdf'), findsNothing);
+
+      await _tap(
+        tester,
+        find.textContaining('Anteprima', findRichText: true).last,
+      );
+      expect(find.text('vecchio.pdf'), findsOneWidget);
+    },
+  );
 }

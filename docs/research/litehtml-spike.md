@@ -95,7 +95,7 @@ I tre branch partono dagli stessi due commit (`08a62b3` vendorizzazione, `97bb1c
 |---|---|---|
 | Trascinamento nel corpo + Cmd+C copia il testo con a capo ai blocchi | sì | `selection_test` 1 |
 | Selezione che parte da un `Text` fuori dal corpo ed entra nell'HTML | sì | `selection_test` 2 |
-| Cmd+A seleziona anche il corpo, insieme al resto dell'app | sì | `selection_test` 3 |
+| Cmd+A seleziona anche il corpo, insieme al resto del contenuto della `SelectionArea` esterna (nell'app: la Conversazione, non l'intera finestra) | sì | `selection_test` 3 |
 | Evidenziazione con il colore di selezione del tema | sì | `selection_test` 1 |
 | Doppio click = parola | sì (codice) | nessun test |
 | Ruoli, etichette, livelli dei titoli, ordine di documento anche con celle affiancate | sì | `a11y_test` fixture |

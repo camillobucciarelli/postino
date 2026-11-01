@@ -54,6 +54,9 @@ dependencies:
   connectivity_plus: ^7.3.2
   flutter_widget_from_html_core: ^0.17.4
   html: ^0.15.7
+  flutter_quill: ^11.6.0
+  flutter_quill_delta_from_html: ^1.5.3
+  vsc_quill_delta_to_html: ^1.0.5
   url_launcher: ^6.3.3
 
 dev_dependencies:

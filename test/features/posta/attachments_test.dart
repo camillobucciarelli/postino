@@ -1,0 +1,277 @@
+// Attachments of a Conversazione (#34): name and size, a tap downloads (then opens from the cache, offline too),
+// progress and Annulla, the offline note, Salva… from the menu, keyboard, screen reader and selectable text.
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/message.dart';
+import 'package:postino/i18n/strings.g.dart';
+import 'package:postino/main.dart';
+import 'package:routefly/routefly.dart';
+
+import '../../support/fake_mail_provider.dart';
+import '../../support/harness.dart';
+
+late Harness h;
+late FakeMailProvider gmail;
+String? _clipboard;
+
+/// Opens Conversazione m1 (Contratto.pdf, 88 KB, and note.txt, 980 B) on a desktop window.
+Future<void> _start(WidgetTester tester, {int? cap}) async {
+  tester.view
+    ..physicalSize = const Size(1600, 900)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  _clipboard = null;
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      if (call.method == 'Clipboard.setData') {
+        _clipboard = (call.arguments as Map)['text'] as String?;
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  h = await Harness.create(attachmentCap: cap);
+  gmail = await h.addAccount('a1')
+    ..bodies['m1'] = const MessageBody('Ti mando il contratto', BodyKind.testo)
+    ..attach('m1', 'Contratto.pdf', List.filled(88 * 1024, 7))
+    ..attach('m1', 'note.txt', List.filled(980, 1))
+    ..deliver(msg('m1', conversationId: 't', subject: 'Contratto'));
+  LocaleSettings.setLocaleSync(AppLocale.it);
+  await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+  Routefly.navigate(routePaths.posta.path);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('row-a1-m1')));
+  await tester.pumpAndSettle();
+}
+
+Finder _chip(String name) => find.byKey(ValueKey('attachment-m1-att-$name'));
+Finder _in(String name, Key key) =>
+    find.descendant(of: _chip(name), matching: find.byKey(key));
+
+Future<void> _tap(WidgetTester tester, Finder f) async {
+  await tester.tap(f);
+  await tester.pumpAndSettle();
+}
+
+List<String> get _cached => h.fs
+    .directory('/support/attachments')
+    .listSync()
+    .map((e) => e.path)
+    .toList();
+
+void main() {
+  testWidgets('each attachment shows its name and size', (tester) async {
+    await _start(tester);
+    expect(find.text('Contratto.pdf'), findsOneWidget);
+    expect(find.textContaining('88 KB', findRichText: true), findsOneWidget);
+    expect(find.text('note.txt'), findsOneWidget);
+    expect(find.textContaining('980 B', findRichText: true), findsOneWidget);
+    // The type is written, not only colored.
+    expect(
+      find.descendant(of: _chip('Contratto.pdf'), matching: find.text('PDF')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'the first tap downloads and opens; the second, offline, opens from the cache',
+    (tester) async {
+      await _start(tester);
+      await _tap(tester, _chip('Contratto.pdf'));
+      expect(gmail.attachmentCalls, [('m1', 'att-Contratto.pdf')]);
+      final opened = h.links.opened.single;
+      expect(opened.scheme, 'file');
+      expect(opened.pathSegments.last, 'Contratto.pdf');
+      expect(h.fs.file(opened.toFilePath()).lengthSync(), 88 * 1024);
+
+      gmail.goOffline();
+      await _tap(tester, _chip('Contratto.pdf'));
+      expect(gmail.attachmentCalls, hasLength(1));
+      expect(h.links.opened, hasLength(2));
+    },
+  );
+
+  testWidgets('offline, an attachment never downloaded says so clearly', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.goOffline();
+    await _tap(tester, _chip('note.txt'));
+    expect(
+      find.textContaining(
+        'Offline: allegato non ancora scaricato',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(h.links.opened, isEmpty);
+
+    // Back online, Riprova opens it.
+    gmail.goOnline();
+    await _tap(tester, _in('note.txt', const ValueKey('attachment-retry')));
+    expect(
+      find.textContaining(
+        'Offline: allegato non ancora scaricato',
+        findRichText: true,
+      ),
+      findsNothing,
+    );
+    expect(h.links.opened, hasLength(1));
+  });
+
+  testWidgets(
+    'while downloading: progress and Annulla, which leaves nothing cached',
+    (tester) async {
+      await _start(tester);
+      gmail.holdAttachment = Completer<void>();
+      await _tap(tester, _chip('Contratto.pdf'));
+      expect(
+        find.textContaining('Scaricamento… 50%', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FractionallySizedBox>(
+              _in('Contratto.pdf', const ValueKey('attachment-progress')),
+            )
+            .widthFactor,
+        0.5,
+      );
+
+      await _tap(
+        tester,
+        _in('Contratto.pdf', const ValueKey('attachment-cancel')),
+      );
+      expect(
+        find.textContaining('Scaricamento… 50%', findRichText: true),
+        findsNothing,
+      );
+      expect(find.textContaining('88 KB', findRichText: true), findsOneWidget);
+      expect(_cached, isEmpty);
+      expect(h.links.opened, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'an attachment bigger than the cache opens without being cached',
+    (tester) async {
+      await _start(tester, cap: 10 * 1024);
+      await _tap(tester, _chip('Contratto.pdf'));
+      expect(h.links.opened, hasLength(1));
+      expect(_cached, isEmpty);
+
+      // The small one still fits.
+      await _tap(tester, _chip('note.txt'));
+      expect(_cached, hasLength(1));
+    },
+  );
+
+  testWidgets('Salva… in the menu offers Save As, with the attachment name', (
+    tester,
+  ) async {
+    await _start(tester);
+    await _tap(tester, _in('Contratto.pdf', const ValueKey('attachment-more')));
+    await _tap(tester, find.text('Salva…'));
+    final (path, name) = h.saver.saved.single;
+    expect(name, 'Contratto.pdf');
+    expect(h.fs.file(path).lengthSync(), 88 * 1024);
+    expect(h.links.opened, isEmpty);
+  });
+
+  testWidgets('no Save As where the platform has none', (tester) async {
+    await _start(tester);
+    h.saver.available = false;
+    // Rebuilt by the next state change.
+    await _tap(tester, _chip('note.txt'));
+    expect(_in('note.txt', const ValueKey('attachment-more')), findsNothing);
+  });
+
+  testWidgets(
+    'keyboard: Tab reaches each attachment, Enter opens, the menu saves',
+    (tester) async {
+      await _start(tester);
+      Future<void> tabTo(Finder target) async {
+        for (var i = 0; i < 30; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.pumpAndSettle();
+          final focused = FocusManager.instance.primaryFocus?.context;
+          if (focused != null &&
+              find
+                  .ancestor(
+                    of: find.byElementPredicate((e) => e == focused),
+                    matching: target,
+                  )
+                  .evaluate()
+                  .isNotEmpty) {
+            return;
+          }
+        }
+        fail('Tab never reached $target');
+      }
+
+      await tabTo(_in('Contratto.pdf', const ValueKey('attachment-open')));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(h.links.opened, hasLength(1));
+
+      await tabTo(_in('Contratto.pdf', const ValueKey('attachment-more')));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      // The menu takes the focus: Enter picks Salva….
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(h.saver.saved.single.$2, 'Contratto.pdf');
+
+      await tabTo(_in('note.txt', const ValueKey('attachment-open')));
+    },
+  );
+
+  testWidgets('screen readers hear the name, the size and that it opens', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _start(tester);
+    expect(
+      tester.getSemantics(
+        find.descendant(
+          of: _chip('Contratto.pdf'),
+          matching: find.bySemanticsLabel('Contratto.pdf'),
+        ),
+      ),
+      matchesSemantics(
+        label: 'Contratto.pdf',
+        value: '88 KB',
+        hint: 'Apri',
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(find.byTooltip('Altre azioni'), findsNWidgets(2));
+    handle.dispose();
+  });
+
+  testWidgets('name and size are selectable and copiable', (tester) async {
+    await _start(tester);
+    await tester.tap(find.text('Ti mando il contratto'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(_clipboard, contains('Contratto.pdf'));
+    expect(_clipboard, contains('88 KB'));
+    expect(_clipboard, contains('note.txt'));
+    // Buttons and the type badge stay out of the selection.
+    expect(_clipboard, isNot(contains('PDF\n')));
+  });
+}

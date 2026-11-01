@@ -79,6 +79,15 @@ class FakeMailProvider implements MailProvider {
   /// Bodies by message id, for the syncs and [fetchBody]; the others are «Corpo di `id`».
   final bodies = <String, MessageBody>{};
 
+  /// Attachment contents by (message id, attachment id); [attach] lists them in the message's body too.
+  final attachmentData = <(String, String), Uint8List>{};
+
+  /// Every [fetchAttachment] that reached the Provider: (message id, attachment id).
+  final attachmentCalls = <(String, String)>[];
+
+  /// While set, [fetchAttachment] reports half done and answers once it completes, or the download is cancelled.
+  Completer<void>? holdAttachment;
+
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
   final labels = [
     const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
@@ -90,6 +99,22 @@ class FakeMailProvider implements MailProvider {
   SyncBatch? lastIncremental;
 
   // --- simulation ---
+  /// Gives message [messageId] an attachment [name] holding [bytes]; its id is `att-<name>`.
+  Attachment attach(String messageId, String name, List<int> bytes) {
+    final a = Attachment(id: 'att-$name', name: name, size: bytes.length);
+    attachmentData[(messageId, a.id)] = Uint8List.fromList(bytes);
+    final old = bodies[messageId] ?? _defaultBody(messageId);
+    bodies[messageId] = MessageBody(
+      old.content,
+      old.kind,
+      attachments: [...?old.attachments, a],
+    );
+    return a;
+  }
+
+  MessageBody _defaultBody(String id, [BodyKind kind = BodyKind.testo]) =>
+      MessageBody('Corpo di $id', kind);
+
   /// A new message, or a change to one (read, Stella, Etichette) made elsewhere.
   void deliver(Message m) {
     _messages[m.id] = m;
@@ -148,7 +173,7 @@ class FakeMailProvider implements MailProvider {
   Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
     for (final m in ms)
       if (m.labelIds.contains(inboxLabelId))
-        m.id: bodies[m.id] ?? MessageBody('Corpo di ${m.id}', BodyKind.testo),
+        m.id: bodies[m.id] ?? _defaultBody(m.id),
   };
 
   @override
@@ -214,7 +239,7 @@ class FakeMailProvider implements MailProvider {
     final f = _failure;
     if (f != null) return Err(f);
     return _messages.containsKey(messageId) || _old.containsKey(messageId)
-        ? Ok(bodies[messageId] ?? MessageBody('Corpo di $messageId', bodyKind))
+        ? Ok(bodies[messageId] ?? _defaultBody(messageId, bodyKind))
         : const Err(NotFoundFailure());
   }
 
@@ -251,15 +276,26 @@ class FakeMailProvider implements MailProvider {
   @override
   Future<Result<Uint8List>> fetchAttachment(
     String messageId,
-    String attachmentId,
-  ) async {
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) async {
     final f = _failure;
     if (f != null) return Err(f);
-    final m = _messages[messageId];
-    final known = m?.attachments.any((a) => a.id == attachmentId) ?? false;
-    return known
-        ? Ok(Uint8List.fromList([1, 2, 3]))
-        : const Err(NotFoundFailure());
+    attachmentCalls.add((messageId, attachmentId));
+    final data = attachmentData[(messageId, attachmentId)];
+    if (data == null) return const Err(NotFoundFailure());
+    if (holdAttachment case final hold?) {
+      onProgress?.call(0.5);
+      var cancelled = false;
+      await Future.any([
+        hold.future,
+        if (cancel != null) cancel.then((_) => cancelled = true),
+      ]);
+      if (cancelled) return const Err(CancelledFailure());
+    }
+    onProgress?.call(1);
+    return Ok(data);
   }
 
   @override
@@ -297,5 +333,4 @@ Message withRead(Message m, bool read) => Message(
   subject: m.subject,
   snippet: m.snippet,
   date: m.date,
-  attachments: m.attachments,
 );

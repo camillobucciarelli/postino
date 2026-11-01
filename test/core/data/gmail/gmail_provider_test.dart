@@ -66,6 +66,12 @@ class GmailHarness implements ContractHarness {
   bool _authBroken = false, _offline = false;
 
   final _mailbox = <String, Message>{};
+
+  /// By message id: (name, bytes) of each attachment.
+  final _attached = <String, List<(String, List<int>)>>{};
+
+  /// Gmail hands out a new attachmentId on every fetch of the message: the old ones keep working.
+  var _fetches = 0;
   final _history = <(int, String, String)>[]; // (historyId, kind, message id)
   var _historyId = 4000;
   var _oldest = 0;
@@ -115,6 +121,14 @@ class GmailHarness implements ContractHarness {
       ]) {
         [] => _fixture('not_found'),
         final messages => _json({'id': id, 'messages': messages}),
+      },
+      ['messages', final id, 'attachments', final aid] => switch (_attached[id]
+          ?.elementAtOrNull(int.parse(aid.substring(aid.indexOf('_') + 1)))) {
+        null => _fixture('not_found'),
+        (_, final bytes) => _json({
+          'size': bytes.length,
+          'data': base64Url.encode(bytes),
+        }),
       },
       ['messages', final id] => switch (_mailbox[id]) {
         null => _fixture('not_found'),
@@ -178,7 +192,7 @@ class GmailHarness implements ContractHarness {
     if (m.isStarred) 'STARRED',
   ];
 
-  static Map<String, Object> _resource(Message m, {required bool full}) => {
+  Map<String, Object> _resource(Message m, {required bool full}) => {
     'id': m.id,
     'threadId': m.conversationId,
     'labelIds': _labels(m),
@@ -196,12 +210,43 @@ class GmailHarness implements ContractHarness {
         {'name': 'Subject', 'value': m.subject},
         {'name': 'Message-Id', 'value': m.messageId},
       ],
-      if (full)
+      if (full && _attached[m.id] == null)
         'body': {
           'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>')),
         },
+      if (_attached[m.id] case final attached? when full)
+        'parts': [
+          {
+            'partId': '0',
+            'mimeType': 'text/html',
+            'filename': '',
+            'body': {
+              'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>')),
+            },
+          },
+          for (final (i, (name, bytes)) in attached.indexed)
+            {
+              'partId': '${i + 1}',
+              'mimeType': 'application/octet-stream',
+              'filename': name,
+              'headers': [
+                {
+                  'name': 'Content-Disposition',
+                  'value': 'attachment; filename="$name"',
+                },
+              ],
+              'body': {
+                'attachmentId': 'ANG${++_fetches}_$i',
+                'size': bytes.length,
+              },
+            },
+        ],
     },
   };
+
+  @override
+  void attach(String messageId, String name, List<int> bytes) =>
+      (_attached[messageId] ??= []).add((name, bytes));
 
   @override
   void deliver(Message m) {
@@ -272,6 +317,7 @@ class _Recorded {
 void main() {
   mailProviderAuthContract('GmailProvider', GmailHarness.new);
   mailProviderSyncContract('GmailProvider', GmailHarness.new);
+  mailProviderAttachmentContract('GmailProvider', GmailHarness.new);
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
@@ -524,6 +570,50 @@ void main() {
         expect(
           _ok(await _Recorded(route).provider.fetchBody(f6)).content,
           text,
+        );
+      });
+    });
+
+    group('a PDF attachment beside an inline logo', () {
+      const f7 = '18f3a2b4c5d6e7f7';
+      const pdf = '%PDF-1.4\n% preventivo sintetico per i test\n%%EOF\n';
+      String route(http.Request r, String path) => switch (path) {
+        'messages/$f7' => 'message_f7_attachments',
+        'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' =>
+          'attachment_f7_pdf',
+        _ => fail('unexpected $path'),
+      };
+
+      test(
+        'fetchBody lists the PDF, not the logo the HTML shows by cid:',
+        () async {
+          final body = _ok(await _Recorded(route).provider.fetchBody(f7));
+          expect(body.content, startsWith('Ciao Bruno,'));
+          expect(body.attachments!.map((a) => (a.id, a.name, a.size)), [
+            ('1', 'Preventivo 2027.pdf', 49),
+          ]);
+        },
+      );
+
+      test('fetchAttachment finds the part, then downloads its data', () async {
+        final g = _Recorded(route);
+        final progress = <double>[];
+        final bytes = _ok(
+          await g.provider.fetchAttachment(f7, '1', onProgress: progress.add),
+        );
+        expect(utf8.decode(bytes), pdf);
+        expect(g.urls.map((u) => u.path), [
+          '${_api}messages/$f7',
+          '${_api}messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7',
+        ]);
+        expect(g.urls.first.queryParameters['format'], 'full');
+        expect(progress.last, 1);
+      });
+
+      test('the inline logo is not an attachment to download', () async {
+        expect(
+          await _Recorded(route).provider.fetchAttachment(f7, '0.1'),
+          _err<NotFoundFailure>(),
         );
       });
     });

@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart' as plus;
+import 'package:file/local.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
@@ -8,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/platform_services.dart';
+import 'attachment_cache.dart';
 import 'postino_database.dart';
 
 /// Keychain (iOS/macOS), Keystore (Android), Credential Manager (Windows), libsecret (Linux).
@@ -66,6 +70,44 @@ class SystemLinkOpener implements LinkOpener {
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (_) {}
+  }
+}
+
+/// The system Save As dialog (file_selector), on desktop only.
+@Singleton(as: FileSaver, env: [Environment.prod])
+class SystemFileSaver implements FileSaver {
+  @override
+  bool get available =>
+      !kIsWeb &&
+      switch (defaultTargetPlatform) {
+        TargetPlatform.macOS ||
+        TargetPlatform.windows ||
+        TargetPlatform.linux => true,
+        _ => false,
+      };
+
+  @override
+  Future<void> save(String path, String name) async {
+    final to = await getSaveLocation(suggestedName: name);
+    if (to != null) await const LocalFileSystem().file(path).copy(to.path);
+  }
+}
+
+@module
+abstract class AttachmentModule {
+  /// The cache in the app's support folder (out of the OS's cache purges, so offline holds), the copies in its temporary one.
+  @preResolve
+  @Singleton(env: [Environment.prod])
+  Future<AttachmentStorage> attachmentStorage() async {
+    const fs = LocalFileSystem();
+    return AttachmentStorage.open(
+      fs.directory(
+        '${(await getApplicationSupportDirectory()).path}/attachments',
+      ),
+      fs.directory(
+        '${(await getTemporaryDirectory()).path}/postino-attachments',
+      ),
+    );
   }
 }
 

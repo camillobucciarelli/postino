@@ -61,6 +61,17 @@ abstract final class PostinoIcons {
     'M12 12h.01',
     'M18.5 12h.01',
   ]);
+  static const download = PostinoIconData([
+    'M12 4v11',
+    'M7 10l5 5 5-5',
+    'M5 20h14',
+  ]);
+  static const close = PostinoIconData(['M6 6l12 12', 'M18 6L6 18']);
+  static const moreVertical = PostinoIconData([
+    'M12 5.5h.01',
+    'M12 12h.01',
+    'M12 18.5h.01',
+  ]);
   // ponytail: drawn here in the set's style, not copied from the Icon card; swap in the card's when it differs.
   static const image = PostinoIconData([
     'M4 5h16v14H4z',

@@ -64,3 +64,12 @@ class FakeLinkOpener implements LinkOpener {
   @override
   Future<void> open(Uri url) async => opened.add(url);
 }
+
+/// Records every Save As instead of showing the dialog.
+class FakeFileSaver implements FileSaver {
+  final saved = <(String path, String name)>[];
+  @override
+  bool available = true;
+  @override
+  Future<void> save(String path, String name) async => saved.add((path, name));
+}

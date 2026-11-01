@@ -132,11 +132,18 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
         MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
       return;
     }
-    // The first one on screen (the back button), not the first attached: the tree order of the
-    // focus nodes follows when each was attached, which a reparented detail shuffles.
-    // A header scrolled out above (negative top) is mounted but not on screen: skipped.
+    // The back button, named explicitly: the controls of the AppBar come first. A control scrolled
+    // under the bar has a positive top, so position alone cannot tell it from the button.
+    // Without an AppBar (two panes never get here) the first on screen wins; a header scrolled
+    // out above (negative top) is mounted but not on screen: skipped.
+    final all = _detailFocus.traversalDescendants;
+    final bar = all
+        .where(
+          (n) => n.context?.findAncestorWidgetOfExactType<AppBar>() != null,
+        )
+        .toList();
     final nodes =
-        _detailFocus.traversalDescendants.where((n) => n.rect.top >= 0).toList()
+        (bar.isNotEmpty ? bar : all.where((n) => n.rect.top >= 0).toList())
           ..sort((a, b) {
             final byTop = a.rect.top.compareTo(b.rect.top);
             return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);

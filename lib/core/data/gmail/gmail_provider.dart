@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:enough_mail/enough_mail.dart' show MailAddress, MessageBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../domain/mail_provider.dart';
+import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
@@ -18,7 +20,7 @@ import 'google_client.dart';
 const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
-// ponytail: send and drafts stay stubs until the tickets that need them (#32 and following).
+// ponytail: send stays a stub until #36.
 class GmailProvider implements MailProvider {
   GmailProvider(
     this._accountId,
@@ -249,14 +251,67 @@ class GmailProvider implements MailProvider {
   @override
   Future<Result<void>> send(OutgoingMessage message) async => _todo;
 
+  /// Gmail draft ids by Message-ID.
+  // ponytail: cache in memory, after a restart the draft is searched again.
+  final _draftIds = <String, String>{};
+
   @override
   Future<Result<void>> saveDraft(
     OutgoingMessage draft, {
     required bool isNew,
-  }) async => _todo;
+  }) => _guard(() async {
+    final message = {'raw': base64Url.encode(utf8.encode(_mime(draft)))};
+    if (isNew) {
+      final r = await _request('POST', 'drafts', body: {'message': message});
+      _draftIds[draft.messageId] = r['id'] as String;
+    } else {
+      final id = await _draftId(draft.messageId);
+      await _request('PUT', 'drafts/$id', body: {'id': id, 'message': message});
+    }
+    return const Ok(null);
+  });
 
   @override
-  Future<Result<void>> deleteDraft(String messageId) async => _todo;
+  Future<Result<void>> deleteDraft(String messageId) => _guard(() async {
+    await _request('DELETE', 'drafts/${await _draftId(messageId)}');
+    _draftIds.remove(messageId);
+    return const Ok(null);
+  });
+
+  /// The Gmail draft holding [messageId]: remembered, else searched with `rfc822msgid:`.
+  /// The query takes the id without its angle brackets, as the Gmail search box does.
+  /// An update or a delete that finds no draft (here or as a 404) throws NotFound.
+  Future<String> _draftId(String messageId) async {
+    if (_draftIds[messageId] case final id?) return id;
+    final r = await _get('drafts', {
+      'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}',
+    });
+    final id = (r['drafts'] as List?)?.firstOrNull?['id'] as String?;
+    if (id == null) throw const _Failed(NotFoundFailure());
+    return _draftIds[messageId] = id;
+  }
+
+  /// The raw RFC 2822 text of [d]: multipart/alternative, the plain text read off the HTML.
+  String _mime(OutgoingMessage d) {
+    MailAddress address(String s) {
+      final m = parseMailbox(s);
+      return MailAddress(m.name, m.address);
+    }
+
+    return (MessageBuilder.prepareMultipartAlternativeMessage(
+            plainText: htmlText(d.body),
+            htmlText: d.body,
+          )
+          ..from = [address(d.from)]
+          ..to = d.to.map(address).toList()
+          ..cc = d.cc.map(address).toList()
+          ..bcc = d.bcc.map(address).toList()
+          ..subject = d.subject
+          ..messageId = d.messageId
+          ..date = _clock.now())
+        .buildMimeMessage()
+        .renderMessage();
+  }
 
   /// Every message id matching [query], following the pages.
   Future<List<String>> _list(Map<String, String> query) async {

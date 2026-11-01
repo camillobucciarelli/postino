@@ -134,11 +134,13 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     }
     // The first one on screen (the back button), not the first attached: the tree order of the
     // focus nodes follows when each was attached, which a reparented detail shuffles.
-    final nodes = _detailFocus.traversalDescendants.toList()
-      ..sort((a, b) {
-        final byTop = a.rect.top.compareTo(b.rect.top);
-        return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);
-      });
+    // A header scrolled out above (negative top) is mounted but not on screen: skipped.
+    final nodes =
+        _detailFocus.traversalDescendants.where((n) => n.rect.top >= 0).toList()
+          ..sort((a, b) {
+            final byTop = a.rect.top.compareTo(b.rect.top);
+            return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);
+          });
     nodes.firstOrNull?.requestFocus();
   });
 

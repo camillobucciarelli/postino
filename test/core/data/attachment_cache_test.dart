@@ -321,15 +321,16 @@ void main() {
     expect(safeFileName('lpt1'), '_lpt1');
     expect(safeFileName('console.txt'), 'console.txt');
     expect(safeFileName('report. . '), 'report');
-    // Cut at 200 bytes, no trailing dot or space left by the cut.
-    expect(safeFileName('${'a' * 199} xxxxx'), 'a' * 199);
+    // Cut at 150 bytes, no trailing dot or space left by the cut.
+    expect(safeFileName('${'a' * 149} xxxxx'), 'a' * 149);
     // Bytes, not characters: 100 CJK characters are 300 bytes, over the file system's 255.
     final cjk = safeFileName('${'漢' * 100}.pdf');
-    expect(cjk, '${'漢' * 65}.pdf');
+    expect(cjk, '${'漢' * 48}.pdf');
     expect(utf8.encode(cjk).length, lessThanOrEqualTo(maxFileNameBytes));
-    // A 4-byte emoji on the edge is dropped whole, never split.
-    final emoji = safeFileName('${'a' * 198}😀😀.txt');
-    expect(emoji, '${'a' * 196}.txt');
+    // 142 + 4 bytes fit the 146 left by «.txt»: the first emoji stays whole, the second goes whole.
+    final emoji = safeFileName('${'a' * 142}😀😀.txt');
+    expect(emoji, '${'a' * 142}😀.txt');
+    expect(utf8.encode(emoji).length, maxFileNameBytes);
     expect(safeFileName('a?b*c<d>|"e.pdf'), 'a_b_c_d___e.pdf');
     final long = safeFileName('${'x' * 300}.pdf');
     expect(long, hasLength(maxFileNameBytes));

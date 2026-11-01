@@ -280,8 +280,9 @@ class AttachmentCache implements AttachmentRepository {
 String _hex(List<int> bytes) =>
     [for (final b in bytes) b.toRadixString(16).padLeft(2, '0')].join();
 
-/// Under every file system's 255 bytes, with room for the temporary folder's own name.
-const maxFileNameBytes = 200;
+/// Under every file system's 255 bytes per name and, being at most as many UTF-16 units, under Windows'
+/// 260 characters for the whole path of the temporary copy (`…\Temp\postino-attachments\<folder>\<name>`).
+const maxFileNameBytes = 150;
 
 typedef _Keys = ({Uint8List enc, Uint8List mac});
 
@@ -299,15 +300,15 @@ String safeFileName(String name) {
     final ext = dot > 0 && s.length - dot <= 10 ? s.substring(dot) : '';
     final room = maxFileNameBytes - utf8.encode(ext).length;
     // Code point by code point, so a multi-byte character is kept whole or dropped.
-    final stem = StringBuffer();
+    final kept = StringBuffer();
     var bytes = 0;
     for (final r in s.substring(0, s.length - ext.length).runes) {
       final n = String.fromCharCode(r);
       bytes += utf8.encode(n).length;
       if (bytes > room) break;
-      stem.write(n);
+      kept.write(n);
     }
-    s = '$stem$ext'.replaceAll(RegExp(r'[. ]+$'), '');
+    s = '$kept$ext'.replaceAll(RegExp(r'[. ]+$'), '');
   }
   if (s.isEmpty) return 'allegato';
   final stem = s.split('.').first.trim().toUpperCase();

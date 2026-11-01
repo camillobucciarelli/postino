@@ -403,39 +403,51 @@ void main() {
 
   // QA saw the menu open on its own after a download and after a cancelled Save As: the window loses and
   // regains focus in both cases (another app, the system sheet). Not reproduced here; pinned all the same.
-  for (final (what, act) in [
-    ('a download', (WidgetTester t) => _tap(t, _chip('Contratto.pdf'))),
-    (
-      'a cancelled Save As',
-      (WidgetTester t) async {
-        await _tap(t, _in('Contratto.pdf', const ValueKey('attachment-more')));
-        await _tap(t, find.text('Salva…'));
-      },
-    ),
-  ]) {
-    testWidgets(
-      'the menu stays closed after $what, when the window regains focus',
-      (tester) async {
-        await _start(tester);
-        await act(tester);
-        expect(find.text('Salva…'), findsNothing);
-        for (final direction in ViewFocusDirection.values) {
-          for (final state in [
-            ViewFocusState.unfocused,
-            ViewFocusState.focused,
-          ]) {
-            tester.binding.handleViewFocusChanged(
-              ViewFocusEvent(
-                viewId: tester.view.viewId,
-                state: state,
-                direction: direction,
-              ),
-            );
-            await tester.pumpAndSettle();
-          }
-          expect(find.text('Salva…'), findsNothing, reason: '$direction');
-        }
-      },
-    );
+  Future<void> windowFocusRoundTrip(WidgetTester tester) async {
+    for (final direction in ViewFocusDirection.values) {
+      for (final state in [ViewFocusState.unfocused, ViewFocusState.focused]) {
+        tester.binding.handleViewFocusChanged(
+          ViewFocusEvent(
+            viewId: tester.view.viewId,
+            state: state,
+            direction: direction,
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Salva…'), findsNothing, reason: '$direction');
+    }
   }
+
+  testWidgets(
+    'the menu stays closed after a download, when the window regains focus',
+    (tester) async {
+      await _start(tester);
+      await _tap(tester, _chip('Contratto.pdf'));
+      expect(h.links.opened, hasLength(1));
+      await windowFocusRoundTrip(tester);
+    },
+  );
+
+  testWidgets(
+    'the menu stays closed while the Save As dialog is open and after its Annulla',
+    (tester) async {
+      await _start(tester);
+      final dialog = h.saver.dialog = Completer<bool>();
+      await _tap(
+        tester,
+        _in('Contratto.pdf', const ValueKey('attachment-more')),
+      );
+      expect(find.text('Salva…'), findsOneWidget);
+      await _tap(tester, find.text('Salva…'));
+      expect(find.text('Salva…'), findsNothing);
+      // The system sheet is up: the window loses and regains focus meanwhile.
+      await windowFocusRoundTrip(tester);
+      dialog.complete(false);
+      await tester.pumpAndSettle();
+      expect(find.text('Salva…'), findsNothing);
+      expect(h.saver.saved, isEmpty);
+      await windowFocusRoundTrip(tester);
+    },
+  );
 }

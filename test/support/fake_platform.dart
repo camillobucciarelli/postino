@@ -80,9 +80,15 @@ class FakeFileSaver implements FileSaver {
 
   /// While set, a save throws it: a full disk, a folder it may not write to.
   Exception? failure;
+
+  /// While set, the dialog stays open until it completes; true saves, false is the user's Annulla.
+  Completer<bool>? dialog;
   @override
   Future<void> save(String path, String name) async {
     if (failure case final f?) throw f;
+    if (dialog case final d?) {
+      if (!await d.future) return;
+    }
     saved.add((path, name));
   }
 }

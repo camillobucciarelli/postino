@@ -386,11 +386,13 @@ void main() {
     await _start(tester);
     gmail
       ..attach('m2', '', [1, 2], mimeType: 'application/pdf')
+      ..attach('m2', 'Fattura', [3], mimeType: 'application/pdf')
       ..deliver(msg('m2', conversationId: 't2', subject: 'Senza nome'));
     await tester.pumpAndSettle();
     await _tap(tester, find.byKey(const ValueKey('row-a1-m2')));
     // Named by its type, so it opens in the right app.
     expect(find.text('Allegato senza nome.pdf'), findsOneWidget);
+    expect(find.text('Fattura.pdf'), findsOneWidget);
     await _tap(tester, find.byKey(const ValueKey('attachment-m2-att-')));
     expect(
       Uri.decodeComponent(h.links.opened.single.pathSegments.last),

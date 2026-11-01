@@ -231,10 +231,13 @@ class _ConversationViewState extends State<ConversationView> {
   }
 
   /// The attachment's name, or «Allegato senza nome» when the message gives none.
-  /// The same name everywhere (chip, opened copy, Save As), with an extension from its type so it opens right.
-  String _name(Attachment a) => a.name.isEmpty
-      ? '${context.t.conversazione.attachmentUntitled}${a.fallbackExtension}'
-      : a.name;
+  /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
+  /// so it opens in the right app (open_filex picks the app by extension only).
+  String _name(Attachment a) => switch (a.name) {
+    '' => '${context.t.conversazione.attachmentUntitled}${a.fallbackExtension}',
+    final n when !n.contains('.') => '$n${a.fallbackExtension}',
+    final n => n,
+  };
 
   void _toggle(String id, bool hasBody) {
     final open = !_expanded[id]!;
@@ -344,7 +347,9 @@ class _ConversationViewState extends State<ConversationView> {
       contentWidth: part.width,
       quiet: quiet,
       onTapUrl: (url) {
-        if (Uri.tryParse(url) case final uri?) {
+        // Web and mail only: a `file:` link in a message must never open (or hand out) a local file.
+        if (Uri.tryParse(url) case final uri?
+            when ['http', 'https', 'mailto'].contains(uri.scheme)) {
           unawaited(GetIt.I<LinkOpener>().open(uri));
         }
       },

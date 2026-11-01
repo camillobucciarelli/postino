@@ -282,6 +282,32 @@ void main() {
     },
   );
 
+  test('an eviction that fails does not block the ones after it', () async {
+    await _start(cap: 2 * (60 + AttachmentCache.overhead) + 10);
+    final all = [
+      for (final n in ['a', 'b', 'c', 'd'])
+        gmail.attach('m1', '$n.pdf', _content(n)),
+    ];
+    _ok(await _file(all[0]));
+    h.clock.advance(const Duration(minutes: 1));
+    _ok(await _file(all[1]));
+    h.clock.advance(const Duration(minutes: 1));
+    var failOnce = true;
+    h.onFileOp = (path, op) {
+      if (op == FileSystemOp.delete &&
+          path.startsWith('/support/') &&
+          !path.endsWith('.part') &&
+          failOnce) {
+        failOnce = false;
+        throw const FileSystemException('busy');
+      }
+    };
+    expect(await _file(all[2]), isA<Err<String>>());
+    h.clock.advance(const Duration(minutes: 1));
+    expect(await _file(all[3]), isA<Ok<String>>());
+    expect(_cached, hasLength(2));
+  });
+
   test('two downloads of the same attachment at once both open', () async {
     await _start();
     final a = gmail.attach('m1', 'a.pdf', _content('a'));

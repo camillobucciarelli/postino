@@ -150,7 +150,7 @@ class AttachmentCache implements AttachmentRepository {
           if (await part.exists()) await part.delete();
         }
         await cached.setLastModified(_clock.now());
-        await (_evicting = _evicting.then((_) => _evict()));
+        await _serially(_evict);
       }
     }
     // One folder per copy, so the file keeps its own name and two of the same name do not clash.
@@ -159,8 +159,17 @@ class AttachmentCache implements AttachmentRepository {
       final copy = dir.childFile(safeFileName(attachment.name));
       if (!cancelled()) await copy.writeAsBytes(plain, flush: true);
       if (!cancelled()) return Ok(copy.path);
-      if (stored && await cached.exists()) await cached.delete();
-      await dir.delete(recursive: true);
+      // Annulla wins even over a failed cleanup: in the queue, so an eviction never deletes the same file.
+      try {
+        if (stored) {
+          await _serially(() async {
+            if (await cached.exists()) await cached.delete();
+          });
+        }
+        await dir.delete(recursive: true);
+      } on FileSystemException {
+        // Left behind: the next launch empties the temporary folder, eviction the cache.
+      }
       return const Err(CancelledFailure());
     } catch (_) {
       if (await dir.exists()) await dir.delete(recursive: true);
@@ -168,8 +177,15 @@ class AttachmentCache implements AttachmentRepository {
     }
   }
 
-  /// One eviction at a time: two at once would pick, and delete, the same file.
-  Future<void> _evicting = Future.value();
+  /// Deletions in the cache, one at a time: two at once would pick, and delete, the same file.
+  /// A failed one does not block the next.
+  Future<void> _deleting = Future.value();
+
+  Future<void> _serially(Future<void> Function() op) {
+    final run = _deleting.then((_) => op());
+    _deleting = run.then<void>((_) {}, onError: (_) {});
+    return run;
+  }
 
   /// Drops the least recently used files until the cache fits its cap.
   Future<void> _evict() async {

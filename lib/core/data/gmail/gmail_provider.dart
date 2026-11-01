@@ -217,7 +217,10 @@ class GmailProvider implements MailProvider {
   Future<Result<void>> send(OutgoingMessage message) async => _todo;
 
   @override
-  Future<Result<void>> saveDraft(OutgoingMessage draft) async => _todo;
+  Future<Result<void>> saveDraft(
+    OutgoingMessage draft, {
+    required bool isNew,
+  }) async => _todo;
 
   @override
   Future<Result<void>> deleteDraft(String messageId) async => _todo;

@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:typed_data' show Uint8List;
 
 class Attachment {
@@ -82,18 +83,43 @@ class Conversation {
   final List<String> messageIds;
 }
 
-/// A message to send or to keep as a draft; [messageId] is generated on the device and stays stable.
+/// A message to send or to keep as a Bozza; [messageId] is generated on the device ([newMessageId]) and stays stable.
 class OutgoingMessage {
   const OutgoingMessage({
     required this.messageId,
+    required this.from,
     required this.to,
     required this.subject,
     required this.body,
+    this.cc = const [],
+    this.bcc = const [],
   });
   final String messageId;
+
+  /// The address of the sending Account.
+  final String from;
   final List<String> to;
+  final List<String> cc;
+  final List<String> bcc;
   final String subject;
+
+  /// HTML; the adapter derives the text/plain alternative (`htmlText`).
   final String body;
+}
+
+const _alphanumerics =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+/// A fresh RFC 5322 Message-ID: `<24 random alphanumerics@domain of [address]>` (`postino.local` without one).
+String newMessageId(String address) {
+  final random = Random.secure();
+  final local = [
+    for (var i = 0; i < 24; i++)
+      _alphanumerics[random.nextInt(_alphanumerics.length)],
+  ].join();
+  final at = address.lastIndexOf('@');
+  final domain = at < 0 ? 'postino.local' : address.substring(at + 1);
+  return '<$local@$domain>';
 }
 
 typedef AttachmentBytes = Uint8List;

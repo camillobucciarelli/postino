@@ -83,7 +83,12 @@ class FakeMailProvider implements MailProvider {
   final labels = [
     const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
   ];
+
+  /// The Bozze folder, by Message-ID; a saved or delivered Bozza is also a DRAFT message for the syncs.
   final drafts = <String, OutgoingMessage>{};
+
+  /// Every [saveDraft] that reached the Provider: (Message-ID, isNew).
+  final draftCalls = <(String, bool)>[];
 
   /// What the sync engine asked for: initial syncs, and the delta of the last incremental one.
   int initialSyncs = 0;
@@ -105,6 +110,38 @@ class FakeMailProvider implements MailProvider {
     _log.add((++_version, null, id));
     if (_signalUp) _changes.add(ChangeSignal.changed);
   }
+
+  /// A Bozza written by another client: in the Bozze folder, with its HTML body; its Provider id is `d-<n>`.
+  void deliverDraft(OutgoingMessage d) {
+    drafts[d.messageId] = d;
+    final id = _draftIds[d.messageId] ??= 'd-${++_draftSeq}';
+    bodies[id] = MessageBody(d.body, BodyKind.html);
+    deliver(
+      Message(
+        id: id,
+        messageId: d.messageId,
+        conversationId: d.messageId,
+        labelIds: const ['DRAFT'],
+        isRead: true,
+        isStarred: false,
+        from: d.from,
+        to: d.to,
+        cc: d.cc,
+        subject: d.subject,
+        snippet: d.body,
+        date: DateTime.utc(2026, 1, 1),
+      ),
+    );
+  }
+
+  /// A Bozza deleted (or sent) by another client.
+  void removeDraftRemotely(String messageId) {
+    drafts.remove(messageId);
+    if (_draftIds.remove(messageId) case final id?) removeRemotely(id);
+  }
+
+  final _draftIds = <String, String>{};
+  int _draftSeq = 0;
 
   void goOffline() => _offline = true;
   void goOnline() => _offline = false;
@@ -269,16 +306,27 @@ class FakeMailProvider implements MailProvider {
   });
 
   @override
-  Future<Result<void>> saveDraft(OutgoingMessage draft) async =>
-      _guard(() => drafts[draft.messageId] = draft);
+  Future<Result<void>> saveDraft(
+    OutgoingMessage draft, {
+    required bool isNew,
+  }) async {
+    final f = _failure;
+    if (f != null) return Err(f);
+    draftCalls.add((draft.messageId, isNew));
+    if (!isNew && !drafts.containsKey(draft.messageId)) {
+      return const Err(NotFoundFailure());
+    }
+    deliverDraft(draft);
+    return const Ok(null);
+  }
 
   @override
   Future<Result<void>> deleteDraft(String messageId) async {
     final f = _failure;
     if (f != null) return Err(f);
-    return drafts.remove(messageId) != null
-        ? const Ok(null)
-        : const Err(NotFoundFailure());
+    if (!drafts.containsKey(messageId)) return const Err(NotFoundFailure());
+    removeDraftRemotely(messageId);
+    return const Ok(null);
   }
 }
 

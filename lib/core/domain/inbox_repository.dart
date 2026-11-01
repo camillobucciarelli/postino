@@ -30,6 +30,10 @@ abstract interface class InboxRepository {
   /// (the inbox is [inboxLabelId], system labels included).
   Stream<Set<(String, String)>> watchUnreadFolders();
 
+  /// The Bozze of one Account, newest first: those written here (id and Conversazione are the Message-ID, the
+  /// snippet comes from the body) and those of other clients, each once; `labelIds` is `['DRAFT']`.
+  Stream<List<Message>> watchDrafts(String accountId);
+
   /// The Etichette of one Account, by name; never those of another.
   Stream<List<Label>> watchLabels(String accountId);
 

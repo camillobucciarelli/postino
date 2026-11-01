@@ -62,6 +62,10 @@ class GmailHarness implements ContractHarness {
 
   final FakeSecureStore keychain;
   final requests = <http.Request>[];
+
+  @override
+  void deliverDraft(OutgoingMessage d) =>
+      throw UnimplementedError('#35: adapter Gmail');
   final _accepted = {'ya29.initial', 'ya29.refreshed'};
   bool _authBroken = false, _offline = false;
 

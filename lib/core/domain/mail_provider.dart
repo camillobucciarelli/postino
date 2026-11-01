@@ -65,7 +65,9 @@ abstract interface class MailProvider {
   /// Idempotent on [OutgoingMessage.messageId].
   Future<Result<void>> send(OutgoingMessage message);
 
-  Future<Result<void>> saveDraft(OutgoingMessage draft);
+  /// [isNew]: creates the Bozza on the Provider; otherwise updates the one with [OutgoingMessage.messageId],
+  /// [NotFoundFailure] if it is gone (deleted or sent elsewhere).
+  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew});
 
   Future<Result<void>> deleteDraft(String messageId);
 }

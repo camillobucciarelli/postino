@@ -1,9 +1,11 @@
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/html_text.dart';
 import '../domain/inbox_repository.dart';
 import '../domain/mail_provider.dart';
 import '../domain/message.dart';
+import 'daos/drafts_dao.dart';
 import 'postino_database.dart';
 
 @lazySingleton
@@ -31,18 +33,28 @@ class MailStore implements InboxRepository {
     String accountId,
     SyncBatch batch, {
     bool fullSnapshot = false,
-  }) => _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
+  }) async {
+    await _db.messagesDao.applySync(
+      accountId,
+      batch,
+      fullSnapshot: fullSnapshot,
+    );
+    await _db.draftsDao.reconcile(accountId);
+  }
 
   /// A page of the initial sync: stored right away, without touching the cursor.
   Future<void> applyPage(
     String accountId,
     List<Message> messages,
     Map<String, MessageBody> bodies,
-  ) => _db.messagesDao.applySync(
-    accountId,
-    SyncBatch(cursor: '', messages: messages, bodies: bodies),
-    saveCursor: false,
-  );
+  ) async {
+    await _db.messagesDao.applySync(
+      accountId,
+      SyncBatch(cursor: '', messages: messages, bodies: bodies),
+      saveCursor: false,
+    );
+    await _db.draftsDao.reconcile(accountId);
+  }
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() => _entries(null, inboxLabelId);
@@ -103,6 +115,92 @@ class MailStore implements InboxRepository {
     required bool isRead,
   }) => _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
+  // --- Bozze (#35) ---
+  Future<void> saveDraft(
+    String accountId,
+    OutgoingMessage draft, {
+    required int updatedAt,
+  }) => _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
+
+  /// A Bozza of another client, kept here as already synced.
+  Future<void> adoptDraft(
+    String accountId,
+    OutgoingMessage draft, {
+    required int updatedAt,
+  }) => _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
+
+  Future<OutgoingMessage?> localDraft(
+    String accountId,
+    String messageId,
+  ) async {
+    final r = await _db.draftsDao.byId(accountId, messageId);
+    return r == null ? null : _draft(r, await _address(accountId));
+  }
+
+  /// The Provider's DRAFT message with this Message-ID, as stored, with its body if downloaded.
+  Future<ConversationMessage?> remoteDraft(
+    String accountId,
+    String messageId,
+  ) async {
+    final r = await _db.draftsDao.remote(accountId, messageId);
+    if (r == null) return null;
+    final (m, b) = r;
+    return (
+      message: _message(m, const [draftLabelId]),
+      body: b == null ? null : MessageBody(b.body, b.kind),
+    );
+  }
+
+  /// The Bozze whose content is not on the Provider yet; [isNew] when it never was.
+  Future<List<({OutgoingMessage draft, bool isNew, int updatedAt})>>
+  pendingDrafts(String accountId) async {
+    final from = await _address(accountId);
+    return [
+      for (final r in await _db.draftsDao.pending(accountId))
+        (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt),
+    ];
+  }
+
+  /// The content of [updatedAt] reached the Provider.
+  Future<void> draftSynced(String accountId, String messageId, int updatedAt) =>
+      _db.draftsDao.synced(accountId, messageId, updatedAt);
+
+  Future<void> removeDraft(String accountId, String messageId) =>
+      _db.draftsDao.remove(accountId, messageId);
+
+  @override
+  Stream<List<Message>> watchDrafts(String accountId) => _db.draftsDao
+      .watchAll(accountId)
+      .map(
+        (rows) => [
+          for (final (r, local) in rows)
+            _message(r, const [
+              draftLabelId,
+            ], local ? _snippet(r.snippet) : null),
+        ],
+      );
+
+  /// The body as a list shows it: no tags, spaces compressed, at most 120 characters.
+  static String _snippet(String html) {
+    final text = htmlText(html).replaceAll(RegExp(r'\s+'), ' ').trim();
+    return text.length > 120 ? text.substring(0, 120) : text;
+  }
+
+  Future<String> _address(String accountId) async =>
+      (await _db.accountsDao.byPosition())
+          .firstWhere((a) => a.id == accountId)
+          .address;
+
+  static OutgoingMessage _draft(DraftRow r, String from) => OutgoingMessage(
+    messageId: r.messageId,
+    from: from,
+    to: _lines(r.recipients),
+    cc: _lines(r.cc),
+    bcc: _lines(r.bcc),
+    subject: r.subject,
+    body: r.body,
+  );
+
   @override
   Stream<Set<(String, String)>> watchUnreadFolders() =>
       _db.messagesDao.watchUnreadFolders();
@@ -134,6 +232,7 @@ class MailStore implements InboxRepository {
   static Message _message(
     MessageRow r, [
     List<String> labelIds = const [inboxLabelId],
+    String? snippet,
   ]) => Message(
     id: r.id,
     messageId: r.messageId,
@@ -146,7 +245,7 @@ class MailStore implements InboxRepository {
     to: _lines(r.recipients),
     cc: _lines(r.cc),
     subject: r.subject,
-    snippet: r.snippet,
+    snippet: snippet ?? r.snippet,
     date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
   );
 }

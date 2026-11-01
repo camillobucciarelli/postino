@@ -149,4 +149,27 @@ void main() {
       'm3': ('n@x.it', 'Nicolò', '', ''),
     });
   });
+
+  test('v9 adds the Bozze', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute('PRAGMA user_version = 8');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    await db.draftsDao.save(
+      'a1',
+      const OutgoingMessage(
+        messageId: '<x>',
+        from: 'a1@example.com',
+        to: ['b@example.com'],
+        subject: 's',
+        body: '<p>Ciao</p>',
+      ),
+      updatedAt: 1,
+    );
+    expect(await db.select(db.drafts).get(), hasLength(1));
+  });
 }

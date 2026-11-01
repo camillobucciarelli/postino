@@ -20,6 +20,9 @@ abstract class ContractHarness {
   void expireCursors();
   void goOffline();
   void breakAuth();
+
+  /// A Bozza is written in the Bozze folder "elsewhere" (another client).
+  void deliverDraft(OutgoingMessage d);
 }
 
 class FakeHarness implements ContractHarness {
@@ -36,6 +39,8 @@ class FakeHarness implements ContractHarness {
   void goOffline() => fake.goOffline();
   @override
   void breakAuth() => fake.breakAuth();
+  @override
+  void deliverDraft(OutgoingMessage d) => fake.deliverDraft(d);
 }
 
 T _ok<T>(Result<T> r) => switch (r) {
@@ -239,9 +244,71 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
   });
 }
 
+OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) =>
+    OutgoingMessage(
+      messageId: messageId,
+      from: 'me@example.com',
+      to: const ['b@example.com'],
+      subject: 's',
+      body: body,
+    );
+
+/// The Bozze part of the contract (#35): create, update by Message-ID, delete, and Bozze written elsewhere.
+void mailProviderDraftContract(String name, ContractHarness Function() create) {
+  group('MailProvider draft contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
+
+    test('a saved Bozza can be updated by its Message-ID', () async {
+      final d = _draft('<x@example.com>');
+      _ok(await h.provider.saveDraft(d, isNew: true));
+      _ok(await h.provider.saveDraft(d, isNew: false));
+    });
+
+    test('updating a Bozza never saved is NotFound', () async {
+      expect(
+        await h.provider.saveDraft(_draft('<nope@example.com>'), isNew: false),
+        _err<NotFoundFailure>(),
+      );
+    });
+
+    test(
+      'deleting a Bozza twice is NotFound the second time; so is updating it',
+      () async {
+        final d = _draft('<x@example.com>');
+        _ok(await h.provider.saveDraft(d, isNew: true));
+        _ok(await h.provider.deleteDraft(d.messageId));
+        expect(
+          await h.provider.deleteDraft(d.messageId),
+          _err<NotFoundFailure>(),
+        );
+        expect(
+          await h.provider.saveDraft(d, isNew: false),
+          _err<NotFoundFailure>(),
+        );
+      },
+    );
+
+    test(
+      'a Bozza written elsewhere syncs as a DRAFT message with its body',
+      () async {
+        h.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));
+        final m = _ok(await h.provider.initialSync()).messages.single;
+        expect(m.labelIds, ['DRAFT']);
+        expect(m.messageId, '<y@example.com>');
+        expect(
+          _ok(await h.provider.fetchBody(m.id)).content,
+          '<p>Da altrove</p>',
+        );
+      },
+    );
+  });
+}
+
 void mailProviderContract(String name, ContractHarness Function() create) {
   mailProviderAuthContract(name, create);
   mailProviderSyncContract(name, create);
+  mailProviderDraftContract(name, create);
   group('MailProvider contract: $name', () {
     late ContractHarness h;
     setUp(() => h = create());
@@ -252,23 +319,8 @@ void mailProviderContract(String name, ContractHarness Function() create) {
       expect(r, _err<NotFoundFailure>());
     });
 
-    test(
-      'sends and keeps drafts; deleting a missing draft is NotFound',
-      () async {
-        const m = OutgoingMessage(
-          messageId: '<x@example.com>',
-          to: ['b@example.com'],
-          subject: 's',
-          body: 'b',
-        );
-        _ok(await h.provider.send(m));
-        _ok(await h.provider.saveDraft(m));
-        _ok(await h.provider.deleteDraft(m.messageId));
-        expect(
-          await h.provider.deleteDraft(m.messageId),
-          _err<NotFoundFailure>(),
-        );
-      },
-    );
+    test('send is accepted', () async {
+      _ok(await h.provider.send(_draft('<x@example.com>')));
+    });
   });
 }

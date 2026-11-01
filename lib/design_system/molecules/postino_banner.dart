@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_button.dart';
 import '../atoms/postino_icon.dart';
+import '../atoms/postino_selectable.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -66,91 +67,93 @@ class PostinoBanner extends StatelessWidget {
     final under = large || actions.length > 1;
     return Padding(
       padding: EdgeInsets.only(bottom: spaced ? PostinoSpacing.s2 : 0),
-      child: Semantics(
-        container: true,
-        liveRegion: true,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            PostinoSpacing.s4,
-            PostinoSpacing.s3,
-            PostinoSpacing.s2,
-            PostinoSpacing.s3,
-          ),
-          decoration: BoxDecoration(
-            color: switch (tone) {
-              PostinoBannerTone.danger => c.dangerSubtle,
-              PostinoBannerTone.warning => c.warningSubtle,
-              PostinoBannerTone.info => c.brandSubtle,
-              PostinoBannerTone.offline => c.surfacePressed,
-            },
-            borderRadius: const BorderRadius.all(
-              Radius.circular(PostinoRadius.md),
+      child: PostinoSelectable(
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              PostinoSpacing.s4,
+              PostinoSpacing.s3,
+              PostinoSpacing.s2,
+              PostinoSpacing.s3,
             ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: PostinoSpacing.s3,
-            children: [
-              PostinoIcon(
-                icon ??
-                    (tone == PostinoBannerTone.offline
-                        ? PostinoIcons.cloudOff
-                        : PostinoIcons.alert),
-                size: PostinoSize.iconLg,
-                color: switch (tone) {
-                  PostinoBannerTone.danger => c.danger,
-                  PostinoBannerTone.warning => c.warning,
-                  PostinoBannerTone.info => c.brand,
-                  PostinoBannerTone.offline => c.inkMuted,
-                },
+            decoration: BoxDecoration(
+              color: switch (tone) {
+                PostinoBannerTone.danger => c.dangerSubtle,
+                PostinoBannerTone.warning => c.warningSubtle,
+                PostinoBannerTone.info => c.brandSubtle,
+                PostinoBannerTone.offline => c.surfacePressed,
+              },
+              borderRadius: const BorderRadius.all(
+                Radius.circular(PostinoRadius.md),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: PostinoSpacing.s0_5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: PostinoSpacing.s0_5,
-                    children: [
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            if (a != null) ...[
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: PostinoAccountMark(
-                                  color: a.color,
-                                  initial: a.initial,
-                                  size: PostinoSize.accountBadge,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: PostinoSpacing.s3,
+              children: [
+                PostinoIcon(
+                  icon ??
+                      (tone == PostinoBannerTone.offline
+                          ? PostinoIcons.cloudOff
+                          : PostinoIcons.alert),
+                  size: PostinoSize.iconLg,
+                  color: switch (tone) {
+                    PostinoBannerTone.danger => c.danger,
+                    PostinoBannerTone.warning => c.warning,
+                    PostinoBannerTone.info => c.brand,
+                    PostinoBannerTone.offline => c.inkMuted,
+                  },
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: PostinoSpacing.s0_5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: PostinoSpacing.s0_5,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              if (a != null) ...[
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: PostinoAccountMark(
+                                    color: a.color,
+                                    initial: a.initial,
+                                    size: PostinoSize.accountBadge,
+                                  ),
                                 ),
-                              ),
-                              const TextSpan(text: ' '),
+                                const TextSpan(text: ' '),
+                              ],
+                              TextSpan(text: title),
                             ],
-                            TextSpan(text: title),
-                          ],
-                        ),
-                        style: PostinoText.subject.copyWith(color: c.ink),
-                      ),
-                      if (message case final m?)
-                        Text(
-                          m,
-                          style: PostinoText.preview.copyWith(color: c.ink),
-                        ),
-                      if (under && actions.isNotEmpty)
-                        // The buttons' own padding is not part of the text's edge.
-                        Transform.translate(
-                          offset: const Offset(-PostinoSpacing.s3, 0),
-                          child: Wrap(
-                            spacing: PostinoSpacing.s3,
-                            runSpacing: PostinoSpacing.s1,
-                            children: actions,
                           ),
+                          style: PostinoText.subject.copyWith(color: c.ink),
                         ),
-                    ],
+                        if (message case final m?)
+                          Text(
+                            m,
+                            style: PostinoText.preview.copyWith(color: c.ink),
+                          ),
+                        if (under && actions.isNotEmpty)
+                          // The buttons' own padding is not part of the text's edge.
+                          Transform.translate(
+                            offset: const Offset(-PostinoSpacing.s3, 0),
+                            child: Wrap(
+                              spacing: PostinoSpacing.s3,
+                              runSpacing: PostinoSpacing.s1,
+                              children: actions,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (!under) ...actions,
-            ],
+                if (!under) ...actions,
+              ],
+            ),
           ),
         ),
       ),

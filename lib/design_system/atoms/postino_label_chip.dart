@@ -20,38 +20,42 @@ class PostinoLabelChip extends StatelessWidget {
     return Semantics(
       label: name,
       excludeSemantics: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.xs),
+      child: SelectionContainer.disabled(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: const BorderRadius.all(
+              Radius.circular(PostinoRadius.xs),
+            ),
           ),
-        ),
-        // At least 22 high: enlarged text grows it and wraps.
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 22),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: PostinoSpacing.s1,
-              children: [
-                PostinoIcon(
-                  PostinoIcons.tag,
-                  size: PostinoSize.iconSm,
-                  color: fg,
-                ),
-                Flexible(
-                  child: Text(
-                    name,
-                    maxLines: wrap ? null : 1,
-                    overflow: wrap
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    style: PostinoText.meta.copyWith(color: fg),
+          // At least 22 high: enlarged text grows it and wraps.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 22),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: PostinoSpacing.s2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: PostinoSpacing.s1,
+                children: [
+                  PostinoIcon(
+                    PostinoIcons.tag,
+                    size: PostinoSize.iconSm,
+                    color: fg,
                   ),
-                ),
-              ],
+                  Flexible(
+                    child: Text(
+                      name,
+                      maxLines: wrap ? null : 1,
+                      overflow: wrap
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      style: PostinoText.meta.copyWith(color: fg),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

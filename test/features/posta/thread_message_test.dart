@@ -190,12 +190,12 @@ void main() {
         await _start(tester, mailbox);
         await _open(tester, 'q3');
 
-        final first = tester.widget<SelectableText>(
-          _in('q1', find.byType(SelectableText)).last,
+        final first = tester.widget<Text>(
+          _in('q1', find.text('-- \nAda Okafor\nOkafor Legal')),
         );
         expect(first.data, '-- \nAda Okafor\nOkafor Legal');
         final muted = tester
-            .element(_in('q1', find.byType(SelectableText)).last)
+            .element(_in('q1', find.text('-- \nAda Okafor\nOkafor Legal')))
             .pc
             .inkMuted;
         expect(first.style?.fontSize, PostinoText.bodyQuote.fontSize);

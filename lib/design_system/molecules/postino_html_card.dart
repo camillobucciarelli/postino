@@ -72,25 +72,24 @@ class PostinoHtmlCard extends StatelessWidget {
         );
       },
     );
-    return SelectionArea(
-      child: dark
-          ? Theme(
-              data: _paper,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: PostinoColors.light.surfaceRaised,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(PostinoRadius.md),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(PostinoSpacing.s4),
-                  child: body,
+    // Selectable through the Conversazione's SelectionArea (PostinoThreadView).
+    return dark
+        ? Theme(
+            data: _paper,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: PostinoColors.light.surfaceRaised,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(PostinoRadius.md),
                 ),
               ),
-            )
-          : body,
-    );
+              child: Padding(
+                padding: const EdgeInsets.all(PostinoSpacing.s4),
+                child: body,
+              ),
+            ),
+          )
+        : body;
   }
 }
 

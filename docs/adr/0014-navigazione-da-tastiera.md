@@ -20,3 +20,4 @@ Selezione = apertura. Nel layout a due riquadri (lista e Conversazione affiancat
 
 - I tasti a lettera singola vanno ignorati quando il focus è in un campo di testo (composizione, ricerca).
 - Scorrere la lista con la tastiera nel layout a due riquadri segna come lette le Conversazioni attraversate, esattamente come aprirle col clic: l'apertura passa da `SyncEngine.openConversation`, che le segna lette subito (anche offline) e accoda la modifica per il Provider.
+- Con una selezione di testo attiva nella Conversazione (un solo `SelectionArea`, #69) j/k e Cmd/Ctrl+B funzionano ancora: una selezione non è un campo di testo. Esc annulla prima la selezione, il secondo Esc chiude la Conversazione.

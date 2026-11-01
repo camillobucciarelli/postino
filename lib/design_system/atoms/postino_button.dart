@@ -51,7 +51,8 @@ class PostinoButton extends StatelessWidget {
         child: child!,
       ),
     );
-    final child = Text(label);
+    // Buttons are controls, not content: out of any selection.
+    final child = SelectionContainer.disabled(child: Text(label));
     return switch (variant) {
       PostinoButtonVariant.primary => FilledButton(
         onPressed: onPressed,

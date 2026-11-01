@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/features/posta/presentation/posta_shortcuts.dart';
@@ -242,6 +243,47 @@ void main() {
         await _press(tester, LogicalKeyboardKey.enter);
         expect(find.byType(ConversationView), findsNothing);
         expect(_focusedRow(), 2);
+      },
+    );
+
+    testWidgets(
+      'narrowed with the Conversazione scrolled into a long message, the focus goes to Indietro',
+      (tester) async {
+        final p = await _start(tester, _desktop);
+        for (var i = 0; i < 3; i++) {
+          p.deliver(
+            msg(
+              'x$i',
+              subject: 'Oggetto 3',
+              date: DateTime.utc(2026, 10, 1, 9, 3, i + 1),
+              conversationId: 't3',
+            ),
+          );
+        }
+        await tester.pumpAndSettle();
+        p.bodies['x2'] = MessageBody(
+          List.generate(200, (i) => 'Riga $i').join('\n'),
+          BodyKind.testo,
+        );
+        await tester.tap(find.byKey(const ValueKey('row-a1-x2')));
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(Scrollable).last, const Offset(0, -1500));
+        await tester.pumpAndSettle();
+
+        tester.view.physicalSize = _narrow;
+        await tester.pumpAndSettle();
+        expect(_backButton, findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byElementPredicate(
+              (e) => e == FocusManager.instance.primaryFocus?.context,
+            ),
+            matching: find.byWidgetPredicate(
+              (w) => w is PostinoIcon && w.icon == PostinoIcons.arrowLeft,
+            ),
+          ),
+          findsOneWidget,
+        );
       },
     );
   });

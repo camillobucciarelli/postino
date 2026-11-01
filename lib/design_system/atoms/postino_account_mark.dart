@@ -32,15 +32,17 @@ class PostinoAccountMark extends StatelessWidget {
         color: swatch.color,
         borderRadius: BorderRadius.circular(size * .3),
       ),
-      child: Text(
-        initial,
-        // A fixed square: the initial keeps its size with dynamic type.
-        textScaler: TextScaler.noScaling,
-        style: PostinoText.label.copyWith(
-          color: swatch.onColor,
-          fontSize: math.max(9, (size * .5).roundToDouble()),
-          fontWeight: FontWeight.w700,
-          height: 1,
+      child: SelectionContainer.disabled(
+        child: Text(
+          initial,
+          // A fixed square: the initial keeps its size with dynamic type.
+          textScaler: TextScaler.noScaling,
+          style: PostinoText.label.copyWith(
+            color: swatch.onColor,
+            fontSize: math.max(9, (size * .5).roundToDouble()),
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
         ),
       ),
     );

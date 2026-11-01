@@ -72,6 +72,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
 	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
+	late final Translations$composizione$it composizione = Translations$composizione$it.internal(_root);
+	late final Translations$bozze$it bozze = Translations$bozze$it.internal(_root);
 }
 
 // Path: sidebar
@@ -287,6 +289,96 @@ class Translations$conversazione$it {
 	String get important => 'Importante';
 }
 
+// Path: composizione
+class Translations$composizione$it {
+	Translations$composizione$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Nuovo messaggio'
+	String get title => 'Nuovo messaggio';
+
+	/// it: 'Scrivi'
+	String get write => 'Scrivi';
+
+	/// it: 'Da'
+	String get from => 'Da';
+
+	/// it: 'A'
+	String get to => 'A';
+
+	/// it: 'Cc'
+	String get cc => 'Cc';
+
+	/// it: 'Ccn'
+	String get bcc => 'Ccn';
+
+	/// it: 'Oggetto'
+	String get subject => 'Oggetto';
+
+	/// it: 'Scrivi il messaggio'
+	String get body => 'Scrivi il messaggio';
+
+	/// it: 'Chiudi'
+	String get close => 'Chiudi';
+
+	/// it: 'Grassetto'
+	String get bold => 'Grassetto';
+
+	/// it: 'Corsivo'
+	String get italic => 'Corsivo';
+
+	/// it: 'Sottolineato'
+	String get underline => 'Sottolineato';
+
+	/// it: 'Barrato'
+	String get strikethrough => 'Barrato';
+
+	/// it: 'Link'
+	String get link => 'Link';
+
+	/// it: 'Elenco puntato'
+	String get bulletList => 'Elenco puntato';
+
+	/// it: 'Elenco numerato'
+	String get numberedList => 'Elenco numerato';
+
+	/// it: 'Indirizzo del link'
+	String get linkUrl => 'Indirizzo del link';
+
+	/// it: 'Inserisci'
+	String get insert => 'Inserisci';
+
+	/// it: 'Annulla'
+	String get cancel => 'Annulla';
+
+	/// it: 'Corpo del messaggio'
+	String get editor => 'Corpo del messaggio';
+
+	/// it: 'Bozza non trovata'
+	String get draftNotFound => 'Bozza non trovata';
+}
+
+// Path: bozze
+class Translations$bozze$it {
+	Translations$bozze$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Bozze'
+	String get title => 'Bozze';
+
+	/// it: 'Nessuna bozza'
+	String get emptyTitle => 'Nessuna bozza';
+
+	/// it: 'Le bozze che scrivi restano qui finché non le invii.'
+	String get emptyBody => 'Le bozze che scrivi restano qui finché non le invii.';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -347,6 +439,30 @@ extension on Translations {
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Mostra testo citato',
 			'conversazione.important' => 'Importante',
+			'composizione.title' => 'Nuovo messaggio',
+			'composizione.write' => 'Scrivi',
+			'composizione.from' => 'Da',
+			'composizione.to' => 'A',
+			'composizione.cc' => 'Cc',
+			'composizione.bcc' => 'Ccn',
+			'composizione.subject' => 'Oggetto',
+			'composizione.body' => 'Scrivi il messaggio',
+			'composizione.close' => 'Chiudi',
+			'composizione.bold' => 'Grassetto',
+			'composizione.italic' => 'Corsivo',
+			'composizione.underline' => 'Sottolineato',
+			'composizione.strikethrough' => 'Barrato',
+			'composizione.link' => 'Link',
+			'composizione.bulletList' => 'Elenco puntato',
+			'composizione.numberedList' => 'Elenco numerato',
+			'composizione.linkUrl' => 'Indirizzo del link',
+			'composizione.insert' => 'Inserisci',
+			'composizione.cancel' => 'Annulla',
+			'composizione.editor' => 'Corpo del messaggio',
+			'composizione.draftNotFound' => 'Bozza non trovata',
+			'bozze.title' => 'Bozze',
+			'bozze.emptyTitle' => 'Nessuna bozza',
+			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',
 			_ => null,
 		};
 	}

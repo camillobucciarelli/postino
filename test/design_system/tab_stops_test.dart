@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
@@ -106,4 +107,87 @@ void main() {
       );
     },
   );
+
+  testWidgets('Tab walks the composer: sender, fields, formats, editor', (
+    t,
+  ) async {
+    final editor = FocusNode(debugLabel: 'editor');
+    addTearDown(editor.dispose);
+    await t.pumpWidget(
+      _app(
+        PostinoComposerLayout(
+          sender: PostinoSenderPicker(
+            options: const [
+              (
+                id: 1,
+                mark: (color: PostinoAccountColor.sky, initial: 'L'),
+                address: 'lavoro@example.com',
+              ),
+            ],
+            selectedId: 1,
+            onSelected: (_) {},
+            label: 'Da',
+          ),
+          fields: [
+            PostinoComposerField(
+              label: 'A',
+              controller: TextEditingController(),
+            ),
+            PostinoComposerField(
+              label: 'Oggetto',
+              controller: TextEditingController(),
+            ),
+          ],
+          editor: PostinoRichEditor(
+            controller: QuillController.basic(),
+            focusNode: editor,
+            label: 'Corpo',
+            placeholder: 'Scrivi',
+            labels: const PostinoFormatLabels(
+              bold: 'Grassetto',
+              italic: 'Corsivo',
+              underline: 'Sottolineato',
+              strikethrough: 'Barrato',
+              link: 'Link',
+              bulletList: 'Elenco puntato',
+              numberedList: 'Elenco numerato',
+              linkUrl: 'Indirizzo del link',
+              insert: 'Inserisci',
+              cancel: 'Annulla',
+            ),
+          ),
+        ),
+      ),
+    );
+    final stops = <Type>[];
+    for (var i = 0; i < 12; i++) {
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+      final focused = FocusManager.instance.primaryFocus!;
+      if (editor.hasFocus) break;
+      final ctx = focused.context!;
+      stops.add(
+        [
+          PostinoSenderPicker,
+          PostinoComposerField,
+          PostinoFormatButton,
+        ].firstWhere(
+          (type) => find
+              .ancestor(
+                of: find.byElementPredicate((e) => e == ctx),
+                matching: find.byType(type),
+              )
+              .evaluate()
+              .isNotEmpty,
+        ),
+      );
+    }
+    expect(editor.hasFocus, isTrue);
+    expect(stops, [
+      PostinoSenderPicker,
+      PostinoComposerField,
+      PostinoComposerField,
+      for (var i = 0; i < 7; i++) PostinoFormatButton,
+    ]);
+  });
 }

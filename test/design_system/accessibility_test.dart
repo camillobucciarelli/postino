@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
@@ -35,6 +36,53 @@ PostinoThreadMessage _message({bool expanded = true}) => PostinoThreadMessage(
   body: const PostinoMessageBody(text: 'Ciao'),
   quote: const Text('citato'),
   quoteLabel: 'Mostra testo citato',
+);
+
+const _formats = PostinoFormatLabels(
+  bold: 'Grassetto',
+  italic: 'Corsivo',
+  underline: 'Sottolineato',
+  strikethrough: 'Barrato',
+  link: 'Link',
+  bulletList: 'Elenco puntato',
+  numberedList: 'Elenco numerato',
+  linkUrl: 'Indirizzo del link',
+  insert: 'Inserisci',
+  cancel: 'Annulla',
+);
+
+/// The whole composer, with a long address and subject.
+Widget _composer() => PostinoComposerLayout(
+  sender: PostinoSenderPicker(
+    options: const [
+      (id: 1, mark: _sky, address: 'lucia.bianchi.della.valle@example.com'),
+    ],
+    selectedId: 1,
+    onSelected: (_) {},
+    label: 'Da',
+  ),
+  fields: [
+    PostinoComposerField(
+      label: 'A',
+      controller: TextEditingController(text: 'ada@okafor-legal.it'),
+    ),
+    PostinoComposerField(
+      label: 'Oggetto',
+      controller: TextEditingController(text: _long),
+      trailing: PostinoButton(
+        label: 'Cc',
+        variant: PostinoButtonVariant.ghost,
+        size: PostinoButtonSize.sm,
+        onPressed: _noop,
+      ),
+    ),
+  ],
+  editor: PostinoRichEditor(
+    controller: QuillController.basic(),
+    label: 'Corpo del messaggio',
+    placeholder: 'Scrivi il messaggio',
+    labels: _formats,
+  ),
 );
 
 final _drawer = PostinoNavigationDrawer(
@@ -137,6 +185,16 @@ void main() {
       'quote toggle': (_message(), find.byKey(const ValueKey('quote-toggle'))),
       'drawer item': (_drawer, find.byKey(const ValueKey('other'))),
       'active drawer item': (_drawer, find.byKey(const ValueKey('active'))),
+      'sender picker': (_composer(), find.byType(PostinoSenderPicker)),
+      'format button': (_composer(), find.byType(PostinoFormatButton).first),
+      'fab': (
+        PostinoFab(
+          label: 'Scrivi',
+          icon: PostinoIcons.pencil,
+          onPressed: _noop,
+        ),
+        find.byType(PostinoFab),
+      ),
     };
     for (final MapEntry(key: name, value: (widget, target)) in cases.entries) {
       for (final (theme, data) in [
@@ -167,6 +225,32 @@ void main() {
         });
       }
     }
+  });
+
+  testWidgets('a composer field marks its focus on the hairline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(Scaffold(body: _composer())));
+    final c = PostinoTheme.light().extension<PostinoColors>()!;
+    BorderSide bottom() =>
+        ((tester
+                            .widget<Container>(
+                              find
+                                  .descendant(
+                                    of: find.byType(PostinoComposerField).first,
+                                    matching: find.byType(Container),
+                                  )
+                                  .first,
+                            )
+                            .decoration
+                        as BoxDecoration)
+                    .border
+                as Border)
+            .bottom;
+    expect(bottom().color, c.composerFieldDivider);
+    await _tabTo(tester, find.byType(PostinoComposerField).first);
+    expect(bottom().color, c.inputBorderFocus);
+    expect(bottom().width, PostinoBorder.borderWidthFocus);
   });
 
   group('text at 200%', () {
@@ -202,6 +286,15 @@ void main() {
             name: 'Fatture e ricevute del condominio di via Roma',
           ),
         ],
+      ),
+      'composer': _composer(),
+      'fab': Align(
+        alignment: Alignment.bottomRight,
+        child: PostinoFab(
+          label: 'Scrivi un nuovo messaggio',
+          icon: PostinoIcons.pencil,
+          onPressed: _noop,
+        ),
       ),
     };
     for (final MapEntry(key: name, value: body) in screens.entries) {

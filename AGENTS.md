@@ -20,6 +20,10 @@ Modalità `auto` (adapter Claude/Codex scelto dall'host, effort high). See `docs
 
 Una PR si unisce solo se tutti i check CI sono verdi sull'ultimo commit (nessuno fallito, in attesa o saltato). La regola è imposta anche da un ruleset su `main`.
 
+### Review prima del push
+
+Prima di aprire una PR o di pushare su una PR esegui la skill `supermatt:code-review` rispetto a `origin/main` con il peer di `docs/agents/cross-model.json` e correggi i finding fondati: ogni finding di Codex su GitHub costa un giro push/review/CI. Dopo ogni push su PR pronta commenta `@codex review` (Codex resta il controllo finale).
+
 ### Accessibilità
 
 Ogni ticket che crea o modifica componenti UI include nei criteri di accettazione le etichette semantiche per lo screen reader e la navigazione da tastiera secondo `docs/adr/0014-navigazione-da-tastiera.md`, verificate in QA con VoiceOver su macOS. Contrasto WCAG 2.2 AA e testo fino al 200% seguono le regole del design system (#53).

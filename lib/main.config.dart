@@ -14,6 +14,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:http/http.dart' as _i519;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
+import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
@@ -22,6 +23,7 @@ import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
+import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
@@ -38,6 +40,7 @@ extension GetItInjectableX on _i174.GetIt {
     _i526.EnvironmentFilter? environmentFilter,
   }) async {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
+    final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
@@ -47,9 +50,18 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i524.SystemConnectivity(),
       registerFor: {_prod},
     );
+    await gh.singletonAsync<_i696.AttachmentStorage>(
+      () => attachmentModule.attachmentStorage(),
+      registerFor: {_prod},
+      preResolve: true,
+    );
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
     gh.singleton<_i398.SecureStore>(
       () => _i524.KeychainStore(),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i398.FileSaver>(
+      () => _i524.SystemFileSaver(),
       registerFor: {_prod},
     );
     gh.singleton<_i902.GoogleConsent>(
@@ -92,12 +104,22 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i893.SyncEngine>(),
       ),
     );
+    gh.lazySingleton<_i278.AttachmentRepository>(
+      () => _i696.AttachmentCache(
+        gh<_i893.SyncEngine>(),
+        gh<_i398.SecureStore>(),
+        gh<_i398.Clock>(),
+        gh<_i696.AttachmentStorage>(),
+      ),
+    );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     return this;
   }
 }
+
+class _$AttachmentModule extends _i524.AttachmentModule {}
 
 class _$HttpModule extends _i524.HttpModule {}
 

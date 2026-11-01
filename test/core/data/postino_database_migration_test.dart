@@ -150,12 +150,30 @@ void main() {
     });
   });
 
-  test('v9 adds the Bozze', () async {
+  test(
+    'v9 adds the attachments to the bodies: unknown for those stored before',
+    () async {
+      final raw = sqlite3.openInMemory()
+        ..execute(_v3Accounts)
+        ..execute(_v4Bodies)
+        ..execute(_v4Messages)
+        ..execute('PRAGMA user_version = 4');
+      raw.execute("INSERT INTO bodies VALUES ('a1', 'm1', 'Ciao')");
+      final db = PostinoDatabase(NativeDatabase.opened(raw));
+      addTearDown(db.close);
+
+      final body = await db.select(db.bodies).getSingle();
+      expect(body.body, 'Ciao');
+      expect(body.attachments, isNull);
+    },
+  );
+
+  test('v10 adds the Bozze', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
-      ..execute('PRAGMA user_version = 8');
+      ..execute('PRAGMA user_version = 9');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 

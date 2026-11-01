@@ -58,6 +58,10 @@ dependencies:
   flutter_quill_delta_from_html: ^1.5.3
   vsc_quill_delta_to_html: ^1.0.5
   url_launcher: ^6.3.3
+  file_selector: ^1.1.0
+  pointycastle: ^4.0.0
+  file: ^7.0.1
+  open_filex: ^5.0.0
 
 dev_dependencies:
   flutter_test:

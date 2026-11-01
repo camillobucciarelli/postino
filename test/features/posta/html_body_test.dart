@@ -35,7 +35,8 @@ late _ImageRequests _images;
 
 String _newsletter(String image) =>
     '<h1>Offerte</h1><p>Scopri le <a href="https://shop.example/offerte">novità</a> '
-    'o <a href="mailto:aiuto@shop.example">scrivici</a>.</p><img src="$image" alt="Logo">';
+    'o <a href="mailto:aiuto@shop.example">scrivici</a>.</p><img src="$image" alt="Logo">'
+    '<p><a href="file:///data/user/0/postino/shared_prefs/p.xml">conferma</a></p>';
 
 /// Every message unread, so each one shows up expanded with its body.
 void _mailbox(FakeMailProvider p) {
@@ -241,11 +242,15 @@ void main() {
     },
   );
 
-  _test('a link tap opens its real URL, mailto: too', (tester) async {
+  _test('a link tap opens its real URL, mailto: too; never a local file', (
+    tester,
+  ) async {
     await _start(tester);
     await _open(tester, 'p1');
     await tester.tapOnText(find.textRange.ofSubstring('novità'));
     await tester.tapOnText(find.textRange.ofSubstring('scrivici'));
+    // A file: link would hand an app-private file to another app (open_filex on mobile).
+    await tester.tapOnText(find.textRange.ofSubstring('conferma'));
     expect(h.links.opened, [
       Uri.parse('https://shop.example/offerte'),
       Uri.parse('mailto:aiuto@shop.example'),

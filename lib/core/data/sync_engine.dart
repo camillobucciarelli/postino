@@ -198,6 +198,24 @@ class SyncEngine implements MailSync {
 
   static const _escape = HtmlEscape(HtmlEscapeMode.element);
 
+  /// Straight from the Provider, outside the Account's serial queue: a download never waits behind a sync.
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String accountId,
+    String messageId,
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    return _provider(account).fetchAttachment(
+      messageId,
+      attachmentId,
+      onProgress: onProgress,
+      cancel: cancel,
+    );
+  }
+
   Future<Account?> _account(String id) async =>
       (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 

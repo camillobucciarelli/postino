@@ -4,8 +4,15 @@ import 'package:postino/core/domain/platform_services.dart';
 
 class FakeSecureStore implements SecureStore {
   final values = <String, String>{};
+
+  /// While set, every read throws it: a locked keychain, access denied.
+  Exception? failure;
   @override
-  Future<String?> read(String key) async => values[key];
+  Future<String?> read(String key) async {
+    if (failure case final f?) throw f;
+    return values[key];
+  }
+
   @override
   Future<void> write(String key, String value) async => values[key] = value;
 }
@@ -63,4 +70,25 @@ class FakeLinkOpener implements LinkOpener {
   final opened = <Uri>[];
   @override
   Future<void> open(Uri url) async => opened.add(url);
+}
+
+/// Records every Save As instead of showing the dialog.
+class FakeFileSaver implements FileSaver {
+  final saved = <(String path, String name)>[];
+  @override
+  bool available = true;
+
+  /// While set, a save throws it: a full disk, a folder it may not write to.
+  Exception? failure;
+
+  /// While set, the dialog stays open until it completes; true saves, false is the user's Annulla.
+  Completer<bool>? dialog;
+  @override
+  Future<void> save(String path, String name) async {
+    if (failure case final f?) throw f;
+    if (dialog case final d?) {
+      if (!await d.future) return;
+    }
+    saved.add((path, name));
+  }
 }

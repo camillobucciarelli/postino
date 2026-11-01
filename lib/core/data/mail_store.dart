@@ -95,7 +95,9 @@ class MailStore implements InboxRepository {
           for (final (m, b, labelIds) in rows)
             (
               message: _message(m, labelIds),
-              body: b == null ? null : MessageBody(b.body, b.kind),
+              body: b == null
+                  ? null
+                  : MessageBody(b.body, b.kind, attachments: b.attachments),
             ),
         ],
       );

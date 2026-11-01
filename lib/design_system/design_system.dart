@@ -20,6 +20,7 @@ export 'atoms/postino_selectable.dart';
 export 'atoms/postino_sender_picker.dart';
 export 'atoms/postino_skeleton.dart';
 
+export 'molecules/postino_attachment_chip.dart';
 export 'molecules/postino_banner.dart';
 export 'molecules/postino_empty_state.dart';
 export 'molecules/postino_html_card.dart';

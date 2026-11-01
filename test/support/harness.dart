@@ -1,3 +1,5 @@
+import 'package:file/memory.dart';
+import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
@@ -10,7 +12,8 @@ import 'fake_google_consent.dart';
 import 'fake_mail_provider.dart';
 import 'fake_platform.dart';
 
-/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network and links.
+/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
+/// links, Save As and file system.
 class Harness {
   Harness._();
 
@@ -19,8 +22,17 @@ class Harness {
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));
   final connectivity = FakeConnectivity();
   final links = FakeLinkOpener();
+  final saver = FakeFileSaver();
 
-  static Future<Harness> create() async {
+  /// The app's folders, in memory: the attachment cache and its temporary copies.
+  /// [onFileOp] sees (and may fail, by throwing) every operation on them.
+  late final fs = MemoryFileSystem(
+    opHandle: (path, op) => onFileOp?.call(path, op),
+  );
+  void Function(String path, FileSystemOp op)? onFileOp;
+
+  /// [attachmentCap]: the attachment cache's cap in bytes, small to test eviction.
+  static Future<Harness> create({int? attachmentCap}) async {
     await getIt.reset();
     final h = Harness._();
     getIt
@@ -32,7 +44,15 @@ class Harness {
       ..registerSingleton<SecureStore>(h.keychain)
       ..registerSingleton<Clock>(h.clock)
       ..registerSingleton<Connectivity>(h.connectivity)
-      ..registerSingleton<LinkOpener>(h.links);
+      ..registerSingleton<LinkOpener>(h.links)
+      ..registerSingleton<FileSaver>(h.saver)
+      ..registerSingleton<AttachmentStorage>(
+        await AttachmentStorage.open(
+          h.fs.directory('/support/attachments'),
+          h.fs.directory('/tmp/postino-attachments'),
+          cap: attachmentCap ?? 500 * 1024 * 1024,
+        ),
+      );
     await configureDependencies(environment: 'test');
     return h;
   }

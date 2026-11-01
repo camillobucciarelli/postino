@@ -22,3 +22,12 @@ abstract interface class Connectivity {
 abstract interface class LinkOpener {
   Future<void> open(Uri url);
 }
+
+/// The Save As dialog: copies a file where the user picks.
+abstract interface class FileSaver {
+  /// False where the platform has no such dialog (Android, iOS).
+  bool get available;
+
+  /// Asks where to save the file at [path], suggesting [name], and copies it there; nothing if the user backs out.
+  Future<void> save(String path, String name);
+}

@@ -1807,7 +1807,22 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
         defaultValue: Constant(BodyKind.testo.name),
       ).withConverter<BodyKind>($BodiesTable.$converterkind);
   @override
-  List<GeneratedColumn> get $columns => [accountId, messageId, body, kind];
+  late final GeneratedColumnWithTypeConverter<List<Attachment>?, String>
+  attachments = GeneratedColumn<String>(
+    'attachments',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<Attachment>?>($BodiesTable.$converterattachmentsn);
+  @override
+  List<GeneratedColumn> get $columns => [
+    accountId,
+    messageId,
+    body,
+    kind,
+    attachments,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1871,6 +1886,12 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
           data['${effectivePrefix}kind'],
         )!,
       ),
+      attachments: $BodiesTable.$converterattachmentsn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}attachments'],
+        ),
+      ),
     );
   }
 
@@ -1881,6 +1902,10 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
 
   static JsonTypeConverter2<BodyKind, String, String> $converterkind =
       const EnumNameConverter<BodyKind>(BodyKind.values);
+  static TypeConverter<List<Attachment>, String> $converterattachments =
+      const AttachmentsConverter();
+  static TypeConverter<List<Attachment>?, String?> $converterattachmentsn =
+      NullAwareTypeConverter.wrap($converterattachments);
 }
 
 class BodyRow extends DataClass implements Insertable<BodyRow> {
@@ -1890,11 +1915,15 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
 
   /// HTML or plain text; the default only fills the rows of v1-v4, which the migration then sorts.
   final BodyKind kind;
+
+  /// The attachments, as JSON `[{"id", "name", "size"}]` (v9); null in rows stored before, which did not know them.
+  final List<Attachment>? attachments;
   const BodyRow({
     required this.accountId,
     required this.messageId,
     required this.body,
     required this.kind,
+    this.attachments,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1905,6 +1934,11 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
     {
       map['kind'] = Variable<String>($BodiesTable.$converterkind.toSql(kind));
     }
+    if (!nullToAbsent || attachments != null) {
+      map['attachments'] = Variable<String>(
+        $BodiesTable.$converterattachmentsn.toSql(attachments),
+      );
+    }
     return map;
   }
 
@@ -1914,6 +1948,9 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       messageId: Value(messageId),
       body: Value(body),
       kind: Value(kind),
+      attachments: attachments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attachments),
     );
   }
 
@@ -1929,6 +1966,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       kind: $BodiesTable.$converterkind.fromJson(
         serializer.fromJson<String>(json['kind']),
       ),
+      attachments: serializer.fromJson<List<Attachment>?>(json['attachments']),
     );
   }
   @override
@@ -1941,6 +1979,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       'kind': serializer.toJson<String>(
         $BodiesTable.$converterkind.toJson(kind),
       ),
+      'attachments': serializer.toJson<List<Attachment>?>(attachments),
     };
   }
 
@@ -1949,11 +1988,13 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
     String? messageId,
     String? body,
     BodyKind? kind,
+    Value<List<Attachment>?> attachments = const Value.absent(),
   }) => BodyRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
     body: body ?? this.body,
     kind: kind ?? this.kind,
+    attachments: attachments.present ? attachments.value : this.attachments,
   );
   BodyRow copyWithCompanion(BodiesCompanion data) {
     return BodyRow(
@@ -1961,6 +2002,9 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
       body: data.body.present ? data.body.value : this.body,
       kind: data.kind.present ? data.kind.value : this.kind,
+      attachments: data.attachments.present
+          ? data.attachments.value
+          : this.attachments,
     );
   }
 
@@ -1970,13 +2014,15 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
           ..write('body: $body, ')
-          ..write('kind: $kind')
+          ..write('kind: $kind, ')
+          ..write('attachments: $attachments')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(accountId, messageId, body, kind);
+  int get hashCode =>
+      Object.hash(accountId, messageId, body, kind, attachments);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1984,7 +2030,8 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
           other.accountId == this.accountId &&
           other.messageId == this.messageId &&
           other.body == this.body &&
-          other.kind == this.kind);
+          other.kind == this.kind &&
+          other.attachments == this.attachments);
 }
 
 class BodiesCompanion extends UpdateCompanion<BodyRow> {
@@ -1992,12 +2039,14 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
   final Value<String> messageId;
   final Value<String> body;
   final Value<BodyKind> kind;
+  final Value<List<Attachment>?> attachments;
   final Value<int> rowid;
   const BodiesCompanion({
     this.accountId = const Value.absent(),
     this.messageId = const Value.absent(),
     this.body = const Value.absent(),
     this.kind = const Value.absent(),
+    this.attachments = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BodiesCompanion.insert({
@@ -2005,6 +2054,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     required String messageId,
     required String body,
     this.kind = const Value.absent(),
+    this.attachments = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -2014,6 +2064,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     Expression<String>? messageId,
     Expression<String>? body,
     Expression<String>? kind,
+    Expression<String>? attachments,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2021,6 +2072,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
       if (messageId != null) 'message_id': messageId,
       if (body != null) 'body': body,
       if (kind != null) 'kind': kind,
+      if (attachments != null) 'attachments': attachments,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2030,6 +2082,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
     Value<String>? messageId,
     Value<String>? body,
     Value<BodyKind>? kind,
+    Value<List<Attachment>?>? attachments,
     Value<int>? rowid,
   }) {
     return BodiesCompanion(
@@ -2037,6 +2090,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
       messageId: messageId ?? this.messageId,
       body: body ?? this.body,
       kind: kind ?? this.kind,
+      attachments: attachments ?? this.attachments,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2058,6 +2112,11 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
         $BodiesTable.$converterkind.toSql(kind.value),
       );
     }
+    if (attachments.present) {
+      map['attachments'] = Variable<String>(
+        $BodiesTable.$converterattachmentsn.toSql(attachments.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2071,6 +2130,7 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
           ..write('messageId: $messageId, ')
           ..write('body: $body, ')
           ..write('kind: $kind, ')
+          ..write('attachments: $attachments, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4616,6 +4676,7 @@ typedef $$BodiesTableCreateCompanionBuilder = BodiesCompanion Function({
   required String messageId,
   required String body,
   Value<BodyKind> kind,
+  Value<List<Attachment>?> attachments,
   Value<int> rowid,
 });
 typedef $$BodiesTableUpdateCompanionBuilder = BodiesCompanion Function({
@@ -4623,6 +4684,7 @@ typedef $$BodiesTableUpdateCompanionBuilder = BodiesCompanion Function({
   Value<String> messageId,
   Value<String> body,
   Value<BodyKind> kind,
+  Value<List<Attachment>?> attachments,
   Value<int> rowid,
 });
 
@@ -4655,6 +4717,12 @@ class $$BodiesTableFilterComposer
         column: $table.kind,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnWithTypeConverterFilters<List<Attachment>?, List<Attachment>, String>
+  get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$BodiesTableOrderingComposer
@@ -4685,6 +4753,11 @@ class $$BodiesTableOrderingComposer
     column: $table.kind,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BodiesTableAnnotationComposer
@@ -4707,6 +4780,12 @@ class $$BodiesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<BodyKind, String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<Attachment>?, String> get attachments =>
+      $composableBuilder(
+        column: $table.attachments,
+        builder: (column) => column,
+      );
 }
 
 class $$BodiesTableTableManager
@@ -4741,12 +4820,14 @@ class $$BodiesTableTableManager
                 Value<String> messageId = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<BodyKind> kind = const Value.absent(),
+                Value<List<Attachment>?> attachments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BodiesCompanion(
                 accountId: accountId,
                 messageId: messageId,
                 body: body,
                 kind: kind,
+                attachments: attachments,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4755,12 +4836,14 @@ class $$BodiesTableTableManager
                 required String messageId,
                 required String body,
                 Value<BodyKind> kind = const Value.absent(),
+                Value<List<Attachment>?> attachments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BodiesCompanion.insert(
                 accountId: accountId,
                 messageId: messageId,
                 body: body,
                 kind: kind,
+                attachments: attachments,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

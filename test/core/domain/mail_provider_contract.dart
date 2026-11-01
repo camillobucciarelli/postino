@@ -1,4 +1,6 @@
 // Contract suite of the Provider adapter (ADR 0002): real adapters pass the same cases.
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
@@ -23,6 +25,9 @@ abstract class ContractHarness {
 
   /// A Bozza is written in the Bozze folder "elsewhere" (another client).
   void deliverDraft(OutgoingMessage d);
+
+  /// Gives message [messageId] an attachment [name] holding [bytes].
+  void attach(String messageId, String name, List<int> bytes);
 }
 
 class FakeHarness implements ContractHarness {
@@ -41,6 +46,9 @@ class FakeHarness implements ContractHarness {
   void breakAuth() => fake.breakAuth();
   @override
   void deliverDraft(OutgoingMessage d) => fake.deliverDraft(d);
+  @override
+  void attach(String messageId, String name, List<int> bytes) =>
+      fake.attach(messageId, name, bytes);
 }
 
 T _ok<T>(Result<T> r) => switch (r) {
@@ -305,19 +313,65 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
   });
 }
 
-void mailProviderContract(String name, ContractHarness Function() create) {
-  mailProviderAuthContract(name, create);
-  mailProviderSyncContract(name, create);
-  mailProviderDraftContract(name, create);
-  group('MailProvider contract: $name', () {
+/// Attachments (#34): listed with the body, downloaded one at a time.
+void mailProviderAttachmentContract(
+  String name,
+  ContractHarness Function() create,
+) {
+  group('MailProvider attachment contract: $name', () {
     late ContractHarness h;
     setUp(() => h = create());
+
+    test('the body lists the attachments, each downloads on its own', () async {
+      h.deliver(msg('a'));
+      h.attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'));
+      h.attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
+      final body = _ok(await h.provider.fetchBody('a'));
+      expect(body.attachments!.map((a) => (a.name, a.size)), [
+        ('Preventivo.pdf', 19),
+        ('foto.jpg', 4),
+      ]);
+
+      final progress = <double>[];
+      final pdf = _ok(
+        await h.provider.fetchAttachment(
+          'a',
+          body.attachments!.first.id,
+          onProgress: progress.add,
+        ),
+      );
+      expect(utf8.decode(pdf), '%PDF-1.4 preventivo');
+      expect(progress.last, 1);
+      expect(
+        _ok(await h.provider.fetchAttachment('a', body.attachments!.last.id)),
+        [0xFF, 0xD8, 0xFF, 0xE0],
+      );
+    });
 
     test('an unknown attachment is NotFound', () async {
       h.deliver(msg('a'));
       final r = await h.provider.fetchAttachment('a', 'nope');
       expect(r, _err<NotFoundFailure>());
     });
+
+    test('offline, a download is OfflineFailure', () async {
+      h.deliver(msg('a'));
+      h.attach('a', 'a.txt', [1, 2, 3]);
+      final id = _ok(await h.provider.fetchBody('a')).attachments!.single.id;
+      h.goOffline();
+      expect(await h.provider.fetchAttachment('a', id), _err<OfflineFailure>());
+    });
+  });
+}
+
+void mailProviderContract(String name, ContractHarness Function() create) {
+  mailProviderAuthContract(name, create);
+  mailProviderSyncContract(name, create);
+  mailProviderAttachmentContract(name, create);
+  mailProviderDraftContract(name, create);
+  group('MailProvider contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
 
     test('send is accepted', () async {
       _ok(await h.provider.send(_draft('<x@example.com>')));

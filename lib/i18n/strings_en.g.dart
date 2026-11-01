@@ -179,6 +179,15 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get cc => 'Cc';
 	@override String get showQuoted => 'Show quoted text';
 	@override String get important => 'Important';
+	@override String get attachmentOpen => 'Open';
+	@override String attachmentDownloading({required Object percent}) => 'Downloading… ${percent}%';
+	@override String get attachmentCancel => 'Cancel download';
+	@override String get attachmentOffline => 'Offline: attachment not downloaded yet';
+	@override String get attachmentFailed => 'Download failed';
+	@override String get attachmentMore => 'More actions';
+	@override String get attachmentSave => 'Save…';
+	@override String get attachmentSaveFailed => 'Save failed';
+	@override String get attachmentUntitled => 'Untitled attachment';
 }
 
 // Path: composizione
@@ -283,6 +292,15 @@ extension on TranslationsEn {
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Show quoted text',
 			'conversazione.important' => 'Important',
+			'conversazione.attachmentOpen' => 'Open',
+			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Downloading… ${percent}%',
+			'conversazione.attachmentCancel' => 'Cancel download',
+			'conversazione.attachmentOffline' => 'Offline: attachment not downloaded yet',
+			'conversazione.attachmentFailed' => 'Download failed',
+			'conversazione.attachmentMore' => 'More actions',
+			'conversazione.attachmentSave' => 'Save…',
+			'conversazione.attachmentSaveFailed' => 'Save failed',
+			'conversazione.attachmentUntitled' => 'Untitled attachment',
 			'composizione.title' => 'New message',
 			'composizione.write' => 'Compose',
 			'composizione.from' => 'From',

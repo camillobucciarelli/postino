@@ -77,6 +77,12 @@ class FakeFileSaver implements FileSaver {
   final saved = <(String path, String name)>[];
   @override
   bool available = true;
+
+  /// While set, a save throws it: a full disk, a folder it may not write to.
+  Exception? failure;
   @override
-  Future<void> save(String path, String name) async => saved.add((path, name));
+  Future<void> save(String path, String name) async {
+    if (failure case final f?) throw f;
+    saved.add((path, name));
+  }
 }

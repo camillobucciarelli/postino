@@ -230,7 +230,53 @@ void main() {
     expect(_cached, isEmpty);
   });
 
+  test(
+    'Annulla while a big attachment is being encrypted caches nothing',
+    () async {
+      await _start();
+      final big = gmail.attach('m1', 'big.bin', List.filled(2 << 20, 7));
+      final cancel = Completer<void>();
+      final r = cache.file(
+        'a1',
+        'm1',
+        big,
+        cancel: cancel.future,
+        // Downloaded: the encryption (in an isolate, past 1 MB) starts now.
+        onProgress: (done) {
+          if (done == 1) {
+            Future<void>.delayed(
+              const Duration(milliseconds: 1),
+              cancel.complete,
+            );
+          }
+        },
+      );
+      expect(
+        await r,
+        isA<Err<String>>().having(
+          (e) => e.failure,
+          'failure',
+          isA<CancelledFailure>(),
+        ),
+      );
+      expect(_cached, isEmpty);
+      expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
+    },
+  );
+
+  test('two downloads of the same attachment at once both open', () async {
+    await _start();
+    final a = gmail.attach('m1', 'a.pdf', _content('a'));
+    final both = await Future.wait([_file(a), _file(a)]);
+    expect(both, everyElement(isA<Ok<String>>()));
+    expect(_cached, hasLength(1));
+  });
+
   test('an attachment name never leaves its folder', () {
+    expect(safeFileName('CON.txt'), '_CON.txt');
+    expect(safeFileName('lpt1'), '_lpt1');
+    expect(safeFileName('console.txt'), 'console.txt');
+    expect(safeFileName('report. . '), 'report');
     expect(safeFileName('a?b*c<d>|"e.pdf'), 'a_b_c_d___e.pdf');
     final long = safeFileName('${'x' * 300}.pdf');
     expect(long, hasLength(150));

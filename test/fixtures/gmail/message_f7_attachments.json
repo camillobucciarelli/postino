@@ -111,6 +111,25 @@
             "attachmentId": "ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7",
             "size": 49
           }
+        },
+        {
+          "partId": "2",
+          "mimeType": "application/octet-stream",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            },
+            {
+              "name": "Content-Disposition",
+              "value": "attachment"
+            }
+          ],
+          "body": {
+            "size": 3,
+            "data": "YWJj"
+          }
         }
       ]
     },

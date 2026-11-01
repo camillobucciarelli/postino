@@ -184,6 +184,8 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get attachmentFailed => 'Download failed';
 	@override String get attachmentMore => 'More actions';
 	@override String get attachmentSave => 'Save…';
+	@override String get attachmentSaveFailed => 'Save failed';
+	@override String get attachmentUntitled => 'Untitled attachment';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -253,6 +255,8 @@ extension on TranslationsEn {
 			'conversazione.attachmentFailed' => 'Download failed',
 			'conversazione.attachmentMore' => 'More actions',
 			'conversazione.attachmentSave' => 'Save…',
+			'conversazione.attachmentSaveFailed' => 'Save failed',
+			'conversazione.attachmentUntitled' => 'Untitled attachment',
 			_ => null,
 		};
 	}

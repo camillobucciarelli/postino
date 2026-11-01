@@ -322,4 +322,58 @@ void main() {
       expect(find.text('vecchio.pdf'), findsOneWidget);
     },
   );
+
+  testWidgets('Riprova after a failed Salva… saves, it does not open', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.goOffline();
+    await _tap(tester, _in('note.txt', const ValueKey('attachment-more')));
+    await _tap(tester, find.text('Salva…'));
+    expect(
+      find.textContaining(
+        'Offline: allegato non ancora scaricato',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    gmail.goOnline();
+    await _tap(tester, _in('note.txt', const ValueKey('attachment-retry')));
+    expect(h.saver.saved.single.$2, 'note.txt');
+    expect(h.links.opened, isEmpty);
+  });
+
+  testWidgets('a Save As that fails says so, and Riprova saves again', (
+    tester,
+  ) async {
+    await _start(tester);
+    h.saver.failure = Exception('disk full');
+    await _tap(tester, _in('note.txt', const ValueKey('attachment-more')));
+    await _tap(tester, find.text('Salva…'));
+    expect(
+      find.textContaining('Salvataggio non riuscito', findRichText: true),
+      findsOneWidget,
+    );
+    h.saver.failure = null;
+    await _tap(tester, _in('note.txt', const ValueKey('attachment-retry')));
+    expect(h.saver.saved.single.$2, 'note.txt');
+    expect(
+      find.textContaining('Salvataggio non riuscito', findRichText: true),
+      findsNothing,
+    );
+  });
+
+  testWidgets('an attachment without a name is «Allegato senza nome»', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail
+      ..attach('m2', '', [1, 2])
+      ..deliver(msg('m2', conversationId: 't2', subject: 'Senza nome'));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.byKey(const ValueKey('row-a1-m2')));
+    expect(find.text('Allegato senza nome'), findsOneWidget);
+    await _tap(tester, find.byKey(const ValueKey('attachment-m2-att-')));
+    expect(h.links.opened.single.pathSegments.last, 'allegato');
+  });
 }

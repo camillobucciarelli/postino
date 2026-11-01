@@ -4,6 +4,8 @@ import 'dart:typed_data' show Uint8List;
 class Attachment {
   const Attachment({required this.id, required this.name, required this.size});
   final String id;
+
+  /// Empty when the message gives none.
   final String name;
 
   /// Bytes, as the Provider reports it.

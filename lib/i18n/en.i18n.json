@@ -78,6 +78,8 @@
     "attachmentOffline": "Offline: attachment not downloaded yet",
     "attachmentFailed": "Download failed",
     "attachmentMore": "More actions",
-    "attachmentSave": "Save…"
+    "attachmentSave": "Save…",
+    "attachmentSaveFailed": "Save failed",
+    "attachmentUntitled": "Untitled attachment"
   }
 }

@@ -71,7 +71,10 @@ class _ConversationViewState extends State<ConversationView> {
   /// and why the last one failed.
   final _downloads =
       <(String, String), ({double done, Completer<void> cancel})>{};
-  final _attachmentFailed = <(String, String), Failure>{};
+
+  /// The failure, and whether it was a Save As: Riprova repeats the same action.
+  final _attachmentFailed =
+      <(String, String), ({Failure failure, bool save})>{};
 
   @override
   void initState() {
@@ -189,19 +192,36 @@ class _ConversationViewState extends State<ConversationView> {
         setState(() {
           _downloads.remove(key);
           if (r case Err(:final failure) when failure is! CancelledFailure) {
-            _attachmentFailed[key] = failure;
+            _attachmentFailed[key] = (failure: failure, save: save);
           }
         });
       }
     }
     if (!mounted) return;
     if (r case Ok(value: final path)) {
-      await (save
-          ? GetIt.I<FileSaver>().save(path, attachment.name)
-          // ponytail: url_launcher opens file: URIs on desktop only; Android/iOS need a native "open with" (e.g. open_filex) when mobile ships.
-          : GetIt.I<LinkOpener>().open(Uri.file(path)));
+      if (!save) {
+        // ponytail: url_launcher opens file: URIs on desktop only; Android/iOS need a native "open with" (e.g. open_filex) when mobile ships.
+        return GetIt.I<LinkOpener>().open(Uri.file(path));
+      }
+      try {
+        await GetIt.I<FileSaver>().save(path, _name(attachment));
+      } on Exception catch (e, s) {
+        // A full disk, a folder it may not write to: said on the attachment, Riprova saves again.
+        if (mounted) {
+          setState(
+            () => _attachmentFailed[key] = (
+              failure: UnexpectedFailure(e, s),
+              save: true,
+            ),
+          );
+        }
+      }
     }
   }
+
+  /// The attachment's name, or «Allegato senza nome» when the message gives none.
+  String _name(Attachment a) =>
+      a.name.isEmpty ? context.t.conversazione.attachmentUntitled : a.name;
 
   void _toggle(String id, bool hasBody) {
     final open = !_expanded[id]!;
@@ -234,7 +254,7 @@ class _ConversationViewState extends State<ConversationView> {
       if (_downloads[(message.id, a.id)] case final d)
         PostinoAttachmentChip(
           key: ValueKey('attachment-${message.id}-${a.id}'),
-          name: a.name,
+          name: _name(a),
           size: _fileSize(a.size, locale),
           openLabel: t.attachmentOpen,
           onOpen: () => _attachment(message.id, a),
@@ -250,10 +270,16 @@ class _ConversationViewState extends State<ConversationView> {
           },
           error: switch (_attachmentFailed[(message.id, a.id)]) {
             null => null,
-            OfflineFailure() => t.attachmentOffline,
+            (failure: OfflineFailure(), save: _) => t.attachmentOffline,
+            (failure: _, save: true) => t.attachmentSaveFailed,
             _ => t.attachmentFailed,
           },
           retryLabel: t.retry,
+          onRetry: () => _attachment(
+            message.id,
+            a,
+            save: _attachmentFailed[(message.id, a.id)]?.save ?? false,
+          ),
           moreLabel: t.attachmentMore,
           saveLabel: t.attachmentSave,
           onSave: GetIt.I<FileSaver>().available

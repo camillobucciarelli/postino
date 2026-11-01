@@ -11,7 +11,8 @@ import '../tokens/postino_tokens.dart';
 /// An attached file (AttachmentChip): its type (a 40 badge with the extension, or the image icon), [name] and
 /// [size], then the actions. A tap (or Enter) calls [onOpen]; the menu offers «Salva…» ([saveLabel], [onSave]).
 /// Downloading ([progress] 0–1): [progressLabel] instead of the size, a `brand` bar along the bottom and
-/// Annulla ([cancelLabel], [onCancel]). Failed ([error], in words): `danger` border and Riprova ([retryLabel]).
+/// Annulla ([cancelLabel], [onCancel]). Failed ([error], in words): `danger` border and Riprova ([retryLabel],
+/// [onRetry], by default [onOpen]: the failed action may have been a save).
 /// Name and size are selectable text; screen readers hear «name, size» as a button, [openLabel] as its hint.
 class PostinoAttachmentChip extends StatefulWidget {
   const PostinoAttachmentChip({
@@ -26,6 +27,7 @@ class PostinoAttachmentChip extends StatefulWidget {
     this.onCancel,
     this.error,
     this.retryLabel = '',
+    this.onRetry,
     this.moreLabel = '',
     this.saveLabel = '',
     this.onSave,
@@ -43,6 +45,7 @@ class PostinoAttachmentChip extends StatefulWidget {
   final VoidCallback? onCancel;
   final String? error;
   final String retryLabel;
+  final VoidCallback? onRetry;
 
   /// The menu button's name («Altre azioni»); no menu without [onSave].
   final String moreLabel;
@@ -164,7 +167,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                             key: const ValueKey('attachment-retry'),
                             icon: PostinoIcons.refresh,
                             label: w.retryLabel,
-                            onPressed: w.onOpen,
+                            onPressed: w.onRetry ?? w.onOpen,
                           ),
                         if (save != null) _menu(c, save),
                       ],

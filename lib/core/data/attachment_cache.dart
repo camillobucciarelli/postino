@@ -127,20 +127,39 @@ class AttachmentCache implements AttachmentRepository {
       // Annulla may land after the Provider's last abortable moment: the result is dropped all the same.
       if (cancelled()) return const Err(CancelledFailure());
       // Bigger than the whole cache: opened from the temporary copy only.
+      // ponytail: whole attachment in memory (download, base64, encryption): Gmail caps an attachment at 25 MB
+      // (a message at 50), so the peak stays around 4x that; stream to disk and encrypt in chunks if a Provider
+      // ever serves files of hundreds of MB.
       if (plain.length + overhead <= _storage.cap) {
         final sealed = (await _crypt(_encrypt, plain, keys))!;
+        // Encrypting a big file takes a moment: Annulla pressed meanwhile still wins.
+        if (cancelled()) return const Err(CancelledFailure());
+
         // Written aside then renamed: a crash never leaves half a file under the real name.
-        final part = _storage.cache.childFile('${cached.basename}.part');
-        await part.writeAsBytes(sealed, flush: true);
-        await part.rename(cached.path);
+        // A name of its own per write: two downloads of the same attachment never share a staging file.
+        final part = _storage.cache.childFile(
+          '${cached.basename}.${_hex(_random(4))}.part',
+        );
+        try {
+          await part.writeAsBytes(sealed, flush: true);
+          await part.rename(cached.path);
+        } finally {
+          if (await part.exists()) await part.delete();
+        }
         await cached.setLastModified(_clock.now());
         await (_evicting = _evicting.then((_) => _evict()));
       }
     }
+    if (cancelled()) return const Err(CancelledFailure());
     // One folder per copy, so the file keeps its own name and two of the same name do not clash.
     final dir = await _storage.temp.createTemp();
     final copy = dir.childFile(safeFileName(attachment.name));
-    await copy.writeAsBytes(plain, flush: true);
+    try {
+      await copy.writeAsBytes(plain, flush: true);
+    } catch (_) {
+      await dir.delete(recursive: true);
+      rethrow;
+    }
     return Ok(copy.path);
   }
 
@@ -180,8 +199,7 @@ class AttachmentCache implements AttachmentRepository {
   Future<String> _readOrCreateKey() async {
     var hex = await _keychain.read(_keyName);
     if (hex == null) {
-      hex = [for (final b in _random(64)) b.toRadixString(16).padLeft(2, '0')]
-          .join();
+      hex = _hex(_random(64));
       await _keychain.write(_keyName, hex);
     }
     return hex;
@@ -238,16 +256,27 @@ class AttachmentCache implements AttachmentRepository {
   }
 }
 
+String _hex(List<int> bytes) =>
+    [for (final b in bytes) b.toRadixString(16).padLeft(2, '0')].join();
+
 typedef _Keys = ({Uint8List enc, Uint8List mac});
 
 /// [name] as a file name on every desktop: no folders (a hostile `../../x` stays inside the temporary folder),
-/// none of the characters Windows refuses, at most 150 characters keeping the extension, never empty.
+/// none of the characters Windows refuses nor its trailing dots and spaces, no device name (`CON.txt`),
+/// at most 150 characters keeping the extension, never empty.
 String safeFileName(String name) {
-  var s = name.replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '_').trim();
+  var s = name
+      .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '_')
+      .trim()
+      .replaceAll(RegExp(r'[. ]+$'), '');
   if (s.length > 150) {
     final dot = s.lastIndexOf('.');
     final ext = dot > 0 && s.length - dot <= 10 ? s.substring(dot) : '';
     s = s.substring(0, 150 - ext.length) + ext;
   }
-  return s.isEmpty || s == '.' || s == '..' ? 'allegato' : s;
+  if (s.isEmpty) return 'allegato';
+  final stem = s.split('.').first.trim().toUpperCase();
+  return RegExp(r'^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])$').hasMatch(stem)
+      ? '_$s'
+      : s;
 }

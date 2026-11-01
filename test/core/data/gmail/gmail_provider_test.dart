@@ -585,16 +585,15 @@ void main() {
         _ => fail('unexpected $path'),
       };
 
-      test(
-        'fetchBody lists the PDF, not the logo the HTML shows by cid:',
-        () async {
-          final body = _ok(await _Recorded(route).provider.fetchBody(f7));
-          expect(body.content, startsWith('Ciao Bruno,'));
-          expect(body.attachments!.map((a) => (a.id, a.name, a.size)), [
-            ('1', 'Preventivo 2027.pdf', 49),
-          ]);
-        },
-      );
+      test('fetchBody lists the PDF and the nameless part, not the logo the HTML shows by cid:', () async {
+        final body = _ok(await _Recorded(route).provider.fetchBody(f7));
+        expect(body.content, startsWith('Ciao Bruno,'));
+        expect(body.attachments!.map((a) => (a.id, a.name, a.size)), [
+          ('1', 'Preventivo 2027.pdf', 49),
+          // `Content-Disposition: attachment` without a filename: listed, nameless.
+          ('2', '', 3),
+        ]);
+      });
 
       test('fetchAttachment finds the part, then downloads its data', () async {
         final g = _Recorded(route);
@@ -630,6 +629,15 @@ void main() {
         await started.future;
         cancel.complete();
         expect(await r, _err<CancelledFailure>());
+      });
+
+      test('a nameless attachment with inline data downloads without a second request', () async {
+        final g = _Recorded(route);
+        expect(
+          utf8.decode(_ok(await g.provider.fetchAttachment(f7, '2'))),
+          'abc',
+        );
+        expect(g.urls, hasLength(1));
       });
 
       test('the inline logo is not an attachment to download', () async {

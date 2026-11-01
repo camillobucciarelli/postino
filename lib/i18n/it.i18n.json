@@ -78,6 +78,8 @@
     "attachmentOffline": "Offline: allegato non ancora scaricato",
     "attachmentFailed": "Scaricamento non riuscito",
     "attachmentMore": "Altre azioni",
-    "attachmentSave": "Salva…"
+    "attachmentSave": "Salva…",
+    "attachmentSaveFailed": "Salvataggio non riuscito",
+    "attachmentUntitled": "Allegato senza nome"
   }
 }

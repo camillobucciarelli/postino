@@ -400,14 +400,16 @@ class GmailProvider implements MailProvider {
       ),
   ];
 
-  /// The parts the user sees as attachments, depth first. An image the HTML shows through `cid:`
+  /// The parts the user sees as attachments, depth first; a part without a filename has an empty name. An image the HTML shows through `cid:`
   /// (a Content-ID, not marked `attachment`) is part of the body, not an attachment.
   static Iterable<Map<String, dynamic>> _attachmentParts(
     Map<String, dynamic> part,
   ) sync* {
     final headers = _partHeaders(part);
+    final body = part['body'] as Map?;
+    // A filename, or `Content-Disposition: attachment` even without one (its name is then empty).
     if (_isAttachment(part) &&
-        (part['filename'] as String? ?? '').isNotEmpty &&
+        (body?['attachmentId'] != null || body?['data'] != null) &&
         (headers['content-id'] == null ||
             (headers['content-disposition'] ?? '').startsWith('attachment'))) {
       yield part;

@@ -166,6 +166,11 @@ class SyncEngine implements MailSync {
       return Ok(local.draft);
     }
     if (remote == null) return const Err(NotFoundFailure());
+    // A reply written elsewhere: the save would drop its In-Reply-To, References and thread.
+    // ponytail: #37 porta In-Reply-To/References/threadId nelle Bozze
+    if (await _store.hasSiblings(accountId, remote.message.id)) {
+      return const Err(DraftReplyFailure());
+    }
     var body = remote.body;
     if (body == null) {
       switch (await _provider(account).fetchBody(remote.message.id)) {

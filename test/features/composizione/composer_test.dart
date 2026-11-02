@@ -281,6 +281,35 @@ void main() {
     },
   );
 
+  _onMac('a reply Bozza of another client is not opened: it says to edit it where it was made', (tester) async {
+    await _start(tester);
+    gmail.deliver(msg('m-1', conversationId: 't-r', subject: 'Originale'));
+    gmail.deliverDraft(
+      const OutgoingMessage(
+        messageId: '<r@example.com>',
+        from: 'a1@example.com',
+        to: ['ada@example.com'],
+        subject: 'Re: Originale',
+        body: '<p>Ok</p>',
+      ),
+      conversationId: 't-r',
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await _settle(tester);
+    await tester.tap(find.text('Re: Originale'));
+    await _settle(tester);
+
+    expect(
+      find.text(
+        'Questa Bozza è una risposta: modificala dal client che l\'ha creata',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(QuillEditor), findsNothing);
+    expect(gmail.draftCalls, isEmpty);
+  });
+
   _onMac('a Bozza of another client is in the Bozze list; opened, its fields and formats are there, '
       'and an edit updates it with the same Message-ID', (tester) async {
     await _start(tester);

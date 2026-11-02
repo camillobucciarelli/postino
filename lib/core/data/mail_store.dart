@@ -155,9 +155,15 @@ class MailStore implements InboxRepository {
     final (m, b) = r;
     return (
       message: _message(m, const [draftLabelId]),
-      body: b == null ? null : MessageBody(b.body, b.kind),
+      body: b == null
+          ? null
+          : MessageBody(b.body, b.kind, attachments: b.attachments),
     );
   }
+
+  /// Whether another message shares the Conversazione of this one.
+  Future<bool> hasSiblings(String accountId, String messageId) =>
+      _db.draftsDao.hasSiblings(accountId, messageId);
 
   /// The Bozze whose content is not on the Provider yet; [isNew] when it never was.
   Future<List<({OutgoingMessage draft, bool isNew, int updatedAt})>>

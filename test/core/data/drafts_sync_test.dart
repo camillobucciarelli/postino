@@ -257,6 +257,40 @@ void main() {
     expect(await row('<y@example.com>'), isNull);
   });
 
+  test('a Bozza with attachments is refused again once its body is in the cache', () async {
+    a.deliverDraft(_draft('<y@example.com>'));
+    a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+    await engine.syncAll();
+    for (var i = 0; i < 2; i++) {
+      expect(
+        await engine.openDraft('a', '<y@example.com>'),
+        isA<Err<OutgoingMessage>>().having(
+          (r) => r.failure,
+          'failure',
+          isA<DraftWithAttachmentsFailure>(),
+        ),
+      );
+    }
+    expect(await row('<y@example.com>'), isNull);
+  });
+
+  test('openDraft of a reply written elsewhere is refused; a Bozza alone in its Conversazione opens', () async {
+    a.deliver(msg('m-1', conversationId: 't-1'));
+    a.deliverDraft(_draft('<r@example.com>'), conversationId: 't-1');
+    a.deliverDraft(_draft('<y@example.com>'));
+    await engine.syncAll();
+    expect(
+      await engine.openDraft('a', '<r@example.com>'),
+      isA<Err<OutgoingMessage>>().having(
+        (r) => r.failure,
+        'failure',
+        isA<DraftReplyFailure>(),
+      ),
+    );
+    expect(await row('<r@example.com>'), isNull);
+    expect(await engine.openDraft('a', '<y@example.com>'), isA<Ok>());
+  });
+
   test('openDraft wraps a plain text Bozza in a paragraph', () async {
     a.deliverDraft(_draft('<y@example.com>', body: 'Ciao <mondo>'));
     a.bodies['d-1'] = const MessageBody('Ciao <mondo>', BodyKind.testo);

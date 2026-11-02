@@ -104,7 +104,8 @@
     "cancel": "Annulla",
     "editor": "Corpo del messaggio",
     "draftNotFound": "Bozza non trovata",
-    "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata"
+    "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata",
+    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata"
   },
   "bozze": {
     "title": "Bozze",

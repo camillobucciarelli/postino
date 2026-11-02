@@ -141,6 +141,24 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     return r == null ? null : (r.readTable(m), r.readTableOrNull(b));
   }
 
+  /// Whether another message of the Account shares the Conversazione of Provider message [id].
+  Future<bool> hasSiblings(String accountId, String id) async {
+    final m = alias(messages, 'm'), o = alias(messages, 'o');
+    final r =
+        await (select(m).join([
+                innerJoin(
+                  o,
+                  o.accountId.equalsExp(m.accountId) &
+                      o.conversationId.equalsExp(m.conversationId) &
+                      o.id.equalsExp(m.id).not(),
+                ),
+              ])
+              ..where(m.accountId.equals(accountId) & m.id.equals(id))
+              ..limit(1))
+            .get();
+    return r.isNotEmpty;
+  }
+
   Future<List<DraftRow>> pending(String accountId) =>
       (select(drafts)..where(
             (t) => t.accountId.equals(accountId) & t.pending.equals(true),

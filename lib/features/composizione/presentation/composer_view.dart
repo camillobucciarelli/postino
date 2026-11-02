@@ -47,6 +47,7 @@ class _ComposerViewState extends State<ComposerView> {
   QuillController? _controller;
   bool _failed = false;
   bool _withAttachments = false;
+  bool _isReply = false;
   List<Account> _accounts = const [];
 
   /// The Account the Bozza leaves from: changeable until the first save.
@@ -82,6 +83,8 @@ class _ComposerViewState extends State<ComposerView> {
         break;
       case Err(failure: DraftWithAttachmentsFailure()):
         return setState(() => _failed = _withAttachments = true);
+      case Err(failure: DraftReplyFailure()):
+        return setState(() => _failed = _isReply = true);
       // ponytail: any other failure (offline, body not downloadable) reads as «Bozza non trovata»; a Riprova if it bites.
       case Err():
         return setState(() => _failed = true);
@@ -165,7 +168,9 @@ class _ComposerViewState extends State<ComposerView> {
       ),
       body: _failed
           ? PostinoEmptyState(
-              title: _withAttachments
+              title: _isReply
+                  ? t.draftReply
+                  : _withAttachments
                   ? t.draftWithAttachments
                   : t.draftNotFound,
             )

@@ -104,7 +104,8 @@
     "cancel": "Cancel",
     "editor": "Message body",
     "draftNotFound": "Draft not found",
-    "draftWithAttachments": "This draft has attachments: edit it from the client that created it"
+    "draftWithAttachments": "This draft has attachments: edit it from the client that created it",
+    "draftReply": "This Draft is a reply: edit it from the client that created it"
   },
   "bozze": {
     "title": "Drafts",

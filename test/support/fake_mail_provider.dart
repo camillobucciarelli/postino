@@ -100,6 +100,9 @@ class FakeMailProvider implements MailProvider {
   /// The Bozze folder, by Message-ID; a saved or delivered Bozza is also a DRAFT message for the syncs.
   final drafts = <String, OutgoingMessage>{};
 
+  /// While set, [saveDraft] fails with it (a forwarded attachment that cannot be fetched).
+  Failure? saveDraftFailure;
+
   /// Every [saveDraft] that reached the Provider: (Message-ID, isNew).
   final draftCalls = <(String, bool)>[];
 
@@ -372,6 +375,7 @@ class FakeMailProvider implements MailProvider {
   }) async {
     final f = _failure;
     if (f != null) return Err(f);
+    if (saveDraftFailure case final failure?) return Err(failure);
     draftCalls.add((draft.messageId, isNew));
     if (!isNew && !drafts.containsKey(draft.messageId)) {
       return const Err(NotFoundFailure());

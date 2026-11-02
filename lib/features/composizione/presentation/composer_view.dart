@@ -243,7 +243,6 @@ class _ComposerViewState extends State<ComposerView> {
                                     Localizations.localeOf(context)
                                         .languageCode,
                                   ),
-                                  onOpen: () {},
                                 ),
                             ],
                           ),

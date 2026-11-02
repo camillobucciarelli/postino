@@ -324,6 +324,9 @@ class Translations$conversazione$it {
 	/// it: 'Inoltra'
 	String get forward => 'Inoltra';
 
+	/// it: 'Impossibile inoltrare: messaggio non scaricato'
+	String get forwardUnavailable => 'Impossibile inoltrare: messaggio non scaricato';
+
 	/// it: 'Azioni del messaggio'
 	String get messageActions => 'Azioni del messaggio';
 }
@@ -499,6 +502,7 @@ extension on Translations {
 			'conversazione.reply' => 'Rispondi',
 			'conversazione.replyAll' => 'Rispondi a tutti',
 			'conversazione.forward' => 'Inoltra',
+			'conversazione.forwardUnavailable' => 'Impossibile inoltrare: messaggio non scaricato',
 			'conversazione.messageActions' => 'Azioni del messaggio',
 			'composizione.title' => 'Nuovo messaggio',
 			'composizione.write' => 'Scrivi',

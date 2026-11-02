@@ -91,6 +91,9 @@ class _ConversationViewState extends State<ConversationView> {
 
   /// One Bozza per key press: a second `r` while the first is still saving does nothing.
   bool _acting = false;
+
+  /// Inoltra could not start: the body or its attachments are not known and could not be downloaded.
+  bool _forwardUnavailable = false;
   void _reply() => unawaited(_act(_Kind.reply));
   void _replyAll() => unawaited(_act(_Kind.replyAll));
   void _forward() => unawaited(_act(_Kind.forward));
@@ -272,8 +275,9 @@ class _ConversationViewState extends State<ConversationView> {
   }
 
   /// Rispondi / Rispondi a tutti / Inoltra [messageId] (the last message by default): the Bozza with the
-  /// Citazione is saved, then the composer opened. A body not here yet is downloaded first; if it cannot
-  /// be, the snippet is quoted instead.
+  /// Citazione is saved, then the composer opened. A body not here yet is downloaded first. If it cannot
+  /// be, Rispondi quotes the snippet; Inoltra (which needs the attachments too, unknown in rows older
+  /// than database v9) makes no Bozza and says so.
   Future<void> _act(_Kind kind, {String? messageId}) async {
     final a = _account;
     final messages = _messages;
@@ -283,7 +287,8 @@ class _ConversationViewState extends State<ConversationView> {
       var (:message, :body) = messageId == null
           ? messages.last
           : messages.firstWhere((m) => m.message.id == messageId);
-      if (body == null &&
+      final forward = kind == _Kind.forward;
+      if ((body == null || forward && body.attachments == null) &&
           await _sync.fetchBody(widget.accountId, message.id) is Ok) {
         // The database stream answers with the rows as they are now.
         final fresh = await GetIt.I<InboxRepository>()
@@ -292,6 +297,9 @@ class _ConversationViewState extends State<ConversationView> {
         body = fresh.where((m) => m.message.id == message.id).firstOrNull?.body;
       }
       if (!mounted) return;
+      final unknown = forward && body?.attachments == null;
+      setState(() => _forwardUnavailable = unknown);
+      if (unknown) return;
       final html = switch (body) {
         MessageBody(kind: BodyKind.html, :final content) => content,
         MessageBody(:final content) => plainToHtml(content),
@@ -467,7 +475,6 @@ class _ConversationViewState extends State<ConversationView> {
   @override
   Widget build(BuildContext context) {
     final t = context.t.conversazione;
-    final c = context.pc;
     final messages = _messages;
     final a = _account;
     final now = GetIt.I<Clock>().now();
@@ -651,45 +658,32 @@ class _ConversationViewState extends State<ConversationView> {
                   ),
                 ),
                 // Under the thread, always in view: on the last message (ADR 0014: r, a, f).
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    border: Border(
-                      top: BorderSide(
-                        color: c.borderSubtle,
-                        width: PostinoBorder.borderWidthHairline,
-                      ),
-                    ),
+                if (_forwardUnavailable)
+                  PostinoBanner(
+                    key: const ValueKey('forward-unavailable'),
+                    tone: PostinoBannerTone.warning,
+                    title: t.forwardUnavailable,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: PostinoSpacing.s4,
-                      vertical: PostinoSpacing.s3,
+                PostinoActionBar(
+                  children: [
+                    PostinoButton(
+                      key: const ValueKey('reply'),
+                      label: t.reply,
+                      onPressed: _reply,
                     ),
-                    child: Wrap(
-                      spacing: PostinoSpacing.s2,
-                      runSpacing: PostinoSpacing.s2,
-                      children: [
-                        PostinoButton(
-                          key: const ValueKey('reply'),
-                          label: t.reply,
-                          onPressed: _reply,
-                        ),
-                        PostinoButton(
-                          key: const ValueKey('reply-all'),
-                          label: t.replyAll,
-                          variant: PostinoButtonVariant.ghost,
-                          onPressed: _replyAll,
-                        ),
-                        PostinoButton(
-                          key: const ValueKey('forward'),
-                          label: t.forward,
-                          variant: PostinoButtonVariant.ghost,
-                          onPressed: _forward,
-                        ),
-                      ],
+                    PostinoButton(
+                      key: const ValueKey('reply-all'),
+                      label: t.replyAll,
+                      variant: PostinoButtonVariant.ghost,
+                      onPressed: _replyAll,
                     ),
-                  ),
+                    PostinoButton(
+                      key: const ValueKey('forward'),
+                      label: t.forward,
+                      variant: PostinoButtonVariant.ghost,
+                      onPressed: _forward,
+                    ),
+                  ],
                 ),
               ],
             ),

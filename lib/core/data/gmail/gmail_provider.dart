@@ -328,6 +328,10 @@ class GmailProvider implements MailProvider {
         final a = f.attachment;
         final bytes = switch (await fetchAttachment(f.sourceMessageId, a.id)) {
           Ok(:final value) => value,
+          // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+          Err(failure: NotFoundFailure()) => throw const _Failed(
+            UnexpectedFailure('forwarded attachment gone'),
+          ),
           Err(:final failure) => throw _Failed(failure),
         };
         builder.addBinary(

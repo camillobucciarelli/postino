@@ -1,4 +1,5 @@
 // Editor <-> HTML of a Bozza (#35): the seven formats survive the round trip, everything else flattens to text.
+import 'package:flutter_quill/flutter_quill.dart' show Document;
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/reply.dart';
@@ -135,6 +136,26 @@ void main() {
         },
         {'insert': '\n', 'attributes': bq},
       ]);
+    });
+
+    test('text nodes stay literal: a typed <address> and an escaped tag are not parsed', () {
+      expect(
+        Document.fromJson(
+          htmlToDelta('<div>Scrivi a &lt;alice@example.com&gt;</div>'),
+        ).toPlainText(),
+        'Scrivi a <alice@example.com>\n',
+      );
+      final ops = htmlToDelta('<div>&lt;b&gt;no&lt;/b&gt;</div>');
+      expect(Document.fromJson(ops).toPlainText(), '<b>no</b>\n');
+      expect(ops.any((o) => o['attributes'] != null), isFalse);
+    });
+
+    test('the space between two inline elements is kept', () {
+      expect(
+        Document.fromJson(htmlToDelta('<div><b>uno</b> <i>due</i></div>'))
+            .toPlainText(),
+        'uno due\n',
+      );
     });
 
     test('empty HTML is the empty document', () {

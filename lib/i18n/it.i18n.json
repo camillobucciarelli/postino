@@ -84,6 +84,7 @@
     "reply": "Rispondi",
     "replyAll": "Rispondi a tutti",
     "forward": "Inoltra",
+    "forwardUnavailable": "Impossibile inoltrare: messaggio non scaricato",
     "messageActions": "Azioni del messaggio"
   },
   "composizione": {

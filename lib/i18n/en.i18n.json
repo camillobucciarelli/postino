@@ -84,6 +84,7 @@
     "reply": "Reply",
     "replyAll": "Reply all",
     "forward": "Forward",
+    "forwardUnavailable": "Cannot forward: message not downloaded",
     "messageActions": "Message actions"
   },
   "composizione": {

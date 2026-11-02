@@ -262,6 +262,33 @@ void main() {
     expect(raw.select('PRAGMA user_version').first.values.first, 12);
   });
 
+  test('v12 keeps a populated v10 Bozza, the reply headers and attachments empty', () async {
+    final raw = sqlite3.openInMemory();
+    // A current database taken back to the v10 shape: the columns of #37 dropped, one Bozza in it.
+    final first = PostinoDatabase(
+      NativeDatabase.opened(raw, closeUnderlyingOnClose: false),
+    );
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    for (final c in ['in_reply_to', '"references"', 'conversation_id', 'attachments']) {
+      raw.execute('ALTER TABLE drafts DROP COLUMN $c');
+    }
+    raw
+      ..execute('ALTER TABLE messages DROP COLUMN reply_to')
+      ..execute('ALTER TABLE messages DROP COLUMN "references"')
+      ..execute(
+        "INSERT INTO drafts VALUES ('a1', '<x>', 'b@example.com', '', '', 's', '<p>Ciao</p>', 7, 1, 0, 0)",
+      )
+      ..execute('PRAGMA user_version = 10');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    final d = await db.select(db.drafts).getSingle();
+    expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
+    expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
+    expect(raw.select('PRAGMA user_version').first.values.first, 12);
+  });
+
   test('a new database keeps the cursors it saves', () async {
     final db = PostinoDatabase(NativeDatabase.memory());
     addTearDown(db.close);

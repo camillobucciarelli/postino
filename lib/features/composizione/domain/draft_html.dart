@@ -1,3 +1,5 @@
+import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
+
 import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parseFragment;
@@ -35,7 +37,8 @@ List<Map<String, dynamic>> _walk(List<Node> nodes) {
   final out = <Map<String, dynamic>>[];
   final run = StringBuffer();
   void flush() {
-    if (run.isNotEmpty) out.addAll(_convert('$run'));
+    // The blank left between a run and a block is not content.
+    if (run.isNotEmpty) out.addAll(_convert('$run'.trimRight()));
     run.clear();
   }
 
@@ -51,13 +54,17 @@ List<Map<String, dynamic>> _walk(List<Node> nodes) {
     } else if (n is Element && _blocks.contains(n.localName)) {
       flush();
       out.addAll(_convert(n.outerHtml));
-    } else if (n is Element || n is Text && n.data.trim().isNotEmpty) {
-      run.write(n is Element ? n.outerHtml : (n as Text).data);
+    } else if (n is Element ||
+        n is Text && (n.data.trim().isNotEmpty || run.isNotEmpty)) {
+      // A text goes back to the parser as HTML: `&lt;b&gt;` must stay literal. Blank between inlines is kept.
+      run.write(n is Element ? n.outerHtml : _escape.convert((n as Text).data));
     }
   }
   flush();
   return out;
 }
+
+const _escape = HtmlEscape(HtmlEscapeMode.element);
 
 const _blocks = {
   'p',

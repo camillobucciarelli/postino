@@ -45,7 +45,8 @@ List<String> replyRecipients(Message m, {required String self}) {
   return to.isEmpty ? _unique(m.to, {}) : to;
 }
 
-/// Who a reply to all goes to: `to` is the `Reply-To` (else the sender) and the original To, `cc` the
+/// Who a reply to all goes to: `to` is the `Reply-To` when there is one, then the sender (as Gmail does),
+/// then the original To; `cc` the
 /// original Cc, both without the Account's own address ([self]) and without duplicates by address
 /// (first occurrence wins, a mailbox in both stays in `to`). When [self] empties `to` (a reply to one's
 /// own message), `to` is the original To.
@@ -54,7 +55,7 @@ List<String> replyRecipients(Message m, {required String self}) {
   required String self,
 }) {
   final seen = {self.toLowerCase()};
-  var to = _unique([m.replyTo ?? _from(m), ...m.to], seen);
+  var to = _unique([?m.replyTo, _from(m), ...m.to], seen);
   if (to.isEmpty) to = _unique(m.to, seen..clear());
   return (to: to, cc: _unique(m.cc, seen));
 }

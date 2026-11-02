@@ -188,7 +188,9 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       transaction(() async {
         Expression<bool> row(Drafts t) =>
             t.accountId.equals(accountId) & t.messageId.equals(messageId);
-        await (update(drafts)..where(row)).write(
+        await (update(
+          drafts,
+        )..where(row)).write(
           const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)),
         );
         await (update(drafts)

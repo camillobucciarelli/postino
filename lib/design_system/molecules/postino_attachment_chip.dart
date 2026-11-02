@@ -20,7 +20,7 @@ class PostinoAttachmentChip extends StatefulWidget {
     super.key,
     required this.name,
     required this.size,
-    required this.onOpen,
+    this.onOpen,
     this.openLabel = '',
     this.progress,
     this.progressLabel,
@@ -38,7 +38,9 @@ class PostinoAttachmentChip extends StatefulWidget {
 
   /// Already formatted («1,2 MB»).
   final String size;
-  final VoidCallback onOpen;
+
+  /// Null: a plain label, not a button (a file only shown, like the forwarded ones of a Bozza).
+  final VoidCallback? onOpen;
   final String openLabel;
   final double? progress;
   final String? progressLabel;
@@ -68,6 +70,38 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
     const radius = BorderRadius.all(Radius.circular(PostinoRadius.md));
     final save = w.onSave;
     final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
+    final open = w.onOpen;
+    final body = Padding(
+      padding: const EdgeInsets.all(PostinoSpacing.s2),
+      child: Row(
+        spacing: PostinoSpacing.s3,
+        children: [
+          SelectionContainer.disabled(child: _TypeBadge(w.name)),
+          Expanded(
+            child: PostinoSelectable(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    w.name,
+                    // Enlarged text wraps instead of being cut.
+                    maxLines: wrap ? null : 1,
+                    overflow: wrap
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
+                    style: PostinoText.preview.copyWith(
+                      color: c.ink,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  _Meta(text: meta, error: error != null),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
     return ConstrainedBox(
       constraints: const BoxConstraints(
         minWidth: 220,
@@ -91,55 +125,24 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
               children: [
                 Expanded(
                   child: Semantics(
-                    button: true,
+                    button: open != null,
                     label: w.name,
                     value: meta,
-                    hint: w.openLabel,
-                    onTap: w.onOpen,
+                    hint: open == null ? null : w.openLabel,
+                    onTap: open,
                     excludeSemantics: true,
-                    child: InkWell(
-                      key: const ValueKey('attachment-open'),
-                      onTap: w.onOpen,
-                      borderRadius: radius,
-                      child: PostinoFocusRing(
-                        borderRadius: radius,
-                        inset: true,
-                        child: Padding(
-                          padding: const EdgeInsets.all(PostinoSpacing.s2),
-                          child: Row(
-                            spacing: PostinoSpacing.s3,
-                            children: [
-                              SelectionContainer.disabled(
-                                child: _TypeBadge(w.name),
-                              ),
-                              Expanded(
-                                child: PostinoSelectable(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        w.name,
-                                        // Enlarged text wraps instead of being cut.
-                                        maxLines: wrap ? null : 1,
-                                        overflow: wrap
-                                            ? TextOverflow.visible
-                                            : TextOverflow.ellipsis,
-                                        style: PostinoText.preview.copyWith(
-                                          color: c.ink,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      _Meta(text: meta, error: error != null),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                    child: open == null
+                        ? body
+                        : InkWell(
+                            key: const ValueKey('attachment-open'),
+                            onTap: open,
+                            borderRadius: radius,
+                            child: PostinoFocusRing(
+                              borderRadius: radius,
+                              inset: true,
+                              child: body,
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
                 ),
                 SelectionContainer.disabled(
@@ -159,7 +162,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                             key: const ValueKey('attachment-retry'),
                             icon: PostinoIcons.refresh,
                             label: w.retryLabel,
-                            onPressed: w.onRetry ?? w.onOpen,
+                            onPressed: w.onRetry ?? open,
                           ),
                         if (save != null) _menu(save),
                       ],

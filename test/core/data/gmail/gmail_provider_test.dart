@@ -994,7 +994,7 @@ void main() {
         );
       });
 
-      test('a forward whose attachment is gone fails as NotFound, nothing is written', () async {
+      test('a forward whose attachment is gone fails as Unexpected (never NotFound: the Bozza is kept), nothing is written', () async {
         final g = _Recorded(
           (r, path) =>
               path.startsWith('messages/') ? 'not_found' : routeEmpty(r, path),
@@ -1014,7 +1014,7 @@ void main() {
         );
         expect(
           await g.provider.saveDraft(forward, isNew: true),
-          _err<NotFoundFailure>(),
+          _err<UnexpectedFailure>(),
         );
         expect(g.requests.map((r) => r.method), isNot(contains('POST')));
       });

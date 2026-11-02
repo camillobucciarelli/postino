@@ -191,6 +191,7 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get reply => 'Reply';
 	@override String get replyAll => 'Reply all';
 	@override String get forward => 'Forward';
+	@override String get forwardUnavailable => 'Cannot forward: message not downloaded';
 	@override String get messageActions => 'Message actions';
 }
 
@@ -311,6 +312,7 @@ extension on TranslationsEn {
 			'conversazione.reply' => 'Reply',
 			'conversazione.replyAll' => 'Reply all',
 			'conversazione.forward' => 'Forward',
+			'conversazione.forwardUnavailable' => 'Cannot forward: message not downloaded',
 			'conversazione.messageActions' => 'Message actions',
 			'composizione.title' => 'New message',
 			'composizione.write' => 'Compose',

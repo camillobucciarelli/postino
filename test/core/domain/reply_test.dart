@@ -67,6 +67,20 @@ void main() {
       expect(r.cc, ['carla@example.com']);
     });
 
+    test('a reply to all keeps both the Reply-To and the sender in to, Reply-To first', () {
+      final m = msg(
+        'm',
+        from: 'ada@example.com',
+        replyTo: 'list@example.com',
+        to: ['bruno@example.com'],
+      );
+      expect(replyAllRecipients(m, self: _self).to, [
+        'list@example.com',
+        'ada@example.com',
+        'bruno@example.com',
+      ]);
+    });
+
     test('duplicates by address go, first occurrence wins, to before cc', () {
       final m = msg(
         'm',

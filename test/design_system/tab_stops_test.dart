@@ -37,6 +37,22 @@ void main() {
     );
   });
 
+  testWidgets('an attachment chip without onOpen is a plain label: no button, no Tab stop', (t) async {
+    final semantics = t.ensureSemantics();
+    await t.pumpWidget(
+      _app(const PostinoAttachmentChip(name: 'Contratto.pdf', size: '88 KB')),
+    );
+    expect(find.byKey(const ValueKey('attachment-open')), findsNothing);
+    await t.sendKeyEvent(LogicalKeyboardKey.tab);
+    await t.pump();
+    expect(FocusManager.instance.primaryFocus, isA<FocusScopeNode>());
+    expect(
+      t.getSemantics(find.bySemanticsLabel('Contratto.pdf')),
+      isNot(isSemantics(isButton: true)),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('Tab in an empty state does not stop on the text', (t) async {
     await t.pumpWidget(
       _app(const PostinoEmptyState(title: 'Niente di nuovo', body: 'Qui.')),

@@ -9,6 +9,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -128,6 +129,22 @@ String _openId() {
 /// The Bozza as the database keeps it.
 Future<OutgoingMessage> _draft(String id) async =>
     (await GetIt.I<MailStore>().localDraft('a1', id))!.draft;
+
+/// m1 without its body and the Provider unreachable: the body cannot be downloaded.
+Future<void> _forgetBodyOfM1(WidgetTester tester) async {
+  final db = GetIt.I<PostinoDatabase>();
+  await tester.runAsync(
+    () => (db.delete(db.bodies)..where((t) => t.messageId.equals('m1'))).go(),
+  );
+  gmail.goOffline();
+  await _settle(tester);
+}
+
+/// The Message-IDs of the Bozze waiting in the database.
+Future<List<String>> _pendingIds() async =>
+    (await GetIt.I<MailStore>().pendingDrafts('a1'))
+        .map((d) => d.draft.messageId)
+        .toList();
 
 Finder _field(String label) => find.descendant(
   of: find.byWidgetPredicate(
@@ -257,14 +274,51 @@ void main() {
     final id = _openId();
     await tester.tap(find.byType(QuillEditor));
     await tester.pump();
+    // r has no reply to start under the open composer, so c (a new Bozza) shows the guard: both are letters.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+    await _settle(tester);
+    // Nothing replied: still the same open Bozza, and no second one.
+    expect(_openId(), id);
+    expect(await _pendingIds(), [id]);
+  });
+
+  _onMac('Rispondi when the body cannot be downloaded quotes the snippet', (
+    tester,
+  ) async {
+    await _start(tester);
+    await _forgetBodyOfM1(tester);
+    await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+    await _tap(tester, find.byKey(const ValueKey('message-reply-m1')));
+    final d = await _draft(_openId());
+    expect(d.inReplyTo, '<m1@example.com>');
+    expect(d.body, contains('Venerdì?'));
+  });
+
+  _onMac(
+    'Inoltra when the body cannot be downloaded makes no Bozza and says so',
+    (tester) async {
+      await _start(tester);
+      await _forgetBodyOfM1(tester);
+      await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+      await _tap(tester, find.byKey(const ValueKey('message-forward-m1')));
+      expect(await _pendingIds(), isEmpty);
+      expect(find.byType(PostinoComposerLayout), findsNothing);
+      expect(
+        find.text('Impossibile inoltrare: messaggio non scaricato'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  _onMac('r twice before the first save ends makes one Bozza', (tester) async {
+    await _start(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
     await _settle(tester);
-    expect(_openId(), id);
-    expect(
-      (await GetIt.I<MailStore>().pendingDrafts('a1'))
-          .map((d) => d.draft.messageId),
-      [id],
-    );
+    expect(await _pendingIds(), hasLength(1));
   });
 
   _onMac('keyboard: Tab reaches Rispondi, Enter replies', (tester) async {

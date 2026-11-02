@@ -337,4 +337,15 @@ void main() {
     final again = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
     expect(again.value.body, '<p>Di nuovo qui</p>');
   });
+
+  test('a forwarded attachment gone from the Provider never deletes the Bozza: it stays pending', () async {
+    await engine.saveDraft('a', _draft(id, body: '<p>Il mio testo</p>'));
+    // What the adapter reports when the attachment cannot be fetched (never NotFound).
+    a.saveDraftFailure = const UnexpectedFailure('forwarded attachment gone');
+    await engine.flushDrafts('a');
+    final kept = await row();
+    expect(kept, isNotNull);
+    expect(kept!.body, '<p>Il mio testo</p>');
+    expect(kept.pending, isTrue);
+  });
 }

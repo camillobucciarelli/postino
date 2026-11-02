@@ -25,6 +25,17 @@ abstract interface class MailSync {
   /// completes offline or Da ricollegare too, the Bozze stay queued.
   Future<void> flushDrafts(String accountId);
 
+  /// Queues the message (#36): it goes after `sendWindow` (Annulla invio), also offline (when the network returns)
+  /// or after a restart; [SizeLimitFailure] when it is too big for the Provider, and nothing is queued.
+  Future<Result<void>> send(String accountId, OutgoingMessage message);
+
+  /// Takes the message out of the outbox within the window; false when it already went (or was never queued).
+  /// The Bozza stays, so the UI can reopen it.
+  Future<bool> cancelSend(String accountId, String messageId);
+
+  /// Sends the Account's due outbox entries now; completes offline or Da ricollegare too, they stay queued.
+  Future<void> flushOutbox(String accountId);
+
   /// The Bozza to resume: the local one, or one of another client (its body downloaded if missing,
   /// then kept here); [NotFoundFailure] when there is none.
   Future<Result<OutgoingMessage>> openDraft(String accountId, String messageId);

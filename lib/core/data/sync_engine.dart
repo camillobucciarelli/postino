@@ -13,12 +13,16 @@ import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import 'gmail/gmail_provider.dart';
 import 'mail_store.dart';
+import 'mime.dart';
 
 /// Polling period: the change signal watches only the inbox, so the poll also brings Bozze and the rest (ADR 0008).
 const pollEvery = Duration(seconds: 60);
 
 /// Pause in the edits after which a Bozza goes to the Provider (#35).
 const draftDebounce = Duration(seconds: 5);
+
+/// Annulla invio: how long after Invia the message can still be taken back (#36).
+const sendWindow = Duration(seconds: 10);
 
 /// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
@@ -45,6 +49,9 @@ class SyncEngine implements MailSync {
   /// Per Account, the ticker that sends its Bozze once the edits pause.
   final _draftTimers = <String, StreamSubscription<void>>{};
 
+  /// Per (Account, Message-ID), the one-shot ticker that sends the message once its window ends.
+  final _sendTimers = <(String, String), StreamSubscription<void>>{};
+
   /// Starts listening to change signals, the poll and the network, then syncs everything.
   void start() {
     _subs
@@ -60,12 +67,18 @@ class SyncEngine implements MailSync {
 
   Future<void> stop() async {
     await Future.wait([
-      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values])
+      for (final s in [
+        ..._subs,
+        ..._signals.values,
+        ..._draftTimers.values,
+        ..._sendTimers.values,
+      ])
         s.cancel(),
     ]);
     _subs.clear();
     _signals.clear();
     _draftTimers.clear();
+    _sendTimers.clear();
   }
 
   @override
@@ -148,6 +161,46 @@ class SyncEngine implements MailSync {
     await _serial(accountId, () async {
       await _replay(accountId, _provider(account), flush: true);
     });
+  }
+
+  @override
+  Future<Result<void>> send(String accountId, OutgoingMessage message) async {
+    if (await _account(accountId) == null) return const Err(NotFoundFailure());
+    final now = _clock.now();
+    final raw = renderMime(message, now);
+    // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
+    if (raw.length > gmailSendLimitBytes) {
+      return const Err(SizeLimitFailure(gmailSendLimitBytes));
+    }
+    await _store.enqueueOutgoing(
+      accountId,
+      message,
+      raw: raw,
+      sendAfter: now.add(sendWindow).millisecondsSinceEpoch,
+    );
+    final key = (accountId, message.messageId);
+    await _sendTimers.remove(key)?.cancel();
+    _sendTimers[key] = _clock.every(sendWindow).listen((_) {
+      unawaited(_sendTimers.remove(key)?.cancel());
+      unawaited(flushOutbox(accountId));
+    });
+    return const Ok(null);
+  }
+
+  @override
+  Future<bool> cancelSend(String accountId, String messageId) async {
+    await _sendTimers.remove((accountId, messageId))?.cancel();
+    return _store.cancelOutgoing(accountId, messageId);
+  }
+
+  /// Sends the Account's due outbox entries at once. While the Provider's pause holds they stay queued
+  /// and go with the first replay after it (the next poll or sync); so do those of a Da ricollegare Account.
+  @override
+  Future<void> flushOutbox(String accountId) async {
+    if (_paused(accountId)) return;
+    final account = await _account(accountId);
+    if (account == null || account.status != AccountStatus.attivo) return;
+    await _serial(accountId, () => _replay(accountId, _provider(account)));
   }
 
   @override
@@ -252,6 +305,7 @@ class SyncEngine implements MailSync {
 
   /// Sends the offline queue (ADR 0008); what fails stays queued and the next poll retries it.
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
+  /// An outbox entry goes once its window has ended: so a restart, a poll and the reconnection all send what is due.
   /// Called only from inside the Account's serial queue.
   Future<void> _replay(
     String accountId,
@@ -288,6 +342,26 @@ class SyncEngine implements MailSync {
           await _store.removeDraft(accountId, draft.messageId);
         case Err(:final failure):
           debugPrint('[sync] $accountId: draft replay failed, $failure');
+      }
+    }
+    final now = _clock.now().millisecondsSinceEpoch;
+    for (final row in await _store.dueOutgoing(accountId, now)) {
+      switch (await provider.send(row.messageId, row.raw)) {
+        case Ok(:final value):
+          await _store.outgoingSent(
+            accountId,
+            row.messageId,
+            providerId: value,
+            date: now,
+          );
+          debugPrint('[sync] $accountId: sent ${row.messageId}');
+        // ponytail: a permanent refusal (too big, Bozza gone) stays queued and retries on every replay;
+        // the UI shows it pending in Inviati, surface the reason when it happens in practice.
+        case Err(failure: SizeLimitFailure() || NotFoundFailure()):
+          debugPrint('[sync] $accountId: send refused ${row.messageId}');
+        case Err(:final failure):
+          await _store.bumpSendAttempts(accountId, row.messageId);
+          debugPrint('[sync] $accountId: send failed, $failure');
       }
     }
   }

@@ -15,6 +15,7 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: MissingPermissionFailure()) => 'missing-permission',
   Err(failure: WrongAccountFailure(:final expected)) =>
     'wrong-account $expected',
+  Err(failure: SizeLimitFailure(:final limitBytes)) => 'size $limitBytes',
 };
 
 void main() {
@@ -32,5 +33,6 @@ void main() {
     expect(describe(const Err(RateLimitFailure())), 'ratelimit');
     expect(describe(const Err(ConfigurationFailure('X'))), 'config X');
     expect(describe(const Err(CancelledFailure())), 'cancelled');
+    expect(describe(const Err(SizeLimitFailure(7))), 'size 7');
   });
 }

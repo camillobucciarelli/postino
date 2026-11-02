@@ -37,6 +37,35 @@ void main() {
     );
   });
 
+  testWidgets('Tab in the undo snackbar reaches Annulla, Enter runs it', (
+    t,
+  ) async {
+    var undone = 0;
+    await t.pumpWidget(
+      _app(
+        PostinoSnackbar(
+          message: 'In attesa d’invio',
+          actionLabel: 'Annulla',
+          onAction: () => undone++,
+        ),
+      ),
+    );
+    await t.sendKeyEvent(LogicalKeyboardKey.tab);
+    await t.pump();
+    expect(
+      find.descendant(
+        of: find.byElementPredicate(
+          (e) => e == FocusManager.instance.primaryFocus?.context,
+        ),
+        matching: find.text('Annulla'),
+      ),
+      findsOneWidget,
+    );
+    await t.sendKeyEvent(LogicalKeyboardKey.enter);
+    await t.pump();
+    expect(undone, 1);
+  });
+
   testWidgets('Tab in an empty state does not stop on the text', (t) async {
     await t.pumpWidget(
       _app(const PostinoEmptyState(title: 'Niente di nuovo', body: 'Qui.')),

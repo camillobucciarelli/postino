@@ -350,6 +350,24 @@ final _components = <String, Widget Function()>{
       ),
     ],
   ),
+  // On its own surface, as the SnackBar draws it.
+  'snackbar': () => Builder(
+    builder: (context) => Material(
+      color: context.pc.snackbarBg,
+      borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PostinoSpacing.s4,
+          vertical: PostinoSpacing.s1,
+        ),
+        child: PostinoSnackbar(
+          message: 'In attesa d’invio',
+          actionLabel: 'Annulla',
+          onAction: _noop,
+        ),
+      ),
+    ),
+  ),
   'attachment_chip': () => const Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     spacing: 8,
@@ -639,6 +657,92 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('citato'), findsOneWidget);
     semantics.dispose();
+  });
+
+  group('PostinoSnackbar', () {
+    testWidgets('the countdown goes down every second from the whole window', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoSnackbar(
+              message: 'In attesa d’invio',
+              actionLabel: 'Annulla',
+              onAction: _noop,
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.text('${PostinoMotion.undoWindow.inSeconds} s'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.text('${PostinoMotion.undoWindow.inSeconds - 1} s'),
+        findsOneWidget,
+      );
+      await tester.pump(PostinoMotion.undoWindow);
+      expect(find.text('0 s'), findsOneWidget);
+    });
+
+    testWidgets(
+      'show puts it in the ScaffoldMessenger; the action runs and closes it',
+      (tester) async {
+        var undone = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: PostinoTheme.light(),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => PostinoSnackbar.show(
+                    context,
+                    message: 'In attesa d’invio',
+                    actionLabel: 'Annulla',
+                    onAction: () => undone++,
+                  ),
+                  child: const Text('Invia'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Invia'));
+        await tester.pumpAndSettle();
+        final snack = tester.widget<SnackBar>(find.byType(SnackBar));
+        expect(snack.duration, PostinoMotion.undoWindow);
+        expect(snack.action, isNull);
+        expect(find.text('In attesa d’invio'), findsOneWidget);
+        await tester.tap(find.text('Annulla'));
+        await tester.pumpAndSettle();
+        expect(undone, 1);
+        expect(find.byType(PostinoSnackbar), findsNothing);
+      },
+    );
+
+    testWidgets('the screen reader hears the message and the countdown', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoSnackbar(
+              message: 'In attesa d’invio',
+              actionLabel: 'Annulla',
+              onAction: _noop,
+            ),
+          ),
+        ),
+      );
+      expect(find.semantics.byLabel('In attesa d’invio, 10 s'), findsOneWidget);
+      expect(find.semantics.byLabel('Annulla'), findsOneWidget);
+      semantics.dispose();
+    });
   });
 
   group('PostinoMessageList', () {

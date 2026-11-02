@@ -79,7 +79,7 @@ void main() {
     () async {
       final raw = sqlite3.openInMemory()
         ..execute(_v3Accounts)
-      ..execute(_syncCursors)
+        ..execute(_syncCursors)
         ..execute(_v4Bodies)
         ..execute(_v4Messages)
         ..execute('PRAGMA user_version = 4');
@@ -164,7 +164,7 @@ void main() {
     () async {
       final raw = sqlite3.openInMemory()
         ..execute(_v3Accounts)
-      ..execute(_syncCursors)
+        ..execute(_syncCursors)
         ..execute(_v4Bodies)
         ..execute(_v4Messages)
         ..execute('PRAGMA user_version = 4');
@@ -212,26 +212,65 @@ void main() {
     );
   });
 
-  test('v10 clears the sync cursors, so the next sync brings the Bcc of the Bozze', () async {
+  test(
+    'v10 clears the sync cursors, so the next sync brings the Bcc of the Bozze',
+    () async {
+      final raw = sqlite3.openInMemory()
+        ..execute(_v3Accounts)
+        ..execute(_syncCursors)
+        ..execute(_v4Bodies)
+        ..execute(_v4Messages)
+        ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
+        ..execute('PRAGMA user_version = 9');
+      final db = PostinoDatabase(NativeDatabase.opened(raw));
+      addTearDown(db.close);
+
+      expect(await db.select(db.syncCursors).get(), isEmpty);
+    },
+  );
+
+  test('v11 adds the outbox, keeping what was there', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
-      ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
-      ..execute('PRAGMA user_version = 9');
+      ..execute(
+        "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
+        "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
+      )
+      ..execute('PRAGMA user_version = 10');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    expect(await db.select(db.syncCursors).get(), isEmpty);
+    await db.outboxDao.enqueue(
+      OutboxCompanion.insert(
+        accountId: 'a1',
+        messageId: '<x>',
+        raw: 'Message-ID: <x>',
+        recipients: 'b@example.com',
+        cc: '',
+        bcc: '',
+        subject: 's',
+        body: '<p>Ciao</p>',
+        sendAfter: 1,
+      ),
+    );
+    expect((await db.outboxDao.due('a1', 1)).single.attempts, 0);
+    expect(
+      (await db.customSelect('SELECT id FROM messages').get()).map(
+        (r) => r.read<String>('id'),
+      ),
+      ['m1'],
+    );
   });
 
   test('a new database keeps the cursors it saves', () async {
     final db = PostinoDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    await db.into(db.syncCursors).insert(
-      SyncCursorsCompanion.insert(accountId: 'a1', cursor: '1'),
-    );
+    await db
+        .into(db.syncCursors)
+        .insert(SyncCursorsCompanion.insert(accountId: 'a1', cursor: '1'));
     expect(await db.select(db.syncCursors).get(), hasLength(1));
   });
 }

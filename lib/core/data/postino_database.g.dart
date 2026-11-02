@@ -3718,6 +3718,619 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   }
 }
 
+class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawMeta = const VerificationMeta('raw');
+  @override
+  late final GeneratedColumn<String> raw = GeneratedColumn<String>(
+    'raw',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientsMeta = const VerificationMeta(
+    'recipients',
+  );
+  @override
+  late final GeneratedColumn<String> recipients = GeneratedColumn<String>(
+    'recipients',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ccMeta = const VerificationMeta('cc');
+  @override
+  late final GeneratedColumn<String> cc = GeneratedColumn<String>(
+    'cc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bccMeta = const VerificationMeta('bcc');
+  @override
+  late final GeneratedColumn<String> bcc = GeneratedColumn<String>(
+    'bcc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta(
+    'subject',
+  );
+  @override
+  late final GeneratedColumn<String> subject = GeneratedColumn<String>(
+    'subject',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sendAfterMeta = const VerificationMeta(
+    'sendAfter',
+  );
+  @override
+  late final GeneratedColumn<int> sendAfter = GeneratedColumn<int>(
+    'send_after',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    accountId,
+    messageId,
+    raw,
+    recipients,
+    cc,
+    bcc,
+    subject,
+    body,
+    sendAfter,
+    attempts,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OutboxRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('raw')) {
+      context.handle(
+        _rawMeta,
+        raw.isAcceptableOrUnknown(data['raw']!, _rawMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rawMeta);
+    }
+    if (data.containsKey('recipients')) {
+      context.handle(
+        _recipientsMeta,
+        recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientsMeta);
+    }
+    if (data.containsKey('cc')) {
+      context.handle(_ccMeta, cc.isAcceptableOrUnknown(data['cc']!, _ccMeta));
+    } else if (isInserting) {
+      context.missing(_ccMeta);
+    }
+    if (data.containsKey('bcc')) {
+      context.handle(
+        _bccMeta,
+        bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bccMeta);
+    }
+    if (data.containsKey('subject')) {
+      context.handle(
+        _subjectMeta,
+        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('send_after')) {
+      context.handle(
+        _sendAfterMeta,
+        sendAfter.isAcceptableOrUnknown(data['send_after']!, _sendAfterMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sendAfterMeta);
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId};
+  @override
+  OutboxRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OutboxRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      )!,
+      raw: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}raw'],
+      )!,
+      recipients: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipients'],
+      )!,
+      cc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cc'],
+      )!,
+      bcc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bcc'],
+      )!,
+      subject: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      sendAfter: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}send_after'],
+      )!,
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+    );
+  }
+
+  @override
+  $OutboxTable createAlias(String alias) {
+    return $OutboxTable(attachedDatabase, alias);
+  }
+}
+
+class OutboxRow extends DataClass implements Insertable<OutboxRow> {
+  final String accountId;
+
+  /// RFC 5322 Message-ID header, the idempotency key on the Provider.
+  final String messageId;
+
+  /// The rendered RFC 5322 text.
+  final String raw;
+
+  /// One address per line, as `messages.recipients`.
+  final String recipients;
+  final String cc;
+  final String bcc;
+  final String subject;
+
+  /// HTML.
+  final String body;
+
+  /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
+  final int sendAfter;
+
+  /// Failed send attempts so far.
+  final int attempts;
+  const OutboxRow({
+    required this.accountId,
+    required this.messageId,
+    required this.raw,
+    required this.recipients,
+    required this.cc,
+    required this.bcc,
+    required this.subject,
+    required this.body,
+    required this.sendAfter,
+    required this.attempts,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['message_id'] = Variable<String>(messageId);
+    map['raw'] = Variable<String>(raw);
+    map['recipients'] = Variable<String>(recipients);
+    map['cc'] = Variable<String>(cc);
+    map['bcc'] = Variable<String>(bcc);
+    map['subject'] = Variable<String>(subject);
+    map['body'] = Variable<String>(body);
+    map['send_after'] = Variable<int>(sendAfter);
+    map['attempts'] = Variable<int>(attempts);
+    return map;
+  }
+
+  OutboxCompanion toCompanion(bool nullToAbsent) {
+    return OutboxCompanion(
+      accountId: Value(accountId),
+      messageId: Value(messageId),
+      raw: Value(raw),
+      recipients: Value(recipients),
+      cc: Value(cc),
+      bcc: Value(bcc),
+      subject: Value(subject),
+      body: Value(body),
+      sendAfter: Value(sendAfter),
+      attempts: Value(attempts),
+    );
+  }
+
+  factory OutboxRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OutboxRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      raw: serializer.fromJson<String>(json['raw']),
+      recipients: serializer.fromJson<String>(json['recipients']),
+      cc: serializer.fromJson<String>(json['cc']),
+      bcc: serializer.fromJson<String>(json['bcc']),
+      subject: serializer.fromJson<String>(json['subject']),
+      body: serializer.fromJson<String>(json['body']),
+      sendAfter: serializer.fromJson<int>(json['sendAfter']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'messageId': serializer.toJson<String>(messageId),
+      'raw': serializer.toJson<String>(raw),
+      'recipients': serializer.toJson<String>(recipients),
+      'cc': serializer.toJson<String>(cc),
+      'bcc': serializer.toJson<String>(bcc),
+      'subject': serializer.toJson<String>(subject),
+      'body': serializer.toJson<String>(body),
+      'sendAfter': serializer.toJson<int>(sendAfter),
+      'attempts': serializer.toJson<int>(attempts),
+    };
+  }
+
+  OutboxRow copyWith({
+    String? accountId,
+    String? messageId,
+    String? raw,
+    String? recipients,
+    String? cc,
+    String? bcc,
+    String? subject,
+    String? body,
+    int? sendAfter,
+    int? attempts,
+  }) => OutboxRow(
+    accountId: accountId ?? this.accountId,
+    messageId: messageId ?? this.messageId,
+    raw: raw ?? this.raw,
+    recipients: recipients ?? this.recipients,
+    cc: cc ?? this.cc,
+    bcc: bcc ?? this.bcc,
+    subject: subject ?? this.subject,
+    body: body ?? this.body,
+    sendAfter: sendAfter ?? this.sendAfter,
+    attempts: attempts ?? this.attempts,
+  );
+  OutboxRow copyWithCompanion(OutboxCompanion data) {
+    return OutboxRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      raw: data.raw.present ? data.raw.value : this.raw,
+      recipients: data.recipients.present
+          ? data.recipients.value
+          : this.recipients,
+      cc: data.cc.present ? data.cc.value : this.cc,
+      bcc: data.bcc.present ? data.bcc.value : this.bcc,
+      subject: data.subject.present ? data.subject.value : this.subject,
+      body: data.body.present ? data.body.value : this.body,
+      sendAfter: data.sendAfter.present ? data.sendAfter.value : this.sendAfter,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutboxRow(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('raw: $raw, ')
+          ..write('recipients: $recipients, ')
+          ..write('cc: $cc, ')
+          ..write('bcc: $bcc, ')
+          ..write('subject: $subject, ')
+          ..write('body: $body, ')
+          ..write('sendAfter: $sendAfter, ')
+          ..write('attempts: $attempts')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    accountId,
+    messageId,
+    raw,
+    recipients,
+    cc,
+    bcc,
+    subject,
+    body,
+    sendAfter,
+    attempts,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OutboxRow &&
+          other.accountId == this.accountId &&
+          other.messageId == this.messageId &&
+          other.raw == this.raw &&
+          other.recipients == this.recipients &&
+          other.cc == this.cc &&
+          other.bcc == this.bcc &&
+          other.subject == this.subject &&
+          other.body == this.body &&
+          other.sendAfter == this.sendAfter &&
+          other.attempts == this.attempts);
+}
+
+class OutboxCompanion extends UpdateCompanion<OutboxRow> {
+  final Value<String> accountId;
+  final Value<String> messageId;
+  final Value<String> raw;
+  final Value<String> recipients;
+  final Value<String> cc;
+  final Value<String> bcc;
+  final Value<String> subject;
+  final Value<String> body;
+  final Value<int> sendAfter;
+  final Value<int> attempts;
+  final Value<int> rowid;
+  const OutboxCompanion({
+    this.accountId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.raw = const Value.absent(),
+    this.recipients = const Value.absent(),
+    this.cc = const Value.absent(),
+    this.bcc = const Value.absent(),
+    this.subject = const Value.absent(),
+    this.body = const Value.absent(),
+    this.sendAfter = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OutboxCompanion.insert({
+    required String accountId,
+    required String messageId,
+    required String raw,
+    required String recipients,
+    required String cc,
+    required String bcc,
+    required String subject,
+    required String body,
+    required int sendAfter,
+    this.attempts = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       messageId = Value(messageId),
+       raw = Value(raw),
+       recipients = Value(recipients),
+       cc = Value(cc),
+       bcc = Value(bcc),
+       subject = Value(subject),
+       body = Value(body),
+       sendAfter = Value(sendAfter);
+  static Insertable<OutboxRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? messageId,
+    Expression<String>? raw,
+    Expression<String>? recipients,
+    Expression<String>? cc,
+    Expression<String>? bcc,
+    Expression<String>? subject,
+    Expression<String>? body,
+    Expression<int>? sendAfter,
+    Expression<int>? attempts,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (messageId != null) 'message_id': messageId,
+      if (raw != null) 'raw': raw,
+      if (recipients != null) 'recipients': recipients,
+      if (cc != null) 'cc': cc,
+      if (bcc != null) 'bcc': bcc,
+      if (subject != null) 'subject': subject,
+      if (body != null) 'body': body,
+      if (sendAfter != null) 'send_after': sendAfter,
+      if (attempts != null) 'attempts': attempts,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OutboxCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? messageId,
+    Value<String>? raw,
+    Value<String>? recipients,
+    Value<String>? cc,
+    Value<String>? bcc,
+    Value<String>? subject,
+    Value<String>? body,
+    Value<int>? sendAfter,
+    Value<int>? attempts,
+    Value<int>? rowid,
+  }) {
+    return OutboxCompanion(
+      accountId: accountId ?? this.accountId,
+      messageId: messageId ?? this.messageId,
+      raw: raw ?? this.raw,
+      recipients: recipients ?? this.recipients,
+      cc: cc ?? this.cc,
+      bcc: bcc ?? this.bcc,
+      subject: subject ?? this.subject,
+      body: body ?? this.body,
+      sendAfter: sendAfter ?? this.sendAfter,
+      attempts: attempts ?? this.attempts,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (raw.present) {
+      map['raw'] = Variable<String>(raw.value);
+    }
+    if (recipients.present) {
+      map['recipients'] = Variable<String>(recipients.value);
+    }
+    if (cc.present) {
+      map['cc'] = Variable<String>(cc.value);
+    }
+    if (bcc.present) {
+      map['bcc'] = Variable<String>(bcc.value);
+    }
+    if (subject.present) {
+      map['subject'] = Variable<String>(subject.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (sendAfter.present) {
+      map['send_after'] = Variable<int>(sendAfter.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutboxCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('raw: $raw, ')
+          ..write('recipients: $recipients, ')
+          ..write('cc: $cc, ')
+          ..write('bcc: $bcc, ')
+          ..write('subject: $subject, ')
+          ..write('body: $body, ')
+          ..write('sendAfter: $sendAfter, ')
+          ..write('attempts: $attempts, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PostinoDatabase extends GeneratedDatabase {
   _$PostinoDatabase(QueryExecutor e) : super(e);
   $PostinoDatabaseManager get managers => $PostinoDatabaseManager(this);
@@ -3731,6 +4344,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $TrustedSendersTable trustedSenders = $TrustedSendersTable(this);
   late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
+  late final $OutboxTable outbox = $OutboxTable(this);
   late final Index messagesConversation = Index(
     'messages_conversation',
     'CREATE INDEX messages_conversation ON messages (account_id, conversation_id)',
@@ -3745,6 +4359,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     this as PostinoDatabase,
   );
   late final DraftsDao draftsDao = DraftsDao(this as PostinoDatabase);
+  late final OutboxDao outboxDao = OutboxDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3760,6 +4375,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     trustedSenders,
     deviceSettings,
     drafts,
+    outbox,
     messagesConversation,
   ];
 }
@@ -5868,6 +6484,307 @@ typedef $$DraftsTableProcessedTableManager =
       DraftRow,
       PrefetchHooks Function()
     >;
+typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
+  required String accountId,
+  required String messageId,
+  required String raw,
+  required String recipients,
+  required String cc,
+  required String bcc,
+  required String subject,
+  required String body,
+  required int sendAfter,
+  Value<int> attempts,
+  Value<int> rowid,
+});
+typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
+  Value<String> accountId,
+  Value<String> messageId,
+  Value<String> raw,
+  Value<String> recipients,
+  Value<String> cc,
+  Value<String> bcc,
+  Value<String> subject,
+  Value<String> body,
+  Value<int> sendAfter,
+  Value<int> attempts,
+  Value<int> rowid,
+});
+
+class $$OutboxTableFilterComposer
+    extends Composer<_$PostinoDatabase, $OutboxTable> {
+  $$OutboxTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get raw => $composableBuilder(
+    column: $table.raw,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipients => $composableBuilder(
+    column: $table.recipients,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cc => $composableBuilder(
+    column: $table.cc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bcc => $composableBuilder(
+    column: $table.bcc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sendAfter => $composableBuilder(
+    column: $table.sendAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$OutboxTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $OutboxTable> {
+  $$OutboxTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get raw => $composableBuilder(
+    column: $table.raw,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipients => $composableBuilder(
+    column: $table.recipients,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cc => $composableBuilder(
+    column: $table.cc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bcc => $composableBuilder(
+    column: $table.bcc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sendAfter => $composableBuilder(
+    column: $table.sendAfter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OutboxTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $OutboxTable> {
+  $$OutboxTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get raw =>
+      $composableBuilder(column: $table.raw, builder: (column) => column);
+
+  GeneratedColumn<String> get recipients => $composableBuilder(
+    column: $table.recipients,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cc =>
+      $composableBuilder(column: $table.cc, builder: (column) => column);
+
+  GeneratedColumn<String> get bcc =>
+      $composableBuilder(column: $table.bcc, builder: (column) => column);
+
+  GeneratedColumn<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<int> get sendAfter =>
+      $composableBuilder(column: $table.sendAfter, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+}
+
+class $$OutboxTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $OutboxTable,
+          OutboxRow,
+          $$OutboxTableFilterComposer,
+          $$OutboxTableOrderingComposer,
+          $$OutboxTableAnnotationComposer,
+          $$OutboxTableCreateCompanionBuilder,
+          $$OutboxTableUpdateCompanionBuilder,
+          (
+            OutboxRow,
+            BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>,
+          ),
+          OutboxRow,
+          PrefetchHooks Function()
+        > {
+  $$OutboxTableTableManager(_$PostinoDatabase db, $OutboxTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OutboxTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> messageId = const Value.absent(),
+                Value<String> raw = const Value.absent(),
+                Value<String> recipients = const Value.absent(),
+                Value<String> cc = const Value.absent(),
+                Value<String> bcc = const Value.absent(),
+                Value<String> subject = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> sendAfter = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OutboxCompanion(
+                accountId: accountId,
+                messageId: messageId,
+                raw: raw,
+                recipients: recipients,
+                cc: cc,
+                bcc: bcc,
+                subject: subject,
+                body: body,
+                sendAfter: sendAfter,
+                attempts: attempts,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String messageId,
+                required String raw,
+                required String recipients,
+                required String cc,
+                required String bcc,
+                required String subject,
+                required String body,
+                required int sendAfter,
+                Value<int> attempts = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OutboxCompanion.insert(
+                accountId: accountId,
+                messageId: messageId,
+                raw: raw,
+                recipients: recipients,
+                cc: cc,
+                bcc: bcc,
+                subject: subject,
+                body: body,
+                sendAfter: sendAfter,
+                attempts: attempts,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$OutboxTable, OutboxRow>(table),
+                  BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OutboxTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $OutboxTable,
+      OutboxRow,
+      $$OutboxTableFilterComposer,
+      $$OutboxTableOrderingComposer,
+      $$OutboxTableAnnotationComposer,
+      $$OutboxTableCreateCompanionBuilder,
+      $$OutboxTableUpdateCompanionBuilder,
+      (OutboxRow, BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>),
+      OutboxRow,
+      PrefetchHooks Function()
+    >;
 
 class $PostinoDatabaseManager {
   final _$PostinoDatabase _db;
@@ -5892,4 +6809,6 @@ class $PostinoDatabaseManager {
       $$DeviceSettingsTableTableManager(_db, _db.deviceSettings);
   $$DraftsTableTableManager get drafts =>
       $$DraftsTableTableManager(_db, _db.drafts);
+  $$OutboxTableTableManager get outbox =>
+      $$OutboxTableTableManager(_db, _db.outbox);
 }

@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "messages": [
+      {
+        "id": "m-sent-1",
+        "threadId": "t1"
+      }
+    ],
+    "resultSizeEstimate": 1
+  }
+}

@@ -194,6 +194,95 @@ class MailStore implements InboxRepository {
         ],
       );
 
+  // --- Outbox (#36) ---
+  /// Queues [message] with its rendered MIME [raw]; it goes once [sendAfter] (ms since epoch, UTC) has passed.
+  Future<void> enqueueOutgoing(
+    String accountId,
+    OutgoingMessage message, {
+    required String raw,
+    required int sendAfter,
+  }) => _db.outboxDao.enqueue(
+    OutboxCompanion.insert(
+      accountId: accountId,
+      messageId: message.messageId,
+      raw: raw,
+      recipients: message.to.join('\n'),
+      cc: message.cc.join('\n'),
+      bcc: message.bcc.join('\n'),
+      subject: message.subject,
+      body: message.body,
+      sendAfter: sendAfter,
+    ),
+  );
+
+  /// Annulla invio: true when the row was still there (not sent yet).
+  Future<bool> cancelOutgoing(String accountId, String messageId) =>
+      _db.outboxDao.remove(accountId, messageId);
+
+  /// The outbox rows whose window ended by [nowMs].
+  Future<List<OutboxRow>> dueOutgoing(String accountId, int nowMs) =>
+      _db.outboxDao.due(accountId, nowMs);
+
+  Future<void> bumpSendAttempts(String accountId, String messageId) =>
+      _db.outboxDao.bumpAttempts(accountId, messageId);
+
+  /// The Provider has the message as [providerId]: the outbox row and the local Bozza go, and the message is
+  /// stored at once under Inviati, so the folder shows it before the next sync upserts the same id.
+  /// Its Conversazione is the message itself, until the sync says otherwise.
+  // ponytail: a full snapshot sync may drop it until the Provider lists it (a brief blink); fine for now.
+  Future<void> outgoingSent(
+    String accountId,
+    String messageId, {
+    required String providerId,
+    required int date,
+  }) => _db.transaction(() async {
+    final r = await _db.outboxDao.byId(accountId, messageId);
+    if (r == null) return;
+    await _db.outboxDao.remove(accountId, messageId);
+    await _db.draftsDao.remove(accountId, messageId);
+    await applyPage(accountId, [
+      Message(
+        id: providerId,
+        messageId: messageId,
+        conversationId: providerId,
+        labelIds: const [sentLabelId],
+        isRead: true,
+        isStarred: false,
+        from: await _address(accountId),
+        to: _lines(r.recipients),
+        cc: _lines(r.cc),
+        bcc: _lines(r.bcc),
+        subject: r.subject,
+        snippet: _snippet(r.body),
+        date: DateTime.fromMillisecondsSinceEpoch(date, isUtc: true),
+      ),
+    ], const {});
+  });
+
+  @override
+  Stream<List<OutgoingEntry>> watchOutbox(String accountId) =>
+      Stream.fromFuture(_address(accountId)).asyncExpand(
+        (from) => _db.outboxDao
+            .watch(accountId)
+            .map(
+              (rows) => [
+                for (final r in rows)
+                  OutgoingEntry(
+                    message: OutgoingMessage(
+                      messageId: r.messageId,
+                      from: from,
+                      to: _lines(r.recipients),
+                      cc: _lines(r.cc),
+                      bcc: _lines(r.bcc),
+                      subject: r.subject,
+                      body: r.body,
+                    ),
+                    sendAfter: r.sendAfter,
+                  ),
+              ],
+            ),
+      );
+
   /// The body as a list shows it: no tags, spaces compressed, at most 120 characters.
   static String _snippet(String html) {
     final text = htmlText(html).replaceAll(RegExp(r'\s+'), ' ').trim();

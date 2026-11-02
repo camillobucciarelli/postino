@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:enough_mail/enough_mail.dart' show MimeMessage;
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
@@ -65,7 +67,13 @@ class FakeMailProvider implements MailProvider {
 
   /// While set, [fetchConversation] and [setRead] answer only once it completes: in-flight requests.
   Completer<void>? holdConversation, holdRead;
-  final sent = <OutgoingMessage>[];
+
+  /// Every send that reached the Provider and was not already in Inviati: (Message-ID, Provider id).
+  final sent = <(String, String)>[];
+
+  /// While set, the next [send] stores the message as sent but answers offline, once: a lost response.
+  bool loseSendResponse = false;
+  int _sentSeq = 0;
 
   /// While set, [setRead] fails as offline even though the syncs work: a passing replay failure.
   bool failSetRead = false;
@@ -355,11 +363,53 @@ class FakeMailProvider implements MailProvider {
     return Ok(data);
   }
 
+  /// Idempotent on the Message-ID: a message already in Inviati is not stored twice.
   @override
-  Future<Result<void>> send(OutgoingMessage message) async => _guard(() {
-    // Idempotent on Message-ID.
-    if (sent.every((s) => s.messageId != message.messageId)) sent.add(message);
-  });
+  Future<Result<String>> send(String messageId, String raw) async {
+    final f = _failure;
+    if (f != null) return Err(f);
+    final existing = _messages.values
+        .where(
+          (m) => m.messageId == messageId && m.labelIds.contains(sentLabelId),
+        )
+        .firstOrNull;
+    if (existing != null) return Ok(existing.id);
+    final mime = MimeMessage.parseFromText(raw);
+    List<String> addresses(String h) => [
+      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? ''))
+        formatMailbox(m),
+    ];
+    final id = 's-${++_sentSeq}';
+    final from = parseMailbox(mime.getHeaderValue('from') ?? '');
+    bodies[id] = MessageBody(mime.decodeTextHtmlPart() ?? '', BodyKind.html);
+    deliver(
+      Message(
+        id: id,
+        messageId: messageId,
+        conversationId: id,
+        labelIds: const [sentLabelId],
+        isRead: true,
+        isStarred: false,
+        from: from.address,
+        fromName: from.name,
+        to: addresses('to'),
+        cc: addresses('cc'),
+        bcc: addresses('bcc'),
+        subject: mime.decodeSubject() ?? '',
+        snippet: mime.decodeTextPlainPart()?.trim() ?? '',
+        date: DateTime.utc(2026, 1, 1),
+      ),
+      signal: false,
+    );
+    sent.add((messageId, id));
+    // Gmail keeps the Bozza: the adapter deletes it after the send.
+    if (drafts.containsKey(messageId)) removeDraftRemotely(messageId);
+    if (loseSendResponse) {
+      loseSendResponse = false;
+      return const Err(OfflineFailure());
+    }
+    return Ok(id);
+  }
 
   @override
   Future<Result<void>> saveDraft(

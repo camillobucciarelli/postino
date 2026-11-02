@@ -58,6 +58,12 @@ final class DraftWithAttachmentsFailure extends Failure {
   const DraftWithAttachmentsFailure();
 }
 
+/// The message is bigger than the Provider accepts ([limitBytes], the whole RFC 5322 text).
+final class SizeLimitFailure extends Failure {
+  const SizeLimitFailure(this.limitBytes);
+  final int limitBytes;
+}
+
 /// The Provider asks to slow down.
 final class RateLimitFailure extends Failure {
   const RateLimitFailure({this.retryAfter});

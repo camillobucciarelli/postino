@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
@@ -385,17 +386,58 @@ void mailProviderAttachmentContract(
   });
 }
 
+/// Sending (#36): idempotent on the Message-ID, the sent message lands in Inviati, its Bozza goes.
+void mailProviderSendContract(String name, ContractHarness Function() create) {
+  group('MailProvider send contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
+    final d = _draft('<x@example.com>');
+    final raw = renderMime(d, DateTime.utc(2026, 1, 1));
+
+    test('the sent message arrives with label SENT at the next sync', () async {
+      final id = _ok(await h.provider.send(d.messageId, raw));
+      final m = _ok(await h.provider.initialSync()).messages.single;
+      expect((m.id, m.messageId), (id, d.messageId));
+      expect(m.labelIds, [sentLabelId]);
+      expect(m.to, ['b@example.com']);
+      expect(m.subject, 's');
+    });
+
+    test(
+      'sending the same Message-ID twice leaves one message in SENT',
+      () async {
+        final first = _ok(await h.provider.send(d.messageId, raw));
+        expect(_ok(await h.provider.send(d.messageId, raw)), first);
+        final sent = _ok(await h.provider.initialSync()).messages
+            .where((m) => m.labelIds.contains(sentLabelId));
+        expect(sent.map((m) => m.messageId), [d.messageId]);
+      },
+    );
+
+    test('the Bozza holding the Message-ID is gone after the send', () async {
+      _ok(await h.provider.saveDraft(d, isNew: true));
+      _ok(await h.provider.send(d.messageId, raw));
+      expect(
+        await h.provider.deleteDraft(d.messageId),
+        _err<NotFoundFailure>(),
+      );
+      final labels = _ok(await h.provider.initialSync()).messages
+          .map((m) => m.labelIds)
+          .expand((l) => l);
+      expect(labels, [sentLabelId]);
+    });
+
+    test('offline is an OfflineFailure', () async {
+      h.goOffline();
+      expect(await h.provider.send(d.messageId, raw), _err<OfflineFailure>());
+    });
+  });
+}
+
 void mailProviderContract(String name, ContractHarness Function() create) {
   mailProviderAuthContract(name, create);
   mailProviderSyncContract(name, create);
   mailProviderAttachmentContract(name, create);
   mailProviderDraftContract(name, create);
-  group('MailProvider contract: $name', () {
-    late ContractHarness h;
-    setUp(() => h = create());
-
-    test('send is accepted', () async {
-      _ok(await h.provider.send(_draft('<x@example.com>')));
-    });
-  });
+  mailProviderSendContract(name, create);
 }

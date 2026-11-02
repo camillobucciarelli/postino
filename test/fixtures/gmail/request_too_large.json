@@ -1,0 +1,10 @@
+{
+  "status": 413,
+  "body": {
+    "error": {
+      "code": 413,
+      "message": "Request Entity Too Large",
+      "status": "FAILED_PRECONDITION"
+    }
+  }
+}

@@ -1531,8 +1531,8 @@ abstract final class PostinoMotion {
   /// Ciclo del riflesso dello skeleton. Flutter: Duration(milliseconds: 1200).
   static const Duration skeleton = Duration(milliseconds: 1200);
 
-  /// Tempo in cui “Annulla” resta disponibile (invio, archivia, elimina). Flutter: SnackBar.duration.
-  static const Duration undoWindow = Duration(milliseconds: 8000);
+  /// Tempo in cui “Annulla” resta disponibile (invio, archivia, elimina): 10 s, mostrati in conto alla rovescia nella PostinoSnackbar. Flutter: SnackBar.duration.
+  static const Duration undoWindow = Duration(seconds: 10);
 
   /// Default per cambi di stato e dimensione. Flutter: Easing.standard.
   static const Curve standard = Easing.standard;

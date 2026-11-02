@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "body": {
+    "id": "m-sent-1",
+    "threadId": "t1",
+    "labelIds": ["SENT"]
+  }
+}

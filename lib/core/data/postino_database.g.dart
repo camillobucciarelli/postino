@@ -1153,7 +1153,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
   /// Bcc, as [cc]; only Bozze and sent messages have one (v10).
   final String bcc;
 
-  /// The `Reply-To` mailbox and the `References` Message-IDs, one per line; null in rows cached before v11 (#37).
+  /// The `Reply-To` mailbox and the `References` Message-IDs, one per line; null in rows cached before v12 (#37; #36 takes v11 with its outbox).
   final String? replyTo;
   final String? references;
   final String subject;
@@ -3561,7 +3561,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
   /// HTML.
   final String body;
 
-  /// A reply (#37, v11): In-Reply-To, the References one per line, the Provider's Conversazione id;
+  /// A reply (#37, v12: #36 takes v11 with its outbox): In-Reply-To, the References one per line, the Provider's Conversazione id;
   /// a forward: the attachments taken over, as JSON. Null for a plain new message.
   final String? inReplyTo;
   final String? references;

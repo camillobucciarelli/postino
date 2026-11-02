@@ -80,6 +80,7 @@
     "attachmentMore": "More actions",
     "attachmentSave": "Save…",
     "attachmentSaveFailed": "Save failed",
+    "attachmentExecutable": "Executable: Postino won't open it. Save it only if you trust the sender",
     "attachmentUntitled": "Untitled attachment",
     "reply": "Reply",
     "replyAll": "Reply all",

@@ -158,6 +158,7 @@ class AttachmentCache implements AttachmentRepository {
     try {
       final copy = dir.childFile(safeFileName(attachment.name));
       if (!cancelled()) await copy.writeAsBytes(plain, flush: true);
+      // On macOS the App Sandbox puts com.apple.quarantine (flag 0x0080) on every file the app writes, this copy and the Save As copy included: no xattr call here (a child process is denied). QA: xattr -p com.apple.quarantine on an opened copy (#75).
       if (!cancelled()) return Ok(copy.path);
       // Annulla wins even over a failed cleanup: in the queue, so an eviction never deletes the same file.
       try {
@@ -287,12 +288,17 @@ const maxFileNameBytes = 150;
 typedef _Keys = ({Uint8List enc, Uint8List mac});
 
 /// [name] as a file name on every desktop: no folders (a hostile `../../x` stays inside the temporary folder),
-/// none of the characters Windows refuses nor its trailing dots and spaces, no device name (`CON.txt`),
+/// none of the characters Windows refuses nor its trailing dots and spaces, no invisible or bidi character
+/// (`fattura\u202Efdp.exe` shows as «fatturaexe.pdf»: #75), no device name (`CON.txt`),
 /// at most [maxFileNameBytes] of UTF-8 (file systems cap a name at 255 bytes, not characters) keeping the
 /// extension and whole characters, never empty.
 String safeFileName(String name) {
   var s = name
-      .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '_')
+      .replaceAll(
+        RegExp(r'[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]'),
+        '',
+      )
+      .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f\x7f-\x9f]'), '_')
       .trim()
       .replaceAll(RegExp(r'[. ]+$'), '');
   if (utf8.encode(s).length > maxFileNameBytes) {

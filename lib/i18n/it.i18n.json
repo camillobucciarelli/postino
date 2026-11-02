@@ -80,6 +80,7 @@
     "attachmentMore": "Altre azioni",
     "attachmentSave": "Salva…",
     "attachmentSaveFailed": "Salvataggio non riuscito",
+    "attachmentExecutable": "Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente",
     "attachmentUntitled": "Allegato senza nome",
     "reply": "Rispondi",
     "replyAll": "Rispondi a tutti",

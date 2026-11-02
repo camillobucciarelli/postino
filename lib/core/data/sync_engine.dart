@@ -205,11 +205,14 @@ class SyncEngine implements MailSync {
   static const _escape = HtmlEscape(HtmlEscapeMode.element);
 
   /// A paragraph per blank-line block, `<br>` for the other line breaks.
-  static String _plainToHtml(String text) => [
-    for (final p in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
-      if (p.trim().isNotEmpty)
-        '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
-  ].join();
+  static String _plainToHtml(String text) => text.trim().isEmpty
+      ? '<p></p>'
+      : [
+          for (final p
+              in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
+            if (p.trim().isNotEmpty)
+              '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
+        ].join();
 
   /// Straight from the Provider, outside the Account's serial queue: a download never waits behind a sync.
   Future<Result<AttachmentBytes>> fetchAttachment(

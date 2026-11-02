@@ -137,11 +137,10 @@ void main() {
     });
 
     test(
-      'keeps a Bozza edited locally, and one the Provider never listed',
+      'keeps a Bozza edited locally, and one never acknowledged by the Provider',
       () async {
         await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
         await db.draftsDao.save('a', _draft('<y@example.com>'), updatedAt: 10);
-        await db.draftsDao.synced('a', '<y@example.com>', 10);
         await sync([
           msg('x', labelIds: const ['DRAFT']),
         ]);

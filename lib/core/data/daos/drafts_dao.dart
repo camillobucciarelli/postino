@@ -149,13 +149,17 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
 
   /// The content of [updatedAt] reached the Provider: the Bozza exists there from now on (the next save is an
   /// update, also when it was edited meanwhile), and is no longer pending unless edited meanwhile.
+  /// The ack proves the Provider has it, so it is remoteKnown too: if it is sent or deleted elsewhere before
+  /// a sync lists it, the next [reconcile] still drops it.
   Future<void> synced(String accountId, String messageId, int updatedAt) =>
       transaction(() async {
         Expression<bool> row(Drafts t) =>
             t.accountId.equals(accountId) & t.messageId.equals(messageId);
         await (update(
           drafts,
-        )..where(row)).write(const DraftsCompanion(synced: Value(true)));
+        )..where(row)).write(
+          const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)),
+        );
         await (update(drafts)
               ..where((t) => row(t) & t.updatedAt.equals(updatedAt)))
             .write(const DraftsCompanion(pending: Value(false)));

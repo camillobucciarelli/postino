@@ -152,6 +152,25 @@ void main() {
   );
 
   test(
+    'an acknowledged Bozza never listed by a sync, gone elsewhere, disappears after a sync',
+    () async {
+      await engine.saveDraft('a', _draft(id));
+      await engine.flushDrafts('a');
+      a.removeDraftRemotely(id);
+      await engine.syncAll();
+      expect(await row(), isNull);
+    },
+  );
+
+  test('an acknowledged Bozza that a sync lists is kept', () async {
+    await engine.saveDraft('a', _draft(id));
+    await engine.flushDrafts('a');
+    await engine.syncAll();
+    expect(await row(), isNotNull);
+    expect((await drafts()).map((m) => m.messageId), [id]);
+  });
+
+  test(
     'watchDrafts lists local Bozze and those of other clients, each once',
     () async {
       a.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));

@@ -148,6 +148,9 @@ class PostinoDatabase extends _$PostinoDatabase {
       if (from < 10) {
         await m.createTable(drafts);
         await m.addColumn(messages, messages.bcc);
+        // Cached Bozze got an empty Bcc, though on the Provider they may have one: with the cursors gone the
+        // next sync is a full one and brings it (openDraft reads the recipients from the cached message).
+        await customStatement('DELETE FROM sync_cursors');
       }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);

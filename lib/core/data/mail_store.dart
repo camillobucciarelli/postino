@@ -38,6 +38,8 @@ class MailStore implements InboxRepository {
       batch,
       fullSnapshot: fullSnapshot,
     );
+    // ponytail: only here, a page of Conversazione says nothing about the Bozze. A window remains if the Gmail
+    // history does not list the new DRAFT yet: the acknowledged row goes, and comes back with the next sync.
     await _db.draftsDao.reconcile(accountId);
   }
 
@@ -52,7 +54,6 @@ class MailStore implements InboxRepository {
       SyncBatch(cursor: '', messages: messages, bodies: bodies),
       saveCursor: false,
     );
-    await _db.draftsDao.reconcile(accountId);
   }
 
   @override

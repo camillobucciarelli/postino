@@ -127,7 +127,7 @@ void main() {
       const bq = {'blockquote': true};
       expect(_normal(htmlToDelta('<p>Prima</p>$html')), [
         {
-          'insert': 'Prima\nIl giorno lunedì 2 novembre 2026 alle 10:00, Ada <ada@example.com> ha scritto:\nVenerdì?',
+          'insert': 'Prima\nIl giorno lunedì 2 novembre 2026 alle 10:00 Ada <ada@example.com> ha scritto:\nVenerdì?',
         },
         {'insert': '\n', 'attributes': bq},
         {

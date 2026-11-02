@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/data/attachment_cache.dart' show safeFileName;
@@ -307,9 +308,10 @@ class _ConversationViewState extends State<ConversationView> {
         MessageBody(:final content) => plainToHtml(content),
         null => plainToHtml(message.snippet),
       };
-      final dateLabel = DateFormat.yMMMMEEEEd(
-        Localizations.localeOf(context).languageCode,
-      ).add_Hm().format(message.date.toLocal());
+      // La lingua del testo dell'app, non quella della piattaforma: la data deve concordare con la frase.
+      final lang = LocaleSettings.currentLocale.languageCode;
+      await initializeDateFormatting(lang);
+      final dateLabel = quoteDateLabel(message.date, lang);
       final id = newMessageId(a.address);
       final draft = switch (kind) {
         _Kind.forward => buildForward(

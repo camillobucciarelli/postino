@@ -75,7 +75,7 @@ String quoteHtml(
   required String dateLabel,
   required String bodyHtml,
 }) =>
-    '<div class="postino-quote"><p>Il giorno ${_esc(dateLabel)}, ${_who(original)} '
+    '<div class="postino-quote"><p>Il giorno ${_esc(dateLabel)} ${_who(original)} '
     'ha scritto:</p><blockquote>$bodyHtml</blockquote></div>';
 
 /// The original message under a forward, Gmail-style: the `---------- Messaggio inoltrato ----------`

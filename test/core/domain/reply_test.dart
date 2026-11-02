@@ -120,10 +120,10 @@ void main() {
       expect(
         quoteHtml(
           m,
-          dateLabel: '1 gen 2026, 10:00',
+          dateLabel: '1 gen 2026 alle ore 10:00',
           bodyHtml: '<p>Ciao <b>tu</b></p>',
         ),
-        '<div class="postino-quote"><p>Il giorno 1 gen 2026, 10:00, '
+        '<div class="postino-quote"><p>Il giorno 1 gen 2026 alle ore 10:00 '
         'Ada &amp; C. &lt;x&gt; &lt;ada@example.com&gt; ha scritto:</p>'
         '<blockquote><p>Ciao <b>tu</b></p></blockquote></div>',
       );
@@ -133,7 +133,7 @@ void main() {
       final m = msg('m', from: 'ada@example.com');
       expect(
         quoteHtml(m, dateLabel: 'd', bodyHtml: ''),
-        contains(', ada@example.com ha scritto:'),
+        contains(' ada@example.com ha scritto:'),
       );
     });
 

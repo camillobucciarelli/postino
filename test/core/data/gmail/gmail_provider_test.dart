@@ -526,7 +526,7 @@ void main() {
       expect((f1.from, f1.fromName), ('bruno@example.com', 'Bruno Verdi'));
       expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
       expect(f1.cc, [
-        'Rossi, Carla <carla.rossi@example.org>',
+        '"Rossi, Carla" <carla.rossi@example.org>',
         'Nicolò Neri <nicolo@example.com>',
       ], reason: 'a quoted name keeps its comma; an RFC 2047 one is decoded');
       expect(f1.labelIds, contains('IMPORTANT'));

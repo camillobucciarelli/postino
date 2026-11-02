@@ -103,7 +103,8 @@
     "insert": "Insert",
     "cancel": "Cancel",
     "editor": "Message body",
-    "draftNotFound": "Draft not found"
+    "draftNotFound": "Draft not found",
+    "draftWithAttachments": "This draft has attachments: edit it from the client that created it"
   },
   "bozze": {
     "title": "Drafts",

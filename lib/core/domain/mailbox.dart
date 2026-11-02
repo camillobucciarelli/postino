@@ -4,8 +4,15 @@ import 'dart:convert';
 typedef Mailbox = ({String? name, String address});
 
 /// `Ada Okafor <ada@example.com>`, or the bare address without a name: how To and Cc entries are kept.
-String formatMailbox(Mailbox m) =>
-    m.name == null ? m.address : '${m.name} <${m.address}>';
+/// A name with a character outside atext (`,;:<>@"()[]\`) is written as a quoted-string (RFC 5322).
+String formatMailbox(Mailbox m) {
+  final name = m.name;
+  if (name == null) return m.address;
+  final quoted = RegExp(r'[,;:<>@"()\[\]\\]').hasMatch(name)
+      ? '"${name.replaceAllMapped(RegExp(r'["\\]'), (c) => '\\${c[0]}')}"'
+      : name;
+  return '$quoted <${m.address}>';
+}
 
 /// One mailbox: `Name <address>`, `"Quoted, Name" <address>`, `<address>` or a bare address,
 /// with RFC 2047 encoded words decoded in the name.

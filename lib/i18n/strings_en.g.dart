@@ -218,6 +218,7 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get cancel => 'Cancel';
 	@override String get editor => 'Message body';
 	@override String get draftNotFound => 'Draft not found';
+	@override String get draftWithAttachments => 'This draft has attachments: edit it from the client that created it';
 }
 
 // Path: bozze
@@ -322,6 +323,7 @@ extension on TranslationsEn {
 			'composizione.cancel' => 'Cancel',
 			'composizione.editor' => 'Message body',
 			'composizione.draftNotFound' => 'Draft not found',
+			'composizione.draftWithAttachments' => 'This draft has attachments: edit it from the client that created it',
 			'bozze.title' => 'Drafts',
 			'bozze.emptyTitle' => 'No drafts',
 			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',

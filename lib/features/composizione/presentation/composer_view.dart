@@ -46,6 +46,7 @@ class _ComposerViewState extends State<ComposerView> {
   /// Null until the Bozza is opened; [_failed] when it could not be.
   QuillController? _controller;
   bool _failed = false;
+  bool _withAttachments = false;
   List<Account> _accounts = const [];
 
   /// The Account the Bozza leaves from: changeable until the first save.
@@ -79,6 +80,8 @@ class _ComposerViewState extends State<ComposerView> {
       // A new Bozza: its Message-ID is already ours.
       case Err(failure: NotFoundFailure()):
         break;
+      case Err(failure: DraftWithAttachmentsFailure()):
+        return setState(() => _failed = _withAttachments = true);
       // ponytail: any other failure (offline, body not downloadable) reads as «Bozza non trovata»; a Riprova if it bites.
       case Err():
         return setState(() => _failed = true);
@@ -161,7 +164,11 @@ class _ComposerViewState extends State<ComposerView> {
         ],
       ),
       body: _failed
-          ? PostinoEmptyState(title: t.draftNotFound)
+          ? PostinoEmptyState(
+              title: _withAttachments
+                  ? t.draftWithAttachments
+                  : t.draftNotFound,
+            )
           : controller == null || senders.every((s) => s.id != _from)
           ? const SizedBox.shrink()
           : PostinoComposerLayout(

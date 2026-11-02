@@ -184,6 +184,21 @@ void main() {
     expect(await engine.openDraft('a', '<nope>'), isA<Err>());
   });
 
+  test('openDraft of a Bozza of another client with attachments is refused: saving would drop them', () async {
+    a.deliverDraft(_draft('<y@example.com>'));
+    a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+    await engine.syncAll();
+    expect(
+      await engine.openDraft('a', '<y@example.com>'),
+      isA<Err<OutgoingMessage>>().having(
+        (r) => r.failure,
+        'failure',
+        isA<DraftWithAttachmentsFailure>(),
+      ),
+    );
+    expect(await row('<y@example.com>'), isNull);
+  });
+
   test('openDraft wraps a plain text Bozza in a paragraph', () async {
     a.deliverDraft(_draft('<y@example.com>', body: 'Ciao <mondo>'));
     a.bodies['d-1'] = const MessageBody('Ciao <mondo>', BodyKind.testo);

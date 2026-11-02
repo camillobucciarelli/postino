@@ -103,7 +103,8 @@
     "insert": "Inserisci",
     "cancel": "Annulla",
     "editor": "Corpo del messaggio",
-    "draftNotFound": "Bozza non trovata"
+    "draftNotFound": "Bozza non trovata",
+    "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata"
   },
   "bozze": {
     "title": "Bozze",

@@ -233,6 +233,52 @@ void main() {
     expect(_openId(), id);
   });
 
+  _onMac(
+    'a Bozza of another client with attachments is not opened: it says to edit it where it was made',
+    (tester) async {
+      await _start(tester);
+      const altrove = OutgoingMessage(
+        messageId: '<altrove@example.com>',
+        from: 'a1@example.com',
+        to: ['ada@example.com'],
+        subject: 'Con allegato',
+        body: '<p>Ciao</p>',
+      );
+      gmail.drafts[altrove.messageId] = altrove;
+      gmail.bodies['d-1'] = MessageBody(altrove.body, BodyKind.html);
+      gmail.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+      gmail.deliver(
+        Message(
+          id: 'd-1',
+          messageId: altrove.messageId,
+          conversationId: 't-altrove',
+          labelIds: const ['DRAFT'],
+          isRead: true,
+          isStarred: false,
+          from: altrove.from,
+          to: altrove.to,
+          subject: altrove.subject,
+          snippet: 'Ciao',
+          date: DateTime.utc(2026, 1, 1),
+        ),
+      );
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+      await _settle(tester);
+      await tester.tap(find.text('Con allegato'));
+      await _settle(tester);
+
+      expect(
+        find.text(
+          'Questa Bozza ha allegati: modificala dal client che l\'ha creata',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(QuillEditor), findsNothing);
+      expect(gmail.draftCalls, isEmpty);
+    },
+  );
+
   _onMac('a Bozza of another client is in the Bozze list; opened, its fields and formats are there, '
       'and an edit updates it with the same Message-ID', (tester) async {
     await _start(tester);

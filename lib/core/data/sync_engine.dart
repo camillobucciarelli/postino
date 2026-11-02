@@ -186,6 +186,11 @@ class SyncEngine implements MailSync {
           return local != null ? Ok(local.draft) : Err(failure);
       }
     }
+    // The save replaces the whole message and the adapters only write text.
+    // ponytail: refused; keep the attachments in the adapters if people ask.
+    if (body.attachments?.isNotEmpty ?? false) {
+      return const Err(DraftWithAttachmentsFailure());
+    }
     final draft = OutgoingMessage(
       messageId: messageId,
       from: account.address,

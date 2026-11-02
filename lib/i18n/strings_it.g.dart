@@ -386,6 +386,9 @@ class Translations$composizione$it {
 
 	/// it: 'Bozza non trovata'
 	String get draftNotFound => 'Bozza non trovata';
+
+	/// it: 'Questa Bozza ha allegati: modificala dal client che l'ha creata'
+	String get draftWithAttachments => 'Questa Bozza ha allegati: modificala dal client che l\'ha creata';
 }
 
 // Path: bozze
@@ -496,6 +499,7 @@ extension on Translations {
 			'composizione.cancel' => 'Annulla',
 			'composizione.editor' => 'Corpo del messaggio',
 			'composizione.draftNotFound' => 'Bozza non trovata',
+			'composizione.draftWithAttachments' => 'Questa Bozza ha allegati: modificala dal client che l\'ha creata',
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',

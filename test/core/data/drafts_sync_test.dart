@@ -91,6 +91,7 @@ void main() {
       expect(a.draftCalls, isEmpty);
       expect((await row())!.pending, isTrue);
 
+      h.clock.advance(draftDebounce);
       a.goOnline();
       h.connectivity.online = true;
       await pumpEventQueue();
@@ -128,6 +129,7 @@ void main() {
       expect(a.draftCalls, isEmpty);
 
       // What AccountsService.connectGmail does once the user consents again.
+      h.clock.advance(draftDebounce);
       a.restoreAuth();
       await store.setStatus('a', AccountStatus.attivo);
       await engine.syncAll();
@@ -182,6 +184,43 @@ void main() {
     final r = (await row('<y@example.com>'))!;
     expect((r.pending, r.synced, r.remoteKnown), (false, true, true));
     expect(await engine.openDraft('a', '<nope>'), isA<Err>());
+  });
+
+  test('a Bozza written or deleted by another client shows up on the poll, with the change signal up', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));
+    h.clock.advance(pollEvery);
+    await pumpEventQueue();
+    expect((await drafts()).map((m) => m.messageId), ['<y@example.com>']);
+    a.removeDraftRemotely('<y@example.com>');
+    h.clock.advance(pollEvery);
+    await pumpEventQueue();
+    expect(await drafts(), isEmpty);
+  });
+
+  test('a background replay leaves a Bozza edited within the pause to its timer; the flush sends it', () async {
+    await engine.saveDraft('a', _draft(id));
+    await engine.syncAll();
+    expect(a.draftCalls, isEmpty);
+    h.clock.advance(draftDebounce);
+    await pumpEventQueue();
+    expect(a.draftCalls, [(id, true)]);
+  });
+
+  test('openDraft of a plain-text Bozza keeps its line breaks and paragraphs, escaped', () async {
+    a.deliverDraft(_draft('<y@example.com>'));
+    a.bodies['d-1'] = MessageBody(
+      'Prima\nSeconda\n\nTerza <b> & co',
+      BodyKind.testo,
+    );
+    await engine.syncAll();
+    final opened = await engine.openDraft('a', '<y@example.com>');
+    expect(
+      (opened as Ok<OutgoingMessage>).value.body,
+      '<p>Prima<br>Seconda</p><p>Terza &lt;b&gt; &amp; co</p>',
+    );
   });
 
   test('openDraft of a Bozza of another client with attachments is refused: saving would drop them', () async {

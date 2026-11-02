@@ -21,11 +21,15 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
   DraftsDao(super.attachedDatabase);
 
   /// Writes the content and marks the Bozza pending; the synced and remoteKnown marks stay.
+  /// [updatedAt] is also the version the ack matches, so it is bumped past the previous save's when the clock has not moved.
+  // ponytail: a version in the timestamp, no revision column; a clock set back keeps counting up from the last save.
   Future<void> save(
     String accountId,
     OutgoingMessage draft, {
     required int updatedAt,
-  }) {
+  }) => transaction(() async {
+    final prev = (await byId(accountId, draft.messageId))?.updatedAt;
+    if (prev != null && updatedAt <= prev) updatedAt = prev + 1;
     final content = DraftsCompanion(
       recipients: Value(draft.to.join('\n')),
       cc: Value(draft.cc.join('\n')),
@@ -35,7 +39,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       updatedAt: Value(updatedAt),
       pending: const Value(true),
     );
-    return into(drafts).insert(
+    await into(drafts).insert(
       DraftsCompanion.insert(
         accountId: accountId,
         messageId: draft.messageId,
@@ -51,7 +55,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       ),
       onConflict: DoUpdate((_) => content),
     );
-  }
+  });
 
   /// A Bozza taken over from the Provider (another client's, or a newer version of one here with nothing
   /// pending): already synced, nothing pending; it replaces the local row.

@@ -69,6 +69,22 @@ void main() {
     },
   );
 
+  test('two edits in the same millisecond get distinct versions, so an ack never covers the newer one', () async {
+    await db.draftsDao.save('a', _draft('<x>'), updatedAt: 10);
+    final first = (await db.draftsDao.byId('a', '<x>'))!.updatedAt;
+    await db.draftsDao.save(
+      'a',
+      _draft('<x>', body: '<p>2</p>'),
+      updatedAt: 10,
+    );
+    expect(
+      (await db.draftsDao.byId('a', '<x>'))!.updatedAt,
+      greaterThan(first),
+    );
+    await db.draftsDao.synced('a', '<x>', first);
+    expect((await db.draftsDao.byId('a', '<x>'))!.pending, isTrue);
+  });
+
   test(
     'watch lists the Account Bozze newest first; remove drops one',
     () async {

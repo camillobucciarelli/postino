@@ -855,6 +855,12 @@ void main() {
         _ => 'not_found',
       };
 
+      /// As [route], but no draft holds the Message-ID yet.
+      String routeEmpty(http.Request r, String path) =>
+          r.method == 'GET' && path == 'drafts'
+          ? 'drafts_empty'
+          : route(r, path);
+
       String raw(http.Request r) => utf8.decode(
         base64Url.decode(
           base64Url.normalize(
@@ -863,11 +869,12 @@ void main() {
         ),
       );
 
-      test('a new Bozza is one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
-        final g = _Recorded(route);
+      test('a new Bozza is searched by Message-ID, then one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
+        final g = _Recorded(routeEmpty);
         _ok(await g.provider.saveDraft(draft, isNew: true));
 
-        final r = g.requests.single;
+        expect(g.requests.first.method, 'GET');
+        final r = g.requests.last;
         expect([r.method, r.url.path], ['POST', '${_api}drafts']);
         expect((jsonDecode(r.body) as Map).keys, ['message']);
         final mime = raw(r);
@@ -890,13 +897,17 @@ void main() {
       });
 
       test('updating after the create reuses the remembered id: one PUT, no search', () async {
-        final g = _Recorded(route);
+        final g = _Recorded(routeEmpty);
         _ok(await g.provider.saveDraft(draft, isNew: true));
         _ok(await g.provider.saveDraft(draft, isNew: false));
 
         expect(
           [for (final r in g.requests) '${r.method} ${r.url.path}'],
-          ['POST ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
+          [
+            'GET ${_api}drafts',
+            'POST ${_api}drafts',
+            'PUT ${_api}drafts/$draftId',
+          ],
         );
         final put = jsonDecode(g.requests.last.body) as Map;
         expect(put['id'], draftId);
@@ -964,26 +975,12 @@ void main() {
         );
       });
 
-      test('a create whose reply was lost is looked up on the retry, not created twice', () async {
-        var posts = 0;
-        final g = _Recorded((r, path) {
-          if (r.method == 'POST' && posts++ == 0) {
-            throw http.ClientException('Connection reset');
-          }
-          return route(r, path);
-        });
-        expect(
-          await g.provider.saveDraft(draft, isNew: true),
-          _err<OfflineFailure>(),
-        );
+      test('a creation after a restart finds the Bozza the lost reply left, and updates it', () async {
+        final g = _Recorded(route);
         _ok(await g.provider.saveDraft(draft, isNew: true));
         expect(
           [for (final r in g.requests) '${r.method} ${r.url.path}'],
-          [
-            'POST ${_api}drafts',
-            'GET ${_api}drafts',
-            'PUT ${_api}drafts/$draftId',
-          ],
+          ['GET ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
         );
       });
 

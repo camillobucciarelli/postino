@@ -252,7 +252,8 @@ class GmailProvider implements MailProvider {
   Future<Result<void>> send(OutgoingMessage message) async => _todo;
 
   /// Gmail draft ids by Message-ID.
-  // ponytail: cache in memory, after a restart the draft is searched again.
+  // ponytail: cache in memory, after a restart the draft is searched again; so a creation always searches
+  // first (one GET more), which keeps it idempotent when a reply was lost (the queue's intent is «this Bozza exists», ADR 0008).
   final _draftIds = <String, String>{};
 
   @override
@@ -262,20 +263,10 @@ class GmailProvider implements MailProvider {
   }) => _guard(() async {
     final message = {'raw': base64Url.encode(utf8.encode(_mime(draft)))};
     Future<void> create() async {
-      try {
-        final r = await _request('POST', 'drafts', body: {'message': message});
-        _draftIds[draft.messageId] = r['id'] as String;
-        _maybeCreated.remove(draft.messageId);
-      } catch (_) {
-        _maybeCreated.add(draft.messageId);
-        rethrow;
-      }
+      final r = await _request('POST', 'drafts', body: {'message': message});
+      _draftIds[draft.messageId] = r['id'] as String;
     }
 
-    if (isNew && !_maybeCreated.contains(draft.messageId)) {
-      await create();
-      return const Ok(null);
-    }
     final String id;
     try {
       id = await _draftId(draft.messageId);
@@ -287,11 +278,6 @@ class GmailProvider implements MailProvider {
     await _request('PUT', 'drafts/$id', body: {'id': id, 'message': message});
     return const Ok(null);
   });
-
-  /// Message-IDs whose create failed: Gmail may have made the draft and lost the reply, so the retry
-  /// looks it up before creating another one (the queue's intent is «this Bozza exists», ADR 0008).
-  // ponytail: in memory, as [_draftIds]; after a restart a lost reply can still leave a duplicate.
-  final _maybeCreated = <String>{};
 
   @override
   Future<Result<void>> deleteDraft(String messageId) => _guard(() async {

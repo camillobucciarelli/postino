@@ -131,19 +131,20 @@ class FakeMailProvider implements MailProvider {
       MessageBody('Corpo di $id', kind);
 
   /// A new message, or a change to one (read, Stella, Etichette) made elsewhere.
-  void deliver(Message m) {
+  /// The change signal watches the inbox only ([signal] false: a Bozza change raises none, as on Gmail).
+  void deliver(Message m, {bool signal = true}) {
     _messages[m.id] = m;
     _log.add((++_version, m, ''));
-    if (_signalUp) _changes.add(ChangeSignal.changed);
+    if (signal && _signalUp) _changes.add(ChangeSignal.changed);
   }
 
   /// A message older than the sync window: the syncs never bring it.
   void deliverOutsideWindow(Message m) => _old[m.id] = m;
 
-  void removeRemotely(String id) {
+  void removeRemotely(String id, {bool signal = true}) {
     _messages.remove(id);
     _log.add((++_version, null, id));
-    if (_signalUp) _changes.add(ChangeSignal.changed);
+    if (signal && _signalUp) _changes.add(ChangeSignal.changed);
   }
 
   /// A Bozza written by another client: in the Bozze folder, with its HTML body; its Provider id is `d-<n>`.
@@ -167,13 +168,15 @@ class FakeMailProvider implements MailProvider {
         snippet: d.body,
         date: date ?? DateTime.utc(2026, 1, 1),
       ),
+      signal: false,
     );
   }
 
   /// A Bozza deleted (or sent) by another client.
   void removeDraftRemotely(String messageId) {
     drafts.remove(messageId);
-    if (_draftIds.remove(messageId) case final id?) removeRemotely(id);
+    if (_draftIds.remove(messageId) case final id?)
+      removeRemotely(id, signal: false);
   }
 
   final _draftIds = <String, String>{};

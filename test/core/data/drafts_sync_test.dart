@@ -379,4 +379,25 @@ void main() {
     expect(opened.value.body, '<p>Risposta</p>');
     expect(opened.value.inReplyTo, '<m-1@example.com>');
   });
+
+  test('a forward with attachments created here stays openable after the Provider returns it', () async {
+    const fwd = OutgoingMessage(
+      messageId: id,
+      from: 'a@example.com',
+      to: ['b@example.com'],
+      subject: 'Fwd: s',
+      body: '<p>Inoltro</p>',
+      attachments: [
+        ForwardedAttachment('m-1', Attachment(id: '1', name: 'c.pdf', size: 3)),
+      ],
+    );
+    await engine.saveDraft('a', fwd);
+    h.clock.advance(draftDebounce);
+    await pumpEventQueue();
+    a.deliverDraft(fwd, date: h.clock.now().add(const Duration(seconds: 30)));
+    a.attach('d-1', 'c.pdf', [1, 2, 3]);
+    await engine.syncAll();
+    final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
+    expect(opened.value.attachments, hasLength(1));
+  });
 }

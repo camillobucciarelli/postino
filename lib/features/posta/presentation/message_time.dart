@@ -22,15 +22,11 @@ String messageTime(
   return DateFormat.yMMMd(locale).format(d);
 }
 
-/// La data di una citazione o di un inoltro, nella lingua del testo che la circonda: come Gmail,
-/// `lun 2 nov 2026 alle ore 16:19` in italiano, `Mon, Nov 2, 2026 4:19 PM` altrimenti.
-/// I simboli di [lang] vanno caricati prima (`initializeDateFormatting`): il locale della piattaforma
-/// può essere un altro.
-String quoteDateLabel(DateTime date, String lang) {
+/// La data di una citazione o di un inoltro, come Gmail in italiano: `lun 2 nov 2026 alle ore 16:19`.
+/// Sempre in italiano, come la frase che la circonda (non dipende dalla lingua dell'app né dalla piattaforma):
+/// i simboli `it` vanno caricati prima (`initializeDateFormatting('it')`).
+String quoteDateLabel(DateTime date) {
   final d = date.toLocal();
-  if (lang == 'it') {
-    return '${DateFormat('EEE d MMM yyyy', lang).format(d)} alle ore '
-        '${DateFormat.Hm(lang).format(d)}';
-  }
-  return DateFormat('EEE, MMM d, yyyy', lang).add_jm().format(d);
+  return '${DateFormat('EEE d MMM yyyy', 'it').format(d)} alle ore '
+      '${DateFormat.Hm('it').format(d)}';
 }

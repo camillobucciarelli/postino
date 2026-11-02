@@ -22,13 +22,10 @@ void main() {
     expect(time(DateTime(2025, 3, 12, 8)), '12 mar 2025');
   });
 
-  test('quote date label agrees with the language of the sentence', () {
-    final d = DateTime(2026, 11, 2, 16, 19);
-    expect(quoteDateLabel(d, 'it'), 'lun 2 nov 2026 alle ore 16:19');
-    // intl puts a narrow no-break space before PM, depending on its version.
+  test('quote date label is Italian like the sentence around it', () {
     expect(
-      quoteDateLabel(d, 'en').replaceAll('\u202F', ' '),
-      'Mon, Nov 2, 2026 4:19 PM',
+      quoteDateLabel(DateTime(2026, 11, 2, 16, 19)),
+      'lun 2 nov 2026 alle ore 16:19',
     );
   });
 }

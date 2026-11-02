@@ -308,10 +308,9 @@ class _ConversationViewState extends State<ConversationView> {
         MessageBody(:final content) => plainToHtml(content),
         null => plainToHtml(message.snippet),
       };
-      // La lingua del testo dell'app, non quella della piattaforma: la data deve concordare con la frase.
-      final lang = LocaleSettings.currentLocale.languageCode;
-      await initializeDateFormatting(lang);
-      final dateLabel = quoteDateLabel(message.date, lang);
+      // La frase della citazione è sempre in italiano: la data deve concordare.
+      await initializeDateFormatting('it');
+      final dateLabel = quoteDateLabel(message.date);
       final id = newMessageId(a.address);
       final draft = switch (kind) {
         _Kind.forward => buildForward(

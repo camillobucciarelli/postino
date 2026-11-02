@@ -18,23 +18,17 @@ import 'sync_engine.dart';
 /// Where attachments live: [cache] holds them encrypted, [temp] their decrypted copies for other apps.
 /// [cap] bounds the cache in bytes (500 MB; smaller only in tests).
 class AttachmentStorage {
-  AttachmentStorage._(this.cache, this.temp, this.cap, this.quarantine);
+  AttachmentStorage._(this.cache, this.temp, this.cap);
 
   final Directory cache;
   final Directory temp;
   final int cap;
-
-  /// Marks a decrypted copy as downloaded from the internet (macOS quarantine, #75); a no-op elsewhere.
-  final Future<void> Function(String path) quarantine;
-
-  static Future<void> _none(String _) async {}
 
   /// Empties [temp]: the decrypted copies of the previous launch go, with any half-written cache file.
   static Future<AttachmentStorage> open(
     Directory cache,
     Directory temp, {
     int cap = 500 * 1024 * 1024,
-    Future<void> Function(String path) quarantine = _none,
   }) async {
     if (await temp.exists()) await temp.delete(recursive: true);
     await temp.create(recursive: true);
@@ -42,7 +36,7 @@ class AttachmentStorage {
     await for (final e in cache.list()) {
       if (e.basename.endsWith('.part')) await e.delete();
     }
-    return AttachmentStorage._(cache, temp, cap, quarantine);
+    return AttachmentStorage._(cache, temp, cap);
   }
 }
 
@@ -164,7 +158,7 @@ class AttachmentCache implements AttachmentRepository {
     try {
       final copy = dir.childFile(safeFileName(attachment.name));
       if (!cancelled()) await copy.writeAsBytes(plain, flush: true);
-      if (!cancelled()) await _storage.quarantine(copy.path);
+      // On macOS the App Sandbox puts com.apple.quarantine (flag 0x0080) on every file the app writes, this copy and the Save As copy included: no xattr call here (a child process is denied). QA: xattr -p com.apple.quarantine on an opened copy (#75).
       if (!cancelled()) return Ok(copy.path);
       // Annulla wins even over a failed cleanup: in the queue, so an eviction never deletes the same file.
       try {

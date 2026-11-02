@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Process;
 
 import 'package:connectivity_plus/connectivity_plus.dart' as plus;
 import 'package:file/local.dart';
@@ -115,17 +114,6 @@ class SystemLinkOpener implements LinkOpener {
 /// The system Save As dialog (file_selector), on desktop only.
 @Singleton(as: FileSaver, env: [Environment.prod])
 class SystemFileSaver implements FileSaver {
-  SystemFileSaver() : _pick = _saveLocation;
-
-  /// [pick] stands for the Save As dialog: the chosen path, or null when dismissed.
-  @visibleForTesting
-  SystemFileSaver.test({required this._pick});
-
-  final Future<String?> Function(String suggestedName) _pick;
-
-  static Future<String?> _saveLocation(String name) async =>
-      (await getSaveLocation(suggestedName: name))?.path;
-
   @override
   bool get available =>
       !kIsWeb &&
@@ -138,35 +126,9 @@ class SystemFileSaver implements FileSaver {
 
   @override
   Future<void> save(String path, String name) async {
-    final to = await _pick(name);
-    if (to == null) return;
-    await const LocalFileSystem().file(path).copy(to);
-    // File.copy does not promise the extended attributes come along.
-    await quarantine(to);
+    final to = await getSaveLocation(suggestedName: name);
+    if (to != null) await const LocalFileSystem().file(path).copy(to.path);
   }
-}
-
-/// Marks [path] as downloaded from the internet, so macOS' Gatekeeper checks it before it runs (#75):
-/// the `com.apple.quarantine` attribute browsers and Mail set. A no-op elsewhere; errors are swallowed.
-/// [platform] stands for [defaultTargetPlatform].
-// ponytail: xattr via /usr/bin/xattr (a native binary since macOS 12.3; the sandbox lets a child process
-// write the app's own files); setxattr via dart:ffi if the spawn ever fails.
-Future<void> quarantine(String path, {TargetPlatform? platform}) async {
-  if (kIsWeb || (platform ?? defaultTargetPlatform) != TargetPlatform.macOS) {
-    return;
-  }
-  final seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  try {
-    final r = await Process.run('/usr/bin/xattr', [
-      '-w',
-      'com.apple.quarantine',
-      '0081;${seconds.toRadixString(16)};Postino;',
-      path,
-    ]);
-    if (r.exitCode != 0) {
-      debugPrint('quarantine failed (${r.exitCode}): ${r.stderr}');
-    }
-  } catch (_) {}
 }
 
 @module
@@ -183,7 +145,6 @@ abstract class AttachmentModule {
       fs.directory(
         '${(await getTemporaryDirectory()).path}/postino-attachments',
       ),
-      quarantine: quarantine,
     );
   }
 }

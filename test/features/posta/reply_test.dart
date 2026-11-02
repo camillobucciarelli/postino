@@ -71,7 +71,8 @@ void _thread(FakeMailProvider p) => p
     '<p>Alle 20</p><p>Porto il vino</p>',
     BodyKind.html,
   )
-  ..attach('m3', 'Contratto.pdf', List.filled(1024, 7));
+  ..attach('m3', 'Contratto.pdf', List.filled(1024, 7))
+  ..attach('m3', 'fattura\u202Efdp.exe', List.filled(10, 5));
 
 Future<void> _start(WidgetTester tester) async {
   tester.view
@@ -213,8 +214,11 @@ void main() {
       expect(d.subject, 'Fwd: Cena');
       expect(d.inReplyTo, isNull);
       expect(d.conversationId, isNull);
-      expect(d.attachments.map((a) => a.attachment.name), ['Contratto.pdf']);
-      expect(d.attachments.single.sourceMessageId, 'm3');
+      expect(d.attachments.map((a) => a.attachment.name), [
+        'Contratto.pdf',
+        'fattura\u202Efdp.exe',
+      ]);
+      expect(d.attachments.first.sourceMessageId, 'm3');
       expect(d.body, contains('Messaggio inoltrato'));
       expect(find.text('Allegati'), findsOneWidget);
       expect(
@@ -224,6 +228,15 @@ void main() {
       expect(find.text('Contratto.pdf'), findsOneWidget);
     },
   );
+
+  _onMac('Inoltra: the chip of an attachment name drops bidi controls', (
+    tester,
+  ) async {
+    await _start(tester);
+    await _tap(tester, find.byKey(const ValueKey('forward')));
+    expect(find.textContaining('\u202E'), findsNothing);
+    expect(find.text('fatturafdp.exe'), findsOneWidget);
+  });
 
   _onMac(
     'the menu of an older message replies to that one, its body fetched first',
@@ -356,8 +369,9 @@ void main() {
     expect(gmail.draftCalls, [(fwd, true)]);
     expect(gmail.drafts[fwd]!.attachments.map((a) => a.attachment.name), [
       'Contratto.pdf',
+      'fattura\u202Efdp.exe',
     ]);
-    expect((await _draft(fwd)).attachments, hasLength(1));
+    expect((await _draft(fwd)).attachments, hasLength(2));
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await _settle(tester);

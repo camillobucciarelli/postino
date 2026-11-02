@@ -137,10 +137,12 @@ class SyncEngine implements MailSync {
       draft,
       updatedAt: _clock.now().millisecondsSinceEpoch,
     );
-    await _draftTimers.remove(accountId)?.cancel();
+    // Swapped with no await in between: two saves in a row must not both keep a timer.
+    final old = _draftTimers.remove(accountId);
     _draftTimers[accountId] = _clock
         .every(draftDebounce)
         .listen((_) => unawaited(flushDrafts(accountId)));
+    await old?.cancel();
   }
 
   @override
@@ -161,10 +163,17 @@ class SyncEngine implements MailSync {
   ) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
-    if (await _store.localDraft(accountId, messageId) case final d?) {
-      return Ok(d);
-    }
+    final local = await _store.localDraft(accountId, messageId);
     final remote = await _store.remoteDraft(accountId, messageId);
+    // The local copy, unless the Provider has a newer one and nothing here is waiting to go:
+    // then it was edited elsewhere since, and the Provider's version is taken over.
+    // ponytail: by the device clock against the Provider's date; a clock far ahead keeps the local copy.
+    if (local != null &&
+        (local.pending ||
+            remote == null ||
+            remote.message.date.millisecondsSinceEpoch <= local.updatedAt)) {
+      return Ok(local.draft);
+    }
     if (remote == null) return const Err(NotFoundFailure());
     var body = remote.body;
     if (body == null) {
@@ -173,7 +182,8 @@ class SyncEngine implements MailSync {
           body = value;
           await _store.saveBody(accountId, remote.message.id, value);
         case Err(:final failure):
-          return Err(failure);
+          // Offline: what we have.
+          return local != null ? Ok(local.draft) : Err(failure);
       }
     }
     final draft = OutgoingMessage(
@@ -181,6 +191,7 @@ class SyncEngine implements MailSync {
       from: account.address,
       to: remote.message.to,
       cc: remote.message.cc,
+      bcc: remote.message.bcc,
       subject: remote.message.subject,
       body: switch (body.kind) {
         BodyKind.html => body.content,

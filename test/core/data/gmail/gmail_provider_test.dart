@@ -89,6 +89,7 @@ class GmailHarness implements ContractHarness {
         from: d.from,
         to: d.to,
         cc: d.cc,
+        bcc: d.bcc,
         subject: d.subject,
         snippet: '',
         date: _now,
@@ -132,6 +133,7 @@ class GmailHarness implements ContractHarness {
           from: parseMailbox(mime.getHeaderValue('from')!).address,
           to: addresses('to'),
           cc: addresses('cc'),
+          bcc: addresses('bcc'),
           subject: mime.decodeSubject() ?? '',
           body: mime.decodeTextHtmlPart() ?? '',
         ),
@@ -312,6 +314,7 @@ class GmailHarness implements ContractHarness {
         },
         {'name': 'To', 'value': m.to.join(', ')},
         if (m.cc.isNotEmpty) {'name': 'Cc', 'value': m.cc.join(', ')},
+        if (m.bcc.isNotEmpty) {'name': 'Bcc', 'value': m.bcc.join(', ')},
         {'name': 'Subject', 'value': m.subject},
         {'name': 'Message-Id', 'value': m.messageId},
       ],
@@ -786,6 +789,7 @@ void main() {
         'From',
         'To',
         'Cc',
+        'Bcc',
         'Subject',
         'Message-ID',
       ]);
@@ -959,6 +963,48 @@ void main() {
           _err<NotFoundFailure>(),
         );
       });
+
+      test('a create whose reply was lost is looked up on the retry, not created twice', () async {
+        var posts = 0;
+        final g = _Recorded((r, path) {
+          if (r.method == 'POST' && posts++ == 0) {
+            throw http.ClientException('Connection reset');
+          }
+          return route(r, path);
+        });
+        expect(
+          await g.provider.saveDraft(draft, isNew: true),
+          _err<OfflineFailure>(),
+        );
+        _ok(await g.provider.saveDraft(draft, isNew: true));
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'POST ${_api}drafts',
+            'GET ${_api}drafts',
+            'PUT ${_api}drafts/$draftId',
+          ],
+        );
+      });
+
+      test(
+        'a draft without a Message-ID is never searched: NotFound',
+        () async {
+          final g = _Recorded(route);
+          final d = OutgoingMessage(
+            messageId: '',
+            from: 'ada@gmail.com',
+            to: const ['bruno@example.com'],
+            subject: 's',
+            body: '<p>x</p>',
+          );
+          expect(
+            await g.provider.saveDraft(d, isNew: false),
+            _err<NotFoundFailure>(),
+          );
+          expect(g.requests, isEmpty);
+        },
+      );
 
       test('offline is an OfflineFailure', () async {
         final h = GmailHarness()..goOffline();

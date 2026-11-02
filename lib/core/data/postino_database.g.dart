@@ -819,6 +819,16 @@ class $MessagesTable extends Messages
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _bccMeta = const VerificationMeta('bcc');
+  @override
+  late final GeneratedColumn<String> bcc = GeneratedColumn<String>(
+    'bcc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _subjectMeta = const VerificationMeta(
     'subject',
   );
@@ -886,6 +896,7 @@ class $MessagesTable extends Messages
     senderName,
     recipients,
     cc,
+    bcc,
     subject,
     snippet,
     date,
@@ -960,6 +971,12 @@ class $MessagesTable extends Messages
     }
     if (data.containsKey('cc')) {
       context.handle(_ccMeta, cc.isAcceptableOrUnknown(data['cc']!, _ccMeta));
+    }
+    if (data.containsKey('bcc')) {
+      context.handle(
+        _bccMeta,
+        bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
+      );
     }
     if (data.containsKey('subject')) {
       context.handle(
@@ -1042,6 +1059,10 @@ class $MessagesTable extends Messages
         DriftSqlType.string,
         data['${effectivePrefix}cc'],
       )!,
+      bcc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bcc'],
+      )!,
       subject: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}subject'],
@@ -1084,6 +1105,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
   /// To and Cc, one `Name <address>` or bare address per line (v7: they were comma separated).
   final String recipients;
   final String cc;
+
+  /// Bcc, as [cc]; only Bozze and sent messages have one (v10).
+  final String bcc;
   final String subject;
   final String snippet;
 
@@ -1100,6 +1124,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     this.senderName,
     required this.recipients,
     required this.cc,
+    required this.bcc,
     required this.subject,
     required this.snippet,
     required this.date,
@@ -1119,6 +1144,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     }
     map['recipients'] = Variable<String>(recipients);
     map['cc'] = Variable<String>(cc);
+    map['bcc'] = Variable<String>(bcc);
     map['subject'] = Variable<String>(subject);
     map['snippet'] = Variable<String>(snippet);
     map['date'] = Variable<int>(date);
@@ -1139,6 +1165,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           : Value(senderName),
       recipients: Value(recipients),
       cc: Value(cc),
+      bcc: Value(bcc),
       subject: Value(subject),
       snippet: Value(snippet),
       date: Value(date),
@@ -1161,6 +1188,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       senderName: serializer.fromJson<String?>(json['senderName']),
       recipients: serializer.fromJson<String>(json['recipients']),
       cc: serializer.fromJson<String>(json['cc']),
+      bcc: serializer.fromJson<String>(json['bcc']),
       subject: serializer.fromJson<String>(json['subject']),
       snippet: serializer.fromJson<String>(json['snippet']),
       date: serializer.fromJson<int>(json['date']),
@@ -1180,6 +1208,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       'senderName': serializer.toJson<String?>(senderName),
       'recipients': serializer.toJson<String>(recipients),
       'cc': serializer.toJson<String>(cc),
+      'bcc': serializer.toJson<String>(bcc),
       'subject': serializer.toJson<String>(subject),
       'snippet': serializer.toJson<String>(snippet),
       'date': serializer.toJson<int>(date),
@@ -1197,6 +1226,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     Value<String?> senderName = const Value.absent(),
     String? recipients,
     String? cc,
+    String? bcc,
     String? subject,
     String? snippet,
     int? date,
@@ -1211,6 +1241,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     senderName: senderName.present ? senderName.value : this.senderName,
     recipients: recipients ?? this.recipients,
     cc: cc ?? this.cc,
+    bcc: bcc ?? this.bcc,
     subject: subject ?? this.subject,
     snippet: snippet ?? this.snippet,
     date: date ?? this.date,
@@ -1233,6 +1264,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ? data.recipients.value
           : this.recipients,
       cc: data.cc.present ? data.cc.value : this.cc,
+      bcc: data.bcc.present ? data.bcc.value : this.bcc,
       subject: data.subject.present ? data.subject.value : this.subject,
       snippet: data.snippet.present ? data.snippet.value : this.snippet,
       date: data.date.present ? data.date.value : this.date,
@@ -1252,6 +1284,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ..write('senderName: $senderName, ')
           ..write('recipients: $recipients, ')
           ..write('cc: $cc, ')
+          ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -1271,6 +1304,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     senderName,
     recipients,
     cc,
+    bcc,
     subject,
     snippet,
     date,
@@ -1289,6 +1323,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           other.senderName == this.senderName &&
           other.recipients == this.recipients &&
           other.cc == this.cc &&
+          other.bcc == this.bcc &&
           other.subject == this.subject &&
           other.snippet == this.snippet &&
           other.date == this.date &&
@@ -1305,6 +1340,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
   final Value<String?> senderName;
   final Value<String> recipients;
   final Value<String> cc;
+  final Value<String> bcc;
   final Value<String> subject;
   final Value<String> snippet;
   final Value<int> date;
@@ -1320,6 +1356,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     this.senderName = const Value.absent(),
     this.recipients = const Value.absent(),
     this.cc = const Value.absent(),
+    this.bcc = const Value.absent(),
     this.subject = const Value.absent(),
     this.snippet = const Value.absent(),
     this.date = const Value.absent(),
@@ -1336,6 +1373,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     this.senderName = const Value.absent(),
     required String recipients,
     this.cc = const Value.absent(),
+    this.bcc = const Value.absent(),
     required String subject,
     required String snippet,
     required int date,
@@ -1362,6 +1400,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Expression<String>? senderName,
     Expression<String>? recipients,
     Expression<String>? cc,
+    Expression<String>? bcc,
     Expression<String>? subject,
     Expression<String>? snippet,
     Expression<int>? date,
@@ -1378,6 +1417,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       if (senderName != null) 'sender_name': senderName,
       if (recipients != null) 'recipients': recipients,
       if (cc != null) 'cc': cc,
+      if (bcc != null) 'bcc': bcc,
       if (subject != null) 'subject': subject,
       if (snippet != null) 'snippet': snippet,
       if (date != null) 'date': date,
@@ -1396,6 +1436,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Value<String?>? senderName,
     Value<String>? recipients,
     Value<String>? cc,
+    Value<String>? bcc,
     Value<String>? subject,
     Value<String>? snippet,
     Value<int>? date,
@@ -1412,6 +1453,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       senderName: senderName ?? this.senderName,
       recipients: recipients ?? this.recipients,
       cc: cc ?? this.cc,
+      bcc: bcc ?? this.bcc,
       subject: subject ?? this.subject,
       snippet: snippet ?? this.snippet,
       date: date ?? this.date,
@@ -1448,6 +1490,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     if (cc.present) {
       map['cc'] = Variable<String>(cc.value);
     }
+    if (bcc.present) {
+      map['bcc'] = Variable<String>(bcc.value);
+    }
     if (subject.present) {
       map['subject'] = Variable<String>(subject.value);
     }
@@ -1480,6 +1525,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
           ..write('senderName: $senderName, ')
           ..write('recipients: $recipients, ')
           ..write('cc: $cc, ')
+          ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -4138,6 +4184,7 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   Value<String?> senderName,
   required String recipients,
   Value<String> cc,
+  Value<String> bcc,
   required String subject,
   required String snippet,
   required int date,
@@ -4154,6 +4201,7 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<String?> senderName,
   Value<String> recipients,
   Value<String> cc,
+  Value<String> bcc,
   Value<String> subject,
   Value<String> snippet,
   Value<int> date,
@@ -4208,6 +4256,11 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<String> get cc => $composableBuilder(
     column: $table.cc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bcc => $composableBuilder(
+    column: $table.bcc,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4286,6 +4339,11 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bcc => $composableBuilder(
+    column: $table.bcc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get subject => $composableBuilder(
     column: $table.subject,
     builder: (column) => ColumnOrderings(column),
@@ -4351,6 +4409,9 @@ class $$MessagesTableAnnotationComposer
   GeneratedColumn<String> get cc =>
       $composableBuilder(column: $table.cc, builder: (column) => column);
 
+  GeneratedColumn<String> get bcc =>
+      $composableBuilder(column: $table.bcc, builder: (column) => column);
+
   GeneratedColumn<String> get subject =>
       $composableBuilder(column: $table.subject, builder: (column) => column);
 
@@ -4406,6 +4467,7 @@ class $$MessagesTableTableManager
                 Value<String?> senderName = const Value.absent(),
                 Value<String> recipients = const Value.absent(),
                 Value<String> cc = const Value.absent(),
+                Value<String> bcc = const Value.absent(),
                 Value<String> subject = const Value.absent(),
                 Value<String> snippet = const Value.absent(),
                 Value<int> date = const Value.absent(),
@@ -4421,6 +4483,7 @@ class $$MessagesTableTableManager
                 senderName: senderName,
                 recipients: recipients,
                 cc: cc,
+                bcc: bcc,
                 subject: subject,
                 snippet: snippet,
                 date: date,
@@ -4438,6 +4501,7 @@ class $$MessagesTableTableManager
                 Value<String?> senderName = const Value.absent(),
                 required String recipients,
                 Value<String> cc = const Value.absent(),
+                Value<String> bcc = const Value.absent(),
                 required String subject,
                 required String snippet,
                 required int date,
@@ -4453,6 +4517,7 @@ class $$MessagesTableTableManager
                 senderName: senderName,
                 recipients: recipients,
                 cc: cc,
+                bcc: bcc,
                 subject: subject,
                 snippet: snippet,
                 date: date,

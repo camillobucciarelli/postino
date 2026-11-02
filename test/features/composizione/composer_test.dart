@@ -124,6 +124,61 @@ void main() {
     },
   );
 
+  _onMac('a Bozza emptied after its first save is saved empty', (tester) async {
+    await _start(tester);
+    await _write(tester);
+    final id = _openId();
+    await _after5s(tester);
+    for (final label in ['A', 'Cc', 'Ccn', 'Oggetto']) {
+      await tester.enterText(_field(label), '');
+    }
+    // Last, so that only the body was left: the save that empties the Bozza for good.
+    tester.widget<QuillEditor>(find.byType(QuillEditor)).controller.clear();
+    await _after5s(tester);
+    final d = gmail.drafts[id]!;
+    expect([...d.to, ...d.cc, ...d.bcc, d.subject], ['']);
+    expect(d.body, isNot(contains('Ciao Ada')));
+  });
+
+  _onMac('the Bozza leaves from the Account chosen in Da', (tester) async {
+    await _start(tester);
+    final other = await h.addAccount('a2');
+    await _settle(tester);
+    await tester.tap(find.text('Scrivi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Da: a1@example.com'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('a2@example.com').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('A'), 'ada@example.com');
+    await _after5s(tester);
+    expect(gmail.draftCalls, isEmpty);
+    expect(other.drafts.values.single.from, 'a2@example.com');
+  });
+
+  _onMac('a Bozza that cannot be opened (offline, body not here) says so', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.deliverDraft(
+      const OutgoingMessage(
+        messageId: '<altrove@example.com>',
+        from: 'a1@example.com',
+        to: ['ada@example.com'],
+        subject: 'Dal telefono',
+        body: '<p>Ciao</p>',
+      ),
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await _settle(tester);
+    gmail.goOffline();
+    await tester.tap(find.text('Dal telefono'));
+    await _settle(tester);
+    expect(find.text('Bozza non trovata'), findsOneWidget);
+    expect(find.byType(PostinoComposerField), findsNothing);
+  });
+
   _onMac('Esc closes the composition and syncs the Bozza at once', (
     tester,
   ) async {
@@ -160,6 +215,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(Routefly.currentUri.pathSegments[2], 'bozza');
     expect(find.bySemanticsLabel('Nuovo messaggio'), findsOneWidget);
+  });
+
+  _onMac('the posta letter keys do nothing while the editor has the focus', (
+    tester,
+  ) async {
+    await _start(tester);
+    await tester.tap(find.text('Scrivi'));
+    await tester.pumpAndSettle();
+    final id = _openId();
+    await tester.tap(find.byType(QuillEditor));
+    await tester.pump();
+    for (final key in [LogicalKeyboardKey.keyC, LogicalKeyboardKey.keyJ]) {
+      await tester.sendKeyEvent(key);
+      await tester.pumpAndSettle();
+    }
+    expect(_openId(), id);
   });
 
   _onMac('a Bozza of another client is in the Bozze list; opened, its fields and formats are there, '

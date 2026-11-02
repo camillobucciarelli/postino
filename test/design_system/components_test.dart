@@ -18,8 +18,8 @@ void _noop() {}
 const _sky = (color: PostinoAccountColor.sky, initial: 'L');
 const _rose = (color: PostinoAccountColor.rose, initial: 'P');
 const _senders = <PostinoSenderOption>[
-  (id: 1, mark: _sky, address: 'lavoro@example.com'),
-  (id: 2, mark: _rose, address: 'personale@example.com'),
+  (id: 'a1', mark: _sky, address: 'lavoro@example.com'),
+  (id: 'a2', mark: _rose, address: 'personale@example.com'),
 ];
 const _formats = PostinoFormatLabels(
   bold: 'Grassetto',
@@ -404,7 +404,7 @@ final _components = <String, Widget Function()>{
   ),
   'sender_picker': () => PostinoSenderPicker(
     options: _senders,
-    selectedId: 1,
+    selectedId: 'a1',
     onSelected: (_) {},
     label: 'Da',
   ),
@@ -432,7 +432,7 @@ final _components = <String, Widget Function()>{
     child: PostinoComposerLayout(
       sender: PostinoSenderPicker(
         options: _senders,
-        selectedId: 2,
+        selectedId: 'a2',
         onSelected: (_) {},
         label: 'Da',
       ),

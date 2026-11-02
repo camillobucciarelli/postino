@@ -5,7 +5,6 @@ import '../domain/html_text.dart';
 import '../domain/inbox_repository.dart';
 import '../domain/mail_provider.dart';
 import '../domain/message.dart';
-import 'daos/drafts_dao.dart';
 import 'postino_database.dart';
 
 @lazySingleton
@@ -124,19 +123,25 @@ class MailStore implements InboxRepository {
     required int updatedAt,
   }) => _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
 
-  /// A Bozza of another client, kept here as already synced.
+  /// A Bozza as the Provider has it (another client's, or edited elsewhere), kept here as already synced.
   Future<void> adoptDraft(
     String accountId,
     OutgoingMessage draft, {
     required int updatedAt,
   }) => _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
 
-  Future<OutgoingMessage?> localDraft(
+  /// The local Bozza, whether it has edits not on the Provider yet, and its version.
+  Future<({OutgoingMessage draft, bool pending, int updatedAt})?> localDraft(
     String accountId,
     String messageId,
   ) async {
     final r = await _db.draftsDao.byId(accountId, messageId);
-    return r == null ? null : _draft(r, await _address(accountId));
+    if (r == null) return null;
+    return (
+      draft: _draft(r, await _address(accountId)),
+      pending: r.pending,
+      updatedAt: r.updatedAt,
+    );
   }
 
   /// The Provider's DRAFT message with this Message-ID, as stored, with its body if downloaded.
@@ -246,6 +251,7 @@ class MailStore implements InboxRepository {
     fromName: r.senderName,
     to: _lines(r.recipients),
     cc: _lines(r.cc),
+    bcc: _lines(r.bcc),
     subject: r.subject,
     snippet: snippet ?? r.snippet,
     date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),

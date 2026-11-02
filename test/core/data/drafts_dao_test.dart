@@ -52,7 +52,9 @@ void main() {
         updatedAt: 20,
       );
       await db.draftsDao.synced('a', '<x>', 10);
-      expect((await db.draftsDao.byId('a', '<x>'))!.pending, isTrue);
+      // Edited while the creation was in flight: still pending, but already on the Provider (no second POST).
+      final mid = (await db.draftsDao.byId('a', '<x>'))!;
+      expect((mid.pending, mid.synced), (true, true));
       await db.draftsDao.synced('a', '<x>', 20);
       final r = (await db.draftsDao.byId('a', '<x>'))!;
       expect((r.pending, r.synced), (false, true));

@@ -96,7 +96,12 @@ class _ComposerViewState extends State<ComposerView> {
     final address = _accounts.where((a) => a.id == _from).firstOrNull?.address;
     if (c == null || address == null) return;
     final fields = [_to.text, _cc.text, _bcc.text, _subject.text];
-    if (fields.every((s) => s.trim().isEmpty) && c.document.isEmpty()) return;
+    // Nothing written yet: no Bozza. Once saved, emptying it is an edit like any other.
+    if (!_saved &&
+        fields.every((s) => s.trim().isEmpty) &&
+        c.document.isEmpty()) {
+      return;
+    }
     if (!_saved) setState(() => _saved = true);
     List<String> addresses(String s) =>
         parseMailboxes(s).map(formatMailbox).toList();
@@ -165,7 +170,7 @@ class _ComposerViewState extends State<ComposerView> {
                 options: senders,
                 selectedId: _from,
                 enabled: !_saved,
-                onSelected: (id) => setState(() => _from = id as String),
+                onSelected: (id) => setState(() => _from = id),
               ),
               fields: [
                 for (final (label, c, first) in [

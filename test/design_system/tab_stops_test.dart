@@ -119,12 +119,12 @@ void main() {
           sender: PostinoSenderPicker(
             options: const [
               (
-                id: 1,
+                id: 'a1',
                 mark: (color: PostinoAccountColor.sky, initial: 'L'),
                 address: 'lavoro@example.com',
               ),
             ],
-            selectedId: 1,
+            selectedId: 'a1',
             onSelected: (_) {},
             label: 'Da',
           ),

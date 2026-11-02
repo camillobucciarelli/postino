@@ -97,11 +97,18 @@ class _PostaAction extends Action<PostaIntent> {
   @override
   bool isEnabled(PostaIntent intent) {
     final focus = primaryFocus?.context;
-    if (focus == null ||
-        focus.findAncestorWidgetOfExactType<EditableText>() != null) {
-      return false;
-    }
+    if (focus == null || _inTextInput(focus)) return false;
     return !intent.shortcut.listOnly || (cursor.listFocused?.call() ?? false);
+  }
+
+  /// Focus inside a text field: an EditableText, or the composer's rich editor (a TextInputClient that is not one).
+  static bool _inTextInput(BuildContext focus) {
+    var found = false;
+    focus.visitAncestorElements((e) {
+      found = e is StatefulElement && e.state is TextInputClient;
+      return !found;
+    });
+    return found;
   }
 
   @override

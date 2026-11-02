@@ -62,9 +62,9 @@ const _formats = PostinoFormatLabels(
 Widget _composer() => PostinoComposerLayout(
   sender: PostinoSenderPicker(
     options: const [
-      (id: 1, mark: _sky, address: 'lucia.bianchi.della.valle@example.com'),
+      (id: 'a1', mark: _sky, address: 'lucia.bianchi.della.valle@example.com'),
     ],
-    selectedId: 1,
+    selectedId: 'a1',
     onSelected: (_) {},
     label: 'Da',
   ),

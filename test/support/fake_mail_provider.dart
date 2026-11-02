@@ -147,7 +147,7 @@ class FakeMailProvider implements MailProvider {
   }
 
   /// A Bozza written by another client: in the Bozze folder, with its HTML body; its Provider id is `d-<n>`.
-  void deliverDraft(OutgoingMessage d) {
+  void deliverDraft(OutgoingMessage d, {DateTime? date}) {
     drafts[d.messageId] = d;
     final id = _draftIds[d.messageId] ??= 'd-${++_draftSeq}';
     bodies[id] = MessageBody(d.body, BodyKind.html);
@@ -162,9 +162,10 @@ class FakeMailProvider implements MailProvider {
         from: d.from,
         to: d.to,
         cc: d.cc,
+        bcc: d.bcc,
         subject: d.subject,
         snippet: d.body,
-        date: DateTime.utc(2026, 1, 1),
+        date: date ?? DateTime.utc(2026, 1, 1),
       ),
     );
   }

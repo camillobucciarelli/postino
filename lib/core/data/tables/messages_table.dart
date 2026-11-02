@@ -19,6 +19,9 @@ class Messages extends Table {
   /// To and Cc, one `Name <address>` or bare address per line (v7: they were comma separated).
   TextColumn get recipients => text()();
   TextColumn get cc => text().withDefault(const Constant(''))();
+
+  /// Bcc, as [cc]; only Bozze and sent messages have one (v10).
+  TextColumn get bcc => text().withDefault(const Constant(''))();
   TextColumn get subject => text()();
   TextColumn get snippet => text()();
 

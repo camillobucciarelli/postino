@@ -168,11 +168,15 @@ void main() {
     },
   );
 
-  test('v10 adds the Bozze', () async {
+  test('v10 adds the Bozze and the Bcc of the messages', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
+      ..execute(
+        "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
+        "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
+      )
       ..execute('PRAGMA user_version = 9');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -189,5 +193,11 @@ void main() {
       updatedAt: 1,
     );
     expect(await db.select(db.drafts).get(), hasLength(1));
+    expect(
+      (await db.customSelect('SELECT bcc FROM messages').get()).map(
+        (r) => r.read<String>('bcc'),
+      ),
+      [''],
+    );
   });
 }

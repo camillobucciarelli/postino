@@ -270,7 +270,18 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
     test('a saved Bozza can be updated by its Message-ID', () async {
       final d = _draft('<x@example.com>');
       _ok(await h.provider.saveDraft(d, isNew: true));
-      _ok(await h.provider.saveDraft(d, isNew: false));
+      _ok(
+        await h.provider.saveDraft(
+          _draft('<x@example.com>', body: '<p>Seconda</p>'),
+          isNew: false,
+        ),
+      );
+      final m = _ok(await h.provider.initialSync()).messages.single;
+      expect(m.messageId, '<x@example.com>');
+      expect(
+        _ok(await h.provider.fetchBody(m.id)).content.trim(),
+        '<p>Seconda</p>',
+      );
     });
 
     test('updating a Bozza never saved is NotFound', () async {
@@ -300,10 +311,20 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
     test(
       'a Bozza written elsewhere syncs as a DRAFT message with its body',
       () async {
-        h.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));
+        h.deliverDraft(
+          OutgoingMessage(
+            messageId: '<y@example.com>',
+            from: 'me@example.com',
+            to: const ['b@example.com'],
+            bcc: const ['dee@example.com'],
+            subject: 's',
+            body: '<p>Da altrove</p>',
+          ),
+        );
         final m = _ok(await h.provider.initialSync()).messages.single;
         expect(m.labelIds, ['DRAFT']);
         expect(m.messageId, '<y@example.com>');
+        expect(m.bcc, ['dee@example.com']);
         expect(
           _ok(await h.provider.fetchBody(m.id)).content,
           '<p>Da altrove</p>',

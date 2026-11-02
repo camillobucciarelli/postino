@@ -10,9 +10,6 @@ import '../tables/messages_table.dart';
 
 part 'drafts_dao.g.dart';
 
-/// Provider-side id of the Bozze label.
-const draftLabelId = 'DRAFT';
-
 /// SQL: the message `m` carries the DRAFT label.
 const _inFolder =
     'EXISTS (SELECT 1 FROM message_labels l WHERE l.account_id = m.account_id '
@@ -56,7 +53,8 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     );
   }
 
-  /// A Bozza taken over from the Provider (opened here for the first time): already synced, nothing pending.
+  /// A Bozza taken over from the Provider (another client's, or a newer version of one here with nothing
+  /// pending): already synced, nothing pending; it replaces the local row.
   Future<void> adopt(
     String accountId,
     OutgoingMessage draft, {
@@ -75,7 +73,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       synced: true,
       remoteKnown: true,
     ),
-    mode: InsertMode.insertOrIgnore,
+    mode: InsertMode.insertOrReplace,
   );
 
   Future<DraftRow?> byId(String accountId, String messageId) =>
@@ -97,13 +95,14 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
   Stream<List<(MessageRow, bool local)>> watchAll(String accountId) =>
       customSelect(
         'SELECT d.account_id, d.message_id AS id, d.message_id, d.message_id AS conversation_id, '
-        'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.subject, d.body AS snippet, '
+        'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.bcc, d.subject, d.body AS snippet, '
         'd.updated_at AS date, 1 AS is_read, 0 AS is_starred, 1 AS local '
         'FROM drafts d JOIN accounts a ON a.id = d.account_id WHERE d.account_id = ?1 '
         'UNION ALL '
         'SELECT m.account_id, m.id, m.message_id, m.conversation_id, m.sender, m.sender_name, '
-        'm.recipients, m.cc, m.subject, m.snippet, m.date, m.is_read, m.is_starred, 0 '
-        'FROM messages m WHERE m.account_id = ?1 AND $_inFolder '
+        'm.recipients, m.cc, m.bcc, m.subject, m.snippet, m.date, m.is_read, m.is_starred, 0 '
+        // A Bozza without a Message-ID cannot be addressed (route, update): not listed.
+        "FROM messages m WHERE m.account_id = ?1 AND m.message_id <> '' AND $_inFolder "
         'AND m.message_id NOT IN (SELECT message_id FROM drafts WHERE account_id = ?1) '
         'ORDER BY date DESC',
         variables: [Variable(accountId)],
@@ -144,17 +143,19 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
           ))
           .get();
 
-  /// The content of [updatedAt] reached the Provider; one edited meanwhile stays pending.
+  /// The content of [updatedAt] reached the Provider: the Bozza exists there from now on (the next save is an
+  /// update, also when it was edited meanwhile), and is no longer pending unless edited meanwhile.
   Future<void> synced(String accountId, String messageId, int updatedAt) =>
-      (update(drafts)..where(
-            (t) =>
-                t.accountId.equals(accountId) &
-                t.messageId.equals(messageId) &
-                t.updatedAt.equals(updatedAt),
-          ))
-          .write(
-            const DraftsCompanion(pending: Value(false), synced: Value(true)),
-          );
+      transaction(() async {
+        Expression<bool> row(Drafts t) =>
+            t.accountId.equals(accountId) & t.messageId.equals(messageId);
+        await (update(
+          drafts,
+        )..where(row)).write(const DraftsCompanion(synced: Value(true)));
+        await (update(drafts)
+              ..where((t) => row(t) & t.updatedAt.equals(updatedAt)))
+            .write(const DraftsCompanion(pending: Value(false)));
+      });
 
   Future<void> remove(String accountId, String messageId) =>
       (delete(drafts)..where(

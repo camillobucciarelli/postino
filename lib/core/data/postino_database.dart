@@ -145,7 +145,10 @@ class PostinoDatabase extends _$PostinoDatabase {
       // From v1 the bodies table was just created above, already with it.
       if (from >= 2 && from < 9) await m.addColumn(bodies, bodies.attachments);
       if (from < 8) await m.createTable(deviceSettings);
-      if (from < 10) await m.createTable(drafts);
+      if (from < 10) {
+        await m.createTable(drafts);
+        await m.addColumn(messages, messages.bcc);
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

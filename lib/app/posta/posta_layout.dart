@@ -6,7 +6,8 @@ import 'package:routefly/routefly.dart';
 
 import '../../core/domain/accounts_repository.dart';
 import '../../core/domain/inbox_repository.dart';
-import '../../core/domain/message.dart' show Message, inboxLabelId;
+import '../../core/domain/message.dart'
+    show Message, draftLabelId, inboxLabelId;
 import '../../core/domain/settings_repository.dart';
 import '../../main.dart' show routePaths;
 import '../../design_system/design_system.dart';
@@ -210,9 +211,6 @@ Widget postaLabelView(
     onOpen: _openConversation,
   ),
 );
-
-/// Provider-side id of the Bozze folder: its list is the Account's Bozze, and a row opens the composer.
-const draftLabelId = 'DRAFT';
 
 /// The Bozze of an Account, ours and other clients'; [selected] is the one open beside it.
 Widget postaDraftsView(

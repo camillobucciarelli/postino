@@ -9,7 +9,7 @@ import 'postino_icon.dart';
 
 /// One Account a message can leave from.
 typedef PostinoSenderOption = ({
-  Object id,
+  String id,
   PostinoAccountRef mark,
   String address,
 });
@@ -27,8 +27,8 @@ class PostinoSenderPicker extends StatelessWidget {
   });
 
   final List<PostinoSenderOption> options;
-  final Object selectedId;
-  final ValueChanged<Object> onSelected;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
   final String label;
   final bool enabled;
 

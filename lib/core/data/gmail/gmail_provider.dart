@@ -261,15 +261,37 @@ class GmailProvider implements MailProvider {
     required bool isNew,
   }) => _guard(() async {
     final message = {'raw': base64Url.encode(utf8.encode(_mime(draft)))};
-    if (isNew) {
-      final r = await _request('POST', 'drafts', body: {'message': message});
-      _draftIds[draft.messageId] = r['id'] as String;
-    } else {
-      final id = await _draftId(draft.messageId);
-      await _request('PUT', 'drafts/$id', body: {'id': id, 'message': message});
+    Future<void> create() async {
+      try {
+        final r = await _request('POST', 'drafts', body: {'message': message});
+        _draftIds[draft.messageId] = r['id'] as String;
+        _maybeCreated.remove(draft.messageId);
+      } catch (_) {
+        _maybeCreated.add(draft.messageId);
+        rethrow;
+      }
     }
+
+    if (isNew && !_maybeCreated.contains(draft.messageId)) {
+      await create();
+      return const Ok(null);
+    }
+    final String id;
+    try {
+      id = await _draftId(draft.messageId);
+    } on _Failed catch (e) {
+      if (!isNew || e.failure is! NotFoundFailure) rethrow;
+      await create();
+      return const Ok(null);
+    }
+    await _request('PUT', 'drafts/$id', body: {'id': id, 'message': message});
     return const Ok(null);
   });
+
+  /// Message-IDs whose create failed: Gmail may have made the draft and lost the reply, so the retry
+  /// looks it up before creating another one (the queue's intent is «this Bozza exists», ADR 0008).
+  // ponytail: in memory, as [_draftIds]; after a restart a lost reply can still leave a duplicate.
+  final _maybeCreated = <String>{};
 
   @override
   Future<Result<void>> deleteDraft(String messageId) => _guard(() async {
@@ -283,6 +305,8 @@ class GmailProvider implements MailProvider {
   /// An update or a delete that finds no draft (here or as a 404) throws NotFound.
   Future<String> _draftId(String messageId) async {
     if (_draftIds[messageId] case final id?) return id;
+    // An empty `rfc822msgid:` would match any draft.
+    if (messageId.isEmpty) throw const _Failed(NotFoundFailure());
     final r = await _get('drafts', {
       'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}',
     });
@@ -376,7 +400,7 @@ class GmailProvider implements MailProvider {
     }
   }
 
-  static const _headers = ['From', 'To', 'Cc', 'Subject', 'Message-ID'];
+  static const _headers = ['From', 'To', 'Cc', 'Bcc', 'Subject', 'Message-ID'];
 
   /// A Gmail message resource (`full` or `metadata`) as a [Message].
   static Message _parse(Map<String, dynamic> j) {
@@ -403,6 +427,9 @@ class GmailProvider implements MailProvider {
       ],
       cc: [
         for (final m in parseMailboxes(headers['cc'] ?? '')) formatMailbox(m),
+      ],
+      bcc: [
+        for (final m in parseMailboxes(headers['bcc'] ?? '')) formatMailbox(m),
       ],
       subject: decodeWords(headers['subject'] ?? ''),
       snippet: _unescape(j['snippet'] as String? ?? ''),

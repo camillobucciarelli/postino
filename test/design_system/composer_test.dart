@@ -190,12 +190,12 @@ void main() {
   group('PostinoSenderPicker', () {
     const options = <PostinoSenderOption>[
       (
-        id: 1,
+        id: 'a1',
         mark: (color: PostinoAccountColor.sky, initial: 'L'),
         address: 'lavoro@example.com',
       ),
       (
-        id: 2,
+        id: 'a2',
         mark: (color: PostinoAccountColor.rose, initial: 'P'),
         address: 'personale@example.com',
       ),
@@ -205,12 +205,12 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      Object? chosen;
+      String? chosen;
       await tester.pumpWidget(
         _app(
           PostinoSenderPicker(
             options: options,
-            selectedId: 1,
+            selectedId: 'a1',
             onSelected: (id) => chosen = id,
             label: 'Da',
           ),
@@ -229,7 +229,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
-      expect(chosen, 2);
+      expect(chosen, 'a2');
       semantics.dispose();
     });
   });

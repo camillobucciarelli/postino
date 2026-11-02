@@ -51,6 +51,9 @@ class Label {
 /// Provider-side id of the INBOX label.
 const inboxLabelId = 'INBOX';
 
+/// Provider-side id of the Bozze label.
+const draftLabelId = 'DRAFT';
+
 class Message {
   const Message({
     required this.id,
@@ -66,6 +69,7 @@ class Message {
     required this.date,
     this.fromName,
     this.cc = const [],
+    this.bcc = const [],
   });
 
   /// Provider-side id.
@@ -85,6 +89,9 @@ class Message {
   /// `Name <address>` or a bare address each ([formatMailbox]).
   final List<String> to;
   final List<String> cc;
+
+  /// Only the Bozze and the sent messages have one; a resumed Bozza keeps it.
+  final List<String> bcc;
   final String subject;
   final String snippet;
   final DateTime date;

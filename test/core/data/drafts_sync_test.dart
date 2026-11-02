@@ -192,4 +192,42 @@ void main() {
         await engine.openDraft('a', '<y@example.com>') as Ok<OutgoingMessage>;
     expect(opened.value.body, '<p>Ciao &lt;mondo&gt;</p>');
   });
+
+  test('openDraft of a Bozza of another client keeps its Ccn', () async {
+    a.deliverDraft(
+      const OutgoingMessage(
+        messageId: '<y@example.com>',
+        from: 'a@example.com',
+        to: ['b@example.com'],
+        bcc: ['Dee <dee@example.com>'],
+        subject: 's',
+        body: '<p>x</p>',
+      ),
+    );
+    await engine.syncAll();
+    final opened =
+        await engine.openDraft('a', '<y@example.com>') as Ok<OutgoingMessage>;
+    expect(opened.value.bcc, ['Dee <dee@example.com>']);
+  });
+
+  test('openDraft takes the newer version edited elsewhere, unless an edit here is waiting', () async {
+    await engine.saveDraft('a', _draft(id, body: '<p>Qui</p>'));
+    await engine.flushDrafts('a');
+    final later = h.clock.now().add(const Duration(minutes: 1));
+    a.deliverDraft(_draft(id, body: '<p>Altrove</p>'), date: later);
+    await engine.syncAll();
+    final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
+    expect(opened.value.body, '<p>Altrove</p>');
+    expect((await row())!.body, '<p>Altrove</p>');
+
+    // An edit here not yet on the Provider wins (the Conflitto is passo 3).
+    await engine.saveDraft('a', _draft(id, body: '<p>Di nuovo qui</p>'));
+    a.deliverDraft(
+      _draft(id, body: '<p>Ancora altrove</p>'),
+      date: later.add(const Duration(minutes: 1)),
+    );
+    await engine.syncAll();
+    final again = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
+    expect(again.value.body, '<p>Di nuovo qui</p>');
+  });
 }

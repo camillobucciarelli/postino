@@ -33,8 +33,6 @@ class PostaDrawer extends StatefulWidget {
   State<PostaDrawer> createState() => _PostaDrawerState();
 }
 
-const _draftLabelId = 'DRAFT';
-
 class _PostaDrawerState extends State<PostaDrawer> {
   late final accounts = streamSignal(
     () => GetIt.I<AccountsRepository>().watchAccounts(),
@@ -113,7 +111,7 @@ class _PostaDrawerState extends State<PostaDrawer> {
                   key: ValueKey('drafts-${a.id}'),
                   label: t.bozze.title,
                   icon: PostinoIcons.pencil,
-                  active: a.id == open && widget.labelId == _draftLabelId,
+                  active: a.id == open && widget.labelId == draftLabelId,
                   onTap: () => widget.onOpenDrafts(a.id),
                 ),
               ],

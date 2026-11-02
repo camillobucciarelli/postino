@@ -12,7 +12,9 @@ import '../tokens/postino_tokens.dart';
 /// [size], then the actions. A tap (or Enter) calls [onOpen]; the menu offers «Salva…» ([saveLabel], [onSave]).
 /// Downloading ([progress] 0–1): [progressLabel] instead of the size, a `brand` bar along the bottom and
 /// Annulla ([cancelLabel], [onCancel]). Failed ([error], in words): `danger` border and Riprova ([retryLabel],
-/// [onRetry], by default [onOpen]: the failed action may have been a save).
+/// [onRetry], by default [onOpen]: the failed action may have been a save). A [warning] (an executable, #75)
+/// takes the size's place in `warning`; [error] wins when both are set. Without [onOpen] the chip is not a
+/// button: no tap, no hint, screen readers hear «name, warning»; the menu stays.
 /// Name and size are selectable text; screen readers hear «name, size» as a button, [openLabel] as its hint.
 class PostinoAttachmentChip extends StatefulWidget {
   const PostinoAttachmentChip({
@@ -26,6 +28,7 @@ class PostinoAttachmentChip extends StatefulWidget {
     this.cancelLabel = '',
     this.onCancel,
     this.error,
+    this.warning,
     this.retryLabel = '',
     this.onRetry,
     this.moreLabel = '',
@@ -37,13 +40,14 @@ class PostinoAttachmentChip extends StatefulWidget {
 
   /// Already formatted («1,2 MB»).
   final String size;
-  final VoidCallback onOpen;
+  final VoidCallback? onOpen;
   final String openLabel;
   final double? progress;
   final String? progressLabel;
   final String cancelLabel;
   final VoidCallback? onCancel;
   final String? error;
+  final String? warning;
   final String retryLabel;
   final VoidCallback? onRetry;
 
@@ -72,7 +76,15 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
     final w = widget;
     final progress = w.progress;
     final error = w.error;
-    final meta = progress != null ? w.progressLabel ?? '' : error ?? w.size;
+    final warning = w.warning;
+    final meta = progress != null
+        ? w.progressLabel ?? ''
+        : error ?? warning ?? w.size;
+    final metaColor = error != null
+        ? c.danger
+        : warning != null
+        ? c.warning
+        : c.inkSubtle;
     const radius = BorderRadius.all(Radius.circular(PostinoRadius.md));
     final save = w.onSave;
     final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
@@ -99,10 +111,10 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
               children: [
                 Expanded(
                   child: Semantics(
-                    button: true,
+                    button: w.onOpen != null,
                     label: w.name,
                     value: meta,
-                    hint: w.openLabel,
+                    hint: w.onOpen == null ? null : w.openLabel,
                     onTap: w.onOpen,
                     excludeSemantics: true,
                     child: InkWell(
@@ -138,7 +150,11 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                      _Meta(text: meta, error: error != null),
+                                      _Meta(
+                                        text: meta,
+                                        color: metaColor,
+                                        icon: metaColor != c.inkSubtle,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -248,21 +264,21 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
   );
 }
 
-/// The size, the progress or the reason it failed: `meta` in `ink-subtle`, or `danger` with the alert icon.
+/// The size, the progress, a warning or the reason it failed: `meta` in [color] (`ink-subtle`, `warning`
+/// or `danger`), with the alert [icon] in front when asked.
 class _Meta extends StatelessWidget {
-  const _Meta({required this.text, required this.error});
+  const _Meta({required this.text, required this.color, required this.icon});
 
   final String text;
-  final bool error;
+  final Color color;
+  final bool icon;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.pc;
-    final color = error ? c.danger : c.inkSubtle;
     return Text.rich(
       TextSpan(
         children: [
-          if (error) ...[
+          if (icon) ...[
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
               child: PostinoIcon(

@@ -159,8 +159,11 @@ class SyncEngine implements MailSync {
     // The local copy, unless the Provider has a newer one and nothing here is waiting to go:
     // then it was edited elsewhere since, and the Provider's version is taken over.
     // ponytail: by the device clock against the Provider's date; a clock far ahead keeps the local copy.
+    // A reply created here always stays ours: the Provider dates it at upload time, after `updatedAt`,
+    // and an edit elsewhere cannot be merged (it would drop In-Reply-To and thread), so never refuse it.
     if (local != null &&
         (local.pending ||
+            local.draft.inReplyTo != null ||
             remote == null ||
             remote.message.date.millisecondsSinceEpoch <= local.updatedAt)) {
       return Ok(local.draft);

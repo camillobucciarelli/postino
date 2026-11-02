@@ -64,6 +64,16 @@ Future<void> _tap(WidgetTester tester, Finder f) async {
   await tester.pumpAndSettle();
 }
 
+/// m1 with setup.exe and install.command too (#75), for the tests on executables.
+Future<void> _startWithExecutables(WidgetTester tester) async {
+  await _start(tester);
+  gmail
+    ..attach('m1', 'setup.exe', List.filled(100, 2))
+    ..attach('m1', 'install.command', List.filled(100, 3))
+    ..deliver(msg('m1', conversationId: 't', subject: 'Contratto'));
+  await tester.pumpAndSettle();
+}
+
 List<String> get _cached => h.fs
     .directory('/support/attachments')
     .listSync()
@@ -399,6 +409,85 @@ void main() {
       Uri.decodeComponent(h.links.opened.single.pathSegments.last),
       'Allegato senza nome.pdf',
     );
+  });
+
+  testWidgets('an executable never opens: a warning, and only Salva… (#75)', (
+    tester,
+  ) async {
+    await _startWithExecutables(tester);
+    for (final name in ['setup.exe', 'install.command']) {
+      await _tap(tester, _chip(name));
+    }
+    expect(h.links.opened, isEmpty);
+    expect(gmail.attachmentCalls, isEmpty);
+    expect(
+      find.textContaining('Eseguibile', findRichText: true),
+      findsNWidgets(2),
+    );
+
+    await _tap(tester, _in('setup.exe', const ValueKey('attachment-more')));
+    await _tap(tester, find.text('Salva…'));
+    expect(h.saver.saved.single.$2, 'setup.exe');
+    expect(h.links.opened, isEmpty);
+    // The others still open.
+    await _tap(tester, _chip('Contratto.pdf'));
+    expect(h.links.opened.single.pathSegments.last, 'Contratto.pdf');
+  });
+
+  testWidgets(
+    'an executable: screen readers hear the warning, not a button; the menu by keyboard (#75)',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      await _startWithExecutables(tester);
+      expect(
+        tester.getSemantics(
+          find.descendant(
+            of: _chip('setup.exe'),
+            matching: find.bySemanticsLabel('setup.exe'),
+          ),
+        ),
+        matchesSemantics(
+          label: 'setup.exe',
+          value: 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente',
+          isButton: false,
+          hasTapAction: false,
+        ),
+      );
+      handle.dispose();
+
+      final more = _in('setup.exe', const ValueKey('attachment-more'));
+      for (var i = 0; i < 30; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+        final focused = FocusManager.instance.primaryFocus?.context;
+        if (focused != null &&
+            find
+                .ancestor(
+                  of: find.byElementPredicate((e) => e == focused),
+                  matching: more,
+                )
+                .evaluate()
+                .isNotEmpty) {
+          return;
+        }
+      }
+      fail('Tab never reached the menu of setup.exe');
+    },
+  );
+
+  testWidgets('the executable warning is selectable and copiable (#75)', (
+    tester,
+  ) async {
+    await _startWithExecutables(tester);
+    await tester.tap(find.text('Ti mando il contratto'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(_clipboard, contains('setup.exe'));
+    expect(_clipboard, contains('Eseguibile: non si apre da Postino'));
   });
 
   // QA saw the menu open on its own after a download and after a cancelled Save As: the window loses and

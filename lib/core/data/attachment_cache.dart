@@ -18,17 +18,23 @@ import 'sync_engine.dart';
 /// Where attachments live: [cache] holds them encrypted, [temp] their decrypted copies for other apps.
 /// [cap] bounds the cache in bytes (500 MB; smaller only in tests).
 class AttachmentStorage {
-  AttachmentStorage._(this.cache, this.temp, this.cap);
+  AttachmentStorage._(this.cache, this.temp, this.cap, this.quarantine);
 
   final Directory cache;
   final Directory temp;
   final int cap;
+
+  /// Marks a decrypted copy as downloaded from the internet (macOS quarantine, #75); a no-op elsewhere.
+  final Future<void> Function(String path) quarantine;
+
+  static Future<void> _none(String _) async {}
 
   /// Empties [temp]: the decrypted copies of the previous launch go, with any half-written cache file.
   static Future<AttachmentStorage> open(
     Directory cache,
     Directory temp, {
     int cap = 500 * 1024 * 1024,
+    Future<void> Function(String path) quarantine = _none,
   }) async {
     if (await temp.exists()) await temp.delete(recursive: true);
     await temp.create(recursive: true);
@@ -36,7 +42,7 @@ class AttachmentStorage {
     await for (final e in cache.list()) {
       if (e.basename.endsWith('.part')) await e.delete();
     }
-    return AttachmentStorage._(cache, temp, cap);
+    return AttachmentStorage._(cache, temp, cap, quarantine);
   }
 }
 
@@ -158,6 +164,7 @@ class AttachmentCache implements AttachmentRepository {
     try {
       final copy = dir.childFile(safeFileName(attachment.name));
       if (!cancelled()) await copy.writeAsBytes(plain, flush: true);
+      if (!cancelled()) await _storage.quarantine(copy.path);
       if (!cancelled()) return Ok(copy.path);
       // Annulla wins even over a failed cleanup: in the queue, so an eviction never deletes the same file.
       try {
@@ -287,12 +294,17 @@ const maxFileNameBytes = 150;
 typedef _Keys = ({Uint8List enc, Uint8List mac});
 
 /// [name] as a file name on every desktop: no folders (a hostile `../../x` stays inside the temporary folder),
-/// none of the characters Windows refuses nor its trailing dots and spaces, no device name (`CON.txt`),
+/// none of the characters Windows refuses nor its trailing dots and spaces, no invisible or bidi character
+/// (`fattura\u202Efdp.exe` shows as «fatturaexe.pdf»: #75), no device name (`CON.txt`),
 /// at most [maxFileNameBytes] of UTF-8 (file systems cap a name at 255 bytes, not characters) keeping the
 /// extension and whole characters, never empty.
 String safeFileName(String name) {
   var s = name
-      .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '_')
+      .replaceAll(
+        RegExp(r'[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]'),
+        '',
+      )
+      .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f\x7f-\x9f]'), '_')
       .trim()
       .replaceAll(RegExp(r'[. ]+$'), '');
   if (utf8.encode(s).length > maxFileNameBytes) {

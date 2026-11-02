@@ -40,6 +40,60 @@ class Attachment {
 
 enum LabelKind { etichetta, cartella }
 
+/// Whether [name] is something the OS would run rather than show (#75): its last extension (case-insensitive,
+/// after Windows' trailing dots and spaces) names a script, an executable, an installer or a disk image.
+/// `.py`/`.rb`/`.pl` left out on purpose (they open in an editor).
+bool isExecutableName(String name) {
+  final s = name.replaceAll(RegExp(r'[. ]+$'), '');
+  final dot = s.lastIndexOf('.');
+  return dot >= 0 && _executable.contains(s.substring(dot + 1).toLowerCase());
+}
+
+const _executable = {
+  'exe',
+  'com',
+  'bat',
+  'cmd',
+  'scr',
+  'pif',
+  'msi',
+  'msp',
+  'dll',
+  'cpl',
+  'lnk',
+  'reg',
+  'ps1',
+  'psm1',
+  'vbs',
+  'vbe',
+  'js',
+  'jse',
+  'wsf',
+  'wsh',
+  'hta',
+  'jar',
+  'sh',
+  'bash',
+  'zsh',
+  'command',
+  'tool',
+  'app',
+  'action',
+  'workflow',
+  'scpt',
+  'applescript',
+  'dmg',
+  'pkg',
+  'mpkg',
+  'iso',
+  'img',
+  'deb',
+  'rpm',
+  'run',
+  'apk',
+  'ipa',
+};
+
 /// Per Account; on folder-based Providers a message has at most one.
 class Label {
   const Label({required this.id, required this.name, required this.kind});

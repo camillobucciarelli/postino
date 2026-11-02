@@ -35,6 +35,22 @@ void main() {
     );
   }
 
+  for (final platform in TargetPlatform.values) {
+    test(
+      '${platform.name}: an executable file is never opened (#75)',
+      () async {
+        final calls = <String>[];
+        final opener = SystemLinkOpener.test(
+          launch: (url) async => calls.add('url_launcher $url'),
+          openFile: (path) async => calls.add('open_filex $path'),
+          platform: platform,
+        );
+        await opener.open(Uri.file('/tmp/postino-attachments/x/setup.exe'));
+        expect(calls, isEmpty);
+      },
+    );
+  }
+
   test('a failure to open is swallowed, not thrown', () async {
     final opener = SystemLinkOpener.test(
       launch: (_) => throw Exception('no app'),

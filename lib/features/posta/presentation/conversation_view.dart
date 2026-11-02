@@ -273,7 +273,10 @@ class _ConversationViewState extends State<ConversationView> {
           name: _name(a),
           size: _fileSize(a.size, locale),
           openLabel: t.attachmentOpen,
-          onOpen: () => _attachment(message.id, a),
+          onOpen: isExecutableName(_name(a))
+              ? null
+              : () => _attachment(message.id, a),
+          warning: isExecutableName(_name(a)) ? t.attachmentExecutable : null,
           progress: d?.done,
           progressLabel: d == null
               ? null
@@ -295,7 +298,9 @@ class _ConversationViewState extends State<ConversationView> {
           onRetry: () => _attachment(
             message.id,
             a,
-            save: _attachmentFailed[(message.id, a.id)]?.save ?? false,
+            save:
+                isExecutableName(_name(a)) ||
+                (_attachmentFailed[(message.id, a.id)]?.save ?? false),
           ),
           moreLabel: t.attachmentMore,
           saveLabel: t.attachmentSave,

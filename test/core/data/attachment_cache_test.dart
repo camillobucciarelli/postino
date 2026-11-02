@@ -9,6 +9,7 @@ import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
@@ -339,5 +340,34 @@ void main() {
     expect(safeFileName('..'), 'allegato');
     expect(safeFileName('  '), 'allegato');
     expect(safeFileName('Fattura 03.pdf'), 'Fattura 03.pdf');
+  });
+
+  test('invisible and bidi characters go, C1 controls become _ (#75)', () {
+    // U+202E right-to-left override: «fattura\u202Efdp.exe» is displayed as «fatturaexe.pdf».
+    expect(safeFileName('fattura\u202Efdp.exe'), 'fatturafdp.exe');
+    expect(
+      safeFileName('a\u200Eb\u200Fc\u2066d\u2069e\uFEFFf\u200Bg.pdf'),
+      'abcdefg.pdf',
+    );
+    expect(safeFileName('a\u007Fb.pdf'), 'a_b.pdf');
+  });
+
+  test('the opened copy is quarantined (#75)', () async {
+    await _start();
+    final calls = <String>[];
+    final storage = await AttachmentStorage.open(
+      _cacheDir,
+      h.fs.directory('/tmp/postino-attachments'),
+      quarantine: (p) async => calls.add(p),
+    );
+    final cache = AttachmentCache(
+      getIt<SyncEngine>(),
+      h.keychain,
+      h.clock,
+      storage,
+    );
+    final a = gmail.attach('m1', 'setup.exe', _content('setup'));
+    final path = _ok(await cache.file('a1', 'm1', a));
+    expect(calls, [path]);
   });
 }

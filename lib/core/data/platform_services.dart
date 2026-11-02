@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Process;
 
 import 'package:connectivity_plus/connectivity_plus.dart' as plus;
 import 'package:file/local.dart';
@@ -11,6 +12,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
 import 'postino_database.dart';
@@ -90,6 +92,12 @@ class SystemLinkOpener implements LinkOpener {
       TargetPlatform.android || TargetPlatform.iOS => true,
       _ => false,
     };
+    // Defence in depth (#75): the Conversazione never asks, but an executable is never launched from here.
+    if (url.isScheme('file') &&
+        url.pathSegments.isNotEmpty &&
+        isExecutableName(url.pathSegments.last)) {
+      return;
+    }
     // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
       await (url.isScheme('file') && mobile && !kIsWeb
@@ -120,8 +128,31 @@ class SystemFileSaver implements FileSaver {
   @override
   Future<void> save(String path, String name) async {
     final to = await getSaveLocation(suggestedName: name);
-    if (to != null) await const LocalFileSystem().file(path).copy(to.path);
+    if (to == null) return;
+    await const LocalFileSystem().file(path).copy(to.path);
+    // File.copy does not promise the extended attributes come along.
+    await quarantine(to.path);
   }
+}
+
+/// Marks [path] as downloaded from the internet, so macOS' Gatekeeper checks it before it runs (#75):
+/// the `com.apple.quarantine` attribute browsers and Mail set. A no-op elsewhere; errors are swallowed.
+/// [platform] stands for [defaultTargetPlatform].
+// ponytail: xattr via /usr/bin/xattr (a native binary since macOS 12.3; the sandbox lets a child process
+// write the app's own files); setxattr via dart:ffi if the spawn ever fails.
+Future<void> quarantine(String path, {TargetPlatform? platform}) async {
+  if (kIsWeb || (platform ?? defaultTargetPlatform) != TargetPlatform.macOS) {
+    return;
+  }
+  final seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  try {
+    await Process.run('/usr/bin/xattr', [
+      '-w',
+      'com.apple.quarantine',
+      '0081;${seconds.toRadixString(16)};Postino;',
+      path,
+    ]);
+  } catch (_) {}
 }
 
 @module
@@ -138,6 +169,7 @@ abstract class AttachmentModule {
       fs.directory(
         '${(await getTemporaryDirectory()).path}/postino-attachments',
       ),
+      quarantine: quarantine,
     );
   }
 }

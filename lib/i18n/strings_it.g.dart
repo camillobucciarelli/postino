@@ -312,6 +312,9 @@ class Translations$conversazione$it {
 	/// it: 'Salvataggio non riuscito'
 	String get attachmentSaveFailed => 'Salvataggio non riuscito';
 
+	/// it: 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente'
+	String get attachmentExecutable => 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente';
+
 	/// it: 'Allegato senza nome'
 	String get attachmentUntitled => 'Allegato senza nome';
 }
@@ -480,6 +483,7 @@ extension on Translations {
 			'conversazione.attachmentMore' => 'Altre azioni',
 			'conversazione.attachmentSave' => 'Salva…',
 			'conversazione.attachmentSaveFailed' => 'Salvataggio non riuscito',
+			'conversazione.attachmentExecutable' => 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente',
 			'conversazione.attachmentUntitled' => 'Allegato senza nome',
 			'composizione.title' => 'Nuovo messaggio',
 			'composizione.write' => 'Scrivi',

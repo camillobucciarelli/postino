@@ -136,9 +136,12 @@ class SyncEngine implements MailSync {
     await old?.cancel();
   }
 
+  /// Sends the Account's pending Bozze at once. While the Provider's pause holds they stay
+  /// pending and go with the first replay after it (the next poll or sync).
   @override
   Future<void> flushDrafts(String accountId) async {
     await _draftTimers.remove(accountId)?.cancel();
+    if (_paused(accountId)) return;
     final account = await _account(accountId);
     // Da ricollegare: the queue waits for the reconnection, which syncs (and replays) again.
     if (account == null || account.status != AccountStatus.attivo) return;
@@ -279,6 +282,7 @@ class SyncEngine implements MailSync {
       switch (await provider.saveDraft(draft, isNew: isNew)) {
         case Ok():
           await _store.draftSynced(accountId, draft.messageId, updatedAt);
+          debugPrint('[sync] $accountId: draft synced ${draft.messageId}');
         // Sent or deleted elsewhere: the local edit is dropped in silence (ADR 0008).
         case Err(failure: NotFoundFailure()):
           await _store.removeDraft(accountId, draft.messageId);
@@ -335,14 +339,20 @@ class SyncEngine implements MailSync {
   /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
   Future<void> _sync(Account account) {
     final id = account.id;
-    if (_pausedUntil[id] case final until?) {
-      if (_clock.now().isBefore(until)) return Future.value();
-      _pausedUntil.remove(id);
-    }
+    if (_paused(id)) return Future.value();
     return _queuedSync[id] ??= _serial(id, () {
       _queuedSync.remove(id);
       return _syncOnce(id, _provider(account));
     });
+  }
+
+  /// True while the Provider's pause holds; a lapsed pause is forgotten.
+  bool _paused(String id) {
+    if (_pausedUntil[id] case final until?) {
+      if (_clock.now().isBefore(until)) return true;
+      _pausedUntil.remove(id);
+    }
+    return false;
   }
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {

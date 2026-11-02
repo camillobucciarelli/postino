@@ -108,7 +108,7 @@ void main() {
     },
   );
 
-  testWidgets('Tab walks the composer: sender, fields, formats, editor', (
+  testWidgets('Tab walks the composer: sender, fields, editor, formats', (
     t,
   ) async {
     final editor = FocusNode(debugLabel: 'editor');
@@ -187,7 +187,20 @@ void main() {
       PostinoSenderPicker,
       PostinoComposerField,
       PostinoComposerField,
-      for (var i = 0; i < 7; i++) PostinoFormatButton,
     ]);
+    // The formats come after the editor (their shortcuts are the fast way): Tab leaves the editor for them.
+    for (var i = 0; i < 7; i++) {
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate(
+            (e) => e == FocusManager.instance.primaryFocus!.context,
+          ),
+          matching: find.byType(PostinoFormatButton),
+        ),
+        findsOneWidget,
+      );
+    }
   });
 }

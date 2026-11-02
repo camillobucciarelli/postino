@@ -38,11 +38,18 @@ class _UnifiedAppBarState extends State<UnifiedAppBar> {
   );
 }
 
-/// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's.
+/// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's
+/// ([labelName] for a folder with no Etichetta, the Bozze).
 class AccountAppBar extends StatefulWidget {
-  const AccountAppBar({super.key, required this.accountId, this.labelId});
+  const AccountAppBar({
+    super.key,
+    required this.accountId,
+    this.labelId,
+    this.labelName,
+  });
   final String accountId;
   final String? labelId;
+  final String? labelName;
 
   @override
   State<AccountAppBar> createState() => _AccountAppBarState();
@@ -74,7 +81,9 @@ class _AccountAppBarState extends State<AccountAppBar> {
           .firstOrNull;
       final name = a?.name ?? '';
       return PostinoAppBar(
-        title: widget.labelId == null ? name : label?.name ?? '',
+        title: widget.labelId == null
+            ? name
+            : widget.labelName ?? label?.name ?? '',
         subtitle: widget.labelId == null ? context.t.postaInArrivo : name,
         account: a == null
             ? null

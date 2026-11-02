@@ -14,7 +14,8 @@ typedef PostinoSenderOption = ({
   String address,
 });
 
-/// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap.
+/// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap;
+/// not [enabled], it only shows the sender.
 class PostinoSenderPicker extends StatelessWidget {
   const PostinoSenderPicker({
     super.key,
@@ -22,12 +23,14 @@ class PostinoSenderPicker extends StatelessWidget {
     required this.selectedId,
     required this.onSelected,
     required this.label,
+    this.enabled = true,
   });
 
   final List<PostinoSenderOption> options;
   final Object selectedId;
   final ValueChanged<Object> onSelected;
   final String label;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +51,12 @@ class PostinoSenderPicker extends StatelessWidget {
       builder: (context, menu, _) => MergeSemantics(
         child: Semantics(
           button: true,
+          enabled: enabled,
           label: '$label: ${selected.address}',
           child: InkWell(
-            onTap: () => menu.isOpen ? menu.close() : menu.open(),
+            onTap: enabled
+                ? () => menu.isOpen ? menu.close() : menu.open()
+                : null,
             // A control, not content: its address is out of any selection and of the merged label.
             child: ExcludeSemantics(
               child: SelectionContainer.disabled(

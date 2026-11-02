@@ -60,33 +60,42 @@ class _PostinoComposerFieldState extends State<PostinoComposerField> {
         child: Row(
           spacing: PostinoSpacing.s3,
           children: [
-            // Merged into the field's node: VoiceOver reads «A, text field».
-            Semantics(
-              label: widget.label,
-              child: ExcludeSemantics(
-                child: Text(
-                  widget.label,
-                  style: PostinoText.label.copyWith(color: c.inkMuted),
-                ),
-              ),
-            ),
             Expanded(
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focus,
-                autofocus: widget.autofocus,
-                onChanged: widget.onChanged,
-                keyboardType: widget.keyboardType,
-                style: PostinoText.body.copyWith(color: c.ink),
-                // No box: the row's hairline is the only border.
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: PostinoSpacing.s3,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
+              // One node, the field's, named by the label: VoiceOver reads «A, text field».
+              child: MergeSemantics(
+                child: Row(
+                  spacing: PostinoSpacing.s3,
+                  children: [
+                    Semantics(
+                      label: widget.label,
+                      child: ExcludeSemantics(
+                        child: Text(
+                          widget.label,
+                          style: PostinoText.label.copyWith(color: c.inkMuted),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: widget.controller,
+                        focusNode: _focus,
+                        autofocus: widget.autofocus,
+                        onChanged: widget.onChanged,
+                        keyboardType: widget.keyboardType,
+                        style: PostinoText.body.copyWith(color: c.ink),
+                        // No box: the row's hairline is the only border.
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: PostinoSpacing.s3,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

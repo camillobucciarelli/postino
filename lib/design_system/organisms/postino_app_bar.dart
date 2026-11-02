@@ -7,7 +7,8 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// The bar on top of a list: `menu` opening the drawer, title and a `meta` subtitle saying where you are.
-/// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead.
+/// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead;
+/// [actions] sit at the end («Chiudi» of the composer).
 class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PostinoAppBar({
     super.key,
@@ -15,12 +16,14 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.subtitle,
     this.account,
     this.onBack,
+    this.actions = const [],
   });
 
   final String title;
   final String? subtitle;
   final PostinoAccountRef? account;
   final VoidCallback? onBack;
+  final List<Widget> actions;
 
   /// The height at 100%; with enlarged text the bar grows.
   @override
@@ -92,6 +95,7 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: scaffold.openDrawer,
                 )
               : null,
+          actions: actions,
           titleSpacing: spacing,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

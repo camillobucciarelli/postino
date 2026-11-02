@@ -9,7 +9,7 @@ import '../../../core/domain/message.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
-/// The drawer: Posta unificata, the Accounts, and the Etichette of the open Account ([accountId]).
+/// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]).
 /// Routing is the caller's: features don't know the routes.
 class PostaDrawer extends StatefulWidget {
   const PostaDrawer({
@@ -19,6 +19,7 @@ class PostaDrawer extends StatefulWidget {
     required this.onOpenUnified,
     required this.onOpenAccount,
     required this.onOpenLabel,
+    required this.onOpenDrafts,
   });
 
   final String? accountId;
@@ -26,10 +27,13 @@ class PostaDrawer extends StatefulWidget {
   final VoidCallback onOpenUnified;
   final void Function(String accountId) onOpenAccount;
   final void Function(String labelId) onOpenLabel;
+  final void Function(String accountId) onOpenDrafts;
 
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
 }
+
+const _draftLabelId = 'DRAFT';
 
 class _PostaDrawerState extends State<PostaDrawer> {
   late final accounts = streamSignal(
@@ -88,7 +92,7 @@ class _PostaDrawerState extends State<PostaDrawer> {
           PostinoDrawerSection(
             title: t.account,
             items: [
-              for (final a in accounts.value.value ?? const <Account>[])
+              for (final a in accounts.value.value ?? const <Account>[]) ...[
                 PostinoDrawerItem(
                   key: ValueKey('account-${a.id}'),
                   label: a.name,
@@ -105,6 +109,14 @@ class _PostaDrawerState extends State<PostaDrawer> {
                       : null,
                   onTap: () => widget.onOpenAccount(a.id),
                 ),
+                PostinoDrawerItem(
+                  key: ValueKey('drafts-${a.id}'),
+                  label: t.bozze.title,
+                  icon: PostinoIcons.pencil,
+                  active: a.id == open && widget.labelId == _draftLabelId,
+                  onTap: () => widget.onOpenDrafts(a.id),
+                ),
+              ],
             ],
           ),
           if (etichette.isNotEmpty)

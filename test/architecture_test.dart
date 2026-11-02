@@ -17,7 +17,9 @@ final _uri = RegExp(r'''['"]([^'"]+)['"]''');
 // ponytail: name-based denylist, extend when a new Flutter-only package without "flutter" in its name is added.
 bool _flutterDependent(String uri) =>
     uri == 'dart:ui' ||
-    uri.split('/').first.contains('flutter') ||
+    // Pure Dart despite its name (dart_quill_delta and html only).
+    uri.split('/').first.contains('flutter') &&
+        !uri.startsWith('package:flutter_quill_delta_from_html/') ||
     uri.startsWith('package:routefly/');
 
 /// Resolves a directive to a lib-relative path (`features/x/...`), or returns the raw URI for external ones.

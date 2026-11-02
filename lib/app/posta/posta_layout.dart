@@ -1,24 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
 
-import '../../core/domain/message.dart' show inboxLabelId;
+import '../../core/domain/accounts_repository.dart';
+import '../../core/domain/inbox_repository.dart';
+import '../../core/domain/message.dart' show Message, inboxLabelId;
 import '../../core/domain/settings_repository.dart';
 import '../../main.dart' show routePaths;
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
+import '../../features/composizione/presentation/composer_view.dart';
 import '../../features/posta/presentation/conversation_view.dart';
 import '../../features/posta/presentation/message_list.dart';
 import '../../features/posta/presentation/offline_banner.dart';
 import '../../features/posta/presentation/posta_app_bars.dart';
 import '../../features/posta/presentation/posta_drawer.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
+import '../../features/posta/presentation/write_fab.dart';
 import '../../i18n/strings.g.dart';
 
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
 /// so the outgoing view can fade out with its own params. The child route pages just delegate here.
-/// A Conversazione opens beside (from 900) or over its list, which stays mounted: the list it was opened from.
+/// A Conversazione, or the composer of a Bozza, opens beside (from 900) or over its list, which stays mounted: the list it was opened from.
 class PostaLayout extends StatefulWidget {
   const PostaLayout({super.key});
 
@@ -52,11 +58,14 @@ class _PostaLayoutState extends State<PostaLayout> {
     final seg = Routefly.currentOriginalPath == own
         ? const <String>[]
         : uri.pathSegments;
+    // (account, conversation) or (account, Message-ID): `pathSegments` decodes the percent-encoding.
     final open = seg.length > 3 && seg[2] == 'conversazione'
         ? (seg[1], seg[3])
         : null;
+    final draft = seg.length > 3 && seg[2] == 'bozza' ? (seg[1], seg[3]) : null;
+    final detail = open ?? draft;
     final String list;
-    if (open == null) {
+    if (detail == null) {
       list = _list = uri.path;
     } else {
       final last = _list;
@@ -64,9 +73,9 @@ class _PostaLayoutState extends State<PostaLayout> {
       list =
           last != null &&
               (last == routePaths.posta.path ||
-                  Uri.parse(last).pathSegments[1] == open.$1)
+                  Uri.parse(last).pathSegments[1] == detail.$1)
           ? last
-          : routePaths.posta.$accountId.path.changes({'accountId': open.$1});
+          : routePaths.posta.$accountId.path.changes({'accountId': detail.$1});
     }
     // /posta/<account>[/etichetta/<label>]: the docked drawer reads its selection from the list.
     final ls = Uri.parse(list).pathSegments;
@@ -101,6 +110,11 @@ class _PostaLayoutState extends State<PostaLayout> {
                       resizeValueLabel: (w) =>
                           context.t.listWidth.value(px: w.round()),
                       list: switch ((accountId, labelId)) {
+                        (final a?, draftLabelId) => postaDraftsView(
+                          a,
+                          selected: detail,
+                          cursor: _cursor,
+                        ),
                         (final a?, final l?) => postaLabelView(
                           a,
                           l,
@@ -114,14 +128,16 @@ class _PostaLayoutState extends State<PostaLayout> {
                         ),
                         _ => postaUnifiedView(selected: open, cursor: _cursor),
                       },
-                      detail: open == null
+                      detail: draft != null
+                          ? postaComposerView(draft.$1, draft.$2, onClose: back)
+                          : open == null
                           ? null
                           : postaConversationView(
                               open.$1,
                               open.$2,
                               onBack: back,
                             ),
-                      detailKey: open,
+                      detailKey: detail,
                       empty: Builder(
                         builder: (context) => PostinoEmptyState(
                           title: context.t.conversazione.selectTitle,
@@ -145,6 +161,7 @@ Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) =>
       appBar: const UnifiedAppBar(),
       drawer: postaDrawer(),
       banners: postaBanners,
+      fab: WriteFab(cursor: cursor, onWrite: _openDraft),
       body: MessageList(
         watch: (r) => r.watchUnifiedInbox(),
         showAccount: true,
@@ -165,6 +182,7 @@ Widget postaAccountView(
   appBar: AccountAppBar(accountId: id),
   drawer: postaDrawer(accountId: id),
   banners: postaBanners,
+  fab: WriteFab(accountId: id, cursor: cursor, onWrite: _openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(id, inboxLabelId),
     selected: selected,
@@ -184,12 +202,96 @@ Widget postaLabelView(
   appBar: AccountAppBar(accountId: accountId, labelId: labelId),
   drawer: postaDrawer(accountId: accountId, labelId: labelId),
   banners: postaBanners,
+  fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(accountId, labelId),
     selected: selected,
     cursor: cursor,
     onOpen: _openConversation,
   ),
+);
+
+/// Provider-side id of the Bozze folder: its list is the Account's Bozze, and a row opens the composer.
+const draftLabelId = 'DRAFT';
+
+/// The Bozze of an Account, ours and other clients'; [selected] is the one open beside it.
+Widget postaDraftsView(
+  String accountId, {
+  (String, String)? selected,
+  ListCursor? cursor,
+}) => Builder(
+  key: ValueKey('$accountId/$draftLabelId'),
+  builder: (context) => PostinoAdaptiveLayout(
+    appBar: AccountAppBar(
+      accountId: accountId,
+      labelId: draftLabelId,
+      labelName: context.t.bozze.title,
+    ),
+    drawer: postaDrawer(accountId: accountId, labelId: draftLabelId),
+    banners: postaBanners,
+    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
+    body: MessageList(
+      watch: (r) => _draftEntries(accountId, r),
+      selected: selected,
+      cursor: cursor,
+      emptyTitle: context.t.bozze.emptyTitle,
+      emptyBody: context.t.bozze.emptyBody,
+      onOpen: _openDraft,
+    ),
+  ),
+);
+
+/// Each Bozza as a row whose Conversazione is its Message-ID: opening it opens the composer, not a thread.
+// ponytail: the rows restart on every Accounts change (rare); a combineLatest if the list flickers.
+Stream<List<InboxEntry>> _draftEntries(String accountId, InboxRepository r) =>
+    GetIt.I<AccountsRepository>().watchAccounts().asyncExpand(
+      (accounts) => r
+          .watchDrafts(accountId)
+          .map(
+            (drafts) => [
+              for (final a in accounts.where((a) => a.id == accountId))
+                for (final m in drafts)
+                  InboxEntry(
+                    message: Message(
+                      id: m.id,
+                      messageId: m.messageId,
+                      conversationId: m.messageId,
+                      labelIds: m.labelIds,
+                      isRead: m.isRead,
+                      isStarred: m.isStarred,
+                      from: m.from,
+                      fromName: m.fromName,
+                      to: m.to,
+                      cc: m.cc,
+                      subject: m.subject,
+                      snippet: m.snippet,
+                      date: m.date,
+                    ),
+                    account: a,
+                    count: 1,
+                    unread: false,
+                  ),
+            ],
+          ),
+    );
+
+/// The composer of a Bozza; its params come from the URI, so a new one is a new view.
+Widget postaComposerView(
+  String accountId,
+  String messageId, {
+  required VoidCallback onClose,
+}) => ComposerView(
+  key: ValueKey('draft-$accountId/$messageId'),
+  accountId: accountId,
+  messageId: messageId,
+  onClose: onClose,
+);
+
+void _openDraft(String accountId, String messageId) => Routefly.navigate(
+  routePaths.posta.$accountId.bozza.$messageId.changes({
+    'accountId': accountId,
+    'messageId': Uri.encodeComponent(messageId),
+  }),
 );
 
 /// An open Conversazione; its params come from the URI, so a new one is a new view.
@@ -227,6 +329,12 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
     routePaths.posta.$accountId.etichetta.$labelId.changes({
       'accountId': accountId!,
       'labelId': id,
+    }),
+  ),
+  onOpenDrafts: (id) => _openFromPosta(
+    routePaths.posta.$accountId.etichetta.$labelId.changes({
+      'accountId': id,
+      'labelId': draftLabelId,
     }),
   ),
 );

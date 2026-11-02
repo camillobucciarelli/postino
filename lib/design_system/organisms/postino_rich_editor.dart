@@ -47,6 +47,7 @@ class _StrikeIntent extends Intent {
 /// The body of a message being written: a bar with the seven formats (#35) over a flutter_quill
 /// editor styled with the tokens. Cmd/Ctrl+B, I, U toggle as in quill; Cmd+Shift+X strikes through;
 /// Cmd+K opens the link dialog; quill's quote, code, header, checklist and image shortcuts are off.
+/// Tab from the field above lands in the editor, Tab again goes on to the bar's buttons (ADR 0014).
 class PostinoRichEditor extends StatefulWidget {
   const PostinoRichEditor({
     super.key,
@@ -128,134 +129,152 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
     ];
     return ColoredBox(
       color: c.composerBg,
-      child: Column(
-        children: [
-          ListenableBuilder(
-            listenable: widget.controller,
-            builder: (context, _) => Wrap(
-              children: [
-                for (final (icon, label, attribute) in buttons)
-                  PostinoFormatButton(
-                    icon: icon,
-                    label: label,
-                    active: _active(attribute),
-                    onPressed: () => _toggle(attribute),
-                  ),
-                PostinoFormatButton(
-                  icon: PostinoIcons.link,
-                  label: l.link,
-                  active: _style.containsKey(Attribute.link.key),
-                  onPressed: _link,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Semantics(
-              label: widget.label,
-              textField: true,
-              multiline: true,
-              child: QuillEditor.basic(
-                controller: widget.controller,
-                focusNode: _focus,
-                scrollController: _scroll,
-                config: QuillEditorConfig(
-                  expands: true,
-                  placeholder: widget.placeholder,
-                  padding: const EdgeInsets.all(PostinoSpacing.s5),
-                  // quill's bullets and numbers are plain widgets whose semantics rect ignores the
-                  // editor's offset, so VoiceOver would point at the wrong place: out of the tree.
-                  // ignore: experimental_member_use
-                  customLeadingBlockBuilder: (node, config) => ExcludeSemantics(
-                    child: config.attribute == Attribute.ol
-                        ? QuillNumberPoint(
-                            index: '${config.index}',
-                            indentLevelCounts: config.indentLevelCounts,
-                            count: config.count,
-                            style: config.style!,
-                            width: config.width!,
-                            attrs: config.attrs,
-                            padding: config.padding!,
-                          )
-                        : QuillBulletPoint(
-                            style: config.style!,
-                            width: config.width!,
-                            padding: config.padding!,
-                          ),
-                  ),
-                  customStyles: DefaultStyles(
-                    paragraph: DefaultTextBlockStyle(
-                      body,
-                      HorizontalSpacing.zero,
-                      VerticalSpacing.zero,
-                      VerticalSpacing.zero,
-                      null,
+      child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Column(
+          children: [
+            FocusTraversalOrder(
+              order: const NumericFocusOrder(1),
+              child: ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) => Wrap(
+                  children: [
+                    for (final (icon, label, attribute) in buttons)
+                      PostinoFormatButton(
+                        icon: icon,
+                        label: label,
+                        active: _active(attribute),
+                        onPressed: () => _toggle(attribute),
+                      ),
+                    PostinoFormatButton(
+                      icon: PostinoIcons.link,
+                      label: l.link,
+                      active: _style.containsKey(Attribute.link.key),
+                      onPressed: _link,
                     ),
-                    lists: DefaultListBlockStyle(
-                      body,
-                      HorizontalSpacing.zero,
-                      VerticalSpacing.zero,
-                      VerticalSpacing.zero,
-                      null,
-                      null,
-                    ),
-                    // Bullets and numbers in ink too.
-                    leading: DefaultTextBlockStyle(
-                      body,
-                      HorizontalSpacing.zero,
-                      VerticalSpacing.zero,
-                      VerticalSpacing.zero,
-                      null,
-                    ),
-                    placeHolder: DefaultTextBlockStyle(
-                      body.copyWith(color: c.inkMuted),
-                      HorizontalSpacing.zero,
-                      VerticalSpacing.zero,
-                      VerticalSpacing.zero,
-                      null,
-                    ),
-                    link: TextStyle(
-                      color: c.brand,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                  customShortcuts: {
-                    key(LogicalKeyboardKey.keyX, shift: true):
-                        const _StrikeIntent(),
-                    key(LogicalKeyboardKey.keyK): const _LinkIntent(),
-                    // Formats outside the list of #35 stay out.
-                    key(LogicalKeyboardKey.keyB, shift: true):
-                        const DoNothingIntent(),
-                    key(LogicalKeyboardKey.backquote): const DoNothingIntent(),
-                    key(LogicalKeyboardKey.tilde, shift: true):
-                        const DoNothingIntent(),
-                    key(LogicalKeyboardKey.keyC, shift: true):
-                        const DoNothingIntent(),
-                    key(LogicalKeyboardKey.keyG): const DoNothingIntent(),
-                    for (final d in [
-                      LogicalKeyboardKey.digit0,
-                      LogicalKeyboardKey.digit1,
-                      LogicalKeyboardKey.digit2,
-                      LogicalKeyboardKey.digit3,
-                      LogicalKeyboardKey.digit4,
-                      LogicalKeyboardKey.digit5,
-                      LogicalKeyboardKey.digit6,
-                    ])
-                      key(d): const DoNothingIntent(),
-                  },
-                  customActions: {
-                    _StrikeIntent: CallbackAction<_StrikeIntent>(
-                      onInvoke: (_) => _toggle(Attribute.strikeThrough),
-                    ),
-                    _LinkIntent: CallbackAction<_LinkIntent>(
-                      onInvoke: (_) => _link(),
-                    ),
-                  },
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: FocusTraversalOrder(
+                order: const NumericFocusOrder(0),
+                child: Semantics(
+                  label: widget.label,
+                  textField: true,
+                  multiline: true,
+                  child: QuillEditor.basic(
+                    controller: widget.controller,
+                    focusNode: _focus,
+                    scrollController: _scroll,
+                    config: QuillEditorConfig(
+                      expands: true,
+                      placeholder: widget.placeholder,
+                      padding: const EdgeInsets.all(PostinoSpacing.s5),
+                      // quill's bullets and numbers are plain widgets whose semantics rect ignores the
+                      // editor's offset, so VoiceOver would point at the wrong place: out of the tree.
+                      // ignore: experimental_member_use
+                      customLeadingBlockBuilder: (node, config) =>
+                          ExcludeSemantics(
+                            child: config.attribute == Attribute.ol
+                                ? QuillNumberPoint(
+                                    index: '${config.index}',
+                                    indentLevelCounts: config.indentLevelCounts,
+                                    count: config.count,
+                                    style: config.style!,
+                                    width: config.width!,
+                                    attrs: config.attrs,
+                                    padding: config.padding!,
+                                  )
+                                : QuillBulletPoint(
+                                    style: config.style!,
+                                    width: config.width!,
+                                    padding: config.padding!,
+                                  ),
+                          ),
+                      customStyles: DefaultStyles(
+                        paragraph: DefaultTextBlockStyle(
+                          body,
+                          HorizontalSpacing.zero,
+                          VerticalSpacing.zero,
+                          VerticalSpacing.zero,
+                          null,
+                        ),
+                        lists: DefaultListBlockStyle(
+                          body,
+                          HorizontalSpacing.zero,
+                          VerticalSpacing.zero,
+                          VerticalSpacing.zero,
+                          null,
+                          null,
+                        ),
+                        // Bullets and numbers in ink too.
+                        leading: DefaultTextBlockStyle(
+                          body,
+                          HorizontalSpacing.zero,
+                          VerticalSpacing.zero,
+                          VerticalSpacing.zero,
+                          null,
+                        ),
+                        placeHolder: DefaultTextBlockStyle(
+                          body.copyWith(color: c.inkMuted),
+                          HorizontalSpacing.zero,
+                          VerticalSpacing.zero,
+                          VerticalSpacing.zero,
+                          null,
+                        ),
+                        link: TextStyle(
+                          color: c.brand,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      // Tab moves the focus on, as in any mail composer: quill's indent is left out
+                      // before it sees the key, so the app's Tab handling takes it.
+                      // ignore: experimental_member_use
+                      onKeyPressed: (event, _) =>
+                          event.logicalKey == LogicalKeyboardKey.tab
+                          ? KeyEventResult.ignored
+                          : null,
+                      customShortcuts: {
+                        key(LogicalKeyboardKey.keyX, shift: true):
+                            const _StrikeIntent(),
+                        key(LogicalKeyboardKey.keyK): const _LinkIntent(),
+                        // Formats outside the list of #35 stay out.
+                        key(LogicalKeyboardKey.keyB, shift: true):
+                            const DoNothingIntent(),
+                        key(LogicalKeyboardKey.backquote):
+                            const DoNothingIntent(),
+                        key(LogicalKeyboardKey.tilde, shift: true):
+                            const DoNothingIntent(),
+                        key(LogicalKeyboardKey.keyC, shift: true):
+                            const DoNothingIntent(),
+                        key(LogicalKeyboardKey.keyG): const DoNothingIntent(),
+                        for (final d in [
+                          LogicalKeyboardKey.digit0,
+                          LogicalKeyboardKey.digit1,
+                          LogicalKeyboardKey.digit2,
+                          LogicalKeyboardKey.digit3,
+                          LogicalKeyboardKey.digit4,
+                          LogicalKeyboardKey.digit5,
+                          LogicalKeyboardKey.digit6,
+                        ])
+                          key(d): const DoNothingIntent(),
+                      },
+                      customActions: {
+                        _StrikeIntent: CallbackAction<_StrikeIntent>(
+                          onInvoke: (_) => _toggle(Attribute.strikeThrough),
+                        ),
+                        _LinkIntent: CallbackAction<_LinkIntent>(
+                          onInvoke: (_) => _link(),
+                        ),
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

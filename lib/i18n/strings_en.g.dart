@@ -56,6 +56,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
 	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
+	@override late final _Translations$composizione$en composizione = _Translations$composizione$en._(_root);
+	@override late final _Translations$bozze$en bozze = _Translations$bozze$en._(_root);
 }
 
 // Path: sidebar
@@ -188,6 +190,50 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get attachmentUntitled => 'Untitled attachment';
 }
 
+// Path: composizione
+class _Translations$composizione$en extends Translations$composizione$it {
+	_Translations$composizione$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'New message';
+	@override String get write => 'Compose';
+	@override String get from => 'From';
+	@override String get to => 'To';
+	@override String get cc => 'Cc';
+	@override String get bcc => 'Bcc';
+	@override String get subject => 'Subject';
+	@override String get body => 'Write your message';
+	@override String get close => 'Close';
+	@override String get bold => 'Bold';
+	@override String get italic => 'Italic';
+	@override String get underline => 'Underline';
+	@override String get strikethrough => 'Strikethrough';
+	@override String get link => 'Link';
+	@override String get bulletList => 'Bulleted list';
+	@override String get numberedList => 'Numbered list';
+	@override String get linkUrl => 'Link address';
+	@override String get insert => 'Insert';
+	@override String get cancel => 'Cancel';
+	@override String get editor => 'Message body';
+	@override String get draftNotFound => 'Draft not found';
+	@override String get draftWithAttachments => 'This draft has attachments: edit it from the client that created it';
+	@override String get draftReply => 'This Draft is a reply: edit it from the client that created it';
+}
+
+// Path: bozze
+class _Translations$bozze$en extends Translations$bozze$it {
+	_Translations$bozze$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Drafts';
+	@override String get emptyTitle => 'No drafts';
+	@override String get emptyBody => 'Drafts you write stay here until you send them.';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -257,6 +303,32 @@ extension on TranslationsEn {
 			'conversazione.attachmentSave' => 'Save…',
 			'conversazione.attachmentSaveFailed' => 'Save failed',
 			'conversazione.attachmentUntitled' => 'Untitled attachment',
+			'composizione.title' => 'New message',
+			'composizione.write' => 'Compose',
+			'composizione.from' => 'From',
+			'composizione.to' => 'To',
+			'composizione.cc' => 'Cc',
+			'composizione.bcc' => 'Bcc',
+			'composizione.subject' => 'Subject',
+			'composizione.body' => 'Write your message',
+			'composizione.close' => 'Close',
+			'composizione.bold' => 'Bold',
+			'composizione.italic' => 'Italic',
+			'composizione.underline' => 'Underline',
+			'composizione.strikethrough' => 'Strikethrough',
+			'composizione.link' => 'Link',
+			'composizione.bulletList' => 'Bulleted list',
+			'composizione.numberedList' => 'Numbered list',
+			'composizione.linkUrl' => 'Link address',
+			'composizione.insert' => 'Insert',
+			'composizione.cancel' => 'Cancel',
+			'composizione.editor' => 'Message body',
+			'composizione.draftNotFound' => 'Draft not found',
+			'composizione.draftWithAttachments' => 'This draft has attachments: edit it from the client that created it',
+			'composizione.draftReply' => 'This Draft is a reply: edit it from the client that created it',
+			'bozze.title' => 'Drafts',
+			'bozze.emptyTitle' => 'No drafts',
+			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',
 			_ => null,
 		};
 	}

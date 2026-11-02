@@ -5,7 +5,7 @@ date: 2026-10-27
 
 # Motore di sincronizzazione: IDLE come segnale, API per i dati
 
-Finché l'app è aperta (mobile in primo piano, desktop aperto o nella tray) ogni Account tiene una connessione IMAP IDLE sulla posta in arrivo, usata solo come segnale "è cambiato qualcosa". I dati si scaricano poi in modo incrementale: tramite API nativa (Gmail history dall'ultimo historyId, delta query di Microsoft Graph) oppure con IMAP CONDSTORE/QRESYNC per gli Account IMAP. Se IDLE cade, si ricade su un polling ogni 60 secondi finché non si riconnette; la sincronizzazione parte anche alla ripresa dell'app e con il pull-to-refresh. Senza backend (ADR 0001) è l'unico modo di avere posta nuova in tempo quasi reale.
+Finché l'app è aperta (mobile in primo piano, desktop aperto o nella tray) ogni Account tiene una connessione IMAP IDLE sulla posta in arrivo, usata solo come segnale "è cambiato qualcosa". I dati si scaricano poi in modo incrementale: tramite API nativa (Gmail history dall'ultimo historyId, delta query di Microsoft Graph) oppure con IMAP CONDSTORE/QRESYNC per gli Account IMAP. Un polling ogni 60 secondi gira sempre, anche con IDLE sano, perché IDLE vede solo la posta in arrivo e non le Bozze o altre cartelle cambiate da un altro client; la sincronizzazione parte anche alla ripresa dell'app e con il pull-to-refresh. Senza backend (ADR 0001) è l'unico modo di avere posta nuova in tempo quasi reale.
 
 Gli scope OAuth si allargano di conseguenza: per Gmail `https://mail.google.com/` (al posto di `gmail.modify`), per Microsoft `IMAP.AccessAsUser.All` in aggiunta a `Mail.ReadWrite` e `Mail.Send`, perché IDLE passa da IMAP.
 

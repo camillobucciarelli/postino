@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:enough_mail/enough_mail.dart' show MimeMessage;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -10,6 +11,7 @@ import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
@@ -63,6 +65,90 @@ class GmailHarness implements ContractHarness {
 
   final FakeSecureStore keychain;
   final requests = <http.Request>[];
+
+  /// Gmail Bozze by draft id (`r-<n>`): the Message-ID and the id of the message it currently holds.
+  final _drafts = <String, ({String messageId, String id})>{};
+  final _draftBodies = <String, String>{};
+  var _draftSeq = 0;
+
+  /// What Gmail does with a `raw` MIME: the Bozza is a DRAFT message whose id changes on every update.
+  Map<String, Object> _putDraft(String? draftId, OutgoingMessage d) {
+    final id = draftId ?? 'r-${++_draftSeq}';
+    if (_drafts[id] case final old?) removeRemotely(old.id);
+    final messageId = 'm-${++_draftSeq}';
+    _drafts[id] = (messageId: d.messageId, id: messageId);
+    _draftBodies[messageId] = d.body;
+    deliver(
+      Message(
+        id: messageId,
+        messageId: d.messageId,
+        conversationId: 'th-$id',
+        labelIds: const ['DRAFT'],
+        isRead: true,
+        isStarred: false,
+        from: d.from,
+        to: d.to,
+        cc: d.cc,
+        bcc: d.bcc,
+        subject: d.subject,
+        snippet: '',
+        date: _now,
+      ),
+    );
+    return {
+      'id': id,
+      'message': {
+        'id': messageId,
+        'threadId': 'th-$id',
+        'labelIds': ['DRAFT'],
+      },
+    };
+  }
+
+  http.Response _deleteDraft(String id) {
+    final d = _drafts.remove(id);
+    if (d == null) return _fixture('not_found');
+    removeRemotely(d.id);
+    return http.Response('', 204);
+  }
+
+  http.Response _draftRaw(String? draftId, Map<String, dynamic> body) {
+    if (draftId != null && !_drafts.containsKey(draftId)) {
+      return _fixture('not_found');
+    }
+    final mime = MimeMessage.parseFromText(
+      utf8.decode(
+        base64Url.decode(base64Url.normalize(body['message']['raw'] as String)),
+      ),
+    );
+    List<String> addresses(String h) => [
+      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? ''))
+        formatMailbox(m),
+    ];
+    return _json(
+      _putDraft(
+        draftId,
+        OutgoingMessage(
+          messageId: mime.getHeaderValue('message-id')!,
+          from: parseMailbox(mime.getHeaderValue('from')!).address,
+          to: addresses('to'),
+          cc: addresses('cc'),
+          bcc: addresses('bcc'),
+          subject: mime.decodeSubject() ?? '',
+          body: mime.decodeTextHtmlPart() ?? '',
+        ),
+      ),
+    );
+  }
+
+  @override
+  void deliverDraft(OutgoingMessage d) => _putDraft(
+    [
+      for (final e in _drafts.entries)
+        if (e.value.messageId == d.messageId) e.key,
+    ].firstOrNull,
+    d,
+  );
   final _accepted = {'ya29.initial', 'ya29.refreshed'};
   bool _authBroken = false, _offline = false;
 
@@ -113,6 +199,24 @@ class GmailHarness implements ContractHarness {
           if (q['labelIds'] == null || _labels(m).contains(q['labelIds']))
             {'id': m.id, 'threadId': m.conversationId},
       ], q),
+      ['drafts'] when r.method == 'GET' => _json({
+        'drafts': [
+          for (final MapEntry(:key, :value) in _drafts.entries)
+            if ('rfc822msgid:${value.messageId.replaceAll(RegExp('[<>]'), '')}' ==
+                q['q'])
+              {
+                'id': key,
+                'message': {'id': value.id},
+              },
+        ],
+        'resultSizeEstimate': _drafts.length,
+      }),
+      ['drafts'] => _draftRaw(null, jsonDecode(r.body)),
+      ['drafts', final id] when r.method == 'PUT' => _draftRaw(
+        id,
+        jsonDecode(r.body),
+      ),
+      ['drafts', final id] when r.method == 'DELETE' => _deleteDraft(id),
       ['messages', 'batchModify'] => _modify(
         jsonDecode(r.body) as Map<String, dynamic>,
       ),
@@ -193,6 +297,8 @@ class GmailHarness implements ContractHarness {
     if (m.isStarred) 'STARRED',
   ];
 
+  String _html(Message m) => _draftBodies[m.id] ?? '<p>Corpo di ${m.id}</p>';
+
   Map<String, Object> _resource(Message m, {required bool full}) => {
     'id': m.id,
     'threadId': m.conversationId,
@@ -208,13 +314,12 @@ class GmailHarness implements ContractHarness {
         },
         {'name': 'To', 'value': m.to.join(', ')},
         if (m.cc.isNotEmpty) {'name': 'Cc', 'value': m.cc.join(', ')},
+        if (m.bcc.isNotEmpty) {'name': 'Bcc', 'value': m.bcc.join(', ')},
         {'name': 'Subject', 'value': m.subject},
         {'name': 'Message-Id', 'value': m.messageId},
       ],
       if (full && _attached[m.id] == null)
-        'body': {
-          'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>')),
-        },
+        'body': {'data': base64Url.encode(utf8.encode(_html(m)))},
       if (_attached[m.id] case final attached? when full)
         'parts': [
           {
@@ -258,6 +363,7 @@ class GmailHarness implements ContractHarness {
 
   @override
   void removeRemotely(String id) {
+    _drafts.removeWhere((_, d) => d.id == id);
     _mailbox.remove(id);
     _history.add((++_historyId, 'messagesDeleted', id));
   }
@@ -319,6 +425,7 @@ void main() {
   mailProviderAuthContract('GmailProvider', GmailHarness.new);
   mailProviderSyncContract('GmailProvider', GmailHarness.new);
   mailProviderAttachmentContract('GmailProvider', GmailHarness.new);
+  mailProviderDraftContract('GmailProvider', GmailHarness.new);
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
@@ -419,7 +526,7 @@ void main() {
       expect((f1.from, f1.fromName), ('bruno@example.com', 'Bruno Verdi'));
       expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
       expect(f1.cc, [
-        'Rossi, Carla <carla.rossi@example.org>',
+        '"Rossi, Carla" <carla.rossi@example.org>',
         'Nicolò Neri <nicolo@example.com>',
       ], reason: 'a quoted name keeps its comma; an RFC 2047 one is decoded');
       expect(f1.labelIds, contains('IMPORTANT'));
@@ -682,6 +789,7 @@ void main() {
         'From',
         'To',
         'Cc',
+        'Bcc',
         'Subject',
         'Message-ID',
       ]);
@@ -721,6 +829,190 @@ void main() {
       expect(jsonDecode(g.requests.single.body), {
         'ids': [_f1],
         'addLabelIds': ['UNREAD'],
+      });
+    });
+
+    group('Bozze', () {
+      const draftId = 'r-4410200000000000001';
+      final draft = OutgoingMessage(
+        messageId: '<c1d2e3f4@postino.example.com>',
+        from: 'Ada Lovelace <ada@gmail.com>',
+        to: const ['Bruno <bruno@example.com>'],
+        cc: const ['carla@example.com'],
+        bcc: const ['dario@example.com'],
+        subject: 'Caffè è più buono',
+        body: '<p>Ciao <b>Bruno</b>, è tutto più semplice.</p>',
+      );
+
+      String route(http.Request r, String path) => switch ((r.method, path)) {
+        ('POST', 'drafts') => 'draft_create',
+        ('GET', 'drafts') =>
+          r.url.queryParameters['q']!.contains('nope')
+              ? 'drafts_empty'
+              : 'drafts_list',
+        ('PUT', 'drafts/$draftId') => 'draft_update',
+        ('DELETE', 'drafts/$draftId') => 'draft_delete',
+        _ => 'not_found',
+      };
+
+      /// As [route], but no draft holds the Message-ID yet.
+      String routeEmpty(http.Request r, String path) =>
+          r.method == 'GET' && path == 'drafts'
+          ? 'drafts_empty'
+          : route(r, path);
+
+      String raw(http.Request r) => utf8.decode(
+        base64Url.decode(
+          base64Url.normalize(
+            (jsonDecode(r.body) as Map)['message']['raw'] as String,
+          ),
+        ),
+      );
+
+      test('a new Bozza is searched by Message-ID, then one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
+        final g = _Recorded(routeEmpty);
+        _ok(await g.provider.saveDraft(draft, isNew: true));
+
+        expect(g.requests.first.method, 'GET');
+        final r = g.requests.last;
+        expect([r.method, r.url.path], ['POST', '${_api}drafts']);
+        expect((jsonDecode(r.body) as Map).keys, ['message']);
+        final mime = raw(r);
+        final unfolded = mime.replaceAll(RegExp(r'\r?\n[ \t]'), ' ');
+        expect(mime, contains('Message-Id: <c1d2e3f4@postino.example.com>'));
+        expect(unfolded, contains('ada@gmail.com'));
+        expect(unfolded, contains('bruno@example.com'));
+        expect(unfolded, contains('carla@example.com'));
+        expect(unfolded, contains('dario@example.com'));
+        expect(mime, contains('Date: '));
+        final parsed = MimeMessage.parseFromText(mime);
+        expect(parsed.decodeSubject(), 'Caffè è più buono');
+        expect(parsed.getHeaderValue('bcc'), contains('dario@example.com'));
+        expect(
+          parsed.decodeTextPlainPart(),
+          contains('Ciao Bruno, è tutto più semplice.'),
+        );
+        expect(parsed.decodeTextPlainPart(), isNot(contains('<b>')));
+        expect(parsed.decodeTextHtmlPart()?.trim(), draft.body);
+      });
+
+      test('updating after the create reuses the remembered id: one PUT, no search', () async {
+        final g = _Recorded(routeEmpty);
+        _ok(await g.provider.saveDraft(draft, isNew: true));
+        _ok(await g.provider.saveDraft(draft, isNew: false));
+
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'GET ${_api}drafts',
+            'POST ${_api}drafts',
+            'PUT ${_api}drafts/$draftId',
+          ],
+        );
+        final put = jsonDecode(g.requests.last.body) as Map;
+        expect(put['id'], draftId);
+        expect((put['message'] as Map)['raw'], isA<String>());
+      });
+
+      test('updating with nothing remembered searches by Message-ID without angle brackets, then PUTs', () async {
+        final g = _Recorded(route);
+        _ok(await g.provider.saveDraft(draft, isNew: false));
+
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          ['GET ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
+        );
+        expect(
+          g.requests.first.url.queryParameters['q'],
+          'rfc822msgid:c1d2e3f4@postino.example.com',
+        );
+      });
+
+      test(
+        'no draft found by the search is NotFound, nothing is written',
+        () async {
+          final g = _Recorded(route);
+          final d = OutgoingMessage(
+            messageId: '<nope@example.com>',
+            from: 'ada@gmail.com',
+            to: const ['bruno@example.com'],
+            subject: 's',
+            body: '<p>x</p>',
+          );
+          expect(
+            await g.provider.saveDraft(d, isNew: false),
+            _err<NotFoundFailure>(),
+          );
+          expect(g.requests.map((r) => r.method), ['GET']);
+        },
+      );
+
+      test('a 404 on the PUT is NotFound', () async {
+        final g = _Recorded(
+          (r, path) => r.method == 'PUT' ? 'not_found' : route(r, path),
+        );
+        expect(
+          await g.provider.saveDraft(draft, isNew: false),
+          _err<NotFoundFailure>(),
+        );
+      });
+
+      test('deleting searches the draft, then DELETEs it', () async {
+        final g = _Recorded(route);
+        _ok(await g.provider.deleteDraft(draft.messageId));
+
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          ['GET ${_api}drafts', 'DELETE ${_api}drafts/$draftId'],
+        );
+      });
+
+      test('deleting an unknown draft is NotFound', () async {
+        final g = _Recorded(route);
+        expect(
+          await g.provider.deleteDraft('<nope@example.com>'),
+          _err<NotFoundFailure>(),
+        );
+      });
+
+      test('a creation after a restart finds the Bozza the lost reply left, and updates it', () async {
+        final g = _Recorded(route);
+        _ok(await g.provider.saveDraft(draft, isNew: true));
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          ['GET ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
+        );
+      });
+
+      test(
+        'a draft without a Message-ID is never searched: NotFound',
+        () async {
+          final g = _Recorded(route);
+          final d = OutgoingMessage(
+            messageId: '',
+            from: 'ada@gmail.com',
+            to: const ['bruno@example.com'],
+            subject: 's',
+            body: '<p>x</p>',
+          );
+          expect(
+            await g.provider.saveDraft(d, isNew: false),
+            _err<NotFoundFailure>(),
+          );
+          expect(g.requests, isEmpty);
+        },
+      );
+
+      test('offline is an OfflineFailure', () async {
+        final h = GmailHarness()..goOffline();
+        expect(
+          await h.provider.saveDraft(draft, isNew: true),
+          _err<OfflineFailure>(),
+        );
+        expect(
+          await h.provider.deleteDraft(draft.messageId),
+          _err<OfflineFailure>(),
+        );
       });
     });
 

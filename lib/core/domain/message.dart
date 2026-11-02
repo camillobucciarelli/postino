@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:typed_data' show Uint8List;
 
 /// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
@@ -50,6 +51,9 @@ class Label {
 /// Provider-side id of the INBOX label.
 const inboxLabelId = 'INBOX';
 
+/// Provider-side id of the Bozze label.
+const draftLabelId = 'DRAFT';
+
 class Message {
   const Message({
     required this.id,
@@ -65,6 +69,7 @@ class Message {
     required this.date,
     this.fromName,
     this.cc = const [],
+    this.bcc = const [],
   });
 
   /// Provider-side id.
@@ -84,6 +89,9 @@ class Message {
   /// `Name <address>` or a bare address each ([formatMailbox]).
   final List<String> to;
   final List<String> cc;
+
+  /// Only the Bozze and the sent messages have one; a resumed Bozza keeps it.
+  final List<String> bcc;
   final String subject;
   final String snippet;
   final DateTime date;
@@ -114,18 +122,43 @@ class Conversation {
   final List<String> messageIds;
 }
 
-/// A message to send or to keep as a draft; [messageId] is generated on the device and stays stable.
+/// A message to send or to keep as a Bozza; [messageId] is generated on the device ([newMessageId]) and stays stable.
 class OutgoingMessage {
   const OutgoingMessage({
     required this.messageId,
+    required this.from,
     required this.to,
     required this.subject,
     required this.body,
+    this.cc = const [],
+    this.bcc = const [],
   });
   final String messageId;
+
+  /// The address of the sending Account.
+  final String from;
   final List<String> to;
+  final List<String> cc;
+  final List<String> bcc;
   final String subject;
+
+  /// HTML; the adapter derives the text/plain alternative (`htmlText`).
   final String body;
+}
+
+const _alphanumerics =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+/// A fresh RFC 5322 Message-ID: `<24 random alphanumerics@domain of [address]>` (`postino.local` without one).
+String newMessageId(String address) {
+  final random = Random.secure();
+  final local = [
+    for (var i = 0; i < 24; i++)
+      _alphanumerics[random.nextInt(_alphanumerics.length)],
+  ].join();
+  final at = address.lastIndexOf('@');
+  final domain = at < 0 ? 'postino.local' : address.substring(at + 1);
+  return '<$local@$domain>';
 }
 
 typedef AttachmentBytes = Uint8List;

@@ -6,14 +6,82 @@
 // each text): on Linux a small caption has no solid ink pixel winning over its anti-aliasing, so it runs on macOS only.
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
 const _golden = ValueKey('golden');
 void _noop() {}
 const _sky = (color: PostinoAccountColor.sky, initial: 'L');
+const _rose = (color: PostinoAccountColor.rose, initial: 'P');
+const _senders = <PostinoSenderOption>[
+  (id: 'a1', mark: _sky, address: 'lavoro@example.com'),
+  (id: 'a2', mark: _rose, address: 'personale@example.com'),
+];
+const _formats = PostinoFormatLabels(
+  bold: 'Grassetto',
+  italic: 'Corsivo',
+  underline: 'Sottolineato',
+  strikethrough: 'Barrato',
+  link: 'Link',
+  bulletList: 'Elenco puntato',
+  numberedList: 'Elenco numerato',
+  linkUrl: 'Indirizzo del link',
+  insert: 'Inserisci',
+  cancel: 'Annulla',
+);
+
+/// A document with every format of #35.
+QuillController _document() => QuillController(
+  document: Document.fromJson([
+    {'insert': 'Ciao '},
+    {
+      'insert': 'Ada',
+      'attributes': {'bold': true},
+    },
+    {'insert': ', '},
+    {
+      'insert': 'corsivo',
+      'attributes': {'italic': true},
+    },
+    {'insert': ' '},
+    {
+      'insert': 'sottolineato',
+      'attributes': {'underline': true},
+    },
+    {'insert': ' '},
+    {
+      'insert': 'barrato',
+      'attributes': {'strike': true},
+    },
+    {'insert': ' '},
+    {
+      'insert': 'link',
+      'attributes': {'link': 'https://example.com'},
+    },
+    {'insert': '\npunto'},
+    {
+      'insert': '\n',
+      'attributes': {'list': 'bullet'},
+    },
+    {'insert': 'uno'},
+    {
+      'insert': '\n',
+      'attributes': {'list': 'ordered'},
+    },
+  ]),
+  selection: const TextSelection.collapsed(offset: 0),
+);
+
+PostinoRichEditor _editor() => PostinoRichEditor(
+  controller: _document(),
+  label: 'Corpo del messaggio',
+  placeholder: 'Scrivi il messaggio',
+  labels: _formats,
+);
 
 final _components = <String, Widget Function()>{
   'icon': () => Wrap(
@@ -33,8 +101,17 @@ final _components = <String, Widget Function()>{
         PostinoIcons.arrowLeft,
         PostinoIcons.chevronLeft,
         PostinoIcons.image,
-        PostinoIcons.download,
+        PostinoIcons.pencil,
         PostinoIcons.close,
+        PostinoIcons.bold,
+        PostinoIcons.italic,
+        PostinoIcons.underline,
+        PostinoIcons.strikethrough,
+        PostinoIcons.link,
+        PostinoIcons.listBullet,
+        PostinoIcons.listNumbered,
+        PostinoIcons.send,
+        PostinoIcons.download,
         PostinoIcons.moreVertical,
       ])
         PostinoIcon(i, size: PostinoSize.iconLg),
@@ -307,6 +384,71 @@ final _components = <String, Widget Function()>{
     title: 'Niente di nuovo',
     body: 'I messaggi compaiono qui appena arrivano.',
   ),
+  'composer_field': () => Column(
+    children: [
+      PostinoComposerField(
+        label: 'A',
+        controller: TextEditingController(text: 'ada@okafor-legal.it'),
+      ),
+      PostinoComposerField(
+        label: 'Oggetto',
+        controller: TextEditingController(),
+        trailing: PostinoButton(
+          label: 'Cc',
+          variant: PostinoButtonVariant.ghost,
+          size: PostinoButtonSize.sm,
+          onPressed: _noop,
+        ),
+      ),
+    ],
+  ),
+  'sender_picker': () => PostinoSenderPicker(
+    options: _senders,
+    selectedId: 'a1',
+    onSelected: (_) {},
+    label: 'Da',
+  ),
+  'format_button': () => Row(
+    children: [
+      PostinoFormatButton(
+        icon: PostinoIcons.bold,
+        label: 'Grassetto',
+        active: true,
+        onPressed: _noop,
+      ),
+      PostinoFormatButton(
+        icon: PostinoIcons.italic,
+        label: 'Corsivo',
+        active: false,
+        onPressed: _noop,
+      ),
+    ],
+  ),
+  'rich_editor': () => SizedBox(height: 260, child: _editor()),
+  'fab': () =>
+      PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop),
+  'composer_layout': () => SizedBox(
+    height: 520,
+    child: PostinoComposerLayout(
+      sender: PostinoSenderPicker(
+        options: _senders,
+        selectedId: 'a2',
+        onSelected: (_) {},
+        label: 'Da',
+      ),
+      fields: [
+        PostinoComposerField(
+          label: 'A',
+          controller: TextEditingController(text: 'ada@okafor-legal.it'),
+        ),
+        PostinoComposerField(
+          label: 'Oggetto',
+          controller: TextEditingController(text: 'Contratto Rossi'),
+        ),
+      ],
+      editor: _editor(),
+    ),
+  ),
 };
 
 /// Light and dark side by side, text at 100% over 200%.
@@ -356,6 +498,11 @@ Widget _grid(Widget Function() build) => MaterialApp(
   ),
 );
 
+/// The editor as on macOS, where the composer is QA'd: on touch platforms quill arms a long press
+/// on the link's own text run (an inline link, which the 48px rule exempts) that the tap target
+/// guideline would flag.
+const _desktop = {'rich_editor', 'composer_layout'};
+
 void main() {
   for (final MapEntry(key: name, value: build) in _components.entries) {
     testWidgets('$name matches its golden and the guidelines', (tester) async {
@@ -364,17 +511,23 @@ void main() {
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final semantics = tester.ensureSemantics();
-
-      await tester.pumpWidget(_grid(build));
-      if (Platform.isMacOS) {
-        await expectLater(
-          find.byKey(_golden),
-          matchesGoldenFile('goldens/$name.png'),
-        );
-        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      if (_desktop.contains(name)) {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
       }
-      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      try {
+        await tester.pumpWidget(_grid(build));
+        if (Platform.isMacOS) {
+          await expectLater(
+            find.byKey(_golden),
+            matchesGoldenFile('goldens/$name.png'),
+          );
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+        }
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
       semantics.dispose();
     });
   }

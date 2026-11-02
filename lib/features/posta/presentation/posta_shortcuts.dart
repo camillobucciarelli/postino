@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
-enum PostaAction { next, previous, toggleSidebar }
+enum PostaAction { next, previous, toggleSidebar, write }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
@@ -39,6 +39,7 @@ const postaShortcuts = <PostaShortcut>[
     PostaAction.toggleSidebar,
     command: true,
   ),
+  PostaShortcut(LogicalKeyboardKey.keyC, PostaAction.write),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -48,6 +49,9 @@ class ListCursor {
 
   /// Whether the focus is on the list and the list is the one in front.
   bool Function()? listFocused;
+
+  /// Starts a new Bozza (`c`): the «Scrivi» button plugs itself in.
+  VoidCallback? write;
 }
 
 class PostaIntent extends Intent {
@@ -93,11 +97,18 @@ class _PostaAction extends Action<PostaIntent> {
   @override
   bool isEnabled(PostaIntent intent) {
     final focus = primaryFocus?.context;
-    if (focus == null ||
-        focus.findAncestorWidgetOfExactType<EditableText>() != null) {
-      return false;
-    }
+    if (focus == null || _inTextInput(focus)) return false;
     return !intent.shortcut.listOnly || (cursor.listFocused?.call() ?? false);
+  }
+
+  /// Focus inside a text field: an EditableText, or the composer's rich editor (a TextInputClient that is not one).
+  static bool _inTextInput(BuildContext focus) {
+    var found = false;
+    focus.visitAncestorElements((e) {
+      found = e is StatefulElement && e.state is TextInputClient;
+      return !found;
+    });
+    return found;
   }
 
   @override
@@ -113,6 +124,8 @@ class _PostaAction extends Action<PostaIntent> {
         if (focus != null) {
           Actions.maybeInvoke(focus, const ToggleSidebarIntent());
         }
+      case PostaAction.write:
+        cursor.write?.call();
     }
     return null;
   }

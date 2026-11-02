@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "id": "r-4410200000000000001",
+    "message": {
+      "id": "18f3a2b4c5d6e802",
+      "threadId": "18f3a2b4c5d6e801",
+      "labelIds": ["DRAFT"]
+    }
+  }
+}

@@ -12,12 +12,14 @@ import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/device_settings_dao.dart';
+import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
 import 'tables/device_settings_table.dart';
+import 'tables/drafts_table.dart';
 import 'tables/intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
@@ -39,6 +41,7 @@ part 'postino_database.g.dart';
     Intents,
     TrustedSenders,
     DeviceSettings,
+    Drafts,
   ],
   daos: [
     AccountsDao,
@@ -46,6 +49,7 @@ part 'postino_database.g.dart';
     IntentsDao,
     TrustedSendersDao,
     DeviceSettingsDao,
+    DraftsDao,
   ],
 )
 class PostinoDatabase extends _$PostinoDatabase {
@@ -95,7 +99,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -141,6 +145,13 @@ class PostinoDatabase extends _$PostinoDatabase {
       // From v1 the bodies table was just created above, already with it.
       if (from >= 2 && from < 9) await m.addColumn(bodies, bodies.attachments);
       if (from < 8) await m.createTable(deviceSettings);
+      if (from < 10) {
+        await m.createTable(drafts);
+        await m.addColumn(messages, messages.bcc);
+        // Cached Bozze got an empty Bcc, though on the Provider they may have one: with the cursors gone the
+        // next sync is a full one and brings it (openDraft reads the recipients from the cached message).
+        await customStatement('DELETE FROM sync_cursors');
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

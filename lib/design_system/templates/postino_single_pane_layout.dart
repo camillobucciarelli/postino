@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../tokens/postino_tokens.dart';
 
-/// One pane on the phone: [appBar], the [drawer] behind it, [banners] on top of the [body].
+/// One pane on the phone: [appBar], the [drawer] behind it, [banners] on top of the [body], [fab] over it.
 class PostinoSinglePaneLayout extends StatelessWidget {
   const PostinoSinglePaneLayout({
     super.key,
@@ -10,16 +10,19 @@ class PostinoSinglePaneLayout extends StatelessWidget {
     required this.body,
     this.drawer,
     this.banners = const [],
+    this.fab,
   });
 
   final Widget appBar;
   final Widget body;
   final Widget? drawer;
   final List<Widget> banners;
+  final Widget? fab;
 
   @override
   Widget build(BuildContext context) => Scaffold(
     drawer: drawer,
+    floatingActionButton: fab,
     // The bar sits in the body, not in `Scaffold.appBar`: it takes the height of its content
     // (56, more with enlarged text) and the rest starts under it, with no fixed cap.
     body: Column(

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart'
+    show FlutterQuillLocalizations;
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
@@ -75,7 +77,11 @@ class _PostinoAppState extends State<PostinoApp> {
       onGenerateTitle: (context) => context.t.appTitle,
       locale: TranslationProvider.of(context).flutterLocale,
       supportedLocales: AppLocaleUtils.supportedLocales,
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      // quill's: without them a tap on a link in the editor throws.
+      localizationsDelegates: [
+        ...GlobalMaterialLocalizations.delegates,
+        ...FlutterQuillLocalizations.localizationsDelegates,
+      ],
     );
   }
 }

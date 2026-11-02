@@ -81,5 +81,35 @@
     "attachmentSave": "Salva…",
     "attachmentSaveFailed": "Salvataggio non riuscito",
     "attachmentUntitled": "Allegato senza nome"
+  },
+  "composizione": {
+    "title": "Nuovo messaggio",
+    "write": "Scrivi",
+    "from": "Da",
+    "to": "A",
+    "cc": "Cc",
+    "bcc": "Ccn",
+    "subject": "Oggetto",
+    "body": "Scrivi il messaggio",
+    "close": "Chiudi",
+    "bold": "Grassetto",
+    "italic": "Corsivo",
+    "underline": "Sottolineato",
+    "strikethrough": "Barrato",
+    "link": "Link",
+    "bulletList": "Elenco puntato",
+    "numberedList": "Elenco numerato",
+    "linkUrl": "Indirizzo del link",
+    "insert": "Inserisci",
+    "cancel": "Annulla",
+    "editor": "Corpo del messaggio",
+    "draftNotFound": "Bozza non trovata",
+    "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata",
+    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata"
+  },
+  "bozze": {
+    "title": "Bozze",
+    "emptyTitle": "Nessuna bozza",
+    "emptyBody": "Le bozze che scrivi restano qui finché non le invii."
   }
 }

@@ -81,5 +81,35 @@
     "attachmentSave": "Save…",
     "attachmentSaveFailed": "Save failed",
     "attachmentUntitled": "Untitled attachment"
+  },
+  "composizione": {
+    "title": "New message",
+    "write": "Compose",
+    "from": "From",
+    "to": "To",
+    "cc": "Cc",
+    "bcc": "Bcc",
+    "subject": "Subject",
+    "body": "Write your message",
+    "close": "Close",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "link": "Link",
+    "bulletList": "Bulleted list",
+    "numberedList": "Numbered list",
+    "linkUrl": "Link address",
+    "insert": "Insert",
+    "cancel": "Cancel",
+    "editor": "Message body",
+    "draftNotFound": "Draft not found",
+    "draftWithAttachments": "This draft has attachments: edit it from the client that created it",
+    "draftReply": "This Draft is a reply: edit it from the client that created it"
+  },
+  "bozze": {
+    "title": "Drafts",
+    "emptyTitle": "No drafts",
+    "emptyBody": "Drafts you write stay here until you send them."
   }
 }

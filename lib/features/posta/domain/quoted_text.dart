@@ -3,6 +3,7 @@ import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
+import '../../../core/domain/html_text.dart';
 import 'safe_html.dart' show dropHeadContent;
 
 /// A message body split for the Conversazione (ThreadView): what it says, its signature and the text it
@@ -41,28 +42,6 @@ class BodyParts {
 const _escape = HtmlEscape(HtmlEscapeMode.element);
 
 bool _looksLikeHtml(String s) => s.trimLeft().startsWith('<');
-
-const _blocks = {
-  'address', 'blockquote', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', //
-  'li', 'ol', 'p', 'pre', 'table', 'tr', 'ul',
-};
-
-/// The text of an HTML fragment as it reads: a `<br>` or a block boundary is a line break.
-String htmlText(String html) {
-  final out = StringBuffer();
-  void walk(Node n) {
-    if (n is Text) return out.write(n.data);
-    if (n is! Element) return n.nodes.forEach(walk);
-    final block = _blocks.contains(n.localName);
-    if (n.localName == 'br' || block) out.write('\n');
-    n.nodes.forEach(walk);
-    if (block) out.write('\n');
-  }
-
-  final doc = parse(html);
-  walk(doc.body ?? doc);
-  return '$out';
-}
 
 /// What a message shows: [body], then [signature] (in `body-quote`, `ink-muted`), then [folded] behind «…»:
 /// the quote, and the signature too when [repeated] (already seen earlier in the Conversazione).

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
 
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
@@ -13,11 +14,14 @@ import '../domain/result.dart';
 import 'gmail/gmail_provider.dart';
 import 'mail_store.dart';
 
-/// Polling period while an Account's change signal is down (ADR 0008).
+/// Polling period: the change signal watches only the inbox, so the poll also brings Bozze and the rest (ADR 0008).
 const pollEvery = Duration(seconds: 60);
 
+/// Pause in the edits after which a Bozza goes to the Provider (#35).
+const draftDebounce = Duration(seconds: 5);
+
 /// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
-/// whenever the change signal fires, every [pollEvery] while it is down, and when the network returns.
+/// whenever the change signal fires, every [pollEvery], and when the network returns.
 @lazySingleton
 class SyncEngine implements MailSync {
   SyncEngine(this._store, this._clock, this._connectivity);
@@ -28,12 +32,6 @@ class SyncEngine implements MailSync {
   final _subs = <StreamSubscription<Object?>>[];
   final _signals = <String, StreamSubscription<ChangeSignal>>{};
 
-  /// Accounts whose change signal is up: the poll skips them.
-  final _signalUp = <String>{};
-
-  /// Accounts whose last sync failed for a passing reason (offline, rate limit): the poll retries them.
-  final _retry = <String>{};
-
   /// Accounts the Provider blocked until a given time: no sync before it.
   final _pausedUntil = <String, DateTime>{};
 
@@ -43,6 +41,9 @@ class SyncEngine implements MailSync {
 
   /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
   final _queuedSync = <String, Future<void>>{};
+
+  /// Per Account, the ticker that sends its Bozze once the edits pause.
+  final _draftTimers = <String, StreamSubscription<void>>{};
 
   /// Starts listening to change signals, the poll and the network, then syncs everything.
   void start() {
@@ -59,11 +60,12 @@ class SyncEngine implements MailSync {
 
   Future<void> stop() async {
     await Future.wait([
-      for (final s in [..._subs, ..._signals.values]) s.cancel(),
+      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values])
+        s.cancel(),
     ]);
     _subs.clear();
     _signals.clear();
-    _signalUp.clear();
+    _draftTimers.clear();
   }
 
   @override
@@ -96,7 +98,7 @@ class SyncEngine implements MailSync {
         await _store.markConversationRead(accountId, conversationId);
       }
       // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
-      if (!await _replay(accountId, provider)) _retry.add(accountId);
+      await _replay(accountId, provider);
       return fetched;
     });
     return switch (fetched) {
@@ -118,6 +120,104 @@ class SyncEngine implements MailSync {
         return Err(failure);
     }
   }
+
+  @override
+  Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
+    await _store.saveDraft(
+      accountId,
+      draft,
+      updatedAt: _clock.now().millisecondsSinceEpoch,
+    );
+    // Swapped with no await in between: two saves in a row must not both keep a timer.
+    final old = _draftTimers.remove(accountId);
+    _draftTimers[accountId] = _clock
+        .every(draftDebounce)
+        .listen((_) => unawaited(flushDrafts(accountId)));
+    await old?.cancel();
+  }
+
+  @override
+  Future<void> flushDrafts(String accountId) async {
+    await _draftTimers.remove(accountId)?.cancel();
+    final account = await _account(accountId);
+    // Da ricollegare: the queue waits for the reconnection, which syncs (and replays) again.
+    if (account == null || account.status != AccountStatus.attivo) return;
+    await _serial(accountId, () async {
+      await _replay(accountId, _provider(account), flush: true);
+    });
+  }
+
+  @override
+  Future<Result<OutgoingMessage>> openDraft(
+    String accountId,
+    String messageId,
+  ) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    final local = await _store.localDraft(accountId, messageId);
+    final remote = await _store.remoteDraft(accountId, messageId);
+    // The local copy, unless the Provider has a newer one and nothing here is waiting to go:
+    // then it was edited elsewhere since, and the Provider's version is taken over.
+    // ponytail: by the device clock against the Provider's date; a clock far ahead keeps the local copy.
+    if (local != null &&
+        (local.pending ||
+            remote == null ||
+            remote.message.date.millisecondsSinceEpoch <= local.updatedAt)) {
+      return Ok(local.draft);
+    }
+    if (remote == null) return const Err(NotFoundFailure());
+    // A reply written elsewhere: the save would drop its In-Reply-To, References and thread.
+    // ponytail: #37 porta In-Reply-To/References/threadId nelle Bozze
+    if (await _store.hasSiblings(accountId, remote.message.id)) {
+      return const Err(DraftReplyFailure());
+    }
+    var body = remote.body;
+    if (body == null) {
+      switch (await _provider(account).fetchBody(remote.message.id)) {
+        case Ok(:final value):
+          body = value;
+          await _store.saveBody(accountId, remote.message.id, value);
+        case Err(:final failure):
+          // Offline: what we have.
+          return local != null ? Ok(local.draft) : Err(failure);
+      }
+    }
+    // The save replaces the whole message and the adapters only write text.
+    // ponytail: refused; keep the attachments in the adapters if people ask.
+    if (body.attachments?.isNotEmpty ?? false) {
+      return const Err(DraftWithAttachmentsFailure());
+    }
+    final draft = OutgoingMessage(
+      messageId: messageId,
+      from: account.address,
+      to: remote.message.to,
+      cc: remote.message.cc,
+      bcc: remote.message.bcc,
+      subject: remote.message.subject,
+      body: switch (body.kind) {
+        BodyKind.html => body.content,
+        BodyKind.testo => _plainToHtml(body.content),
+      },
+    );
+    await _store.adoptDraft(
+      accountId,
+      draft,
+      updatedAt: remote.message.date.millisecondsSinceEpoch,
+    );
+    return Ok(draft);
+  }
+
+  static const _escape = HtmlEscape(HtmlEscapeMode.element);
+
+  /// A paragraph per blank-line block, `<br>` for the other line breaks.
+  static String _plainToHtml(String text) => text.trim().isEmpty
+      ? '<p></p>'
+      : [
+          for (final p
+              in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
+            if (p.trim().isNotEmpty)
+              '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
+        ].join();
 
   /// Straight from the Provider, outside the Account's serial queue: a download never waits behind a sync.
   Future<Result<AttachmentBytes>> fetchAttachment(
@@ -147,11 +247,14 @@ class SyncEngine implements MailSync {
     return run;
   }
 
-  /// Sends the offline queue (ADR 0008); what fails stays queued and the result is false,
-  /// so the poll retries the Account even while its change signal is up.
+  /// Sends the offline queue (ADR 0008); what fails stays queued and the next poll retries it.
+  /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   /// Called only from inside the Account's serial queue.
-  Future<bool> _replay(String accountId, MailProvider provider) async {
-    var done = true;
+  Future<void> _replay(
+    String accountId,
+    MailProvider provider, {
+    bool flush = false,
+  }) async {
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
       if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
@@ -163,18 +266,32 @@ class SyncEngine implements MailSync {
           await _store.readDone(accountId, ids, isRead: read);
         case Err(:final failure):
           debugPrint('[sync] $accountId: replay failed, $failure');
-          done = false;
       }
     }
-    return done;
+    for (final (:draft, :isNew, :updatedAt) in await _store.pendingDrafts(
+      accountId,
+    )) {
+      if (!flush &&
+          _clock.now().millisecondsSinceEpoch - updatedAt <
+              draftDebounce.inMilliseconds) {
+        continue;
+      }
+      switch (await provider.saveDraft(draft, isNew: isNew)) {
+        case Ok():
+          await _store.draftSynced(accountId, draft.messageId, updatedAt);
+        // Sent or deleted elsewhere: the local edit is dropped in silence (ADR 0008).
+        case Err(failure: NotFoundFailure()):
+          await _store.removeDraft(accountId, draft.messageId);
+        case Err(:final failure):
+          debugPrint('[sync] $accountId: draft replay failed, $failure');
+      }
+    }
   }
 
   Future<void> _poll() async {
     await Future.wait([
       for (final account in await _store.accounts())
-        if (account.status == AccountStatus.attivo &&
-            (!_signalUp.contains(account.id) || _retry.contains(account.id)))
-          _sync(account),
+        if (account.status == AccountStatus.attivo) _sync(account),
     ]);
   }
 
@@ -187,28 +304,18 @@ class SyncEngine implements MailSync {
     for (final id in _signals.keys.toList()) {
       if (!attivi.containsKey(id)) {
         unawaited(_signals.remove(id)!.cancel());
-        _signalUp.remove(id);
       }
     }
     for (final a in attivi.values) {
       if (_signals.containsKey(a.id)) continue;
-      void down() => _signalUp.remove(a.id);
-      _signals[a.id] = _provider(a).changes.listen(
-        (signal) {
-          switch (signal) {
-            case ChangeSignal.up:
-              _signalUp.add(a.id);
-              // Whatever changed while it was down.
-              unawaited(_sync(a));
-            case ChangeSignal.changed:
-              unawaited(_sync(a));
-            case ChangeSignal.down:
-              down();
-          }
-        },
-        onError: (_) => down(),
-        onDone: down,
-      );
+      _signals[a.id] = _provider(a).changes.listen((signal) {
+        switch (signal) {
+          // Up: whatever changed while it was down.
+          case ChangeSignal.up || ChangeSignal.changed:
+            unawaited(_sync(a));
+          case ChangeSignal.down:
+        }
+      });
     }
   }
 
@@ -240,7 +347,7 @@ class SyncEngine implements MailSync {
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     // The queue first, so the sync brings back what the user did offline.
-    final replayed = await _replay(accountId, provider);
+    await _replay(accountId, provider);
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
@@ -262,8 +369,6 @@ class SyncEngine implements MailSync {
     }
     switch (result) {
       case Ok(:final value):
-        // The mail is here, but a queue still waiting keeps the Account on the poll.
-        replayed ? _retry.remove(accountId) : _retry.add(accountId);
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
         debugPrint(
@@ -276,12 +381,9 @@ class SyncEngine implements MailSync {
           _pausedUntil[accountId] = retryAfter;
           debugPrint('[sync] $accountId: paused until $retryAfter');
         }
+        // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
         if (failure is AuthFailure) {
-          _retry.remove(accountId);
           await _store.setStatus(accountId, AccountStatus.daRicollegare);
-        } else {
-          // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
-          _retry.add(accountId);
         }
     }
   }

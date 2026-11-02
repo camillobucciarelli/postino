@@ -3,16 +3,19 @@
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
-import 'app/posta/[accountId]/conversazione/[conversationId]_page.dart' as a1;
-import 'app/posta/[accountId]/etichetta/[labelId]_page.dart' as a2;
-import 'app/posta/[accountId]_page.dart' as a3;
+import 'app/posta/[accountId]/bozza/[messageId]_page.dart' as a1;
+import 'app/posta/[accountId]/conversazione/[conversationId]_page.dart' as a2;
+import 'app/posta/[accountId]/etichetta/[labelId]_page.dart' as a3;
+import 'app/posta/[accountId]_page.dart' as a4;
 import 'app/posta/posta_layout.dart' as a0;
 
 Route b0Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a0.PostaLayout());
 Route b1Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a1.ConversationPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a1.DraftPage());
 Route b2Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a2.LabelPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a2.ConversationPage());
 Route b3Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a3.AccountPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a3.LabelPage());
+Route b4Builder(BuildContext ctx, RouteSettings settings) =>
+    Routefly.defaultRouteBuilder(ctx, settings, const a4.AccountPage());

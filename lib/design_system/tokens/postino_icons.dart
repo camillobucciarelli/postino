@@ -78,4 +78,50 @@ abstract final class PostinoIcons {
     'M4 16l4.5-4.5 4 4 3-3L20 17',
     'M15.5 9h.01',
   ]);
+  static const pencil = PostinoIconData([
+    'M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19z',
+    'M13.5 7l3.5 3.5',
+  ]);
+  static const bold = PostinoIconData([
+    'M7 4.5h6a3.5 3.5 0 0 1 0 7H7z',
+    'M7 11.5h7a4 4 0 0 1 0 8H7z',
+  ]);
+  static const italic = PostinoIconData([
+    'M10 4.5h8',
+    'M6 19.5h8',
+    'M14.5 4.5l-5 15',
+  ]);
+  static const underline = PostinoIconData([
+    'M7 4v7a5 5 0 0 0 10 0V4',
+    'M5 20h14',
+  ]);
+  // ponytail: strikethrough and listNumbered are not in the Icon card; drawn in its style.
+  static const strikethrough = PostinoIconData([
+    'M5 12h14',
+    'M16.5 7.5a4.5 3 0 0 0-9 0',
+    'M7.5 16.5a4.5 3 0 0 0 9 0',
+  ]);
+  static const link = PostinoIconData([
+    'M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1',
+    'M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1',
+  ]);
+  static const listBullet = PostinoIconData([
+    'M9 7h11',
+    'M9 12h11',
+    'M9 17h11',
+    'M4.5 7h.01',
+    'M4.5 12h.01',
+    'M4.5 17h.01',
+  ]);
+  static const listNumbered = PostinoIconData([
+    'M10 7h10',
+    'M10 12h10',
+    'M10 17h10',
+    'M3.5 5.5l1.5-1v4.5',
+    'M3 14a1.5 1.5 0 1 1 3 1l-3 3h3',
+  ]);
+  static const send = PostinoIconData([
+    'M4 12l16-8-6 16-2.5-6.5z',
+    'M11.5 13.5L20 4',
+  ]);
 }

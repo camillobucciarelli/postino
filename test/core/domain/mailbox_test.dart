@@ -66,4 +66,20 @@ void main() {
     expect(formatMailbox((name: 'Ada', address: 'a@x.it')), 'Ada <a@x.it>');
     expect(formatMailbox((name: null, address: 'a@x.it')), 'a@x.it');
   });
+
+  test('a name with specials is quoted and survives the round trip', () {
+    for (final name in [
+      'Rossi, Carla',
+      'Ada "Ace" Okafor',
+      r'Back\slash',
+      'A <b>',
+    ]) {
+      final m = (name: name, address: 'a@x.it');
+      expect(parseMailboxes(formatMailbox(m)), [m], reason: name);
+    }
+    expect(
+      formatMailbox((name: 'Rossi, Carla', address: 'c@x.it')),
+      '"Rossi, Carla" <c@x.it>',
+    );
+  });
 }

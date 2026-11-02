@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "drafts": [
+      {
+        "id": "r-4410200000000000001",
+        "message": {
+          "id": "18f3a2b4c5d6e801",
+          "threadId": "18f3a2b4c5d6e801"
+        }
+      }
+    ],
+    "resultSizeEstimate": 1
+  }
+}

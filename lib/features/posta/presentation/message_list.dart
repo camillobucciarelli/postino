@@ -21,6 +21,8 @@ class MessageList extends StatefulWidget {
     this.showAccount = false,
     this.selected,
     this.cursor,
+    this.emptyTitle,
+    this.emptyBody,
   });
 
   /// Which messages to show, e.g. `repo.watchUnifiedInbox`.
@@ -35,6 +37,10 @@ class MessageList extends StatefulWidget {
 
   /// Plugs the list into the keyboard shortcuts ([PostaShortcuts]).
   final ListCursor? cursor;
+
+  /// What an empty list says (the Bozze have their own); default: the inbox's.
+  final String? emptyTitle;
+  final String? emptyBody;
 
   @override
   State<MessageList> createState() => _MessageListState();
@@ -207,8 +213,8 @@ class _MessageListState extends State<MessageList> {
         itemCount: list?.length ?? 0,
         onRefresh: GetIt.I<MailSync>().syncAll,
         loadingLabel: t.loading,
-        emptyTitle: t.emptyTitle,
-        emptyBody: t.emptyBody,
+        emptyTitle: widget.emptyTitle ?? t.emptyTitle,
+        emptyBody: widget.emptyBody ?? t.emptyBody,
         itemBuilder: (context, i) {
           final InboxEntry(message: m, account: a, :count, :unread) = list![i];
           final time = messageTime(m.date, now, locale, t.yesterday);

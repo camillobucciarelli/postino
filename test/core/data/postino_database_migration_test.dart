@@ -20,6 +20,10 @@ const _v3Accounts =
     'provider TEXT NOT NULL, color INTEGER NOT NULL, position INTEGER NOT NULL, '
     'status TEXT NOT NULL)';
 
+/// Exists since v1; the v10 migration empties it.
+const _syncCursors =
+    'CREATE TABLE sync_cursors (account_id TEXT NOT NULL PRIMARY KEY, cursor TEXT NOT NULL)';
+
 void main() {
   test('v3 drops the Gmail system labels cached as Etichette, keeping user ones', () async {
     final raw = sqlite3.openInMemory()
@@ -28,6 +32,7 @@ void main() {
         'name TEXT NOT NULL, kind TEXT NOT NULL, PRIMARY KEY (account_id, id))',
       )
       ..execute(_v3Accounts)
+      ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 2');
@@ -46,6 +51,7 @@ void main() {
   test('v4 stores the Account color as its place in the palette', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
+      ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 3');
@@ -73,6 +79,7 @@ void main() {
     () async {
       final raw = sqlite3.openInMemory()
         ..execute(_v3Accounts)
+      ..execute(_syncCursors)
         ..execute(_v4Bodies)
         ..execute(_v4Messages)
         ..execute('PRAGMA user_version = 4');
@@ -101,6 +108,7 @@ void main() {
   test('v6 adds the Mittenti fidati, keeping what was there', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
+      ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 5');
@@ -118,6 +126,7 @@ void main() {
   test('v7 splits the stored sender into address and name, adds Cc, one recipient per line', () async {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
+      ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 6');
@@ -155,6 +164,7 @@ void main() {
     () async {
       final raw = sqlite3.openInMemory()
         ..execute(_v3Accounts)
+      ..execute(_syncCursors)
         ..execute(_v4Bodies)
         ..execute(_v4Messages)
         ..execute('PRAGMA user_version = 4');
@@ -167,4 +177,61 @@ void main() {
       expect(body.attachments, isNull);
     },
   );
+
+  test('v10 adds the Bozze and the Bcc of the messages', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_syncCursors)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute(
+        "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
+        "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
+      )
+      ..execute('PRAGMA user_version = 9');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    await db.draftsDao.save(
+      'a1',
+      const OutgoingMessage(
+        messageId: '<x>',
+        from: 'a1@example.com',
+        to: ['b@example.com'],
+        subject: 's',
+        body: '<p>Ciao</p>',
+      ),
+      updatedAt: 1,
+    );
+    expect(await db.select(db.drafts).get(), hasLength(1));
+    expect(
+      (await db.customSelect('SELECT bcc FROM messages').get()).map(
+        (r) => r.read<String>('bcc'),
+      ),
+      [''],
+    );
+  });
+
+  test('v10 clears the sync cursors, so the next sync brings the Bcc of the Bozze', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_syncCursors)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
+      ..execute('PRAGMA user_version = 9');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    expect(await db.select(db.syncCursors).get(), isEmpty);
+  });
+
+  test('a new database keeps the cursors it saves', () async {
+    final db = PostinoDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.into(db.syncCursors).insert(
+      SyncCursorsCompanion.insert(accountId: 'a1', cursor: '1'),
+    );
+    expect(await db.select(db.syncCursors).get(), hasLength(1));
+  });
 }

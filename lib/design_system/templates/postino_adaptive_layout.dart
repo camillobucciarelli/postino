@@ -18,12 +18,14 @@ class PostinoAdaptiveLayout extends StatelessWidget {
     required this.body,
     required this.drawer,
     this.banners = const [],
+    this.fab,
   });
 
   final Widget appBar;
   final Widget body;
   final Widget drawer;
   final List<Widget> banners;
+  final Widget? fab;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,7 @@ class PostinoAdaptiveLayout extends StatelessWidget {
       body: body,
       drawer: docked ? null : drawer,
       banners: banners,
+      fab: fab,
     );
   }
 }

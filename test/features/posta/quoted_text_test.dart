@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/html_text.dart';
 import 'package:postino/features/posta/domain/quoted_text.dart';
 import 'package:postino/features/posta/domain/safe_html.dart';
 

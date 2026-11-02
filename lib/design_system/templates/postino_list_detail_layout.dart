@@ -183,8 +183,12 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
         widget.detail == null) {
       return false;
     }
-    // A selection in the Conversazione takes the first Esc.
     final focus = primaryFocus?.context;
+    // A dialog (or any route above this one) owns the Esc.
+    if (focus != null && ModalRoute.of(focus) != ModalRoute.of(context)) {
+      return false;
+    }
+    // A selection in the Conversazione takes the first Esc.
     if (focus != null) {
       const clear = PostinoClearSelectionIntent();
       if (Actions.maybeFind<PostinoClearSelectionIntent>(focus)

@@ -175,8 +175,10 @@ class FakeMailProvider implements MailProvider {
   /// A Bozza deleted (or sent) by another client.
   void removeDraftRemotely(String messageId) {
     drafts.remove(messageId);
-    if (_draftIds.remove(messageId) case final id?)
+    final id = _draftIds.remove(messageId);
+    if (id != null) {
       removeRemotely(id, signal: false);
+    }
   }
 
   final _draftIds = <String, String>{};

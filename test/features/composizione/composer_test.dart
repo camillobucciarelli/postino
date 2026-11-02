@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -169,6 +170,7 @@ void main() {
         body: '<p>Ciao</p>',
       ),
     );
+    h.clock.advance(pollEvery); // a Bozza raises no signal: the poll brings it
     await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('drafts-a1')));
     await _settle(tester);
@@ -398,6 +400,7 @@ void main() {
       expect(gmail.draftCalls, isEmpty);
       expect(find.text('Saluti'), findsWidgets);
 
+      h.clock.advance(const Duration(seconds: 1));
       gmail.goOnline();
       h.connectivity.online = true;
       await _settle(tester);
@@ -440,6 +443,40 @@ void main() {
       expect(primaryFocus?.debugLabel, 'Editor');
     },
   );
+
+  _onMac(
+    'Escape in the link dialog closes only the dialog, not the composition',
+    (tester) async {
+      await _start(tester);
+      await tester.tap(find.text('Scrivi'));
+      await _settle(tester);
+      await tester.tap(find.byType(QuillEditor));
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+      await tester.pumpAndSettle();
+      expect(find.text('Indirizzo del link'), findsWidgets);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Indirizzo del link'), findsNothing);
+      expect(find.byType(PostinoComposerLayout), findsOneWidget);
+    },
+  );
+
+  _onMac('on a low window the composition scrolls instead of overflowing', (
+    tester,
+  ) async {
+    await _start(tester, size: const Size(390, 400));
+    await tester.tap(find.text('Scrivi'));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(QuillEditor)).height,
+      greaterThanOrEqualTo(100),
+    );
+  });
 
   _onMac(
     'under 900 px the composition fills the window, with the back button',

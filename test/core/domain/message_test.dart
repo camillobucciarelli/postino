@@ -21,6 +21,12 @@ void main() {
     expect(isExecutableName('fattura.pdf.exe'), isTrue);
     expect(isExecutableName('Fattura.PDF'), isFalse);
     expect(isExecutableName('setup.Exe'), isTrue);
+    // macOS disk images beyond .dmg (Copilot on #77).
+    expect(isExecutableName('invoice.sparseimage'), isTrue);
+    expect(isExecutableName('invoice.cdr'), isTrue);
+    expect(isExecutableName('invoice.sparsebundle'), isTrue);
+    expect(isExecutableName('invoice.toast'), isTrue);
+    expect(isExecutableName('invoice.asif'), isTrue);
     expect(isExecutableName('README'), isFalse);
     expect(isExecutableName('archivio.zip'), isFalse);
     expect(isExecutableName('run.command'), isTrue);

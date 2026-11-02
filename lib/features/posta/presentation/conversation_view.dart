@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/data/attachment_cache.dart' show safeFileName;
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/attachment_repository.dart';
@@ -232,12 +233,13 @@ class _ConversationViewState extends State<ConversationView> {
 
   /// The attachment's name, or «Allegato senza nome» when the message gives none.
   /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
-  /// so it opens in the right app (open_filex picks the app by extension only).
-  String _name(Attachment a) => switch (a.name) {
+  /// so it opens in the right app (open_filex picks the app by extension only); [safeFileName] strips bidi
+  /// and invisible characters, so the chip shows the name the file gets (#75).
+  String _name(Attachment a) => safeFileName(switch (a.name) {
     '' => '${context.t.conversazione.attachmentUntitled}${a.fallbackExtension}',
     final n when !n.contains('.') => '$n${a.fallbackExtension}',
     final n => n,
-  };
+  });
 
   void _toggle(String id, bool hasBody) {
     final open = !_expanded[id]!;

@@ -37,6 +37,33 @@ void main() {
   );
 
   test(
+    'SystemFileSaver copies to the chosen path and quarantines the copy',
+    () async {
+      // Tests run as Android by default; quarantine goes by defaultTargetPlatform.
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final to = '${file.parent.path}/saved.exe';
+      await SystemFileSaver.test(pick: (_) async => to).save(file.path, 'x');
+      expect(File(to).readAsStringSync(), 'MZ');
+      final r = await Process.run('/usr/bin/xattr', [
+        '-p',
+        'com.apple.quarantine',
+        to,
+      ]);
+      expect(r.stdout as String, startsWith('0081;'));
+      expect(r.stdout as String, contains(';Postino;'));
+    },
+    skip: Platform.isMacOS
+        ? false
+        : 'com.apple.quarantine exists on macOS only',
+  );
+
+  test('SystemFileSaver writes nothing when the dialog is dismissed', () async {
+    await SystemFileSaver.test(pick: (_) async => null).save(file.path, 'x');
+    expect(file.parent.listSync().map((e) => e.path), [file.path]);
+  });
+
+  test(
     'elsewhere it does nothing',
     () async {
       await quarantine(file.path, platform: TargetPlatform.linux);

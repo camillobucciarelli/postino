@@ -27,5 +27,9 @@ void main() {
     expect(isExecutableName('setup.exe. '), isTrue);
     expect(isExecutableName('fattura\u202Efdp.exe'), isTrue);
     expect(isExecutableName(safeFileName('fattura\u202Efdp.exe')), isTrue);
+    expect(isExecutableName(safeFileName('setup.exe\u200B')), isTrue);
+    expect(isExecutableName('setup.msix'), isTrue);
+    expect(isExecutableName('setup.appinstaller'), isTrue);
+    expect(isExecutableName('link.webloc'), isTrue);
   });
 }

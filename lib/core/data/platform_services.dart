@@ -115,6 +115,17 @@ class SystemLinkOpener implements LinkOpener {
 /// The system Save As dialog (file_selector), on desktop only.
 @Singleton(as: FileSaver, env: [Environment.prod])
 class SystemFileSaver implements FileSaver {
+  SystemFileSaver() : _pick = _saveLocation;
+
+  /// [pick] stands for the Save As dialog: the chosen path, or null when dismissed.
+  @visibleForTesting
+  SystemFileSaver.test({required this._pick});
+
+  final Future<String?> Function(String suggestedName) _pick;
+
+  static Future<String?> _saveLocation(String name) async =>
+      (await getSaveLocation(suggestedName: name))?.path;
+
   @override
   bool get available =>
       !kIsWeb &&
@@ -127,11 +138,11 @@ class SystemFileSaver implements FileSaver {
 
   @override
   Future<void> save(String path, String name) async {
-    final to = await getSaveLocation(suggestedName: name);
+    final to = await _pick(name);
     if (to == null) return;
-    await const LocalFileSystem().file(path).copy(to.path);
+    await const LocalFileSystem().file(path).copy(to);
     // File.copy does not promise the extended attributes come along.
-    await quarantine(to.path);
+    await quarantine(to);
   }
 }
 
@@ -146,12 +157,15 @@ Future<void> quarantine(String path, {TargetPlatform? platform}) async {
   }
   final seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   try {
-    await Process.run('/usr/bin/xattr', [
+    final r = await Process.run('/usr/bin/xattr', [
       '-w',
       'com.apple.quarantine',
       '0081;${seconds.toRadixString(16)};Postino;',
       path,
     ]);
+    if (r.exitCode != 0) {
+      debugPrint('quarantine failed (${r.exitCode}): ${r.stderr}');
+    }
   } catch (_) {}
 }
 

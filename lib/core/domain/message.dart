@@ -41,7 +41,8 @@ class Attachment {
 enum LabelKind { etichetta, cartella }
 
 /// Whether [name] is something the OS would run rather than show (#75): its last extension (case-insensitive,
-/// after Windows' trailing dots and spaces) names a script, an executable, an installer or a disk image.
+/// after Windows' trailing dots and spaces) names a script, an executable, an installer (`.msix`, `.appinstaller`),
+/// a disk image or a launcher of URLs and commands (`.url`, `.webloc`, `.desktop`, `.terminal`).
 /// `.py`/`.rb`/`.pl` left out on purpose (they open in an editor).
 bool isExecutableName(String name) {
   final s = name.replaceAll(RegExp(r'[. ]+$'), '');
@@ -92,6 +93,22 @@ const _executable = {
   'run',
   'apk',
   'ipa',
+  'msix',
+  'appx',
+  'msixbundle',
+  'appxbundle',
+  'appinstaller',
+  'application',
+  'appref-ms',
+  'chm',
+  'msc',
+  'sct',
+  'wsc',
+  'terminal',
+  'desktop',
+  'url',
+  'webloc',
+  'inetloc',
 };
 
 /// Per Account; on folder-based Providers a message has at most one.

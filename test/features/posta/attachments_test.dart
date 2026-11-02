@@ -64,12 +64,14 @@ Future<void> _tap(WidgetTester tester, Finder f) async {
   await tester.pumpAndSettle();
 }
 
-/// m1 with setup.exe and install.command too (#75), for the tests on executables.
+/// m1 with setup.exe, install.command, script.sh and a bidi-spoofed name too (#75), for the tests on executables.
 Future<void> _startWithExecutables(WidgetTester tester) async {
   await _start(tester);
   gmail
     ..attach('m1', 'setup.exe', List.filled(100, 2))
     ..attach('m1', 'install.command', List.filled(100, 3))
+    ..attach('m1', 'script.sh', List.filled(100, 4))
+    ..attach('m1', 'fattura\u202Efdp.exe', List.filled(100, 5))
     ..deliver(msg('m1', conversationId: 't', subject: 'Contratto'));
   await tester.pumpAndSettle();
 }
@@ -415,20 +417,34 @@ void main() {
     tester,
   ) async {
     await _startWithExecutables(tester);
-    for (final name in ['setup.exe', 'install.command']) {
+    for (final name in [
+      'setup.exe',
+      'install.command',
+      'script.sh',
+      'fattura\u202Efdp.exe',
+    ]) {
       await _tap(tester, _chip(name));
     }
     expect(h.links.opened, isEmpty);
     expect(gmail.attachmentCalls, isEmpty);
     expect(
       find.textContaining('Eseguibile', findRichText: true),
-      findsNWidgets(2),
+      findsNWidgets(4),
     );
+    // The chip shows the name without the bidi override.
+    expect(find.text('fatturafdp.exe'), findsOneWidget);
+    expect(find.text('fattura\u202Efdp.exe'), findsNothing);
 
     await _tap(tester, _in('setup.exe', const ValueKey('attachment-more')));
     await _tap(tester, find.text('Salva…'));
     expect(h.saver.saved.single.$2, 'setup.exe');
     expect(h.links.opened, isEmpty);
+    await _tap(
+      tester,
+      _in('fattura\u202Efdp.exe', const ValueKey('attachment-more')),
+    );
+    await _tap(tester, find.text('Salva…'));
+    expect(h.saver.saved.last.$2, 'fatturafdp.exe');
     // The others still open.
     await _tap(tester, _chip('Contratto.pdf'));
     expect(h.links.opened.single.pathSegments.last, 'Contratto.pdf');

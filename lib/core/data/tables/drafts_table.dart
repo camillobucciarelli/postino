@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+
+import '../../domain/message.dart';
+import 'bodies_table.dart';
 
 /// The Bozze (#35): each row is both the local save and the intent «make sure Bozza X has this content»
 /// (ADR 0008: it merges by nature, the last one wins). [pending]: content not yet on the Provider;
@@ -21,6 +26,14 @@ class Drafts extends Table {
   /// HTML.
   TextColumn get body => text()();
 
+  /// A reply (#37, v11): In-Reply-To, the References one per line, the Provider's Conversazione id;
+  /// a forward: the attachments taken over, as JSON. Null for a plain new message.
+  TextColumn get inReplyTo => text().nullable()();
+  TextColumn get references => text().nullable()();
+  TextColumn get conversationId => text().nullable()();
+  TextColumn get attachments =>
+      text().map(const ForwardedAttachmentsConverter()).nullable()();
+
   /// Milliseconds since epoch, UTC.
   IntColumn get updatedAt => integer()();
   BoolColumn get pending => boolean()();
@@ -29,4 +42,30 @@ class Drafts extends Table {
 
   @override
   Set<Column> get primaryKey => {accountId, messageId};
+}
+
+/// [ForwardedAttachment]s as JSON: the [AttachmentsConverter] shape plus `sourceMessageId`.
+class ForwardedAttachmentsConverter
+    extends TypeConverter<List<ForwardedAttachment>, String> {
+  const ForwardedAttachmentsConverter();
+
+  static const _inner = AttachmentsConverter();
+
+  @override
+  List<ForwardedAttachment> fromSql(String fromDb) => [
+    for (final a in jsonDecode(fromDb) as List)
+      ForwardedAttachment(
+        a['sourceMessageId'] as String,
+        _inner.fromSql(jsonEncode([a])).single,
+      ),
+  ];
+
+  @override
+  String toSql(List<ForwardedAttachment> value) => jsonEncode([
+    for (final a in value)
+      {
+        'sourceMessageId': a.sourceMessageId,
+        ...(jsonDecode(_inner.toSql([a.attachment])) as List).single as Map,
+      },
+  ]);
 }

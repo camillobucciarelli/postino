@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:enough_mail/enough_mail.dart' show MailAddress, MessageBuilder;
+import 'package:enough_mail/enough_mail.dart'
+    show MailAddress, MediaType, MessageBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -261,7 +262,11 @@ class GmailProvider implements MailProvider {
     OutgoingMessage draft, {
     required bool isNew,
   }) => _guard(() async {
-    final message = {'raw': base64Url.encode(utf8.encode(_mime(draft)))};
+    final message = {
+      'raw': base64Url.encode(utf8.encode(await _mime(draft))),
+      // Gmail threads a Bozza by threadId, besides the headers.
+      'threadId': ?draft.conversationId,
+    };
     Future<void> create() async {
       final r = await _request('POST', 'drafts', body: {'message': message});
       _draftIds[draft.messageId] = r['id'] as String;
@@ -301,26 +306,50 @@ class GmailProvider implements MailProvider {
     return _draftIds[messageId] = id;
   }
 
-  /// The raw RFC 2822 text of [d]: multipart/alternative, the plain text read off the HTML.
-  String _mime(OutgoingMessage d) {
+  /// The raw RFC 2822 text of [d]: multipart/alternative, the plain text read off the HTML; inside a
+  /// multipart/mixed with the forwarded attachments, fetched now, when there are any (#37).
+  Future<String> _mime(OutgoingMessage d) async {
     MailAddress address(String s) {
       final m = parseMailbox(s);
       return MailAddress(m.name, m.address);
     }
 
-    return (MessageBuilder.prepareMultipartAlternativeMessage(
-            plainText: htmlText(d.body),
-            htmlText: d.body,
-          )
-          ..from = [address(d.from)]
-          ..to = d.to.map(address).toList()
-          ..cc = d.cc.map(address).toList()
-          ..bcc = d.bcc.map(address).toList()
-          ..subject = d.subject
-          ..messageId = d.messageId
-          ..date = _clock.now())
-        .buildMimeMessage()
-        .renderMessage();
+    final text = htmlText(d.body);
+    final MessageBuilder builder;
+    if (d.attachments.isEmpty) {
+      builder = MessageBuilder.prepareMultipartAlternativeMessage(
+        plainText: text,
+        htmlText: d.body,
+      );
+    } else {
+      builder = MessageBuilder.prepareMultipartMixedMessage()
+        ..addMultipartAlternative(plainText: text, htmlText: d.body);
+      for (final f in d.attachments) {
+        final a = f.attachment;
+        final bytes = switch (await fetchAttachment(f.sourceMessageId, a.id)) {
+          Ok(:final value) => value,
+          Err(:final failure) => throw _Failed(failure),
+        };
+        builder.addBinary(
+          bytes,
+          MediaType.fromText(a.mimeType ?? 'application/octet-stream'),
+          filename: a.name.isEmpty ? null : a.name,
+        );
+      }
+    }
+    builder
+      ..from = [address(d.from)]
+      ..to = d.to.map(address).toList()
+      ..cc = d.cc.map(address).toList()
+      ..bcc = d.bcc.map(address).toList()
+      ..subject = d.subject
+      ..messageId = d.messageId
+      ..date = _clock.now();
+    if (d.inReplyTo case final id?) builder.setHeader('In-Reply-To', id);
+    if (d.references.isNotEmpty) {
+      builder.setHeader('References', d.references.join(' '));
+    }
+    return builder.buildMimeMessage().renderMessage();
   }
 
   /// Every message id matching [query], following the pages.
@@ -386,7 +415,16 @@ class GmailProvider implements MailProvider {
     }
   }
 
-  static const _headers = ['From', 'To', 'Cc', 'Bcc', 'Subject', 'Message-ID'];
+  static const _headers = [
+    'From',
+    'To',
+    'Cc',
+    'Bcc',
+    'Reply-To',
+    'References',
+    'Subject',
+    'Message-ID',
+  ];
 
   /// A Gmail message resource (`full` or `metadata`) as a [Message].
   static Message _parse(Map<String, dynamic> j) {
@@ -419,6 +457,12 @@ class GmailProvider implements MailProvider {
       ],
       subject: decodeWords(headers['subject'] ?? ''),
       snippet: _unescape(j['snippet'] as String? ?? ''),
+      replyTo: switch (parseMailboxes(headers['reply-to'] ?? '')) {
+        [final m, ...] => formatMailbox(m),
+        _ => null,
+      },
+      references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))
+        ..removeWhere((r) => r.isEmpty),
       date: DateTime.fromMillisecondsSinceEpoch(
         int.parse(j['internalDate'] as String),
         isUtc: true,

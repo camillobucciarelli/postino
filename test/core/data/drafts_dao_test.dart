@@ -24,6 +24,53 @@ void main() {
     addTearDown(db.close);
   });
 
+  test('save and adopt keep the reply headers, the Conversazione and the forwarded attachments (#37)', () async {
+    const reply = OutgoingMessage(
+      messageId: '<x>',
+      from: 'a@example.com',
+      to: ['b@example.com'],
+      subject: 'Re: s',
+      body: '<p>Ciao</p>',
+      inReplyTo: '<o@example.com>',
+      references: ['<p@example.com>', '<o@example.com>'],
+      conversationId: 't-1',
+      attachments: [
+        ForwardedAttachment(
+          'm-9',
+          Attachment(
+            id: '1',
+            name: 'a.pdf',
+            size: 3,
+            mimeType: 'application/pdf',
+          ),
+        ),
+        ForwardedAttachment('m-9', Attachment(id: '2', name: '', size: 0)),
+      ],
+    );
+    await db.draftsDao.save('a', reply, updatedAt: 10);
+    var r = (await db.draftsDao.byId('a', '<x>'))!;
+    expect(
+      (r.inReplyTo, r.references, r.conversationId),
+      ('<o@example.com>', '<p@example.com>\n<o@example.com>', 't-1'),
+    );
+    expect(
+      r.attachments!.map(
+        (f) => (
+          f.sourceMessageId,
+          f.attachment.id,
+          f.attachment.name,
+          f.attachment.size,
+          f.attachment.mimeType,
+        ),
+      ),
+      [('m-9', '1', 'a.pdf', 3, 'application/pdf'), ('m-9', '2', '', 0, null)],
+    );
+    await db.draftsDao.adopt('a', _draft('<x>'), updatedAt: 11);
+    r = (await db.draftsDao.byId('a', '<x>'))!;
+    expect((r.inReplyTo, r.references, r.conversationId), (null, null, null));
+    expect(r.attachments, isEmpty);
+  });
+
   test('save keeps the content and marks the Bozza pending', () async {
     await db.draftsDao.save('a', _draft('<x>'), updatedAt: 10);
     final r = (await db.draftsDao.byId('a', '<x>'))!;

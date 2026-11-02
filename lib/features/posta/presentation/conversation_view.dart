@@ -7,11 +7,14 @@ import 'package:intl/intl.dart';
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/attachment_repository.dart';
+import '../../../core/domain/file_size.dart';
+import '../../../core/domain/html_text.dart';
 import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
+import '../../../core/domain/reply.dart';
 import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
@@ -19,24 +22,33 @@ import '../../../i18n/strings.g.dart';
 import '../domain/quoted_text.dart';
 import '../domain/safe_html.dart';
 import 'message_time.dart';
+import 'posta_shortcuts.dart';
 
 /// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
 /// expanded. Opening it marks it read and fetches what is missing; a missing body is downloaded when its
 /// message expands, and retried when the network returns. HTML bodies render cleaned, their remote
 /// resources blocked unless shown for the message or its sender is a Mittente fidato (ADR 0007).
 /// A tap on an attachment downloads it (unless cached) and opens it in the system's app; its menu saves it (#34).
-/// Routing is the caller's ([onBack]).
+/// Rispondi, Rispondi a tutti and Inoltra (#37): the bar at the bottom acts on the last message, the menu
+/// of each message on that one, `r`/`a`/`f` through [cursor] on the last; each saves a Bozza with the
+/// Citazione and opens it ([onOpenDraft]). Routing is the caller's ([onBack], [onOpenDraft]).
 class ConversationView extends StatefulWidget {
   const ConversationView({
     super.key,
     required this.accountId,
     required this.conversationId,
     required this.onBack,
+    required this.onOpenDraft,
+    this.cursor,
   });
 
   final String accountId;
   final String conversationId;
   final VoidCallback onBack;
+
+  /// Opens the composer of the Bozza just saved, by Message-ID.
+  final void Function(String messageId) onOpenDraft;
+  final ListCursor? cursor;
 
   @override
   State<ConversationView> createState() => _ConversationViewState();
@@ -77,9 +89,19 @@ class _ConversationViewState extends State<ConversationView> {
   final _attachmentFailed =
       <(String, String), ({Failure failure, bool save, bool saving})>{};
 
+  /// One Bozza per key press: a second `r` while the first is still saving does nothing.
+  bool _acting = false;
+  void _reply() => unawaited(_act(_Kind.reply));
+  void _replyAll() => unawaited(_act(_Kind.replyAll));
+  void _forward() => unawaited(_act(_Kind.forward));
+
   @override
   void initState() {
     super.initState();
+    widget.cursor
+      ?..reply = _reply
+      ..replyAll = _replyAll
+      ..forward = _forward;
     _subs
       ..add(
         GetIt.I<InboxRepository>()
@@ -249,8 +271,69 @@ class _ConversationViewState extends State<ConversationView> {
     if (open && unread) _open();
   }
 
+  /// Rispondi / Rispondi a tutti / Inoltra [messageId] (the last message by default): the Bozza with the
+  /// Citazione is saved, then the composer opened. A body not here yet is downloaded first; if it cannot
+  /// be, the snippet is quoted instead.
+  Future<void> _act(_Kind kind, {String? messageId}) async {
+    final a = _account;
+    final messages = _messages;
+    if (_acting || a == null || messages == null || messages.isEmpty) return;
+    _acting = true;
+    try {
+      var (:message, :body) = messageId == null
+          ? messages.last
+          : messages.firstWhere((m) => m.message.id == messageId);
+      if (body == null &&
+          await _sync.fetchBody(widget.accountId, message.id) is Ok) {
+        // The database stream answers with the rows as they are now.
+        final fresh = await GetIt.I<InboxRepository>()
+            .watchConversation(widget.accountId, widget.conversationId)
+            .first;
+        body = fresh.where((m) => m.message.id == message.id).firstOrNull?.body;
+      }
+      if (!mounted) return;
+      final html = switch (body) {
+        MessageBody(kind: BodyKind.html, :final content) => content,
+        MessageBody(:final content) => plainToHtml(content),
+        null => plainToHtml(message.snippet),
+      };
+      final dateLabel = DateFormat.yMMMMEEEEd(
+        Localizations.localeOf(context).languageCode,
+      ).add_Hm().format(message.date.toLocal());
+      final id = newMessageId(a.address);
+      final draft = switch (kind) {
+        _Kind.forward => buildForward(
+          original: message,
+          originalHtml: html,
+          self: a.address,
+          messageId: id,
+          dateLabel: dateLabel,
+          attachments: body?.attachments ?? const [],
+        ),
+        _ => buildReply(
+          original: message,
+          originalHtml: html,
+          self: a.address,
+          messageId: id,
+          all: kind == _Kind.replyAll,
+          dateLabel: dateLabel,
+        ),
+      };
+      await _sync.saveDraft(widget.accountId, draft);
+      if (mounted) widget.onOpenDraft(id);
+    } finally {
+      _acting = false;
+    }
+  }
+
   @override
   void dispose() {
+    final cursor = widget.cursor;
+    if (cursor != null) {
+      if (cursor.reply == _reply) cursor.reply = null;
+      if (cursor.replyAll == _replyAll) cursor.replyAll = null;
+      if (cursor.forward == _forward) cursor.forward = null;
+    }
     for (final s in _subs) {
       unawaited(s.cancel());
     }
@@ -271,7 +354,7 @@ class _ConversationViewState extends State<ConversationView> {
         PostinoAttachmentChip(
           key: ValueKey('attachment-${message.id}-${a.id}'),
           name: _name(a),
-          size: _fileSize(a.size, locale),
+          size: fileSize(a.size, locale),
           openLabel: t.attachmentOpen,
           onOpen: () => _attachment(message.id, a),
           progress: d?.done,
@@ -384,6 +467,7 @@ class _ConversationViewState extends State<ConversationView> {
   @override
   Widget build(BuildContext context) {
     final t = context.t.conversazione;
+    final c = context.pc;
     final messages = _messages;
     final a = _account;
     final now = GetIt.I<Clock>().now();
@@ -419,126 +503,198 @@ class _ConversationViewState extends State<ConversationView> {
       ),
       body: messages == null || messages.isEmpty || a == null
           ? const SizedBox.shrink()
-          : PostinoThreadView(
-              subject: messages.first.message.subject,
-              account: (
-                color: PostinoAccountColor.values[a.color],
-                initial: a.initial,
-              ),
-              accountName: a.name,
-              importantLabel:
-                  messages.any((m) => m.message.labelIds.contains('IMPORTANT'))
-                  ? t.important
-                  : null,
-              labels: [
-                for (final l in _labels)
-                  if (l.kind == LabelKind.etichetta &&
-                      messages.any((m) => m.message.labelIds.contains(l.id)))
-                    l.name,
-              ],
-              messages: [
-                for (final (:message, :body) in messages.reversed)
-                  PostinoThreadMessage(
-                    key: ValueKey('message-${message.id}'),
-                    sender: message.fromName ?? message.from,
-                    address: message.fromName == null ? null : message.from,
-                    time: messageTime(
-                      message.date,
-                      now,
-                      locale,
-                      context.t.list.yesterday,
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: PostinoThreadView(
+                    subject: messages.first.message.subject,
+                    account: (
+                      color: PostinoAccountColor.values[a.color],
+                      initial: a.initial,
                     ),
-                    preview: message.snippet,
-                    recipients: message.cc.isEmpty
-                        ? t.to(recipients: message.to.map(name).join(', '))
-                        : t.toCc(
-                            recipients: message.to.map(name).join(', '),
-                            cc: message.cc.map(name).join(', '),
-                          ),
-                    details: [
-                      PostinoMessageDetail(
-                        t.from,
-                        formatMailbox((
-                          name: message.fromName,
-                          address: message.from,
-                        )),
-                      ),
-                      PostinoMessageDetail(t.toLabel, message.to.join(', ')),
-                      if (message.cc.isNotEmpty)
-                        PostinoMessageDetail(t.cc, message.cc.join(', ')),
-                      PostinoMessageDetail(
-                        t.date,
-                        DateFormat.yMMMMEEEEd(locale)
-                            .add_Hm()
-                            .format(message.date.toLocal()),
-                      ),
-                      PostinoMessageDetail(
-                        t.receivedOn,
-                        a.address,
-                        account: accountRef,
-                      ),
+                    accountName: a.name,
+                    importantLabel:
+                        messages.any(
+                          (m) => m.message.labelIds.contains('IMPORTANT'),
+                        )
+                        ? t.important
+                        : null,
+                    labels: [
+                      for (final l in _labels)
+                        if (l.kind == LabelKind.etichetta &&
+                            messages.any(
+                              (m) => m.message.labelIds.contains(l.id),
+                            ))
+                          l.name,
                     ],
-                    notices: _notices(message, body, t),
-                    unread: !message.isRead,
-                    expanded: _expanded[message.id]!,
-                    // A body without its attachments known (stored before v9) is downloaded again too.
-                    onToggle: () => _toggle(
-                      message.id,
-                      body != null && body.attachments != null,
-                    ),
-                    quoteLabel: t.showQuoted,
-                    attachments: _attachments(message, body, t, locale),
-                    signature: switch ((body, shown[message.id]?.signature)) {
-                      (final b?, final s?) => _part(
-                        s,
-                        b.kind,
-                        message,
-                        quiet: true,
-                      ),
-                      _ => null,
-                    },
-                    quote: switch ((body, shown[message.id]?.folded)) {
-                      (final b?, final q?) => _part(
-                        q,
-                        b.kind,
-                        message,
-                        quiet: true,
-                      ),
-                      _ => null,
-                    },
-                    body: switch ((body, _failed[message.id])) {
-                      (final b?, _) => _part(
-                        shown[message.id]!.body,
-                        b.kind,
-                        message,
-                      ),
-                      (null, final f?) => PostinoMessageBody.missing(
-                        key: const ValueKey('body-missing'),
-                        note: f is OfflineFailure ? t.offline : t.failed,
-                        actionLabel: t.retry,
-                        onAction: () => _fetchBody(message.id),
-                      ),
-                      (null, null) => PostinoMessageBody.missing(
-                        note: t.loading,
-                      ),
-                    },
+                    messages: [
+                      for (final (:message, :body) in messages.reversed)
+                        PostinoThreadMessage(
+                          key: ValueKey('message-${message.id}'),
+                          sender: message.fromName ?? message.from,
+                          address: message.fromName == null
+                              ? null
+                              : message.from,
+                          time: messageTime(
+                            message.date,
+                            now,
+                            locale,
+                            context.t.list.yesterday,
+                          ),
+                          preview: message.snippet,
+                          recipients: message.cc.isEmpty
+                              ? t.to(
+                                  recipients: message.to.map(name).join(', '),
+                                )
+                              : t.toCc(
+                                  recipients: message.to.map(name).join(', '),
+                                  cc: message.cc.map(name).join(', '),
+                                ),
+                          details: [
+                            PostinoMessageDetail(
+                              t.from,
+                              formatMailbox((
+                                name: message.fromName,
+                                address: message.from,
+                              )),
+                            ),
+                            PostinoMessageDetail(
+                              t.toLabel,
+                              message.to.join(', '),
+                            ),
+                            if (message.cc.isNotEmpty)
+                              PostinoMessageDetail(t.cc, message.cc.join(', ')),
+                            PostinoMessageDetail(
+                              t.date,
+                              DateFormat.yMMMMEEEEd(locale)
+                                  .add_Hm()
+                                  .format(message.date.toLocal()),
+                            ),
+                            PostinoMessageDetail(
+                              t.receivedOn,
+                              a.address,
+                              account: accountRef,
+                            ),
+                          ],
+                          notices: _notices(message, body, t),
+                          actions: PostinoMenu(
+                            buttonKey: ValueKey(
+                              'message-actions-${message.id}',
+                            ),
+                            label: t.messageActions,
+                            items: [
+                              for (final (kind, label) in [
+                                (_Kind.reply, t.reply),
+                                (_Kind.replyAll, t.replyAll),
+                                (_Kind.forward, t.forward),
+                              ])
+                                PostinoMenuItem(
+                                  key: ValueKey(
+                                    'message-${kind.name}-${message.id}',
+                                  ),
+                                  label: label,
+                                  onPressed: () => unawaited(
+                                    _act(kind, messageId: message.id),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          unread: !message.isRead,
+                          expanded: _expanded[message.id]!,
+                          // A body without its attachments known (stored before v9) is downloaded again too.
+                          onToggle: () => _toggle(
+                            message.id,
+                            body != null && body.attachments != null,
+                          ),
+                          quoteLabel: t.showQuoted,
+                          attachments: _attachments(message, body, t, locale),
+                          signature: switch ((
+                            body,
+                            shown[message.id]?.signature,
+                          )) {
+                            (final b?, final s?) => _part(
+                              s,
+                              b.kind,
+                              message,
+                              quiet: true,
+                            ),
+                            _ => null,
+                          },
+                          quote: switch ((body, shown[message.id]?.folded)) {
+                            (final b?, final q?) => _part(
+                              q,
+                              b.kind,
+                              message,
+                              quiet: true,
+                            ),
+                            _ => null,
+                          },
+                          body: switch ((body, _failed[message.id])) {
+                            (final b?, _) => _part(
+                              shown[message.id]!.body,
+                              b.kind,
+                              message,
+                            ),
+                            (null, final f?) => PostinoMessageBody.missing(
+                              key: const ValueKey('body-missing'),
+                              note: f is OfflineFailure ? t.offline : t.failed,
+                              actionLabel: t.retry,
+                              onAction: () => _fetchBody(message.id),
+                            ),
+                            (null, null) => PostinoMessageBody.missing(
+                              note: t.loading,
+                            ),
+                          },
+                        ),
+                    ],
                   ),
+                ),
+                // Under the thread, always in view: on the last message (ADR 0014: r, a, f).
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    border: Border(
+                      top: BorderSide(
+                        color: c.borderSubtle,
+                        width: PostinoBorder.borderWidthHairline,
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PostinoSpacing.s4,
+                      vertical: PostinoSpacing.s3,
+                    ),
+                    child: Wrap(
+                      spacing: PostinoSpacing.s2,
+                      runSpacing: PostinoSpacing.s2,
+                      children: [
+                        PostinoButton(
+                          key: const ValueKey('reply'),
+                          label: t.reply,
+                          onPressed: _reply,
+                        ),
+                        PostinoButton(
+                          key: const ValueKey('reply-all'),
+                          label: t.replyAll,
+                          variant: PostinoButtonVariant.ghost,
+                          onPressed: _replyAll,
+                        ),
+                        PostinoButton(
+                          key: const ValueKey('forward'),
+                          label: t.forward,
+                          variant: PostinoButtonVariant.ghost,
+                          onPressed: _forward,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
     );
   }
 }
 
-/// «980 B», «88 KB», «1,2 MB»: binary units, one decimal from MB, in the reader's [locale].
-String _fileSize(int bytes, String locale) {
-  const units = ['B', 'KB', 'MB', 'GB'];
-  var value = bytes.toDouble();
-  var unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  final f = NumberFormat.decimalPattern(locale)
-    ..maximumFractionDigits = unit >= 2 ? 1 : 0;
-  return '${f.format(value)} ${units[unit]}';
-}
+enum _Kind { reply, replyAll, forward }

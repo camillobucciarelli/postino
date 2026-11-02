@@ -70,6 +70,8 @@ class Message {
     this.fromName,
     this.cc = const [],
     this.bcc = const [],
+    this.replyTo,
+    this.references = const [],
   });
 
   /// Provider-side id.
@@ -95,6 +97,12 @@ class Message {
   final String subject;
   final String snippet;
   final DateTime date;
+
+  /// The `Reply-To` mailbox ([formatMailbox]), if the header is there: a reply goes to it instead of [from] (#37).
+  final String? replyTo;
+
+  /// The Message-IDs of the `References` header, oldest first (#37).
+  final List<String> references;
 }
 
 enum BodyKind { html, testo }
@@ -132,6 +140,10 @@ class OutgoingMessage {
     required this.body,
     this.cc = const [],
     this.bcc = const [],
+    this.inReplyTo,
+    this.references = const [],
+    this.conversationId,
+    this.attachments = const [],
   });
   final String messageId;
 
@@ -144,6 +156,22 @@ class OutgoingMessage {
 
   /// HTML; the adapter derives the text/plain alternative (`htmlText`).
   final String body;
+
+  /// A reply (#37): the Message-ID answered, the chain of `References`, and the Provider's id of the
+  /// Conversazione it joins (Gmail threadId). Null and empty for a new message or a forward.
+  final String? inReplyTo;
+  final List<String> references;
+  final String? conversationId;
+
+  /// Attachments taken over from another message (a forward, #37): the adapter fetches their bytes when it builds the MIME.
+  final List<ForwardedAttachment> attachments;
+}
+
+/// An [Attachment] of the Provider message [sourceMessageId], re-attached to an [OutgoingMessage].
+class ForwardedAttachment {
+  const ForwardedAttachment(this.sourceMessageId, this.attachment);
+  final String sourceMessageId;
+  final Attachment attachment;
 }
 
 const _alphanumerics =

@@ -55,6 +55,10 @@ _Avoid_: Thread, discussione
 **Bozza**:
 Un messaggio non ancora inviato, salvato nella cartella Bozze del Provider del suo Account, così da poterlo riprendere su qualsiasi dispositivo o in un altro client. Appartiene a un solo Account; se viene modificata in due posti diversi nasce un Conflitto.
 
+**Citazione**:
+Il messaggio originale riportato sotto il testo nuovo di un Rispondi o Inoltra: la riga «Il giorno <data>, <Nome> <email> ha scritto:» seguita dal corpo originale, modificabile nell'editor.
+_Avoid_: Quote, testo citato (è la parte ripiegata di un messaggio ricevuto)
+
 **Annulla invio**:
 La breve attesa dopo Invia durante la quale l'utente può ritirare il messaggio e tornare a modificarlo; trascorsa l'attesa il messaggio parte anche se l'app è stata chiusa.
 _Avoid_: Undo send, ripensamento

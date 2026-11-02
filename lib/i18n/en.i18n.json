@@ -80,7 +80,11 @@
     "attachmentMore": "More actions",
     "attachmentSave": "Save…",
     "attachmentSaveFailed": "Save failed",
-    "attachmentUntitled": "Untitled attachment"
+    "attachmentUntitled": "Untitled attachment",
+    "reply": "Reply",
+    "replyAll": "Reply all",
+    "forward": "Forward",
+    "messageActions": "Message actions"
   },
   "composizione": {
     "title": "New message",
@@ -105,7 +109,8 @@
     "editor": "Message body",
     "draftNotFound": "Draft not found",
     "draftWithAttachments": "This draft has attachments: edit it from the client that created it",
-    "draftReply": "This Draft is a reply: edit it from the client that created it"
+    "draftReply": "This Draft is a reply: edit it from the client that created it",
+    "forwardedAttachments": "Attachments"
   },
   "bozze": {
     "title": "Drafts",

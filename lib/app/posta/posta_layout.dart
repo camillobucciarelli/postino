@@ -137,6 +137,8 @@ class _PostaLayoutState extends State<PostaLayout> {
                               open.$1,
                               open.$2,
                               onBack: back,
+                              cursor: _cursor,
+                              onOpenDraft: (id) => _openDraft(open.$1, id),
                             ),
                       detailKey: detail,
                       empty: Builder(
@@ -293,15 +295,20 @@ void _openDraft(String accountId, String messageId) => Routefly.navigate(
 );
 
 /// An open Conversazione; its params come from the URI, so a new one is a new view.
+/// [onOpenDraft]: the composer of the Bozza a Rispondi/Inoltra just saved (#37).
 Widget postaConversationView(
   String accountId,
   String conversationId, {
   required VoidCallback onBack,
+  required void Function(String messageId) onOpenDraft,
+  ListCursor? cursor,
 }) => ConversationView(
   key: ValueKey('conversation-$accountId/$conversationId'),
   accountId: accountId,
   conversationId: conversationId,
   onBack: onBack,
+  onOpenDraft: onOpenDraft,
+  cursor: cursor,
 );
 
 void _openConversation(String accountId, String conversationId) =>

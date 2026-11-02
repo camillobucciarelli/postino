@@ -1,7 +1,10 @@
 // Editor <-> HTML of a Bozza (#35): the seven formats survive the round trip, everything else flattens to text.
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/reply.dart';
 import 'package:postino/features/composizione/domain/draft_html.dart';
+
+import '../../support/fake_mail_provider.dart';
 
 /// Adjacent runs with the same attributes as one, as a quill Document keeps them.
 List<Map<String, dynamic>> _normal(List<Map<String, dynamic>> ops) {
@@ -80,6 +83,58 @@ void main() {
           {'insert': 'Titolo\nrosso\n'},
         ],
       );
+    });
+
+    test('the quote of a reply (#37) keeps its blockquote', () {
+      final ops = <Map<String, dynamic>>[
+        {'insert': 'ciao'},
+        {
+          'insert': '\n',
+          'attributes': {'blockquote': true},
+        },
+      ];
+      expect(_normal(htmlToDelta('<blockquote><p>ciao</p></blockquote>')), ops);
+      expect(deltaToHtml(ops), startsWith('<blockquote'));
+      expect(_normal(htmlToDelta(deltaToHtml(ops))), ops);
+    });
+
+    test('a blockquote of two paragraphs keeps two quoted lines (#37)', () {
+      const bq = {'blockquote': true};
+      expect(
+        _normal(htmlToDelta('<blockquote><p>a</p><p>b</p></blockquote>')),
+        [
+          {'insert': 'a'},
+          {'insert': '\n', 'attributes': bq},
+          {'insert': 'b'},
+          {'insert': '\n', 'attributes': bq},
+        ],
+      );
+    });
+
+    test('the Citazione of a reply: attribution as a paragraph, the quoted lines after', () {
+      final m = msg(
+        'o',
+        from: 'ada@example.com',
+        fromName: 'Ada',
+        subject: 'Cena',
+      );
+      final html = quoteHtml(
+        m,
+        dateLabel: 'lunedì 2 novembre 2026 alle 10:00',
+        bodyHtml: '<p>Venerdì?</p><p><strong>Alle 20</strong></p>',
+      );
+      const bq = {'blockquote': true};
+      expect(_normal(htmlToDelta('<p>Prima</p>$html')), [
+        {
+          'insert': 'Prima\nIl giorno lunedì 2 novembre 2026 alle 10:00, Ada <ada@example.com> ha scritto:\nVenerdì?',
+        },
+        {'insert': '\n', 'attributes': bq},
+        {
+          'insert': 'Alle 20',
+          'attributes': {'bold': true},
+        },
+        {'insert': '\n', 'attributes': bq},
+      ]);
     });
 
     test('empty HTML is the empty document', () {

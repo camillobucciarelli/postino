@@ -80,7 +80,11 @@
     "attachmentMore": "Altre azioni",
     "attachmentSave": "Salva…",
     "attachmentSaveFailed": "Salvataggio non riuscito",
-    "attachmentUntitled": "Allegato senza nome"
+    "attachmentUntitled": "Allegato senza nome",
+    "reply": "Rispondi",
+    "replyAll": "Rispondi a tutti",
+    "forward": "Inoltra",
+    "messageActions": "Azioni del messaggio"
   },
   "composizione": {
     "title": "Nuovo messaggio",
@@ -105,7 +109,8 @@
     "editor": "Corpo del messaggio",
     "draftNotFound": "Bozza non trovata",
     "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata",
-    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata"
+    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata",
+    "forwardedAttachments": "Allegati"
   },
   "bozze": {
     "title": "Bozze",

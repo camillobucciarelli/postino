@@ -22,6 +22,10 @@ class Messages extends Table {
 
   /// Bcc, as [cc]; only Bozze and sent messages have one (v10).
   TextColumn get bcc => text().withDefault(const Constant(''))();
+
+  /// The `Reply-To` mailbox and the `References` Message-IDs, one per line; null in rows cached before v11 (#37).
+  TextColumn get replyTo => text().nullable()();
+  TextColumn get references => text().nullable()();
   TextColumn get subject => text()();
   TextColumn get snippet => text()();
 

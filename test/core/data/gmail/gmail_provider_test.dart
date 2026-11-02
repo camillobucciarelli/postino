@@ -542,6 +542,13 @@ void main() {
       expect(f2.labelIds, contains('Label_12'));
       expect(f2.snippet, contains("c'è"));
       expect((f2.from, f2.fromName), ('ada@gmail.com', 'Ada Rossi – Studio'));
+      expect(f2.replyTo, 'Studio <studio@example.com>');
+      expect(f2.references, [
+        '<CAF0@mail.example.com>',
+        '<CAF1x7Yk2b@mail.example.com>',
+      ], reason: 'folded References, one id per token');
+      expect(f1.replyTo, isNull);
+      expect(f1.references, isEmpty);
       expect(byId[_f3]!.labelIds, ['SENT']);
 
       expect(_contents(batch.bodies), {
@@ -790,6 +797,8 @@ void main() {
         'To',
         'Cc',
         'Bcc',
+        'Reply-To',
+        'References',
         'Subject',
         'Message-ID',
       ]);
@@ -894,6 +903,120 @@ void main() {
         );
         expect(parsed.decodeTextPlainPart(), isNot(contains('<b>')));
         expect(parsed.decodeTextHtmlPart()?.trim(), draft.body);
+      });
+
+      test('a reply (#37): In-Reply-To and References headers, threadId beside the raw', () async {
+        final g = _Recorded(routeEmpty);
+        final reply = OutgoingMessage(
+          messageId: draft.messageId,
+          from: draft.from,
+          to: draft.to,
+          subject: 'Re: Caffè',
+          body: '<p>Sì</p>',
+          inReplyTo: '<orig@example.com>',
+          references: const ['<first@example.com>', '<orig@example.com>'],
+          conversationId: 'thread-7',
+        );
+        _ok(await g.provider.saveDraft(reply, isNew: true));
+
+        final body = jsonDecode(g.requests.last.body) as Map;
+        expect((body['message'] as Map)['threadId'], 'thread-7');
+        final parsed = MimeMessage.parseFromText(raw(g.requests.last));
+        expect(parsed.getHeaderValue('in-reply-to'), '<orig@example.com>');
+        expect(
+          parsed.getHeaderValue('references'),
+          '<first@example.com> <orig@example.com>',
+        );
+      });
+
+      test(
+        'a plain Bozza carries no threadId and no threading headers',
+        () async {
+          final g = _Recorded(routeEmpty);
+          _ok(await g.provider.saveDraft(draft, isNew: true));
+          final body = jsonDecode(g.requests.last.body) as Map;
+          expect((body['message'] as Map).containsKey('threadId'), isFalse);
+          final parsed = MimeMessage.parseFromText(raw(g.requests.last));
+          expect(parsed.getHeaderValue('in-reply-to'), isNull);
+          expect(parsed.getHeaderValue('references'), isNull);
+        },
+      );
+
+      test('a forward (#37) fetches each attachment and adds it as a part beside the text and HTML', () async {
+        const f7 = '18f3a2b4c5d6e7f7';
+        final g = _Recorded(
+          (r, path) => switch (path) {
+            'messages/$f7' => 'message_f7_attachments',
+            'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' =>
+              'attachment_f7_pdf',
+            _ => routeEmpty(r, path),
+          },
+        );
+        final forward = OutgoingMessage(
+          messageId: draft.messageId,
+          from: draft.from,
+          to: draft.to,
+          subject: 'Fwd: Caffè',
+          body: '<p>Guarda</p>',
+          attachments: const [
+            ForwardedAttachment(
+              f7,
+              Attachment(
+                id: '1',
+                name: 'Preventivo 2027.pdf',
+                size: 49,
+                mimeType: 'application/pdf',
+              ),
+            ),
+          ],
+        );
+        _ok(await g.provider.saveDraft(forward, isNew: true));
+
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'GET ${_api}messages/$f7',
+            'GET ${_api}messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7',
+            'GET ${_api}drafts',
+            'POST ${_api}drafts',
+          ],
+        );
+        final parsed = MimeMessage.parseFromText(raw(g.requests.last));
+        expect(parsed.mediaType.text, 'multipart/mixed');
+        expect(parsed.decodeTextPlainPart(), contains('Guarda'));
+        expect(parsed.decodeTextHtmlPart()?.trim(), '<p>Guarda</p>');
+        final part = parsed.findContentInfo().single;
+        expect(part.fileName, 'Preventivo 2027.pdf');
+        expect(part.mediaType?.text, 'application/pdf');
+        expect(
+          utf8.decode(parsed.getPart(part.fetchId)!.decodeContentBinary()!),
+          '%PDF-1.4\n% preventivo sintetico per i test\n%%EOF\n',
+        );
+      });
+
+      test('a forward whose attachment is gone fails as NotFound, nothing is written', () async {
+        final g = _Recorded(
+          (r, path) =>
+              path.startsWith('messages/') ? 'not_found' : routeEmpty(r, path),
+        );
+        final forward = OutgoingMessage(
+          messageId: draft.messageId,
+          from: draft.from,
+          to: draft.to,
+          subject: 'Fwd: Caffè',
+          body: '<p>Guarda</p>',
+          attachments: const [
+            ForwardedAttachment(
+              'gone',
+              Attachment(id: '1', name: 'a', size: 1),
+            ),
+          ],
+        );
+        expect(
+          await g.provider.saveDraft(forward, isNew: true),
+          _err<NotFoundFailure>(),
+        );
+        expect(g.requests.map((r) => r.method), isNot(contains('POST')));
       });
 
       test('updating after the create reuses the remembered id: one PUT, no search', () async {

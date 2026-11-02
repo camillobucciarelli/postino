@@ -18,6 +18,8 @@ Message msg(
   bool isStarred = false,
   List<String> labelIds = const [inboxLabelId],
   String? conversationId,
+  String? replyTo,
+  List<String> references = const [],
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
@@ -32,6 +34,8 @@ Message msg(
   subject: subject,
   snippet: snippet,
   date: date ?? DateTime.utc(2026, 1, 1),
+  replyTo: replyTo,
+  references: references,
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
@@ -401,4 +405,6 @@ Message withRead(Message m, bool read) => Message(
   subject: m.subject,
   snippet: m.snippet,
   date: m.date,
+  replyTo: m.replyTo,
+  references: m.references,
 );

@@ -183,17 +183,20 @@ void main() {
       expect(await db.draftsDao.byId('a', '<x@example.com>'), isNull);
     });
 
-    test('keeps a Bozza edited locally, and one never acknowledged by the Provider', () async {
-      await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
-      await db.draftsDao.save('a', _draft('<y@example.com>'), updatedAt: 10);
-      await sync([
-        msg('x', labelIds: const ['DRAFT']),
-      ]);
-      await db.draftsDao.reconcile('a');
-      await sync([]);
-      await db.draftsDao.reconcile('a');
-      expect(await db.draftsDao.byId('a', '<x@example.com>'), isNotNull);
-      expect(await db.draftsDao.byId('a', '<y@example.com>'), isNotNull);
-    });
+    test(
+      'keeps a Bozza edited locally, and one never acknowledged by the Provider',
+      () async {
+        await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
+        await db.draftsDao.save('a', _draft('<y@example.com>'), updatedAt: 10);
+        await sync([
+          msg('x', labelIds: const ['DRAFT']),
+        ]);
+        await db.draftsDao.reconcile('a');
+        await sync([]);
+        await db.draftsDao.reconcile('a');
+        expect(await db.draftsDao.byId('a', '<x@example.com>'), isNotNull);
+        expect(await db.draftsDao.byId('a', '<y@example.com>'), isNotNull);
+      },
+    );
   });
 }

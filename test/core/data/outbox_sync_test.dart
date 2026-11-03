@@ -86,7 +86,7 @@ void main() {
     await engine.saveDraft('a', _message(id));
     await engine.send('a', _message(id));
     h.clock.advance(const Duration(seconds: 5));
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     h.clock.advance(const Duration(seconds: 10));
     await pumpEventQueue();
     expect(a.sent, isEmpty);
@@ -97,7 +97,7 @@ void main() {
     h.clock.advance(sendWindow);
     await pumpEventQueue();
     expect(a.sent, hasLength(1));
-    expect(await engine.cancelSend('a', id), isFalse);
+    expect(await engine.cancelSend('a', id), isNull);
   });
 
   test(
@@ -237,7 +237,7 @@ void main() {
     final old = a.holdAttachment = Completer();
     final first = engine.send('a', forward(att));
     await pumpEventQueue();
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     a.holdAttachment = null;
     final second = _message(id, body: '<p>Nuovo</p>');
     final deadline = h.clock.now().add(sendWindow);
@@ -271,7 +271,7 @@ void main() {
       greaterThan(h.clock.now().millisecondsSinceEpoch),
     );
     expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     expect(await outbox(), isEmpty);
     a.holdAttachment!.complete();
     expect(
@@ -298,7 +298,7 @@ void main() {
     h.clock.advance(sendWindow);
     // The flush of the send is queued behind the upload; Annulla does not wait for the queue.
     await pumpEventQueue();
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     a.holdDraft!.complete();
     await flush;
     await pumpEventQueue();
@@ -336,7 +336,7 @@ void main() {
     final cancel = engine.cancelSend('a', id);
     await pumpEventQueue();
     a.holdSend!.complete();
-    expect(await cancel, isFalse);
+    expect(await cancel, isNull);
     expect(await outbox(), isEmpty);
     expect((await inviati()).single.message.messageId, id);
   });
@@ -383,7 +383,7 @@ void main() {
     a.removeDraftRemotely(id);
     await engine.syncAll();
     expect(await draftRow(), isNotNull);
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     expect(await engine.openDraft('a', id), isA<Ok<OutgoingMessage>>());
   });
 
@@ -460,7 +460,7 @@ void main() {
     await pumpEventQueue();
     expect(a.sendCalls, 1);
 
-    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.cancelSend('a', id), id);
     expect(await outbox(), isEmpty);
   });
 
@@ -676,5 +676,48 @@ void main() {
         isA<NotFoundFailure>(),
       ),
     );
+  });
+
+  test(
+    'after the send the cached Provider Bozza is gone at once, without a sync',
+    () async {
+      await engine.saveDraft('a', _message(id));
+      await engine.flushDrafts('a');
+      await engine.syncAll(); // the Provider's DRAFT copy is cached
+      await engine.send('a', _message(id));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect(a.sent, hasLength(1));
+      expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
+    },
+  );
+
+  test('Annulla of a row already attempted reopens the Bozza under a new Message-ID, which then goes out', () async {
+    a.loseSendResponse = true;
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a'); // no draft timer left to replay the outbox
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, hasLength(1));
+
+    final fresh = await engine.cancelSend('a', id);
+    expect(fresh, isNotNull);
+    expect(fresh, isNot(id));
+    expect(await draftRow(), isNull);
+    final moved = await GetIt.I<PostinoDatabase>().draftsDao.byId('a', fresh!);
+    expect(moved!.body, '<p>Ciao</p>');
+
+    await engine.send('a', _message(fresh));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent.map((e) => e.$1), [id, fresh]);
+  });
+
+  test('Annulla of a row never attempted keeps the Message-ID', () async {
+    await engine.saveDraft('a', _message(id));
+    await engine.send('a', _message(id));
+    expect(await engine.cancelSend('a', id), id);
+    expect(await draftRow(), isNotNull);
   });
 }

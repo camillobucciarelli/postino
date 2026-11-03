@@ -4183,6 +4183,21 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _attemptedMeta = const VerificationMeta(
+    'attempted',
+  );
+  @override
+  late final GeneratedColumn<bool> attempted = GeneratedColumn<bool>(
+    'attempted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("attempted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -4198,6 +4213,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     sendAfter,
     claimedUntil,
     failed,
+    attempted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4312,6 +4328,12 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
       );
     }
+    if (data.containsKey('attempted')) {
+      context.handle(
+        _attemptedMeta,
+        attempted.isAcceptableOrUnknown(data['attempted']!, _attemptedMeta),
+      );
+    }
     return context;
   }
 
@@ -4373,6 +4395,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}failed'],
       )!,
+      attempted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}attempted'],
+      )!,
     );
   }
 
@@ -4414,6 +4440,10 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
 
   /// The Provider refused it for good (too big, Bozza gone): not retried, the UI shows it as failed.
   final bool failed;
+
+  /// A send of this row reached the Provider's door (set when a sender claims it): its delivery may be uncertain, so a
+  /// cancel reopens the Bozza under a new Message-ID.
+  final bool attempted;
   const OutboxRow({
     required this.accountId,
     required this.messageId,
@@ -4428,6 +4458,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     required this.sendAfter,
     this.claimedUntil,
     required this.failed,
+    required this.attempted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4449,6 +4480,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       map['claimed_until'] = Variable<int>(claimedUntil);
     }
     map['failed'] = Variable<bool>(failed);
+    map['attempted'] = Variable<bool>(attempted);
     return map;
   }
 
@@ -4471,6 +4503,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ? const Value.absent()
           : Value(claimedUntil),
       failed: Value(failed),
+      attempted: Value(attempted),
     );
   }
 
@@ -4493,6 +4526,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       sendAfter: serializer.fromJson<int>(json['sendAfter']),
       claimedUntil: serializer.fromJson<int?>(json['claimedUntil']),
       failed: serializer.fromJson<bool>(json['failed']),
+      attempted: serializer.fromJson<bool>(json['attempted']),
     );
   }
   @override
@@ -4512,6 +4546,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       'sendAfter': serializer.toJson<int>(sendAfter),
       'claimedUntil': serializer.toJson<int?>(claimedUntil),
       'failed': serializer.toJson<bool>(failed),
+      'attempted': serializer.toJson<bool>(attempted),
     };
   }
 
@@ -4529,6 +4564,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     int? sendAfter,
     Value<int?> claimedUntil = const Value.absent(),
     bool? failed,
+    bool? attempted,
   }) => OutboxRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -4545,6 +4581,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     sendAfter: sendAfter ?? this.sendAfter,
     claimedUntil: claimedUntil.present ? claimedUntil.value : this.claimedUntil,
     failed: failed ?? this.failed,
+    attempted: attempted ?? this.attempted,
   );
   OutboxRow copyWithCompanion(OutboxCompanion data) {
     return OutboxRow(
@@ -4567,6 +4604,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ? data.claimedUntil.value
           : this.claimedUntil,
       failed: data.failed.present ? data.failed.value : this.failed,
+      attempted: data.attempted.present ? data.attempted.value : this.attempted,
     );
   }
 
@@ -4585,7 +4623,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ..write('version: $version, ')
           ..write('sendAfter: $sendAfter, ')
           ..write('claimedUntil: $claimedUntil, ')
-          ..write('failed: $failed')
+          ..write('failed: $failed, ')
+          ..write('attempted: $attempted')
           ..write(')'))
         .toString();
   }
@@ -4605,6 +4644,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     sendAfter,
     claimedUntil,
     failed,
+    attempted,
   );
   @override
   bool operator ==(Object other) =>
@@ -4622,7 +4662,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           other.version == this.version &&
           other.sendAfter == this.sendAfter &&
           other.claimedUntil == this.claimedUntil &&
-          other.failed == this.failed);
+          other.failed == this.failed &&
+          other.attempted == this.attempted);
 }
 
 class OutboxCompanion extends UpdateCompanion<OutboxRow> {
@@ -4639,6 +4680,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
   final Value<int> sendAfter;
   final Value<int?> claimedUntil;
   final Value<bool> failed;
+  final Value<bool> attempted;
   final Value<int> rowid;
   const OutboxCompanion({
     this.accountId = const Value.absent(),
@@ -4654,6 +4696,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     this.sendAfter = const Value.absent(),
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
+    this.attempted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OutboxCompanion.insert({
@@ -4670,6 +4713,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     required int sendAfter,
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
+    this.attempted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -4695,6 +4739,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Expression<int>? sendAfter,
     Expression<int>? claimedUntil,
     Expression<bool>? failed,
+    Expression<bool>? attempted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4711,6 +4756,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       if (sendAfter != null) 'send_after': sendAfter,
       if (claimedUntil != null) 'claimed_until': claimedUntil,
       if (failed != null) 'failed': failed,
+      if (attempted != null) 'attempted': attempted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4729,6 +4775,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Value<int>? sendAfter,
     Value<int?>? claimedUntil,
     Value<bool>? failed,
+    Value<bool>? attempted,
     Value<int>? rowid,
   }) {
     return OutboxCompanion(
@@ -4745,6 +4792,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       sendAfter: sendAfter ?? this.sendAfter,
       claimedUntil: claimedUntil ?? this.claimedUntil,
       failed: failed ?? this.failed,
+      attempted: attempted ?? this.attempted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4791,6 +4839,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     if (failed.present) {
       map['failed'] = Variable<bool>(failed.value);
     }
+    if (attempted.present) {
+      map['attempted'] = Variable<bool>(attempted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4813,6 +4864,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
           ..write('sendAfter: $sendAfter, ')
           ..write('claimedUntil: $claimedUntil, ')
           ..write('failed: $failed, ')
+          ..write('attempted: $attempted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7116,6 +7168,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   required int sendAfter,
   Value<int?> claimedUntil,
   Value<bool> failed,
+  Value<bool> attempted,
   Value<int> rowid,
 });
 typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
@@ -7132,6 +7185,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<int> sendAfter,
   Value<int?> claimedUntil,
   Value<bool> failed,
+  Value<bool> attempted,
   Value<int> rowid,
 });
 
@@ -7206,6 +7260,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<bool> get failed => $composableBuilder(
     column: $table.failed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get attempted => $composableBuilder(
+    column: $table.attempted,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7283,6 +7342,11 @@ class $$OutboxTableOrderingComposer
     column: $table.failed,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get attempted => $composableBuilder(
+    column: $table.attempted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OutboxTableAnnotationComposer
@@ -7338,6 +7402,9 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<bool> get failed =>
       $composableBuilder(column: $table.failed, builder: (column) => column);
+
+  GeneratedColumn<bool> get attempted =>
+      $composableBuilder(column: $table.attempted, builder: (column) => column);
 }
 
 class $$OutboxTableTableManager
@@ -7384,6 +7451,7 @@ class $$OutboxTableTableManager
                 Value<int> sendAfter = const Value.absent(),
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
+                Value<bool> attempted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion(
                 accountId: accountId,
@@ -7399,6 +7467,7 @@ class $$OutboxTableTableManager
                 sendAfter: sendAfter,
                 claimedUntil: claimedUntil,
                 failed: failed,
+                attempted: attempted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7416,6 +7485,7 @@ class $$OutboxTableTableManager
                 required int sendAfter,
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
+                Value<bool> attempted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion.insert(
                 accountId: accountId,
@@ -7431,6 +7501,7 @@ class $$OutboxTableTableManager
                 sendAfter: sendAfter,
                 claimedUntil: claimedUntil,
                 failed: failed,
+                attempted: attempted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

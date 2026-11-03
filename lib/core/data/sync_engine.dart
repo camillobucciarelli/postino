@@ -256,8 +256,10 @@ class SyncEngine implements MailSync {
   }
 
   @override
-  Future<bool> cancelSend(String accountId, String messageId) async {
+  Future<String?> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
+    final attempted =
+        (await _store.outgoing(accountId, messageId))?.attempted ?? false;
     // Not behind the Account's queue: a replay waiting on a slow upload would send the row first.
     // The claim in the database refuses the cancel of a row that is going now (false).
     final cancelled = await _store.cancelOutgoing(
@@ -266,7 +268,15 @@ class SyncEngine implements MailSync {
       _clock.now().millisecondsSinceEpoch,
     );
     await _releaseIfEmpty(accountId);
-    return cancelled;
+    if (!cancelled) return null;
+    final account = attempted ? await _account(accountId) : null;
+    if (account == null) return messageId;
+    // ponytail: the original may or may not have been delivered; a new Message-ID keeps the two apart (an edit is never
+    // taken for the original), and the next sync shows the original in Inviati if it went. The old remote draft is left to reconcile.
+    final fresh = newMessageId(account.address);
+    return await _store.rekeyDraft(accountId, messageId, fresh)
+        ? fresh
+        : messageId;
   }
 
   /// Lets the platform go once nothing of the Account is queued any more.

@@ -212,6 +212,23 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
           ))
           .go();
 
+  /// Moves the local Bozza to [to], as new on the Provider; false when there is none.
+  Future<bool> rekey(String accountId, String from, String to) =>
+      transaction(() async {
+        final d = await byId(accountId, from);
+        if (d == null) return false;
+        await into(drafts).insert(
+          d.copyWith(
+            messageId: to,
+            pending: true,
+            synced: false,
+            remoteKnown: false,
+          ),
+        );
+        await remove(accountId, from);
+        return true;
+      });
+
   /// After a sync: a Bozza the Provider lists as DRAFT is remoteKnown; one it listed before and no longer
   /// does, with nothing pending here and not queued to send, was deleted or sent elsewhere, so it goes.
   // ponytail: a small window if the Gmail history brings the deletion and the new version in different batches.

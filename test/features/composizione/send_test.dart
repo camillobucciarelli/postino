@@ -440,7 +440,7 @@ class _TooBig implements MailSync {
   @override
   Future<void> flushDrafts(String a) => real.flushDrafts(a);
   @override
-  Future<bool> cancelSend(String a, String m) => real.cancelSend(a, m);
+  Future<String?> cancelSend(String a, String m) => real.cancelSend(a, m);
   @override
   Future<void> flushOutbox(String a) => real.flushOutbox(a);
   @override

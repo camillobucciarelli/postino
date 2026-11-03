@@ -37,6 +37,10 @@ class Outbox extends Table {
   /// The Provider refused it for good (too big, Bozza gone): not retried, the UI shows it as failed.
   BoolColumn get failed => boolean().withDefault(const Constant(false))();
 
+  /// A send of this row reached the Provider's door (set when a sender claims it): its delivery may be uncertain, so a
+  /// cancel reopens the Bozza under a new Message-ID.
+  BoolColumn get attempted => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {accountId, messageId};
 }

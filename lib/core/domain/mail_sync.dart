@@ -31,8 +31,9 @@ abstract interface class MailSync {
   Future<Result<DateTime>> send(String accountId, OutgoingMessage message);
 
   /// Takes the message out of the outbox within the window, or once the Provider refused it for good;
-  /// false when it already went (or was never queued). The Bozza stays, so the UI can reopen it.
-  Future<bool> cancelSend(String accountId, String messageId);
+  /// null when it already went (or was never queued). The Bozza stays, so the UI can reopen it: the result is its
+  /// Message-ID, [messageId] itself, or a new one when a send was already attempted (its delivery is uncertain).
+  Future<String?> cancelSend(String accountId, String messageId);
 
   /// Sends the Account's due outbox entries now; completes offline or Da ricollegare too, they stay queued.
   Future<void> flushOutbox(String accountId);

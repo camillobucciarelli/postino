@@ -415,9 +415,8 @@ Stream<bool> _connectivity() async* {
 
 /// Annulla invio of a queued or failed message: when it is still ours, it reopens as a Bozza.
 Future<void> _reopen(String accountId, String messageId) async {
-  if (await GetIt.I<MailSync>().cancelSend(accountId, messageId)) {
-    _openDraft(accountId, messageId);
-  }
+  final id = await GetIt.I<MailSync>().cancelSend(accountId, messageId);
+  if (id != null) _openDraft(accountId, id);
 }
 
 /// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.

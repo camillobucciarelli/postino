@@ -106,7 +106,12 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
                 t.failed.not() &
                 _unclaimed(t, nowMs),
           ))
-          .write(OutboxCompanion(claimedUntil: Value(untilMs))) >
+          .write(
+            OutboxCompanion(
+              claimedUntil: Value(untilMs),
+              attempted: const Value(true),
+            ),
+          ) >
       0;
 
   /// Gives the row back after a send that failed but may be retried.

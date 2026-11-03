@@ -239,7 +239,7 @@ void main() {
     tester,
   ) async {
     await _start(tester);
-    // ponytail: 36 MB through the editor never lays out in a widget test; the engine's refusal of a real
+    // ponytail: 37 MB put in the Quill document never lays out in a widget test (tried: it hangs); the engine's refusal of a real
     // oversized message is outbox_sync_test's, here the composer only has to show it.
     final real = GetIt.I<MailSync>();
     GetIt.I
@@ -259,9 +259,7 @@ void main() {
 
   _onMac(
     'a message still queued at the restart of PostinoApp goes',
-    // ponytail: disposing PostinoApp mid-window never settles under the test clock; the replay at the next
-    // start is covered by outbox_sync_test («an entry still queued at restart goes at the next start»).
-    skip: false,
+    // The app is disposed within the window and started again after it: the replay at start sends it.
     (tester) async {
       await _start(tester);
       await _write(tester);

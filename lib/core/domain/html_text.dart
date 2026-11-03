@@ -25,6 +25,12 @@ String htmlText(String html) {
   return '$out';
 }
 
+/// The body as a list shows it: no tags, spaces compressed, at most 120 characters.
+String listSnippet(String html) {
+  final text = htmlText(html).replaceAll(RegExp(r'\s+'), ' ').trim();
+  return text.length > 120 ? text.substring(0, 120) : text;
+}
+
 const _escape = HtmlEscape(HtmlEscapeMode.element);
 
 /// Plain text as HTML: a paragraph per blank-line block, `<br>` for the other line breaks, the text escaped.

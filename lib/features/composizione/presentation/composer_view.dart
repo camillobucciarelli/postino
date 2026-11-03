@@ -36,7 +36,10 @@ class ComposerView extends StatefulWidget {
   final String accountId;
   final String messageId;
   final VoidCallback onClose;
-  final void Function(String accountId, String messageId) onQueued;
+
+  /// [until]: the end of the Annulla invio window, as the engine computed it.
+  final void Function(String accountId, String messageId, DateTime until)
+  onQueued;
 
   @override
   State<ComposerView> createState() => _ComposerViewState();
@@ -151,6 +154,9 @@ class _ComposerViewState extends State<ComposerView> {
     unawaited(_sync.saveDraft(_from, m));
   }
 
+  // Set while the engine prepares the message: a second Invia would queue it twice.
+  bool _sending = false;
+
   Future<void> _send() async {
     final t = context.t.composizione;
     final m = _message();
@@ -158,11 +164,16 @@ class _ComposerViewState extends State<ComposerView> {
     if ([...m.to, ...m.cc, ...m.bcc].isEmpty) {
       return setState(() => _sendError = t.noRecipient);
     }
+    if (_sending) return;
+    setState(() => _sending = true);
     final r = await _sync.send(_from, m);
     if (!mounted) return;
+    setState(() => _sending = false);
     switch (r) {
-      case Ok():
-        widget.onQueued(_from, widget.messageId);
+      case Ok(:final value):
+        widget.onQueued(_from, widget.messageId, value);
+      case Err(failure: OfflineFailure()):
+        setState(() => _sendError = t.offlineAttachments);
       case Err(failure: SizeLimitFailure(:final limitBytes)):
         setState(
           () => _sendError = t.tooLarge(mb: limitBytes ~/ (1024 * 1024)),
@@ -209,7 +220,7 @@ class _ComposerViewState extends State<ComposerView> {
             PostinoIconButton(
               icon: PostinoIcons.send,
               label: t.send,
-              onPressed: _send,
+              onPressed: _sending ? null : _send,
             ),
           PostinoIconButton(
             icon: PostinoIcons.close,

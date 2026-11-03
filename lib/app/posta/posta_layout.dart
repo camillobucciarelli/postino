@@ -88,17 +88,15 @@ class _PostaLayoutState extends State<PostaLayout> {
     void back() => Routefly.navigate(list);
     // Invia: the composer closes and the Snackbar of Annulla invio shows under this layout's messenger (the
     // app's: PostaLayout outlives the composer in both layouts), so it survives the detail going away.
-    void queued(String accountId, String messageId) {
+    void queued(String accountId, String messageId, DateTime until) {
       back();
       PostinoSnackbar.show(
         context,
         message: context.t.composizione.queued,
         actionLabel: context.t.composizione.undo,
-        onAction: () async {
-          if (await GetIt.I<MailSync>().cancelSend(accountId, messageId)) {
-            _openDraft(accountId, messageId);
-          }
-        },
+        until: until,
+        now: GetIt.I<Clock>().now,
+        onAction: () => _reopen(accountId, messageId),
       );
     }
 
@@ -326,19 +324,22 @@ Widget postaSentView(
         r,
         waiting: context.t.inviati.waiting,
         offline: context.t.inviati.offline,
+        failed: context.t.inviati.failed,
       ),
       selected: selected,
       cursor: cursor,
       emptyTitle: context.t.inviati.emptyTitle,
       emptyBody: context.t.inviati.emptyBody,
-      // ponytail: a queued row (its Conversazione is its Message-ID) opens nothing; Annulla is in the Snackbar.
-      onOpen: (a, c) => c.startsWith('<') ? null : _openConversation(a, c),
+      // A queued or failed row (its Conversazione is its Message-ID) is cancelled and reopens as a Bozza.
+      onOpen: (a, c) =>
+          c.startsWith('<') ? _reopen(a, c) : _openConversation(a, c),
     ),
   ),
 );
 
 /// The outbox rows first, newest first, then the sent messages. The state sits before the preview:
-/// «In attesa d'invio» within the window or online, «In uscita, in attesa di rete» once the window passed offline.
+/// «In attesa d'invio» within the window or online, «In uscita, in attesa di rete» once the window passed offline,
+/// «Invio non riuscito» when the Provider refused it for good.
 // ponytail: the rows recompute on every outbox change (the failed attempt offline is one), not on the clock: a row
 // may read «In attesa d'invio» for the seconds the send takes, then it leaves the outbox.
 Stream<List<InboxEntry>> _sentEntries(
@@ -346,20 +347,26 @@ Stream<List<InboxEntry>> _sentEntries(
   InboxRepository r, {
   required String waiting,
   required String offline,
+  required String failed,
 }) => _latest(
-  GetIt.I<AccountsRepository>().watchAccounts(),
+  _latest(
+    GetIt.I<AccountsRepository>().watchAccounts(),
+    _connectivity(),
+    (accounts, online) => (accounts, online),
+  ),
   _latest(
     r.watchOutbox(accountId),
     r.watchMessages(accountId, sentLabelId),
     (outbox, sent) => (outbox, sent),
   ),
-  (accounts, lists) {
+  (context, lists) {
+    final (accounts, online) = context;
     final (outbox, sent) = lists;
     final now = GetIt.I<Clock>().now().millisecondsSinceEpoch;
-    final online = GetIt.I<Connectivity>().isOnline;
     return [
       for (final a in accounts.where((a) => a.id == accountId))
-        for (final OutgoingEntry(message: m, :sendAfter) in outbox)
+        for (final OutgoingEntry(message: m, :sendAfter, failed: refused)
+            in outbox)
           InboxEntry(
             message: Message(
               id: m.messageId,
@@ -374,8 +381,12 @@ Stream<List<InboxEntry>> _sentEntries(
               bcc: m.bcc,
               subject: m.subject,
               snippet:
-                  '${sendAfter > now || online ? waiting : offline} · '
-                  '${htmlText(m.body).replaceAll(RegExp(r'\s+'), ' ').trim()}',
+                  '${refused
+                      ? failed
+                      : sendAfter > now || online
+                      ? waiting
+                      : offline} · '
+                  '${listSnippet(m.body)}',
               // The end of the window: the time it is listed under until the Provider dates it.
               date: DateTime.fromMillisecondsSinceEpoch(sendAfter, isUtc: true),
             ),
@@ -387,6 +398,20 @@ Stream<List<InboxEntry>> _sentEntries(
     ];
   },
 );
+
+/// The connection state now, then each change.
+Stream<bool> _connectivity() async* {
+  final c = GetIt.I<Connectivity>();
+  yield c.isOnline;
+  yield* c.onChanged;
+}
+
+/// Annulla invio of a queued or failed message: when it is still ours, it reopens as a Bozza.
+Future<void> _reopen(String accountId, String messageId) async {
+  if (await GetIt.I<MailSync>().cancelSend(accountId, messageId)) {
+    _openDraft(accountId, messageId);
+  }
+}
 
 /// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.
 // ponytail: two streams only; a package combineLatest if a third view needs it.
@@ -420,7 +445,8 @@ Widget postaComposerView(
   String accountId,
   String messageId, {
   required VoidCallback onClose,
-  required void Function(String accountId, String messageId) onQueued,
+  required void Function(String accountId, String messageId, DateTime until)
+  onQueued,
 }) => ComposerView(
   key: ValueKey('draft-$accountId/$messageId'),
   accountId: accountId,

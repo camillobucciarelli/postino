@@ -15,33 +15,35 @@ class PostinoSnackbar extends StatefulWidget {
     required this.message,
     required this.actionLabel,
     required this.onAction,
-    this.duration = PostinoMotion.undoWindow,
-    this.semanticsLabel,
+    required this.until,
+    this.now = DateTime.now,
   });
 
   final String message;
   final String actionLabel;
   final VoidCallback onAction;
 
-  /// How long the action stays available; the countdown shows its whole seconds.
-  final Duration duration;
+  /// When the action stops being available; the countdown shows the whole seconds left to it.
+  final DateTime until;
 
-  /// What the screen reader announces; defaults to the message and the countdown.
-  final String? semanticsLabel;
+  /// The clock the countdown reads (the app's, so a test can move it).
+  final DateTime Function() now;
 
-  /// Shows it through the nearest ScaffoldMessenger; returns the controller so the caller can dismiss it.
+  /// Shows it through the nearest ScaffoldMessenger, replacing the one on screen (a second Annulla never
+  /// waits behind the first); returns the controller so the caller can dismiss it.
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason> show(
     BuildContext context, {
     required String message,
     required String actionLabel,
     required VoidCallback onAction,
-    Duration duration = PostinoMotion.undoWindow,
-    String? semanticsLabel,
+    required DateTime until,
+    DateTime Function() now = DateTime.now,
   }) {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
+    final left = until.difference(now());
     return messenger.showSnackBar(
       SnackBar(
-        duration: duration,
+        duration: left.isNegative ? Duration.zero : left,
         padding: const EdgeInsets.symmetric(
           horizontal: PostinoSpacing.s4,
           vertical: PostinoSpacing.s1,
@@ -49,8 +51,8 @@ class PostinoSnackbar extends StatefulWidget {
         content: PostinoSnackbar(
           message: message,
           actionLabel: actionLabel,
-          duration: duration,
-          semanticsLabel: semanticsLabel,
+          until: until,
+          now: now,
           onAction: () {
             onAction();
             messenger.hideCurrentSnackBar();
@@ -65,15 +67,19 @@ class PostinoSnackbar extends StatefulWidget {
 }
 
 class _PostinoSnackbarState extends State<PostinoSnackbar> {
-  late int _left = widget.duration.inSeconds;
+  late int _left = _seconds();
   Timer? _timer;
+
+  int _seconds() {
+    final ms = widget.until.difference(widget.now()).inMilliseconds;
+    return ms <= 0 ? 0 : (ms / 1000).ceil();
+  }
 
   @override
   void initState() {
     super.initState();
-    // The tick count, not the elapsed clock: a periodic Timer re-aligns to its start, so no drift.
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      setState(() => _left = widget.duration.inSeconds - t.tick);
+      setState(() => _left = _seconds());
       if (_left <= 0) t.cancel();
     });
   }
@@ -91,7 +97,7 @@ class _PostinoSnackbarState extends State<PostinoSnackbar> {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: widget.semanticsLabel ?? '${widget.message}, $countdown',
+      label: '${widget.message}, $countdown',
       child: Row(
         spacing: PostinoSpacing.s3,
         children: [

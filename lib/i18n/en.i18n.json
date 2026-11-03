@@ -117,6 +117,7 @@
     "undo": "Undo",
     "tooLarge": "The message exceeds Gmail's $mb MB limit",
     "sendFailed": "Sending failed: try again",
+    "offlineAttachments": "You are offline: the forwarded attachments are not downloaded yet, try again online",
     "noRecipient": "Add at least one recipient",
     "forwardedAttachments": "Attachments"
   },
@@ -129,6 +130,7 @@
     "title": "Sent",
     "waiting": "Waiting to send",
     "offline": "Outgoing, waiting for network",
+    "failed": "Sending failed",
     "emptyTitle": "No sent messages",
     "emptyBody": "Messages you send show up here."
   }

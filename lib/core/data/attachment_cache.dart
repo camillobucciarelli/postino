@@ -28,17 +28,21 @@ class AttachmentStorage {
   final Directory temp;
   final int cap;
 
-  /// Empties [temp]: the decrypted copies of the previous launch go, with any half-written cache file
-  /// older than [stalePart]: a younger one may be the write of another isolate still running (#36).
+  /// Clears what [stalePart] has left: decrypted copies in [temp] and half-written cache files older than
+  /// that. A younger one may be a copy another app has just opened, or the write of another isolate (#36).
   static Future<AttachmentStorage> open(
     Directory cache,
     Directory temp, {
     int cap = 500 * 1024 * 1024,
   }) async {
-    if (await temp.exists()) await temp.delete(recursive: true);
     await temp.create(recursive: true);
     await cache.create(recursive: true);
     final before = DateTime.now().subtract(stalePart);
+    await for (final e in temp.list()) {
+      if ((await e.stat()).modified.isBefore(before)) {
+        await e.delete(recursive: true);
+      }
+    }
     await for (final e in cache.list()) {
       if (e.basename.endsWith('.part') &&
           (await e.stat()).modified.isBefore(before)) {

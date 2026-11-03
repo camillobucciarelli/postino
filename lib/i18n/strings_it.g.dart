@@ -427,6 +427,9 @@ class Translations$composizione$it {
 	/// it: 'Invio non riuscito: riprova'
 	String get sendFailed => 'Invio non riuscito: riprova';
 
+	/// it: 'Sei offline: gli allegati dell'inoltro non sono ancora scaricati, riprova in rete'
+	String get offlineAttachments => 'Sei offline: gli allegati dell\'inoltro non sono ancora scaricati, riprova in rete';
+
 	/// it: 'Aggiungi almeno un destinatario'
 	String get noRecipient => 'Aggiungi almeno un destinatario';
 
@@ -468,6 +471,9 @@ class Translations$inviati$it {
 
 	/// it: 'In uscita, in attesa di rete'
 	String get offline => 'In uscita, in attesa di rete';
+
+	/// it: 'Invio non riuscito'
+	String get failed => 'Invio non riuscito';
 
 	/// it: 'Nessun messaggio inviato'
 	String get emptyTitle => 'Nessun messaggio inviato';
@@ -579,6 +585,7 @@ extension on Translations {
 			'composizione.undo' => 'Annulla',
 			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail',
 			'composizione.sendFailed' => 'Invio non riuscito: riprova',
+			'composizione.offlineAttachments' => 'Sei offline: gli allegati dell\'inoltro non sono ancora scaricati, riprova in rete',
 			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',
 			'composizione.forwardedAttachments' => 'Allegati',
 			'bozze.title' => 'Bozze',
@@ -587,6 +594,7 @@ extension on Translations {
 			'inviati.title' => 'Inviati',
 			'inviati.waiting' => 'In attesa d\'invio',
 			'inviati.offline' => 'In uscita, in attesa di rete',
+			'inviati.failed' => 'Invio non riuscito',
 			'inviati.emptyTitle' => 'Nessun messaggio inviato',
 			'inviati.emptyBody' => 'I messaggi che invii compaiono qui.',
 			_ => null,

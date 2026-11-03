@@ -191,7 +191,7 @@ class MailStore implements InboxRepository {
           for (final (r, local) in rows)
             _message(r, const [
               draftLabelId,
-            ], local ? _snippet(r.snippet) : null),
+            ], local ? listSnippet(r.snippet) : null),
         ],
       );
 
@@ -274,7 +274,7 @@ class MailStore implements InboxRepository {
         cc: _lines(r.cc),
         bcc: _lines(r.bcc),
         subject: r.subject,
-        snippet: _snippet(r.body),
+        snippet: listSnippet(r.body),
         date: DateTime.fromMillisecondsSinceEpoch(date, isUtc: true),
       ),
     ], const {});
@@ -304,12 +304,6 @@ class MailStore implements InboxRepository {
               ],
             ),
       );
-
-  /// The body as a list shows it: no tags, spaces compressed, at most 120 characters.
-  static String _snippet(String html) {
-    final text = htmlText(html).replaceAll(RegExp(r'\s+'), ' ').trim();
-    return text.length > 120 ? text.substring(0, 120) : text;
-  }
 
   Future<String> _address(String accountId) async =>
       (await _db.accountsDao.byPosition())

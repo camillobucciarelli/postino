@@ -232,6 +232,7 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get undo => 'Undo';
 	@override String tooLarge({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit';
 	@override String get sendFailed => 'Sending failed: try again';
+	@override String get offlineAttachments => 'You are offline: the forwarded attachments are not downloaded yet, try again online';
 	@override String get noRecipient => 'Add at least one recipient';
 	@override String get forwardedAttachments => 'Attachments';
 }
@@ -258,6 +259,7 @@ class _Translations$inviati$en extends Translations$inviati$it {
 	@override String get title => 'Sent';
 	@override String get waiting => 'Waiting to send';
 	@override String get offline => 'Outgoing, waiting for network';
+	@override String get failed => 'Sending failed';
 	@override String get emptyTitle => 'No sent messages';
 	@override String get emptyBody => 'Messages you send show up here.';
 }
@@ -365,6 +367,7 @@ extension on TranslationsEn {
 			'composizione.undo' => 'Undo',
 			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit',
 			'composizione.sendFailed' => 'Sending failed: try again',
+			'composizione.offlineAttachments' => 'You are offline: the forwarded attachments are not downloaded yet, try again online',
 			'composizione.noRecipient' => 'Add at least one recipient',
 			'composizione.forwardedAttachments' => 'Attachments',
 			'bozze.title' => 'Drafts',
@@ -373,6 +376,7 @@ extension on TranslationsEn {
 			'inviati.title' => 'Sent',
 			'inviati.waiting' => 'Waiting to send',
 			'inviati.offline' => 'Outgoing, waiting for network',
+			'inviati.failed' => 'Sending failed',
 			'inviati.emptyTitle' => 'No sent messages',
 			'inviati.emptyBody' => 'Messages you send show up here.',
 			_ => null,

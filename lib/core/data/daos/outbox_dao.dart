@@ -59,16 +59,22 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
           .watch();
 
   /// Takes the row for one sender until [untilMs], unless another holds an unexpired claim; true when taken.
+  /// Bound to the version the sender read ([sendAfter]): a row cancelled and queued again (new sendAfter) is not it.
   /// One UPDATE, so two isolates on the same file never both win.
   Future<bool> claim(
     String accountId,
     String messageId,
+    int sendAfter,
     int untilMs,
     int nowMs,
   ) async =>
-      await (update(
-            outbox,
-          )..where((t) => _row(t, accountId, messageId) & _unclaimed(t, nowMs)))
+      await (update(outbox)..where(
+            (t) =>
+                _row(t, accountId, messageId) &
+                t.sendAfter.equals(sendAfter) &
+                t.failed.not() &
+                _unclaimed(t, nowMs),
+          ))
           .write(OutboxCompanion(claimedUntil: Value(untilMs))) >
       0;
 

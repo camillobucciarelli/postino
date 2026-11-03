@@ -363,6 +363,11 @@ Stream<List<InboxEntry>> _sentEntries(
     final (accounts, online) = context;
     final (outbox, sent) = lists;
     final now = GetIt.I<Clock>().now().millisecondsSinceEpoch;
+    String state(bool refused, int sendAfter) => refused
+        ? failed
+        : sendAfter > now || online
+        ? waiting
+        : offline;
     return [
       for (final a in accounts.where((a) => a.id == accountId))
         for (final OutgoingEntry(message: m, :sendAfter, failed: refused)
@@ -380,19 +385,14 @@ Stream<List<InboxEntry>> _sentEntries(
               cc: m.cc,
               bcc: m.bcc,
               subject: m.subject,
-              snippet:
-                  '${refused
-                      ? failed
-                      : sendAfter > now || online
-                      ? waiting
-                      : offline} · '
-                  '${listSnippet(m.body)}',
+              snippet: '${state(refused, sendAfter)} · ${listSnippet(m.body)}',
               // The end of the window: the time it is listed under until the Provider dates it.
               date: DateTime.fromMillisecondsSinceEpoch(sendAfter, isUtc: true),
             ),
             account: a,
             count: 1,
             unread: false,
+            status: state(refused, sendAfter),
           ),
       ...sent,
     ];

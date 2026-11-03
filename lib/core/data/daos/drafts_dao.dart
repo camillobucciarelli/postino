@@ -213,7 +213,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
           .go();
 
   /// After a sync: a Bozza the Provider lists as DRAFT is remoteKnown; one it listed before and no longer
-  /// does, with nothing pending here, was deleted or sent elsewhere, so it goes.
+  /// does, with nothing pending here and not queued to send, was deleted or sent elsewhere, so it goes.
   // ponytail: a small window if the Gmail history brings the deletion and the new version in different batches.
   Future<void> reconcile(String accountId) => transaction(() async {
     const inFolder =
@@ -226,7 +226,8 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     );
     await customUpdate(
       'DELETE FROM drafts WHERE account_id = ?1 AND pending = 0 AND remote_known = 1 '
-      'AND NOT $inFolder',
+      'AND NOT $inFolder '
+      'AND message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1)',
       variables: [Variable(accountId)],
       updates: {drafts},
       updateKind: UpdateKind.delete,

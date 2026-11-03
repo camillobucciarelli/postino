@@ -8,11 +8,15 @@ class InboxEntry {
     required this.account,
     required this.count,
     required this.unread,
+    this.status,
   });
   final Message message;
   final Account account;
   final int count;
   final bool unread;
+
+  /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
+  final String? status;
 }
 
 /// A message of an open Conversazione, with its body once downloaded.

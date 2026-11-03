@@ -424,6 +424,7 @@ class SyncEngine implements MailSync {
       if (!await _store.claimOutgoing(
         accountId,
         row.messageId,
+        sendAfter: row.sendAfter,
         untilMs: claimAt + sendClaim.inMilliseconds,
         nowMs: claimAt,
       )) {
@@ -440,6 +441,7 @@ class SyncEngine implements MailSync {
             row.messageId,
             providerId: value,
             date: now,
+            sendAfter: row.sendAfter,
           );
           debugPrint('[sync] $accountId: sent ${row.messageId}');
         // Refused for good (too big, Bozza gone): kept as failed for the UI, never retried (ADR 0008).

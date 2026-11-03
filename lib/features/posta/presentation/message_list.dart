@@ -216,7 +216,8 @@ class _MessageListState extends State<MessageList> {
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,
         itemBuilder: (context, i) {
-          final InboxEntry(message: m, account: a, :count, :unread) = list![i];
+          final InboxEntry(message: m, account: a, :count, :unread, :status) =
+              list![i];
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
           final node = _node(key)
@@ -250,6 +251,7 @@ class _MessageListState extends State<MessageList> {
                 m.fromName ?? m.from,
                 m.subject,
                 if (count > 1) t.messages(n: count),
+                ?status,
                 if (m.isStarred) t.starred,
                 if (widget.showAccount) t.account(name: a.name),
                 time,

@@ -186,6 +186,11 @@ void main() {
       expect(find.text('Inviati'), findsWidgets);
       expect(_inTile(_waiting), findsOneWidget);
       expect(_inTile('Saluti'), findsOneWidget);
+      // The state is spoken with the row (ADR 0014), not only shown in its preview.
+      expect(
+        find.bySemanticsLabel(RegExp("Saluti, In attesa d'invio")),
+        findsOneWidget,
+      );
 
       await _afterWindow(tester);
       expect(_inTile(_waiting), findsNothing);
@@ -209,6 +214,10 @@ void main() {
       await _afterWindow(tester);
       expect(gmail.sent, isEmpty);
       expect(_inTile(_offline), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('Saluti, $_offline')),
+        findsOneWidget,
+      );
 
       gmail.goOnline();
       h.connectivity.online = true;

@@ -246,6 +246,52 @@ void main() {
     expect((await inviati()).single.message.messageId, id);
   });
 
+  test('a row cancelled and queued again while another send is in flight is not sent from the old snapshot', () async {
+    const other = '<o@example.com>';
+    await engine.send('a', _message(id));
+    h.clock.advance(const Duration(seconds: 1));
+    await engine.send('a', _message(other));
+    h.clock.advance(sendWindow);
+    a.holdSend = Completer();
+    unawaited(engine.flushOutbox('a'));
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    // While the first send is held, the second row (already read as due) is cancelled and queued again.
+    final db = GetIt.I<PostinoDatabase>();
+    expect(
+      await db.outboxDao.cancel(
+        'a',
+        other,
+        h.clock.now().millisecondsSinceEpoch,
+      ),
+      isTrue,
+    );
+    await engine.send('a', _message(other, body: '<p>Nuovo</p>'));
+    a.holdSend!.complete();
+    a.holdSend = null;
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    expect(a.sent.map((e) => e.$1), [id]);
+    expect((await outbox()).single.messageId, other);
+    // The replacement goes by its own timer.
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent.map((e) => e.$1), [id, other]);
+    expect(await outbox(), isEmpty);
+  });
+
+  test('a queued Bozza the Provider no longer lists survives the sync, and Annulla reopens it', () async {
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a');
+    await engine.syncAll();
+    await engine.send('a', _message(id));
+    a.removeDraftRemotely(id);
+    await engine.syncAll();
+    expect(await draftRow(), isNotNull);
+    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await engine.openDraft('a', id), isA<Ok<OutgoingMessage>>());
+  });
+
   test('a slow send does not leave the next claim already expired', () async {
     const other = '<o@example.com>';
     await engine.send('a', _message(id));

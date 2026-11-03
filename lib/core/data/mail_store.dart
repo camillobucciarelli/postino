@@ -232,13 +232,15 @@ class MailStore implements InboxRepository {
   /// True while the Account has anything queued to send (a failed row waits for the user, not the platform).
   Future<bool> hasOutgoing(String accountId) => _db.outboxDao.any(accountId);
 
-  /// Takes the row for this sender until [untilMs] (#36); false when another isolate holds it.
+  /// Takes the row version read at [sendAfter] for this sender until [untilMs] (#36); false when another isolate
+  /// holds it or it was cancelled and queued again meanwhile.
   Future<bool> claimOutgoing(
     String accountId,
     String messageId, {
+    required int sendAfter,
     required int untilMs,
     required int nowMs,
-  }) => _db.outboxDao.claim(accountId, messageId, untilMs, nowMs);
+  }) => _db.outboxDao.claim(accountId, messageId, sendAfter, untilMs, nowMs);
 
   /// A send failed and may be retried: the row is free again, for the next replay of either isolate.
   Future<void> unclaimOutgoing(String accountId, String messageId) =>
@@ -260,9 +262,11 @@ class MailStore implements InboxRepository {
     String messageId, {
     required String providerId,
     required int date,
+    required int sendAfter,
   }) => _db.transaction(() async {
     final r = await _db.outboxDao.byId(accountId, messageId);
-    if (r == null) return;
+    // Not the version that was sent (cancelled and queued again meanwhile): it stays.
+    if (r == null || r.sendAfter != sendAfter) return;
     await _db.outboxDao.remove(accountId, messageId);
     await _db.draftsDao.remove(accountId, messageId);
     await applyPage(accountId, [

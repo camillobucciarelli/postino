@@ -10,6 +10,26 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
     with _$OutboxDaoMixin {
   OutboxDao(super.attachedDatabase);
 
+  /// sendAfter of a row whose MIME is still being prepared: never due, "waiting" in the UI.
+  // ponytail: a crash during preparation leaves the row until the user's Annulla; sweep stale ones if it matters.
+  static const preparing = 1 << 52;
+
+  /// Fills the MIME of a row still being prepared and sets its real deadline; false when it is gone (cancelled).
+  Future<bool> ready(
+    String accountId,
+    String messageId,
+    String raw,
+    int sendAfter,
+  ) async =>
+      await (update(outbox)..where(
+            (t) =>
+                _row(t, accountId, messageId) & t.sendAfter.equals(preparing),
+          ))
+          .write(
+            OutboxCompanion(raw: Value(raw), sendAfter: Value(sendAfter)),
+          ) >
+      0;
+
   /// Queues the message; the same Message-ID replaces the row (a second Invia after an Annulla).
   Future<void> enqueue(OutboxCompanion row) =>
       into(outbox).insert(row, mode: InsertMode.insertOrReplace);

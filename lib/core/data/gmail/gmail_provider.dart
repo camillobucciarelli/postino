@@ -685,9 +685,19 @@ class GmailProvider implements MailProvider {
             caseSensitive: false,
           ).hasMatch(r.body) =>
         const SizeLimitFailure(gmailSendLimitBytes),
+      400 => RejectedFailure('Gmail $path: ${_errorMessage(r.body)}'),
       _ when _rateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
       _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
     });
+  }
+
+  /// The `error.message` of a Google error body, else "HTTP 400".
+  static String _errorMessage(String body) {
+    try {
+      final m = (jsonDecode(body) as Map)['error']['message'];
+      if (m is String && m.isNotEmpty) return m;
+    } catch (_) {}
+    return 'HTTP 400';
   }
 
   /// The end of a temporary block: "Retry after" plus an ISO timestamp in the body, else the Retry-After header in seconds.

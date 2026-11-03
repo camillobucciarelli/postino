@@ -232,6 +232,73 @@ void main() {
     },
   );
 
+  test('Annulla while the forwarded attachments download: true, the row is gone, send is Cancelled, nothing goes', () async {
+    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+    a.holdAttachment = Completer();
+    final sending = engine.send('a', forward(att));
+    await pumpEventQueue();
+    // Born at the start of the preparation: not in Bozze, shown in Inviati's outbox as waiting.
+    expect(
+      (await outbox()).single.sendAfter,
+      greaterThan(h.clock.now().millisecondsSinceEpoch),
+    );
+    expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
+    expect(await engine.cancelSend('a', id), isTrue);
+    expect(await outbox(), isEmpty);
+    a.holdAttachment!.complete();
+    expect(
+      await sending,
+      isA<Err<DateTime>>().having(
+        (e) => e.failure,
+        'failure',
+        isA<CancelledFailure>(),
+      ),
+    );
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(await outbox(), isEmpty);
+    expect(a.sendCalls, 0);
+  });
+
+  test('a replay blocked on a Bozza upload does not send a message cancelled meanwhile', () async {
+    const other = '<o@example.com>';
+    await engine.saveDraft('a', _message(other));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    // The flush of the send is queued behind the upload; Annulla does not wait for the queue.
+    await pumpEventQueue();
+    expect(await engine.cancelSend('a', id), isTrue);
+    a.holdDraft!.complete();
+    await flush;
+    await pumpEventQueue();
+    expect(a.sendCalls, 0);
+    expect(await outbox(), isEmpty);
+  });
+
+  test(
+    'a 400 refusal of the send marks the row failed and is not retried',
+    () async {
+      engine.start();
+      addTearDown(engine.stop);
+      await pumpEventQueue();
+      a.sendFailure = const RejectedFailure('x');
+      await engine.send('a', _message(id));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect((await outbox()).single.failed, isTrue);
+      expect(
+        (await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed,
+        isTrue,
+      );
+      h.clock.advance(pollEvery);
+      await pumpEventQueue();
+      expect(a.sendCalls, 1);
+    },
+  );
+
   test('Annulla while the send is in flight waits for it: false, and the message is in Inviati', () async {
     a.holdSend = Completer();
     await engine.send('a', _message(id));

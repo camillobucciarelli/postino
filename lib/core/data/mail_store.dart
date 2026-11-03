@@ -221,6 +221,22 @@ class MailStore implements InboxRepository {
     ),
   );
 
+  /// The row of [messageId], if queued (or still being prepared).
+  Future<OutboxRow?> outgoing(String accountId, String messageId) =>
+      _db.outboxDao.byId(accountId, messageId);
+
+  /// The row has its MIME and deadline; false when it was cancelled while preparing.
+  Future<bool> outgoingReady(
+    String accountId,
+    String messageId, {
+    required String raw,
+    required int sendAfter,
+  }) => _db.outboxDao.ready(accountId, messageId, raw, sendAfter);
+
+  /// Drops the row of a preparation that failed.
+  Future<void> dropOutgoing(String accountId, String messageId) =>
+      _db.outboxDao.remove(accountId, messageId);
+
   /// Annulla invio: true when the row was still there and no sender (another isolate) is sending it now.
   Future<bool> cancelOutgoing(String accountId, String messageId, int nowMs) =>
       _db.outboxDao.cancel(accountId, messageId, nowMs);

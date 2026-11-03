@@ -1294,6 +1294,24 @@ void main() {
         expect(await g.provider.send(messageId, raw), _err<SizeLimitFailure>());
       });
 
+      test('another 400 is a RejectedFailure with Gmail\'s message', () async {
+        final g = _Recorded(
+          (r, path) => path == 'messages/send' ? 'bad_request' : route(r, path),
+        );
+        expect(
+          await g.provider.send(messageId, raw),
+          isA<Err<String>>().having(
+            (e) => e.failure,
+            'failure',
+            isA<RejectedFailure>().having(
+              (f) => f.reason,
+              'reason',
+              contains('Invalid To header'),
+            ),
+          ),
+        );
+      });
+
       test('offline is an OfflineFailure', () async {
         final h = GmailHarness()..goOffline();
         expect(await h.provider.send(messageId, raw), _err<OfflineFailure>());

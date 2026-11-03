@@ -12,6 +12,7 @@ import '../domain/mail_sync.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
+import 'daos/outbox_dao.dart';
 import 'gmail/gmail_provider.dart';
 import 'mail_store.dart';
 import 'mime.dart';
@@ -184,6 +185,20 @@ class SyncEngine implements MailSync {
   ) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
+    // A second Invia of the same Message-ID (a reopened composer): the first one stands.
+    final existing = await _store.outgoing(accountId, message.messageId);
+    if (existing != null) {
+      return existing.sendAfter == OutboxDao.preparing
+          ? const Err(UnexpectedFailure('already preparing'))
+          : Ok(DateTime.fromMillisecondsSinceEpoch(existing.sendAfter));
+    }
+    // The row is born now, without MIME: Bozze hides it, Inviati shows it and Annulla works while it is prepared.
+    await _store.enqueueOutgoing(
+      accountId,
+      message,
+      raw: '',
+      sendAfter: OutboxDao.preparing,
+    );
     // A forward's attachments are read now, from the cache (offline too) or the Provider, so the queued text is complete.
     // ponytail: an attachment never opened here needs the network at Invia (OfflineFailure); persist copies of the
     // attachments when the forward is composed to queue those offline too.
@@ -200,20 +215,24 @@ class SyncEngine implements MailSync {
       case Ok(:final value):
         raw = value;
       case Err(:final failure):
+        await _store.dropOutgoing(accountId, message.messageId);
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
     if (raw.length > gmailSendLimitBytes) {
+      await _store.dropOutgoing(accountId, message.messageId);
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
     final sendAfter = _clock.now().add(sendWindow);
-    await _store.enqueueOutgoing(
+    if (!await _store.outgoingReady(
       accountId,
-      message,
+      message.messageId,
       raw: raw,
       sendAfter: sendAfter.millisecondsSinceEpoch,
-    );
+    )) {
+      return const Err(CancelledFailure());
+    }
     final key = (accountId, message.messageId);
     await _sendTimers.remove(key)?.cancel();
     _sendTimers[key] = _clock.every(sendWindow).listen((_) {
@@ -233,16 +252,15 @@ class SyncEngine implements MailSync {
   @override
   Future<bool> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
-    // In the Account's queue: a replay already sending it ends first, and then the row is gone (false).
-    return _serial(accountId, () async {
-      final cancelled = await _store.cancelOutgoing(
-        accountId,
-        messageId,
-        _clock.now().millisecondsSinceEpoch,
-      );
-      await _releaseIfEmpty(accountId);
-      return cancelled;
-    });
+    // Not behind the Account's queue: a replay waiting on a slow upload would send the row first.
+    // The claim in the database refuses the cancel of a row that is going now (false).
+    final cancelled = await _store.cancelOutgoing(
+      accountId,
+      messageId,
+      _clock.now().millisecondsSinceEpoch,
+    );
+    await _releaseIfEmpty(accountId);
+    return cancelled;
   }
 
   /// Lets the platform go once nothing of the Account is queued any more.
@@ -447,7 +465,10 @@ class SyncEngine implements MailSync {
           );
           debugPrint('[sync] $accountId: sent ${row.messageId}');
         // Refused for good (too big, Bozza gone): kept as failed for the UI, never retried (ADR 0008).
-        case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure())):
+        case Err(
+          failure: final f &&
+              (SizeLimitFailure() || NotFoundFailure() || RejectedFailure()),
+        ):
           await _store.outgoingFailed(accountId, row.messageId);
           debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
         // Rate limited: the Account waits for the deadline, as after a sync; the rest stays queued.

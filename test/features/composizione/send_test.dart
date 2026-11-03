@@ -293,6 +293,27 @@ void main() {
     expect(gmail.sent, isEmpty);
   });
 
+  _onMac('closing the composer while the engine prepares still shows Annulla', (
+    tester,
+  ) async {
+    await _start(tester);
+    final hold = Completer<void>();
+    final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
+    GetIt.I
+      ..unregister<MailSync>()
+      ..registerSingleton<MailSync>(held);
+    await _write(tester);
+    await _send(tester);
+    await tester.tap(find.byTooltip('Chiudi'));
+    await _settle(tester);
+    expect(find.byType(PostinoComposerField), findsNothing);
+    expect(_undo, findsNothing);
+    hold.complete();
+    await _settle(tester);
+    expect(_undo, findsOneWidget);
+    await _afterWindow(tester);
+  });
+
   _onMac(
     'a message still queued at the restart of PostinoApp goes',
     // The app is disposed within the window and started again after it: the replay at start sends it.
@@ -365,14 +386,18 @@ void main() {
 /// The real engine, but every message is over the Provider's limit.
 /// With [hold], [send] waits for it first (the engine preparing the MIME); [saves] counts the Bozza saves.
 class _TooBig implements MailSync {
-  _TooBig(this.real, {this.hold});
+  _TooBig(this.real, {this.hold, this.delegate = false});
   final MailSync real;
+
+  /// After [hold], the real engine sends instead of refusing.
+  final bool delegate;
   final Completer<void>? hold;
   int saves = 0;
 
   @override
   Future<Result<DateTime>> send(String a, OutgoingMessage m) async {
     await hold?.future;
+    if (delegate) return real.send(a, m);
     return const Err(SizeLimitFailure(gmailSendLimitBytes));
   }
 

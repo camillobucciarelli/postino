@@ -64,6 +64,12 @@ final class SizeLimitFailure extends Failure {
   final int limitBytes;
 }
 
+/// The Provider refused the request for good (HTTP 400, e.g. an invalid header): retrying cannot help.
+final class RejectedFailure extends Failure {
+  const RejectedFailure(this.reason);
+  final String reason;
+}
+
 /// The Provider asks to slow down.
 final class RateLimitFailure extends Failure {
   const RateLimitFailure({this.retryAfter});

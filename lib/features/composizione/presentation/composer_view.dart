@@ -168,11 +168,15 @@ class _ComposerViewState extends State<ComposerView> {
     if (_sending) return;
     setState(() => _sending = true);
     final r = await _sync.send(_from, m);
+    // The composer may be gone (Chiudi while preparing): onQueued belongs to the layout, which guards itself.
+    if (r case Ok(:final value)) {
+      widget.onQueued(_from, widget.messageId, value);
+    }
     if (!mounted) return;
     setState(() => _sending = false);
     switch (r) {
-      case Ok(:final value):
-        widget.onQueued(_from, widget.messageId, value);
+      case Ok():
+        break;
       case Err(failure: OfflineFailure()):
         setState(() => _sendError = t.offlineAttachments);
       case Err(failure: SizeLimitFailure(:final limitBytes)):

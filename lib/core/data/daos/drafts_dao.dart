@@ -212,6 +212,20 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
           ))
           .go();
 
+  /// The remote copy is gone: the Bozza goes back to new and pending, so the next upload creates it.
+  Future<void> forgetRemote(String accountId, String messageId) =>
+      (update(drafts)..where(
+            (t) =>
+                t.accountId.equals(accountId) & t.messageId.equals(messageId),
+          ))
+          .write(
+            const DraftsCompanion(
+              pending: Value(true),
+              synced: Value(false),
+              remoteKnown: Value(false),
+            ),
+          );
+
   /// Moves the local Bozza to [to], as new on the Provider; false when there is none.
   Future<bool> rekey(String accountId, String from, String to) =>
       transaction(() async {

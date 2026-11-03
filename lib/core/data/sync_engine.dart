@@ -450,6 +450,8 @@ class SyncEngine implements MailSync {
                 '[sync] $accountId: late draft delete failed, $failure',
               );
             }
+            // A later Annulla reopens the row: it must upload as new, not as an update of the deleted copy.
+            await _store.forgetRemoteDraft(accountId, draft.messageId);
             continue;
           }
           await _store.draftSynced(accountId, draft.messageId, updatedAt);

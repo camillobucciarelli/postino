@@ -621,6 +621,24 @@ void main() {
     },
   );
 
+  test('Annulla after the late remote Bozza was deleted: the local Bozza uploads as new and survives', () async {
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a');
+    await engine.saveDraft('a', _message(id));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    await engine.send('a', _message(id));
+    a.holdDraft!.complete();
+    await flush;
+    expect(a.drafts.containsKey(id), isFalse);
+    expect(await engine.cancelSend('a', id), id);
+    a.draftCalls.clear();
+    await engine.flushDrafts('a');
+    expect(a.draftCalls, [(id, true)]);
+    expect(await draftRow(), isNotNull);
+  });
+
   test('a Bozza upload that ends after another engine sent the row deletes the late remote Bozza', () async {
     await engine.saveDraft('a', _message(id));
     a.holdDraft = Completer();

@@ -184,6 +184,10 @@ class MailStore implements InboxRepository {
   Future<void> draftSynced(String accountId, String messageId, int updatedAt) =>
       _db.draftsDao.synced(accountId, messageId, updatedAt);
 
+  /// The remote copy was deleted: the local Bozza is new again.
+  Future<void> forgetRemoteDraft(String accountId, String messageId) =>
+      _db.draftsDao.forgetRemote(accountId, messageId);
+
   Future<void> removeDraft(String accountId, String messageId) =>
       _db.draftsDao.remove(accountId, messageId);
 

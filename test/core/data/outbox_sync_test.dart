@@ -232,6 +232,34 @@ void main() {
     },
   );
 
+  test('an obsolete preparation cannot fill or drop the row of a newer Invia of the same Message-ID', () async {
+    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+    final old = a.holdAttachment = Completer();
+    final first = engine.send('a', forward(att));
+    await pumpEventQueue();
+    expect(await engine.cancelSend('a', id), isTrue);
+    a.holdAttachment = null;
+    final second = _message(id, body: '<p>Nuovo</p>');
+    final deadline = h.clock.now().add(sendWindow);
+    expect(await engine.send('a', second), _okAt(deadline));
+    old.complete();
+    expect(
+      await first,
+      isA<Err<DateTime>>().having(
+        (e) => e.failure,
+        'failure',
+        isA<CancelledFailure>(),
+      ),
+    );
+    final row = (await outbox()).single;
+    expect(row.raw, contains('Nuovo'));
+    expect(row.raw, isNot(contains('Contratto.pdf')));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, hasLength(1));
+    expect(await outbox(), isEmpty);
+  });
+
   test('Annulla while the forwarded attachments download: true, the row is gone, send is Cancelled, nothing goes', () async {
     final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
     a.holdAttachment = Completer();

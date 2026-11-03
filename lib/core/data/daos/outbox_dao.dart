@@ -14,16 +14,19 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
   // ponytail: a crash during preparation leaves the row until the user's Annulla; sweep stale ones if it matters.
   static const preparing = 1 << 52;
 
-  /// Fills the MIME of a row still being prepared and sets its real deadline; false when it is gone (cancelled).
+  /// Fills the MIME of the row of preparation [version] still being prepared and sets its real deadline; false when it is gone (cancelled).
   Future<bool> ready(
     String accountId,
     String messageId,
+    int version,
     String raw,
     int sendAfter,
   ) async =>
       await (update(outbox)..where(
             (t) =>
-                _row(t, accountId, messageId) & t.sendAfter.equals(preparing),
+                _row(t, accountId, messageId) &
+                t.version.equals(version) &
+                t.sendAfter.equals(preparing),
           ))
           .write(
             OutboxCompanion(raw: Value(raw), sendAfter: Value(sendAfter)),
@@ -43,6 +46,14 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
       await (delete(
             outbox,
           )..where((t) => _row(t, accountId, messageId) & _unclaimed(t, nowMs)))
+          .go() >
+      0;
+
+  /// Removes the row of preparation [version] (a failed one); a newer row of the same Message-ID stays.
+  Future<bool> drop(String accountId, String messageId, int version) async =>
+      await (delete(outbox)..where(
+            (t) => _row(t, accountId, messageId) & t.version.equals(version),
+          ))
           .go() >
       0;
 

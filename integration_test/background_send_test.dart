@@ -76,6 +76,7 @@ void main() {
       await store.enqueueOutgoing(
         'a',
         _message,
+        version: 1,
         raw: renderMime(_message, clock.now()),
         sendAfter: clock.now().millisecondsSinceEpoch,
       );

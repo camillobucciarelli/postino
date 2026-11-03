@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
@@ -192,10 +193,13 @@ class SyncEngine implements MailSync {
           ? const Err(UnexpectedFailure('already preparing'))
           : Ok(DateTime.fromMillisecondsSinceEpoch(existing.sendAfter));
     }
+    // Tags this preparation; random so it is unique across isolates too (collision odds 2^-31 per Message-ID).
+    final version = Random.secure().nextInt(1 << 31);
     // The row is born now, without MIME: Bozze hides it, Inviati shows it and Annulla works while it is prepared.
     await _store.enqueueOutgoing(
       accountId,
       message,
+      version: version,
       raw: '',
       sendAfter: OutboxDao.preparing,
     );
@@ -215,12 +219,12 @@ class SyncEngine implements MailSync {
       case Ok(:final value):
         raw = value;
       case Err(:final failure):
-        await _store.dropOutgoing(accountId, message.messageId);
+        await _store.dropOutgoing(accountId, message.messageId, version);
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
     if (raw.length > gmailSendLimitBytes) {
-      await _store.dropOutgoing(accountId, message.messageId);
+      await _store.dropOutgoing(accountId, message.messageId, version);
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
@@ -228,9 +232,11 @@ class SyncEngine implements MailSync {
     if (!await _store.outgoingReady(
       accountId,
       message.messageId,
+      version: version,
       raw: raw,
       sendAfter: sendAfter.millisecondsSinceEpoch,
     )) {
+      // Cancelled, or replaced by a newer Invia: this preparation is obsolete and leaves the row alone.
       return const Err(CancelledFailure());
     }
     final key = (accountId, message.messageId);

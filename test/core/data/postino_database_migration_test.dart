@@ -251,6 +251,7 @@ void main() {
       OutboxCompanion.insert(
         accountId: 'a1',
         messageId: '<x>',
+        version: 1,
         raw: 'Message-ID: <x>',
         recipients: 'b@example.com',
         cc: '',

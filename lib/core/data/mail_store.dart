@@ -204,12 +204,14 @@ class MailStore implements InboxRepository {
   Future<void> enqueueOutgoing(
     String accountId,
     OutgoingMessage message, {
+    required int version,
     required String raw,
     required int sendAfter,
   }) => _db.outboxDao.enqueue(
     OutboxCompanion.insert(
       accountId: accountId,
       messageId: message.messageId,
+      version: version,
       raw: raw,
       recipients: message.to.join('\n'),
       cc: message.cc.join('\n'),
@@ -225,17 +227,18 @@ class MailStore implements InboxRepository {
   Future<OutboxRow?> outgoing(String accountId, String messageId) =>
       _db.outboxDao.byId(accountId, messageId);
 
-  /// The row has its MIME and deadline; false when it was cancelled while preparing.
+  /// The row has its MIME and deadline; false when it was cancelled (or replaced) while preparing.
   Future<bool> outgoingReady(
     String accountId,
     String messageId, {
+    required int version,
     required String raw,
     required int sendAfter,
-  }) => _db.outboxDao.ready(accountId, messageId, raw, sendAfter);
+  }) => _db.outboxDao.ready(accountId, messageId, version, raw, sendAfter);
 
   /// Drops the row of a preparation that failed.
-  Future<void> dropOutgoing(String accountId, String messageId) =>
-      _db.outboxDao.remove(accountId, messageId);
+  Future<void> dropOutgoing(String accountId, String messageId, int version) =>
+      _db.outboxDao.drop(accountId, messageId, version);
 
   /// Annulla invio: true when the row was still there and no sender (another isolate) is sending it now.
   Future<bool> cancelOutgoing(String accountId, String messageId, int nowMs) =>

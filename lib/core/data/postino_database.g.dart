@@ -4137,6 +4137,17 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _sendAfterMeta = const VerificationMeta(
     'sendAfter',
   );
@@ -4183,6 +4194,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     subject,
     body,
     conversationId,
+    version,
     sendAfter,
     claimedUntil,
     failed,
@@ -4269,6 +4281,14 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         ),
       );
     }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
     if (data.containsKey('send_after')) {
       context.handle(
         _sendAfterMeta,
@@ -4337,6 +4357,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         DriftSqlType.string,
         data['${effectivePrefix}conversation_id'],
       ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
       sendAfter: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}send_after'],
@@ -4379,6 +4403,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
   /// The Gmail thread of a reply or forward (#37), sent with it so it threads in Inviati too.
   final String? conversationId;
 
+  /// Identifies one preparation of this row: a stale preparation (cancelled, then Invia again) cannot fill or drop the new row.
+  final int version;
+
   /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
   final int sendAfter;
 
@@ -4397,6 +4424,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     required this.subject,
     required this.body,
     this.conversationId,
+    required this.version,
     required this.sendAfter,
     this.claimedUntil,
     required this.failed,
@@ -4415,6 +4443,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     if (!nullToAbsent || conversationId != null) {
       map['conversation_id'] = Variable<String>(conversationId);
     }
+    map['version'] = Variable<int>(version);
     map['send_after'] = Variable<int>(sendAfter);
     if (!nullToAbsent || claimedUntil != null) {
       map['claimed_until'] = Variable<int>(claimedUntil);
@@ -4436,6 +4465,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       conversationId: conversationId == null && nullToAbsent
           ? const Value.absent()
           : Value(conversationId),
+      version: Value(version),
       sendAfter: Value(sendAfter),
       claimedUntil: claimedUntil == null && nullToAbsent
           ? const Value.absent()
@@ -4459,6 +4489,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       subject: serializer.fromJson<String>(json['subject']),
       body: serializer.fromJson<String>(json['body']),
       conversationId: serializer.fromJson<String?>(json['conversationId']),
+      version: serializer.fromJson<int>(json['version']),
       sendAfter: serializer.fromJson<int>(json['sendAfter']),
       claimedUntil: serializer.fromJson<int?>(json['claimedUntil']),
       failed: serializer.fromJson<bool>(json['failed']),
@@ -4477,6 +4508,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       'subject': serializer.toJson<String>(subject),
       'body': serializer.toJson<String>(body),
       'conversationId': serializer.toJson<String?>(conversationId),
+      'version': serializer.toJson<int>(version),
       'sendAfter': serializer.toJson<int>(sendAfter),
       'claimedUntil': serializer.toJson<int?>(claimedUntil),
       'failed': serializer.toJson<bool>(failed),
@@ -4493,6 +4525,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     String? subject,
     String? body,
     Value<String?> conversationId = const Value.absent(),
+    int? version,
     int? sendAfter,
     Value<int?> claimedUntil = const Value.absent(),
     bool? failed,
@@ -4508,6 +4541,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     conversationId: conversationId.present
         ? conversationId.value
         : this.conversationId,
+    version: version ?? this.version,
     sendAfter: sendAfter ?? this.sendAfter,
     claimedUntil: claimedUntil.present ? claimedUntil.value : this.claimedUntil,
     failed: failed ?? this.failed,
@@ -4527,6 +4561,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       conversationId: data.conversationId.present
           ? data.conversationId.value
           : this.conversationId,
+      version: data.version.present ? data.version.value : this.version,
       sendAfter: data.sendAfter.present ? data.sendAfter.value : this.sendAfter,
       claimedUntil: data.claimedUntil.present
           ? data.claimedUntil.value
@@ -4547,6 +4582,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ..write('subject: $subject, ')
           ..write('body: $body, ')
           ..write('conversationId: $conversationId, ')
+          ..write('version: $version, ')
           ..write('sendAfter: $sendAfter, ')
           ..write('claimedUntil: $claimedUntil, ')
           ..write('failed: $failed')
@@ -4565,6 +4601,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     subject,
     body,
     conversationId,
+    version,
     sendAfter,
     claimedUntil,
     failed,
@@ -4582,6 +4619,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           other.subject == this.subject &&
           other.body == this.body &&
           other.conversationId == this.conversationId &&
+          other.version == this.version &&
           other.sendAfter == this.sendAfter &&
           other.claimedUntil == this.claimedUntil &&
           other.failed == this.failed);
@@ -4597,6 +4635,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
   final Value<String> subject;
   final Value<String> body;
   final Value<String?> conversationId;
+  final Value<int> version;
   final Value<int> sendAfter;
   final Value<int?> claimedUntil;
   final Value<bool> failed;
@@ -4611,6 +4650,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     this.subject = const Value.absent(),
     this.body = const Value.absent(),
     this.conversationId = const Value.absent(),
+    this.version = const Value.absent(),
     this.sendAfter = const Value.absent(),
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
@@ -4626,6 +4666,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     required String subject,
     required String body,
     this.conversationId = const Value.absent(),
+    required int version,
     required int sendAfter,
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
@@ -4638,6 +4679,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
        bcc = Value(bcc),
        subject = Value(subject),
        body = Value(body),
+       version = Value(version),
        sendAfter = Value(sendAfter);
   static Insertable<OutboxRow> custom({
     Expression<String>? accountId,
@@ -4649,6 +4691,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Expression<String>? subject,
     Expression<String>? body,
     Expression<String>? conversationId,
+    Expression<int>? version,
     Expression<int>? sendAfter,
     Expression<int>? claimedUntil,
     Expression<bool>? failed,
@@ -4664,6 +4707,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       if (subject != null) 'subject': subject,
       if (body != null) 'body': body,
       if (conversationId != null) 'conversation_id': conversationId,
+      if (version != null) 'version': version,
       if (sendAfter != null) 'send_after': sendAfter,
       if (claimedUntil != null) 'claimed_until': claimedUntil,
       if (failed != null) 'failed': failed,
@@ -4681,6 +4725,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Value<String>? subject,
     Value<String>? body,
     Value<String?>? conversationId,
+    Value<int>? version,
     Value<int>? sendAfter,
     Value<int?>? claimedUntil,
     Value<bool>? failed,
@@ -4696,6 +4741,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       subject: subject ?? this.subject,
       body: body ?? this.body,
       conversationId: conversationId ?? this.conversationId,
+      version: version ?? this.version,
       sendAfter: sendAfter ?? this.sendAfter,
       claimedUntil: claimedUntil ?? this.claimedUntil,
       failed: failed ?? this.failed,
@@ -4733,6 +4779,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     if (conversationId.present) {
       map['conversation_id'] = Variable<String>(conversationId.value);
     }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
     if (sendAfter.present) {
       map['send_after'] = Variable<int>(sendAfter.value);
     }
@@ -4760,6 +4809,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
           ..write('subject: $subject, ')
           ..write('body: $body, ')
           ..write('conversationId: $conversationId, ')
+          ..write('version: $version, ')
           ..write('sendAfter: $sendAfter, ')
           ..write('claimedUntil: $claimedUntil, ')
           ..write('failed: $failed, ')
@@ -7062,6 +7112,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   required String subject,
   required String body,
   Value<String?> conversationId,
+  required int version,
   required int sendAfter,
   Value<int?> claimedUntil,
   Value<bool> failed,
@@ -7077,6 +7128,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String> subject,
   Value<String> body,
   Value<String?> conversationId,
+  Value<int> version,
   Value<int> sendAfter,
   Value<int?> claimedUntil,
   Value<bool> failed,
@@ -7134,6 +7186,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<String> get conversationId => $composableBuilder(
     column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7207,6 +7264,11 @@ class $$OutboxTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sendAfter => $composableBuilder(
     column: $table.sendAfter,
     builder: (column) => ColumnOrderings(column),
@@ -7263,6 +7325,9 @@ class $$OutboxTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
   GeneratedColumn<int> get sendAfter =>
       $composableBuilder(column: $table.sendAfter, builder: (column) => column);
 
@@ -7315,6 +7380,7 @@ class $$OutboxTableTableManager
                 Value<String> subject = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<String?> conversationId = const Value.absent(),
+                Value<int> version = const Value.absent(),
                 Value<int> sendAfter = const Value.absent(),
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
@@ -7329,6 +7395,7 @@ class $$OutboxTableTableManager
                 subject: subject,
                 body: body,
                 conversationId: conversationId,
+                version: version,
                 sendAfter: sendAfter,
                 claimedUntil: claimedUntil,
                 failed: failed,
@@ -7345,6 +7412,7 @@ class $$OutboxTableTableManager
                 required String subject,
                 required String body,
                 Value<String?> conversationId = const Value.absent(),
+                required int version,
                 required int sendAfter,
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
@@ -7359,6 +7427,7 @@ class $$OutboxTableTableManager
                 subject: subject,
                 body: body,
                 conversationId: conversationId,
+                version: version,
                 sendAfter: sendAfter,
                 claimedUntil: claimedUntil,
                 failed: failed,

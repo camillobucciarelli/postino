@@ -25,6 +25,9 @@ class Outbox extends Table {
   /// The Gmail thread of a reply or forward (#37), sent with it so it threads in Inviati too.
   TextColumn get conversationId => text().nullable()();
 
+  /// Identifies one preparation of this row: a stale preparation (cancelled, then Invia again) cannot fill or drop the new row.
+  IntColumn get version => integer()();
+
   /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
   IntColumn get sendAfter => integer()();
 

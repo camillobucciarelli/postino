@@ -26,7 +26,9 @@ const draftDebounce = Duration(seconds: 5);
 const sendWindow = Duration(seconds: 10);
 
 /// How long a replay owns an outbox row it is sending, against the other isolate (#36).
-const sendClaim = Duration(minutes: 2);
+/// It must outlast the adapter's worst case: 5 retries x <=32 s backoff + 6 x 30 s stall ~ 6 min; 10 min is the margin.
+// ponytail: a crash mid-send delays the retry by the lease; renew the claim during the send if that ever hurts.
+const sendClaim = Duration(minutes: 10);
 
 /// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
 /// whenever the change signal fires, every [pollEvery], and when the network returns.

@@ -214,7 +214,8 @@ class SystemBackgroundSender implements BackgroundSender {
           inputData: {'accountId': accountId},
           initialDelay: sendWindow,
           constraints: Constraints(networkType: NetworkType.connected),
-          existingWorkPolicy: ExistingWorkPolicy.replace,
+          // Append, not replace: replace cancels a worker that is sending right now (its row stays claimed with no retry).
+          existingWorkPolicy: ExistingWorkPolicy.append,
         );
       default:
     }

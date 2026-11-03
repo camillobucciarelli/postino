@@ -89,7 +89,14 @@ class _PostaLayoutState extends State<PostaLayout> {
     // Invia: the composer closes and the Snackbar of Annulla invio shows under this layout's messenger (the
     // app's: PostaLayout outlives the composer in both layouts), so it survives the detail going away.
     void queued(String accountId, String messageId, DateTime until) {
-      back();
+      // The preparation may outlast the composer: go back only if the route is still this very composer.
+      final now = Routefly.currentUri.pathSegments;
+      if (now.length > 3 &&
+          now[1] == accountId &&
+          now[2] == 'bozza' &&
+          now[3] == messageId) {
+        back();
+      }
       PostinoSnackbar.show(
         context,
         message: context.t.composizione.queued,

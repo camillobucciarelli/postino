@@ -314,6 +314,29 @@ void main() {
     await _afterWindow(tester);
   });
 
+  _onMac('a slow preparation does not close the composer opened meanwhile', (
+    tester,
+  ) async {
+    await _start(tester);
+    final hold = Completer<void>();
+    final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
+    GetIt.I
+      ..unregister<MailSync>()
+      ..registerSingleton<MailSync>(held);
+    await _write(tester);
+    await _send(tester);
+    await tester.tap(find.byTooltip('Chiudi'));
+    await _settle(tester);
+    await tester.tap(find.text('Scrivi'));
+    await _settle(tester);
+    expect(find.byType(PostinoComposerField), findsWidgets);
+    hold.complete();
+    await _settle(tester);
+    expect(find.byType(PostinoComposerField), findsWidgets);
+    expect(find.text("In attesa d'invio"), findsWidgets);
+    await _afterWindow(tester);
+  });
+
   _onMac(
     'a message still queued at the restart of PostinoApp goes',
     // The app is disposed within the window and started again after it: the replay at start sends it.

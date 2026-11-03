@@ -2,6 +2,7 @@
 // returns, or after a restart), Annulla within the window keeps the Bozza, and a lost answer never sends it twice.
 import 'dart:async';
 
+import 'package:drift/drift.dart' show BooleanExpressionOperators;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -689,6 +690,16 @@ void main() {
       await pumpEventQueue();
       expect(a.sent, hasLength(1));
       expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
+      // Only the Sent copy is left: no unlabelled DRAFT row in the Conversazione.
+      final db = GetIt.I<PostinoDatabase>();
+      final rows = await (db.select(db.messages)
+            ..where((m) => m.accountId.equals('a') & m.messageId.equals(id)))
+          .get();
+      expect(rows, hasLength(1));
+      final labels = await (db.select(db.messageLabels)
+            ..where((l) => l.accountId.equals('a') & l.messageId.equals(rows.single.id)))
+          .get();
+      expect(labels.map((l) => l.labelId), ['SENT']);
     },
   );
 

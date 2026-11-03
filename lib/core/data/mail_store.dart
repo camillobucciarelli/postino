@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show UpdateKind, Value, Variable;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, Value, Variable;
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
@@ -293,22 +293,24 @@ class MailStore implements InboxRepository {
     await _db.outboxDao.remove(accountId, messageId);
     await _db.draftsDao.remove(accountId, messageId);
     // The cached remote DRAFT copy goes too, or Bozze shows it again until the next sync.
-    const draftIds =
-        'SELECT m.id FROM messages m WHERE m.account_id = ?1 AND m.message_id = ?2 '
-        "AND EXISTS (SELECT 1 FROM message_labels l WHERE l.account_id = m.account_id AND l.message_id = m.id AND l.label_id = '$draftLabelId')";
-    final vars = [Variable(accountId), Variable(messageId)];
-    await _db.customUpdate(
-      'DELETE FROM message_labels WHERE account_id = ?1 AND message_id IN ($draftIds)',
-      variables: vars,
-      updates: {_db.messageLabels},
-      updateKind: UpdateKind.delete,
-    );
-    await _db.customUpdate(
-      'DELETE FROM messages WHERE account_id = ?1 AND id IN ($draftIds)',
-      variables: vars,
-      updates: {_db.messages},
-      updateKind: UpdateKind.delete,
-    );
+    // Ids first: the label rows are what identifies the DRAFT copy.
+    final ids = await _db
+        .customSelect(
+          'SELECT m.id FROM messages m WHERE m.account_id = ?1 AND m.message_id = ?2 '
+          "AND EXISTS (SELECT 1 FROM message_labels l WHERE l.account_id = m.account_id AND l.message_id = m.id AND l.label_id = '$draftLabelId')",
+          variables: [Variable(accountId), Variable(messageId)],
+          readsFrom: {_db.messages, _db.messageLabels},
+        )
+        .map((row) => row.read<String>('id'))
+        .get();
+    await (_db.delete(_db.messageLabels)..where(
+          (l) => l.accountId.equals(accountId) & l.messageId.isIn(ids),
+        ))
+        .go();
+    await (_db.delete(_db.messages)..where(
+          (m) => m.accountId.equals(accountId) & m.id.isIn(ids),
+        ))
+        .go();
     await applyPage(accountId, [
       Message(
         id: providerId,

@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/attachment_repository.dart';
 import '../domain/html_text.dart';
 import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
@@ -23,6 +24,9 @@ const draftDebounce = Duration(seconds: 5);
 
 /// Annulla invio: how long after Invia the message can still be taken back (#36).
 const sendWindow = Duration(seconds: 10);
+
+/// How long a replay owns an outbox row it is sending, against the other isolate (#36).
+const sendClaim = Duration(minutes: 2);
 
 /// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
@@ -88,6 +92,9 @@ class SyncEngine implements MailSync {
 
   @override
   Future<void> syncAll() async {
+    // On resume the WorkManager isolate may have sent (or refused) outbox rows: the streams read the file again.
+    // ponytail: only when syncAll runs (start, resume, network back); a cross-isolate notification if a worker ever writes while in foreground.
+    _store.refreshAfterExternalWrites();
     await Future.wait([
       for (final account in await _store.accounts())
         // A Da ricollegare Account stops syncing until the user consents again.
@@ -169,16 +176,24 @@ class SyncEngine implements MailSync {
   }
 
   @override
-  Future<Result<void>> send(String accountId, OutgoingMessage message) async {
+  Future<Result<DateTime>> send(
+    String accountId,
+    OutgoingMessage message,
+  ) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
-    final now = _clock.now();
-    // A forward's attachments are downloaded now (online), so the queued text is complete.
+    // A forward's attachments are read now, from the cache (offline too) or the Provider, so the queued text is complete.
+    // ponytail: an attachment never opened here needs the network at Invia (OfflineFailure); persist copies of the
+    // attachments when the forward is composed to queue those offline too.
     final String raw;
     switch (await renderMimeFetching(
       message,
-      now,
-      _provider(account).fetchAttachment,
+      _clock.now(),
+      (messageId, attachmentId) => GetIt.I<AttachmentRepository>().bytes(
+        accountId,
+        messageId,
+        attachmentId,
+      ),
     )) {
       case Ok(:final value):
         raw = value;
@@ -189,11 +204,13 @@ class SyncEngine implements MailSync {
     if (raw.length > gmailSendLimitBytes) {
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
+    // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
+    final sendAfter = _clock.now().add(sendWindow);
     await _store.enqueueOutgoing(
       accountId,
       message,
       raw: raw,
-      sendAfter: now.add(sendWindow).millisecondsSinceEpoch,
+      sendAfter: sendAfter.millisecondsSinceEpoch,
     );
     final key = (accountId, message.messageId);
     await _sendTimers.remove(key)?.cancel();
@@ -208,15 +225,22 @@ class SyncEngine implements MailSync {
         debugPrint('[sync] $accountId: background hold failed, $e');
       }),
     );
-    return const Ok(null);
+    return Ok(sendAfter);
   }
 
   @override
   Future<bool> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
-    final cancelled = await _store.cancelOutgoing(accountId, messageId);
-    await _releaseIfEmpty(accountId);
-    return cancelled;
+    // In the Account's queue: a replay already sending it ends first, and then the row is gone (false).
+    return _serial(accountId, () async {
+      final cancelled = await _store.cancelOutgoing(
+        accountId,
+        messageId,
+        _clock.now().millisecondsSinceEpoch,
+      );
+      await _releaseIfEmpty(accountId);
+      return cancelled;
+    });
   }
 
   /// Lets the platform go once nothing of the Account is queued any more.
@@ -379,6 +403,16 @@ class SyncEngine implements MailSync {
     }
     final now = _clock.now().millisecondsSinceEpoch;
     for (final row in await _store.dueOutgoing(accountId, now)) {
+      // Taken in the database first: the WorkManager isolate may be replaying the same row; the loser skips it.
+      // ponytail: a crash mid-send keeps the row claimed, so its retry waits up to [sendClaim].
+      if (!await _store.claimOutgoing(
+        accountId,
+        row.messageId,
+        untilMs: now + sendClaim.inMilliseconds,
+        nowMs: now,
+      )) {
+        continue;
+      }
       switch (await provider.send(
         row.messageId,
         row.raw,
@@ -392,12 +426,12 @@ class SyncEngine implements MailSync {
             date: now,
           );
           debugPrint('[sync] $accountId: sent ${row.messageId}');
-        // ponytail: a permanent refusal (too big, Bozza gone) stays queued and retries on every replay;
-        // the UI shows it pending in Inviati, surface the reason when it happens in practice.
-        case Err(failure: SizeLimitFailure() || NotFoundFailure()):
-          debugPrint('[sync] $accountId: send refused ${row.messageId}');
+        // Refused for good (too big, Bozza gone): kept as failed for the UI, never retried (ADR 0008).
+        case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure())):
+          await _store.outgoingFailed(accountId, row.messageId);
+          debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
         case Err(:final failure):
-          await _store.bumpSendAttempts(accountId, row.messageId);
+          await _store.unclaimOutgoing(accountId, row.messageId);
           debugPrint('[sync] $accountId: send failed, $failure');
       }
     }

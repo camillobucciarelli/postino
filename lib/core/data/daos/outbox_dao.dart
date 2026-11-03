@@ -18,26 +18,35 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
     outbox,
   )..where((t) => _row(t, accountId, messageId))).getSingleOrNull();
 
+  /// Annulla: removes the row unless a sender holds an unexpired claim on it (it is going now); true when removed.
+  Future<bool> cancel(String accountId, String messageId, int nowMs) async =>
+      await (delete(
+            outbox,
+          )..where((t) => _row(t, accountId, messageId) & _unclaimed(t, nowMs)))
+          .go() >
+      0;
+
   /// Removes the row; true when there was one.
   Future<bool> remove(String accountId, String messageId) async =>
       await (delete(outbox)..where((t) => _row(t, accountId, messageId))).go() >
       0;
 
-  /// The rows whose window ended by [nowMs], oldest first.
+  /// The rows whose window ended by [nowMs] and not refused for good, oldest first.
   Future<List<OutboxRow>> due(String accountId, int nowMs) =>
       (select(outbox)
             ..where(
               (t) =>
                   t.accountId.equals(accountId) &
-                  t.sendAfter.isSmallerOrEqualValue(nowMs),
+                  t.sendAfter.isSmallerOrEqualValue(nowMs) &
+                  t.failed.not(),
             )
             ..orderBy([(t) => OrderingTerm.asc(t.sendAfter)]))
           .get();
 
-  /// True while the Account has any row queued.
+  /// True while the Account has any row still to send.
   Future<bool> any(String accountId) async =>
       (await (select(outbox)
-                ..where((t) => t.accountId.equals(accountId))
+                ..where((t) => t.accountId.equals(accountId) & t.failed.not())
                 ..limit(1))
               .get())
           .isNotEmpty;
@@ -49,10 +58,33 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.sendAfter)]))
           .watch();
 
-  Future<void> bumpAttempts(String accountId, String messageId) =>
+  /// Takes the row for one sender until [untilMs], unless another holds an unexpired claim; true when taken.
+  /// One UPDATE, so two isolates on the same file never both win.
+  Future<bool> claim(
+    String accountId,
+    String messageId,
+    int untilMs,
+    int nowMs,
+  ) async =>
+      await (update(
+            outbox,
+          )..where((t) => _row(t, accountId, messageId) & _unclaimed(t, nowMs)))
+          .write(OutboxCompanion(claimedUntil: Value(untilMs))) >
+      0;
+
+  /// Gives the row back after a send that failed but may be retried.
+  Future<void> unclaim(String accountId, String messageId) =>
       (update(outbox)..where((t) => _row(t, accountId, messageId))).write(
-        OutboxCompanion.custom(attempts: outbox.attempts + const Constant(1)),
+        const OutboxCompanion(claimedUntil: Value(null)),
       );
+
+  Future<void> markFailed(String accountId, String messageId) =>
+      (update(outbox)..where((t) => _row(t, accountId, messageId))).write(
+        const OutboxCompanion(failed: Value(true), claimedUntil: Value(null)),
+      );
+
+  static Expression<bool> _unclaimed(Outbox t, int nowMs) =>
+      t.claimedUntil.isNull() | t.claimedUntil.isSmallerThanValue(nowMs);
 
   static Expression<bool> _row(Outbox t, String accountId, String messageId) =>
       t.accountId.equals(accountId) & t.messageId.equals(messageId);

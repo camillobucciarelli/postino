@@ -28,8 +28,11 @@ class Outbox extends Table {
   /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
   IntColumn get sendAfter => integer()();
 
-  /// Failed send attempts so far.
-  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  /// Milliseconds since epoch, UTC: until then one isolate (foreground or WorkManager) owns the send of this row.
+  IntColumn get claimedUntil => integer().nullable()();
+
+  /// The Provider refused it for good (too big, Bozza gone): not retried, the UI shows it as failed.
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {accountId, messageId};

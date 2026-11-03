@@ -179,8 +179,12 @@ class SystemBackgroundSender implements BackgroundSender {
   static const task = 'postino.send';
   static String workName(String accountId) => '$task.$accountId';
 
-  /// iOS task identifiers, one per Account; a second hold while one is open is a no-op.
+  /// iOS task identifiers, one per Account; a second hold replaces the open one, which may have expired.
   final _tasks = <String, int>{};
+
+  /// The iOS task held for the Account, if any.
+  @visibleForTesting
+  int? taskId(String accountId) => _tasks[accountId];
 
   static TargetPlatform? get _mobile => kIsWeb
       ? null
@@ -193,7 +197,14 @@ class SystemBackgroundSender implements BackgroundSender {
   Future<void> hold(String accountId) async {
     switch (_mobile) {
       case TargetPlatform.iOS:
-        if (_tasks.containsKey(accountId)) return;
+        // iOS may have expired the open task already (its 30 s are gone): ended (harmless if so) and begun anew.
+        if (_tasks.remove(accountId) case final old?) {
+          try {
+            await channel.invokeMethod<void>('endBackgroundTask', old);
+          } on PlatformException catch (e) {
+            debugPrint('[background] end of task $old failed, $e');
+          }
+        }
         final id = await channel.invokeMethod<int>('beginBackgroundTask');
         if (id != null && id != 0) _tasks[accountId] = id;
       case TargetPlatform.android:

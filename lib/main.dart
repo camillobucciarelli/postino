@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,23 @@ final getIt = GetIt.instance;
 @InjectableInit()
 Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
+}
+
+/// Android WorkManager entry point (#36): a fresh isolate wires the app's DI and runs [runOutboxTask].
+@pragma('vm:entry-point')
+void sendOutboxDispatcher() {
+  Workmanager().executeTask((task, input) async {
+    final accountId = input?['accountId'] as String?;
+    if (accountId == null) return true;
+    try {
+      DartPluginRegistrant.ensureInitialized();
+      await configureDependencies(environment: Environment.prod);
+    } catch (e) {
+      debugPrint('[background] $accountId: setup failed, $e');
+      return true;
+    }
+    return runOutboxTask(accountId);
+  });
 }
 
 Future<void> main() async {

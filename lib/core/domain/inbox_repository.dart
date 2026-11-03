@@ -19,10 +19,16 @@ class InboxEntry {
 typedef ConversationMessage = ({Message message, MessageBody? body});
 
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
+/// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
 class OutgoingEntry {
-  const OutgoingEntry({required this.message, required this.sendAfter});
+  const OutgoingEntry({
+    required this.message,
+    required this.sendAfter,
+    this.failed = false,
+  });
   final OutgoingMessage message;
   final int sendAfter;
+  final bool failed;
 }
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).

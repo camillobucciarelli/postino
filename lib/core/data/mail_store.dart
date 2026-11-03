@@ -217,19 +217,35 @@ class MailStore implements InboxRepository {
     ),
   );
 
-  /// Annulla invio: true when the row was still there (not sent yet).
-  Future<bool> cancelOutgoing(String accountId, String messageId) =>
-      _db.outboxDao.remove(accountId, messageId);
+  /// Annulla invio: true when the row was still there and no sender (another isolate) is sending it now.
+  Future<bool> cancelOutgoing(String accountId, String messageId, int nowMs) =>
+      _db.outboxDao.cancel(accountId, messageId, nowMs);
 
   /// The outbox rows whose window ended by [nowMs].
   Future<List<OutboxRow>> dueOutgoing(String accountId, int nowMs) =>
       _db.outboxDao.due(accountId, nowMs);
 
-  /// True while the Account has anything queued to send.
+  /// True while the Account has anything queued to send (a failed row waits for the user, not the platform).
   Future<bool> hasOutgoing(String accountId) => _db.outboxDao.any(accountId);
 
-  Future<void> bumpSendAttempts(String accountId, String messageId) =>
-      _db.outboxDao.bumpAttempts(accountId, messageId);
+  /// Takes the row for this sender until [untilMs] (#36); false when another isolate holds it.
+  Future<bool> claimOutgoing(
+    String accountId,
+    String messageId, {
+    required int untilMs,
+    required int nowMs,
+  }) => _db.outboxDao.claim(accountId, messageId, untilMs, nowMs);
+
+  /// A send failed and may be retried: the row is free again, for the next replay of either isolate.
+  Future<void> unclaimOutgoing(String accountId, String messageId) =>
+      _db.outboxDao.unclaim(accountId, messageId);
+
+  /// The Provider refused the message for good: it stays, shown as failed, and is not retried.
+  Future<void> outgoingFailed(String accountId, String messageId) =>
+      _db.outboxDao.markFailed(accountId, messageId);
+
+  /// Another isolate (the WorkManager sender) may have written the file: the streams read it again.
+  void refreshAfterExternalWrites() => _db.markTablesUpdated(_db.allTables);
 
   /// The Provider has the message as [providerId]: the outbox row and the local Bozza go, and the message is
   /// stored at once under Inviati, so the folder shows it before the next sync upserts the same id.
@@ -283,6 +299,7 @@ class MailStore implements InboxRepository {
                       body: r.body,
                     ),
                     sendAfter: r.sendAfter,
+                    failed: r.failed,
                   ),
               ],
             ),

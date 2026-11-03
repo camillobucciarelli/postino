@@ -334,7 +334,7 @@ class _TooBig implements MailSync {
   final MailSync real;
 
   @override
-  Future<Result<void>> send(String a, OutgoingMessage m) async =>
+  Future<Result<DateTime>> send(String a, OutgoingMessage m) async =>
       const Err(SizeLimitFailure(gmailSendLimitBytes));
   @override
   Future<void> syncAll() => real.syncAll();

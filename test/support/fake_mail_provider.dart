@@ -75,6 +75,15 @@ class FakeMailProvider implements MailProvider {
   /// Every send that reached the Provider and was not already in Inviati: (Message-ID, Provider id).
   final sent = <(String, String)>[];
 
+  /// Every call of [send], also those that fail or find the message already in Inviati.
+  int sendCalls = 0;
+
+  /// While set, [send] waits for it before doing anything: a send in flight.
+  Completer<void>? holdSend;
+
+  /// While set, [send] refuses with it, as the Provider would for good (too big, Bozza gone).
+  Failure? sendFailure;
+
   /// While set, the next [send] stores the message as sent but answers offline, once: a lost response.
   bool loseSendResponse = false;
   int _sentSeq = 0;
@@ -377,7 +386,9 @@ class FakeMailProvider implements MailProvider {
     String raw, {
     String? threadId,
   }) async {
-    final f = _failure;
+    sendCalls++;
+    await holdSend?.future;
+    final f = _failure ?? sendFailure;
     if (f != null) return Err(f);
     final existing = _messages.values
         .where(

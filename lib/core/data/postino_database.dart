@@ -90,6 +90,8 @@ class PostinoDatabase extends _$PostinoDatabase {
           // A wrong key fails here.
           sql.select('SELECT count(*) FROM sqlite_master');
           _secureDelete(sql);
+          // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
+          sql.execute('PRAGMA busy_timeout = 5000');
         },
       ),
     );

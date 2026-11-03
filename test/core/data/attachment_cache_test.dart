@@ -221,14 +221,17 @@ void main() {
     expect(await _file(a), isA<Ok<String>>());
   });
 
-  test('a file half written by a crash is gone at the next launch', () async {
+  test('a file half written by a crash is gone at the next launch; a recent one, maybe another isolate\'s write, stays', () async {
     await _start();
-    _cacheDir.childFile('abc.part').writeAsBytesSync([1, 2, 3]);
+    _cacheDir.childFile('old.part')
+      ..writeAsBytesSync([1, 2, 3])
+      ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
+    _cacheDir.childFile('new.part').writeAsBytesSync([1, 2, 3]);
     await AttachmentStorage.open(
       _cacheDir,
       h.fs.directory('/tmp/postino-attachments'),
     );
-    expect(_cached, isEmpty);
+    expect(_cached.map((f) => f.basename), ['new.part']);
   });
 
   for (final (step, where) in [

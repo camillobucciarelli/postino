@@ -1231,13 +1231,24 @@ void main() {
         },
       );
 
-      test('a message already in Inviati is not sent again: no POST', () async {
+      test('a message already in Inviati is not sent again: no POST, but its Bozza is deleted', () async {
         final g = _Recorded(
-          (r, path) =>
-              path == 'messages' ? 'messages_sent_search_hit' : route(r, path),
+          (r, path) => switch ((r.method, path)) {
+            ('GET', 'messages') => 'messages_sent_search_hit',
+            ('GET', 'drafts') => 'drafts_list',
+            ('DELETE', 'drafts/r-4410200000000000001') => 'draft_delete',
+            _ => route(r, path),
+          },
         );
         expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
-        expect(g.requests.map((r) => r.method), ['GET']);
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'GET ${_api}messages',
+            'GET ${_api}drafts',
+            'DELETE ${_api}drafts/r-4410200000000000001',
+          ],
+        );
       });
 
       test(
@@ -1272,6 +1283,15 @@ void main() {
             ),
           ),
         );
+      });
+
+      test('a 400 «Message too large» is a SizeLimitFailure too', () async {
+        final g = _Recorded(
+          (r, path) => path == 'messages/send'
+              ? 'request_too_large_400'
+              : route(r, path),
+        );
+        expect(await g.provider.send(messageId, raw), _err<SizeLimitFailure>());
       });
 
       test('offline is an OfflineFailure', () async {

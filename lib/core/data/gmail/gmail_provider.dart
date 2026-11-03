@@ -253,27 +253,31 @@ class GmailProvider implements MailProvider {
     String? threadId,
   }) => _guard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
+    String? id;
     if (bare.isNotEmpty) {
       final sent = await _list({
         'q': 'rfc822msgid:$bare',
         'labelIds': sentLabelId,
       });
-      if (sent.firstOrNull case final id?) return Ok(id);
+      id = sent.firstOrNull;
     }
-    final r = await _request(
-      'POST',
-      'messages/send',
-      body: {
-        'raw': base64Url.encode(utf8.encode(raw)),
-        // Gmail threads it in the sender's mailbox only with the threadId, besides In-Reply-To/References.
-        'threadId': ?threadId,
-      },
-    );
+    // Already in Inviati (a lost answer): not sent again, but its Bozza may still be there.
+    id ??=
+        (await _request(
+              'POST',
+              'messages/send',
+              body: {
+                'raw': base64Url.encode(utf8.encode(raw)),
+                // Gmail threads it in the sender's mailbox only with the threadId, besides In-Reply-To/References.
+                'threadId': ?threadId,
+              },
+            ))['id']
+            as String;
     if (await deleteDraft(messageId) case Err(:final failure)
         when failure is! NotFoundFailure) {
       debugPrint('[gmail] draft of sent $messageId not deleted, $failure');
     }
-    return Ok(r['id'] as String);
+    return Ok(id);
   });
 
   /// Gmail draft ids by Message-ID.

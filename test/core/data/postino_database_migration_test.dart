@@ -262,7 +262,10 @@ void main() {
       ),
     );
     final row = (await db.outboxDao.due('a1', 1)).single;
-    expect((row.attempts, row.conversationId), (0, 't'));
+    expect(
+      (row.failed, row.claimedUntil, row.conversationId),
+      (false, null, 't'),
+    );
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
     expect(raw.select('PRAGMA user_version').first.values.first, 13);
   });

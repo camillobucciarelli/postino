@@ -1197,6 +1197,45 @@ void main() {
         _ => fail('unexpected ${r.method} $path'),
       };
 
+      test('a send that stalls is aborted and is an OfflineFailure', () async {
+        http.BaseRequest? posted;
+        final provider = GmailProvider(
+          _account,
+          _keychain(),
+          MockClient.streaming((r, _) async {
+            if (r.url.path.endsWith('messages/send')) {
+              posted = r;
+              return Completer<http.StreamedResponse>().future;
+            }
+            final res = _fixture(
+              route(r as http.Request, r.url.path.substring(_api.length)),
+            );
+            return http.StreamedResponse(
+              http.ByteStream.fromBytes(res.bodyBytes),
+              res.statusCode,
+              headers: res.headers,
+            );
+          }),
+          FakeClock(_now),
+          client: _testClient,
+          sleep: (_) async {},
+          stall: const Duration(milliseconds: 50),
+        );
+        expect(await provider.send(messageId, raw), _err<OfflineFailure>());
+        await (posted! as http.Abortable).abortTrigger!.timeout(
+          const Duration(seconds: 1),
+        );
+      });
+
+      test('the first timeout grows with the body: 1 s per 50 KB', () {
+        expect(sendTimeout(0), const Duration(seconds: 30));
+        expect(
+          sendTimeout(5 * 1024 * 1024),
+          const Duration(seconds: 30, milliseconds: 104857),
+        );
+        expect(sendTimeout(35 * 1000 * 1000), const Duration(seconds: 730));
+      });
+
       test('Inviati is searched by Message-ID, then one POST of the raw as base64url, then the Bozza is looked for', () async {
         final g = _Recorded(route);
         expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');

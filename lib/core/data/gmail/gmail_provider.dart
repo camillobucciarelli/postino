@@ -28,6 +28,7 @@ class GmailProvider implements MailProvider {
     this._client = const GoogleClient.fromEnvironment(),
     this._sleep = Future<void>.delayed,
     this._idle = imapIdle,
+    this._stall = const Duration(seconds: 30),
   });
 
   final String _accountId;
@@ -37,6 +38,7 @@ class GmailProvider implements MailProvider {
   final GoogleClient _client;
   final Future<void> Function(Duration) _sleep;
   final ImapIdle _idle;
+  final Duration _stall;
 
   static final _tokenEndpoint = Uri.parse(
     'https://oauth2.googleapis.com/token',
@@ -608,28 +610,45 @@ class GmailProvider implements MailProvider {
     final url = _api
         .resolve(path)
         .replace(queryParameters: query.isEmpty ? null : query);
-    // 30 s for the answer to start, then 30 s at most between two chunks: a long download is fine, a stalled one is not.
-    const stall = Duration(seconds: 30);
+    // The answer must start within [sendTimeout] (a big upload needs time), then [_stall] at most between two chunks:
+    // a long download is fine, a stalled one is not.
+    final stall = _stall;
+    final payload = body == null ? null : jsonEncode(body);
     Future<http.Response> send() async {
-      final request = cancel == null
-          ? http.Request(method, url)
-          : http.AbortableRequest(method, url, abortTrigger: cancel);
+      // A timeout aborts the connection too, so a replay can never overlap a request still uploading.
+      final abort = Completer<void>();
+      final request = http.AbortableRequest(
+        method,
+        url,
+        abortTrigger: cancel == null
+            ? abort.future
+            : Future.any([cancel, abort.future]),
+      );
       request.headers['authorization'] = 'Bearer ${tokens.access}';
-      if (body != null) {
+      if (payload != null) {
         request
           ..headers['content-type'] = 'application/json'
-          ..body = jsonEncode(body);
+          ..body = payload;
       }
-      final r = await _http.send(request).timeout(stall);
-      final total = r.contentLength ?? expected;
-      var read = 0;
-      final bytes = await http.ByteStream(
-        r.stream.timeout(stall).map((chunk) {
-          read += chunk.length;
-          if (total > 0) onProgress?.call(min(1, read / total));
-          return chunk;
-        }),
-      ).toBytes();
+      final Uint8List bytes;
+      final http.StreamedResponse r;
+      try {
+        r = await _http
+            .send(request)
+            .timeout(sendTimeout(request.contentLength, stall));
+        final total = r.contentLength ?? expected;
+        var read = 0;
+        bytes = await http.ByteStream(
+          r.stream.timeout(stall).map((chunk) {
+            read += chunk.length;
+            if (total > 0) onProgress?.call(min(1, read / total));
+            return chunk;
+          }),
+        ).toBytes();
+      } on TimeoutException {
+        abort.complete();
+        rethrow;
+      }
       return http.Response.bytes(
         bytes,
         r.statusCode,
@@ -760,6 +779,13 @@ class GmailProvider implements MailProvider {
     }
   }
 }
+
+/// Time for the answer to start: [stall] plus 1 s per 50 KB of [bodyBytes] (a 400 kbit/s floor, so 35 MB gets ~12 min).
+@visibleForTesting
+Duration sendTimeout(
+  int bodyBytes, [
+  Duration stall = const Duration(seconds: 30),
+]) => stall + Duration(milliseconds: bodyBytes ~/ 50);
 
 /// A failed Gmail call, unwound to [GmailProvider._guard].
 final class _Failed implements Exception {

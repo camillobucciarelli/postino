@@ -247,7 +247,11 @@ class GmailProvider implements MailProvider {
   /// Inviati is searched first: a message already there (a send whose answer was lost) is not sent twice.
   /// The Bozza holding the Message-ID is then deleted, best effort: Gmail does not drop it on its own.
   @override
-  Future<Result<String>> send(String messageId, String raw) => _guard(() async {
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+  }) => _guard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
     if (bare.isNotEmpty) {
       final sent = await _list({
@@ -259,7 +263,11 @@ class GmailProvider implements MailProvider {
     final r = await _request(
       'POST',
       'messages/send',
-      body: {'raw': base64Url.encode(utf8.encode(raw))},
+      body: {
+        'raw': base64Url.encode(utf8.encode(raw)),
+        // Gmail threads it in the sender's mailbox only with the threadId, besides In-Reply-To/References.
+        'threadId': ?threadId,
+      },
     );
     if (await deleteDraft(messageId) case Err(:final failure)
         when failure is! NotFoundFailure) {
@@ -278,8 +286,22 @@ class GmailProvider implements MailProvider {
     OutgoingMessage draft, {
     required bool isNew,
   }) => _guard(() async {
+    final raw = switch (await renderMimeFetching(
+      draft,
+      _clock.now(),
+      fetchAttachment,
+    )) {
+      Ok(:final value) => value,
+      // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+      Err(failure: NotFoundFailure()) => throw const _Failed(
+        UnexpectedFailure('forwarded attachment gone'),
+      ),
+      Err(:final failure) => throw _Failed(failure),
+    };
     final message = {
-      'raw': base64Url.encode(utf8.encode(renderMime(draft, _clock.now()))),
+      'raw': base64Url.encode(utf8.encode(raw)),
+      // Gmail threads a Bozza by threadId, besides the headers.
+      'threadId': ?draft.conversationId,
     };
     Future<void> create() async {
       final r = await _request('POST', 'drafts', body: {'message': message});
@@ -383,7 +405,16 @@ class GmailProvider implements MailProvider {
     }
   }
 
-  static const _headers = ['From', 'To', 'Cc', 'Bcc', 'Subject', 'Message-ID'];
+  static const _headers = [
+    'From',
+    'To',
+    'Cc',
+    'Bcc',
+    'Reply-To',
+    'References',
+    'Subject',
+    'Message-ID',
+  ];
 
   /// A Gmail message resource (`full` or `metadata`) as a [Message].
   static Message _parse(Map<String, dynamic> j) {
@@ -416,6 +447,12 @@ class GmailProvider implements MailProvider {
       ],
       subject: decodeWords(headers['subject'] ?? ''),
       snippet: _unescape(j['snippet'] as String? ?? ''),
+      replyTo: switch (parseMailboxes(headers['reply-to'] ?? '')) {
+        [final m, ...] => formatMailbox(m),
+        _ => null,
+      },
+      references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))
+        ..removeWhere((r) => r.isEmpty),
       date: DateTime.fromMillisecondsSinceEpoch(
         int.parse(j['internalDate'] as String),
         isUtc: true,

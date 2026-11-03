@@ -3,7 +3,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:postino/features/posta/presentation/message_time.dart';
 
 void main() {
-  setUpAll(() => initializeDateFormatting('it'));
+  setUpAll(() async {
+    await initializeDateFormatting('it');
+    await initializeDateFormatting('en');
+  });
 
   // Wednesday 28 October 2026, local time.
   final now = DateTime(2026, 10, 28, 12);
@@ -17,5 +20,12 @@ void main() {
     expect(time(DateTime(2026, 10, 21, 8)), '21 ott');
     expect(time(DateTime(2026, 3, 12, 8)), '12 mar');
     expect(time(DateTime(2025, 3, 12, 8)), '12 mar 2025');
+  });
+
+  test('quote date label is Italian like the sentence around it', () {
+    expect(
+      quoteDateLabel(DateTime(2026, 11, 2, 16, 19)),
+      'lun 2 nov 2026 alle ore 16:19',
+    );
   });
 }

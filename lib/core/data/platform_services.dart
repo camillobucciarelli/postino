@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
 import 'postino_database.dart';
@@ -93,6 +94,12 @@ class SystemLinkOpener implements LinkOpener {
       TargetPlatform.android || TargetPlatform.iOS => true,
       _ => false,
     };
+    // Defence in depth (#75): the Conversazione never asks, but an executable is never launched from here.
+    if (url.isScheme('file') &&
+        url.pathSegments.isNotEmpty &&
+        isExecutableName(url.pathSegments.last)) {
+      return;
+    }
     // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
       await (url.isScheme('file') && mobile && !kIsWeb

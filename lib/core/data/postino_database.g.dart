@@ -829,6 +829,28 @@ class $MessagesTable extends Messages
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _replyToMeta = const VerificationMeta(
+    'replyTo',
+  );
+  @override
+  late final GeneratedColumn<String> replyTo = GeneratedColumn<String>(
+    'reply_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _referencesMeta = const VerificationMeta(
+    'references',
+  );
+  @override
+  late final GeneratedColumn<String> references = GeneratedColumn<String>(
+    'references',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _subjectMeta = const VerificationMeta(
     'subject',
   );
@@ -897,6 +919,8 @@ class $MessagesTable extends Messages
     recipients,
     cc,
     bcc,
+    replyTo,
+    references,
     subject,
     snippet,
     date,
@@ -976,6 +1000,18 @@ class $MessagesTable extends Messages
       context.handle(
         _bccMeta,
         bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
+      );
+    }
+    if (data.containsKey('reply_to')) {
+      context.handle(
+        _replyToMeta,
+        replyTo.isAcceptableOrUnknown(data['reply_to']!, _replyToMeta),
+      );
+    }
+    if (data.containsKey('references')) {
+      context.handle(
+        _referencesMeta,
+        references.isAcceptableOrUnknown(data['references']!, _referencesMeta),
       );
     }
     if (data.containsKey('subject')) {
@@ -1063,6 +1099,14 @@ class $MessagesTable extends Messages
         DriftSqlType.string,
         data['${effectivePrefix}bcc'],
       )!,
+      replyTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reply_to'],
+      ),
+      references: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}references'],
+      ),
       subject: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}subject'],
@@ -1108,6 +1152,10 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
 
   /// Bcc, as [cc]; only Bozze and sent messages have one (v10).
   final String bcc;
+
+  /// The `Reply-To` mailbox and the `References` Message-IDs, one per line; null in rows cached before v12 (#37; #36 takes v11 with its outbox).
+  final String? replyTo;
+  final String? references;
   final String subject;
   final String snippet;
 
@@ -1125,6 +1173,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     required this.recipients,
     required this.cc,
     required this.bcc,
+    this.replyTo,
+    this.references,
     required this.subject,
     required this.snippet,
     required this.date,
@@ -1145,6 +1195,12 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     map['recipients'] = Variable<String>(recipients);
     map['cc'] = Variable<String>(cc);
     map['bcc'] = Variable<String>(bcc);
+    if (!nullToAbsent || replyTo != null) {
+      map['reply_to'] = Variable<String>(replyTo);
+    }
+    if (!nullToAbsent || references != null) {
+      map['references'] = Variable<String>(references);
+    }
     map['subject'] = Variable<String>(subject);
     map['snippet'] = Variable<String>(snippet);
     map['date'] = Variable<int>(date);
@@ -1166,6 +1222,12 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       recipients: Value(recipients),
       cc: Value(cc),
       bcc: Value(bcc),
+      replyTo: replyTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyTo),
+      references: references == null && nullToAbsent
+          ? const Value.absent()
+          : Value(references),
       subject: Value(subject),
       snippet: Value(snippet),
       date: Value(date),
@@ -1189,6 +1251,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       recipients: serializer.fromJson<String>(json['recipients']),
       cc: serializer.fromJson<String>(json['cc']),
       bcc: serializer.fromJson<String>(json['bcc']),
+      replyTo: serializer.fromJson<String?>(json['replyTo']),
+      references: serializer.fromJson<String?>(json['references']),
       subject: serializer.fromJson<String>(json['subject']),
       snippet: serializer.fromJson<String>(json['snippet']),
       date: serializer.fromJson<int>(json['date']),
@@ -1209,6 +1273,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       'recipients': serializer.toJson<String>(recipients),
       'cc': serializer.toJson<String>(cc),
       'bcc': serializer.toJson<String>(bcc),
+      'replyTo': serializer.toJson<String?>(replyTo),
+      'references': serializer.toJson<String?>(references),
       'subject': serializer.toJson<String>(subject),
       'snippet': serializer.toJson<String>(snippet),
       'date': serializer.toJson<int>(date),
@@ -1227,6 +1293,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     String? recipients,
     String? cc,
     String? bcc,
+    Value<String?> replyTo = const Value.absent(),
+    Value<String?> references = const Value.absent(),
     String? subject,
     String? snippet,
     int? date,
@@ -1242,6 +1310,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     recipients: recipients ?? this.recipients,
     cc: cc ?? this.cc,
     bcc: bcc ?? this.bcc,
+    replyTo: replyTo.present ? replyTo.value : this.replyTo,
+    references: references.present ? references.value : this.references,
     subject: subject ?? this.subject,
     snippet: snippet ?? this.snippet,
     date: date ?? this.date,
@@ -1265,6 +1335,10 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           : this.recipients,
       cc: data.cc.present ? data.cc.value : this.cc,
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
+      replyTo: data.replyTo.present ? data.replyTo.value : this.replyTo,
+      references: data.references.present
+          ? data.references.value
+          : this.references,
       subject: data.subject.present ? data.subject.value : this.subject,
       snippet: data.snippet.present ? data.snippet.value : this.snippet,
       date: data.date.present ? data.date.value : this.date,
@@ -1285,6 +1359,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ..write('recipients: $recipients, ')
           ..write('cc: $cc, ')
           ..write('bcc: $bcc, ')
+          ..write('replyTo: $replyTo, ')
+          ..write('references: $references, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -1305,6 +1381,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     recipients,
     cc,
     bcc,
+    replyTo,
+    references,
     subject,
     snippet,
     date,
@@ -1324,6 +1402,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           other.recipients == this.recipients &&
           other.cc == this.cc &&
           other.bcc == this.bcc &&
+          other.replyTo == this.replyTo &&
+          other.references == this.references &&
           other.subject == this.subject &&
           other.snippet == this.snippet &&
           other.date == this.date &&
@@ -1341,6 +1421,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
   final Value<String> recipients;
   final Value<String> cc;
   final Value<String> bcc;
+  final Value<String?> replyTo;
+  final Value<String?> references;
   final Value<String> subject;
   final Value<String> snippet;
   final Value<int> date;
@@ -1357,6 +1439,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     this.recipients = const Value.absent(),
     this.cc = const Value.absent(),
     this.bcc = const Value.absent(),
+    this.replyTo = const Value.absent(),
+    this.references = const Value.absent(),
     this.subject = const Value.absent(),
     this.snippet = const Value.absent(),
     this.date = const Value.absent(),
@@ -1374,6 +1458,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     required String recipients,
     this.cc = const Value.absent(),
     this.bcc = const Value.absent(),
+    this.replyTo = const Value.absent(),
+    this.references = const Value.absent(),
     required String subject,
     required String snippet,
     required int date,
@@ -1401,6 +1487,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Expression<String>? recipients,
     Expression<String>? cc,
     Expression<String>? bcc,
+    Expression<String>? replyTo,
+    Expression<String>? references,
     Expression<String>? subject,
     Expression<String>? snippet,
     Expression<int>? date,
@@ -1418,6 +1506,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       if (recipients != null) 'recipients': recipients,
       if (cc != null) 'cc': cc,
       if (bcc != null) 'bcc': bcc,
+      if (replyTo != null) 'reply_to': replyTo,
+      if (references != null) 'references': references,
       if (subject != null) 'subject': subject,
       if (snippet != null) 'snippet': snippet,
       if (date != null) 'date': date,
@@ -1437,6 +1527,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Value<String>? recipients,
     Value<String>? cc,
     Value<String>? bcc,
+    Value<String?>? replyTo,
+    Value<String?>? references,
     Value<String>? subject,
     Value<String>? snippet,
     Value<int>? date,
@@ -1454,6 +1546,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       recipients: recipients ?? this.recipients,
       cc: cc ?? this.cc,
       bcc: bcc ?? this.bcc,
+      replyTo: replyTo ?? this.replyTo,
+      references: references ?? this.references,
       subject: subject ?? this.subject,
       snippet: snippet ?? this.snippet,
       date: date ?? this.date,
@@ -1493,6 +1587,12 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     if (bcc.present) {
       map['bcc'] = Variable<String>(bcc.value);
     }
+    if (replyTo.present) {
+      map['reply_to'] = Variable<String>(replyTo.value);
+    }
+    if (references.present) {
+      map['references'] = Variable<String>(references.value);
+    }
     if (subject.present) {
       map['subject'] = Variable<String>(subject.value);
     }
@@ -1526,6 +1626,8 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
           ..write('recipients: $recipients, ')
           ..write('cc: $cc, ')
           ..write('bcc: $bcc, ')
+          ..write('replyTo: $replyTo, ')
+          ..write('references: $references, ')
           ..write('subject: $subject, ')
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
@@ -3121,6 +3223,54 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _inReplyToMeta = const VerificationMeta(
+    'inReplyTo',
+  );
+  @override
+  late final GeneratedColumn<String> inReplyTo = GeneratedColumn<String>(
+    'in_reply_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _referencesMeta = const VerificationMeta(
+    'references',
+  );
+  @override
+  late final GeneratedColumn<String> references = GeneratedColumn<String>(
+    'references',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<
+    List<ForwardedAttachment>?,
+    String
+  >
+  attachments =
+      GeneratedColumn<String>(
+        'attachments',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<List<ForwardedAttachment>?>(
+        $DraftsTable.$converterattachmentsn,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -3181,6 +3331,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     bcc,
     subject,
     body,
+    inReplyTo,
+    references,
+    conversationId,
+    attachments,
     updatedAt,
     pending,
     synced,
@@ -3250,6 +3404,27 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
       );
     } else if (isInserting) {
       context.missing(_bodyMeta);
+    }
+    if (data.containsKey('in_reply_to')) {
+      context.handle(
+        _inReplyToMeta,
+        inReplyTo.isAcceptableOrUnknown(data['in_reply_to']!, _inReplyToMeta),
+      );
+    }
+    if (data.containsKey('references')) {
+      context.handle(
+        _referencesMeta,
+        references.isAcceptableOrUnknown(data['references']!, _referencesMeta),
+      );
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
     }
     if (data.containsKey('updated_at')) {
       context.handle(
@@ -3323,6 +3498,24 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}body'],
       )!,
+      inReplyTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}in_reply_to'],
+      ),
+      references: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}references'],
+      ),
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
+      attachments: $DraftsTable.$converterattachmentsn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}attachments'],
+        ),
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
@@ -3346,6 +3539,11 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   $DraftsTable createAlias(String alias) {
     return $DraftsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<ForwardedAttachment>, String>
+  $converterattachments = const ForwardedAttachmentsConverter();
+  static TypeConverter<List<ForwardedAttachment>?, String?>
+  $converterattachmentsn = NullAwareTypeConverter.wrap($converterattachments);
 }
 
 class DraftRow extends DataClass implements Insertable<DraftRow> {
@@ -3363,6 +3561,13 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
   /// HTML.
   final String body;
 
+  /// A reply (#37, v12: #36 takes v11 with its outbox): In-Reply-To, the References one per line, the Provider's Conversazione id;
+  /// a forward: the attachments taken over, as JSON. Null for a plain new message.
+  final String? inReplyTo;
+  final String? references;
+  final String? conversationId;
+  final List<ForwardedAttachment>? attachments;
+
   /// Milliseconds since epoch, UTC.
   final int updatedAt;
   final bool pending;
@@ -3376,6 +3581,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.bcc,
     required this.subject,
     required this.body,
+    this.inReplyTo,
+    this.references,
+    this.conversationId,
+    this.attachments,
     required this.updatedAt,
     required this.pending,
     required this.synced,
@@ -3391,6 +3600,20 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     map['bcc'] = Variable<String>(bcc);
     map['subject'] = Variable<String>(subject);
     map['body'] = Variable<String>(body);
+    if (!nullToAbsent || inReplyTo != null) {
+      map['in_reply_to'] = Variable<String>(inReplyTo);
+    }
+    if (!nullToAbsent || references != null) {
+      map['references'] = Variable<String>(references);
+    }
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
+    if (!nullToAbsent || attachments != null) {
+      map['attachments'] = Variable<String>(
+        $DraftsTable.$converterattachmentsn.toSql(attachments),
+      );
+    }
     map['updated_at'] = Variable<int>(updatedAt);
     map['pending'] = Variable<bool>(pending);
     map['synced'] = Variable<bool>(synced);
@@ -3407,6 +3630,18 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       bcc: Value(bcc),
       subject: Value(subject),
       body: Value(body),
+      inReplyTo: inReplyTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inReplyTo),
+      references: references == null && nullToAbsent
+          ? const Value.absent()
+          : Value(references),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
+      attachments: attachments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attachments),
       updatedAt: Value(updatedAt),
       pending: Value(pending),
       synced: Value(synced),
@@ -3427,6 +3662,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       bcc: serializer.fromJson<String>(json['bcc']),
       subject: serializer.fromJson<String>(json['subject']),
       body: serializer.fromJson<String>(json['body']),
+      inReplyTo: serializer.fromJson<String?>(json['inReplyTo']),
+      references: serializer.fromJson<String?>(json['references']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
+      attachments: serializer.fromJson<List<ForwardedAttachment>?>(
+        json['attachments'],
+      ),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       pending: serializer.fromJson<bool>(json['pending']),
       synced: serializer.fromJson<bool>(json['synced']),
@@ -3444,6 +3685,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'bcc': serializer.toJson<String>(bcc),
       'subject': serializer.toJson<String>(subject),
       'body': serializer.toJson<String>(body),
+      'inReplyTo': serializer.toJson<String?>(inReplyTo),
+      'references': serializer.toJson<String?>(references),
+      'conversationId': serializer.toJson<String?>(conversationId),
+      'attachments': serializer.toJson<List<ForwardedAttachment>?>(attachments),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'pending': serializer.toJson<bool>(pending),
       'synced': serializer.toJson<bool>(synced),
@@ -3459,6 +3704,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     String? bcc,
     String? subject,
     String? body,
+    Value<String?> inReplyTo = const Value.absent(),
+    Value<String?> references = const Value.absent(),
+    Value<String?> conversationId = const Value.absent(),
+    Value<List<ForwardedAttachment>?> attachments = const Value.absent(),
     int? updatedAt,
     bool? pending,
     bool? synced,
@@ -3471,6 +3720,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     bcc: bcc ?? this.bcc,
     subject: subject ?? this.subject,
     body: body ?? this.body,
+    inReplyTo: inReplyTo.present ? inReplyTo.value : this.inReplyTo,
+    references: references.present ? references.value : this.references,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
+    attachments: attachments.present ? attachments.value : this.attachments,
     updatedAt: updatedAt ?? this.updatedAt,
     pending: pending ?? this.pending,
     synced: synced ?? this.synced,
@@ -3487,6 +3742,16 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
       subject: data.subject.present ? data.subject.value : this.subject,
       body: data.body.present ? data.body.value : this.body,
+      inReplyTo: data.inReplyTo.present ? data.inReplyTo.value : this.inReplyTo,
+      references: data.references.present
+          ? data.references.value
+          : this.references,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      attachments: data.attachments.present
+          ? data.attachments.value
+          : this.attachments,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       pending: data.pending.present ? data.pending.value : this.pending,
       synced: data.synced.present ? data.synced.value : this.synced,
@@ -3506,6 +3771,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('body: $body, ')
+          ..write('inReplyTo: $inReplyTo, ')
+          ..write('references: $references, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('attachments: $attachments, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
@@ -3523,6 +3792,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     bcc,
     subject,
     body,
+    inReplyTo,
+    references,
+    conversationId,
+    attachments,
     updatedAt,
     pending,
     synced,
@@ -3539,6 +3812,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.bcc == this.bcc &&
           other.subject == this.subject &&
           other.body == this.body &&
+          other.inReplyTo == this.inReplyTo &&
+          other.references == this.references &&
+          other.conversationId == this.conversationId &&
+          other.attachments == this.attachments &&
           other.updatedAt == this.updatedAt &&
           other.pending == this.pending &&
           other.synced == this.synced &&
@@ -3553,6 +3830,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<String> bcc;
   final Value<String> subject;
   final Value<String> body;
+  final Value<String?> inReplyTo;
+  final Value<String?> references;
+  final Value<String?> conversationId;
+  final Value<List<ForwardedAttachment>?> attachments;
   final Value<int> updatedAt;
   final Value<bool> pending;
   final Value<bool> synced;
@@ -3566,6 +3847,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.bcc = const Value.absent(),
     this.subject = const Value.absent(),
     this.body = const Value.absent(),
+    this.inReplyTo = const Value.absent(),
+    this.references = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.attachments = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.pending = const Value.absent(),
     this.synced = const Value.absent(),
@@ -3580,6 +3865,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required String bcc,
     required String subject,
     required String body,
+    this.inReplyTo = const Value.absent(),
+    this.references = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.attachments = const Value.absent(),
     required int updatedAt,
     required bool pending,
     required bool synced,
@@ -3604,6 +3893,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<String>? bcc,
     Expression<String>? subject,
     Expression<String>? body,
+    Expression<String>? inReplyTo,
+    Expression<String>? references,
+    Expression<String>? conversationId,
+    Expression<String>? attachments,
     Expression<int>? updatedAt,
     Expression<bool>? pending,
     Expression<bool>? synced,
@@ -3618,6 +3911,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (bcc != null) 'bcc': bcc,
       if (subject != null) 'subject': subject,
       if (body != null) 'body': body,
+      if (inReplyTo != null) 'in_reply_to': inReplyTo,
+      if (references != null) 'references': references,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (attachments != null) 'attachments': attachments,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (pending != null) 'pending': pending,
       if (synced != null) 'synced': synced,
@@ -3634,6 +3931,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<String>? bcc,
     Value<String>? subject,
     Value<String>? body,
+    Value<String?>? inReplyTo,
+    Value<String?>? references,
+    Value<String?>? conversationId,
+    Value<List<ForwardedAttachment>?>? attachments,
     Value<int>? updatedAt,
     Value<bool>? pending,
     Value<bool>? synced,
@@ -3648,6 +3949,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       bcc: bcc ?? this.bcc,
       subject: subject ?? this.subject,
       body: body ?? this.body,
+      inReplyTo: inReplyTo ?? this.inReplyTo,
+      references: references ?? this.references,
+      conversationId: conversationId ?? this.conversationId,
+      attachments: attachments ?? this.attachments,
       updatedAt: updatedAt ?? this.updatedAt,
       pending: pending ?? this.pending,
       synced: synced ?? this.synced,
@@ -3680,6 +3985,20 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
+    if (inReplyTo.present) {
+      map['in_reply_to'] = Variable<String>(inReplyTo.value);
+    }
+    if (references.present) {
+      map['references'] = Variable<String>(references.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (attachments.present) {
+      map['attachments'] = Variable<String>(
+        $DraftsTable.$converterattachmentsn.toSql(attachments.value),
+      );
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
@@ -3708,6 +4027,10 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('body: $body, ')
+          ..write('inReplyTo: $inReplyTo, ')
+          ..write('references: $references, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('attachments: $attachments, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
@@ -3803,6 +4126,17 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sendAfterMeta = const VerificationMeta(
     'sendAfter',
   );
@@ -3836,6 +4170,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     bcc,
     subject,
     body,
+    conversationId,
     sendAfter,
     attempts,
   ];
@@ -3912,6 +4247,15 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     } else if (isInserting) {
       context.missing(_bodyMeta);
     }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('send_after')) {
       context.handle(
         _sendAfterMeta,
@@ -3967,6 +4311,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         DriftSqlType.string,
         data['${effectivePrefix}body'],
       )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
       sendAfter: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}send_after'],
@@ -4002,6 +4350,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
   /// HTML.
   final String body;
 
+  /// The Gmail thread of a reply or forward (#37), sent with it so it threads in Inviati too.
+  final String? conversationId;
+
   /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
   final int sendAfter;
 
@@ -4016,6 +4367,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     required this.bcc,
     required this.subject,
     required this.body,
+    this.conversationId,
     required this.sendAfter,
     required this.attempts,
   });
@@ -4030,6 +4382,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     map['bcc'] = Variable<String>(bcc);
     map['subject'] = Variable<String>(subject);
     map['body'] = Variable<String>(body);
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
     map['send_after'] = Variable<int>(sendAfter);
     map['attempts'] = Variable<int>(attempts);
     return map;
@@ -4045,6 +4400,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       bcc: Value(bcc),
       subject: Value(subject),
       body: Value(body),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
       sendAfter: Value(sendAfter),
       attempts: Value(attempts),
     );
@@ -4064,6 +4422,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       bcc: serializer.fromJson<String>(json['bcc']),
       subject: serializer.fromJson<String>(json['subject']),
       body: serializer.fromJson<String>(json['body']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
       sendAfter: serializer.fromJson<int>(json['sendAfter']),
       attempts: serializer.fromJson<int>(json['attempts']),
     );
@@ -4080,6 +4439,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       'bcc': serializer.toJson<String>(bcc),
       'subject': serializer.toJson<String>(subject),
       'body': serializer.toJson<String>(body),
+      'conversationId': serializer.toJson<String?>(conversationId),
       'sendAfter': serializer.toJson<int>(sendAfter),
       'attempts': serializer.toJson<int>(attempts),
     };
@@ -4094,6 +4454,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     String? bcc,
     String? subject,
     String? body,
+    Value<String?> conversationId = const Value.absent(),
     int? sendAfter,
     int? attempts,
   }) => OutboxRow(
@@ -4105,6 +4466,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     bcc: bcc ?? this.bcc,
     subject: subject ?? this.subject,
     body: body ?? this.body,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
     sendAfter: sendAfter ?? this.sendAfter,
     attempts: attempts ?? this.attempts,
   );
@@ -4120,6 +4484,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
       subject: data.subject.present ? data.subject.value : this.subject,
       body: data.body.present ? data.body.value : this.body,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
       sendAfter: data.sendAfter.present ? data.sendAfter.value : this.sendAfter,
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
     );
@@ -4136,6 +4503,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('body: $body, ')
+          ..write('conversationId: $conversationId, ')
           ..write('sendAfter: $sendAfter, ')
           ..write('attempts: $attempts')
           ..write(')'))
@@ -4152,6 +4520,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     bcc,
     subject,
     body,
+    conversationId,
     sendAfter,
     attempts,
   );
@@ -4167,6 +4536,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           other.bcc == this.bcc &&
           other.subject == this.subject &&
           other.body == this.body &&
+          other.conversationId == this.conversationId &&
           other.sendAfter == this.sendAfter &&
           other.attempts == this.attempts);
 }
@@ -4180,6 +4550,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
   final Value<String> bcc;
   final Value<String> subject;
   final Value<String> body;
+  final Value<String?> conversationId;
   final Value<int> sendAfter;
   final Value<int> attempts;
   final Value<int> rowid;
@@ -4192,6 +4563,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     this.bcc = const Value.absent(),
     this.subject = const Value.absent(),
     this.body = const Value.absent(),
+    this.conversationId = const Value.absent(),
     this.sendAfter = const Value.absent(),
     this.attempts = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4205,6 +4577,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     required String bcc,
     required String subject,
     required String body,
+    this.conversationId = const Value.absent(),
     required int sendAfter,
     this.attempts = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4226,6 +4599,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Expression<String>? bcc,
     Expression<String>? subject,
     Expression<String>? body,
+    Expression<String>? conversationId,
     Expression<int>? sendAfter,
     Expression<int>? attempts,
     Expression<int>? rowid,
@@ -4239,6 +4613,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       if (bcc != null) 'bcc': bcc,
       if (subject != null) 'subject': subject,
       if (body != null) 'body': body,
+      if (conversationId != null) 'conversation_id': conversationId,
       if (sendAfter != null) 'send_after': sendAfter,
       if (attempts != null) 'attempts': attempts,
       if (rowid != null) 'rowid': rowid,
@@ -4254,6 +4629,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Value<String>? bcc,
     Value<String>? subject,
     Value<String>? body,
+    Value<String?>? conversationId,
     Value<int>? sendAfter,
     Value<int>? attempts,
     Value<int>? rowid,
@@ -4267,6 +4643,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       bcc: bcc ?? this.bcc,
       subject: subject ?? this.subject,
       body: body ?? this.body,
+      conversationId: conversationId ?? this.conversationId,
       sendAfter: sendAfter ?? this.sendAfter,
       attempts: attempts ?? this.attempts,
       rowid: rowid ?? this.rowid,
@@ -4300,6 +4677,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
     if (sendAfter.present) {
       map['send_after'] = Variable<int>(sendAfter.value);
     }
@@ -4323,6 +4703,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
           ..write('bcc: $bcc, ')
           ..write('subject: $subject, ')
           ..write('body: $body, ')
+          ..write('conversationId: $conversationId, ')
           ..write('sendAfter: $sendAfter, ')
           ..write('attempts: $attempts, ')
           ..write('rowid: $rowid')
@@ -4801,6 +5182,8 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   required String recipients,
   Value<String> cc,
   Value<String> bcc,
+  Value<String?> replyTo,
+  Value<String?> references,
   required String subject,
   required String snippet,
   required int date,
@@ -4818,6 +5201,8 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<String> recipients,
   Value<String> cc,
   Value<String> bcc,
+  Value<String?> replyTo,
+  Value<String?> references,
   Value<String> subject,
   Value<String> snippet,
   Value<int> date,
@@ -4877,6 +5262,16 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<String> get bcc => $composableBuilder(
     column: $table.bcc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get replyTo => $composableBuilder(
+    column: $table.replyTo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get references => $composableBuilder(
+    column: $table.references,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4960,6 +5355,16 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get replyTo => $composableBuilder(
+    column: $table.replyTo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get references => $composableBuilder(
+    column: $table.references,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get subject => $composableBuilder(
     column: $table.subject,
     builder: (column) => ColumnOrderings(column),
@@ -5028,6 +5433,14 @@ class $$MessagesTableAnnotationComposer
   GeneratedColumn<String> get bcc =>
       $composableBuilder(column: $table.bcc, builder: (column) => column);
 
+  GeneratedColumn<String> get replyTo =>
+      $composableBuilder(column: $table.replyTo, builder: (column) => column);
+
+  GeneratedColumn<String> get references => $composableBuilder(
+    column: $table.references,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get subject =>
       $composableBuilder(column: $table.subject, builder: (column) => column);
 
@@ -5084,6 +5497,8 @@ class $$MessagesTableTableManager
                 Value<String> recipients = const Value.absent(),
                 Value<String> cc = const Value.absent(),
                 Value<String> bcc = const Value.absent(),
+                Value<String?> replyTo = const Value.absent(),
+                Value<String?> references = const Value.absent(),
                 Value<String> subject = const Value.absent(),
                 Value<String> snippet = const Value.absent(),
                 Value<int> date = const Value.absent(),
@@ -5100,6 +5515,8 @@ class $$MessagesTableTableManager
                 recipients: recipients,
                 cc: cc,
                 bcc: bcc,
+                replyTo: replyTo,
+                references: references,
                 subject: subject,
                 snippet: snippet,
                 date: date,
@@ -5118,6 +5535,8 @@ class $$MessagesTableTableManager
                 required String recipients,
                 Value<String> cc = const Value.absent(),
                 Value<String> bcc = const Value.absent(),
+                Value<String?> replyTo = const Value.absent(),
+                Value<String?> references = const Value.absent(),
                 required String subject,
                 required String snippet,
                 required int date,
@@ -5134,6 +5553,8 @@ class $$MessagesTableTableManager
                 recipients: recipients,
                 cc: cc,
                 bcc: bcc,
+                replyTo: replyTo,
+                references: references,
                 subject: subject,
                 snippet: snippet,
                 date: date,
@@ -6173,6 +6594,10 @@ typedef $$DraftsTableCreateCompanionBuilder = DraftsCompanion Function({
   required String bcc,
   required String subject,
   required String body,
+  Value<String?> inReplyTo,
+  Value<String?> references,
+  Value<String?> conversationId,
+  Value<List<ForwardedAttachment>?> attachments,
   required int updatedAt,
   required bool pending,
   required bool synced,
@@ -6187,6 +6612,10 @@ typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
   Value<String> bcc,
   Value<String> subject,
   Value<String> body,
+  Value<String?> inReplyTo,
+  Value<String?> references,
+  Value<String?> conversationId,
+  Value<List<ForwardedAttachment>?> attachments,
   Value<int> updatedAt,
   Value<bool> pending,
   Value<bool> synced,
@@ -6236,6 +6665,31 @@ class $$DraftsTableFilterComposer
   ColumnFilters<String> get body => $composableBuilder(
     column: $table.body,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inReplyTo => $composableBuilder(
+    column: $table.inReplyTo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get references => $composableBuilder(
+    column: $table.references,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<ForwardedAttachment>?,
+    List<ForwardedAttachment>,
+    String
+  >
+  get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnFilters<int> get updatedAt => $composableBuilder(
@@ -6303,6 +6757,26 @@ class $$DraftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get inReplyTo => $composableBuilder(
+    column: $table.inReplyTo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get references => $composableBuilder(
+    column: $table.references,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -6356,6 +6830,25 @@ class $$DraftsTableAnnotationComposer
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
 
+  GeneratedColumn<String> get inReplyTo =>
+      $composableBuilder(column: $table.inReplyTo, builder: (column) => column);
+
+  GeneratedColumn<String> get references => $composableBuilder(
+    column: $table.references,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<List<ForwardedAttachment>?, String>
+  get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
@@ -6406,6 +6899,11 @@ class $$DraftsTableTableManager
                 Value<String> bcc = const Value.absent(),
                 Value<String> subject = const Value.absent(),
                 Value<String> body = const Value.absent(),
+                Value<String?> inReplyTo = const Value.absent(),
+                Value<String?> references = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<List<ForwardedAttachment>?> attachments =
+                    const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<bool> pending = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
@@ -6419,6 +6917,10 @@ class $$DraftsTableTableManager
                 bcc: bcc,
                 subject: subject,
                 body: body,
+                inReplyTo: inReplyTo,
+                references: references,
+                conversationId: conversationId,
+                attachments: attachments,
                 updatedAt: updatedAt,
                 pending: pending,
                 synced: synced,
@@ -6434,6 +6936,11 @@ class $$DraftsTableTableManager
                 required String bcc,
                 required String subject,
                 required String body,
+                Value<String?> inReplyTo = const Value.absent(),
+                Value<String?> references = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<List<ForwardedAttachment>?> attachments =
+                    const Value.absent(),
                 required int updatedAt,
                 required bool pending,
                 required bool synced,
@@ -6447,6 +6954,10 @@ class $$DraftsTableTableManager
                 bcc: bcc,
                 subject: subject,
                 body: body,
+                inReplyTo: inReplyTo,
+                references: references,
+                conversationId: conversationId,
+                attachments: attachments,
                 updatedAt: updatedAt,
                 pending: pending,
                 synced: synced,
@@ -6493,6 +7004,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   required String bcc,
   required String subject,
   required String body,
+  Value<String?> conversationId,
   required int sendAfter,
   Value<int> attempts,
   Value<int> rowid,
@@ -6506,6 +7018,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String> bcc,
   Value<String> subject,
   Value<String> body,
+  Value<String?> conversationId,
   Value<int> sendAfter,
   Value<int> attempts,
   Value<int> rowid,
@@ -6557,6 +7070,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<String> get body => $composableBuilder(
     column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6620,6 +7138,11 @@ class $$OutboxTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sendAfter => $composableBuilder(
     column: $table.sendAfter,
     builder: (column) => ColumnOrderings(column),
@@ -6665,6 +7188,11 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get sendAfter =>
       $composableBuilder(column: $table.sendAfter, builder: (column) => column);
@@ -6712,6 +7240,7 @@ class $$OutboxTableTableManager
                 Value<String> bcc = const Value.absent(),
                 Value<String> subject = const Value.absent(),
                 Value<String> body = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
                 Value<int> sendAfter = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6724,6 +7253,7 @@ class $$OutboxTableTableManager
                 bcc: bcc,
                 subject: subject,
                 body: body,
+                conversationId: conversationId,
                 sendAfter: sendAfter,
                 attempts: attempts,
                 rowid: rowid,
@@ -6738,6 +7268,7 @@ class $$OutboxTableTableManager
                 required String bcc,
                 required String subject,
                 required String body,
+                Value<String?> conversationId = const Value.absent(),
                 required int sendAfter,
                 Value<int> attempts = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6750,6 +7281,7 @@ class $$OutboxTableTableManager
                 bcc: bcc,
                 subject: subject,
                 body: body,
+                conversationId: conversationId,
                 sendAfter: sendAfter,
                 attempts: attempts,
                 rowid: rowid,

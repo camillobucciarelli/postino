@@ -103,7 +103,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -156,7 +156,20 @@ class PostinoDatabase extends _$PostinoDatabase {
         // next sync is a full one and brings it (openDraft reads the recipients from the cached message).
         await customStatement('DELETE FROM sync_cursors');
       }
-      if (from < 11) await m.createTable(outbox);
+      if (from < 12) {
+        // Reply-To and References of the messages, the threading headers and the forwarded attachments of the
+        // Bozze (#37); the cached messages keep null until synced again.
+        await m.addColumn(messages, messages.replyTo);
+        await m.addColumn(messages, messages.references);
+        // Before v10 the drafts table was just created above, already with them.
+        if (from >= 10) {
+          await m.addColumn(drafts, drafts.inReplyTo);
+          await m.addColumn(drafts, drafts.references);
+          await m.addColumn(drafts, drafts.conversationId);
+          await m.addColumn(drafts, drafts.attachments);
+        }
+      }
+      if (from < 13) await m.createTable(outbox);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

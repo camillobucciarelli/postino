@@ -302,6 +302,21 @@ void main() {
         labels: const ['Fatture e ricevute del condominio', 'Casa'],
         messages: [_message(expanded: false), _message()],
       ),
+      'action bar': PostinoActionBar(
+        children: [
+          PostinoButton(label: 'Rispondi', onPressed: _noop),
+          PostinoButton(
+            label: 'Rispondi a tutti',
+            variant: PostinoButtonVariant.ghost,
+            onPressed: _noop,
+          ),
+          PostinoButton(
+            label: 'Inoltra',
+            variant: PostinoButtonVariant.ghost,
+            onPressed: _noop,
+          ),
+        ],
+      ),
       'drawer': _drawer,
       'label chip': const Wrap(
         children: [

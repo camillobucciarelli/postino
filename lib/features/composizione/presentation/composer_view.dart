@@ -7,8 +7,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../core/data/attachment_cache.dart' show safeFileName;
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
+import '../../../core/domain/file_size.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/message.dart';
@@ -51,6 +53,10 @@ class _ComposerViewState extends State<ComposerView> {
 
   /// Null until the Bozza is opened; [_failed] when it could not be.
   QuillController? _controller;
+
+  /// The Bozza as opened: a reply's In-Reply-To, References and Conversazione and a forward's
+  /// attachments (#37) are not in the fields, so every save copies them from here.
+  OutgoingMessage? _opened;
   bool _failed = false;
   bool _withAttachments = false;
   bool _isReply = false;
@@ -86,6 +92,7 @@ class _ComposerViewState extends State<ComposerView> {
         _bcc.text = value.bcc.join(', ');
         _subject.text = value.subject;
         ops = htmlToDelta(value.body);
+        _opened = value;
         _saved = true;
       // A new Bozza: its Message-ID is already ours.
       case Err(failure: NotFoundFailure()):
@@ -121,6 +128,10 @@ class _ComposerViewState extends State<ComposerView> {
       bcc: addresses(_bcc.text),
       subject: _subject.text,
       body: deltaToHtml(c.document.toDelta().toJson()),
+      inReplyTo: _opened?.inReplyTo,
+      references: _opened?.references ?? const [],
+      conversationId: _opened?.conversationId,
+      attachments: _opened?.attachments ?? const [],
     );
   }
 
@@ -257,6 +268,48 @@ class _ComposerViewState extends State<ComposerView> {
                           ? TextInputType.text
                           : TextInputType.emailAddress,
                       onChanged: (_) => _save(),
+                    ),
+                  // The attachments a forward carries over (#37), read-only.
+                  // ponytail: adding and removing attachments is #75.
+                  if (_opened?.attachments case final atts?
+                      when atts.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: PostinoSpacing.s3,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: PostinoSpacing.s3,
+                        children: [
+                          Text(
+                            t.forwardedAttachments,
+                            style: PostinoText.label.copyWith(
+                              color: context.pc.inkMuted,
+                            ),
+                          ),
+                          Expanded(
+                            child: Wrap(
+                              spacing: PostinoSpacing.s2,
+                              runSpacing: PostinoSpacing.s2,
+                              children: [
+                                for (final a in atts)
+                                  PostinoAttachmentChip(
+                                    key: ValueKey(
+                                      'draft-attachment-${a.attachment.id}',
+                                    ),
+                                    // safeFileName: un override bidi non deve falsare l'estensione mostrata.
+                                    name: safeFileName(a.attachment.name),
+                                    size: fileSize(
+                                      a.attachment.size,
+                                      Localizations.localeOf(context)
+                                          .languageCode,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                 ],
                 editor: PostinoRichEditor(

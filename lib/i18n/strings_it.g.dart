@@ -313,8 +313,26 @@ class Translations$conversazione$it {
 	/// it: 'Salvataggio non riuscito'
 	String get attachmentSaveFailed => 'Salvataggio non riuscito';
 
+	/// it: 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente'
+	String get attachmentExecutable => 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente';
+
 	/// it: 'Allegato senza nome'
 	String get attachmentUntitled => 'Allegato senza nome';
+
+	/// it: 'Rispondi'
+	String get reply => 'Rispondi';
+
+	/// it: 'Rispondi a tutti'
+	String get replyAll => 'Rispondi a tutti';
+
+	/// it: 'Inoltra'
+	String get forward => 'Inoltra';
+
+	/// it: 'Impossibile inoltrare: messaggio non scaricato'
+	String get forwardUnavailable => 'Impossibile inoltrare: messaggio non scaricato';
+
+	/// it: 'Azioni del messaggio'
+	String get messageActions => 'Azioni del messaggio';
 }
 
 // Path: composizione
@@ -411,6 +429,9 @@ class Translations$composizione$it {
 
 	/// it: 'Aggiungi almeno un destinatario'
 	String get noRecipient => 'Aggiungi almeno un destinatario';
+
+	/// it: 'Allegati'
+	String get forwardedAttachments => 'Allegati';
 }
 
 // Path: bozze
@@ -523,7 +544,13 @@ extension on Translations {
 			'conversazione.attachmentMore' => 'Altre azioni',
 			'conversazione.attachmentSave' => 'Salva…',
 			'conversazione.attachmentSaveFailed' => 'Salvataggio non riuscito',
+			'conversazione.attachmentExecutable' => 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente',
 			'conversazione.attachmentUntitled' => 'Allegato senza nome',
+			'conversazione.reply' => 'Rispondi',
+			'conversazione.replyAll' => 'Rispondi a tutti',
+			'conversazione.forward' => 'Inoltra',
+			'conversazione.forwardUnavailable' => 'Impossibile inoltrare: messaggio non scaricato',
+			'conversazione.messageActions' => 'Azioni del messaggio',
 			'composizione.title' => 'Nuovo messaggio',
 			'composizione.write' => 'Scrivi',
 			'composizione.from' => 'Da',
@@ -553,6 +580,7 @@ extension on Translations {
 			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail',
 			'composizione.sendFailed' => 'Invio non riuscito: riprova',
 			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',
+			'composizione.forwardedAttachments' => 'Allegati',
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',

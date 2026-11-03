@@ -188,7 +188,13 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get attachmentMore => 'More actions';
 	@override String get attachmentSave => 'Save…';
 	@override String get attachmentSaveFailed => 'Save failed';
+	@override String get attachmentExecutable => 'Executable: Postino won\'t open it. Save it only if you trust the sender';
 	@override String get attachmentUntitled => 'Untitled attachment';
+	@override String get reply => 'Reply';
+	@override String get replyAll => 'Reply all';
+	@override String get forward => 'Forward';
+	@override String get forwardUnavailable => 'Cannot forward: message not downloaded';
+	@override String get messageActions => 'Message actions';
 }
 
 // Path: composizione
@@ -227,6 +233,7 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String tooLarge({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit';
 	@override String get sendFailed => 'Sending failed: try again';
 	@override String get noRecipient => 'Add at least one recipient';
+	@override String get forwardedAttachments => 'Attachments';
 }
 
 // Path: bozze
@@ -323,7 +330,13 @@ extension on TranslationsEn {
 			'conversazione.attachmentMore' => 'More actions',
 			'conversazione.attachmentSave' => 'Save…',
 			'conversazione.attachmentSaveFailed' => 'Save failed',
+			'conversazione.attachmentExecutable' => 'Executable: Postino won\'t open it. Save it only if you trust the sender',
 			'conversazione.attachmentUntitled' => 'Untitled attachment',
+			'conversazione.reply' => 'Reply',
+			'conversazione.replyAll' => 'Reply all',
+			'conversazione.forward' => 'Forward',
+			'conversazione.forwardUnavailable' => 'Cannot forward: message not downloaded',
+			'conversazione.messageActions' => 'Message actions',
 			'composizione.title' => 'New message',
 			'composizione.write' => 'Compose',
 			'composizione.from' => 'From',
@@ -353,6 +366,7 @@ extension on TranslationsEn {
 			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit',
 			'composizione.sendFailed' => 'Sending failed: try again',
 			'composizione.noRecipient' => 'Add at least one recipient',
+			'composizione.forwardedAttachments' => 'Attachments',
 			'bozze.title' => 'Drafts',
 			'bozze.emptyTitle' => 'No drafts',
 			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',

@@ -68,8 +68,9 @@ abstract interface class MailProvider {
 
   /// Sends [raw] (the rendered RFC 5322 text, `renderMime`) whose Message-ID is [messageId].
   /// Idempotent on the Message-ID: a message already in Inviati is not sent again.
+  /// [threadId] ([OutgoingMessage.conversationId]) keeps a reply in its Conversazione.
   /// [Ok] carries the Provider's id of the sent message.
-  Future<Result<String>> send(String messageId, String raw);
+  Future<Result<String>> send(String messageId, String raw, {String? threadId});
 
   /// [isNew]: creates the Bozza on the Provider; otherwise updates the one with [OutgoingMessage.messageId],
   /// [NotFoundFailure] if it is gone (deleted or sent elsewhere).

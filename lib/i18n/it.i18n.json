@@ -80,7 +80,13 @@
     "attachmentMore": "Altre azioni",
     "attachmentSave": "Salva…",
     "attachmentSaveFailed": "Salvataggio non riuscito",
-    "attachmentUntitled": "Allegato senza nome"
+    "attachmentExecutable": "Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente",
+    "attachmentUntitled": "Allegato senza nome",
+    "reply": "Rispondi",
+    "replyAll": "Rispondi a tutti",
+    "forward": "Inoltra",
+    "forwardUnavailable": "Impossibile inoltrare: messaggio non scaricato",
+    "messageActions": "Azioni del messaggio"
   },
   "composizione": {
     "title": "Nuovo messaggio",
@@ -111,7 +117,8 @@
     "undo": "Annulla",
     "tooLarge": "Il messaggio supera il limite di $mb MB di Gmail",
     "sendFailed": "Invio non riuscito: riprova",
-    "noRecipient": "Aggiungi almeno un destinatario"
+    "noRecipient": "Aggiungi almeno un destinatario",
+    "forwardedAttachments": "Allegati"
   },
   "bozze": {
     "title": "Bozze",

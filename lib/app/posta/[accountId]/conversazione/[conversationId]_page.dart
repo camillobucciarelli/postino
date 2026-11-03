@@ -18,5 +18,11 @@ class ConversationPage extends StatelessWidget {
         'accountId': Routefly.query['accountId'],
       }),
     ),
+    onOpenDraft: (id) => Routefly.navigate(
+      routePaths.posta.$accountId.bozza.$messageId.changes({
+        'accountId': Routefly.query['accountId'],
+        'messageId': Uri.encodeComponent(id),
+      }),
+    ),
   );
 }

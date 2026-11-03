@@ -153,6 +153,30 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
+  test('a forward goes with its attachments, downloaded at Invia, and in its Conversazione', () async {
+    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+    final m = _message(id);
+    expect(
+      await engine.send(
+        'a',
+        OutgoingMessage(
+          messageId: m.messageId,
+          from: m.from,
+          to: m.to,
+          subject: m.subject,
+          body: m.body,
+          conversationId: 't-0',
+          attachments: [ForwardedAttachment('m0', att)],
+        ),
+      ),
+      isA<Ok<void>>(),
+    );
+    expect((await outbox()).single.raw, contains('Contratto.pdf'));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect((await inviati()).single.message.conversationId, 't-0');
+  });
+
   test('a message over the Gmail limit is refused and not queued', () async {
     final r = await engine.send(
       'a',

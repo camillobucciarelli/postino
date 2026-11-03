@@ -48,12 +48,12 @@ final class NotFoundFailure extends Failure {
   const NotFoundFailure();
 }
 
-/// A Bozza written elsewhere has attachments: Postino cannot keep them when it saves, so it does not open it.
 /// A Bozza of reply written elsewhere: saving it here would drop In-Reply-To, References and the thread.
 final class DraftReplyFailure extends Failure {
   const DraftReplyFailure();
 }
 
+/// A Bozza written elsewhere has attachments: Postino cannot keep them when it saves, so it does not open it.
 final class DraftWithAttachmentsFailure extends Failure {
   const DraftWithAttachmentsFailure();
 }

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
@@ -211,6 +212,7 @@ class MailStore implements InboxRepository {
       bcc: message.bcc.join('\n'),
       subject: message.subject,
       body: message.body,
+      conversationId: Value(message.conversationId),
       sendAfter: sendAfter,
     ),
   );
@@ -231,7 +233,7 @@ class MailStore implements InboxRepository {
 
   /// The Provider has the message as [providerId]: the outbox row and the local Bozza go, and the message is
   /// stored at once under Inviati, so the folder shows it before the next sync upserts the same id.
-  /// Its Conversazione is the message itself, until the sync says otherwise.
+  /// Its Conversazione is the one it replies to (#37), else the message itself, until the sync says otherwise.
   // ponytail: a full snapshot sync may drop it until the Provider lists it (a brief blink); fine for now.
   Future<void> outgoingSent(
     String accountId,
@@ -247,7 +249,7 @@ class MailStore implements InboxRepository {
       Message(
         id: providerId,
         messageId: messageId,
-        conversationId: providerId,
+        conversationId: r.conversationId ?? providerId,
         labelIds: const [sentLabelId],
         isRead: true,
         isStarred: false,
@@ -305,6 +307,10 @@ class MailStore implements InboxRepository {
     bcc: _lines(r.bcc),
     subject: r.subject,
     body: r.body,
+    inReplyTo: r.inReplyTo,
+    references: _lines(r.references ?? ''),
+    conversationId: r.conversationId,
+    attachments: r.attachments ?? const [],
   );
 
   @override
@@ -354,6 +360,8 @@ class MailStore implements InboxRepository {
     subject: r.subject,
     snippet: snippet ?? r.snippet,
     date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
+    replyTo: r.replyTo,
+    references: _lines(r.references ?? ''),
   );
 }
 

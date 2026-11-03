@@ -36,6 +36,10 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       bcc: Value(draft.bcc.join('\n')),
       subject: Value(draft.subject),
       body: Value(draft.body),
+      inReplyTo: Value(draft.inReplyTo),
+      references: Value(_references(draft)),
+      conversationId: Value(draft.conversationId),
+      attachments: Value(draft.attachments),
       updatedAt: Value(updatedAt),
       pending: const Value(true),
     );
@@ -48,6 +52,10 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
         bcc: draft.bcc.join('\n'),
         subject: draft.subject,
         body: draft.body,
+        inReplyTo: Value(draft.inReplyTo),
+        references: Value(_references(draft)),
+        conversationId: Value(draft.conversationId),
+        attachments: Value(draft.attachments),
         updatedAt: updatedAt,
         pending: true,
         synced: false,
@@ -72,6 +80,10 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       bcc: draft.bcc.join('\n'),
       subject: draft.subject,
       body: draft.body,
+      inReplyTo: Value(draft.inReplyTo),
+      references: Value(_references(draft)),
+      conversationId: Value(draft.conversationId),
+      attachments: Value(draft.attachments),
       updatedAt: updatedAt,
       pending: false,
       synced: true,
@@ -79,6 +91,9 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     ),
     mode: InsertMode.insertOrReplace,
   );
+
+  static String? _references(OutgoingMessage d) =>
+      d.references.isEmpty ? null : d.references.join('\n');
 
   Future<DraftRow?> byId(String accountId, String messageId) =>
       (select(drafts)..where(

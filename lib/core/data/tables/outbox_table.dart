@@ -22,6 +22,9 @@ class Outbox extends Table {
   /// HTML.
   TextColumn get body => text()();
 
+  /// The Gmail thread of a reply or forward (#37), sent with it so it threads in Inviati too.
+  TextColumn get conversationId => text().nullable()();
+
   /// Milliseconds since epoch, UTC: the end of the Annulla invio window.
   IntColumn get sendAfter => integer()();
 

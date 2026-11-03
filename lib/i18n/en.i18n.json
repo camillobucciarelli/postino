@@ -80,7 +80,13 @@
     "attachmentMore": "More actions",
     "attachmentSave": "Save…",
     "attachmentSaveFailed": "Save failed",
-    "attachmentUntitled": "Untitled attachment"
+    "attachmentExecutable": "Executable: Postino won't open it. Save it only if you trust the sender",
+    "attachmentUntitled": "Untitled attachment",
+    "reply": "Reply",
+    "replyAll": "Reply all",
+    "forward": "Forward",
+    "forwardUnavailable": "Cannot forward: message not downloaded",
+    "messageActions": "Message actions"
   },
   "composizione": {
     "title": "New message",
@@ -111,7 +117,8 @@
     "undo": "Undo",
     "tooLarge": "The message exceeds Gmail's $mb MB limit",
     "sendFailed": "Sending failed: try again",
-    "noRecipient": "Add at least one recipient"
+    "noRecipient": "Add at least one recipient",
+    "forwardedAttachments": "Attachments"
   },
   "bozze": {
     "title": "Drafts",

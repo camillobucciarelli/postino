@@ -40,6 +40,86 @@ class Attachment {
 
 enum LabelKind { etichetta, cartella }
 
+/// Whether [name] is something the OS would run rather than show (#75): its last extension (case-insensitive,
+/// after Windows' trailing dots and spaces) names a script, an executable, an installer (`.msix`, `.appinstaller`),
+/// a disk image (every type DiskImageMounter registers) or a launcher of URLs and commands (`.url`, `.webloc`, `.desktop`, `.terminal`).
+/// `.py`/`.rb`/`.pl` left out on purpose (they open in an editor).
+bool isExecutableName(String name) {
+  final s = name.replaceAll(RegExp(r'[. ]+$'), '');
+  final dot = s.lastIndexOf('.');
+  return dot >= 0 && _executable.contains(s.substring(dot + 1).toLowerCase());
+}
+
+const _executable = {
+  'exe',
+  'com',
+  'bat',
+  'cmd',
+  'scr',
+  'pif',
+  'msi',
+  'msp',
+  'dll',
+  'cpl',
+  'lnk',
+  'reg',
+  'ps1',
+  'psm1',
+  'vbs',
+  'vbe',
+  'js',
+  'jse',
+  'wsf',
+  'wsh',
+  'hta',
+  'jar',
+  'sh',
+  'bash',
+  'zsh',
+  'command',
+  'tool',
+  'app',
+  'action',
+  'workflow',
+  'scpt',
+  'applescript',
+  'dmg',
+  'sparseimage',
+  'sparsebundle',
+  'cdr',
+  'udif',
+  'dvdr',
+  'asif',
+  'toast',
+  'dmgpart',
+  'backupbundle',
+  'pkg',
+  'mpkg',
+  'iso',
+  'img',
+  'deb',
+  'rpm',
+  'run',
+  'apk',
+  'ipa',
+  'msix',
+  'appx',
+  'msixbundle',
+  'appxbundle',
+  'appinstaller',
+  'application',
+  'appref-ms',
+  'chm',
+  'msc',
+  'sct',
+  'wsc',
+  'terminal',
+  'desktop',
+  'url',
+  'webloc',
+  'inetloc',
+};
+
 /// Per Account; on folder-based Providers a message has at most one.
 class Label {
   const Label({required this.id, required this.name, required this.kind});
@@ -73,6 +153,8 @@ class Message {
     this.fromName,
     this.cc = const [],
     this.bcc = const [],
+    this.replyTo,
+    this.references = const [],
   });
 
   /// Provider-side id.
@@ -98,6 +180,12 @@ class Message {
   final String subject;
   final String snippet;
   final DateTime date;
+
+  /// The `Reply-To` mailbox ([formatMailbox]), if the header is there: a reply goes to it instead of [from] (#37).
+  final String? replyTo;
+
+  /// The Message-IDs of the `References` header, oldest first (#37).
+  final List<String> references;
 }
 
 enum BodyKind { html, testo }
@@ -135,6 +223,10 @@ class OutgoingMessage {
     required this.body,
     this.cc = const [],
     this.bcc = const [],
+    this.inReplyTo,
+    this.references = const [],
+    this.conversationId,
+    this.attachments = const [],
   });
   final String messageId;
 
@@ -147,6 +239,22 @@ class OutgoingMessage {
 
   /// HTML; the adapter derives the text/plain alternative (`htmlText`).
   final String body;
+
+  /// A reply (#37): the Message-ID answered, the chain of `References`, and the Provider's id of the
+  /// Conversazione it joins (Gmail threadId). Null and empty for a new message or a forward.
+  final String? inReplyTo;
+  final List<String> references;
+  final String? conversationId;
+
+  /// Attachments taken over from another message (a forward, #37): the adapter fetches their bytes when it builds the MIME.
+  final List<ForwardedAttachment> attachments;
+}
+
+/// An [Attachment] of the Provider message [sourceMessageId], re-attached to an [OutgoingMessage].
+class ForwardedAttachment {
+  const ForwardedAttachment(this.sourceMessageId, this.attachment);
+  final String sourceMessageId;
+  final Attachment attachment;
 }
 
 const _alphanumerics =

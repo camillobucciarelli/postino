@@ -228,6 +228,7 @@ class PostinoThreadMessage extends StatefulWidget {
     this.quote,
     this.quoteLabel = '',
     this.attachments = const [],
+    this.actions,
   });
 
   final String sender;
@@ -261,6 +262,9 @@ class PostinoThreadMessage extends StatefulWidget {
 
   /// At the bottom, wrapping.
   final List<PostinoAttachmentChip> attachments;
+
+  /// After the time, in the header: a [PostinoMenu] of the message's actions, say. Out of the selection.
+  final Widget? actions;
 
   @override
   State<PostinoThreadMessage> createState() => _PostinoThreadMessageState();
@@ -368,6 +372,8 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                     ),
                   ),
                 ),
+                if (w.actions case final actions?)
+                  SelectionContainer.disabled(child: actions),
               ],
             ),
           ),

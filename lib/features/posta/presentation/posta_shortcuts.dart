@@ -5,7 +5,15 @@ import 'package:flutter/services.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
-enum PostaAction { next, previous, toggleSidebar, write }
+enum PostaAction {
+  next,
+  previous,
+  toggleSidebar,
+  write,
+  reply,
+  replyAll,
+  forward,
+}
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
@@ -40,6 +48,9 @@ const postaShortcuts = <PostaShortcut>[
     command: true,
   ),
   PostaShortcut(LogicalKeyboardKey.keyC, PostaAction.write),
+  PostaShortcut(LogicalKeyboardKey.keyR, PostaAction.reply),
+  PostaShortcut(LogicalKeyboardKey.keyA, PostaAction.replyAll),
+  PostaShortcut(LogicalKeyboardKey.keyF, PostaAction.forward),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -52,6 +63,12 @@ class ListCursor {
 
   /// Starts a new Bozza (`c`): the «Scrivi» button plugs itself in.
   VoidCallback? write;
+
+  /// Rispondi, Rispondi a tutti and Inoltra (`r`, `a`, `f`) the last message of the open Conversazione (#37):
+  /// the Conversazione plugs itself in; idle with none open.
+  VoidCallback? reply;
+  VoidCallback? replyAll;
+  VoidCallback? forward;
 }
 
 class PostaIntent extends Intent {
@@ -126,6 +143,12 @@ class _PostaAction extends Action<PostaIntent> {
         }
       case PostaAction.write:
         cursor.write?.call();
+      case PostaAction.reply:
+        cursor.reply?.call();
+      case PostaAction.replyAll:
+        cursor.replyAll?.call();
+      case PostaAction.forward:
+        cursor.forward?.call();
     }
     return null;
   }

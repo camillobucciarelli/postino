@@ -175,16 +175,13 @@ void main() {
     },
   );
 
-  test(
-    'an acknowledged Bozza never listed by a sync, gone elsewhere, disappears after a sync',
-    () async {
-      await engine.saveDraft('a', _draft(id));
-      await engine.flushDrafts('a');
-      a.removeDraftRemotely(id);
-      await engine.syncAll();
-      expect(await row(), isNull);
-    },
-  );
+  test('an acknowledged Bozza never listed by a sync, gone elsewhere, disappears after a sync', () async {
+    await engine.saveDraft('a', _draft(id));
+    await engine.flushDrafts('a');
+    a.removeDraftRemotely(id);
+    await engine.syncAll();
+    expect(await row(), isNull);
+  });
 
   test('an acknowledged Bozza that a sync lists is kept', () async {
     await engine.saveDraft('a', _draft(id));
@@ -281,22 +278,25 @@ void main() {
     expect(await row('<y@example.com>'), isNull);
   });
 
-  test('a Bozza with attachments is refused again once its body is in the cache', () async {
-    a.deliverDraft(_draft('<y@example.com>'));
-    a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
-    await engine.syncAll();
-    for (var i = 0; i < 2; i++) {
-      expect(
-        await engine.openDraft('a', '<y@example.com>'),
-        isA<Err<OutgoingMessage>>().having(
-          (r) => r.failure,
-          'failure',
-          isA<DraftWithAttachmentsFailure>(),
-        ),
-      );
-    }
-    expect(await row('<y@example.com>'), isNull);
-  });
+  test(
+    'a Bozza with attachments is refused again once its body is in the cache',
+    () async {
+      a.deliverDraft(_draft('<y@example.com>'));
+      a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+      await engine.syncAll();
+      for (var i = 0; i < 2; i++) {
+        expect(
+          await engine.openDraft('a', '<y@example.com>'),
+          isA<Err<OutgoingMessage>>().having(
+            (r) => r.failure,
+            'failure',
+            isA<DraftWithAttachmentsFailure>(),
+          ),
+        );
+      }
+      expect(await row('<y@example.com>'), isNull);
+    },
+  );
 
   test('openDraft of a reply written elsewhere is refused; a Bozza alone in its Conversazione opens', () async {
     a.deliver(msg('m-1', conversationId: 't-1'));
@@ -360,5 +360,68 @@ void main() {
     await engine.syncAll();
     final again = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
     expect(again.value.body, '<p>Di nuovo qui</p>');
+  });
+
+  test('a forwarded attachment gone from the Provider never deletes the Bozza: it stays pending', () async {
+    await engine.saveDraft('a', _draft(id, body: '<p>Il mio testo</p>'));
+    // What the adapter reports when the attachment cannot be fetched (never NotFound).
+    a.saveDraftFailure = const UnexpectedFailure('forwarded attachment gone');
+    await engine.flushDrafts('a');
+    final kept = await row();
+    expect(kept, isNotNull);
+    expect(kept!.body, '<p>Il mio testo</p>');
+    expect(kept.pending, isTrue);
+  });
+
+  test('a reply created here stays openable after the Provider returns it with a later date', () async {
+    a.deliver(msg('m-1', conversationId: 't-1'));
+    await engine.syncAll();
+    const reply = OutgoingMessage(
+      messageId: id,
+      from: 'a@example.com',
+      to: ['b@example.com'],
+      subject: 'Re: s',
+      body: '<p>Risposta</p>',
+      inReplyTo: '<m-1@example.com>',
+      references: ['<m-1@example.com>'],
+      conversationId: 't-1',
+    );
+    await engine.saveDraft('a', reply);
+    h.clock.advance(draftDebounce);
+    await pumpEventQueue();
+    expect((await row())!.pending, isFalse);
+    // The Provider dates it at upload time, after the local edit.
+    a.deliverDraft(
+      reply,
+      date: h.clock.now().add(const Duration(seconds: 30)),
+      conversationId: 't-1',
+    );
+    await engine.syncAll();
+    final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
+    expect(opened.value.to, ['b@example.com']);
+    expect(opened.value.subject, 'Re: s');
+    expect(opened.value.body, '<p>Risposta</p>');
+    expect(opened.value.inReplyTo, '<m-1@example.com>');
+  });
+
+  test('a forward with attachments created here stays openable after the Provider returns it', () async {
+    const fwd = OutgoingMessage(
+      messageId: id,
+      from: 'a@example.com',
+      to: ['b@example.com'],
+      subject: 'Fwd: s',
+      body: '<p>Inoltro</p>',
+      attachments: [
+        ForwardedAttachment('m-1', Attachment(id: '1', name: 'c.pdf', size: 3)),
+      ],
+    );
+    await engine.saveDraft('a', fwd);
+    h.clock.advance(draftDebounce);
+    await pumpEventQueue();
+    a.deliverDraft(fwd, date: h.clock.now().add(const Duration(seconds: 30)));
+    a.attach('d-1', 'c.pdf', [1, 2, 3]);
+    await engine.syncAll();
+    final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
+    expect(opened.value.attachments, hasLength(1));
   });
 }

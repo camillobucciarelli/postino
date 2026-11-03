@@ -441,6 +441,17 @@ class SyncEngine implements MailSync {
       if (await _store.isQueued(accountId, draft.messageId)) continue;
       switch (await provider.saveDraft(draft, isNew: isNew)) {
         case Ok():
+          // The message was queued or sent while the upload ran: the late remote Bozza must not survive.
+          if (await _store.isQueued(accountId, draft.messageId) ||
+              await _store.localDraft(accountId, draft.messageId) == null) {
+            if (await provider.deleteDraft(draft.messageId)
+                case Err(:final failure) when failure is! NotFoundFailure) {
+              debugPrint(
+                '[sync] $accountId: late draft delete failed, $failure',
+              );
+            }
+            continue;
+          }
           await _store.draftSynced(accountId, draft.messageId, updatedAt);
           debugPrint('[sync] $accountId: draft synced ${draft.messageId}');
         // Sent or deleted elsewhere: the local edit is dropped in silence (ADR 0008).

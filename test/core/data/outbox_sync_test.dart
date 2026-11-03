@@ -605,6 +605,44 @@ void main() {
     expect(a.draftCalls.map((c) => c.$1), [first]);
   });
 
+  test(
+    'a Bozza upload that ends after Invia deletes the late remote Bozza',
+    () async {
+      await engine.saveDraft('a', _message(id));
+      a.holdDraft = Completer();
+      final flush = engine.flushDrafts('a');
+      await pumpEventQueue();
+      expect(a.draftHeld, id);
+      await engine.send('a', _message(id));
+      a.holdDraft!.complete();
+      await flush;
+      expect(a.drafts.containsKey(id), isFalse);
+      expect(a.draftCalls.map((c) => c.$1), [id]);
+    },
+  );
+
+  test('a Bozza upload that ends after another engine sent the row deletes the late remote Bozza', () async {
+    await engine.saveDraft('a', _message(id));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    final other = SyncEngine(
+      GetIt.I<MailStore>(),
+      GetIt.I<Clock>(),
+      GetIt.I<Connectivity>(),
+      GetIt.I<BackgroundSender>(),
+    );
+    await other.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    other.start();
+    addTearDown(other.stop);
+    await pumpEventQueue();
+    expect(await draftRow(), isNull);
+    a.holdDraft!.complete();
+    await flush;
+    expect(a.drafts.containsKey(id), isFalse);
+  });
+
   test('a RateLimitFailure of the send pauses the Account: one call, the rest stays queued until the deadline', () async {
     engine.start();
     addTearDown(engine.stop);
@@ -679,29 +717,29 @@ void main() {
     );
   });
 
-  test(
-    'after the send the cached Provider Bozza is gone at once, without a sync',
-    () async {
-      await engine.saveDraft('a', _message(id));
-      await engine.flushDrafts('a');
-      await engine.syncAll(); // the Provider's DRAFT copy is cached
-      await engine.send('a', _message(id));
-      h.clock.advance(sendWindow);
-      await pumpEventQueue();
-      expect(a.sent, hasLength(1));
-      expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
-      // Only the Sent copy is left: no unlabelled DRAFT row in the Conversazione.
-      final db = GetIt.I<PostinoDatabase>();
-      final rows = await (db.select(db.messages)
-            ..where((m) => m.accountId.equals('a') & m.messageId.equals(id)))
-          .get();
-      expect(rows, hasLength(1));
-      final labels = await (db.select(db.messageLabels)
-            ..where((l) => l.accountId.equals('a') & l.messageId.equals(rows.single.id)))
-          .get();
-      expect(labels.map((l) => l.labelId), ['SENT']);
-    },
-  );
+  test('after the send the cached Provider Bozza is gone at once, without a sync', () async {
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a');
+    await engine.syncAll(); // the Provider's DRAFT copy is cached
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, hasLength(1));
+    expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
+    // Only the Sent copy is left: no unlabelled DRAFT row in the Conversazione.
+    final db = GetIt.I<PostinoDatabase>();
+    final rows = await (db.select(
+      db.messages,
+    )..where((m) => m.accountId.equals('a') & m.messageId.equals(id))).get();
+    expect(rows, hasLength(1));
+    final labels =
+        await (db.select(db.messageLabels)..where(
+              (l) =>
+                  l.accountId.equals('a') & l.messageId.equals(rows.single.id),
+            ))
+            .get();
+    expect(labels.map((l) => l.labelId), ['SENT']);
+  });
 
   test('Annulla of a row already attempted reopens the Bozza under a new Message-ID, which then goes out', () async {
     a.loseSendResponse = true;

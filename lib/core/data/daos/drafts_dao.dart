@@ -128,7 +128,13 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
         'AND m.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
         'ORDER BY date DESC',
         variables: [Variable(accountId)],
-        readsFrom: {drafts, accounts, messages, messageLabels, attachedDatabase.outbox},
+        readsFrom: {
+          drafts,
+          accounts,
+          messages,
+          messageLabels,
+          attachedDatabase.outbox,
+        },
       ).watch().map(
         (rows) => [
           for (final r in rows) (messages.map(r.data), r.read<bool>('local')),
@@ -191,9 +197,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       transaction(() async {
         Expression<bool> row(Drafts t) =>
             t.accountId.equals(accountId) & t.messageId.equals(messageId);
-        await (update(
-          drafts,
-        )..where(row)).write(
+        await (update(drafts)..where(row)).write(
           const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)),
         );
         await (update(drafts)

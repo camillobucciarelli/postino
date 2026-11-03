@@ -347,6 +347,86 @@ void main() {
     expect(await listed(), [id]);
   });
 
+  test('a remote-only Bozza with a queued Message-ID is not listed in Bozze, and is after Annulla', () async {
+    const remote = '<r@example.com>';
+    Future<List<String>> listed() async =>
+        (await GetIt.I<InboxRepository>().watchDrafts('a').first)
+            .map((m) => m.messageId)
+            .toList();
+    a.deliverDraft(_message(remote));
+    await engine.syncAll();
+    expect(await listed(), [remote]);
+    expect(
+      await GetIt.I<PostinoDatabase>().draftsDao.byId('a', remote),
+      isNull,
+    );
+
+    await engine.send('a', _message(remote));
+    expect(await listed(), isEmpty);
+
+    await engine.cancelSend('a', remote);
+    expect(await listed(), [remote]);
+  });
+
+  test('a sync whose replay hits the send RateLimit makes no sync request until the deadline', () async {
+    await engine.send('a', _message(id));
+    await engine.stop(); // no timer: the replay is the sync's own
+    h.clock.advance(sendWindow);
+    a.sendFailure = RateLimitFailure(
+      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
+    );
+    final before = a.syncCalls;
+    await engine.syncAll();
+    expect(a.sendCalls, 1);
+    expect(a.syncCalls, before);
+
+    a.sendFailure = null;
+    h.clock.advance(const Duration(minutes: 5));
+    await engine.syncAll();
+    expect(a.sent, [(id, 's-1')]);
+    expect(a.syncCalls, greaterThan(before));
+  });
+
+  test('a flushDrafts and a sync queued behind a send that is rate limited make no provider call', () async {
+    const other = '<o@example.com>';
+    a.holdSend = Completer();
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    await engine.saveDraft('a', _message(other));
+    final before = a.syncCalls;
+    final queued = [engine.flushDrafts('a'), engine.syncAll()];
+    await pumpEventQueue();
+
+    a.sendFailure = RateLimitFailure(
+      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
+    );
+    a.holdSend!.complete();
+    await Future.wait(queued);
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    expect(a.draftCalls, isEmpty);
+    expect(a.syncCalls, before);
+  });
+
+  test('a message queued while another Bozza uploads does not upload its own Bozza', () async {
+    const other = '<o@example.com>';
+    await engine.saveDraft('a', _message(id));
+    await engine.saveDraft('a', _message(other));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    final first = a.draftHeld;
+    expect(first, isNotNull);
+    final second = first == id ? other : id;
+
+    await engine.send('a', _message(second));
+    a.holdDraft!.complete();
+    await flush;
+    expect(a.draftCalls.map((c) => c.$1), [first]);
+  });
+
   test('a RateLimitFailure of the send pauses the Account: one call, the rest stays queued until the deadline', () async {
     engine.start();
     addTearDown(engine.stop);

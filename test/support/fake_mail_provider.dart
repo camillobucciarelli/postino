@@ -125,6 +125,15 @@ class FakeMailProvider implements MailProvider {
 
   /// What the sync engine asked for: initial syncs, and the delta of the last incremental one.
   int initialSyncs = 0;
+
+  /// Every [initialSync] and [incrementalSync] that reached the Provider, also those that fail.
+  int syncCalls = 0;
+
+  /// While set, [saveDraft] waits for it before doing anything: a Bozza upload in flight.
+  Completer<void>? holdDraft;
+
+  /// The Message-ID of the last [saveDraft] that reached the Provider, set before it waits for [holdDraft].
+  String? draftHeld;
   SyncBatch? lastIncremental;
 
   // --- simulation ---
@@ -259,6 +268,7 @@ class FakeMailProvider implements MailProvider {
 
   @override
   Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) async {
+    syncCalls++;
     await hold?.future;
     if (_failure == null && onPage != null) {
       final all = _messages.values.toList();
@@ -283,6 +293,7 @@ class FakeMailProvider implements MailProvider {
 
   @override
   Future<Result<SyncBatch>> incrementalSync(String cursor) async {
+    syncCalls++;
     if (_failure == null && int.parse(cursor) < _oldest) {
       await hold?.future;
       return const Err(NotFoundFailure());
@@ -438,6 +449,8 @@ class FakeMailProvider implements MailProvider {
     OutgoingMessage draft, {
     required bool isNew,
   }) async {
+    draftHeld = draft.messageId;
+    await holdDraft?.future;
     final f = _failure;
     if (f != null) return Err(f);
     if (saveDraftFailure case final failure?) return Err(failure);

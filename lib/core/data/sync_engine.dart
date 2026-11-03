@@ -263,13 +263,7 @@ class SyncEngine implements MailSync {
     if (_paused(accountId)) return;
     final account = await _account(accountId);
     if (account == null || account.status != AccountStatus.attivo) return;
-    // Checked again inside the queue: a replay ahead of this one may have just paused the Account.
-    await _serial(
-      accountId,
-      () => _paused(accountId)
-          ? Future.value()
-          : _replay(accountId, _provider(account)),
-    );
+    await _serial(accountId, () => _replay(accountId, _provider(account)));
   }
 
   @override
@@ -376,6 +370,8 @@ class SyncEngine implements MailSync {
     MailProvider provider, {
     bool flush = false,
   }) async {
+    // A send ahead of this one in the queue may have just paused the Account.
+    if (_paused(accountId)) return;
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
       if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
@@ -397,6 +393,8 @@ class SyncEngine implements MailSync {
               draftDebounce.inMilliseconds) {
         continue;
       }
+      // Queued while an earlier upload was in flight: it goes with its own MIME.
+      if (await _store.isQueued(accountId, draft.messageId)) continue;
       switch (await provider.saveDraft(draft, isNew: isNew)) {
         case Ok():
           await _store.draftSynced(accountId, draft.messageId, updatedAt);
@@ -518,6 +516,7 @@ class SyncEngine implements MailSync {
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     // The queue first, so the sync brings back what the user did offline.
     await _replay(accountId, provider);
+    if (_paused(accountId)) return;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {

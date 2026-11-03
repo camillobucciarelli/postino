@@ -263,7 +263,10 @@ class SyncEngine implements MailSync {
     if (_paused(accountId)) return;
     final account = await _account(accountId);
     if (account == null || account.status != AccountStatus.attivo) return;
-    await _serial(accountId, () => _replay(accountId, _provider(account)));
+    await _serial(
+      accountId,
+      () => _replay(accountId, _provider(account), outboxOnly: true),
+    );
   }
 
   @override
@@ -364,16 +367,20 @@ class SyncEngine implements MailSync {
   /// Sends the offline queue (ADR 0008); what fails stays queued and the next poll retries it.
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   /// An outbox entry goes once its window has ended: so a restart, a poll and the reconnection all send what is due.
+  /// With [outboxOnly] only the outbox goes (the 10 s timer and the WorkManager isolate): Bozze uploads
+  /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
   /// Called only from inside the Account's serial queue.
   Future<void> _replay(
     String accountId,
     MailProvider provider, {
     bool flush = false,
+    bool outboxOnly = false,
   }) async {
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     final byValue = <bool, List<String>>{};
     for (final i in await _store.pendingIntents(accountId)) {
+      if (outboxOnly) break;
       if (i.isRead case final read?) (byValue[read] ??= []).add(i.messageId);
     }
     for (final MapEntry(key: read, value: ids) in byValue.entries) {
@@ -388,6 +395,7 @@ class SyncEngine implements MailSync {
     for (final (:draft, :isNew, :updatedAt) in await _store.pendingDrafts(
       accountId,
     )) {
+      if (outboxOnly) break;
       if (!flush &&
           _clock.now().millisecondsSinceEpoch - updatedAt <
               draftDebounce.inMilliseconds) {
@@ -411,11 +419,13 @@ class SyncEngine implements MailSync {
     for (final row in await _store.dueOutgoing(accountId, now)) {
       // Taken in the database first: the WorkManager isolate may be replaying the same row; the loser skips it.
       // ponytail: a crash mid-send keeps the row claimed, so its retry waits up to [sendClaim].
+      // A fresh clock reading: earlier sends in this loop may have been slow.
+      final claimAt = _clock.now().millisecondsSinceEpoch;
       if (!await _store.claimOutgoing(
         accountId,
         row.messageId,
-        untilMs: now + sendClaim.inMilliseconds,
-        nowMs: now,
+        untilMs: claimAt + sendClaim.inMilliseconds,
+        nowMs: claimAt,
       )) {
         continue;
       }

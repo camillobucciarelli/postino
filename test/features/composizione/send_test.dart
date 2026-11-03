@@ -2,6 +2,8 @@
 // message only after the 10 s window (fake clock), once; Annulla reopens the Bozza; the Inviati list shows
 // the queued message with its state (also offline), then the sent one; the Gmail limit; a restart; the
 // semantics and Cmd+Enter.
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -235,6 +237,31 @@ void main() {
     await _afterWindow(tester);
   });
 
+  _onMac(
+    'the composer is frozen while the engine prepares the message: no edit, no Bozza save',
+    (tester) async {
+      await _start(tester);
+      final hold = Completer<void>();
+      final held = _TooBig(GetIt.I<MailSync>(), hold: hold);
+      GetIt.I
+        ..unregister<MailSync>()
+        ..registerSingleton<MailSync>(held);
+      await _write(tester);
+      final saved = held.saves;
+      await _send(tester);
+      await _typeInEditor(tester, 'Modifica tardiva');
+      await tester.enterText(_field('Oggetto'), 'Tardivo');
+      await _settle(tester);
+      expect(find.text('Modifica tardiva'), findsNothing);
+      expect(find.text('Tardivo'), findsNothing);
+      expect(held.saves, saved);
+      hold.complete();
+      await _settle(tester);
+      // The Bozza reaches the Provider: left pending, the composer's flush on dispose blocks the next database reset.
+      await _afterWindow(tester);
+    },
+  );
+
   _onMac('a message over the Gmail limit is refused, naming the 35 MB limit', (
     tester,
   ) async {
@@ -327,13 +354,19 @@ void main() {
 }
 
 /// The real engine, but every message is over the Provider's limit.
+/// With [hold], [send] waits for it first (the engine preparing the MIME); [saves] counts the Bozza saves.
 class _TooBig implements MailSync {
-  _TooBig(this.real);
+  _TooBig(this.real, {this.hold});
   final MailSync real;
+  final Completer<void>? hold;
+  int saves = 0;
 
   @override
-  Future<Result<DateTime>> send(String a, OutgoingMessage m) async =>
-      const Err(SizeLimitFailure(gmailSendLimitBytes));
+  Future<Result<DateTime>> send(String a, OutgoingMessage m) async {
+    await hold?.future;
+    return const Err(SizeLimitFailure(gmailSendLimitBytes));
+  }
+
   @override
   Future<void> syncAll() => real.syncAll();
   @override
@@ -342,7 +375,11 @@ class _TooBig implements MailSync {
   @override
   Future<Result<void>> fetchBody(String a, String m) => real.fetchBody(a, m);
   @override
-  Future<void> saveDraft(String a, OutgoingMessage d) => real.saveDraft(a, d);
+  Future<void> saveDraft(String a, OutgoingMessage d) {
+    saves++;
+    return real.saveDraft(a, d);
+  }
+
   @override
   Future<void> flushDrafts(String a) => real.flushDrafts(a);
   @override

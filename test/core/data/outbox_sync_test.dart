@@ -246,6 +246,42 @@ void main() {
     expect((await inviati()).single.message.messageId, id);
   });
 
+  test('a slow send does not leave the next claim already expired', () async {
+    const other = '<o@example.com>';
+    await engine.send('a', _message(id));
+    await engine.send('a', _message(other));
+    h.clock.advance(sendWindow);
+    final first = a.holdSend = Completer();
+    unawaited(engine.flushOutbox('a'));
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    h.clock.advance(sendClaim + const Duration(seconds: 1));
+    a.holdSend = Completer();
+    first.complete();
+    await pumpEventQueue();
+    expect(a.sendCalls, 2);
+    final claimed = (await outbox()).where((r) => r.claimedUntil != null);
+    expect(
+      claimed.single.claimedUntil,
+      greaterThan(h.clock.now().millisecondsSinceEpoch),
+    );
+    a.holdSend!.complete();
+    await pumpEventQueue();
+  });
+
+  test('flushOutbox sends the due outbox but leaves the pending Bozza to the next sync', () async {
+    const other = '<o@example.com>';
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await engine.saveDraft('a', _message(other));
+    h.clock.advance(draftDebounce);
+    await engine.flushOutbox('a');
+    expect(a.sendCalls, 1);
+    expect(a.draftCalls, isEmpty);
+    await engine.syncAll();
+    expect(a.draftCalls.map((c) => c.$1), contains(other));
+  });
+
   test('two engines on the same database (foreground and WorkManager) replaying at once send once', () async {
     await engine.send('a', _message(id));
     await engine.stop();

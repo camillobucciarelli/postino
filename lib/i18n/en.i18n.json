@@ -81,7 +81,12 @@
     "attachmentSave": "Save…",
     "attachmentSaveFailed": "Save failed",
     "attachmentExecutable": "Executable: Postino won't open it. Save it only if you trust the sender",
-    "attachmentUntitled": "Untitled attachment"
+    "attachmentUntitled": "Untitled attachment",
+    "reply": "Reply",
+    "replyAll": "Reply all",
+    "forward": "Forward",
+    "forwardUnavailable": "Cannot forward: message not downloaded",
+    "messageActions": "Message actions"
   },
   "composizione": {
     "title": "New message",
@@ -106,7 +111,8 @@
     "editor": "Message body",
     "draftNotFound": "Draft not found",
     "draftWithAttachments": "This draft has attachments: edit it from the client that created it",
-    "draftReply": "This Draft is a reply: edit it from the client that created it"
+    "draftReply": "This Draft is a reply: edit it from the client that created it",
+    "forwardedAttachments": "Attachments"
   },
   "bozze": {
     "title": "Drafts",

@@ -99,7 +99,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,6 +151,19 @@ class PostinoDatabase extends _$PostinoDatabase {
         // Cached Bozze got an empty Bcc, though on the Provider they may have one: with the cursors gone the
         // next sync is a full one and brings it (openDraft reads the recipients from the cached message).
         await customStatement('DELETE FROM sync_cursors');
+      }
+      if (from < 12) {
+        // Reply-To and References of the messages, the threading headers and the forwarded attachments of the
+        // Bozze (#37); the cached messages keep null until synced again.
+        await m.addColumn(messages, messages.replyTo);
+        await m.addColumn(messages, messages.references);
+        // Before v10 the drafts table was just created above, already with them.
+        if (from >= 10) {
+          await m.addColumn(drafts, drafts.inReplyTo);
+          await m.addColumn(drafts, drafts.references);
+          await m.addColumn(drafts, drafts.conversationId);
+          await m.addColumn(drafts, drafts.attachments);
+        }
       }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);

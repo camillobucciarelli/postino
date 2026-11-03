@@ -123,6 +123,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               recipients: m.to.join('\n'),
               cc: Value(m.cc.join('\n')),
               bcc: Value(m.bcc.join('\n')),
+              replyTo: Value(m.replyTo),
+              references: Value(m.references.join('\n')),
               subject: m.subject,
               snippet: m.snippet,
               date: m.date.millisecondsSinceEpoch,

@@ -317,6 +317,21 @@ class Translations$conversazione$it {
 
 	/// it: 'Allegato senza nome'
 	String get attachmentUntitled => 'Allegato senza nome';
+
+	/// it: 'Rispondi'
+	String get reply => 'Rispondi';
+
+	/// it: 'Rispondi a tutti'
+	String get replyAll => 'Rispondi a tutti';
+
+	/// it: 'Inoltra'
+	String get forward => 'Inoltra';
+
+	/// it: 'Impossibile inoltrare: messaggio non scaricato'
+	String get forwardUnavailable => 'Impossibile inoltrare: messaggio non scaricato';
+
+	/// it: 'Azioni del messaggio'
+	String get messageActions => 'Azioni del messaggio';
 }
 
 // Path: composizione
@@ -395,6 +410,9 @@ class Translations$composizione$it {
 
 	/// it: 'Questa Bozza è una risposta: modificala dal client che l'ha creata'
 	String get draftReply => 'Questa Bozza è una risposta: modificala dal client che l\'ha creata';
+
+	/// it: 'Allegati'
+	String get forwardedAttachments => 'Allegati';
 }
 
 // Path: bozze
@@ -485,6 +503,11 @@ extension on Translations {
 			'conversazione.attachmentSaveFailed' => 'Salvataggio non riuscito',
 			'conversazione.attachmentExecutable' => 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente',
 			'conversazione.attachmentUntitled' => 'Allegato senza nome',
+			'conversazione.reply' => 'Rispondi',
+			'conversazione.replyAll' => 'Rispondi a tutti',
+			'conversazione.forward' => 'Inoltra',
+			'conversazione.forwardUnavailable' => 'Impossibile inoltrare: messaggio non scaricato',
+			'conversazione.messageActions' => 'Azioni del messaggio',
 			'composizione.title' => 'Nuovo messaggio',
 			'composizione.write' => 'Scrivi',
 			'composizione.from' => 'Da',
@@ -508,6 +531,7 @@ extension on Translations {
 			'composizione.draftNotFound' => 'Bozza non trovata',
 			'composizione.draftWithAttachments' => 'Questa Bozza ha allegati: modificala dal client che l\'ha creata',
 			'composizione.draftReply' => 'Questa Bozza è una risposta: modificala dal client che l\'ha creata',
+			'composizione.forwardedAttachments' => 'Allegati',
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',

@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
 
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/html_text.dart';
 import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
 import '../domain/message.dart';
@@ -159,15 +159,21 @@ class SyncEngine implements MailSync {
     // The local copy, unless the Provider has a newer one and nothing here is waiting to go:
     // then it was edited elsewhere since, and the Provider's version is taken over.
     // ponytail: by the device clock against the Provider's date; a clock far ahead keeps the local copy.
+    // A reply created here always stays ours: the Provider dates it at upload time, after `updatedAt`,
+    // and an edit elsewhere cannot be merged (it would drop In-Reply-To, thread or forwarded attachments),
+    // so never refuse it.
     if (local != null &&
         (local.pending ||
+            local.draft.inReplyTo != null ||
+            local.draft.attachments.isNotEmpty ||
             remote == null ||
             remote.message.date.millisecondsSinceEpoch <= local.updatedAt)) {
       return Ok(local.draft);
     }
     if (remote == null) return const Err(NotFoundFailure());
     // A reply written elsewhere: the save would drop its In-Reply-To, References and thread.
-    // ponytail: #37 porta In-Reply-To/References/threadId nelle Bozze
+    // ponytail: the local Bozze of #37 carry them; a remote one is still refused because its headers
+    // are not fetched (metadata sync has no In-Reply-To): read them from the message when people ask.
     if (await _store.hasSiblings(accountId, remote.message.id)) {
       return const Err(DraftReplyFailure());
     }
@@ -196,7 +202,7 @@ class SyncEngine implements MailSync {
       subject: remote.message.subject,
       body: switch (body.kind) {
         BodyKind.html => body.content,
-        BodyKind.testo => _plainToHtml(body.content),
+        BodyKind.testo => plainToHtml(body.content),
       },
     );
     await _store.adoptDraft(
@@ -206,18 +212,6 @@ class SyncEngine implements MailSync {
     );
     return Ok(draft);
   }
-
-  static const _escape = HtmlEscape(HtmlEscapeMode.element);
-
-  /// A paragraph per blank-line block, `<br>` for the other line breaks.
-  static String _plainToHtml(String text) => text.trim().isEmpty
-      ? '<p></p>'
-      : [
-          for (final p
-              in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
-            if (p.trim().isNotEmpty)
-              '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
-        ].join();
 
   /// Straight from the Provider, outside the Account's serial queue: a download never waits behind a sync.
   Future<Result<AttachmentBytes>> fetchAttachment(

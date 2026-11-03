@@ -1,3 +1,5 @@
+import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
+
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
@@ -22,3 +24,14 @@ String htmlText(String html) {
   walk(doc.body ?? doc);
   return '$out';
 }
+
+const _escape = HtmlEscape(HtmlEscapeMode.element);
+
+/// Plain text as HTML: a paragraph per blank-line block, `<br>` for the other line breaks, the text escaped.
+String plainToHtml(String text) => text.trim().isEmpty
+    ? '<p></p>'
+    : [
+        for (final p in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
+          if (p.trim().isNotEmpty)
+            '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
+      ].join();

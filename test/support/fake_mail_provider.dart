@@ -18,6 +18,8 @@ Message msg(
   bool isStarred = false,
   List<String> labelIds = const [inboxLabelId],
   String? conversationId,
+  String? replyTo,
+  List<String> references = const [],
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
@@ -32,6 +34,8 @@ Message msg(
   subject: subject,
   snippet: snippet,
   date: date ?? DateTime.utc(2026, 1, 1),
+  replyTo: replyTo,
+  references: references,
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
@@ -95,6 +99,9 @@ class FakeMailProvider implements MailProvider {
 
   /// The Bozze folder, by Message-ID; a saved or delivered Bozza is also a DRAFT message for the syncs.
   final drafts = <String, OutgoingMessage>{};
+
+  /// While set, [saveDraft] fails with it (a forwarded attachment that cannot be fetched).
+  Failure? saveDraftFailure;
 
   /// Every [saveDraft] that reached the Provider: (Message-ID, isNew).
   final draftCalls = <(String, bool)>[];
@@ -368,6 +375,7 @@ class FakeMailProvider implements MailProvider {
   }) async {
     final f = _failure;
     if (f != null) return Err(f);
+    if (saveDraftFailure case final failure?) return Err(failure);
     draftCalls.add((draft.messageId, isNew));
     if (!isNew && !drafts.containsKey(draft.messageId)) {
       return const Err(NotFoundFailure());
@@ -401,4 +409,6 @@ Message withRead(Message m, bool read) => Message(
   subject: m.subject,
   snippet: m.snippet,
   date: m.date,
+  replyTo: m.replyTo,
+  references: m.references,
 );

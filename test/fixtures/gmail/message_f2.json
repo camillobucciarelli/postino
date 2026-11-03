@@ -31,6 +31,14 @@
           "value": "Bruno Verdi <bruno@example.com>"
         },
         {
+          "name": "Reply-To",
+          "value": "Studio <studio@example.com>"
+        },
+        {
+          "name": "References",
+          "value": "<CAF0@mail.example.com>\r\n <CAF1x7Yk2b@mail.example.com>"
+        },
+        {
           "name": "Message-ID",
           "value": "<CAG2y8Zl3c@mail.gmail.com>"
         },

@@ -213,6 +213,10 @@ class MailStore implements InboxRepository {
     bcc: _lines(r.bcc),
     subject: r.subject,
     body: r.body,
+    inReplyTo: r.inReplyTo,
+    references: _lines(r.references ?? ''),
+    conversationId: r.conversationId,
+    attachments: r.attachments ?? const [],
   );
 
   @override
@@ -262,6 +266,8 @@ class MailStore implements InboxRepository {
     subject: r.subject,
     snippet: snippet ?? r.snippet,
     date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
+    replyTo: r.replyTo,
+    references: _lines(r.references ?? ''),
   );
 }
 

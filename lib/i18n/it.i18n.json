@@ -81,7 +81,12 @@
     "attachmentSave": "Salva…",
     "attachmentSaveFailed": "Salvataggio non riuscito",
     "attachmentExecutable": "Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente",
-    "attachmentUntitled": "Allegato senza nome"
+    "attachmentUntitled": "Allegato senza nome",
+    "reply": "Rispondi",
+    "replyAll": "Rispondi a tutti",
+    "forward": "Inoltra",
+    "forwardUnavailable": "Impossibile inoltrare: messaggio non scaricato",
+    "messageActions": "Azioni del messaggio"
   },
   "composizione": {
     "title": "Nuovo messaggio",
@@ -106,7 +111,8 @@
     "editor": "Corpo del messaggio",
     "draftNotFound": "Bozza non trovata",
     "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata",
-    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata"
+    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata",
+    "forwardedAttachments": "Allegati"
   },
   "bozze": {
     "title": "Bozze",

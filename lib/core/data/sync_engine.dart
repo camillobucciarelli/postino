@@ -263,7 +263,13 @@ class SyncEngine implements MailSync {
     if (_paused(accountId)) return;
     final account = await _account(accountId);
     if (account == null || account.status != AccountStatus.attivo) return;
-    await _serial(accountId, () => _replay(accountId, _provider(account)));
+    // Checked again inside the queue: a replay ahead of this one may have just paused the Account.
+    await _serial(
+      accountId,
+      () => _paused(accountId)
+          ? Future.value()
+          : _replay(accountId, _provider(account)),
+    );
   }
 
   @override
@@ -271,6 +277,7 @@ class SyncEngine implements MailSync {
     String accountId,
     String messageId,
   ) async {
+    // ponytail: no guard on a queued Message-ID; the Bozze list hides it (watchAll) and Inviati reopens through cancelSend.
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
     final local = await _store.localDraft(accountId, messageId);
@@ -402,6 +409,7 @@ class SyncEngine implements MailSync {
       }
     }
     final now = _clock.now().millisecondsSinceEpoch;
+    outbox:
     for (final row in await _store.dueOutgoing(accountId, now)) {
       // Taken in the database first: the WorkManager isolate may be replaying the same row; the loser skips it.
       // ponytail: a crash mid-send keeps the row claimed, so its retry waits up to [sendClaim].
@@ -430,6 +438,12 @@ class SyncEngine implements MailSync {
         case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure())):
           await _store.outgoingFailed(accountId, row.messageId);
           debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
+        // Rate limited: the Account waits for the deadline, as after a sync; the rest stays queued.
+        case Err(failure: RateLimitFailure(:final retryAfter?)):
+          _pausedUntil[accountId] = retryAfter;
+          await _store.unclaimOutgoing(accountId, row.messageId);
+          debugPrint('[sync] $accountId: send paused until $retryAfter');
+          break outbox;
         case Err(:final failure):
           await _store.unclaimOutgoing(accountId, row.messageId);
           debugPrint('[sync] $accountId: send failed, $failure');

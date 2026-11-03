@@ -329,6 +329,63 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
+  test('a queued message is not listed in Bozze (local row nor the Provider\'s), and is again after Annulla', () async {
+    Future<List<String>> listed() async =>
+        (await GetIt.I<InboxRepository>().watchDrafts('a').first)
+            .map((m) => m.messageId)
+            .toList();
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a');
+    await engine.syncAll(); // the Provider lists it as DRAFT too
+    expect(await listed(), [id]);
+
+    await engine.send('a', _message(id));
+    expect(await draftRow(), isNotNull);
+    expect(await listed(), isEmpty);
+
+    await engine.cancelSend('a', id);
+    expect(await listed(), [id]);
+  });
+
+  test('a RateLimitFailure of the send pauses the Account: one call, the rest stays queued until the deadline', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    await engine.send('a', _message(id));
+    await engine.send('a', _message('<y@example.com>'));
+    a.sendFailure = RateLimitFailure(
+      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
+    );
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    expect(await outbox(), hasLength(2));
+
+    a.sendFailure = null;
+    h.clock.advance(const Duration(seconds: 60));
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+
+    h.clock.advance(const Duration(minutes: 5));
+    await pumpEventQueue();
+    expect(a.sent.map((s) => s.$1), unorderedEquals([id, '<y@example.com>']));
+    expect(await outbox(), isEmpty);
+  });
+
+  test('a queued message does not upload its Bozza: the send goes at 10 s without a draft PUT', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await engine.saveDraft('a', _message(id));
+    await engine.send('a', _message(id));
+    await engine.flushDrafts('a'); // the composer disposing
+    expect(a.drafts, isEmpty);
+
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, [(id, 's-1')]);
+    expect(a.drafts, isEmpty);
+  });
+
   test('Invia holds the platform once; the send releases it once', () async {
     await engine.send('a', _message(id));
     await pumpEventQueue();

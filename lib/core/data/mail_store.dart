@@ -172,7 +172,9 @@ class MailStore implements InboxRepository {
     final from = await _address(accountId);
     return [
       for (final r in await _db.draftsDao.pending(accountId))
-        (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt),
+        // A queued message goes with its own MIME: a Bozza PUT now would only delay the send in the Account's queue.
+        if (await _db.outboxDao.byId(accountId, r.messageId) == null)
+          (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt),
     ];
   }
 

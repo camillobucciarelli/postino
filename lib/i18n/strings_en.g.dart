@@ -58,6 +58,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
 	@override late final _Translations$composizione$en composizione = _Translations$composizione$en._(_root);
 	@override late final _Translations$bozze$en bozze = _Translations$bozze$en._(_root);
+	@override late final _Translations$inviati$en inviati = _Translations$inviati$en._(_root);
 }
 
 // Path: sidebar
@@ -220,6 +221,12 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get draftNotFound => 'Draft not found';
 	@override String get draftWithAttachments => 'This draft has attachments: edit it from the client that created it';
 	@override String get draftReply => 'This Draft is a reply: edit it from the client that created it';
+	@override String get send => 'Send';
+	@override String get queued => 'Waiting to send';
+	@override String get undo => 'Undo';
+	@override String tooLarge({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit';
+	@override String get sendFailed => 'Sending failed: try again';
+	@override String get noRecipient => 'Add at least one recipient';
 }
 
 // Path: bozze
@@ -232,6 +239,20 @@ class _Translations$bozze$en extends Translations$bozze$it {
 	@override String get title => 'Drafts';
 	@override String get emptyTitle => 'No drafts';
 	@override String get emptyBody => 'Drafts you write stay here until you send them.';
+}
+
+// Path: inviati
+class _Translations$inviati$en extends Translations$inviati$it {
+	_Translations$inviati$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Sent';
+	@override String get waiting => 'Waiting to send';
+	@override String get offline => 'Outgoing, waiting for network';
+	@override String get emptyTitle => 'No sent messages';
+	@override String get emptyBody => 'Messages you send show up here.';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -326,9 +347,20 @@ extension on TranslationsEn {
 			'composizione.draftNotFound' => 'Draft not found',
 			'composizione.draftWithAttachments' => 'This draft has attachments: edit it from the client that created it',
 			'composizione.draftReply' => 'This Draft is a reply: edit it from the client that created it',
+			'composizione.send' => 'Send',
+			'composizione.queued' => 'Waiting to send',
+			'composizione.undo' => 'Undo',
+			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit',
+			'composizione.sendFailed' => 'Sending failed: try again',
+			'composizione.noRecipient' => 'Add at least one recipient',
 			'bozze.title' => 'Drafts',
 			'bozze.emptyTitle' => 'No drafts',
 			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',
+			'inviati.title' => 'Sent',
+			'inviati.waiting' => 'Waiting to send',
+			'inviati.offline' => 'Outgoing, waiting for network',
+			'inviati.emptyTitle' => 'No sent messages',
+			'inviati.emptyBody' => 'Messages you send show up here.',
 			_ => null,
 		};
 	}

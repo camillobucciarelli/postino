@@ -28,10 +28,15 @@ const sendWindow = Duration(seconds: 10);
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
 @lazySingleton
 class SyncEngine implements MailSync {
-  SyncEngine(this._store, this._clock, this._connectivity);
+  SyncEngine(this._store, this._clock, this._connectivity, this._background);
   final MailStore _store;
   final Clock _clock;
   final Connectivity _connectivity;
+  final BackgroundSender _background;
+
+  /// Accounts the platform is holding for (#36); released once their outbox is empty.
+  /// A hold made by a previous run of the app is not here: the platform drops it on its own.
+  final _held = <String>{};
 
   final _subs = <StreamSubscription<Object?>>[];
   final _signals = <String, StreamSubscription<ChangeSignal>>{};
@@ -184,13 +189,35 @@ class SyncEngine implements MailSync {
       unawaited(_sendTimers.remove(key)?.cancel());
       unawaited(flushOutbox(accountId));
     });
+    // The platform keeps the send going if the user leaves now; a refusal never fails the Invia.
+    _held.add(accountId);
+    unawaited(
+      _background.hold(accountId).catchError((Object e) {
+        debugPrint('[sync] $accountId: background hold failed, $e');
+      }),
+    );
     return const Ok(null);
   }
 
   @override
   Future<bool> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
-    return _store.cancelOutgoing(accountId, messageId);
+    final cancelled = await _store.cancelOutgoing(accountId, messageId);
+    await _releaseIfEmpty(accountId);
+    return cancelled;
+  }
+
+  /// Lets the platform go once nothing of the Account is queued any more.
+  Future<void> _releaseIfEmpty(String accountId) async {
+    if (!_held.contains(accountId) || await _store.hasOutgoing(accountId)) {
+      return;
+    }
+    _held.remove(accountId);
+    try {
+      await _background.release(accountId);
+    } catch (e) {
+      debugPrint('[sync] $accountId: background release failed, $e');
+    }
   }
 
   /// Sends the Account's due outbox entries at once. While the Provider's pause holds they stay queued
@@ -364,6 +391,7 @@ class SyncEngine implements MailSync {
           debugPrint('[sync] $accountId: send failed, $failure');
       }
     }
+    await _releaseIfEmpty(accountId);
   }
 
   Future<void> _poll() async {

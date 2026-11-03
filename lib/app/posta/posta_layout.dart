@@ -5,9 +5,12 @@ import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
 
 import '../../core/domain/accounts_repository.dart';
+import '../../core/domain/html_text.dart';
 import '../../core/domain/inbox_repository.dart';
+import '../../core/domain/mail_sync.dart';
 import '../../core/domain/message.dart'
-    show Message, draftLabelId, inboxLabelId;
+    show Message, draftLabelId, inboxLabelId, sentLabelId;
+import '../../core/domain/platform_services.dart' show Clock, Connectivity;
 import '../../core/domain/settings_repository.dart';
 import '../../main.dart' show routePaths;
 import '../../design_system/design_system.dart';
@@ -83,6 +86,22 @@ class _PostaLayoutState extends State<PostaLayout> {
     final accountId = ls.length > 1 ? ls[1] : null;
     final labelId = ls.length > 3 ? ls[3] : null;
     void back() => Routefly.navigate(list);
+    // Invia: the composer closes and the Snackbar of Annulla invio shows under this layout's messenger (the
+    // app's: PostaLayout outlives the composer in both layouts), so it survives the detail going away.
+    void queued(String accountId, String messageId) {
+      back();
+      PostinoSnackbar.show(
+        context,
+        message: context.t.composizione.queued,
+        actionLabel: context.t.composizione.undo,
+        onAction: () async {
+          if (await GetIt.I<MailSync>().cancelSend(accountId, messageId)) {
+            _openDraft(accountId, messageId);
+          }
+        },
+      );
+    }
+
     // One shell above the content: only the content is replaced on navigation.
     return OnboardingGate(
       child: FutureBuilder<(bool?, double?)>(
@@ -116,6 +135,11 @@ class _PostaLayoutState extends State<PostaLayout> {
                           selected: detail,
                           cursor: _cursor,
                         ),
+                        (final a?, sentLabelId) => postaSentView(
+                          a,
+                          selected: open,
+                          cursor: _cursor,
+                        ),
                         (final a?, final l?) => postaLabelView(
                           a,
                           l,
@@ -130,7 +154,12 @@ class _PostaLayoutState extends State<PostaLayout> {
                         _ => postaUnifiedView(selected: open, cursor: _cursor),
                       },
                       detail: draft != null
-                          ? postaComposerView(draft.$1, draft.$2, onClose: back)
+                          ? postaComposerView(
+                              draft.$1,
+                              draft.$2,
+                              onClose: back,
+                              onQueued: queued,
+                            )
                           : open == null
                           ? null
                           : postaConversationView(
@@ -273,16 +302,129 @@ Stream<List<InboxEntry>> _draftEntries(String accountId, InboxRepository r) =>
           ),
     );
 
+/// The Inviati of an Account: the messages waiting to go, each with its state, over the sent ones.
+Widget postaSentView(
+  String accountId, {
+  (String, String)? selected,
+  ListCursor? cursor,
+}) => Builder(
+  key: ValueKey('$accountId/$sentLabelId'),
+  builder: (context) => PostinoAdaptiveLayout(
+    appBar: AccountAppBar(
+      accountId: accountId,
+      labelId: sentLabelId,
+      labelName: context.t.inviati.title,
+    ),
+    drawer: postaDrawer(accountId: accountId, labelId: sentLabelId),
+    banners: postaBanners,
+    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
+    body: MessageList(
+      watch: (r) => _sentEntries(
+        accountId,
+        r,
+        waiting: context.t.inviati.waiting,
+        offline: context.t.inviati.offline,
+      ),
+      selected: selected,
+      cursor: cursor,
+      emptyTitle: context.t.inviati.emptyTitle,
+      emptyBody: context.t.inviati.emptyBody,
+      // ponytail: a queued row (its Conversazione is its Message-ID) opens nothing; Annulla is in the Snackbar.
+      onOpen: (a, c) => c.startsWith('<') ? null : _openConversation(a, c),
+    ),
+  ),
+);
+
+/// The outbox rows first, newest first, then the sent messages. The state sits before the preview:
+/// «In attesa d'invio» within the window or online, «In uscita, in attesa di rete» once the window passed offline.
+// ponytail: the rows recompute on every outbox change (the failed attempt offline is one), not on the clock: a row
+// may read «In attesa d'invio» for the seconds the send takes, then it leaves the outbox.
+Stream<List<InboxEntry>> _sentEntries(
+  String accountId,
+  InboxRepository r, {
+  required String waiting,
+  required String offline,
+}) => _latest(
+  GetIt.I<AccountsRepository>().watchAccounts(),
+  _latest(
+    r.watchOutbox(accountId),
+    r.watchMessages(accountId, sentLabelId),
+    (outbox, sent) => (outbox, sent),
+  ),
+  (accounts, lists) {
+    final (outbox, sent) = lists;
+    final now = GetIt.I<Clock>().now().millisecondsSinceEpoch;
+    final online = GetIt.I<Connectivity>().isOnline;
+    return [
+      for (final a in accounts.where((a) => a.id == accountId))
+        for (final OutgoingEntry(message: m, :sendAfter) in outbox)
+          InboxEntry(
+            message: Message(
+              id: m.messageId,
+              messageId: m.messageId,
+              conversationId: m.messageId,
+              labelIds: const [sentLabelId],
+              isRead: true,
+              isStarred: false,
+              from: m.from,
+              to: m.to,
+              cc: m.cc,
+              bcc: m.bcc,
+              subject: m.subject,
+              snippet:
+                  '${sendAfter > now || online ? waiting : offline} · '
+                  '${htmlText(m.body).replaceAll(RegExp(r'\s+'), ' ').trim()}',
+              // The end of the window: the time it is listed under until the Provider dates it.
+              date: DateTime.fromMillisecondsSinceEpoch(sendAfter, isUtc: true),
+            ),
+            account: a,
+            count: 1,
+            unread: false,
+          ),
+      ...sent,
+    ];
+  },
+);
+
+/// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.
+// ponytail: two streams only; a package combineLatest if a third view needs it.
+Stream<R> _latest<A, B, R>(Stream<A> a, Stream<B> b, R Function(A, B) f) {
+  late final StreamController<R> c;
+  final subs = <StreamSubscription<void>>[];
+  (A,)? la;
+  (B,)? lb;
+  void emit() {
+    if ((la, lb) case ((final x,), (final y,))) c.add(f(x, y));
+  }
+
+  c = StreamController(
+    onListen: () => subs.addAll([
+      a.listen((v) {
+        la = (v,);
+        emit();
+      }, onError: c.addError),
+      b.listen((v) {
+        lb = (v,);
+        emit();
+      }, onError: c.addError),
+    ]),
+    onCancel: () => Future.wait(subs.map((s) => s.cancel())),
+  );
+  return c.stream;
+}
+
 /// The composer of a Bozza; its params come from the URI, so a new one is a new view.
 Widget postaComposerView(
   String accountId,
   String messageId, {
   required VoidCallback onClose,
+  required void Function(String accountId, String messageId) onQueued,
 }) => ComposerView(
   key: ValueKey('draft-$accountId/$messageId'),
   accountId: accountId,
   messageId: messageId,
   onClose: onClose,
+  onQueued: onQueued,
 );
 
 void _openDraft(String accountId, String messageId) => Routefly.navigate(
@@ -333,6 +475,12 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
     routePaths.posta.$accountId.etichetta.$labelId.changes({
       'accountId': id,
       'labelId': draftLabelId,
+    }),
+  ),
+  onOpenSent: (id) => _openFromPosta(
+    routePaths.posta.$accountId.etichetta.$labelId.changes({
+      'accountId': id,
+      'labelId': sentLabelId,
     }),
   ),
 );

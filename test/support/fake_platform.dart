@@ -92,3 +92,13 @@ class FakeFileSaver implements FileSaver {
     saved.add((path, name));
   }
 }
+
+/// Records every hold and release instead of asking the platform.
+class FakeBackgroundSender implements BackgroundSender {
+  final holds = <String>[];
+  final releases = <String>[];
+  @override
+  Future<void> hold(String accountId) async => holds.add(accountId);
+  @override
+  Future<void> release(String accountId) async => releases.add(accountId);
+}

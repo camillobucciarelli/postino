@@ -34,6 +34,14 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
             ..orderBy([(t) => OrderingTerm.asc(t.sendAfter)]))
           .get();
 
+  /// True while the Account has any row queued.
+  Future<bool> any(String accountId) async =>
+      (await (select(outbox)
+                ..where((t) => t.accountId.equals(accountId))
+                ..limit(1))
+              .get())
+          .isNotEmpty;
+
   /// Every row of the Account, newest first.
   Stream<List<OutboxRow>> watch(String accountId) =>
       (select(outbox)

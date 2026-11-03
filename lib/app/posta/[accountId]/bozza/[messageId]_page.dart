@@ -19,5 +19,9 @@ class DraftPage extends StatelessWidget {
         'accountId': Routefly.query['accountId'],
       }),
     ),
+    // Never drawn: PostaLayout draws the composer itself, with Annulla invio; here the composer just closes.
+    onQueued: (accountId, _) => Routefly.navigate(
+      routePaths.posta.$accountId.path.changes({'accountId': accountId}),
+    ),
   );
 }

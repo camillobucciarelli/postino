@@ -223,6 +223,9 @@ class MailStore implements InboxRepository {
   Future<List<OutboxRow>> dueOutgoing(String accountId, int nowMs) =>
       _db.outboxDao.due(accountId, nowMs);
 
+  /// True while the Account has anything queued to send.
+  Future<bool> hasOutgoing(String accountId) => _db.outboxDao.any(accountId);
+
   Future<void> bumpSendAttempts(String accountId, String messageId) =>
       _db.outboxDao.bumpAttempts(accountId, messageId);
 

@@ -347,4 +347,29 @@ void main() {
       expect(_clipboard, contains('Niente da fare'));
     },
   );
+
+  testWidgets(
+    'the Snackbar of Annulla invio: its state text is selectable, «Annulla» is not',
+    (tester) async {
+      _mockClipboard(tester);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoSnackbar(
+              message: "In attesa d'invio",
+              actionLabel: 'Annulla',
+              onAction: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text("In attesa d'invio"));
+      await tester.pump();
+      await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
+      await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
+      expect(_clipboard, contains("In attesa d'invio"));
+      expect(_clipboard, isNot(contains('Annulla')));
+    },
+  );
 }

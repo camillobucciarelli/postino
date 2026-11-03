@@ -9,7 +9,9 @@ import 'package:flutter_quill/flutter_quill.dart'
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
+import 'package:workmanager/workmanager.dart';
 
+import 'core/data/background_send.dart';
 import 'core/data/sync_engine.dart';
 import 'design_system/tokens/postino_theme.dart';
 import 'i18n/strings.g.dart';
@@ -33,6 +35,10 @@ Future<void> main() async {
       'Figtree',
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    // The outbox keeps going after the user leaves the app (#36).
+    await Workmanager().initialize(sendOutboxDispatcher);
+  }
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));

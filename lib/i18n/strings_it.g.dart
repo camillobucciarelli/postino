@@ -74,6 +74,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
 	late final Translations$composizione$it composizione = Translations$composizione$it.internal(_root);
 	late final Translations$bozze$it bozze = Translations$bozze$it.internal(_root);
+	late final Translations$inviati$it inviati = Translations$inviati$it.internal(_root);
 }
 
 // Path: sidebar
@@ -392,6 +393,24 @@ class Translations$composizione$it {
 
 	/// it: 'Questa Bozza è una risposta: modificala dal client che l'ha creata'
 	String get draftReply => 'Questa Bozza è una risposta: modificala dal client che l\'ha creata';
+
+	/// it: 'Invia'
+	String get send => 'Invia';
+
+	/// it: 'In attesa d'invio'
+	String get queued => 'In attesa d\'invio';
+
+	/// it: 'Annulla'
+	String get undo => 'Annulla';
+
+	/// it: 'Il messaggio supera il limite di $mb MB di Gmail'
+	String tooLarge({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail';
+
+	/// it: 'Invio non riuscito: riprova'
+	String get sendFailed => 'Invio non riuscito: riprova';
+
+	/// it: 'Aggiungi almeno un destinatario'
+	String get noRecipient => 'Aggiungi almeno un destinatario';
 }
 
 // Path: bozze
@@ -410,6 +429,30 @@ class Translations$bozze$it {
 
 	/// it: 'Le bozze che scrivi restano qui finché non le invii.'
 	String get emptyBody => 'Le bozze che scrivi restano qui finché non le invii.';
+}
+
+// Path: inviati
+class Translations$inviati$it {
+	Translations$inviati$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Inviati'
+	String get title => 'Inviati';
+
+	/// it: 'In attesa d'invio'
+	String get waiting => 'In attesa d\'invio';
+
+	/// it: 'In uscita, in attesa di rete'
+	String get offline => 'In uscita, in attesa di rete';
+
+	/// it: 'Nessun messaggio inviato'
+	String get emptyTitle => 'Nessun messaggio inviato';
+
+	/// it: 'I messaggi che invii compaiono qui.'
+	String get emptyBody => 'I messaggi che invii compaiono qui.';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -504,9 +547,20 @@ extension on Translations {
 			'composizione.draftNotFound' => 'Bozza non trovata',
 			'composizione.draftWithAttachments' => 'Questa Bozza ha allegati: modificala dal client che l\'ha creata',
 			'composizione.draftReply' => 'Questa Bozza è una risposta: modificala dal client che l\'ha creata',
+			'composizione.send' => 'Invia',
+			'composizione.queued' => 'In attesa d\'invio',
+			'composizione.undo' => 'Annulla',
+			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail',
+			'composizione.sendFailed' => 'Invio non riuscito: riprova',
+			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',
+			'inviati.title' => 'Inviati',
+			'inviati.waiting' => 'In attesa d\'invio',
+			'inviati.offline' => 'In uscita, in attesa di rete',
+			'inviati.emptyTitle' => 'Nessun messaggio inviato',
+			'inviati.emptyBody' => 'I messaggi che invii compaiono qui.',
 			_ => null,
 		};
 	}

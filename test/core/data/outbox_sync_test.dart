@@ -144,6 +144,7 @@ void main() {
       GetIt.I<MailStore>(),
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
+      GetIt.I<BackgroundSender>(),
     );
     restarted.start();
     addTearDown(restarted.stop);
@@ -192,6 +193,30 @@ void main() {
     await pumpEventQueue();
     expect(a.sent, [(id, 's-1')]);
     expect(await outbox(), isEmpty);
+  });
+
+  test('Invia holds the platform once; the send releases it once', () async {
+    await engine.send('a', _message(id));
+    await pumpEventQueue();
+    expect(h.background.holds, ['a']);
+    expect(h.background.releases, isEmpty);
+
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, hasLength(1));
+    expect(h.background.holds, ['a']);
+    expect(h.background.releases, ['a']);
+
+    // A later replay with an empty outbox does not release again.
+    await engine.syncAll();
+    expect(h.background.releases, ['a']);
+  });
+
+  test('Annulla of the only queued message releases the platform', () async {
+    await engine.send('a', _message(id));
+    await engine.cancelSend('a', id);
+    expect(h.background.holds, ['a']);
+    expect(h.background.releases, ['a']);
   });
 
   test('send for an unknown Account is NotFound', () async {

@@ -59,6 +59,10 @@ Un messaggio non ancora inviato, salvato nella cartella Bozze del Provider del s
 La breve attesa dopo Invia durante la quale l'utente può ritirare il messaggio e tornare a modificarlo; trascorsa l'attesa il messaggio parte anche se l'app è stata chiusa.
 _Avoid_: Undo send, ripensamento
 
+**Inviati**:
+La cartella del Provider con i messaggi spediti dall'Account. Vi compare subito anche il messaggio in coda (Annulla invio, offline), con il suo stato, finché non è partito.
+_Avoid_: Sent, posta inviata
+
 **Invito**:
 Un messaggio che propone un evento di calendario, a cui l'utente risponde Sì, Forse o No.
 _Avoid_: Evento (è la cosa proposta), meeting

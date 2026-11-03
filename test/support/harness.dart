@@ -13,7 +13,7 @@ import 'fake_mail_provider.dart';
 import 'fake_platform.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
-/// links, Save As and file system.
+/// links, Save As, background sender and file system.
 class Harness {
   Harness._();
 
@@ -23,6 +23,7 @@ class Harness {
   final connectivity = FakeConnectivity();
   final links = FakeLinkOpener();
   final saver = FakeFileSaver();
+  final background = FakeBackgroundSender();
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
@@ -46,6 +47,7 @@ class Harness {
       ..registerSingleton<Connectivity>(h.connectivity)
       ..registerSingleton<LinkOpener>(h.links)
       ..registerSingleton<FileSaver>(h.saver)
+      ..registerSingleton<BackgroundSender>(h.background)
       ..registerSingleton<AttachmentStorage>(
         await AttachmentStorage.open(
           h.fs.directory('/support/attachments'),

@@ -105,11 +105,24 @@
     "editor": "Corpo del messaggio",
     "draftNotFound": "Bozza non trovata",
     "draftWithAttachments": "Questa Bozza ha allegati: modificala dal client che l'ha creata",
-    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata"
+    "draftReply": "Questa Bozza è una risposta: modificala dal client che l'ha creata",
+    "send": "Invia",
+    "queued": "In attesa d'invio",
+    "undo": "Annulla",
+    "tooLarge": "Il messaggio supera il limite di $mb MB di Gmail",
+    "sendFailed": "Invio non riuscito: riprova",
+    "noRecipient": "Aggiungi almeno un destinatario"
   },
   "bozze": {
     "title": "Bozze",
     "emptyTitle": "Nessuna bozza",
     "emptyBody": "Le bozze che scrivi restano qui finché non le invii."
+  },
+  "inviati": {
+    "title": "Inviati",
+    "waiting": "In attesa d'invio",
+    "offline": "In uscita, in attesa di rete",
+    "emptyTitle": "Nessun messaggio inviato",
+    "emptyBody": "I messaggi che invii compaiono qui."
   }
 }

@@ -11,9 +11,13 @@ PODS:
   - flutter_web_auth_2 (5.0.0):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
+  - quill_native_bridge_macos (0.0.1):
+    - FlutterMacOS
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
   - window_to_front (0.0.4):
+    - FlutterMacOS
+  - workmanager_apple (0.0.1):
     - FlutterMacOS
 
 DEPENDENCIES:
@@ -23,8 +27,10 @@ DEPENDENCIES:
   - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_web_auth_2 (from `Flutter/ephemeral/.symlinks/plugins/flutter_web_auth_2/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
+  - quill_native_bridge_macos (from `Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
   - window_to_front (from `Flutter/ephemeral/.symlinks/plugins/window_to_front/macos`)
+  - workmanager_apple (from `Flutter/ephemeral/.symlinks/plugins/workmanager_apple/macos`)
 
 EXTERNAL SOURCES:
   connectivity_plus:
@@ -39,10 +45,14 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_web_auth_2/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
+  quill_native_bridge_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
   window_to_front:
     :path: Flutter/ephemeral/.symlinks/plugins/window_to_front/macos
+  workmanager_apple:
+    :path: Flutter/ephemeral/.symlinks/plugins/workmanager_apple/macos
 
 SPEC CHECKSUMS:
   connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
@@ -51,8 +61,10 @@ SPEC CHECKSUMS:
   flutter_secure_storage_darwin: 46e401699982ee74142909676535e0f6a7321e58
   flutter_web_auth_2: 7fe624ff12ddcb4c19e5dbcd56c9e9ea4899d967
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+  quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   window_to_front: 2d7d31f268d0b13b7e63b26e31eb0a2e9612239e
+  workmanager_apple: 573f1503f9752eadd70a35bb478dfd2a103c4d18
 
 PODFILE CHECKSUM: 1e95c36afbfd1cb6423ceca4de7a8e1b256fb6ac
 

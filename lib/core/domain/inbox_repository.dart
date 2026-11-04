@@ -5,6 +5,7 @@ import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
 class InboxEntry extends Equatable {
+  /// Crea una riga di elenco.
   const InboxEntry({
     required this.message,
     required this.account,
@@ -12,9 +13,17 @@ class InboxEntry extends Equatable {
     required this.unread,
     this.status,
   });
+
+  /// L'ultimo messaggio della Conversazione.
   final Message message;
+
+  /// L'Account a cui appartiene.
   final Account account;
+
+  /// Numero di messaggi della Conversazione.
   final int count;
+
+  /// Se almeno un messaggio è da leggere.
   final bool unread;
 
   /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
@@ -30,9 +39,16 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
 class OutgoingEntry extends Equatable {
+  /// Crea una voce della Coda d'uscita; `failed` parte falso.
   const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false});
+
+  /// Il messaggio in attesa di partire.
   final OutgoingMessage message;
+
+  /// Quando finisce Annulla invio (ms da epoch, UTC).
   final int sendAfter;
+
+  /// Il Provider l'ha rifiutato per sempre: attende l'utente.
   final bool failed;
 
   @override

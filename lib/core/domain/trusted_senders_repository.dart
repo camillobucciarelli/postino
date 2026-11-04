@@ -15,5 +15,7 @@ abstract interface class TrustedSendersRepository {
 
   /// «Mostra immagini»: only this message, until the app closes.
   void showOnce(String accountId, String messageId);
+
+  /// Se il messaggio è stato mostrato una volta con le immagini.
   bool shownOnce(String accountId, String messageId);
 }

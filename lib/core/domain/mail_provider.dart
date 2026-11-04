@@ -5,6 +5,7 @@ import 'result.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
 class SyncBatch extends Equatable {
+  /// Crea un batch; senza argomenti le liste sono vuote.
   const SyncBatch({
     required this.cursor,
     this.messages = const [],
@@ -15,8 +16,14 @@ class SyncBatch extends Equatable {
 
   /// Opaque to the core: Gmail historyId, Graph delta token, IMAP modseq...
   final String cursor;
+
+  /// Messaggi nuovi o modificati.
   final List<Message> messages;
+
+  /// Etichette nuove o modificate.
   final List<Label> labels;
+
+  /// Id (lato Provider) dei messaggi eliminati.
   final List<String> removedMessageIds;
 
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
@@ -31,7 +38,17 @@ typedef SyncPage = Future<void> Function(List<Message> messages, Map<String, Mes
 
 /// What the change signal reports: it came [up], something [changed], or it went [down].
 /// While it is down the sync engine falls back to polling (ADR 0008).
-enum ChangeSignal { up, changed, down }
+/// Stato del segnale di cambiamento.
+enum ChangeSignal {
+  /// Il segnale è attivo.
+  up,
+
+  /// Qualcosa è cambiato sul Provider.
+  changed,
+
+  /// Il segnale è caduto: si torna al polling.
+  down,
+}
 
 /// The single adapter interface (ADR 0002), one instance per Account.
 // ponytail: Search and conditional Action join the interface at steps 3 and 6.
@@ -50,6 +67,7 @@ abstract interface class MailProvider {
   /// "Something changed" signal (IMAP IDLE on the inbox); data comes from [incrementalSync].
   Stream<ChangeSignal> get changes;
 
+  /// Scarica il corpo (e gli allegati) del messaggio `messageId`.
   Future<Result<MessageBody>> fetchBody(String messageId);
 
   /// Every message of the Conversazione, also those outside the sync window (Inviati, older than 90 days);
@@ -78,5 +96,6 @@ abstract interface class MailProvider {
   /// [NotFoundFailure] if it is gone (deleted or sent elsewhere).
   Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew});
 
+  /// Elimina dal Provider la Bozza con Message-ID `messageId`.
   Future<Result<void>> deleteDraft(String messageId);
 }

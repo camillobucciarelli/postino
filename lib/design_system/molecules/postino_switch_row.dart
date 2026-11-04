@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_selectable.dart';
+import '../atoms/postino_switch.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
@@ -59,9 +60,7 @@ class const PostinoSwitchRow({
                       ),
                     ),
                     // The row is the control: the switch is not a second tab stop.
-                    ExcludeFocus(
-                      child: Switch(value: value, onChanged: onChanged),
-                    ),
+                    PostinoSwitch(value: value, onChanged: onChanged, focusable: false),
                   ],
                 ),
               ),

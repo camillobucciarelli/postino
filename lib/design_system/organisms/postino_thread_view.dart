@@ -13,7 +13,9 @@ import '../tokens/postino_tokens.dart';
 
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
-/// at most `reading-max-width` wide.
+/// at most `reading-max-width` wide. With [onRemoveLabel] the etichette have a × each; the action that opens
+/// the picker of the etichette goes in the bar above it (`PostinoAppBar.actions`, a PostinoIconButton with a
+/// `focusNode` to give the focus back).
 class const PostinoThreadView({
   super.key,
 
@@ -34,6 +36,13 @@ class const PostinoThreadView({
 
   /// «Importante»: the Conversazione is important; the mark after the subject says it to screen readers.
   final String? importantLabel,
+
+  /// Removes an etichetta from the whole Conversazione: with it every chip ends with a ×.
+  final ValueChanged<String>? onRemoveLabel,
+
+  /// The accessible name of a chip's × from the etichetta's name («Togli Etichetta Fatture»);
+  /// required with [onRemoveLabel].
+  final String Function(String name)? removeLabelName,
 }) extends StatefulWidget {
   /// Crea la vista di una conversazione con oggetto, account e messaggi.
   this;
@@ -153,7 +162,12 @@ class _PostinoThreadViewState() extends State<PostinoThreadView> {
                         ),
                       ],
                     ),
-                    for (final l in w.labels) PostinoLabelChip(name: l),
+                    for (final l in w.labels)
+                      PostinoLabelChip(
+                        name: l,
+                        onRemove: w.onRemoveLabel == null ? null : () => w.onRemoveLabel!(l),
+                        removeLabel: w.removeLabelName?.call(l),
+                      ),
                   ],
                 ),
               ],

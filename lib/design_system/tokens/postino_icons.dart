@@ -128,4 +128,23 @@ abstract final class PostinoIcons() {
   // ponytail: not in the Icon card; drawn in its style.
   /// Impostazioni (cursori).
   static const sliders = PostinoIconData(['M4 7h9', 'M17 7h3', 'M15 5v4', 'M4 17h3', 'M11 17h9', 'M9 15v4']);
+
+  // ponytail: plus, search, settings and chevronRight are not in the Icon card; drawn in its style.
+  /// Più (crea, aggiungi).
+  static const plus = PostinoIconData(['M12 5v14', 'M5 12h14']);
+
+  /// Cerca.
+  static const search = PostinoIconData(['M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 1 0 0-13z', 'M15.5 15.5L20 20']);
+
+  /// Impostazioni (ingranaggio).
+  static const settings = PostinoIconData([
+    'M19.03 10.43L21.21 10.7L21.21 13.3L19.03 13.57L18.08 15.86L19.43 17.59L17.59 19.43L15.86 18.08L13.57 19.03 '
+        'L13.3 21.21L10.7 21.21L10.43 19.03L8.14 18.08L6.41 19.43L4.57 17.59L5.92 15.86L4.97 13.57L2.79 13.3 '
+        'L2.79 10.7L4.97 10.43L5.92 8.14L4.57 6.41L6.41 4.57L8.14 5.92L10.43 4.97L10.7 2.79L13.3 2.79L13.57 4.97 '
+        'L15.86 5.92L17.59 4.57L19.43 6.41L18.08 8.14z',
+    'M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z',
+  ]);
+
+  /// Chevron verso destra.
+  static const chevronRight = PostinoIconData(['M9.5 6l6 6-6 6']);
 }

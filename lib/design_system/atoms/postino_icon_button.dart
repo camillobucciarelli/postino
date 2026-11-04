@@ -18,6 +18,9 @@ class const PostinoIconButton({
 
   /// Chiamata al tocco; se nulla il comando è disabilitato.
   required final VoidCallback? onPressed,
+
+  /// The button's focus, so a popover it opened can give it back on Esc.
+  final FocusNode? focusNode,
 }) extends StatelessWidget {
   /// Crea un comando con la sola icona.
   this;
@@ -30,6 +33,7 @@ class const PostinoIconButton({
     heightFactor: 1,
     child: IconButton(
       onPressed: onPressed,
+      focusNode: focusNode,
       tooltip: label,
       color: context.pc.inkMuted,
       style: ButtonStyle(

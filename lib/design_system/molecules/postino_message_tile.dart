@@ -4,6 +4,7 @@ import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
+import '../atoms/postino_label_chip.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -49,6 +50,10 @@ class const PostinoMessageTile({
 
   /// The row's focus, owned by the list so it can move it with the keyboard.
   final FocusNode? focusNode,
+
+  /// Names of the user's Etichette, as small chips under the preview (wrapping); without any the row keeps its
+  /// height. Read only through [semanticLabel], which should name them.
+  final List<String> labels = const [],
 }) extends StatelessWidget {
   /// Crea la riga di una Conversazione.
   this;
@@ -183,6 +188,16 @@ class const PostinoMessageTile({
                                   maxLines: wrap ? null : d.previewLines,
                                   overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
                                   style: PostinoText.preview.copyWith(color: c.listItemFgRead),
+                                ),
+                              if (labels.isNotEmpty)
+                                Padding(
+                                  key: const ValueKey('labels'),
+                                  padding: const EdgeInsets.only(top: PostinoSpacing.s1),
+                                  child: Wrap(
+                                    spacing: PostinoSpacing.s1,
+                                    runSpacing: PostinoSpacing.s1,
+                                    children: [for (final l in labels) PostinoLabelChip(name: l)],
+                                  ),
                                 ),
                             ],
                           ),

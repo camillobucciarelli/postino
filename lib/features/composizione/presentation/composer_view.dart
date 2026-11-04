@@ -7,9 +7,9 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../../core/data/attachment_cache.dart' show safeFileName;
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
+import '../../../core/domain/file_name.dart';
 import '../../../core/domain/file_size.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/mailbox.dart';

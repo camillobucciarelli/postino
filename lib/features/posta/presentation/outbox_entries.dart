@@ -60,7 +60,7 @@ Stream<List<InboxEntry>> sentEntries(
     final (accounts, online) = context;
     final (outbox, sent) = lists;
     final now = GetIt.I<Clock>().now().millisecondsSinceEpoch;
-    String state(bool refused, int sendAfter) => refused
+    String state({required bool refused, required int sendAfter}) => refused
         ? failed
         : sendAfter > now || online
         ? waiting
@@ -81,14 +81,14 @@ Stream<List<InboxEntry>> sentEntries(
               cc: m.cc,
               bcc: m.bcc,
               subject: m.subject,
-              snippet: '${state(refused, sendAfter)} · ${listSnippet(m.body)}',
+              snippet: '${state(refused: refused, sendAfter: sendAfter)} · ${listSnippet(m.body)}',
               // The end of the window: the time it is listed under until the Provider dates it.
               date: DateTime.fromMillisecondsSinceEpoch(sendAfter, isUtc: true),
             ),
             account: a,
             count: 1,
             unread: false,
-            status: state(refused, sendAfter),
+            status: state(refused: refused, sendAfter: sendAfter),
           ),
       ...sent,
     ];

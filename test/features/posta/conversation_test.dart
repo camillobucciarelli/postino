@@ -297,7 +297,9 @@ void main() {
     await _start(tester, _phone, (p) {
       _thread(p);
       // An older unread one in the middle stays expanded too.
-      p.deliver(withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), false));
+      p.deliver(
+        withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), read: false),
+      );
     });
     await _open(tester, 'm3');
 

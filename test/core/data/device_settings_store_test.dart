@@ -15,11 +15,11 @@ void main() {
 
   test('the sidebar choice is null until made, then kept: expanded, icons, cleared', () async {
     expect(await store.sidebarExpanded(), isNull);
-    await store.setSidebarExpanded(true);
+    await store.setSidebarExpanded(expanded: true);
     expect(await store.sidebarExpanded(), isTrue);
-    await store.setSidebarExpanded(false);
+    await store.setSidebarExpanded(expanded: false);
     expect(await store.sidebarExpanded(), isFalse);
-    await store.setSidebarExpanded(null);
+    await store.setSidebarExpanded(expanded: null);
     expect(await store.sidebarExpanded(), isNull);
     expect(await db.select(db.deviceSettings).get(), isEmpty);
   });

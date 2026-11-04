@@ -42,7 +42,7 @@ Future<void> _start(WidgetTester tester, double width, {bool? stored, int many =
     await getIt<MailStore>().setStatus('a2', AccountStatus.daRicollegare);
   }
   if (stored != null) {
-    await getIt<SettingsRepository>().setSidebarExpanded(stored);
+    await getIt<SettingsRepository>().setSidebarExpanded(expanded: stored);
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));

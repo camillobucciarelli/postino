@@ -53,7 +53,7 @@ class ConversationBody extends StatefulWidget {
   final AttachmentActions attachments;
 
   /// [hasBody]: the body and its attachments are known, nothing to download.
-  final void Function(String id, bool hasBody) onToggle;
+  final void Function(String id, {required bool hasBody}) onToggle;
   final void Function(String id) onFetchBody;
   final void Function(ReplyKind kind, String messageId) onAct;
 
@@ -197,7 +197,7 @@ class _ConversationBodyState extends State<ConversationBody> {
             unread: !message.isRead,
             expanded: widget.expanded[message.id]!,
             // A body without its attachments known (stored before v9) is downloaded again too.
-            onToggle: () => widget.onToggle(message.id, body != null && body.attachments != null),
+            onToggle: () => widget.onToggle(message.id, hasBody: body != null && body.attachments != null),
             quoteLabel: t.showQuoted,
             attachments: attachmentChips(widget.attachments, message, body, t, locale),
             signature: switch ((body, shown[message.id]?.signature)) {

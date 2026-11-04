@@ -280,7 +280,7 @@ class GmailHarness implements ContractHarness {
     final read = (body['removeLabelIds'] as List?)?.contains('UNREAD') ?? false;
     for (final id in body['ids'] as List) {
       if (_mailbox[id] case final m?) {
-        _mailbox[id as String] = withRead(m, read);
+        _mailbox[id as String] = withRead(m, read: read);
         _history.add((++_historyId, 'labelsRemoved', id));
       }
     }

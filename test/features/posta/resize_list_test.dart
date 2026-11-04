@@ -34,7 +34,7 @@ class _FakeSettings implements SettingsRepository {
   Future<bool?> sidebarExpanded() async => null;
 
   @override
-  Future<void> setSidebarExpanded(bool? expanded) async {}
+  Future<void> setSidebarExpanded({required bool? expanded}) async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {

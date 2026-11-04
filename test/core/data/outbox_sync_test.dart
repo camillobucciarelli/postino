@@ -466,10 +466,10 @@ void main() {
       await pumpEventQueue();
       final until = h.clock.now().add(const Duration(minutes: 5));
       a
-        ..rateLimit(true, until)
+        ..rateLimit(retryAfter: until)
         ..deliver(msg('3'));
       await pumpEventQueue();
-      a.rateLimit(false);
+      a.rateLimit(on: false);
 
       await engine.send('a', _message(id));
       h.clock.advance(sendWindow);

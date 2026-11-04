@@ -84,7 +84,7 @@ class _PostaLayoutState extends State<PostaLayout> {
                   closeLabel: context.t.sidebar.close,
                   openLabel: context.t.sidebar.open,
                   expanded: saved.data!.$1,
-                  onExpandedChanged: GetIt.I<SettingsRepository>().setSidebarExpanded,
+                  onExpandedChanged: (expanded) => GetIt.I<SettingsRepository>().setSidebarExpanded(expanded: expanded),
                   child: PostinoFadeThrough(
                     transitionKey: list,
                     child: PostinoListDetailLayout(

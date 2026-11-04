@@ -35,14 +35,14 @@ void main() {
           return _fixture(token);
         }),
         FakeClock(_now),
-        client,
-        ({required url, required callbackUrlScheme}) async {
+        client: client,
+        authenticate: ({required url, required callbackUrlScheme}) async {
           opened = Uri.parse(url);
           scheme = callbackUrlScheme;
           return browser?.call(opened) ??
               '${opened.queryParameters['redirect_uri']}?state=${opened.queryParameters['state']}&code=4/0Ab';
         },
-        loopback,
+        loopback: loopback,
       );
 
   setUp(() {

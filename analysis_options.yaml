@@ -45,6 +45,7 @@ linter:
     - use_late_for_private_fields_and_variables
     - unnecessary_underscores
     - no_wildcard_variable_uses
+    - avoid_positional_boolean_parameters
     - avoid_slow_async_io
     - unawaited_futures
     - cascade_invocations

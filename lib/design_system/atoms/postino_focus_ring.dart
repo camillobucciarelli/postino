@@ -43,14 +43,14 @@ class _PostinoFocusRingState extends State<PostinoFocusRing> {
         (Focus.maybeOf(context)?.hasPrimaryFocus ?? false) &&
         FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
     return CustomPaint(
-      foregroundPainter: shown ? _RingPainter(context.pc.focusRing, widget.borderRadius, widget.inset) : null,
+      foregroundPainter: shown ? _RingPainter(context.pc.focusRing, widget.borderRadius, inset: widget.inset) : null,
       child: widget.child,
     );
   }
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter(this.color, this.radius, this.inset);
+  const _RingPainter(this.color, this.radius, {required this.inset});
 
   final Color color;
   final BorderRadius radius;

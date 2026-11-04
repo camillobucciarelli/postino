@@ -154,7 +154,7 @@ void main() {
     await pumpEventQueue();
     expect(await inbox(), isNot(contains('a:3')));
 
-    a.rateLimit(false);
+    a.rateLimit(on: false);
     h.clock.advance(pollEvery);
     await pumpEventQueue();
     expect(await inbox(), contains('a:3'));
@@ -166,13 +166,13 @@ void main() {
     await pumpEventQueue();
     final until = h.clock.now().add(const Duration(minutes: 5));
     a
-      ..rateLimit(true, until)
+      ..rateLimit(retryAfter: until)
       ..deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
     await pumpEventQueue();
     final syncs = a.initialSyncs;
 
     a
-      ..rateLimit(false)
+      ..rateLimit(on: false)
       ..deliver(msg('4')); // signal while paused: skipped
     h.clock.advance(pollEvery); // poll while paused: skipped
     await pumpEventQueue();

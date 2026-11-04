@@ -54,7 +54,9 @@ class FileModelManager(
     if (_state(model) case ModelAbsent() || ModelFailed()) {
       final generation = _generation[model.id];
       final wifi = await _network.isOnWifi();
-      if (_generation[model.id] != generation) return;
+      // Meanwhile a cancel, or a download started or finished elsewhere, takes precedence over this answer.
+      if (_generation[model.id] != generation || _running.containsKey(model.id)) return;
+      if (_state(model) is! ModelAbsent && _state(model) is! ModelFailed) return;
       if (wifi) return download(model);
       _emit(model, ModelAwaitingConfirmation(model.sizeBytes));
     }
@@ -78,32 +80,17 @@ class FileModelManager(
     var aborted = false;
     unawaited(abort.then((_) => aborted = true));
     final part = _part(model);
+    // Aborts the request on any failure of ours too, e.g. headers that never arrive.
+    final failed = Completer<void>();
     _emit(model, ModelDownloading(0, model.sizeBytes));
     try {
       await _dir.create(recursive: true);
-      final response = await _client.send(http.AbortableRequest('GET', model.url, abortTrigger: abort));
-      final error = switch ((response.statusCode, response.contentLength)) {
-        (final code, _) when code != 200 => 'HTTP $code',
-        (_, final n?) when n != model.sizeBytes => '$n bytes, ${model.sizeBytes} expected',
-        _ => null,
-      };
-      if (error != null) {
-        // Unread, the body would hold the connection.
-        await response.stream.listen(null).cancel();
-        throw http.ClientException(error, model.url);
-      }
+      // Opened before the request: if the disk refuses it, no response is left holding the connection.
+      final out = await part.open(mode: FileMode.write);
       Digest? digest;
       final hash = sha256.startChunkedConversion(ChunkedConversionSink.withCallback((d) => digest = d.single));
-      final out = await part.open(mode: FileMode.write);
-      var received = 0;
       try {
-        await for (final chunk in response.stream.timeout(_idleTimeout)) {
-          received += chunk.length;
-          if (received > model.sizeBytes) throw http.ClientException('More than ${model.sizeBytes} bytes', model.url);
-          await out.writeFrom(chunk);
-          hash.add(chunk);
-          _emit(model, ModelDownloading(received, model.sizeBytes));
-        }
+        await _receive(model, out, hash, Future.any([abort, failed.future]));
       } finally {
         await out.close();
       }
@@ -124,12 +111,37 @@ class FileModelManager(
       }
       _emit(model, ModelReady(file.path));
     } on Exception catch (e, s) {
+      if (!failed.isCompleted) failed.complete();
       try {
         if (part.existsSync()) await part.delete();
       } on FileSystemException {
         // Left behind: the next download overwrites it.
       }
       _emit(model, aborted ? const ModelAbsent() : ModelFailed(UnexpectedFailure(e, s)));
+    }
+  }
+
+  /// Writes the body of [model] to [out] and [hash], failing if the server stays silent for [_idleTimeout].
+  Future<void> _receive(ModelDescriptor model, RandomAccessFile out, Sink<List<int>> hash, Future<void> abort) async {
+    final request = http.AbortableRequest('GET', model.url, abortTrigger: abort);
+    final response = await _client.send(request).timeout(_idleTimeout);
+    final error = switch ((response.statusCode, response.contentLength)) {
+      (final code, _) when code != 200 => 'HTTP $code',
+      (_, final n?) when n != model.sizeBytes => '$n bytes, ${model.sizeBytes} expected',
+      _ => null,
+    };
+    if (error != null) {
+      // Unread, the body would hold the connection.
+      await response.stream.listen(null).cancel();
+      throw http.ClientException(error, model.url);
+    }
+    var received = 0;
+    await for (final chunk in response.stream.timeout(_idleTimeout)) {
+      received += chunk.length;
+      if (received > model.sizeBytes) throw http.ClientException('More than ${model.sizeBytes} bytes', model.url);
+      await out.writeFrom(chunk);
+      hash.add(chunk);
+      _emit(model, ModelDownloading(received, model.sizeBytes));
     }
   }
 

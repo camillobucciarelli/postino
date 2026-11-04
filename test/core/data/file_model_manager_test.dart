@@ -236,6 +236,44 @@ void main() {
     expect(await stalled.sizeOnDisk(model), 0);
   });
 
+  test('a server that never sends the headers fails after the idle timeout and aborts', () async {
+    var aborted = false;
+    final mute = FileModelManager(
+      MockClient.streaming((r, _) {
+        unawaited((r as http.Abortable).abortTrigger!.then((_) => aborted = true));
+        return Completer<http.StreamedResponse>().future;
+      }),
+      network,
+      fs.directory('/support/models'),
+      idleTimeout: const Duration(milliseconds: 10),
+    );
+    final seen = <ModelState>[];
+    mute.watch(model).listen(seen.add);
+    await mute.activate(model);
+    expect(seen.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
+    expect(aborted, isTrue);
+  });
+
+  test('a download finished while the activation checks the network stays ready', () async {
+    final slow = _SlowWifi();
+    final gated = FileModelManager(MockClient((_) async => http.Response.bytes(bytes, 200)), slow, fs.directory('/m'));
+    final seen = <ModelState>[];
+    gated.watch(model).listen(seen.add);
+    final activating = gated.activate(model);
+    await gated.download(model);
+    slow.answer.complete(false);
+    await activating;
+    expect(seen.last, isA<ModelReady>());
+  });
+
+  test('a partial file that cannot be opened leaves no response unread', () async {
+    fs.directory('/support/models/m.litertlm.part').createSync(recursive: true);
+    await manager.activate(model);
+    expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
+    // Opened before the request: no response is left holding the connection.
+    expect(requests, isEmpty);
+  });
+
   test('a second download during the first shares it', () async {
     final body = StreamController<List<int>>();
     serve = (_) async => http.StreamedResponse(body.stream, 200);

@@ -5,10 +5,10 @@ import 'package:get_it/get_it.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/data/attachment_cache.dart' show safeFileName;
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/attachment_repository.dart';
+import '../../../core/domain/file_name.dart';
 import '../../../core/domain/file_size.dart';
 import '../../../core/domain/html_text.dart';
 import '../../../core/domain/mailbox.dart';

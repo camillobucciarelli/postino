@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/data/attachment_cache.dart';
+import 'package:postino/core/domain/file_name.dart';
 import 'package:postino/core/domain/message.dart';
 
 void main() {

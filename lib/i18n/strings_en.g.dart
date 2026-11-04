@@ -59,6 +59,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$composizione$en composizione = _Translations$composizione$en._(_root);
 	@override late final _Translations$bozze$en bozze = _Translations$bozze$en._(_root);
 	@override late final _Translations$inviati$en inviati = _Translations$inviati$en._(_root);
+	@override late final _Translations$impostazioni$en impostazioni = _Translations$impostazioni$en._(_root);
+	@override late final _Translations$tray$en tray = _Translations$tray$en._(_root);
 }
 
 // Path: sidebar
@@ -272,6 +274,31 @@ class _Translations$inviati$en extends Translations$inviati$it {
 	@override String get emptyBody => 'Messages you send show up here.';
 }
 
+// Path: impostazioni
+class _Translations$impostazioni$en extends Translations$impostazioni$it {
+	_Translations$impostazioni$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Settings';
+	@override String get device => 'Device settings';
+	@override String get launchAtLogin => 'Launch at login';
+	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
+	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+}
+
+// Path: tray
+class _Translations$tray$en extends Translations$tray$it {
+	_Translations$tray$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get open => 'Open Postino';
+	@override String get quit => 'Quit';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -395,6 +422,13 @@ extension on TranslationsEn {
 			'inviati.failed' => 'Sending failed',
 			'inviati.emptyTitle' => 'No sent messages',
 			'inviati.emptyBody' => 'Messages you send show up here.',
+			'impostazioni.title' => 'Settings',
+			'impostazioni.device' => 'Device settings',
+			'impostazioni.launchAtLogin' => 'Launch at login',
+			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
+			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'tray.open' => 'Open Postino',
+			'tray.quit' => 'Quit',
 			_ => null,
 		};
 	}

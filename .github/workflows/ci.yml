@@ -40,6 +40,11 @@ jobs:
             | grep -vE '\.(g|freezed|config|route)\.dart$' \
             | xargs dart format --output=none --set-exit-if-changed
       - run: flutter analyze --fatal-infos
+      # Host tests build cnativeapi's native assets (tray_manager/window_manager, #38) for Linux: GTK 3, X11, Xi headers.
+      - name: Native asset build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev
       - run: flutter test
 
   android:
@@ -75,7 +80,7 @@ jobs:
       - name: Linux build dependencies
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev
       - run: flutter pub get
       - name: Codegen
         run: |

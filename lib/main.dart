@@ -12,7 +12,12 @@ import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'core/data/background_send.dart';
+import 'core/data/postino_database.dart';
 import 'core/data/sync_engine.dart';
+import 'core/domain/app_window.dart';
+import 'core/domain/launch_at_login_use_case.dart';
+import 'core/domain/system_tray.dart';
+import 'core/presentation/desktop_tray.dart';
 import 'design_system/tokens/postino_theme.dart';
 import 'i18n/strings.g.dart';
 import 'main.config.dart';
@@ -59,6 +64,38 @@ Future<void> main() async {
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));
+  if (!kIsWeb &&
+      const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform)) {
+    unawaited(_startDesktop());
+  }
+}
+
+/// Desktop (#38): the avvio al login on by default, then the tray. Neither failing keeps Postino from running.
+Future<void> _startDesktop() async {
+  // A debug run would register the debug build as the login item: there the switch works, the default does not.
+  if (!kDebugMode) {
+    try {
+      await getIt<LaunchAtLoginUseCase>().applyDefault();
+    } on Object catch (e) {
+      debugPrint('[desktop] avvio al login: $e');
+    }
+  }
+  // The window exists and is shown after the first frame; the AppWindow resolves it then, before the tray exists.
+  await WidgetsBinding.instance.endOfFrame;
+  try {
+    final window = getIt<AppWindow>();
+    await DesktopTray(window, getIt<SystemTray>()).start(
+      tooltip: t.appTitle,
+      openLabel: t.tray.open,
+      quitLabel: t.tray.quit,
+      beforeQuit: () async {
+        await getIt<SyncEngine>().stop();
+        await getIt<PostinoDatabase>().close();
+      },
+    );
+  } on Object catch (e) {
+    debugPrint('[desktop] tray: $e');
+  }
 }
 
 @Main('lib/app')

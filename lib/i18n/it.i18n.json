@@ -141,5 +141,16 @@
     "failed": "Invio non riuscito",
     "emptyTitle": "Nessun messaggio inviato",
     "emptyBody": "I messaggi che invii compaiono qui."
+  },
+  "impostazioni": {
+    "title": "Impostazioni",
+    "device": "Impostazioni del dispositivo",
+    "launchAtLogin": "Avvio al login",
+    "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
+    "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema."
+  },
+  "tray": {
+    "open": "Apri Postino",
+    "quit": "Esci"
   }
 }

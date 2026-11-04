@@ -75,6 +75,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$composizione$it composizione = Translations$composizione$it.internal(_root);
 	late final Translations$bozze$it bozze = Translations$bozze$it.internal(_root);
 	late final Translations$inviati$it inviati = Translations$inviati$it.internal(_root);
+	late final Translations$impostazioni$it impostazioni = Translations$impostazioni$it.internal(_root);
+	late final Translations$tray$it tray = Translations$tray$it.internal(_root);
 }
 
 // Path: sidebar
@@ -506,6 +508,45 @@ class Translations$inviati$it {
 	String get emptyBody => 'I messaggi che invii compaiono qui.';
 }
 
+// Path: impostazioni
+class Translations$impostazioni$it {
+	Translations$impostazioni$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Impostazioni'
+	String get title => 'Impostazioni';
+
+	/// it: 'Impostazioni del dispositivo'
+	String get device => 'Impostazioni del dispositivo';
+
+	/// it: 'Avvio al login'
+	String get launchAtLogin => 'Avvio al login';
+
+	/// it: 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.'
+	String get launchAtLoginBody => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.';
+
+	/// it: 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.'
+	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
+}
+
+// Path: tray
+class Translations$tray$it {
+	Translations$tray$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Apri Postino'
+	String get open => 'Apri Postino';
+
+	/// it: 'Esci'
+	String get quit => 'Esci';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -629,6 +670,13 @@ extension on Translations {
 			'inviati.failed' => 'Invio non riuscito',
 			'inviati.emptyTitle' => 'Nessun messaggio inviato',
 			'inviati.emptyBody' => 'I messaggi che invii compaiono qui.',
+			'impostazioni.title' => 'Impostazioni',
+			'impostazioni.device' => 'Impostazioni del dispositivo',
+			'impostazioni.launchAtLogin' => 'Avvio al login',
+			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
+			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'tray.open' => 'Apri Postino',
+			'tray.quit' => 'Esci',
 			_ => null,
 		};
 	}

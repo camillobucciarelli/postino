@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../core/domain/launch_at_login_use_case.dart';
 import '../../core/domain/mail_sync.dart';
 import '../../core/domain/message.dart' show draftLabelId, inboxLabelId, sentLabelId;
 import '../../design_system/design_system.dart';
@@ -164,6 +167,10 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
   ),
   onOpenSent: (id) =>
       _openFromPosta(routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': id, 'labelId': sentLabelId})),
+  // ponytail: the Impostazioni hold only the avvio al login so far, so they show where it exists (desktop).
+  onOpenSettings: GetIt.I<LaunchAtLoginUseCase>().supported
+      ? () => unawaited(Routefly.push<void>(routePaths.impostazioni))
+      : null,
 );
 
 void _openFromPosta(String path) => Routefly.navigate(path);

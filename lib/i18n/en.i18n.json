@@ -141,5 +141,16 @@
     "failed": "Sending failed",
     "emptyTitle": "No sent messages",
     "emptyBody": "Messages you send show up here."
+  },
+  "impostazioni": {
+    "title": "Settings",
+    "device": "Device settings",
+    "launchAtLogin": "Launch at login",
+    "launchAtLoginBody": "Postino opens when you log in and stays in the tray, so mail keeps arriving.",
+    "launchAtLoginFailed": "The system did not accept the change. Try again, or check the login items in the system settings."
+  },
+  "tray": {
+    "open": "Open Postino",
+    "quit": "Quit"
   }
 }

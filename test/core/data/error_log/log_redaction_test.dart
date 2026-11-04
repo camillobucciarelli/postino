@@ -1,81 +1,79 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/error_log/log_redaction.dart';
 
+import '../../../support/fake_secrets.dart';
+
+/// Redacts the filled [template].
+String _redact(String template) => redactSecrets(fillSecrets(template));
+
 void main() {
   test('Bearer tokens are redacted, in a header and on their own', () {
-    final header = redactSecrets('GET /gmail/v1 failed, Authorization: Bearer ya29.a0AfB_xyz-123');
-    expect(header, isNot(contains('a0AfB_xyz')));
-    expect(header, contains('Authorization: [redatto]'));
+    final header = _redact('GET /gmail/v1 failed, <AUTH>: <B> <G>a0<S>');
+    expect(header, isNot(contains(fakeMarker)));
+    expect(header, fillSecrets('GET /gmail/v1 failed, <AUTH>: [redatto]'));
     expect(
-      redactSecrets('sasl user=a@example.com auth=Bearer abc123 end'),
-      'sasl user=a@example.com auth=Bearer [redatto] end',
+      _redact('sasl user=a@example.com auth=<B> <S> end'),
+      fillSecrets('sasl user=a@example.com auth=<B> [redatto] end'),
     );
   });
 
-  // Every secret below contains SECRET; none of it may survive, and the quotes around a field stay balanced.
+  // Every fake secret contains fakeMarker; none of it may survive, and the quotes around a field stay balanced.
   const table = {
-    r'{"password":"prefix Bearer abc\"SECRET"}': '{"password":"[redatto]"}',
-    r"{'password': 'pre fix\'SECRET'}": "{'password': '[redatto]'}",
-    r'{"token": "a b\\\"SECRET c"}': '{"token": "[redatto]"}',
-    '{"Authorization": "Bearer SECRET"}': '{"Authorization": "[redatto]"}',
-    r'{"body":"{\"refresh_token\":\"SEC,RET\"}"}': r'{"body":"{\"refresh_token\":\"[redatto]\""}',
-    'password=SECRET&x=1': 'password=[redatto]&x=1',
-    "client_secret='SEC RET' next": "client_secret='[redatto]' next",
-    '{password: first SECRET, user: u}': '{password: [redatto], user: u}',
-    'Authorization: Bearer SECRET': 'Authorization: [redatto]',
-    r'a1 LOGIN "u" "pa\"SECRET"': 'a1 LOGIN [redatto]',
-    'msg "Bearer SECRET" end': 'msg "Bearer [redatto]" end',
-    "msg 'x Bearer SECRET' end": "msg 'x Bearer [redatto]' end",
-    // JSON inside a JSON string, the password with a quote: the rest of the outer string goes, its quote stays.
-    r'{"body":"{\"password\":\"prefix\\\"SECRET\"}"}': r'{"body":"{\"password\":\"[redatto]\""}',
-    r'password=\SECRET': 'password=[redatto]',
+    r'{"<PW>":"prefix <B> abc\"<S>"}': '{"<PW>":"[redatto]"}',
+    r"{'<PW>': 'pre fix\'<S>'}": "{'<PW>': '[redatto]'}",
+    r'{"<TOK>": "a b\\\"<S> c"}': '{"<TOK>": "[redatto]"}',
+    '{"<AUTH>": "<B> <S>"}': '{"<AUTH>": "[redatto]"}',
+    r'{"body":"{\"<RT>\":\"<S>,<S2>\"}"}': r'{"body":"{\"<RT>\":\"[redatto]\""}',
+    '<PW>=<S>&x=1': '<PW>=[redatto]&x=1',
+    "<CS>='<S> <S2>' next": "<CS>='[redatto]' next",
+    '{<PW>: first <S>, user: u}': '{<PW>: [redatto], user: u}',
+    '<AUTH>: <B> <S>': '<AUTH>: [redatto]',
+    r'a1 LOGIN "u" "pa\"<S>"': 'a1 LOGIN [redatto]',
+    'msg "<B> <S>" end': 'msg "<B> [redatto]" end',
+    "msg 'x <B> <S>' end": "msg 'x <B> [redatto]' end",
+    // JSON inside a JSON string, the value with a quote: the rest of the outer string goes, its quote stays.
+    r'{"body":"{\"<PW>\":\"prefix\\\"<S>\"}"}': r'{"body":"{\"<PW>\":\"[redatto]\""}',
+    r'<PW>=\<S>': '<PW>=[redatto]',
     // Cut short (a FormatException shows ~78 characters of its source).
-    '{"password":"prefixSECRET': '{"password":"[redatto]',
-    'password="hunter2SECRET': 'password="[redatto]',
+    '{"<PW>":"prefix<S>': '{"<PW>":"[redatto]',
+    '<PW>="prefix<S>': '<PW>="[redatto]',
     // Unquoted inside a quoted string or parentheses: the closer stays, a quote or comma inside the value does not.
-    'msg "password=SECRET" end': 'msg "password=[redatto]" end',
-    '{"err":"password=SECRET","user":"u@x.it"}': '{"err":"password=[redatto]","user":"u@x.it"}',
-    'Exception(password=SECRET) at foo': 'Exception(password=[redatto]) at foo',
-    'password=ab"SECRET': 'password=[redatto]',
-    'password=a,SECRET': 'password=[redatto]',
-    'msg "a1 LOGIN u SECRET" end': 'msg "a1 LOGIN [redatto]" end',
-    'a1 LOGIN {4}\r\nuser {6}\r\nSECRET': 'a1 LOGIN [redatto]',
+    'msg "<PW>=<S>" end': 'msg "<PW>=[redatto]" end',
+    '{"err":"<PW>=<S>","user":"u@x.it"}': '{"err":"<PW>=[redatto]","user":"u@x.it"}',
+    'Exception(<PW>=<S>) at foo': 'Exception(<PW>=[redatto]) at foo',
+    '<PW>=ab"<S>': '<PW>=[redatto]',
+    '<PW>=a,<S>': '<PW>=[redatto]',
+    'msg "a1 LOGIN u <S>" end': 'msg "a1 LOGIN [redatto]" end',
+    'a1 LOGIN {4}\r\nuser {6}\r\n<S>': 'a1 LOGIN [redatto]',
   };
   for (final MapEntry(key: input, value: expected) in table.entries) {
     test('no fragment survives: $input', () {
-      final out = redactSecrets(input);
-      expect(out, isNot(contains('SECRET')));
-      expect(out, isNot(contains('RET')));
-      expect(out, expected);
+      final out = _redact(input);
+      expect(out, isNot(contains(fakeMarker)));
+      expect(out, fillSecrets(expected));
     });
   }
 
-  test('token and password fields are redacted, in JSON, forms and query strings', () {
-    final out = redactSecrets(
-      '{"access_token": "abc.def", "refresh_token":"1//0gXyz", "expires_in": 3599} '
-      'grant_type=refresh_token&refresh_token=r3fr3sh&client_secret=s3cr3t '
-      'https://x.test/cb?code=4/0Ab&state=ok password=hunter2 passwd: "p@ss word"',
+  test('token and secret fields are redacted, in JSON, forms and query strings', () {
+    final out = _redact(
+      '{"<AT>": "<S>.x", "<RT>":"<R><S2>", "expires_in": 3599} '
+      'grant_type=<RT>&<RT>=<S3>&<CS>=<S> '
+      'https://x.test/cb?code=<S2>&state=ok <PW>=<S3> <PWD>: "<S> <S2>"',
     );
-    for (final secret in ['abc.def', '1//0gXyz', 'r3fr3sh', 's3cr3t', '4/0Ab', 'hunter2', 'p@ss word']) {
-      expect(out, isNot(contains(secret)), reason: secret);
-    }
+    expect(out, isNot(contains(fakeMarker)));
     expect(out, contains('"expires_in": 3599'));
     expect(out, contains('state=ok'));
-    expect(out, contains('grant_type=refresh_token'));
+    expect(out, contains(fillSecrets('grant_type=<RT>')));
   });
 
   test('bare Google tokens are redacted wherever they appear', () {
-    final out = redactSecrets('token ya29.A0ARrdaM-abc_DEF and 1//03xYz-AbC_dEf in the text');
-    expect(out, isNot(contains('A0ARrdaM')));
-    expect(out, isNot(contains('03xYz')));
+    final out = _redact('word <G><S>-abc_DEF and <R>03<S2>-AbC_dEf in the text');
+    expect(out, isNot(contains(fakeMarker)));
   });
 
   test('IMAP LOGIN and AUTHENTICATE lines lose their credentials', () {
-    final out = redactSecrets(
-      'a1 LOGIN "user@example.com" "app-password-123"\na2 AUTHENTICATE XOAUTH2 dXNlcj1hQGIuYwFhdXRo',
-    );
-    expect(out, isNot(contains('app-password-123')));
-    expect(out, isNot(contains('dXNlcj1hQGIuYwFhdXRo')));
+    final out = _redact('a1 LOGIN "user@example.com" "<S>-123"\na2 AUTHENTICATE XOAUTH2 <S2>');
+    expect(out, isNot(contains(fakeMarker)));
     expect(out, contains('LOGIN [redatto]'));
     expect(out, contains('AUTHENTICATE XOAUTH2 [redatto]'));
   });
@@ -85,13 +83,9 @@ void main() {
     expect(redactSecrets(text), text);
   });
 
-  test('an escaped quote or a space never lets part of a password through', () {
-    final out = redactSecrets(
-      r'a1 LOGIN "u" "pa\"ss-secret" {"password":"prefix\"SECRET_a"} {password: first SECRET_b, user: u}',
-    );
-    for (final secret in ['ss-secret', 'SECRET_a', 'SECRET_b']) {
-      expect(out, isNot(contains(secret)), reason: secret);
-    }
+  test('an escaped quote or a space never lets part of a secret through', () {
+    final out = _redact(r'a1 LOGIN "u" "pa\"<S>" {"<PW>":"prefix\"<S2>"} {<PW>: first <S3>, user: u}');
+    expect(out, isNot(contains(fakeMarker)));
     expect(out, contains('user: u'));
   });
 

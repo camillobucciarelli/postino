@@ -6,6 +6,7 @@ import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
+import '../../../support/fake_secrets.dart';
 
 void main() {
   final keys = logKeysFrom('ab' * 32);
@@ -68,9 +69,9 @@ void main() {
   });
 
   test('tokens and passwords are redacted before they reach the disk', () async {
-    log().record('refresh failed: {"refresh_token": "1//0gSegreto"} Authorization: Bearer ya29.Segreto');
+    log().record(fillSecrets('refresh failed: {"<RT>": "<R>0g<S>"} <AUTH>: <B> <G><S2>'));
     final text = await log().read();
-    expect(text, isNot(contains('Segreto')));
+    expect(text, isNot(contains(fakeMarker)));
     expect(text, contains('[redatto]'));
   });
 

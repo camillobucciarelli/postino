@@ -16,12 +16,16 @@ mixin _$MessagesDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class MessagesDaoManager {
   final _$MessagesDaoMixin _db;
   MessagesDaoManager(this._db);
-  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
-  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$AccountsTableTableManager get accounts =>
+      $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
+  $$MessagesTableTableManager get messages =>
+      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
-  $$BodiesTableTableManager get bodies => $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
+  $$BodiesTableTableManager get bodies =>
+      $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
   $$SyncCursorsTableTableManager get syncCursors =>
       $$SyncCursorsTableTableManager(_db.attachedDatabase, _db.syncCursors);
-  $$IntentsTableTableManager get intents => $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
+  $$IntentsTableTableManager get intents =>
+      $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
 }

@@ -52,6 +52,17 @@ void main() {
       expect(check('https://evil.io', 'versione 3.14'), isNull);
     });
 
+    test('an IP literal in an explicit URL is a displayed host; a bare version number is not', () {
+      expect(check('https://evil.io/', 'https://192.168.1.1')?.domain, 'evil.io');
+      expect(check('https://evil.io/', 'Vai a http://192.168.1.1/login.')?.domain, 'evil.io');
+      expect(check('https://evil.io/', 'https://[2001:db8::1]/')?.domain, 'evil.io');
+      expect(check('http://192.168.1.1/x', 'https://192.168.1.1'), isNull);
+      expect(check('http://[::1]:8080/x', 'http://[::1]'), isNull);
+      expect(check('https://evil.io/', 'https://192.168.1.1.evil.io')?.domain, isNull);
+      expect(check('https://evil.io/', '1.2.3'), isNull);
+      expect(check('https://evil.io/', 'versione 10.0.1'), isNull);
+    });
+
     test('trailing punctuation does not hide a domain; every domain shown counts', () {
       expect(check('https://evil.io', 'https://paypal.com.')?.domain, 'evil.io');
       expect(check('https://paypal.com./x', 'paypal.com'), isNull);

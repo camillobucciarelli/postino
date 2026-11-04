@@ -23,6 +23,10 @@ String registrableDomain(String host) {
 
 final _url = RegExp('^(?:https?://)?([^\\s/?#:]+)', caseSensitive: false);
 final _scheme = RegExp('^https?://', caseSensitive: false);
+final _literal = RegExp(
+  r'^\W*https?://(\[[0-9a-f:.]+\]|\d{1,3}(?:\.\d{1,3}){3})(?=[/?#:\s)>\"\u201d,;!?]|\.?(?:\s|$))',
+  caseSensitive: false,
+);
 final _domain = RegExp(r'^[^\s.]+(\.[^\s.]+)*\.[^\s.\d]{2,}$');
 
 final _edges = RegExp(
@@ -36,6 +40,11 @@ List<String> displayedHosts(String text) {
   final trimmed = text.trim();
   final hosts = <String>[];
   for (final raw in trimmed.split(RegExp(r'\s+'))) {
+    // An IP literal in an explicit URL is a host as it is; a bare `1.2.3` is a version, not a host.
+    if (_literal.firstMatch(raw)?[1] case final ip?) {
+      hosts.add(ip.toLowerCase().replaceAll(RegExp(r'^\[|\]$'), ''));
+      continue;
+    }
     final token = raw.replaceAll(_edges, '');
     if (!_scheme.hasMatch(token) && !token.toLowerCase().startsWith('www.') && raw != trimmed) continue;
     final host = _url.firstMatch(token)?[1]?.toLowerCase().split('@').last.replaceAll(RegExp(r'\.+$'), '');

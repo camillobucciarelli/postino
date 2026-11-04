@@ -15,8 +15,9 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/quoted_text.dart';
 import '../domain/safe_html.dart';
-import '../domain/reply_draft_use_case.dart';
+import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
+import 'attachment_chips.dart';
 import 'message_time.dart';
 
 /// The thread of an open Conversazione, newest first: each message with its details, its menu (Rispondi,
@@ -249,7 +250,13 @@ class _ConversationBodyState extends State<ConversationBody> {
               body != null && body.attachments != null,
             ),
             quoteLabel: t.showQuoted,
-            attachments: widget.attachments.chips(message, body, t, locale),
+            attachments: attachmentChips(
+              widget.attachments,
+              message,
+              body,
+              t,
+              locale,
+            ),
             signature: switch ((body, shown[message.id]?.signature)) {
               (final b?, final s?) => _part(s, b.kind, message, quiet: true),
               _ => null,

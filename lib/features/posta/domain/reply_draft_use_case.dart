@@ -9,22 +9,8 @@ import '../../../core/domain/message.dart';
 import '../../../core/domain/reply.dart';
 import '../../../core/domain/result.dart';
 import 'quote_date_label.dart';
-
-/// Rispondi, Rispondi a tutti, Inoltra (#37). The names are part of the widget keys (`message-reply-…`).
-enum ReplyKind { reply, replyAll, forward }
-
-/// What a Bozza of [kind] starts from: [message] with its body as known once downloaded.
-class ReplySource {
-  const ReplySource(this.kind, this.message, this.body);
-  final ReplyKind kind;
-  final Message message;
-  final MessageBody? body;
-
-  /// Inoltra needs the attachments too: unknown when the body could not be downloaded
-  /// (or was stored before database v9 and could not be downloaded again).
-  bool get unavailable =>
-      kind == ReplyKind.forward && body?.attachments == null;
-}
+import 'reply_kind.dart';
+import 'reply_source.dart';
 
 /// Saves the Bozza with the Citazione of a message, in two steps: [source] downloads the body if missing,
 /// [save] makes the Bozza through the offline queue (ADR 0008). The caller decides in between whether it

@@ -8,6 +8,8 @@ import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/features/posta/domain/reply_draft_use_case.dart';
+import 'package:postino/features/posta/domain/reply_kind.dart';
+import 'package:postino/features/posta/domain/reply_source.dart';
 
 import '../../support/fake_mail_provider.dart' show msg;
 
@@ -180,13 +182,10 @@ void main() {
     expect((await source(ReplyKind.reply)).unavailable, isFalse);
   });
 
-  test(
-    'the first step saves nothing: a caller gone meanwhile makes no Bozza',
-    () async {
-      given(fetched: const MessageBody('Porto il vino', BodyKind.testo));
-      await source(ReplyKind.reply);
-      await source(ReplyKind.forward);
-      expect(sync.drafts, isEmpty);
-    },
-  );
+  test('source alone saves no Bozza', () async {
+    given(fetched: const MessageBody('Porto il vino', BodyKind.testo));
+    await source(ReplyKind.reply);
+    await source(ReplyKind.forward);
+    expect(sync.drafts, isEmpty);
+  });
 }

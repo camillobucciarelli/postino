@@ -4,13 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/domain/attachment_repository.dart';
-import '../../../core/domain/file_name.dart';
-import '../../../core/domain/file_size.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/result.dart';
-import '../../../design_system/design_system.dart';
-import '../../../i18n/strings.g.dart';
 
 /// The attachments of an open Conversazione (#34): a tap downloads one (unless cached) and opens it in the
 /// system's app, its menu saves it; an executable is only saved (#75). Holds the downloads running and the
@@ -31,6 +27,18 @@ class AttachmentActions {
   final _failed =
       <(String, String), ({Failure failure, bool save, bool saving})>{};
 
+  /// The download of an attachment running, with its progress and its Annulla; null when none.
+  ({double done, Completer<void> cancel})? download(
+    String messageId,
+    String attachmentId,
+  ) => _downloads[(messageId, attachmentId)];
+
+  /// Why the last action on an attachment failed, null when it did not.
+  ({Failure failure, bool save, bool saving})? failure(
+    String messageId,
+    String attachmentId,
+  ) => _failed[(messageId, attachmentId)];
+
   void _update(VoidCallback change) {
     if (_disposed) return;
     change();
@@ -47,7 +55,7 @@ class AttachmentActions {
 
   /// Downloads (unless cached) then opens it in the system's app, or with [save] offers Save As.
   /// [name] is the one the chip shows: the opened copy and Save As carry it too.
-  Future<void> _attachment(
+  Future<void> start(
     String messageId,
     Attachment attachment,
     String name, {
@@ -104,70 +112,4 @@ class AttachmentActions {
       }
     }
   }
-
-  /// The attachment's name, or «Allegato senza nome» when the message gives none.
-  /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
-  /// so it opens in the right app (open_filex picks the app by extension only); [safeFileName] strips bidi
-  /// and invisible characters, so the chip shows the name the file gets (#75).
-  String _name(Attachment a, Translations$conversazione$it t) =>
-      safeFileName(switch (a.name) {
-        '' => '${t.attachmentUntitled}${a.fallbackExtension}',
-        final n when !n.contains('.') => '$n${a.fallbackExtension}',
-        final n => n,
-      });
-
-  /// The chips of [message]'s attachments, with their download, failure and actions.
-  List<PostinoAttachmentChip> chips(
-    Message message,
-    MessageBody? body,
-    Translations$conversazione$it t,
-    String locale,
-  ) => [
-    for (final a in body?.attachments ?? const <Attachment>[])
-      if ((_downloads[(message.id, a.id)], _name(a, t)) case (
-        final d,
-        final name,
-      ))
-        PostinoAttachmentChip(
-          key: ValueKey('attachment-${message.id}-${a.id}'),
-          name: name,
-          size: fileSize(a.size, locale),
-          openLabel: t.attachmentOpen,
-          onOpen: isExecutableName(name)
-              ? null
-              : () => _attachment(message.id, a, name),
-          warning: isExecutableName(name) ? t.attachmentExecutable : null,
-          progress: d?.done,
-          progressLabel: d == null
-              ? null
-              : t.attachmentDownloading(percent: (d.done * 100).round()),
-          cancelLabel: t.attachmentCancel,
-          onCancel: () {
-            if (d case (done: _, :final cancel) when !cancel.isCompleted) {
-              cancel.complete();
-            }
-          },
-          error: switch (_failed[(message.id, a.id)]) {
-            null => null,
-            (failure: OfflineFailure(), save: _, saving: _) =>
-              t.attachmentOffline,
-            (failure: _, save: _, saving: true) => t.attachmentSaveFailed,
-            _ => t.attachmentFailed,
-          },
-          retryLabel: t.retry,
-          onRetry: () => _attachment(
-            message.id,
-            a,
-            name,
-            save:
-                isExecutableName(name) ||
-                (_failed[(message.id, a.id)]?.save ?? false),
-          ),
-          moreLabel: t.attachmentMore,
-          saveLabel: t.attachmentSave,
-          onSave: GetIt.I<FileSaver>().available
-              ? () => _attachment(message.id, a, name, save: true)
-              : null,
-        ),
-  ];
 }

@@ -475,7 +475,12 @@ class SyncEngine implements MailSync {
           debugPrint('[sync] $accountId: draft synced ${draft.messageId}');
         // Sent or deleted elsewhere: the local edit is dropped in silence (ADR 0008).
         case Err(failure: NotFoundFailure()):
-          await _store.removeDraft(accountId, draft.messageId);
+          // Queued meanwhile: keep the row as new so Annulla reopens its content.
+          if (await _store.isQueued(accountId, draft.messageId)) {
+            await _store.forgetRemoteDraft(accountId, draft.messageId);
+          } else {
+            await _store.removeDraft(accountId, draft.messageId);
+          }
         case Err(:final failure):
           debugPrint('[sync] $accountId: draft replay failed, $failure');
       }

@@ -639,6 +639,22 @@ void main() {
     expect(a.draftCalls.map((c) => c.$1), [first]);
   });
 
+  test('a Bozza upload that finds the remote copy gone after Invia keeps the local Bozza for Annulla', () async {
+    await engine.saveDraft('a', _message(id));
+    await engine.flushDrafts('a');
+    await engine.saveDraft('a', _message(id, body: '<p>edited</p>'));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    await engine.send('a', _message(id));
+    a.removeDraftRemotely(id);
+    a.holdDraft!.complete();
+    await flush;
+    expect(await draftRow(), isNotNull);
+    expect(await engine.cancelSend('a', id), id);
+    expect(await engine.openDraft('a', id), isA<Ok<OutgoingMessage>>());
+  });
+
   test(
     'a Bozza upload that ends after Invia deletes the late remote Bozza',
     () async {

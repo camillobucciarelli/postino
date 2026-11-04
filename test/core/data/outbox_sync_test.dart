@@ -212,7 +212,7 @@ void main() {
         isA<OfflineFailure>(),
       ),
     );
-    expect(await outbox(), isEmpty);
+    expect((await outbox()).single.failed, isTrue);
   });
 
   test(
@@ -465,7 +465,7 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
-  test('a message over the Gmail limit is refused and not queued', () async {
+  test('a message over the Gmail limit is refused, kept as failed and replaced by the next Invia', () async {
     final r = await engine.send(
       'a',
       _message(id, body: '<p>${'x' * (gmailSendLimitBytes + 1)}</p>'),
@@ -482,7 +482,17 @@ void main() {
         ),
       ),
     );
-    expect(await outbox(), isEmpty);
+    // Kept as failed (the composer may be gone): Inviati shows it, and a new Invia replaces it.
+    expect((await outbox()).single.failed, isTrue);
+    expect(
+      (await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed,
+      isTrue,
+    );
+    final retry = await engine.send('a', _message(id));
+    expect(retry, isA<Ok<DateTime>>());
+    final rows = await outbox();
+    expect(rows.single.failed, isFalse);
+    expect(rows.single.raw, isNotEmpty);
   });
 
   test('during the pause after a RateLimitFailure the flush waits; the message goes with the first sync after it', () async {

@@ -314,6 +314,57 @@ void main() {
     await _afterWindow(tester);
   });
 
+  _onMac(
+    'a preparation that fails after the composer was closed is listed as «Invio non riuscito»',
+    (tester) async {
+      await _start(tester);
+      final hold = Completer<void>();
+      final held = _TooBig(
+        GetIt.I<MailSync>(),
+        hold: hold,
+        delegate: true,
+        oversize: true,
+      );
+      GetIt.I
+        ..unregister<MailSync>()
+        ..registerSingleton<MailSync>(held);
+      await _write(tester);
+      await _send(tester);
+      await tester.tap(find.byTooltip('Chiudi'));
+      await _settle(tester);
+      hold.complete();
+      await _settle(tester);
+      expect(_undo, findsNothing);
+      await _openSent(tester);
+      expect(_inTile('Invio non riuscito'), findsOneWidget);
+      await _afterWindow(tester);
+    },
+  );
+
+  _onMac(
+    'Invia from a composer opened under Account A, sending as B, still closes it',
+    (tester) async {
+      await _start(tester);
+      await h.addAccount('b2');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scrivi'));
+      await tester.pumpAndSettle();
+      // The sender can only change before the Bozza is first saved.
+      await tester.tap(find.byType(PostinoSenderPicker));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('b2@example.com').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('A'), 'ada@example.com');
+      await tester.enterText(_field('Oggetto'), 'Saluti');
+      await _typeInEditor(tester, 'Ciao Ada');
+      await tester.pumpAndSettle();
+      await _send(tester);
+      expect(find.byType(PostinoComposerField), findsNothing);
+      expect(_undo, findsOneWidget);
+      await _afterWindow(tester);
+    },
+  );
+
   _onMac('a slow preparation does not close the composer opened meanwhile', (
     tester,
   ) async {
@@ -409,17 +460,32 @@ void main() {
 /// The real engine, but every message is over the Provider's limit.
 /// With [hold], [send] waits for it first (the engine preparing the MIME); [saves] counts the Bozza saves.
 class _TooBig implements MailSync {
-  _TooBig(this.real, {this.hold, this.delegate = false});
+  _TooBig(this.real, {this.hold, this.delegate = false, this.oversize = false});
   final MailSync real;
 
   /// After [hold], the real engine sends instead of refusing.
   final bool delegate;
+
+  /// With [delegate], the real engine gets a message over the limit: its preparation fails.
+  final bool oversize;
   final Completer<void>? hold;
   int saves = 0;
 
   @override
   Future<Result<DateTime>> send(String a, OutgoingMessage m) async {
     await hold?.future;
+    if (oversize) {
+      return real.send(
+        a,
+        OutgoingMessage(
+          messageId: m.messageId,
+          from: m.from,
+          to: m.to,
+          subject: m.subject,
+          body: 'x' * (gmailSendLimitBytes + 1),
+        ),
+      );
+    }
     if (delegate) return real.send(a, m);
     return const Err(SizeLimitFailure(gmailSendLimitBytes));
   }

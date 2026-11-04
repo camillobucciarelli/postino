@@ -120,10 +120,21 @@ class OutboxDao extends DatabaseAccessor<PostinoDatabase>
         const OutboxCompanion(claimedUntil: Value(null)),
       );
 
-  Future<void> markFailed(String accountId, String messageId) =>
-      (update(outbox)..where((t) => _row(t, accountId, messageId))).write(
-        const OutboxCompanion(failed: Value(true), claimedUntil: Value(null)),
-      );
+  /// With [version], only the row of that preparation (a newer Invia of the same Message-ID stays as it is).
+  Future<void> markFailed(String accountId, String messageId, {int? version}) =>
+      (update(outbox)..where(
+            (t) =>
+                _row(t, accountId, messageId) &
+                (version == null
+                    ? const Constant(true)
+                    : t.version.equals(version)),
+          ))
+          .write(
+            const OutboxCompanion(
+              failed: Value(true),
+              claimedUntil: Value(null),
+            ),
+          );
 
   static Expression<bool> _unclaimed(Outbox t, int nowMs) =>
       t.claimedUntil.isNull() | t.claimedUntil.isSmallerThanValue(nowMs);

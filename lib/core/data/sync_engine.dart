@@ -186,8 +186,12 @@ class SyncEngine implements MailSync {
   ) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
-    // A second Invia of the same Message-ID (a reopened composer): the first one stands.
-    final existing = await _store.outgoing(accountId, message.messageId);
+    // A second Invia of the same Message-ID (a reopened composer): the first one stands, unless it failed preparing.
+    var existing = await _store.outgoing(accountId, message.messageId);
+    if (existing != null && existing.failed) {
+      await _store.dropOutgoing(accountId, message.messageId, existing.version);
+      existing = null;
+    }
     if (existing != null) {
       return existing.sendAfter == OutboxDao.preparing
           ? const Err(UnexpectedFailure('already preparing'))
@@ -219,12 +223,20 @@ class SyncEngine implements MailSync {
       case Ok(:final value):
         raw = value;
       case Err(:final failure):
-        await _store.dropOutgoing(accountId, message.messageId, version);
+        await _store.outgoingFailed(
+          accountId,
+          message.messageId,
+          version: version,
+        );
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
     if (raw.length > gmailSendLimitBytes) {
-      await _store.dropOutgoing(accountId, message.messageId, version);
+      await _store.outgoingFailed(
+        accountId,
+        message.messageId,
+        version: version,
+      );
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.

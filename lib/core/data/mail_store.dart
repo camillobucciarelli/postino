@@ -1,4 +1,5 @@
-import 'package:drift/drift.dart' show BooleanExpressionOperators, Value, Variable;
+import 'package:drift/drift.dart'
+    show BooleanExpressionOperators, Value, Variable;
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
@@ -274,8 +275,12 @@ class MailStore implements InboxRepository {
       _db.outboxDao.unclaim(accountId, messageId);
 
   /// The Provider refused the message for good: it stays, shown as failed, and is not retried.
-  Future<void> outgoingFailed(String accountId, String messageId) =>
-      _db.outboxDao.markFailed(accountId, messageId);
+  /// With [version], only that preparation's row.
+  Future<void> outgoingFailed(
+    String accountId,
+    String messageId, {
+    int? version,
+  }) => _db.outboxDao.markFailed(accountId, messageId, version: version);
 
   /// Another isolate (the WorkManager sender) may have written the file: the streams read it again.
   void refreshAfterExternalWrites() => _db.markTablesUpdated(_db.allTables);
@@ -307,14 +312,12 @@ class MailStore implements InboxRepository {
         )
         .map((row) => row.read<String>('id'))
         .get();
-    await (_db.delete(_db.messageLabels)..where(
-          (l) => l.accountId.equals(accountId) & l.messageId.isIn(ids),
-        ))
+    await (_db.delete(_db.messageLabels)
+          ..where((l) => l.accountId.equals(accountId) & l.messageId.isIn(ids)))
         .go();
-    await (_db.delete(_db.messages)..where(
-          (m) => m.accountId.equals(accountId) & m.id.isIn(ids),
-        ))
-        .go();
+    await (_db.delete(
+      _db.messages,
+    )..where((m) => m.accountId.equals(accountId) & m.id.isIn(ids))).go();
     await applyPage(accountId, [
       Message(
         id: providerId,

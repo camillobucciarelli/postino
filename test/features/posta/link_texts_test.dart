@@ -96,4 +96,65 @@ void main() {
       expect(textsOf(links, 'https://c.example/'), isEmpty);
     });
   });
+
+  group('textsOf, one destination in many spellings', () {
+    Iterable<String> texts(String href, String url) =>
+        textsOf(linkTexts('<a href="$href">paypal.com</a><a href="https://evil.io/">Continue</a>'), url);
+
+    test('Unicode and punycode hosts collide', () {
+      expect(texts('https://bücher.example/', 'https://xn--bcher-kva.example/'), contains('paypal.com'));
+      expect(texts('https://xn--bcher-kva.example/', 'https://bücher.example/'), contains('paypal.com'));
+      expect(texts('https://BÜCHER.example/', 'https://xn--bcher-kva.example/'), contains('paypal.com'));
+    });
+
+    test('case, trailing dot, default port, userinfo, fragment and empty path collide', () {
+      for (final other in [
+        'HTTPS://EVIL.IO/',
+        'https://evil.io./',
+        'https://evil.io:443/',
+        'https://u:p@evil.io/',
+        'https://evil.io/#top',
+        'https://evil.io',
+        'https://evil.io:/',
+      ]) {
+        expect(texts('https://evil.io/', other), containsAll(['paypal.com', 'Continue']), reason: other);
+      }
+      expect(texts('http://evil.io:80/', 'http://evil.io/'), contains('paypal.com'));
+      expect(texts('https://evil.io:8443/', 'https://evil.io/').toList(), ['Continue']);
+    });
+
+    test('backslashes, tabs, newlines and percent-encoding collide', () {
+      expect(texts(r'https://evil.io\a', 'https://evil.io/a'), contains('paypal.com'));
+      expect(texts('https://evil.io/a', 'https://evi\tl.io/a'), contains('paypal.com'));
+      expect(texts('https://evil.io/%7Euser/a%20b', 'https://evil.io/~user/a b'), contains('paypal.com'));
+      expect(texts('https://evil.io/caf\u00e9', 'https://evil.io/caf%C3%A9'), contains('paypal.com'));
+      expect(texts('https://evil.io/%7euser', 'https://evil.io/%7Euser'), contains('paypal.com'));
+      expect(texts('https://evil.io/?q=%41', 'https://evil.io/?q=A'), contains('paypal.com'));
+    });
+
+    test('IPv4 in any base, IPv6 forms, percent-encoded host, dot segments collide', () {
+      for (final other in ['http://0x7f.1/', 'http://2130706433/', 'http://0177.0.0.1/', 'http://127.1/']) {
+        expect(texts('http://127.0.0.1/', other), contains('paypal.com'), reason: other);
+      }
+      expect(texts('http://[::1]/', 'http://[0:0:0:0:0:0:0:1]/'), contains('paypal.com'));
+      expect(texts('http://[::FFFF:127.0.0.1]/', 'http://[0:0:0:0:0:ffff:7f00:1]/'), contains('paypal.com'));
+      expect(texts('https://ex%61mple.io/', 'https://example.io/'), contains('paypal.com'));
+      expect(texts('https://evil.io/a/../b', 'https://evil.io/b'), contains('paypal.com'));
+      expect(texts('https://evil.io/./a/', 'https://evil.io/a/'), contains('paypal.com'));
+    });
+
+    test('a link that cannot be keyed makes every destination unverifiable', () {
+      final links = linkTexts('<a href="https://\uff45vil.io/">paypal.com</a><a href="https://ok.io/">Continue</a>');
+      expect(textsOf(links, 'https://evil.io/'), contains(unverifiableText));
+      expect(
+        textsOf(linkTexts('<a href="/relative">x</a><a href="mailto:a@b.io">y</a>'), 'https://evil.io/').toList(),
+        isEmpty,
+      );
+    });
+
+    test('a URL that cannot be read fails closed', () {
+      expect(textsOf(linkTexts('<a href="https://a.io/">x</a>'), '::nope'), [unverifiableText]);
+      expect(textsOf(linkTexts('<a href="https://a.io/">x</a>'), 'https:///'), [unverifiableText]);
+    });
+  });
 }

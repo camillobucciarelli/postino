@@ -1,18 +1,18 @@
 import 'package:html/dom.dart' show Element;
 import 'package:html/parser.dart' show parse;
 
-/// The texts of every link that goes to [url]: by exact `href` and by the URL itself once normalised
-/// (`https://a.example` and `https://a.example/` are one destination), so a deceptive label cannot hide among honest ones.
-Iterable<String> textsOf(Map<String, List<String>> links, String url) {
-  String? key(String s) {
-    final u = Uri.tryParse(s);
-    return u == null ? null : (u.hasAuthority && u.path.isEmpty ? u.replace(path: '/') : u).toString();
-  }
+import 'destination_key.dart';
 
-  final wanted = key(url);
+/// The texts of every link that goes to [url], whichever way each spells the destination ([destinationKey]), so a
+/// deceptive label cannot hide among honest ones; if any link cannot be keyed, [unverifiableText] joins them. A [url] that cannot be read is [unverifiableText]: it fails closed.
+Iterable<String> textsOf(Map<String, List<String>> links, String url) {
+  final wanted = destinationKey(url);
+  if (wanted == null) return const [unverifiableText];
   return [
     for (final e in links.entries)
-      if (e.key == url || key(e.key) == wanted) ...e.value,
+      if (e.key == url || destinationKey(e.key) == wanted) ...e.value,
+    // A link written in a form that cannot be keyed might be this very destination: ask.
+    if (links.keys.any(opaqueDestination)) unverifiableText,
   ];
 }
 

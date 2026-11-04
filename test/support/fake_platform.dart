@@ -115,8 +115,14 @@ class FakeLaunchAtLogin() implements LaunchAtLogin {
   /// Every change asked, in order.
   final changes = <bool>[];
 
+  /// While set, reading the state throws it.
+  Exception? readFailure;
+
   @override
-  Future<bool> isEnabled() async => enabled;
+  Future<bool> isEnabled() async {
+    if (readFailure case final f?) throw f;
+    return enabled;
+  }
 
   @override
   Future<void> setEnabled({required bool enabled}) async {

@@ -6,10 +6,20 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../domain/app_window.dart';
 
-/// The window through window_manager's native API (nativeapi).
+/// The window through window_manager's native API (nativeapi), resolved once, when this is built: nativeapi's
+/// "current" window is the active one (Windows: GetActiveWindow), which a hidden window never is, and on macOS the
+/// tray's own status item may come first. So it is built after the first frame and before the tray.
 @LazySingleton(as: AppWindow, env: [Environment.prod])
 class NativeAppWindow() implements AppWindow {
-  Window get _window => WindowManager.instance.getCurrent() ?? (throw StateError('no window'));
+  final Window _window = _resolve();
+
+  /// Like nativeapi_flutter's DropRegion: the active window, else the app's only one.
+  static Window _resolve() {
+    const manager = WindowManager.instance;
+    if (manager.getCurrent() case final current?) return current;
+    final all = manager.getAll();
+    return all.length == 1 ? all.single : throw StateError('no window');
+  }
 
   @override
   Stream<void> interceptClose() {

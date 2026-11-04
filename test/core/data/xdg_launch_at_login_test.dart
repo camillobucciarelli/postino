@@ -28,9 +28,16 @@ void main() {
     expect(await login.isEnabled(), isFalse);
   });
 
-  test('an entry the desktop hid counts as off', () async {
-    await login.setEnabled(enabled: true);
-    entry.writeAsStringSync('${entry.readAsStringSync()}Hidden=true\n');
-    expect(await login.isEnabled(), isFalse);
+  for (final off in ['Hidden=true', 'X-GNOME-Autostart-enabled=false']) {
+    test('an entry the desktop turned off with $off counts as off', () async {
+      await login.setEnabled(enabled: true);
+      entry.writeAsStringSync('${entry.readAsStringSync()}$off\n');
+      expect(await login.isEnabled(), isFalse);
+    });
+  }
+
+  test('a % in the path is doubled, not read as a field code', () async {
+    await XdgLaunchAtLogin(entry, '/opt/100%postino/postino').setEnabled(enabled: true);
+    expect(entry.readAsLinesSync(), contains('Exec="/opt/100%%postino/postino"'));
   });
 }

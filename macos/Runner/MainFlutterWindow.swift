@@ -43,6 +43,12 @@ enum LaunchAtLogin {
         do {
           if enabled {
             try service.register()
+            // Turned off earlier in System Settings › Login Items: only the user can turn it on there.
+            if service.status == .requiresApproval {
+              SMAppService.openSystemSettingsLoginItems()
+              result(FlutterError(code: "requires_approval", message: "Login Items", details: nil))
+              return
+            }
           } else if service.status != .notRegistered {
             try service.unregister()
           }

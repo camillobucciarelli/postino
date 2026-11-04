@@ -30,8 +30,11 @@ class _FakeWindow() implements AppWindow {
   Future<void> quit() async => calls.add('quit');
 }
 
-class _FakeTray() implements SystemTray {
+class _FakeTray(final List<String> _calls) implements SystemTray {
   final _commands = StreamController<TrayCommand>.broadcast();
+
+  @override
+  Future<void> hide() async => _calls.add('trayHide');
   (String, String, String)? shown;
   Object? failure;
 
@@ -54,9 +57,9 @@ void main() {
   late List<String> calls;
   setUp(() {
     window = _FakeWindow();
-    tray = _FakeTray();
-    desktop = DesktopTray(window, tray);
     calls = window.calls;
+    tray = _FakeTray(calls);
+    desktop = DesktopTray(window, tray);
   });
   tearDown(() => desktop.dispose());
 
@@ -87,7 +90,8 @@ void main() {
     await start();
     tray.choose(TrayCommand.quit);
     await pumpEventQueue();
-    expect(calls, ['beforeQuit', 'quit']);
+    // The icon goes first: Windows would keep a ghost of it after the process ends.
+    expect(calls, ['trayHide', 'beforeQuit', 'quit']);
   });
 
   test('«Esci» ends the process even when the clean-up fails', () async {
@@ -102,7 +106,7 @@ void main() {
       tray.choose(TrayCommand.quit);
       await pumpEventQueue();
     }, (e, _) => errors.add(e));
-    expect(calls, ['quit']);
+    expect(calls, ['trayHide', 'quit']);
     expect(errors, [isA<StateError>()]);
   });
 

@@ -4,7 +4,8 @@ import '../domain/app_window.dart';
 import '../domain/system_tray.dart';
 
 /// Close to tray (#38): closing the window hides it and the process, with its sync, keeps running; the tray's
-/// menu shows the window again or quits. Without a tray (it failed to show) closing still quits, as before.
+/// menu shows the window again or quits. Without a tray (it failed to show) closing is the platform's again: it quits
+/// on Windows and Linux, and on macOS the Dock icon brings the window back.
 class DesktopTray(final AppWindow _window, final SystemTray _tray) {
   final _subscriptions = <StreamSubscription<Object?>>[];
 
@@ -30,6 +31,7 @@ class DesktopTray(final AppWindow _window, final SystemTray _tray) {
   Future<void> _quit(Future<void> Function() beforeQuit) async {
     // ponytail: the process ends anyway; a failing cleanup must not keep it alive.
     try {
+      await _tray.hide();
       await beforeQuit();
     } finally {
       await _window.quit();

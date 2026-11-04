@@ -114,6 +114,29 @@ void main() {
     expect(find.text('Posta unificata'), findsWidgets);
   });
 
+  testWidgets('opened by a link with nothing under it, back goes to the Posta unificata', (tester) async {
+    await _start(tester);
+    unawaited(Routefly.navigate(routePaths.impostazioni));
+    await tester.pumpAndSettle();
+    expect(find.text('Impostazioni del dispositivo'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Impostazioni del dispositivo'), findsNothing);
+    expect(find.text('Posta unificata'), findsWidgets);
+  });
+
+  testWidgets('when the OS cannot say, the switch reads off and still works', (tester) async {
+    final h = await _start(tester);
+    h.launchAtLogin.readFailure = Exception('unreadable');
+    await _openSettings(tester);
+    expect(_switchOn(tester), isFalse);
+    h.launchAtLogin.readFailure = null;
+    await tester.tap(_row);
+    await tester.pumpAndSettle();
+    expect(h.launchAtLogin.changes.last, isTrue);
+    expect(_switchOn(tester), isTrue);
+  });
+
   testWidgets('no Impostazioni in the drawer where there is no avvio al login (mobile)', (tester) async {
     final h = await _start(tester, supported: false);
     expect(find.byKey(const ValueKey('drawer-impostazioni')), findsNothing);

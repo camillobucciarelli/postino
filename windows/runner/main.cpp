@@ -13,6 +13,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     CreateAndAttachConsole();
   }
 
+  // postino (#38): one instance. A second launch (Start menu, avvio al login) brings back the window of
+  // the first, hidden in the tray or not, and ends. The mutex is released when the process exits.
+  ::CreateMutexW(nullptr, TRUE, L"Local\\it.postino.single-instance");
+  if (::GetLastError() == ERROR_ALREADY_EXISTS) {
+    HWND existing = ::FindWindowW(L"FLUTTER_RUNNER_WIN32_WINDOW", L"postino");
+    if (existing != nullptr) {
+      ::ShowWindow(existing, ::IsIconic(existing) ? SW_RESTORE : SW_SHOW);
+      ::SetForegroundWindow(existing);
+    }
+    return EXIT_SUCCESS;
+  }
+
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);

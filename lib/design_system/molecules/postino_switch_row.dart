@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_focus_ring.dart';
+import '../atoms/postino_selectable.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
@@ -49,7 +50,11 @@ class const PostinoSwitchRow({
                         spacing: PostinoSpacing.s1,
                         children: [
                           Text(title, style: PostinoText.label.copyWith(color: change == null ? c.inkDisabled : c.ink)),
-                          if (description case final d?) Text(d, style: PostinoText.meta.copyWith(color: c.inkSubtle)),
+                          // Informational, so selectable and copiable (the reason of a failure, too); the title is a label.
+                          if (description case final d?)
+                            PostinoSelectable(
+                              child: Text(d, style: PostinoText.meta.copyWith(color: c.inkSubtle)),
+                            ),
                         ],
                       ),
                     ),

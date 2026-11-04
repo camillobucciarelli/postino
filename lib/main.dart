@@ -80,8 +80,11 @@ Future<void> _startDesktop() async {
       debugPrint('[desktop] avvio al login: $e');
     }
   }
+  // The window exists and is shown after the first frame; the AppWindow resolves it then, before the tray exists.
+  await WidgetsBinding.instance.endOfFrame;
   try {
-    await DesktopTray(getIt<AppWindow>(), getIt<SystemTray>()).start(
+    final window = getIt<AppWindow>();
+    await DesktopTray(window, getIt<SystemTray>()).start(
       tooltip: t.appTitle,
       openLabel: t.tray.open,
       quitLabel: t.tray.quit,

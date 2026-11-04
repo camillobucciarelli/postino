@@ -15,6 +15,9 @@ abstract interface class SystemTray() {
   /// Puts the icon with its menu in the tray; throws when the system has no tray to put it in.
   Future<void> show({required String tooltip, required String openLabel, required String quitLabel});
 
+  /// Removes the icon, before the process ends.
+  Future<void> hide();
+
   /// The commands chosen from the icon and its menu.
   Stream<TrayCommand> get commands;
 }

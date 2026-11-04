@@ -12,6 +12,10 @@ namespace {
 
 constexpr wchar_t kRunKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 constexpr wchar_t kValueName[] = L"Postino";
+// Where Task Manager's Startup tab records an entry the user turned off: an
+// odd first byte means off.
+constexpr wchar_t kApprovedKey[] =
+    L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
 
 // The running executable, quoted: the Run value is a command line.
 std::wstring Command() {
@@ -26,9 +30,22 @@ std::wstring Command() {
   return L"\"" + path + L"\"";
 }
 
+// On only when the Run value starts this very executable (an install moved
+// elsewhere reads as off) and Task Manager has not turned it off.
 bool IsEnabled() {
-  return RegGetValueW(HKEY_CURRENT_USER, kRunKey, kValueName, RRF_RT_REG_SZ,
-                      nullptr, nullptr, nullptr) == ERROR_SUCCESS;
+  wchar_t value[4 * MAX_PATH];
+  DWORD size = sizeof(value);
+  if (RegGetValueW(HKEY_CURRENT_USER, kRunKey, kValueName, RRF_RT_REG_SZ,
+                   nullptr, value, &size) != ERROR_SUCCESS ||
+      _wcsicmp(value, Command().c_str()) != 0) {
+    return false;
+  }
+  BYTE approved[12];
+  DWORD approved_size = sizeof(approved);
+  return RegGetValueW(HKEY_CURRENT_USER, kApprovedKey, kValueName,
+                      RRF_RT_REG_BINARY, nullptr, approved,
+                      &approved_size) != ERROR_SUCCESS ||
+         approved_size == 0 || (approved[0] & 1) == 0;
 }
 
 LSTATUS SetEnabled(bool enabled) {
@@ -42,6 +59,14 @@ LSTATUS SetEnabled(bool enabled) {
         key, kValueName, 0, REG_SZ,
         reinterpret_cast<const BYTE*>(command.c_str()),
         static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+    // Turning it on here also undoes an earlier "off" from Task Manager.
+    if (status == ERROR_SUCCESS) {
+      const LSTATUS approved =
+          RegDeleteKeyValueW(HKEY_CURRENT_USER, kApprovedKey, kValueName);
+      if (approved != ERROR_FILE_NOT_FOUND && approved != ERROR_PATH_NOT_FOUND) {
+        status = approved;
+      }
+    }
   } else {
     status = RegDeleteValueW(key, kValueName);
     if (status == ERROR_FILE_NOT_FOUND) status = ERROR_SUCCESS;

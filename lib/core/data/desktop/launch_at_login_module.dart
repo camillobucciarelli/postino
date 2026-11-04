@@ -18,7 +18,8 @@ abstract class LaunchAtLoginModule() {
           TargetPlatform.macOS || TargetPlatform.windows => ChannelLaunchAtLogin(),
           TargetPlatform.linux => XdgLaunchAtLogin(
             const LocalFileSystem().file('${_xdgConfigHome()}/autostart/postino.desktop'),
-            Platform.resolvedExecutable,
+            // An AppImage runs from a mount that changes at every start: the image itself is what to start.
+            Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable,
           ),
           _ => const _Unsupported(),
         };

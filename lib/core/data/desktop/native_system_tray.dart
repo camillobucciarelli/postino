@@ -15,14 +15,14 @@ class NativeSystemTray() implements SystemTray {
   final _commands = StreamController<TrayCommand>.broadcast();
 
   // Kept while shown: a wrapper that is garbage-collected removes the icon or drops its listener.
-  final _held = <Object>[];
+  final _nativeHandles = <Object>[];
 
   @override
   Stream<TrayCommand> get commands => _commands.stream;
 
   @override
   Future<void> show({required String tooltip, required String openLabel, required String quitLabel}) async {
-    if (_held.isNotEmpty) return;
+    if (_nativeHandles.isNotEmpty) return;
     if (defaultTargetPlatform == TargetPlatform.linux && !await _linuxHasWatcher()) {
       throw StateError('no StatusNotifierWatcher');
     }
@@ -50,7 +50,16 @@ class NativeSystemTray() implements SystemTray {
       });
     }
     if (!icon.setVisible(true)) throw StateError('tray icon not shown');
-    _held.addAll([icon, menu, open, quit]);
+    _nativeHandles.addAll([icon, menu, open, quit]);
+  }
+
+  /// Windows keeps a ghost icon in the notification area until the mouse passes over it, unless it is removed.
+  @override
+  Future<void> hide() async {
+    for (final icon in _nativeHandles.whereType<TrayIcon>()) {
+      icon.dispose();
+    }
+    _nativeHandles.clear();
   }
 
   MenuItem _item(String label, TrayCommand command) {

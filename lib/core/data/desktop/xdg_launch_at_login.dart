@@ -4,13 +4,15 @@ import '../../domain/launch_at_login.dart';
 
 /// Linux: an XDG autostart entry, `$XDG_CONFIG_HOME/autostart/postino.desktop` ([_entry]), starting [_executable].
 class XdgLaunchAtLogin(final File _entry, final String _executable) implements LaunchAtLogin {
+  /// What a desktop writes to turn the entry off without deleting it (GNOME: the second).
+  static const _off = {'Hidden=true', 'X-GNOME-Autostart-enabled=false'};
+
   @override
   bool get supported => true;
 
-  /// A desktop that turns autostart off without deleting the entry writes `Hidden=true`.
   @override
   Future<bool> isEnabled() async =>
-      _entry.existsSync() && !(await _entry.readAsLines()).any((l) => l.replaceAll(' ', '') == 'Hidden=true');
+      _entry.existsSync() && !(await _entry.readAsLines()).map((l) => l.replaceAll(' ', '')).any(_off.contains);
 
   @override
   Future<void> setEnabled({required bool enabled}) async {
@@ -28,7 +30,10 @@ class XdgLaunchAtLogin(final File _entry, final String _executable) implements L
     );
   }
 
-  /// Exec quoting (`"`, `` ` ``, `$`, `\` escaped inside double quotes), then the file's own escape of `\`.
-  static String _quoted(String path) =>
-      '"${path.replaceAllMapped(RegExp(r'["`$\\]'), (m) => '\\${m[0]}')}"'.replaceAll(r'\', r'\\');
+  /// Exec quoting (`"`, `` ` ``, `$`, `\` escaped inside double quotes; `%` doubled, or it reads as a field code),
+  /// then the file's own escape of `\`.
+  static String _quoted(String path) {
+    final escaped = path.replaceAllMapped(RegExp(r'["`$\\]'), (m) => '\\${m[0]}').replaceAll('%', '%%');
+    return '"$escaped"'.replaceAll(r'\', r'\\');
+  }
 }

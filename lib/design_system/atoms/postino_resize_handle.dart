@@ -13,6 +13,7 @@ import 'postino_focus_ring.dart';
 /// Keyboard, with the focus on it: left/right by `list-width-step`, Home [min], End [max] (all through
 /// [onChangeEnd]); the arrows stop here and move nothing else. VoiceOver: increase and decrease by the same step.
 class PostinoResizeHandle extends StatefulWidget {
+  /// Crea il divisore trascinabile.
   const PostinoResizeHandle({
     super.key,
     required this.value,
@@ -26,8 +27,13 @@ class PostinoResizeHandle extends StatefulWidget {
     this.onDragEnd,
   });
 
+  /// Larghezza attuale in pixel.
   final double value;
+
+  /// Larghezza minima.
   final double min;
+
+  /// Larghezza massima.
   final double max;
 
   /// The accessible name, e.g. "Larghezza lista".
@@ -35,8 +41,14 @@ class PostinoResizeHandle extends StatefulWidget {
 
   /// The accessible value at a width, e.g. "380 pixel".
   final String Function(double value) valueLabel;
+
+  /// Larghezza durante il trascinamento.
   final ValueChanged<double> onChanged;
+
+  /// Larghezza finale, a trascinamento o tastiera concluso.
   final ValueChanged<double> onChangeEnd;
+
+  /// Chiamata al doppio clic: torna alla larghezza di default.
   final VoidCallback onReset;
 
   /// Every drag that started ends here, after [onChangeEnd] if the width changed: the parent drops its live override.

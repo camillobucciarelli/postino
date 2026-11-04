@@ -5,11 +5,37 @@ import 'postino_account_swatch.dart';
 import 'postino_colors_lerp.dart';
 import 'postino_palette.dart';
 
-enum PostinoAccountColor { sky, blue, violet, magenta, rose, olive, slate, graphite }
+/// Colore scelto per distinguere un account (badge, avatar).
+enum PostinoAccountColor {
+  /// Account Azzurro.
+  sky,
+
+  /// Account Blu.
+  blue,
+
+  /// Account Viola.
+  violet,
+
+  /// Account Magenta.
+  magenta,
+
+  /// Account Rosa.
+  rose,
+
+  /// Account Oliva.
+  olive,
+
+  /// Account Ardesia.
+  slate,
+
+  /// Account Grafite.
+  graphite,
+}
 
 /// Livello 2 e 3 — token semantici e di componente, light e dark.
 @immutable
 class PostinoColors extends ThemeExtension<PostinoColors> {
+  /// Crea un set di colori; tutti i token sono obbligatori.
   const PostinoColors({
     required this.surfaceGround,
     required this.surface,
@@ -461,6 +487,7 @@ class PostinoColors extends ThemeExtension<PostinoColors> {
   /// SyncStatus: errore.
   final Color syncError;
 
+  /// Colori del tema chiaro.
   static const light = PostinoColors(
     surfaceGround: PostinoPrimitives.pNeutral100,
     surface: PostinoPrimitives.pNeutral50,
@@ -576,6 +603,7 @@ class PostinoColors extends ThemeExtension<PostinoColors> {
     syncError: PostinoPrimitives.pRed700,
   );
 
+  /// Colori del tema scuro.
   static const dark = PostinoColors(
     surfaceGround: PostinoPrimitives.pNeutral950,
     surface: PostinoPrimitives.pNeutral900,
@@ -691,6 +719,7 @@ class PostinoColors extends ThemeExtension<PostinoColors> {
     syncError: PostinoPrimitives.pRed300,
   );
 
+  /// Tinte dell'account `c` in questo tema.
   PostinoAccountSwatch account(PostinoAccountColor c) => switch (c) {
     PostinoAccountColor.sky => PostinoAccountSwatch(accountSky, accountSkySubtle, onAccount),
     PostinoAccountColor.blue => PostinoAccountSwatch(accountBlue, accountBlueSubtle, onAccount),

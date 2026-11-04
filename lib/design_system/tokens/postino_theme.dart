@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 
 import 'postino_tokens.dart';
 
+/// Costruisce i `ThemeData` chiaro e scuro dai token.
 abstract final class PostinoTheme {
+  /// Tema chiaro con la densità data.
   static ThemeData light({PostinoDensity density = PostinoDensity.comfortable}) =>
       _build(Brightness.light, PostinoColors.light, density);
+
+  /// Tema scuro con la densità data.
   static ThemeData dark({PostinoDensity density = PostinoDensity.comfortable}) =>
       _build(Brightness.dark, PostinoColors.dark, density);
 
@@ -242,7 +246,11 @@ abstract final class PostinoTheme {
   }
 }
 
+/// Scorciatoie per leggere i token dal tema corrente.
 extension PostinoContext on BuildContext {
+  /// Colori semantici del tema corrente.
   PostinoColors get pc => Theme.of(this).extension<PostinoColors>()!;
+
+  /// Densità della lista del tema corrente.
   PostinoDensity get density => Theme.of(this).extension<PostinoDensity>()!;
 }

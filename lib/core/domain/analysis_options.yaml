@@ -1,0 +1,6 @@
+include: ../../../analysis_options.yaml
+
+# Doc comment obbligatori sulle API pubbliche del dominio (#87 PR3).
+linter:
+  rules:
+    - public_member_api_docs

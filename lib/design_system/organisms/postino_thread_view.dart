@@ -16,6 +16,7 @@ import '../tokens/postino_tokens.dart';
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
 /// at most `reading-max-width` wide.
 class PostinoThreadView extends StatefulWidget {
+  /// Crea la vista di una conversazione con oggetto, account e messaggi.
   const PostinoThreadView({
     super.key,
     required this.subject,
@@ -26,9 +27,16 @@ class PostinoThreadView extends StatefulWidget {
     this.importantLabel,
   });
 
+  /// Oggetto della conversazione, mostrato come titolo.
   final String subject;
+
+  /// Account che ha ricevuto la conversazione, indicato con il suo contrassegno.
   final PostinoAccountRef account;
+
+  /// Nome dell'account mostrato accanto al contrassegno.
   final String accountName;
+
+  /// I messaggi della conversazione, dal più recente al più vecchio.
   final List<Widget> messages;
 
   /// Names of the etichette of the Conversazione, as [PostinoLabelChip]s after the Account.

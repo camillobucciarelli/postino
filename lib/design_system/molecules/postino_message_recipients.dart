@@ -10,6 +10,7 @@ import '../tokens/postino_tokens.dart';
 /// Of `PostinoThreadMessage` only (not in the barrel), like [PostinoMessageDetailsPanel].
 /// “a me, cc Marco”: opens the details when there are some.
 class PostinoMessageRecipients extends StatelessWidget {
+  /// Crea la riga dei destinatari.
   const PostinoMessageRecipients({super.key, required this.label, required this.open, required this.onTap});
 
   /// The recipients, already formatted.

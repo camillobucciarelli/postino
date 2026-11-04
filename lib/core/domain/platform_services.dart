@@ -1,17 +1,24 @@
 /// Thin platform services (keychain, clock, connectivity, links); real ones in core/data, fakes in tests.
 abstract interface class SecureStore {
+  /// Legge il valore di `key`, null se manca.
   Future<String?> read(String key);
+
+  /// Salva `value` sotto `key`.
   Future<void> write(String key, String value);
 }
 
+/// L'orologio, sostituibile nei test.
 abstract interface class Clock {
+  /// L'ora corrente.
   DateTime now();
 
   /// Fires every [period], for as long as it is listened to.
   Stream<void> every(Duration period);
 }
 
+/// Lo stato della rete.
 abstract interface class Connectivity {
+  /// Se il dispositivo è online ora.
   bool get isOnline;
 
   /// The new state, each time it changes.
@@ -20,6 +27,7 @@ abstract interface class Connectivity {
 
 /// Opens a link outside Postino: the system browser, or the mail client for `mailto:`.
 abstract interface class LinkOpener {
+  /// Apre `url` fuori da Postino.
   Future<void> open(Uri url);
 }
 

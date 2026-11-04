@@ -6,6 +6,7 @@ import '../tokens/postino_tokens.dart';
 /// A header line of the composer («A», «Oggetto»): the label on the left, a bare single-line
 /// field, a `composer-field-divider` hairline below that turns `input-border-focus` with focus.
 class PostinoComposerField extends StatefulWidget {
+  /// Crea una riga di intestazione del compositore.
   const PostinoComposerField({
     super.key,
     required this.label,
@@ -17,12 +18,25 @@ class PostinoComposerField extends StatefulWidget {
     this.trailing,
   });
 
+  /// Etichetta a sinistra, anche nome accessibile del campo.
   final String label;
+
+  /// Controller del testo.
   final TextEditingController controller;
+
+  /// Nodo del focus; se nullo il campo ne crea uno suo.
   final FocusNode? focusNode;
+
+  /// Se il campo prende il focus all'apertura.
   final bool autofocus;
+
+  /// Chiamata a ogni modifica del testo.
   final ValueChanged<String>? onChanged;
+
+  /// Tipo di tastiera richiesto.
   final TextInputType? keyboardType;
+
+  /// Widget a destra del campo (es. un'azione).
   final Widget? trailing;
 
   @override

@@ -6,10 +6,16 @@ import '../tokens/postino_tokens.dart';
 /// The sender: initials on a muted `label-*` tint derived from [name]; [badge] (an AccountMark) bottom right.
 /// Always decorative: the sender is written next to it.
 class PostinoAvatar extends StatelessWidget {
+  /// Crea l'avatar del mittente.
   const PostinoAvatar({super.key, required this.name, this.size = PostinoSize.avatarMd, this.badge});
 
+  /// Nome del mittente: da qui iniziali e tinta.
   final String name;
+
+  /// Diametro del cerchio.
   final double size;
+
+  /// Segno dell'Account in basso a destra, se presente.
   final Widget? badge;
 
   @override

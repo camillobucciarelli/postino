@@ -7,6 +7,7 @@ import '../tokens/postino_tokens.dart';
 /// The body of an expanded message: its [text] in `body` (selectable through the Conversazione's SelectionArea);
 /// or, while it is not there, a quiet note and maybe a retry.
 class PostinoMessageBody extends StatelessWidget {
+  /// Crea il corpo con `text` da mostrare.
   const PostinoMessageBody({super.key, required String this.text, this.quiet = false})
     : note = null,
       actionLabel = null,
@@ -17,9 +18,16 @@ class PostinoMessageBody extends StatelessWidget {
     : text = null,
       quiet = false;
 
+  /// Testo del corpo; null se manca.
   final String? text;
+
+  /// Perché il corpo non c'è; null se il testo c'è.
   final String? note;
+
+  /// Etichetta del pulsante di nuovo tentativo, se serve.
   final String? actionLabel;
+
+  /// Chiamata dal pulsante di nuovo tentativo.
   final VoidCallback? onAction;
 
   /// A signature or a quote: `body-quote` in `ink-muted`.

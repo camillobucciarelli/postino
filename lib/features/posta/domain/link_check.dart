@@ -1,3 +1,4 @@
+import 'package:html/dom.dart' show Element;
 import 'package:html/parser.dart' show parse;
 
 import 'punycode.dart';
@@ -96,30 +97,44 @@ const _unseen = {
   'canvas',
   'dialog',
   'script',
+  'title',
+  'rp',
+  'noembed',
+  'noframes',
+  'xmp',
+  'area',
+  'optgroup',
+  'svg',
+  'math',
+  'bdo',
+  'bdi',
 };
 
 /// The visible texts of the links of [html], by `href`: what a tap on that URL claims to open. CSS cannot be judged
-/// here, so a link whose label could be altered fails closed ([unverifiableText], hence a Dialog): an empty label
-/// (a `::before` could fill it), a descendant that could hide text (`style`, `hidden`, `aria-hidden`, or one of
-/// [_unseen]), or any nested element once the document has a stylesheet or a `style` on `html`/`body`.
-/// Plain nested tags (`<b>`) in a document without styles keep their text.
+/// here, so a link whose label could be altered fails closed ([unverifiableText], hence a Dialog): the document has a
+/// `<style>` or a stylesheet `<link>`; the link or an ancestor has a `style`; an empty label (a `::before` could fill
+/// it); or a descendant could hide text (`style`, `hidden`, `aria-hidden`, or one of [_unseen]).
+/// A document with none of these keeps the label, plain nested tags (`<b>`) included.
 Map<String, List<String>> linkTexts(String html) {
   final doc = parse(html);
-  final styled =
-      doc.querySelector('style, link[rel~=stylesheet]') != null ||
-      (doc.documentElement?.attributes.containsKey('style') ?? false) ||
-      (doc.body?.attributes.containsKey('style') ?? false);
+  final styled = doc.querySelector('style, link[rel~=stylesheet]') != null;
   final out = <String, List<String>>{};
   for (final a in doc.querySelectorAll('a[href]')) {
-    final nested = a.querySelectorAll('*');
+    var inlineStyle = false;
+    for (Element? e = a; e != null; e = e.parent) {
+      inlineStyle |= e.attributes.containsKey('style') || e.attributes.containsKey('dir');
+    }
     final hideable =
+        styled ||
+        inlineStyle ||
         a.text.trim().isEmpty ||
-        (styled && nested.isNotEmpty) ||
-        nested.any(
-          (e) =>
-              _unseen.contains(e.localName) ||
-              e.attributes.keys.any((k) => const {'style', 'hidden', 'aria-hidden'}.contains(k)),
-        );
+        a
+            .querySelectorAll('*')
+            .any(
+              (e) =>
+                  _unseen.contains(e.localName) ||
+                  e.attributes.keys.any((k) => const {'style', 'hidden', 'aria-hidden', 'dir'}.contains(k)),
+            );
     (out[a.attributes['href']!] ??= []).add(hideable ? unverifiableText : a.text);
   }
   return out;

@@ -140,7 +140,18 @@ void main() {
       expect(text('<body style="x"><a href="https://e.io/">a<b>@e.io</b></a>'), unverifiableText);
       expect(text('<a href="https://e.io/">a<details>@e.io</details></a>'), unverifiableText);
       expect(text('<a href="https://e.io/"></a>'), unverifiableText);
-      expect(text('<style>b{}</style><a href="https://e.io/">e.io</a>'), 'e.io');
+      expect(text('<a href="https://e.io/">e.io<rp>x</rp></a>'), unverifiableText);
+      expect(text('<a href="https://e.io/"><bdo dir="rtl">oi.e</bdo></a>'), unverifiableText);
+      expect(text('<p dir="rtl"><a href="https://e.io/">e.io</a></p>'), unverifiableText);
+      expect(
+        text(
+          '<style>a{font-size:0}a::before{content:"paypal.com";font-size:16px}</style><a href="https://e.io/">e.io</a>',
+        ),
+        unverifiableText,
+      );
+      expect(text('<a href="https://e.io/" style="color:red">e.io</a>'), unverifiableText);
+      expect(text('<div style="x"><p><a href="https://e.io/">e.io</a></p></div>'), unverifiableText);
+      expect(text('<a href="https://e.io/">e.io</a>'), 'e.io');
       expect(text('<a href="https://e.io/">e.<b>io</b></a>'), 'e.io');
     });
 

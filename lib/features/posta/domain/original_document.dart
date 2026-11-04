@@ -12,9 +12,13 @@ String originalDocument(String html, {required bool allowRemote}) {
   for (final e in doc.querySelectorAll('base, link, meta[http-equiv]').toList()) {
     e.remove();
   }
+  // A `target` opens a link in a new frame or window, which the WebView reports as a subframe: every tap is a main-frame one.
+  for (final e in doc.querySelectorAll('a[target], area[target]')) {
+    e.attributes.remove('target');
+  }
   final img = allowRemote ? 'data: https: http:' : 'data:';
   return '<meta http-equiv="x-dns-prefetch-control" content="off">'
       '<meta name="referrer" content="no-referrer">'
       '<meta http-equiv="Content-Security-Policy" '
-      "content=\"default-src 'none'; img-src $img; style-src 'unsafe-inline'\">${doc.outerHtml}";
+      "content=\"default-src 'none'; form-action 'none'; img-src $img; style-src 'unsafe-inline'\">${doc.outerHtml}";
 }

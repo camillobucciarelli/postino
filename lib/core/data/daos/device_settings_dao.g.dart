@@ -12,8 +12,5 @@ class DeviceSettingsDaoManager {
   final _$DeviceSettingsDaoMixin _db;
   DeviceSettingsDaoManager(this._db);
   $$DeviceSettingsTableTableManager get deviceSettings =>
-      $$DeviceSettingsTableTableManager(
-        _db.attachedDatabase,
-        _db.deviceSettings,
-      );
+      $$DeviceSettingsTableTableManager(_db.attachedDatabase, _db.deviceSettings);
 }

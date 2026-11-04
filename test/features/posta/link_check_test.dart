@@ -155,6 +155,14 @@ void main() {
       expect(text('<a href="https://e.io/">e.<b>io</b></a>'), 'e.io');
     });
 
+    test('textsOf collects every label of the destination, exact or normalised', () {
+      final links = linkTexts('<a href="https://evil.io">paypal.com</a><a href="https://evil.io/">Continue</a>');
+      final texts = textsOf(links, 'https://evil.io/').toList();
+      expect(texts, containsAll(['paypal.com', 'Continue']));
+      expect(textsOf(links, 'https://evil.io').toList(), containsAll(['paypal.com', 'Continue']));
+      expect(linkWarning(Uri.parse('https://evil.io/'), texts)?.unverified, isFalse);
+    });
+
     test('textsOf matches an exact or normalised URL', () {
       final links = linkTexts('<a href="https://a.example">uno</a><a href="https://b.example/p">due</a>');
       expect(textsOf(links, 'https://a.example'), ['uno']);
@@ -182,6 +190,10 @@ void main() {
       expect(doc, isNot(contains('refresh')));
       expect(doc, isNot(contains('<base')));
       expect(doc, isNot(contains('<link')));
+      expect(
+        originalDocument('<a href="https://a.example/" target="_blank">a</a>', allowRemote: false),
+        allOf(contains('<a href="https://a.example/">a</a>'), isNot(contains('target'))),
+      );
       expect(doc, isNot(contains('content="x"')));
       expect(doc, contains('<meta charset="utf-8">'));
       expect(doc, startsWith('<meta http-equiv="x-dns-prefetch-control" content="off">'));

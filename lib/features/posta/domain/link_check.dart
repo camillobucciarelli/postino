@@ -64,10 +64,9 @@ LinkWarning? linkWarning(Uri target, Iterable<String> texts) {
   return texts.map((t) => deceptiveLink(target, t)).nonNulls.firstOrNull;
 }
 
-/// The texts of the links that go to [url]: by exact `href` or, for a URL a WebView normalised
-/// (`https://a.example` became `https://a.example/`), by the URL itself.
+/// The texts of every link that goes to [url]: by exact `href` and by the URL itself once normalised
+/// (`https://a.example` and `https://a.example/` are one destination), so a deceptive label cannot hide among honest ones.
 Iterable<String> textsOf(Map<String, List<String>> links, String url) {
-  if (links[url] case final exact?) return exact;
   String? key(String s) {
     final u = Uri.tryParse(s);
     return u == null ? null : (u.hasAuthority && u.path.isEmpty ? u.replace(path: '/') : u).toString();
@@ -76,7 +75,7 @@ Iterable<String> textsOf(Map<String, List<String>> links, String url) {
   final wanted = key(url);
   return [
     for (final e in links.entries)
-      if (key(e.key) == wanted) ...e.value,
+      if (e.key == url || key(e.key) == wanted) ...e.value,
   ];
 }
 

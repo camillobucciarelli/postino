@@ -3,8 +3,7 @@
 part of 'postino_database.dart';
 
 // ignore_for_file: type=lint
-class $AccountsTable extends Accounts
-    with TableInfo<$AccountsTable, AccountRow> {
+class $AccountsTable extends Accounts with TableInfo<$AccountsTable, AccountRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -18,9 +17,7 @@ class $AccountsTable extends Accounts
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _addressMeta = const VerificationMeta(
-    'address',
-  );
+  static const VerificationMeta _addressMeta = const VerificationMeta('address');
   @override
   late final GeneratedColumn<String> address = GeneratedColumn<String>(
     'address',
@@ -30,14 +27,13 @@ class $AccountsTable extends Accounts
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<ProviderKind, String> provider =
-      GeneratedColumn<String>(
-        'provider',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<ProviderKind>($AccountsTable.$converterprovider);
+  late final GeneratedColumnWithTypeConverter<ProviderKind, String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  ).withConverter<ProviderKind>($AccountsTable.$converterprovider);
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<int> color = GeneratedColumn<int>(
@@ -47,9 +43,7 @@ class $AccountsTable extends Accounts
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _positionMeta = const VerificationMeta(
-    'position',
-  );
+  static const VerificationMeta _positionMeta = const VerificationMeta('position');
   @override
   late final GeneratedColumn<int> position = GeneratedColumn<int>(
     'position',
@@ -59,33 +53,22 @@ class $AccountsTable extends Accounts
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<AccountStatus, String> status =
-      GeneratedColumn<String>(
-        'status',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<AccountStatus>($AccountsTable.$converterstatus);
+  late final GeneratedColumnWithTypeConverter<AccountStatus, String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  ).withConverter<AccountStatus>($AccountsTable.$converterstatus);
   @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    address,
-    provider,
-    color,
-    position,
-    status,
-  ];
+  List<GeneratedColumn> get $columns => [id, address, provider, color, position, status];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'accounts';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<AccountRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<AccountRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -94,26 +77,17 @@ class $AccountsTable extends Accounts
       context.missing(_idMeta);
     }
     if (data.containsKey('address')) {
-      context.handle(
-        _addressMeta,
-        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
-      );
+      context.handle(_addressMeta, address.isAcceptableOrUnknown(data['address']!, _addressMeta));
     } else if (isInserting) {
       context.missing(_addressMeta);
     }
     if (data.containsKey('color')) {
-      context.handle(
-        _colorMeta,
-        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
-      );
+      context.handle(_colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     } else if (isInserting) {
       context.missing(_colorMeta);
     }
     if (data.containsKey('position')) {
-      context.handle(
-        _positionMeta,
-        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
-      );
+      context.handle(_positionMeta, position.isAcceptableOrUnknown(data['position']!, _positionMeta));
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
@@ -126,33 +100,15 @@ class $AccountsTable extends Accounts
   AccountRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AccountRow(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      address: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}address'],
-      )!,
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      address: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}address'])!,
       provider: $AccountsTable.$converterprovider.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}provider'],
-        )!,
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}provider'])!,
       ),
-      color: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}color'],
-      )!,
-      position: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}position'],
-      )!,
+      color: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}color'])!,
+      position: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}position'])!,
       status: $AccountsTable.$converterstatus.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}status'],
-        )!,
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       ),
     );
   }
@@ -162,10 +118,12 @@ class $AccountsTable extends Accounts
     return $AccountsTable(attachedDatabase, alias);
   }
 
-  static JsonTypeConverter2<ProviderKind, String, String> $converterprovider =
-      const EnumNameConverter<ProviderKind>(ProviderKind.values);
-  static JsonTypeConverter2<AccountStatus, String, String> $converterstatus =
-      const EnumNameConverter<AccountStatus>(AccountStatus.values);
+  static JsonTypeConverter2<ProviderKind, String, String> $converterprovider = const EnumNameConverter<ProviderKind>(
+    ProviderKind.values,
+  );
+  static JsonTypeConverter2<AccountStatus, String, String> $converterstatus = const EnumNameConverter<AccountStatus>(
+    AccountStatus.values,
+  );
 }
 
 class AccountRow extends DataClass implements Insertable<AccountRow> {
@@ -189,16 +147,12 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     map['id'] = Variable<String>(id);
     map['address'] = Variable<String>(address);
     {
-      map['provider'] = Variable<String>(
-        $AccountsTable.$converterprovider.toSql(provider),
-      );
+      map['provider'] = Variable<String>($AccountsTable.$converterprovider.toSql(provider));
     }
     map['color'] = Variable<int>(color);
     map['position'] = Variable<int>(position);
     {
-      map['status'] = Variable<String>(
-        $AccountsTable.$converterstatus.toSql(status),
-      );
+      map['status'] = Variable<String>($AccountsTable.$converterstatus.toSql(status));
     }
     return map;
   }
@@ -214,22 +168,15 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     );
   }
 
-  factory AccountRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory AccountRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AccountRow(
       id: serializer.fromJson<String>(json['id']),
       address: serializer.fromJson<String>(json['address']),
-      provider: $AccountsTable.$converterprovider.fromJson(
-        serializer.fromJson<String>(json['provider']),
-      ),
+      provider: $AccountsTable.$converterprovider.fromJson(serializer.fromJson<String>(json['provider'])),
       color: serializer.fromJson<int>(json['color']),
       position: serializer.fromJson<int>(json['position']),
-      status: $AccountsTable.$converterstatus.fromJson(
-        serializer.fromJson<String>(json['status']),
-      ),
+      status: $AccountsTable.$converterstatus.fromJson(serializer.fromJson<String>(json['status'])),
     );
   }
   @override
@@ -238,14 +185,10 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'address': serializer.toJson<String>(address),
-      'provider': serializer.toJson<String>(
-        $AccountsTable.$converterprovider.toJson(provider),
-      ),
+      'provider': serializer.toJson<String>($AccountsTable.$converterprovider.toJson(provider)),
       'color': serializer.toJson<int>(color),
       'position': serializer.toJson<int>(position),
-      'status': serializer.toJson<String>(
-        $AccountsTable.$converterstatus.toJson(status),
-      ),
+      'status': serializer.toJson<String>($AccountsTable.$converterstatus.toJson(status)),
     };
   }
 
@@ -289,8 +232,7 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, address, provider, color, position, status);
+  int get hashCode => Object.hash(id, address, provider, color, position, status);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -384,9 +326,7 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
       map['address'] = Variable<String>(address.value);
     }
     if (provider.present) {
-      map['provider'] = Variable<String>(
-        $AccountsTable.$converterprovider.toSql(provider.value),
-      );
+      map['provider'] = Variable<String>($AccountsTable.$converterprovider.toSql(provider.value));
     }
     if (color.present) {
       map['color'] = Variable<int>(color.value);
@@ -395,9 +335,7 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
       map['position'] = Variable<int>(position.value);
     }
     if (status.present) {
-      map['status'] = Variable<String>(
-        $AccountsTable.$converterstatus.toSql(status.value),
-      );
+      map['status'] = Variable<String>($AccountsTable.$converterstatus.toSql(status.value));
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -425,9 +363,7 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $LabelsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -455,14 +391,13 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<LabelKind, String> kind =
-      GeneratedColumn<String>(
-        'kind',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<LabelKind>($LabelsTable.$converterkind);
+  late final GeneratedColumnWithTypeConverter<LabelKind, String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  ).withConverter<LabelKind>($LabelsTable.$converterkind);
   @override
   List<GeneratedColumn> get $columns => [accountId, id, name, kind];
   @override
@@ -471,17 +406,11 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
   String get actualTableName => $name;
   static const String $name = 'labels';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<LabelRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<LabelRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
@@ -491,10 +420,7 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
       context.missing(_idMeta);
     }
     if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
+      context.handle(_nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
@@ -507,23 +433,11 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
   LabelRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LabelRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       kind: $LabelsTable.$converterkind.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}kind'],
-        )!,
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
       ),
     );
   }
@@ -533,8 +447,9 @@ class $LabelsTable extends Labels with TableInfo<$LabelsTable, LabelRow> {
     return $LabelsTable(attachedDatabase, alias);
   }
 
-  static JsonTypeConverter2<LabelKind, String, String> $converterkind =
-      const EnumNameConverter<LabelKind>(LabelKind.values);
+  static JsonTypeConverter2<LabelKind, String, String> $converterkind = const EnumNameConverter<LabelKind>(
+    LabelKind.values,
+  );
 }
 
 class LabelRow extends DataClass implements Insertable<LabelRow> {
@@ -542,12 +457,7 @@ class LabelRow extends DataClass implements Insertable<LabelRow> {
   final String id;
   final String name;
   final LabelKind kind;
-  const LabelRow({
-    required this.accountId,
-    required this.id,
-    required this.name,
-    required this.kind,
-  });
+  const LabelRow({required this.accountId, required this.id, required this.name, required this.kind});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -561,26 +471,16 @@ class LabelRow extends DataClass implements Insertable<LabelRow> {
   }
 
   LabelsCompanion toCompanion(bool nullToAbsent) {
-    return LabelsCompanion(
-      accountId: Value(accountId),
-      id: Value(id),
-      name: Value(name),
-      kind: Value(kind),
-    );
+    return LabelsCompanion(accountId: Value(accountId), id: Value(id), name: Value(name), kind: Value(kind));
   }
 
-  factory LabelRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory LabelRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LabelRow(
       accountId: serializer.fromJson<String>(json['accountId']),
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      kind: $LabelsTable.$converterkind.fromJson(
-        serializer.fromJson<String>(json['kind']),
-      ),
+      kind: $LabelsTable.$converterkind.fromJson(serializer.fromJson<String>(json['kind'])),
     );
   }
   @override
@@ -590,18 +490,11 @@ class LabelRow extends DataClass implements Insertable<LabelRow> {
       'accountId': serializer.toJson<String>(accountId),
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
-      'kind': serializer.toJson<String>(
-        $LabelsTable.$converterkind.toJson(kind),
-      ),
+      'kind': serializer.toJson<String>($LabelsTable.$converterkind.toJson(kind)),
     };
   }
 
-  LabelRow copyWith({
-    String? accountId,
-    String? id,
-    String? name,
-    LabelKind? kind,
-  }) => LabelRow(
+  LabelRow copyWith({String? accountId, String? id, String? name, LabelKind? kind}) => LabelRow(
     accountId: accountId ?? this.accountId,
     id: id ?? this.id,
     name: name ?? this.name,
@@ -707,9 +600,7 @@ class LabelsCompanion extends UpdateCompanion<LabelRow> {
       map['name'] = Variable<String>(name.value);
     }
     if (kind.present) {
-      map['kind'] = Variable<String>(
-        $LabelsTable.$converterkind.toSql(kind.value),
-      );
+      map['kind'] = Variable<String>($LabelsTable.$converterkind.toSql(kind.value));
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -730,15 +621,12 @@ class LabelsCompanion extends UpdateCompanion<LabelRow> {
   }
 }
 
-class $MessagesTable extends Messages
-    with TableInfo<$MessagesTable, MessageRow> {
+class $MessagesTable extends Messages with TableInfo<$MessagesTable, MessageRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $MessagesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -756,9 +644,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -767,9 +653,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
-    'conversationId',
-  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta('conversationId');
   @override
   late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
     'conversation_id',
@@ -787,9 +671,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _senderNameMeta = const VerificationMeta(
-    'senderName',
-  );
+  static const VerificationMeta _senderNameMeta = const VerificationMeta('senderName');
   @override
   late final GeneratedColumn<String> senderName = GeneratedColumn<String>(
     'sender_name',
@@ -798,9 +680,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _recipientsMeta = const VerificationMeta(
-    'recipients',
-  );
+  static const VerificationMeta _recipientsMeta = const VerificationMeta('recipients');
   @override
   late final GeneratedColumn<String> recipients = GeneratedColumn<String>(
     'recipients',
@@ -829,9 +709,7 @@ class $MessagesTable extends Messages
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
-  static const VerificationMeta _replyToMeta = const VerificationMeta(
-    'replyTo',
-  );
+  static const VerificationMeta _replyToMeta = const VerificationMeta('replyTo');
   @override
   late final GeneratedColumn<String> replyTo = GeneratedColumn<String>(
     'reply_to',
@@ -840,9 +718,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _referencesMeta = const VerificationMeta(
-    'references',
-  );
+  static const VerificationMeta _referencesMeta = const VerificationMeta('references');
   @override
   late final GeneratedColumn<String> references = GeneratedColumn<String>(
     'references',
@@ -851,9 +727,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _subjectMeta = const VerificationMeta(
-    'subject',
-  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta('subject');
   @override
   late final GeneratedColumn<String> subject = GeneratedColumn<String>(
     'subject',
@@ -862,9 +736,7 @@ class $MessagesTable extends Messages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _snippetMeta = const VerificationMeta(
-    'snippet',
-  );
+  static const VerificationMeta _snippetMeta = const VerificationMeta('snippet');
   @override
   late final GeneratedColumn<String> snippet = GeneratedColumn<String>(
     'snippet',
@@ -890,13 +762,9 @@ class $MessagesTable extends Messages
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_read" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("is_read" IN (0, 1))'),
   );
-  static const VerificationMeta _isStarredMeta = const VerificationMeta(
-    'isStarred',
-  );
+  static const VerificationMeta _isStarredMeta = const VerificationMeta('isStarred');
   @override
   late final GeneratedColumn<bool> isStarred = GeneratedColumn<bool>(
     'is_starred',
@@ -904,9 +772,7 @@ class $MessagesTable extends Messages
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_starred" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("is_starred" IN (0, 1))'),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -933,17 +799,11 @@ class $MessagesTable extends Messages
   String get actualTableName => $name;
   static const String $name = 'messages';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<MessageRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<MessageRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
@@ -953,43 +813,28 @@ class $MessagesTable extends Messages
       context.missing(_idMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('conversation_id')) {
       context.handle(
         _conversationIdMeta,
-        conversationId.isAcceptableOrUnknown(
-          data['conversation_id']!,
-          _conversationIdMeta,
-        ),
+        conversationId.isAcceptableOrUnknown(data['conversation_id']!, _conversationIdMeta),
       );
     } else if (isInserting) {
       context.missing(_conversationIdMeta);
     }
     if (data.containsKey('sender')) {
-      context.handle(
-        _senderMeta,
-        sender.isAcceptableOrUnknown(data['sender']!, _senderMeta),
-      );
+      context.handle(_senderMeta, sender.isAcceptableOrUnknown(data['sender']!, _senderMeta));
     } else if (isInserting) {
       context.missing(_senderMeta);
     }
     if (data.containsKey('sender_name')) {
-      context.handle(
-        _senderNameMeta,
-        senderName.isAcceptableOrUnknown(data['sender_name']!, _senderNameMeta),
-      );
+      context.handle(_senderNameMeta, senderName.isAcceptableOrUnknown(data['sender_name']!, _senderNameMeta));
     }
     if (data.containsKey('recipients')) {
-      context.handle(
-        _recipientsMeta,
-        recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta),
-      );
+      context.handle(_recipientsMeta, recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta));
     } else if (isInserting) {
       context.missing(_recipientsMeta);
     }
@@ -997,60 +842,36 @@ class $MessagesTable extends Messages
       context.handle(_ccMeta, cc.isAcceptableOrUnknown(data['cc']!, _ccMeta));
     }
     if (data.containsKey('bcc')) {
-      context.handle(
-        _bccMeta,
-        bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
-      );
+      context.handle(_bccMeta, bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta));
     }
     if (data.containsKey('reply_to')) {
-      context.handle(
-        _replyToMeta,
-        replyTo.isAcceptableOrUnknown(data['reply_to']!, _replyToMeta),
-      );
+      context.handle(_replyToMeta, replyTo.isAcceptableOrUnknown(data['reply_to']!, _replyToMeta));
     }
     if (data.containsKey('references')) {
-      context.handle(
-        _referencesMeta,
-        references.isAcceptableOrUnknown(data['references']!, _referencesMeta),
-      );
+      context.handle(_referencesMeta, references.isAcceptableOrUnknown(data['references']!, _referencesMeta));
     }
     if (data.containsKey('subject')) {
-      context.handle(
-        _subjectMeta,
-        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
-      );
+      context.handle(_subjectMeta, subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta));
     } else if (isInserting) {
       context.missing(_subjectMeta);
     }
     if (data.containsKey('snippet')) {
-      context.handle(
-        _snippetMeta,
-        snippet.isAcceptableOrUnknown(data['snippet']!, _snippetMeta),
-      );
+      context.handle(_snippetMeta, snippet.isAcceptableOrUnknown(data['snippet']!, _snippetMeta));
     } else if (isInserting) {
       context.missing(_snippetMeta);
     }
     if (data.containsKey('date')) {
-      context.handle(
-        _dateMeta,
-        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
-      );
+      context.handle(_dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));
     } else if (isInserting) {
       context.missing(_dateMeta);
     }
     if (data.containsKey('is_read')) {
-      context.handle(
-        _isReadMeta,
-        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
-      );
+      context.handle(_isReadMeta, isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta));
     } else if (isInserting) {
       context.missing(_isReadMeta);
     }
     if (data.containsKey('is_starred')) {
-      context.handle(
-        _isStarredMeta,
-        isStarred.isAcceptableOrUnknown(data['is_starred']!, _isStarredMeta),
-      );
+      context.handle(_isStarredMeta, isStarred.isAcceptableOrUnknown(data['is_starred']!, _isStarredMeta));
     } else if (isInserting) {
       context.missing(_isStarredMeta);
     }
@@ -1063,70 +884,25 @@ class $MessagesTable extends Messages
   MessageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MessageRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
       conversationId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}conversation_id'],
       )!,
-      sender: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sender'],
-      )!,
-      senderName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sender_name'],
-      ),
-      recipients: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}recipients'],
-      )!,
-      cc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cc'],
-      )!,
-      bcc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bcc'],
-      )!,
-      replyTo: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}reply_to'],
-      ),
-      references: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}references'],
-      ),
-      subject: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}subject'],
-      )!,
-      snippet: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}snippet'],
-      )!,
-      date: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}date'],
-      )!,
-      isRead: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_read'],
-      )!,
-      isStarred: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_starred'],
-      )!,
+      sender: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}sender'])!,
+      senderName: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}sender_name']),
+      recipients: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}recipients'])!,
+      cc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}cc'])!,
+      bcc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}bcc'])!,
+      replyTo: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}reply_to']),
+      references: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}references']),
+      subject: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}subject'])!,
+      snippet: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}snippet'])!,
+      date: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}date'])!,
+      isRead: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}is_read'])!,
+      isStarred: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}is_starred'])!,
     );
   }
 
@@ -1216,18 +992,12 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       messageId: Value(messageId),
       conversationId: Value(conversationId),
       sender: Value(sender),
-      senderName: senderName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(senderName),
+      senderName: senderName == null && nullToAbsent ? const Value.absent() : Value(senderName),
       recipients: Value(recipients),
       cc: Value(cc),
       bcc: Value(bcc),
-      replyTo: replyTo == null && nullToAbsent
-          ? const Value.absent()
-          : Value(replyTo),
-      references: references == null && nullToAbsent
-          ? const Value.absent()
-          : Value(references),
+      replyTo: replyTo == null && nullToAbsent ? const Value.absent() : Value(replyTo),
+      references: references == null && nullToAbsent ? const Value.absent() : Value(references),
       subject: Value(subject),
       snippet: Value(snippet),
       date: Value(date),
@@ -1236,10 +1006,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     );
   }
 
-  factory MessageRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory MessageRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MessageRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -1323,22 +1090,14 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       id: data.id.present ? data.id.value : this.id,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
-      conversationId: data.conversationId.present
-          ? data.conversationId.value
-          : this.conversationId,
+      conversationId: data.conversationId.present ? data.conversationId.value : this.conversationId,
       sender: data.sender.present ? data.sender.value : this.sender,
-      senderName: data.senderName.present
-          ? data.senderName.value
-          : this.senderName,
-      recipients: data.recipients.present
-          ? data.recipients.value
-          : this.recipients,
+      senderName: data.senderName.present ? data.senderName.value : this.senderName,
+      recipients: data.recipients.present ? data.recipients.value : this.recipients,
       cc: data.cc.present ? data.cc.value : this.cc,
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
       replyTo: data.replyTo.present ? data.replyTo.value : this.replyTo,
-      references: data.references.present
-          ? data.references.value
-          : this.references,
+      references: data.references.present ? data.references.value : this.references,
       subject: data.subject.present ? data.subject.value : this.subject,
       snippet: data.snippet.present ? data.snippet.value : this.snippet,
       date: data.date.present ? data.date.value : this.date,
@@ -1639,15 +1398,12 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
   }
 }
 
-class $MessageLabelsTable extends MessageLabels
-    with TableInfo<$MessageLabelsTable, MessageLabelRow> {
+class $MessageLabelsTable extends MessageLabels with TableInfo<$MessageLabelsTable, MessageLabelRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $MessageLabelsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -1656,9 +1412,7 @@ class $MessageLabelsTable extends MessageLabels
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -1667,9 +1421,7 @@ class $MessageLabelsTable extends MessageLabels
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _labelIdMeta = const VerificationMeta(
-    'labelId',
-  );
+  static const VerificationMeta _labelIdMeta = const VerificationMeta('labelId');
   @override
   late final GeneratedColumn<String> labelId = GeneratedColumn<String>(
     'label_id',
@@ -1686,33 +1438,21 @@ class $MessageLabelsTable extends MessageLabels
   String get actualTableName => $name;
   static const String $name = 'message_labels';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<MessageLabelRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<MessageLabelRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('label_id')) {
-      context.handle(
-        _labelIdMeta,
-        labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta),
-      );
+      context.handle(_labelIdMeta, labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta));
     } else if (isInserting) {
       context.missing(_labelIdMeta);
     }
@@ -1725,18 +1465,9 @@ class $MessageLabelsTable extends MessageLabels
   MessageLabelRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MessageLabelRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
-      labelId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}label_id'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      labelId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}label_id'])!,
     );
   }
 
@@ -1750,11 +1481,7 @@ class MessageLabelRow extends DataClass implements Insertable<MessageLabelRow> {
   final String accountId;
   final String messageId;
   final String labelId;
-  const MessageLabelRow({
-    required this.accountId,
-    required this.messageId,
-    required this.labelId,
-  });
+  const MessageLabelRow({required this.accountId, required this.messageId, required this.labelId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1765,17 +1492,10 @@ class MessageLabelRow extends DataClass implements Insertable<MessageLabelRow> {
   }
 
   MessageLabelsCompanion toCompanion(bool nullToAbsent) {
-    return MessageLabelsCompanion(
-      accountId: Value(accountId),
-      messageId: Value(messageId),
-      labelId: Value(labelId),
-    );
+    return MessageLabelsCompanion(accountId: Value(accountId), messageId: Value(messageId), labelId: Value(labelId));
   }
 
-  factory MessageLabelRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory MessageLabelRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MessageLabelRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -1793,11 +1513,7 @@ class MessageLabelRow extends DataClass implements Insertable<MessageLabelRow> {
     };
   }
 
-  MessageLabelRow copyWith({
-    String? accountId,
-    String? messageId,
-    String? labelId,
-  }) => MessageLabelRow(
+  MessageLabelRow copyWith({String? accountId, String? messageId, String? labelId}) => MessageLabelRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
     labelId: labelId ?? this.labelId,
@@ -1913,9 +1629,7 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $BodiesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -1924,9 +1638,7 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -1945,18 +1657,16 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<BodyKind, String> kind =
-      GeneratedColumn<String>(
-        'kind',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: Constant(BodyKind.testo.name),
-      ).withConverter<BodyKind>($BodiesTable.$converterkind);
+  late final GeneratedColumnWithTypeConverter<BodyKind, String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: Constant(BodyKind.testo.name),
+  ).withConverter<BodyKind>($BodiesTable.$converterkind);
   @override
-  late final GeneratedColumnWithTypeConverter<List<Attachment>?, String>
-  attachments = GeneratedColumn<String>(
+  late final GeneratedColumnWithTypeConverter<List<Attachment>?, String> attachments = GeneratedColumn<String>(
     'attachments',
     aliasedName,
     true,
@@ -1964,46 +1674,28 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
     requiredDuringInsert: false,
   ).withConverter<List<Attachment>?>($BodiesTable.$converterattachmentsn);
   @override
-  List<GeneratedColumn> get $columns => [
-    accountId,
-    messageId,
-    body,
-    kind,
-    attachments,
-  ];
+  List<GeneratedColumn> get $columns => [accountId, messageId, body, kind, attachments];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'bodies';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<BodyRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<BodyRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('body')) {
-      context.handle(
-        _bodyMeta,
-        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
-      );
+      context.handle(_bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
     } else if (isInserting) {
       context.missing(_bodyMeta);
     }
@@ -2016,29 +1708,14 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
   BodyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return BodyRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
-      body: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}body'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      body: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}body'])!,
       kind: $BodiesTable.$converterkind.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}kind'],
-        )!,
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
       ),
       attachments: $BodiesTable.$converterattachmentsn.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}attachments'],
-        ),
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}attachments']),
       ),
     );
   }
@@ -2048,12 +1725,13 @@ class $BodiesTable extends Bodies with TableInfo<$BodiesTable, BodyRow> {
     return $BodiesTable(attachedDatabase, alias);
   }
 
-  static JsonTypeConverter2<BodyKind, String, String> $converterkind =
-      const EnumNameConverter<BodyKind>(BodyKind.values);
-  static TypeConverter<List<Attachment>, String> $converterattachments =
-      const AttachmentsConverter();
-  static TypeConverter<List<Attachment>?, String?> $converterattachmentsn =
-      NullAwareTypeConverter.wrap($converterattachments);
+  static JsonTypeConverter2<BodyKind, String, String> $converterkind = const EnumNameConverter<BodyKind>(
+    BodyKind.values,
+  );
+  static TypeConverter<List<Attachment>, String> $converterattachments = const AttachmentsConverter();
+  static TypeConverter<List<Attachment>?, String?> $converterattachmentsn = NullAwareTypeConverter.wrap(
+    $converterattachments,
+  );
 }
 
 class BodyRow extends DataClass implements Insertable<BodyRow> {
@@ -2083,9 +1761,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       map['kind'] = Variable<String>($BodiesTable.$converterkind.toSql(kind));
     }
     if (!nullToAbsent || attachments != null) {
-      map['attachments'] = Variable<String>(
-        $BodiesTable.$converterattachmentsn.toSql(attachments),
-      );
+      map['attachments'] = Variable<String>($BodiesTable.$converterattachmentsn.toSql(attachments));
     }
     return map;
   }
@@ -2096,24 +1772,17 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       messageId: Value(messageId),
       body: Value(body),
       kind: Value(kind),
-      attachments: attachments == null && nullToAbsent
-          ? const Value.absent()
-          : Value(attachments),
+      attachments: attachments == null && nullToAbsent ? const Value.absent() : Value(attachments),
     );
   }
 
-  factory BodyRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory BodyRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BodyRow(
       accountId: serializer.fromJson<String>(json['accountId']),
       messageId: serializer.fromJson<String>(json['messageId']),
       body: serializer.fromJson<String>(json['body']),
-      kind: $BodiesTable.$converterkind.fromJson(
-        serializer.fromJson<String>(json['kind']),
-      ),
+      kind: $BodiesTable.$converterkind.fromJson(serializer.fromJson<String>(json['kind'])),
       attachments: serializer.fromJson<List<Attachment>?>(json['attachments']),
     );
   }
@@ -2124,9 +1793,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       'accountId': serializer.toJson<String>(accountId),
       'messageId': serializer.toJson<String>(messageId),
       'body': serializer.toJson<String>(body),
-      'kind': serializer.toJson<String>(
-        $BodiesTable.$converterkind.toJson(kind),
-      ),
+      'kind': serializer.toJson<String>($BodiesTable.$converterkind.toJson(kind)),
       'attachments': serializer.toJson<List<Attachment>?>(attachments),
     };
   }
@@ -2150,9 +1817,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
       body: data.body.present ? data.body.value : this.body,
       kind: data.kind.present ? data.kind.value : this.kind,
-      attachments: data.attachments.present
-          ? data.attachments.value
-          : this.attachments,
+      attachments: data.attachments.present ? data.attachments.value : this.attachments,
     );
   }
 
@@ -2169,8 +1834,7 @@ class BodyRow extends DataClass implements Insertable<BodyRow> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(accountId, messageId, body, kind, attachments);
+  int get hashCode => Object.hash(accountId, messageId, body, kind, attachments);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2256,14 +1920,10 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
       map['body'] = Variable<String>(body.value);
     }
     if (kind.present) {
-      map['kind'] = Variable<String>(
-        $BodiesTable.$converterkind.toSql(kind.value),
-      );
+      map['kind'] = Variable<String>($BodiesTable.$converterkind.toSql(kind.value));
     }
     if (attachments.present) {
-      map['attachments'] = Variable<String>(
-        $BodiesTable.$converterattachmentsn.toSql(attachments.value),
-      );
+      map['attachments'] = Variable<String>($BodiesTable.$converterattachmentsn.toSql(attachments.value));
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2285,15 +1945,12 @@ class BodiesCompanion extends UpdateCompanion<BodyRow> {
   }
 }
 
-class $SyncCursorsTable extends SyncCursors
-    with TableInfo<$SyncCursorsTable, SyncCursorRow> {
+class $SyncCursorsTable extends SyncCursors with TableInfo<$SyncCursorsTable, SyncCursorRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $SyncCursorsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -2319,25 +1976,16 @@ class $SyncCursorsTable extends SyncCursors
   String get actualTableName => $name;
   static const String $name = 'sync_cursors';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<SyncCursorRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<SyncCursorRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('cursor')) {
-      context.handle(
-        _cursorMeta,
-        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
-      );
+      context.handle(_cursorMeta, cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta));
     } else if (isInserting) {
       context.missing(_cursorMeta);
     }
@@ -2350,14 +1998,8 @@ class $SyncCursorsTable extends SyncCursors
   SyncCursorRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SyncCursorRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      cursor: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cursor'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      cursor: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}cursor'])!,
     );
   }
 
@@ -2380,16 +2022,10 @@ class SyncCursorRow extends DataClass implements Insertable<SyncCursorRow> {
   }
 
   SyncCursorsCompanion toCompanion(bool nullToAbsent) {
-    return SyncCursorsCompanion(
-      accountId: Value(accountId),
-      cursor: Value(cursor),
-    );
+    return SyncCursorsCompanion(accountId: Value(accountId), cursor: Value(cursor));
   }
 
-  factory SyncCursorRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory SyncCursorRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SyncCursorRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -2405,10 +2041,8 @@ class SyncCursorRow extends DataClass implements Insertable<SyncCursorRow> {
     };
   }
 
-  SyncCursorRow copyWith({String? accountId, String? cursor}) => SyncCursorRow(
-    accountId: accountId ?? this.accountId,
-    cursor: cursor ?? this.cursor,
-  );
+  SyncCursorRow copyWith({String? accountId, String? cursor}) =>
+      SyncCursorRow(accountId: accountId ?? this.accountId, cursor: cursor ?? this.cursor);
   SyncCursorRow copyWithCompanion(SyncCursorsCompanion data) {
     return SyncCursorRow(
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
@@ -2430,9 +2064,7 @@ class SyncCursorRow extends DataClass implements Insertable<SyncCursorRow> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SyncCursorRow &&
-          other.accountId == this.accountId &&
-          other.cursor == this.cursor);
+      (other is SyncCursorRow && other.accountId == this.accountId && other.cursor == this.cursor);
 }
 
 class SyncCursorsCompanion extends UpdateCompanion<SyncCursorRow> {
@@ -2444,12 +2076,9 @@ class SyncCursorsCompanion extends UpdateCompanion<SyncCursorRow> {
     this.cursor = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  SyncCursorsCompanion.insert({
-    required String accountId,
-    required String cursor,
-    this.rowid = const Value.absent(),
-  }) : accountId = Value(accountId),
-       cursor = Value(cursor);
+  SyncCursorsCompanion.insert({required String accountId, required String cursor, this.rowid = const Value.absent()})
+    : accountId = Value(accountId),
+      cursor = Value(cursor);
   static Insertable<SyncCursorRow> custom({
     Expression<String>? accountId,
     Expression<String>? cursor,
@@ -2462,11 +2091,7 @@ class SyncCursorsCompanion extends UpdateCompanion<SyncCursorRow> {
     });
   }
 
-  SyncCursorsCompanion copyWith({
-    Value<String>? accountId,
-    Value<String>? cursor,
-    Value<int>? rowid,
-  }) {
+  SyncCursorsCompanion copyWith({Value<String>? accountId, Value<String>? cursor, Value<int>? rowid}) {
     return SyncCursorsCompanion(
       accountId: accountId ?? this.accountId,
       cursor: cursor ?? this.cursor,
@@ -2505,9 +2130,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $IntentsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -2516,9 +2139,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -2535,9 +2156,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     true,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_read" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("is_read" IN (0, 1))'),
   );
   @override
   List<GeneratedColumn> get $columns => [accountId, messageId, isRead];
@@ -2547,33 +2166,21 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
   String get actualTableName => $name;
   static const String $name = 'intents';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<IntentRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<IntentRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('is_read')) {
-      context.handle(
-        _isReadMeta,
-        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
-      );
+      context.handle(_isReadMeta, isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta));
     }
     return context;
   }
@@ -2584,18 +2191,9 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
   IntentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return IntentRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
-      isRead: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_read'],
-      ),
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      isRead: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}is_read']),
     );
   }
 
@@ -2609,11 +2207,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
   final String accountId;
   final String messageId;
   final bool? isRead;
-  const IntentRow({
-    required this.accountId,
-    required this.messageId,
-    this.isRead,
-  });
+  const IntentRow({required this.accountId, required this.messageId, this.isRead});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2629,16 +2223,11 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     return IntentsCompanion(
       accountId: Value(accountId),
       messageId: Value(messageId),
-      isRead: isRead == null && nullToAbsent
-          ? const Value.absent()
-          : Value(isRead),
+      isRead: isRead == null && nullToAbsent ? const Value.absent() : Value(isRead),
     );
   }
 
-  factory IntentRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory IntentRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return IntentRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -2656,11 +2245,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     };
   }
 
-  IntentRow copyWith({
-    String? accountId,
-    String? messageId,
-    Value<bool?> isRead = const Value.absent(),
-  }) => IntentRow(
+  IntentRow copyWith({String? accountId, String? messageId, Value<bool?> isRead = const Value.absent()}) => IntentRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
     isRead: isRead.present ? isRead.value : this.isRead,
@@ -2770,15 +2355,12 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   }
 }
 
-class $TrustedSendersTable extends TrustedSenders
-    with TableInfo<$TrustedSendersTable, TrustedSenderRow> {
+class $TrustedSendersTable extends TrustedSenders with TableInfo<$TrustedSendersTable, TrustedSenderRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $TrustedSendersTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _addressMeta = const VerificationMeta(
-    'address',
-  );
+  static const VerificationMeta _addressMeta = const VerificationMeta('address');
   @override
   late final GeneratedColumn<String> address = GeneratedColumn<String>(
     'address',
@@ -2795,17 +2377,11 @@ class $TrustedSendersTable extends TrustedSenders
   String get actualTableName => $name;
   static const String $name = 'trusted_senders';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<TrustedSenderRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<TrustedSenderRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('address')) {
-      context.handle(
-        _addressMeta,
-        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
-      );
+      context.handle(_addressMeta, address.isAcceptableOrUnknown(data['address']!, _addressMeta));
     } else if (isInserting) {
       context.missing(_addressMeta);
     }
@@ -2818,10 +2394,7 @@ class $TrustedSendersTable extends TrustedSenders
   TrustedSenderRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TrustedSenderRow(
-      address: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}address'],
-      )!,
+      address: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}address'])!,
     );
   }
 
@@ -2831,8 +2404,7 @@ class $TrustedSendersTable extends TrustedSenders
   }
 }
 
-class TrustedSenderRow extends DataClass
-    implements Insertable<TrustedSenderRow> {
+class TrustedSenderRow extends DataClass implements Insertable<TrustedSenderRow> {
   final String address;
   const TrustedSenderRow({required this.address});
   @override
@@ -2846,14 +2418,9 @@ class TrustedSenderRow extends DataClass
     return TrustedSendersCompanion(address: Value(address));
   }
 
-  factory TrustedSenderRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory TrustedSenderRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return TrustedSenderRow(
-      address: serializer.fromJson<String>(json['address']),
-    );
+    return TrustedSenderRow(address: serializer.fromJson<String>(json['address']));
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
@@ -2861,12 +2428,9 @@ class TrustedSenderRow extends DataClass
     return <String, dynamic>{'address': serializer.toJson<String>(address)};
   }
 
-  TrustedSenderRow copyWith({String? address}) =>
-      TrustedSenderRow(address: address ?? this.address);
+  TrustedSenderRow copyWith({String? address}) => TrustedSenderRow(address: address ?? this.address);
   TrustedSenderRow copyWithCompanion(TrustedSendersCompanion data) {
-    return TrustedSenderRow(
-      address: data.address.present ? data.address.value : this.address,
-    );
+    return TrustedSenderRow(address: data.address.present ? data.address.value : this.address);
   }
 
   @override
@@ -2881,39 +2445,21 @@ class TrustedSenderRow extends DataClass
   int get hashCode => address.hashCode;
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is TrustedSenderRow && other.address == this.address);
+      identical(this, other) || (other is TrustedSenderRow && other.address == this.address);
 }
 
 class TrustedSendersCompanion extends UpdateCompanion<TrustedSenderRow> {
   final Value<String> address;
   final Value<int> rowid;
-  const TrustedSendersCompanion({
-    this.address = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  TrustedSendersCompanion.insert({
-    required String address,
-    this.rowid = const Value.absent(),
-  }) : address = Value(address);
-  static Insertable<TrustedSenderRow> custom({
-    Expression<String>? address,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (address != null) 'address': address,
-      if (rowid != null) 'rowid': rowid,
-    });
+  const TrustedSendersCompanion({this.address = const Value.absent(), this.rowid = const Value.absent()});
+  TrustedSendersCompanion.insert({required String address, this.rowid = const Value.absent()})
+    : address = Value(address);
+  static Insertable<TrustedSenderRow> custom({Expression<String>? address, Expression<int>? rowid}) {
+    return RawValuesInsertable({if (address != null) 'address': address, if (rowid != null) 'rowid': rowid});
   }
 
-  TrustedSendersCompanion copyWith({
-    Value<String>? address,
-    Value<int>? rowid,
-  }) {
-    return TrustedSendersCompanion(
-      address: address ?? this.address,
-      rowid: rowid ?? this.rowid,
-    );
+  TrustedSendersCompanion copyWith({Value<String>? address, Value<int>? rowid}) {
+    return TrustedSendersCompanion(address: address ?? this.address, rowid: rowid ?? this.rowid);
   }
 
   @override
@@ -2938,8 +2484,7 @@ class TrustedSendersCompanion extends UpdateCompanion<TrustedSenderRow> {
   }
 }
 
-class $DeviceSettingsTable extends DeviceSettings
-    with TableInfo<$DeviceSettingsTable, DeviceSettingRow> {
+class $DeviceSettingsTable extends DeviceSettings with TableInfo<$DeviceSettingsTable, DeviceSettingRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -2970,25 +2515,16 @@ class $DeviceSettingsTable extends DeviceSettings
   String get actualTableName => $name;
   static const String $name = 'device_settings';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<DeviceSettingRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<DeviceSettingRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('key')) {
-      context.handle(
-        _keyMeta,
-        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
-      );
+      context.handle(_keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
     } else if (isInserting) {
       context.missing(_keyMeta);
     }
     if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
+      context.handle(_valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
     } else if (isInserting) {
       context.missing(_valueMeta);
     }
@@ -3001,14 +2537,8 @@ class $DeviceSettingsTable extends DeviceSettings
   DeviceSettingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DeviceSettingRow(
-      key: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}key'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}value'],
-      )!,
+      key: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}value'])!,
     );
   }
 
@@ -3018,8 +2548,7 @@ class $DeviceSettingsTable extends DeviceSettings
   }
 }
 
-class DeviceSettingRow extends DataClass
-    implements Insertable<DeviceSettingRow> {
+class DeviceSettingRow extends DataClass implements Insertable<DeviceSettingRow> {
   final String key;
   final String value;
   const DeviceSettingRow({required this.key, required this.value});
@@ -3035,10 +2564,7 @@ class DeviceSettingRow extends DataClass
     return DeviceSettingsCompanion(key: Value(key), value: Value(value));
   }
 
-  factory DeviceSettingRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory DeviceSettingRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DeviceSettingRow(
       key: serializer.fromJson<String>(json['key']),
@@ -3048,10 +2574,7 @@ class DeviceSettingRow extends DataClass
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'key': serializer.toJson<String>(key),
-      'value': serializer.toJson<String>(value),
-    };
+    return <String, dynamic>{'key': serializer.toJson<String>(key), 'value': serializer.toJson<String>(value)};
   }
 
   DeviceSettingRow copyWith({String? key, String? value}) =>
@@ -3076,10 +2599,7 @@ class DeviceSettingRow extends DataClass
   int get hashCode => Object.hash(key, value);
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is DeviceSettingRow &&
-          other.key == this.key &&
-          other.value == this.value);
+      identical(this, other) || (other is DeviceSettingRow && other.key == this.key && other.value == this.value);
 }
 
 class DeviceSettingsCompanion extends UpdateCompanion<DeviceSettingRow> {
@@ -3091,12 +2611,9 @@ class DeviceSettingsCompanion extends UpdateCompanion<DeviceSettingRow> {
     this.value = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  DeviceSettingsCompanion.insert({
-    required String key,
-    required String value,
-    this.rowid = const Value.absent(),
-  }) : key = Value(key),
-       value = Value(value);
+  DeviceSettingsCompanion.insert({required String key, required String value, this.rowid = const Value.absent()})
+    : key = Value(key),
+      value = Value(value);
   static Insertable<DeviceSettingRow> custom({
     Expression<String>? key,
     Expression<String>? value,
@@ -3109,16 +2626,8 @@ class DeviceSettingsCompanion extends UpdateCompanion<DeviceSettingRow> {
     });
   }
 
-  DeviceSettingsCompanion copyWith({
-    Value<String>? key,
-    Value<String>? value,
-    Value<int>? rowid,
-  }) {
-    return DeviceSettingsCompanion(
-      key: key ?? this.key,
-      value: value ?? this.value,
-      rowid: rowid ?? this.rowid,
-    );
+  DeviceSettingsCompanion copyWith({Value<String>? key, Value<String>? value, Value<int>? rowid}) {
+    return DeviceSettingsCompanion(key: key ?? this.key, value: value ?? this.value, rowid: rowid ?? this.rowid);
   }
 
   @override
@@ -3152,9 +2661,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $DraftsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -3163,9 +2670,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -3174,9 +2679,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _recipientsMeta = const VerificationMeta(
-    'recipients',
-  );
+  static const VerificationMeta _recipientsMeta = const VerificationMeta('recipients');
   @override
   late final GeneratedColumn<String> recipients = GeneratedColumn<String>(
     'recipients',
@@ -3203,9 +2706,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _subjectMeta = const VerificationMeta(
-    'subject',
-  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta('subject');
   @override
   late final GeneratedColumn<String> subject = GeneratedColumn<String>(
     'subject',
@@ -3223,9 +2724,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _inReplyToMeta = const VerificationMeta(
-    'inReplyTo',
-  );
+  static const VerificationMeta _inReplyToMeta = const VerificationMeta('inReplyTo');
   @override
   late final GeneratedColumn<String> inReplyTo = GeneratedColumn<String>(
     'in_reply_to',
@@ -3234,9 +2733,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _referencesMeta = const VerificationMeta(
-    'references',
-  );
+  static const VerificationMeta _referencesMeta = const VerificationMeta('references');
   @override
   late final GeneratedColumn<String> references = GeneratedColumn<String>(
     'references',
@@ -3245,9 +2742,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
-    'conversationId',
-  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta('conversationId');
   @override
   late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
     'conversation_id',
@@ -3257,23 +2752,14 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     requiredDuringInsert: false,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<
-    List<ForwardedAttachment>?,
-    String
-  >
-  attachments =
-      GeneratedColumn<String>(
-        'attachments',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      ).withConverter<List<ForwardedAttachment>?>(
-        $DraftsTable.$converterattachmentsn,
-      );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
+  late final GeneratedColumnWithTypeConverter<List<ForwardedAttachment>?, String> attachments = GeneratedColumn<String>(
+    'attachments',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<ForwardedAttachment>?>($DraftsTable.$converterattachmentsn);
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
   @override
   late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
     'updated_at',
@@ -3282,9 +2768,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _pendingMeta = const VerificationMeta(
-    'pending',
-  );
+  static const VerificationMeta _pendingMeta = const VerificationMeta('pending');
   @override
   late final GeneratedColumn<bool> pending = GeneratedColumn<bool>(
     'pending',
@@ -3292,9 +2776,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("pending" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("pending" IN (0, 1))'),
   );
   static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
   @override
@@ -3304,13 +2786,9 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("synced" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("synced" IN (0, 1))'),
   );
-  static const VerificationMeta _remoteKnownMeta = const VerificationMeta(
-    'remoteKnown',
-  );
+  static const VerificationMeta _remoteKnownMeta = const VerificationMeta('remoteKnown');
   @override
   late final GeneratedColumn<bool> remoteKnown = GeneratedColumn<bool>(
     'remote_known',
@@ -3318,9 +2796,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("remote_known" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("remote_known" IN (0, 1))'),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3346,33 +2822,21 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   String get actualTableName => $name;
   static const String $name = 'drafts';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<DraftRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<DraftRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('recipients')) {
-      context.handle(
-        _recipientsMeta,
-        recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta),
-      );
+      context.handle(_recipientsMeta, recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta));
     } else if (isInserting) {
       context.missing(_recipientsMeta);
     }
@@ -3382,82 +2846,49 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
       context.missing(_ccMeta);
     }
     if (data.containsKey('bcc')) {
-      context.handle(
-        _bccMeta,
-        bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
-      );
+      context.handle(_bccMeta, bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta));
     } else if (isInserting) {
       context.missing(_bccMeta);
     }
     if (data.containsKey('subject')) {
-      context.handle(
-        _subjectMeta,
-        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
-      );
+      context.handle(_subjectMeta, subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta));
     } else if (isInserting) {
       context.missing(_subjectMeta);
     }
     if (data.containsKey('body')) {
-      context.handle(
-        _bodyMeta,
-        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
-      );
+      context.handle(_bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
     } else if (isInserting) {
       context.missing(_bodyMeta);
     }
     if (data.containsKey('in_reply_to')) {
-      context.handle(
-        _inReplyToMeta,
-        inReplyTo.isAcceptableOrUnknown(data['in_reply_to']!, _inReplyToMeta),
-      );
+      context.handle(_inReplyToMeta, inReplyTo.isAcceptableOrUnknown(data['in_reply_to']!, _inReplyToMeta));
     }
     if (data.containsKey('references')) {
-      context.handle(
-        _referencesMeta,
-        references.isAcceptableOrUnknown(data['references']!, _referencesMeta),
-      );
+      context.handle(_referencesMeta, references.isAcceptableOrUnknown(data['references']!, _referencesMeta));
     }
     if (data.containsKey('conversation_id')) {
       context.handle(
         _conversationIdMeta,
-        conversationId.isAcceptableOrUnknown(
-          data['conversation_id']!,
-          _conversationIdMeta,
-        ),
+        conversationId.isAcceptableOrUnknown(data['conversation_id']!, _conversationIdMeta),
       );
     }
     if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
+      context.handle(_updatedAtMeta, updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('pending')) {
-      context.handle(
-        _pendingMeta,
-        pending.isAcceptableOrUnknown(data['pending']!, _pendingMeta),
-      );
+      context.handle(_pendingMeta, pending.isAcceptableOrUnknown(data['pending']!, _pendingMeta));
     } else if (isInserting) {
       context.missing(_pendingMeta);
     }
     if (data.containsKey('synced')) {
-      context.handle(
-        _syncedMeta,
-        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
-      );
+      context.handle(_syncedMeta, synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta));
     } else if (isInserting) {
       context.missing(_syncedMeta);
     }
     if (data.containsKey('remote_known')) {
-      context.handle(
-        _remoteKnownMeta,
-        remoteKnown.isAcceptableOrUnknown(
-          data['remote_known']!,
-          _remoteKnownMeta,
-        ),
-      );
+      context.handle(_remoteKnownMeta, remoteKnown.isAcceptableOrUnknown(data['remote_known']!, _remoteKnownMeta));
     } else if (isInserting) {
       context.missing(_remoteKnownMeta);
     }
@@ -3470,68 +2901,23 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   DraftRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DraftRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
-      recipients: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}recipients'],
-      )!,
-      cc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cc'],
-      )!,
-      bcc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bcc'],
-      )!,
-      subject: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}subject'],
-      )!,
-      body: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}body'],
-      )!,
-      inReplyTo: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}in_reply_to'],
-      ),
-      references: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}references'],
-      ),
-      conversationId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}conversation_id'],
-      ),
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      recipients: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}recipients'])!,
+      cc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}cc'])!,
+      bcc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}bcc'])!,
+      subject: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}subject'])!,
+      body: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+      inReplyTo: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}in_reply_to']),
+      references: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}references']),
+      conversationId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}conversation_id']),
       attachments: $DraftsTable.$converterattachmentsn.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}attachments'],
-        ),
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}attachments']),
       ),
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}updated_at'],
-      )!,
-      pending: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}pending'],
-      )!,
-      synced: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}synced'],
-      )!,
-      remoteKnown: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}remote_known'],
-      )!,
+      updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}updated_at'])!,
+      pending: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}pending'])!,
+      synced: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}synced'])!,
+      remoteKnown: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}remote_known'])!,
     );
   }
 
@@ -3540,10 +2926,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     return $DraftsTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<List<ForwardedAttachment>, String>
-  $converterattachments = const ForwardedAttachmentsConverter();
-  static TypeConverter<List<ForwardedAttachment>?, String?>
-  $converterattachmentsn = NullAwareTypeConverter.wrap($converterattachments);
+  static TypeConverter<List<ForwardedAttachment>, String> $converterattachments = const ForwardedAttachmentsConverter();
+  static TypeConverter<List<ForwardedAttachment>?, String?> $converterattachmentsn = NullAwareTypeConverter.wrap(
+    $converterattachments,
+  );
 }
 
 class DraftRow extends DataClass implements Insertable<DraftRow> {
@@ -3610,9 +2996,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       map['conversation_id'] = Variable<String>(conversationId);
     }
     if (!nullToAbsent || attachments != null) {
-      map['attachments'] = Variable<String>(
-        $DraftsTable.$converterattachmentsn.toSql(attachments),
-      );
+      map['attachments'] = Variable<String>($DraftsTable.$converterattachmentsn.toSql(attachments));
     }
     map['updated_at'] = Variable<int>(updatedAt);
     map['pending'] = Variable<bool>(pending);
@@ -3630,18 +3014,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       bcc: Value(bcc),
       subject: Value(subject),
       body: Value(body),
-      inReplyTo: inReplyTo == null && nullToAbsent
-          ? const Value.absent()
-          : Value(inReplyTo),
-      references: references == null && nullToAbsent
-          ? const Value.absent()
-          : Value(references),
-      conversationId: conversationId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(conversationId),
-      attachments: attachments == null && nullToAbsent
-          ? const Value.absent()
-          : Value(attachments),
+      inReplyTo: inReplyTo == null && nullToAbsent ? const Value.absent() : Value(inReplyTo),
+      references: references == null && nullToAbsent ? const Value.absent() : Value(references),
+      conversationId: conversationId == null && nullToAbsent ? const Value.absent() : Value(conversationId),
+      attachments: attachments == null && nullToAbsent ? const Value.absent() : Value(attachments),
       updatedAt: Value(updatedAt),
       pending: Value(pending),
       synced: Value(synced),
@@ -3649,10 +3025,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     );
   }
 
-  factory DraftRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory DraftRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DraftRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -3665,9 +3038,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       inReplyTo: serializer.fromJson<String?>(json['inReplyTo']),
       references: serializer.fromJson<String?>(json['references']),
       conversationId: serializer.fromJson<String?>(json['conversationId']),
-      attachments: serializer.fromJson<List<ForwardedAttachment>?>(
-        json['attachments'],
-      ),
+      attachments: serializer.fromJson<List<ForwardedAttachment>?>(json['attachments']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       pending: serializer.fromJson<bool>(json['pending']),
       synced: serializer.fromJson<bool>(json['synced']),
@@ -3722,9 +3093,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     body: body ?? this.body,
     inReplyTo: inReplyTo.present ? inReplyTo.value : this.inReplyTo,
     references: references.present ? references.value : this.references,
-    conversationId: conversationId.present
-        ? conversationId.value
-        : this.conversationId,
+    conversationId: conversationId.present ? conversationId.value : this.conversationId,
     attachments: attachments.present ? attachments.value : this.attachments,
     updatedAt: updatedAt ?? this.updatedAt,
     pending: pending ?? this.pending,
@@ -3735,29 +3104,19 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     return DraftRow(
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
-      recipients: data.recipients.present
-          ? data.recipients.value
-          : this.recipients,
+      recipients: data.recipients.present ? data.recipients.value : this.recipients,
       cc: data.cc.present ? data.cc.value : this.cc,
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
       subject: data.subject.present ? data.subject.value : this.subject,
       body: data.body.present ? data.body.value : this.body,
       inReplyTo: data.inReplyTo.present ? data.inReplyTo.value : this.inReplyTo,
-      references: data.references.present
-          ? data.references.value
-          : this.references,
-      conversationId: data.conversationId.present
-          ? data.conversationId.value
-          : this.conversationId,
-      attachments: data.attachments.present
-          ? data.attachments.value
-          : this.attachments,
+      references: data.references.present ? data.references.value : this.references,
+      conversationId: data.conversationId.present ? data.conversationId.value : this.conversationId,
+      attachments: data.attachments.present ? data.attachments.value : this.attachments,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       pending: data.pending.present ? data.pending.value : this.pending,
       synced: data.synced.present ? data.synced.value : this.synced,
-      remoteKnown: data.remoteKnown.present
-          ? data.remoteKnown.value
-          : this.remoteKnown,
+      remoteKnown: data.remoteKnown.present ? data.remoteKnown.value : this.remoteKnown,
     );
   }
 
@@ -3995,9 +3354,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       map['conversation_id'] = Variable<String>(conversationId.value);
     }
     if (attachments.present) {
-      map['attachments'] = Variable<String>(
-        $DraftsTable.$converterattachmentsn.toSql(attachments.value),
-      );
+      map['attachments'] = Variable<String>($DraftsTable.$converterattachmentsn.toSql(attachments.value));
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
@@ -4046,9 +3403,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $OutboxTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta('accountId');
   @override
   late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
     'account_id',
@@ -4057,9 +3412,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _messageIdMeta = const VerificationMeta(
-    'messageId',
-  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta('messageId');
   @override
   late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
     'message_id',
@@ -4077,9 +3430,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _recipientsMeta = const VerificationMeta(
-    'recipients',
-  );
+  static const VerificationMeta _recipientsMeta = const VerificationMeta('recipients');
   @override
   late final GeneratedColumn<String> recipients = GeneratedColumn<String>(
     'recipients',
@@ -4106,9 +3457,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _subjectMeta = const VerificationMeta(
-    'subject',
-  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta('subject');
   @override
   late final GeneratedColumn<String> subject = GeneratedColumn<String>(
     'subject',
@@ -4126,9 +3475,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
-    'conversationId',
-  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta('conversationId');
   @override
   late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
     'conversation_id',
@@ -4137,9 +3484,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _versionMeta = const VerificationMeta(
-    'version',
-  );
+  static const VerificationMeta _versionMeta = const VerificationMeta('version');
   @override
   late final GeneratedColumn<int> version = GeneratedColumn<int>(
     'version',
@@ -4148,9 +3493,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _sendAfterMeta = const VerificationMeta(
-    'sendAfter',
-  );
+  static const VerificationMeta _sendAfterMeta = const VerificationMeta('sendAfter');
   @override
   late final GeneratedColumn<int> sendAfter = GeneratedColumn<int>(
     'send_after',
@@ -4159,9 +3502,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _claimedUntilMeta = const VerificationMeta(
-    'claimedUntil',
-  );
+  static const VerificationMeta _claimedUntilMeta = const VerificationMeta('claimedUntil');
   @override
   late final GeneratedColumn<int> claimedUntil = GeneratedColumn<int>(
     'claimed_until',
@@ -4178,14 +3519,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("failed" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("failed" IN (0, 1))'),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _attemptedMeta = const VerificationMeta(
-    'attempted',
-  );
+  static const VerificationMeta _attemptedMeta = const VerificationMeta('attempted');
   @override
   late final GeneratedColumn<bool> attempted = GeneratedColumn<bool>(
     'attempted',
@@ -4193,9 +3530,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("attempted" IN (0, 1))',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('CHECK ("attempted" IN (0, 1))'),
     defaultValue: const Constant(false),
   );
   @override
@@ -4221,41 +3556,26 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   String get actualTableName => $name;
   static const String $name = 'outbox';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<OutboxRow> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<OutboxRow> instance, {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
+      context.handle(_accountIdMeta, accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     } else if (isInserting) {
       context.missing(_accountIdMeta);
     }
     if (data.containsKey('message_id')) {
-      context.handle(
-        _messageIdMeta,
-        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
-      );
+      context.handle(_messageIdMeta, messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
     if (data.containsKey('raw')) {
-      context.handle(
-        _rawMeta,
-        raw.isAcceptableOrUnknown(data['raw']!, _rawMeta),
-      );
+      context.handle(_rawMeta, raw.isAcceptableOrUnknown(data['raw']!, _rawMeta));
     } else if (isInserting) {
       context.missing(_rawMeta);
     }
     if (data.containsKey('recipients')) {
-      context.handle(
-        _recipientsMeta,
-        recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta),
-      );
+      context.handle(_recipientsMeta, recipients.isAcceptableOrUnknown(data['recipients']!, _recipientsMeta));
     } else if (isInserting) {
       context.missing(_recipientsMeta);
     }
@@ -4265,74 +3585,44 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
       context.missing(_ccMeta);
     }
     if (data.containsKey('bcc')) {
-      context.handle(
-        _bccMeta,
-        bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta),
-      );
+      context.handle(_bccMeta, bcc.isAcceptableOrUnknown(data['bcc']!, _bccMeta));
     } else if (isInserting) {
       context.missing(_bccMeta);
     }
     if (data.containsKey('subject')) {
-      context.handle(
-        _subjectMeta,
-        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
-      );
+      context.handle(_subjectMeta, subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta));
     } else if (isInserting) {
       context.missing(_subjectMeta);
     }
     if (data.containsKey('body')) {
-      context.handle(
-        _bodyMeta,
-        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
-      );
+      context.handle(_bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
     } else if (isInserting) {
       context.missing(_bodyMeta);
     }
     if (data.containsKey('conversation_id')) {
       context.handle(
         _conversationIdMeta,
-        conversationId.isAcceptableOrUnknown(
-          data['conversation_id']!,
-          _conversationIdMeta,
-        ),
+        conversationId.isAcceptableOrUnknown(data['conversation_id']!, _conversationIdMeta),
       );
     }
     if (data.containsKey('version')) {
-      context.handle(
-        _versionMeta,
-        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
-      );
+      context.handle(_versionMeta, version.isAcceptableOrUnknown(data['version']!, _versionMeta));
     } else if (isInserting) {
       context.missing(_versionMeta);
     }
     if (data.containsKey('send_after')) {
-      context.handle(
-        _sendAfterMeta,
-        sendAfter.isAcceptableOrUnknown(data['send_after']!, _sendAfterMeta),
-      );
+      context.handle(_sendAfterMeta, sendAfter.isAcceptableOrUnknown(data['send_after']!, _sendAfterMeta));
     } else if (isInserting) {
       context.missing(_sendAfterMeta);
     }
     if (data.containsKey('claimed_until')) {
-      context.handle(
-        _claimedUntilMeta,
-        claimedUntil.isAcceptableOrUnknown(
-          data['claimed_until']!,
-          _claimedUntilMeta,
-        ),
-      );
+      context.handle(_claimedUntilMeta, claimedUntil.isAcceptableOrUnknown(data['claimed_until']!, _claimedUntilMeta));
     }
     if (data.containsKey('failed')) {
-      context.handle(
-        _failedMeta,
-        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
-      );
+      context.handle(_failedMeta, failed.isAcceptableOrUnknown(data['failed']!, _failedMeta));
     }
     if (data.containsKey('attempted')) {
-      context.handle(
-        _attemptedMeta,
-        attempted.isAcceptableOrUnknown(data['attempted']!, _attemptedMeta),
-      );
+      context.handle(_attemptedMeta, attempted.isAcceptableOrUnknown(data['attempted']!, _attemptedMeta));
     }
     return context;
   }
@@ -4343,62 +3633,20 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
   OutboxRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return OutboxRow(
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      )!,
-      messageId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_id'],
-      )!,
-      raw: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}raw'],
-      )!,
-      recipients: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}recipients'],
-      )!,
-      cc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cc'],
-      )!,
-      bcc: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bcc'],
-      )!,
-      subject: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}subject'],
-      )!,
-      body: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}body'],
-      )!,
-      conversationId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}conversation_id'],
-      ),
-      version: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}version'],
-      )!,
-      sendAfter: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}send_after'],
-      )!,
-      claimedUntil: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}claimed_until'],
-      ),
-      failed: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}failed'],
-      )!,
-      attempted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}attempted'],
-      )!,
+      accountId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      messageId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      raw: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}raw'])!,
+      recipients: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}recipients'])!,
+      cc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}cc'])!,
+      bcc: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}bcc'])!,
+      subject: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}subject'])!,
+      body: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+      conversationId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}conversation_id']),
+      version: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}version'])!,
+      sendAfter: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}send_after'])!,
+      claimedUntil: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}claimed_until']),
+      failed: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}failed'])!,
+      attempted: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}attempted'])!,
     );
   }
 
@@ -4494,23 +3742,16 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       bcc: Value(bcc),
       subject: Value(subject),
       body: Value(body),
-      conversationId: conversationId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(conversationId),
+      conversationId: conversationId == null && nullToAbsent ? const Value.absent() : Value(conversationId),
       version: Value(version),
       sendAfter: Value(sendAfter),
-      claimedUntil: claimedUntil == null && nullToAbsent
-          ? const Value.absent()
-          : Value(claimedUntil),
+      claimedUntil: claimedUntil == null && nullToAbsent ? const Value.absent() : Value(claimedUntil),
       failed: Value(failed),
       attempted: Value(attempted),
     );
   }
 
-  factory OutboxRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory OutboxRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return OutboxRow(
       accountId: serializer.fromJson<String>(json['accountId']),
@@ -4574,9 +3815,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     bcc: bcc ?? this.bcc,
     subject: subject ?? this.subject,
     body: body ?? this.body,
-    conversationId: conversationId.present
-        ? conversationId.value
-        : this.conversationId,
+    conversationId: conversationId.present ? conversationId.value : this.conversationId,
     version: version ?? this.version,
     sendAfter: sendAfter ?? this.sendAfter,
     claimedUntil: claimedUntil.present ? claimedUntil.value : this.claimedUntil,
@@ -4588,21 +3827,15 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
       raw: data.raw.present ? data.raw.value : this.raw,
-      recipients: data.recipients.present
-          ? data.recipients.value
-          : this.recipients,
+      recipients: data.recipients.present ? data.recipients.value : this.recipients,
       cc: data.cc.present ? data.cc.value : this.cc,
       bcc: data.bcc.present ? data.bcc.value : this.bcc,
       subject: data.subject.present ? data.subject.value : this.subject,
       body: data.body.present ? data.body.value : this.body,
-      conversationId: data.conversationId.present
-          ? data.conversationId.value
-          : this.conversationId,
+      conversationId: data.conversationId.present ? data.conversationId.value : this.conversationId,
       version: data.version.present ? data.version.value : this.version,
       sendAfter: data.sendAfter.present ? data.sendAfter.value : this.sendAfter,
-      claimedUntil: data.claimedUntil.present
-          ? data.claimedUntil.value
-          : this.claimedUntil,
+      claimedUntil: data.claimedUntil.present ? data.claimedUntil.value : this.claimedUntil,
       failed: data.failed.present ? data.failed.value : this.failed,
       attempted: data.attempted.present ? data.attempted.value : this.attempted,
     );
@@ -4894,17 +4127,12 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final LabelsDao labelsDao = LabelsDao(this as PostinoDatabase);
   late final BodiesDao bodiesDao = BodiesDao(this as PostinoDatabase);
   late final IntentsDao intentsDao = IntentsDao(this as PostinoDatabase);
-  late final TrustedSendersDao trustedSendersDao = TrustedSendersDao(
-    this as PostinoDatabase,
-  );
-  late final DeviceSettingsDao deviceSettingsDao = DeviceSettingsDao(
-    this as PostinoDatabase,
-  );
+  late final TrustedSendersDao trustedSendersDao = TrustedSendersDao(this as PostinoDatabase);
+  late final DeviceSettingsDao deviceSettingsDao = DeviceSettingsDao(this as PostinoDatabase);
   late final DraftsDao draftsDao = DraftsDao(this as PostinoDatabase);
   late final OutboxDao outboxDao = OutboxDao(this as PostinoDatabase);
   @override
-  Iterable<TableInfo<Table, Object?>> get allTables =>
-      allSchemaEntities.whereType<TableInfo<Table, Object?>>();
+  Iterable<TableInfo<Table, Object?>> get allTables => allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     accounts,
@@ -4941,8 +4169,7 @@ typedef $$AccountsTableUpdateCompanionBuilder = AccountsCompanion Function({
   Value<int> rowid,
 });
 
-class $$AccountsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $AccountsTable> {
+class $$AccountsTableFilterComposer extends Composer<_$PostinoDatabase, $AccountsTable> {
   $$AccountsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -4950,41 +4177,24 @@ class $$AccountsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => ColumnFilters(column));
 
-  ColumnWithTypeConverterFilters<ProviderKind, ProviderKind, String>
-  get provider => $composableBuilder(
-    column: $table.provider,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
+  ColumnWithTypeConverterFilters<ProviderKind, ProviderKind, String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => ColumnWithTypeConverterFilters(column));
 
-  ColumnFilters<int> get color => $composableBuilder(
-    column: $table.color,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get color => $composableBuilder(column: $table.color, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get position => $composableBuilder(
-    column: $table.position,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => ColumnFilters(column));
 
-  ColumnWithTypeConverterFilters<AccountStatus, AccountStatus, String>
-  get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
+  ColumnWithTypeConverterFilters<AccountStatus, AccountStatus, String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => ColumnWithTypeConverterFilters(column));
 }
 
-class $$AccountsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $AccountsTable> {
+class $$AccountsTableOrderingComposer extends Composer<_$PostinoDatabase, $AccountsTable> {
   $$AccountsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -4992,39 +4202,25 @@ class $$AccountsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get provider => $composableBuilder(
-    column: $table.provider,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get color => $composableBuilder(
-    column: $table.color,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get position => $composableBuilder(
-    column: $table.position,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => ColumnOrderings(column));
 }
 
-class $$AccountsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $AccountsTable> {
+class $$AccountsTableAnnotationComposer extends Composer<_$PostinoDatabase, $AccountsTable> {
   $$AccountsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -5032,20 +4228,16 @@ class $$AccountsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
+  GeneratedColumn<String> get id => $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
+  GeneratedColumn<String> get address => $composableBuilder(column: $table.address, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<ProviderKind, String> get provider =>
       $composableBuilder(column: $table.provider, builder: (column) => column);
 
-  GeneratedColumn<int> get color =>
-      $composableBuilder(column: $table.color, builder: (column) => column);
+  GeneratedColumn<int> get color => $composableBuilder(column: $table.color, builder: (column) => column);
 
-  GeneratedColumn<int> get position =>
-      $composableBuilder(column: $table.position, builder: (column) => column);
+  GeneratedColumn<int> get position => $composableBuilder(column: $table.position, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<AccountStatus, String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
@@ -5062,10 +4254,7 @@ class $$AccountsTableTableManager
           $$AccountsTableAnnotationComposer,
           $$AccountsTableCreateCompanionBuilder,
           $$AccountsTableUpdateCompanionBuilder,
-          (
-            AccountRow,
-            BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>,
-          ),
+          (AccountRow, BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>),
           AccountRow,
           PrefetchHooks Function()
         > {
@@ -5074,12 +4263,9 @@ class $$AccountsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$AccountsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$AccountsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$AccountsTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$AccountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$AccountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$AccountsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -5120,11 +4306,7 @@ class $$AccountsTableTableManager
               .map(
                 (e) => (
                   e.readTable<$AccountsTable, AccountRow>(table),
-                  BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -5143,10 +4325,7 @@ typedef $$AccountsTableProcessedTableManager =
       $$AccountsTableAnnotationComposer,
       $$AccountsTableCreateCompanionBuilder,
       $$AccountsTableUpdateCompanionBuilder,
-      (
-        AccountRow,
-        BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>,
-      ),
+      (AccountRow, BaseReferences<_$PostinoDatabase, $AccountsTable, AccountRow>),
       AccountRow,
       PrefetchHooks Function()
     >;
@@ -5165,8 +4344,7 @@ typedef $$LabelsTableUpdateCompanionBuilder = LabelsCompanion Function({
   Value<int> rowid,
 });
 
-class $$LabelsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $LabelsTable> {
+class $$LabelsTableFilterComposer extends Composer<_$PostinoDatabase, $LabelsTable> {
   $$LabelsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -5174,30 +4352,18 @@ class $$LabelsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get name => $composableBuilder(column: $table.name, builder: (column) => ColumnFilters(column));
 
   ColumnWithTypeConverterFilters<LabelKind, LabelKind, String> get kind =>
-      $composableBuilder(
-        column: $table.kind,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
+      $composableBuilder(column: $table.kind, builder: (column) => ColumnWithTypeConverterFilters(column));
 }
 
-class $$LabelsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $LabelsTable> {
+class $$LabelsTableOrderingComposer extends Composer<_$PostinoDatabase, $LabelsTable> {
   $$LabelsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -5205,29 +4371,19 @@ class $$LabelsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get kind => $composableBuilder(
-    column: $table.kind,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => ColumnOrderings(column));
 }
 
-class $$LabelsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $LabelsTable> {
+class $$LabelsTableAnnotationComposer extends Composer<_$PostinoDatabase, $LabelsTable> {
   $$LabelsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -5235,14 +4391,11 @@ class $$LabelsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
+  GeneratedColumn<String> get id => $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
+  GeneratedColumn<String> get name => $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<LabelKind, String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
@@ -5268,49 +4421,28 @@ class $$LabelsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$LabelsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$LabelsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$LabelsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> accountId = const Value.absent(),
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<LabelKind> kind = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => LabelsCompanion(
-                accountId: accountId,
-                id: id,
-                name: name,
-                kind: kind,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String accountId,
-                required String id,
-                required String name,
-                required LabelKind kind,
-                Value<int> rowid = const Value.absent(),
-              }) => LabelsCompanion.insert(
-                accountId: accountId,
-                id: id,
-                name: name,
-                kind: kind,
-                rowid: rowid,
-              ),
+          createFilteringComposer: () => $$LabelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$LabelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$LabelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<LabelKind> kind = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => LabelsCompanion(accountId: accountId, id: id, name: name, kind: kind, rowid: rowid),
+          createCompanionCallback: ({
+            required String accountId,
+            required String id,
+            required String name,
+            required LabelKind kind,
+            Value<int> rowid = const Value.absent(),
+          }) => LabelsCompanion.insert(accountId: accountId, id: id, name: name, kind: kind, rowid: rowid),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable<$LabelsTable, LabelRow>(table),
-                  BaseReferences<_$PostinoDatabase, $LabelsTable, LabelRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $LabelsTable, LabelRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -5372,8 +4504,7 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<int> rowid,
 });
 
-class $$MessagesTableFilterComposer
-    extends Composer<_$PostinoDatabase, $MessagesTable> {
+class $$MessagesTableFilterComposer extends Composer<_$PostinoDatabase, $MessagesTable> {
   $$MessagesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -5381,89 +4512,52 @@ class $$MessagesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get sender => $composableBuilder(
-    column: $table.sender,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get sender =>
+      $composableBuilder(column: $table.sender, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get senderName =>
+      $composableBuilder(column: $table.senderName, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get replyTo => $composableBuilder(
-    column: $table.replyTo,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get replyTo =>
+      $composableBuilder(column: $table.replyTo, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get references =>
+      $composableBuilder(column: $table.references, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get snippet => $composableBuilder(
-    column: $table.snippet,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get snippet =>
+      $composableBuilder(column: $table.snippet, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get date => $composableBuilder(column: $table.date, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get isStarred => $composableBuilder(
-    column: $table.isStarred,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get isStarred =>
+      $composableBuilder(column: $table.isStarred, builder: (column) => ColumnFilters(column));
 }
 
-class $$MessagesTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $MessagesTable> {
+class $$MessagesTableOrderingComposer extends Composer<_$PostinoDatabase, $MessagesTable> {
   $$MessagesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -5471,89 +4565,54 @@ class $$MessagesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get sender => $composableBuilder(
-    column: $table.sender,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get sender =>
+      $composableBuilder(column: $table.sender, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get senderName =>
+      $composableBuilder(column: $table.senderName, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get bcc =>
+      $composableBuilder(column: $table.bcc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get replyTo => $composableBuilder(
-    column: $table.replyTo,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get replyTo =>
+      $composableBuilder(column: $table.replyTo, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get references =>
+      $composableBuilder(column: $table.references, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get snippet => $composableBuilder(
-    column: $table.snippet,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get snippet =>
+      $composableBuilder(column: $table.snippet, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get isStarred => $composableBuilder(
-    column: $table.isStarred,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get isStarred =>
+      $composableBuilder(column: $table.isStarred, builder: (column) => ColumnOrderings(column));
 }
 
-class $$MessagesTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $MessagesTable> {
+class $$MessagesTableAnnotationComposer extends Composer<_$PostinoDatabase, $MessagesTable> {
   $$MessagesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -5561,61 +4620,38 @@ class $$MessagesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
+  GeneratedColumn<String> get id => $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => column);
 
-  GeneratedColumn<String> get sender =>
-      $composableBuilder(column: $table.sender, builder: (column) => column);
+  GeneratedColumn<String> get sender => $composableBuilder(column: $table.sender, builder: (column) => column);
 
-  GeneratedColumn<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get senderName => $composableBuilder(column: $table.senderName, builder: (column) => column);
 
-  GeneratedColumn<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get recipients => $composableBuilder(column: $table.recipients, builder: (column) => column);
 
-  GeneratedColumn<String> get cc =>
-      $composableBuilder(column: $table.cc, builder: (column) => column);
+  GeneratedColumn<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => column);
 
-  GeneratedColumn<String> get bcc =>
-      $composableBuilder(column: $table.bcc, builder: (column) => column);
+  GeneratedColumn<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => column);
 
-  GeneratedColumn<String> get replyTo =>
-      $composableBuilder(column: $table.replyTo, builder: (column) => column);
+  GeneratedColumn<String> get replyTo => $composableBuilder(column: $table.replyTo, builder: (column) => column);
 
-  GeneratedColumn<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get references => $composableBuilder(column: $table.references, builder: (column) => column);
 
-  GeneratedColumn<String> get subject =>
-      $composableBuilder(column: $table.subject, builder: (column) => column);
+  GeneratedColumn<String> get subject => $composableBuilder(column: $table.subject, builder: (column) => column);
 
-  GeneratedColumn<String> get snippet =>
-      $composableBuilder(column: $table.snippet, builder: (column) => column);
+  GeneratedColumn<String> get snippet => $composableBuilder(column: $table.snippet, builder: (column) => column);
 
-  GeneratedColumn<int> get date =>
-      $composableBuilder(column: $table.date, builder: (column) => column);
+  GeneratedColumn<int> get date => $composableBuilder(column: $table.date, builder: (column) => column);
 
-  GeneratedColumn<bool> get isRead =>
-      $composableBuilder(column: $table.isRead, builder: (column) => column);
+  GeneratedColumn<bool> get isRead => $composableBuilder(column: $table.isRead, builder: (column) => column);
 
-  GeneratedColumn<bool> get isStarred =>
-      $composableBuilder(column: $table.isStarred, builder: (column) => column);
+  GeneratedColumn<bool> get isStarred => $composableBuilder(column: $table.isStarred, builder: (column) => column);
 }
 
 class $$MessagesTableTableManager
@@ -5629,10 +4665,7 @@ class $$MessagesTableTableManager
           $$MessagesTableAnnotationComposer,
           $$MessagesTableCreateCompanionBuilder,
           $$MessagesTableUpdateCompanionBuilder,
-          (
-            MessageRow,
-            BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>,
-          ),
+          (MessageRow, BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>),
           MessageRow,
           PrefetchHooks Function()
         > {
@@ -5641,12 +4674,9 @@ class $$MessagesTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$MessagesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$MessagesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$MessagesTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$MessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$MessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$MessagesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> accountId = const Value.absent(),
@@ -5727,11 +4757,7 @@ class $$MessagesTableTableManager
               .map(
                 (e) => (
                   e.readTable<$MessagesTable, MessageRow>(table),
-                  BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -5750,30 +4776,24 @@ typedef $$MessagesTableProcessedTableManager =
       $$MessagesTableAnnotationComposer,
       $$MessagesTableCreateCompanionBuilder,
       $$MessagesTableUpdateCompanionBuilder,
-      (
-        MessageRow,
-        BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>,
-      ),
+      (MessageRow, BaseReferences<_$PostinoDatabase, $MessagesTable, MessageRow>),
       MessageRow,
       PrefetchHooks Function()
     >;
-typedef $$MessageLabelsTableCreateCompanionBuilder =
-    MessageLabelsCompanion Function({
-      required String accountId,
-      required String messageId,
-      required String labelId,
-      Value<int> rowid,
-    });
-typedef $$MessageLabelsTableUpdateCompanionBuilder =
-    MessageLabelsCompanion Function({
-      Value<String> accountId,
-      Value<String> messageId,
-      Value<String> labelId,
-      Value<int> rowid,
-    });
+typedef $$MessageLabelsTableCreateCompanionBuilder = MessageLabelsCompanion Function({
+  required String accountId,
+  required String messageId,
+  required String labelId,
+  Value<int> rowid,
+});
+typedef $$MessageLabelsTableUpdateCompanionBuilder = MessageLabelsCompanion Function({
+  Value<String> accountId,
+  Value<String> messageId,
+  Value<String> labelId,
+  Value<int> rowid,
+});
 
-class $$MessageLabelsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
+class $$MessageLabelsTableFilterComposer extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
   $$MessageLabelsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -5781,24 +4801,17 @@ class $$MessageLabelsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get labelId => $composableBuilder(
-    column: $table.labelId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get labelId =>
+      $composableBuilder(column: $table.labelId, builder: (column) => ColumnFilters(column));
 }
 
-class $$MessageLabelsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
+class $$MessageLabelsTableOrderingComposer extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
   $$MessageLabelsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -5806,24 +4819,17 @@ class $$MessageLabelsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get labelId => $composableBuilder(
-    column: $table.labelId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get labelId =>
+      $composableBuilder(column: $table.labelId, builder: (column) => ColumnOrderings(column));
 }
 
-class $$MessageLabelsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
+class $$MessageLabelsTableAnnotationComposer extends Composer<_$PostinoDatabase, $MessageLabelsTable> {
   $$MessageLabelsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -5831,14 +4837,11 @@ class $$MessageLabelsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get labelId =>
-      $composableBuilder(column: $table.labelId, builder: (column) => column);
+  GeneratedColumn<String> get labelId => $composableBuilder(column: $table.labelId, builder: (column) => column);
 }
 
 class $$MessageLabelsTableTableManager
@@ -5852,42 +4855,24 @@ class $$MessageLabelsTableTableManager
           $$MessageLabelsTableAnnotationComposer,
           $$MessageLabelsTableCreateCompanionBuilder,
           $$MessageLabelsTableUpdateCompanionBuilder,
-          (
-            MessageLabelRow,
-            BaseReferences<
-              _$PostinoDatabase,
-              $MessageLabelsTable,
-              MessageLabelRow
-            >,
-          ),
+          (MessageLabelRow, BaseReferences<_$PostinoDatabase, $MessageLabelsTable, MessageLabelRow>),
           MessageLabelRow,
           PrefetchHooks Function()
         > {
-  $$MessageLabelsTableTableManager(
-    _$PostinoDatabase db,
-    $MessageLabelsTable table,
-  ) : super(
+  $$MessageLabelsTableTableManager(_$PostinoDatabase db, $MessageLabelsTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$MessageLabelsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$MessageLabelsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$MessageLabelsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> accountId = const Value.absent(),
-                Value<String> messageId = const Value.absent(),
-                Value<String> labelId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => MessageLabelsCompanion(
-                accountId: accountId,
-                messageId: messageId,
-                labelId: labelId,
-                rowid: rowid,
-              ),
+          createFilteringComposer: () => $$MessageLabelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$MessageLabelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$MessageLabelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> messageId = const Value.absent(),
+            Value<String> labelId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => MessageLabelsCompanion(accountId: accountId, messageId: messageId, labelId: labelId, rowid: rowid),
           createCompanionCallback:
               ({
                 required String accountId,
@@ -5904,11 +4889,7 @@ class $$MessageLabelsTableTableManager
               .map(
                 (e) => (
                   e.readTable<$MessageLabelsTable, MessageLabelRow>(table),
-                  BaseReferences<
-                    _$PostinoDatabase,
-                    $MessageLabelsTable,
-                    MessageLabelRow
-                  >(db, table, e),
+                  BaseReferences<_$PostinoDatabase, $MessageLabelsTable, MessageLabelRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -5927,10 +4908,7 @@ typedef $$MessageLabelsTableProcessedTableManager =
       $$MessageLabelsTableAnnotationComposer,
       $$MessageLabelsTableCreateCompanionBuilder,
       $$MessageLabelsTableUpdateCompanionBuilder,
-      (
-        MessageLabelRow,
-        BaseReferences<_$PostinoDatabase, $MessageLabelsTable, MessageLabelRow>,
-      ),
+      (MessageLabelRow, BaseReferences<_$PostinoDatabase, $MessageLabelsTable, MessageLabelRow>),
       MessageLabelRow,
       PrefetchHooks Function()
     >;
@@ -5951,8 +4929,7 @@ typedef $$BodiesTableUpdateCompanionBuilder = BodiesCompanion Function({
   Value<int> rowid,
 });
 
-class $$BodiesTableFilterComposer
-    extends Composer<_$PostinoDatabase, $BodiesTable> {
+class $$BodiesTableFilterComposer extends Composer<_$PostinoDatabase, $BodiesTable> {
   $$BodiesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -5960,36 +4937,22 @@ class $$BodiesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get body => $composableBuilder(column: $table.body, builder: (column) => ColumnFilters(column));
 
   ColumnWithTypeConverterFilters<BodyKind, BodyKind, String> get kind =>
-      $composableBuilder(
-        column: $table.kind,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
+      $composableBuilder(column: $table.kind, builder: (column) => ColumnWithTypeConverterFilters(column));
 
-  ColumnWithTypeConverterFilters<List<Attachment>?, List<Attachment>, String>
-  get attachments => $composableBuilder(
-    column: $table.attachments,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
+  ColumnWithTypeConverterFilters<List<Attachment>?, List<Attachment>, String> get attachments =>
+      $composableBuilder(column: $table.attachments, builder: (column) => ColumnWithTypeConverterFilters(column));
 }
 
-class $$BodiesTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $BodiesTable> {
+class $$BodiesTableOrderingComposer extends Composer<_$PostinoDatabase, $BodiesTable> {
   $$BodiesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -5997,34 +4960,23 @@ class $$BodiesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get kind => $composableBuilder(
-    column: $table.kind,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get attachments => $composableBuilder(
-    column: $table.attachments,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get attachments =>
+      $composableBuilder(column: $table.attachments, builder: (column) => ColumnOrderings(column));
 }
 
-class $$BodiesTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $BodiesTable> {
+class $$BodiesTableAnnotationComposer extends Composer<_$PostinoDatabase, $BodiesTable> {
   $$BodiesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6032,23 +4984,17 @@ class $$BodiesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get body =>
-      $composableBuilder(column: $table.body, builder: (column) => column);
+  GeneratedColumn<String> get body => $composableBuilder(column: $table.body, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<BodyKind, String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<List<Attachment>?, String> get attachments =>
-      $composableBuilder(
-        column: $table.attachments,
-        builder: (column) => column,
-      );
+      $composableBuilder(column: $table.attachments, builder: (column) => column);
 }
 
 class $$BodiesTableTableManager
@@ -6071,12 +5017,9 @@ class $$BodiesTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$BodiesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$BodiesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$BodiesTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$BodiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$BodiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$BodiesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> accountId = const Value.absent(),
@@ -6113,11 +5056,7 @@ class $$BodiesTableTableManager
               .map(
                 (e) => (
                   e.readTable<$BodiesTable, BodyRow>(table),
-                  BaseReferences<_$PostinoDatabase, $BodiesTable, BodyRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $BodiesTable, BodyRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -6140,21 +5079,18 @@ typedef $$BodiesTableProcessedTableManager =
       BodyRow,
       PrefetchHooks Function()
     >;
-typedef $$SyncCursorsTableCreateCompanionBuilder =
-    SyncCursorsCompanion Function({
-      required String accountId,
-      required String cursor,
-      Value<int> rowid,
-    });
-typedef $$SyncCursorsTableUpdateCompanionBuilder =
-    SyncCursorsCompanion Function({
-      Value<String> accountId,
-      Value<String> cursor,
-      Value<int> rowid,
-    });
+typedef $$SyncCursorsTableCreateCompanionBuilder = SyncCursorsCompanion Function({
+  required String accountId,
+  required String cursor,
+  Value<int> rowid,
+});
+typedef $$SyncCursorsTableUpdateCompanionBuilder = SyncCursorsCompanion Function({
+  Value<String> accountId,
+  Value<String> cursor,
+  Value<int> rowid,
+});
 
-class $$SyncCursorsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+class $$SyncCursorsTableFilterComposer extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
   $$SyncCursorsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -6162,19 +5098,14 @@ class $$SyncCursorsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get cursor => $composableBuilder(
-    column: $table.cursor,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => ColumnFilters(column));
 }
 
-class $$SyncCursorsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+class $$SyncCursorsTableOrderingComposer extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
   $$SyncCursorsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -6182,19 +5113,14 @@ class $$SyncCursorsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get cursor => $composableBuilder(
-    column: $table.cursor,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => ColumnOrderings(column));
 }
 
-class $$SyncCursorsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
+class $$SyncCursorsTableAnnotationComposer extends Composer<_$PostinoDatabase, $SyncCursorsTable> {
   $$SyncCursorsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6202,11 +5128,9 @@ class $$SyncCursorsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get cursor =>
-      $composableBuilder(column: $table.cursor, builder: (column) => column);
+  GeneratedColumn<String> get cursor => $composableBuilder(column: $table.cursor, builder: (column) => column);
 }
 
 class $$SyncCursorsTableTableManager
@@ -6220,10 +5144,7 @@ class $$SyncCursorsTableTableManager
           $$SyncCursorsTableAnnotationComposer,
           $$SyncCursorsTableCreateCompanionBuilder,
           $$SyncCursorsTableUpdateCompanionBuilder,
-          (
-            SyncCursorRow,
-            BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>,
-          ),
+          (SyncCursorRow, BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>),
           SyncCursorRow,
           PrefetchHooks Function()
         > {
@@ -6232,41 +5153,24 @@ class $$SyncCursorsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$SyncCursorsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SyncCursorsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SyncCursorsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> accountId = const Value.absent(),
-                Value<String> cursor = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SyncCursorsCompanion(
-                accountId: accountId,
-                cursor: cursor,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String accountId,
-                required String cursor,
-                Value<int> rowid = const Value.absent(),
-              }) => SyncCursorsCompanion.insert(
-                accountId: accountId,
-                cursor: cursor,
-                rowid: rowid,
-              ),
+          createFilteringComposer: () => $$SyncCursorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$SyncCursorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$SyncCursorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> cursor = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => SyncCursorsCompanion(accountId: accountId, cursor: cursor, rowid: rowid),
+          createCompanionCallback: ({
+            required String accountId,
+            required String cursor,
+            Value<int> rowid = const Value.absent(),
+          }) => SyncCursorsCompanion.insert(accountId: accountId, cursor: cursor, rowid: rowid),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable<$SyncCursorsTable, SyncCursorRow>(table),
-                  BaseReferences<
-                    _$PostinoDatabase,
-                    $SyncCursorsTable,
-                    SyncCursorRow
-                  >(db, table, e),
+                  BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -6285,10 +5189,7 @@ typedef $$SyncCursorsTableProcessedTableManager =
       $$SyncCursorsTableAnnotationComposer,
       $$SyncCursorsTableCreateCompanionBuilder,
       $$SyncCursorsTableUpdateCompanionBuilder,
-      (
-        SyncCursorRow,
-        BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>,
-      ),
+      (SyncCursorRow, BaseReferences<_$PostinoDatabase, $SyncCursorsTable, SyncCursorRow>),
       SyncCursorRow,
       PrefetchHooks Function()
     >;
@@ -6305,8 +5206,7 @@ typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
   Value<int> rowid,
 });
 
-class $$IntentsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $IntentsTable> {
+class $$IntentsTableFilterComposer extends Composer<_$PostinoDatabase, $IntentsTable> {
   $$IntentsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -6314,24 +5214,17 @@ class $$IntentsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => ColumnFilters(column));
 }
 
-class $$IntentsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $IntentsTable> {
+class $$IntentsTableOrderingComposer extends Composer<_$PostinoDatabase, $IntentsTable> {
   $$IntentsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -6339,24 +5232,17 @@ class $$IntentsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => ColumnOrderings(column));
 }
 
-class $$IntentsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $IntentsTable> {
+class $$IntentsTableAnnotationComposer extends Composer<_$PostinoDatabase, $IntentsTable> {
   $$IntentsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6364,14 +5250,11 @@ class $$IntentsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<bool> get isRead =>
-      $composableBuilder(column: $table.isRead, builder: (column) => column);
+  GeneratedColumn<bool> get isRead => $composableBuilder(column: $table.isRead, builder: (column) => column);
 }
 
 class $$IntentsTableTableManager
@@ -6385,10 +5268,7 @@ class $$IntentsTableTableManager
           $$IntentsTableAnnotationComposer,
           $$IntentsTableCreateCompanionBuilder,
           $$IntentsTableUpdateCompanionBuilder,
-          (
-            IntentRow,
-            BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>,
-          ),
+          (IntentRow, BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>),
           IntentRow,
           PrefetchHooks Function()
         > {
@@ -6397,45 +5277,26 @@ class $$IntentsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$IntentsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$IntentsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$IntentsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> accountId = const Value.absent(),
-                Value<String> messageId = const Value.absent(),
-                Value<bool?> isRead = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => IntentsCompanion(
-                accountId: accountId,
-                messageId: messageId,
-                isRead: isRead,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String accountId,
-                required String messageId,
-                Value<bool?> isRead = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => IntentsCompanion.insert(
-                accountId: accountId,
-                messageId: messageId,
-                isRead: isRead,
-                rowid: rowid,
-              ),
+          createFilteringComposer: () => $$IntentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$IntentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$IntentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> messageId = const Value.absent(),
+            Value<bool?> isRead = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => IntentsCompanion(accountId: accountId, messageId: messageId, isRead: isRead, rowid: rowid),
+          createCompanionCallback: ({
+            required String accountId,
+            required String messageId,
+            Value<bool?> isRead = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => IntentsCompanion.insert(accountId: accountId, messageId: messageId, isRead: isRead, rowid: rowid),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable<$IntentsTable, IntentRow>(table),
-                  BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $IntentsTable, IntentRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -6458,16 +5319,16 @@ typedef $$IntentsTableProcessedTableManager =
       IntentRow,
       PrefetchHooks Function()
     >;
-typedef $$TrustedSendersTableCreateCompanionBuilder =
-    TrustedSendersCompanion Function({
-      required String address,
-      Value<int> rowid,
-    });
-typedef $$TrustedSendersTableUpdateCompanionBuilder =
-    TrustedSendersCompanion Function({Value<String> address, Value<int> rowid});
+typedef $$TrustedSendersTableCreateCompanionBuilder = TrustedSendersCompanion Function({
+  required String address,
+  Value<int> rowid,
+});
+typedef $$TrustedSendersTableUpdateCompanionBuilder = TrustedSendersCompanion Function({
+  Value<String> address,
+  Value<int> rowid,
+});
 
-class $$TrustedSendersTableFilterComposer
-    extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
+class $$TrustedSendersTableFilterComposer extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
   $$TrustedSendersTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -6475,14 +5336,11 @@ class $$TrustedSendersTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => ColumnFilters(column));
 }
 
-class $$TrustedSendersTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
+class $$TrustedSendersTableOrderingComposer extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
   $$TrustedSendersTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -6490,14 +5348,11 @@ class $$TrustedSendersTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => ColumnOrderings(column));
 }
 
-class $$TrustedSendersTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
+class $$TrustedSendersTableAnnotationComposer extends Composer<_$PostinoDatabase, $TrustedSendersTable> {
   $$TrustedSendersTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6505,8 +5360,7 @@ class $$TrustedSendersTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
+  GeneratedColumn<String> get address => $composableBuilder(column: $table.address, builder: (column) => column);
 }
 
 class $$TrustedSendersTableTableManager
@@ -6520,47 +5374,29 @@ class $$TrustedSendersTableTableManager
           $$TrustedSendersTableAnnotationComposer,
           $$TrustedSendersTableCreateCompanionBuilder,
           $$TrustedSendersTableUpdateCompanionBuilder,
-          (
-            TrustedSenderRow,
-            BaseReferences<
-              _$PostinoDatabase,
-              $TrustedSendersTable,
-              TrustedSenderRow
-            >,
-          ),
+          (TrustedSenderRow, BaseReferences<_$PostinoDatabase, $TrustedSendersTable, TrustedSenderRow>),
           TrustedSenderRow,
           PrefetchHooks Function()
         > {
-  $$TrustedSendersTableTableManager(
-    _$PostinoDatabase db,
-    $TrustedSendersTable table,
-  ) : super(
+  $$TrustedSendersTableTableManager(_$PostinoDatabase db, $TrustedSendersTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$TrustedSendersTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$TrustedSendersTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$TrustedSendersTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$TrustedSendersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$TrustedSendersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$TrustedSendersTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> address = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) => TrustedSendersCompanion(address: address, rowid: rowid),
-          createCompanionCallback: ({
-            required String address,
-            Value<int> rowid = const Value.absent(),
-          }) => TrustedSendersCompanion.insert(address: address, rowid: rowid),
+          createCompanionCallback: ({required String address, Value<int> rowid = const Value.absent()}) =>
+              TrustedSendersCompanion.insert(address: address, rowid: rowid),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable<$TrustedSendersTable, TrustedSenderRow>(table),
-                  BaseReferences<
-                    _$PostinoDatabase,
-                    $TrustedSendersTable,
-                    TrustedSenderRow
-                  >(db, table, e),
+                  BaseReferences<_$PostinoDatabase, $TrustedSendersTable, TrustedSenderRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -6579,32 +5415,22 @@ typedef $$TrustedSendersTableProcessedTableManager =
       $$TrustedSendersTableAnnotationComposer,
       $$TrustedSendersTableCreateCompanionBuilder,
       $$TrustedSendersTableUpdateCompanionBuilder,
-      (
-        TrustedSenderRow,
-        BaseReferences<
-          _$PostinoDatabase,
-          $TrustedSendersTable,
-          TrustedSenderRow
-        >,
-      ),
+      (TrustedSenderRow, BaseReferences<_$PostinoDatabase, $TrustedSendersTable, TrustedSenderRow>),
       TrustedSenderRow,
       PrefetchHooks Function()
     >;
-typedef $$DeviceSettingsTableCreateCompanionBuilder =
-    DeviceSettingsCompanion Function({
-      required String key,
-      required String value,
-      Value<int> rowid,
-    });
-typedef $$DeviceSettingsTableUpdateCompanionBuilder =
-    DeviceSettingsCompanion Function({
-      Value<String> key,
-      Value<String> value,
-      Value<int> rowid,
-    });
+typedef $$DeviceSettingsTableCreateCompanionBuilder = DeviceSettingsCompanion Function({
+  required String key,
+  required String value,
+  Value<int> rowid,
+});
+typedef $$DeviceSettingsTableUpdateCompanionBuilder = DeviceSettingsCompanion Function({
+  Value<String> key,
+  Value<String> value,
+  Value<int> rowid,
+});
 
-class $$DeviceSettingsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
+class $$DeviceSettingsTableFilterComposer extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
   $$DeviceSettingsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -6612,19 +5438,13 @@ class $$DeviceSettingsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get key => $composableBuilder(
-    column: $table.key,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get key => $composableBuilder(column: $table.key, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => ColumnFilters(column));
 }
 
-class $$DeviceSettingsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
+class $$DeviceSettingsTableOrderingComposer extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
   $$DeviceSettingsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -6632,19 +5452,14 @@ class $$DeviceSettingsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get key => $composableBuilder(
-    column: $table.key,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => ColumnOrderings(column));
 }
 
-class $$DeviceSettingsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
+class $$DeviceSettingsTableAnnotationComposer extends Composer<_$PostinoDatabase, $DeviceSettingsTable> {
   $$DeviceSettingsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6652,11 +5467,9 @@ class $$DeviceSettingsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get key =>
-      $composableBuilder(column: $table.key, builder: (column) => column);
+  GeneratedColumn<String> get key => $composableBuilder(column: $table.key, builder: (column) => column);
 
-  GeneratedColumn<String> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
+  GeneratedColumn<String> get value => $composableBuilder(column: $table.value, builder: (column) => column);
 }
 
 class $$DeviceSettingsTableTableManager
@@ -6670,54 +5483,33 @@ class $$DeviceSettingsTableTableManager
           $$DeviceSettingsTableAnnotationComposer,
           $$DeviceSettingsTableCreateCompanionBuilder,
           $$DeviceSettingsTableUpdateCompanionBuilder,
-          (
-            DeviceSettingRow,
-            BaseReferences<
-              _$PostinoDatabase,
-              $DeviceSettingsTable,
-              DeviceSettingRow
-            >,
-          ),
+          (DeviceSettingRow, BaseReferences<_$PostinoDatabase, $DeviceSettingsTable, DeviceSettingRow>),
           DeviceSettingRow,
           PrefetchHooks Function()
         > {
-  $$DeviceSettingsTableTableManager(
-    _$PostinoDatabase db,
-    $DeviceSettingsTable table,
-  ) : super(
+  $$DeviceSettingsTableTableManager(_$PostinoDatabase db, $DeviceSettingsTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$DeviceSettingsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$DeviceSettingsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$DeviceSettingsTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$DeviceSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$DeviceSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$DeviceSettingsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> key = const Value.absent(),
             Value<String> value = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) => DeviceSettingsCompanion(key: key, value: value, rowid: rowid),
-          createCompanionCallback:
-              ({
-                required String key,
-                required String value,
-                Value<int> rowid = const Value.absent(),
-              }) => DeviceSettingsCompanion.insert(
-                key: key,
-                value: value,
-                rowid: rowid,
-              ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<int> rowid = const Value.absent(),
+          }) => DeviceSettingsCompanion.insert(key: key, value: value, rowid: rowid),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable<$DeviceSettingsTable, DeviceSettingRow>(table),
-                  BaseReferences<
-                    _$PostinoDatabase,
-                    $DeviceSettingsTable,
-                    DeviceSettingRow
-                  >(db, table, e),
+                  BaseReferences<_$PostinoDatabase, $DeviceSettingsTable, DeviceSettingRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -6736,14 +5528,7 @@ typedef $$DeviceSettingsTableProcessedTableManager =
       $$DeviceSettingsTableAnnotationComposer,
       $$DeviceSettingsTableCreateCompanionBuilder,
       $$DeviceSettingsTableUpdateCompanionBuilder,
-      (
-        DeviceSettingRow,
-        BaseReferences<
-          _$PostinoDatabase,
-          $DeviceSettingsTable,
-          DeviceSettingRow
-        >,
-      ),
+      (DeviceSettingRow, BaseReferences<_$PostinoDatabase, $DeviceSettingsTable, DeviceSettingRow>),
       DeviceSettingRow,
       PrefetchHooks Function()
     >;
@@ -6784,8 +5569,7 @@ typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
   Value<int> rowid,
 });
 
-class $$DraftsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $DraftsTable> {
+class $$DraftsTableFilterComposer extends Composer<_$PostinoDatabase, $DraftsTable> {
   $$DraftsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -6793,89 +5577,50 @@ class $$DraftsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get body => $composableBuilder(column: $table.body, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get inReplyTo => $composableBuilder(
-    column: $table.inReplyTo,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get inReplyTo =>
+      $composableBuilder(column: $table.inReplyTo, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get references =>
+      $composableBuilder(column: $table.references, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnFilters(column));
 
-  ColumnWithTypeConverterFilters<
-    List<ForwardedAttachment>?,
-    List<ForwardedAttachment>,
-    String
-  >
-  get attachments => $composableBuilder(
-    column: $table.attachments,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
+  ColumnWithTypeConverterFilters<List<ForwardedAttachment>?, List<ForwardedAttachment>, String> get attachments =>
+      $composableBuilder(column: $table.attachments, builder: (column) => ColumnWithTypeConverterFilters(column));
 
-  ColumnFilters<int> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get pending => $composableBuilder(
-    column: $table.pending,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get pending =>
+      $composableBuilder(column: $table.pending, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get synced => $composableBuilder(
-    column: $table.synced,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get remoteKnown => $composableBuilder(
-    column: $table.remoteKnown,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get remoteKnown =>
+      $composableBuilder(column: $table.remoteKnown, builder: (column) => ColumnFilters(column));
 }
 
-class $$DraftsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $DraftsTable> {
+class $$DraftsTableOrderingComposer extends Composer<_$PostinoDatabase, $DraftsTable> {
   $$DraftsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -6883,84 +5628,52 @@ class $$DraftsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get bcc =>
+      $composableBuilder(column: $table.bcc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get inReplyTo => $composableBuilder(
-    column: $table.inReplyTo,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get inReplyTo =>
+      $composableBuilder(column: $table.inReplyTo, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get references =>
+      $composableBuilder(column: $table.references, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get attachments => $composableBuilder(
-    column: $table.attachments,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get attachments =>
+      $composableBuilder(column: $table.attachments, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get pending => $composableBuilder(
-    column: $table.pending,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get pending =>
+      $composableBuilder(column: $table.pending, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get synced => $composableBuilder(
-    column: $table.synced,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get remoteKnown => $composableBuilder(
-    column: $table.remoteKnown,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get remoteKnown =>
+      $composableBuilder(column: $table.remoteKnown, builder: (column) => ColumnOrderings(column));
 }
 
-class $$DraftsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $DraftsTable> {
+class $$DraftsTableAnnotationComposer extends Composer<_$PostinoDatabase, $DraftsTable> {
   $$DraftsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -6968,61 +5681,37 @@ class $$DraftsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get recipients => $composableBuilder(column: $table.recipients, builder: (column) => column);
 
-  GeneratedColumn<String> get cc =>
-      $composableBuilder(column: $table.cc, builder: (column) => column);
+  GeneratedColumn<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => column);
 
-  GeneratedColumn<String> get bcc =>
-      $composableBuilder(column: $table.bcc, builder: (column) => column);
+  GeneratedColumn<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => column);
 
-  GeneratedColumn<String> get subject =>
-      $composableBuilder(column: $table.subject, builder: (column) => column);
+  GeneratedColumn<String> get subject => $composableBuilder(column: $table.subject, builder: (column) => column);
 
-  GeneratedColumn<String> get body =>
-      $composableBuilder(column: $table.body, builder: (column) => column);
+  GeneratedColumn<String> get body => $composableBuilder(column: $table.body, builder: (column) => column);
 
-  GeneratedColumn<String> get inReplyTo =>
-      $composableBuilder(column: $table.inReplyTo, builder: (column) => column);
+  GeneratedColumn<String> get inReplyTo => $composableBuilder(column: $table.inReplyTo, builder: (column) => column);
 
-  GeneratedColumn<String> get references => $composableBuilder(
-    column: $table.references,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get references => $composableBuilder(column: $table.references, builder: (column) => column);
 
-  GeneratedColumn<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<List<ForwardedAttachment>?, String>
-  get attachments => $composableBuilder(
-    column: $table.attachments,
-    builder: (column) => column,
-  );
+  GeneratedColumnWithTypeConverter<List<ForwardedAttachment>?, String> get attachments =>
+      $composableBuilder(column: $table.attachments, builder: (column) => column);
 
-  GeneratedColumn<int> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+  GeneratedColumn<int> get updatedAt => $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  GeneratedColumn<bool> get pending =>
-      $composableBuilder(column: $table.pending, builder: (column) => column);
+  GeneratedColumn<bool> get pending => $composableBuilder(column: $table.pending, builder: (column) => column);
 
-  GeneratedColumn<bool> get synced =>
-      $composableBuilder(column: $table.synced, builder: (column) => column);
+  GeneratedColumn<bool> get synced => $composableBuilder(column: $table.synced, builder: (column) => column);
 
-  GeneratedColumn<bool> get remoteKnown => $composableBuilder(
-    column: $table.remoteKnown,
-    builder: (column) => column,
-  );
+  GeneratedColumn<bool> get remoteKnown => $composableBuilder(column: $table.remoteKnown, builder: (column) => column);
 }
 
 class $$DraftsTableTableManager
@@ -7045,12 +5734,9 @@ class $$DraftsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$DraftsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$DraftsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$DraftsTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$DraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$DraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$DraftsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> accountId = const Value.absent(),
@@ -7063,8 +5749,7 @@ class $$DraftsTableTableManager
                 Value<String?> inReplyTo = const Value.absent(),
                 Value<String?> references = const Value.absent(),
                 Value<String?> conversationId = const Value.absent(),
-                Value<List<ForwardedAttachment>?> attachments =
-                    const Value.absent(),
+                Value<List<ForwardedAttachment>?> attachments = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<bool> pending = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
@@ -7100,8 +5785,7 @@ class $$DraftsTableTableManager
                 Value<String?> inReplyTo = const Value.absent(),
                 Value<String?> references = const Value.absent(),
                 Value<String?> conversationId = const Value.absent(),
-                Value<List<ForwardedAttachment>?> attachments =
-                    const Value.absent(),
+                Value<List<ForwardedAttachment>?> attachments = const Value.absent(),
                 required int updatedAt,
                 required bool pending,
                 required bool synced,
@@ -7129,11 +5813,7 @@ class $$DraftsTableTableManager
               .map(
                 (e) => (
                   e.readTable<$DraftsTable, DraftRow>(table),
-                  BaseReferences<_$PostinoDatabase, $DraftsTable, DraftRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $DraftsTable, DraftRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -7191,8 +5871,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<int> rowid,
 });
 
-class $$OutboxTableFilterComposer
-    extends Composer<_$PostinoDatabase, $OutboxTable> {
+class $$OutboxTableFilterComposer extends Composer<_$PostinoDatabase, $OutboxTable> {
   $$OutboxTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -7200,79 +5879,46 @@ class $$OutboxTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get raw => $composableBuilder(
-    column: $table.raw,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get raw => $composableBuilder(column: $table.raw, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get body => $composableBuilder(column: $table.body, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get version => $composableBuilder(
-    column: $table.version,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get sendAfter => $composableBuilder(
-    column: $table.sendAfter,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get sendAfter =>
+      $composableBuilder(column: $table.sendAfter, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get claimedUntil => $composableBuilder(
-    column: $table.claimedUntil,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get claimedUntil =>
+      $composableBuilder(column: $table.claimedUntil, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get failed => $composableBuilder(
-    column: $table.failed,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get attempted => $composableBuilder(
-    column: $table.attempted,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<bool> get attempted =>
+      $composableBuilder(column: $table.attempted, builder: (column) => ColumnFilters(column));
 }
 
-class $$OutboxTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $OutboxTable> {
+class $$OutboxTableOrderingComposer extends Composer<_$PostinoDatabase, $OutboxTable> {
   $$OutboxTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -7280,79 +5926,49 @@ class $$OutboxTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get messageId => $composableBuilder(
-    column: $table.messageId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get raw => $composableBuilder(
-    column: $table.raw,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get raw =>
+      $composableBuilder(column: $table.raw, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get recipients =>
+      $composableBuilder(column: $table.recipients, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get cc => $composableBuilder(
-    column: $table.cc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get bcc => $composableBuilder(
-    column: $table.bcc,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get bcc =>
+      $composableBuilder(column: $table.bcc, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get subject => $composableBuilder(
-    column: $table.subject,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get body => $composableBuilder(
-    column: $table.body,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get version => $composableBuilder(
-    column: $table.version,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get sendAfter => $composableBuilder(
-    column: $table.sendAfter,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get sendAfter =>
+      $composableBuilder(column: $table.sendAfter, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get claimedUntil => $composableBuilder(
-    column: $table.claimedUntil,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get claimedUntil =>
+      $composableBuilder(column: $table.claimedUntil, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get failed => $composableBuilder(
-    column: $table.failed,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get attempted => $composableBuilder(
-    column: $table.attempted,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<bool> get attempted =>
+      $composableBuilder(column: $table.attempted, builder: (column) => ColumnOrderings(column));
 }
 
-class $$OutboxTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $OutboxTable> {
+class $$OutboxTableAnnotationComposer extends Composer<_$PostinoDatabase, $OutboxTable> {
   $$OutboxTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -7360,53 +5976,34 @@ class $$OutboxTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
+  GeneratedColumn<String> get accountId => $composableBuilder(column: $table.accountId, builder: (column) => column);
 
-  GeneratedColumn<String> get messageId =>
-      $composableBuilder(column: $table.messageId, builder: (column) => column);
+  GeneratedColumn<String> get messageId => $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get raw =>
-      $composableBuilder(column: $table.raw, builder: (column) => column);
+  GeneratedColumn<String> get raw => $composableBuilder(column: $table.raw, builder: (column) => column);
 
-  GeneratedColumn<String> get recipients => $composableBuilder(
-    column: $table.recipients,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get recipients => $composableBuilder(column: $table.recipients, builder: (column) => column);
 
-  GeneratedColumn<String> get cc =>
-      $composableBuilder(column: $table.cc, builder: (column) => column);
+  GeneratedColumn<String> get cc => $composableBuilder(column: $table.cc, builder: (column) => column);
 
-  GeneratedColumn<String> get bcc =>
-      $composableBuilder(column: $table.bcc, builder: (column) => column);
+  GeneratedColumn<String> get bcc => $composableBuilder(column: $table.bcc, builder: (column) => column);
 
-  GeneratedColumn<String> get subject =>
-      $composableBuilder(column: $table.subject, builder: (column) => column);
+  GeneratedColumn<String> get subject => $composableBuilder(column: $table.subject, builder: (column) => column);
 
-  GeneratedColumn<String> get body =>
-      $composableBuilder(column: $table.body, builder: (column) => column);
+  GeneratedColumn<String> get body => $composableBuilder(column: $table.body, builder: (column) => column);
 
-  GeneratedColumn<String> get conversationId => $composableBuilder(
-    column: $table.conversationId,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get conversationId =>
+      $composableBuilder(column: $table.conversationId, builder: (column) => column);
 
-  GeneratedColumn<int> get version =>
-      $composableBuilder(column: $table.version, builder: (column) => column);
+  GeneratedColumn<int> get version => $composableBuilder(column: $table.version, builder: (column) => column);
 
-  GeneratedColumn<int> get sendAfter =>
-      $composableBuilder(column: $table.sendAfter, builder: (column) => column);
+  GeneratedColumn<int> get sendAfter => $composableBuilder(column: $table.sendAfter, builder: (column) => column);
 
-  GeneratedColumn<int> get claimedUntil => $composableBuilder(
-    column: $table.claimedUntil,
-    builder: (column) => column,
-  );
+  GeneratedColumn<int> get claimedUntil => $composableBuilder(column: $table.claimedUntil, builder: (column) => column);
 
-  GeneratedColumn<bool> get failed =>
-      $composableBuilder(column: $table.failed, builder: (column) => column);
+  GeneratedColumn<bool> get failed => $composableBuilder(column: $table.failed, builder: (column) => column);
 
-  GeneratedColumn<bool> get attempted =>
-      $composableBuilder(column: $table.attempted, builder: (column) => column);
+  GeneratedColumn<bool> get attempted => $composableBuilder(column: $table.attempted, builder: (column) => column);
 }
 
 class $$OutboxTableTableManager
@@ -7420,10 +6017,7 @@ class $$OutboxTableTableManager
           $$OutboxTableAnnotationComposer,
           $$OutboxTableCreateCompanionBuilder,
           $$OutboxTableUpdateCompanionBuilder,
-          (
-            OutboxRow,
-            BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>,
-          ),
+          (OutboxRow, BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>),
           OutboxRow,
           PrefetchHooks Function()
         > {
@@ -7432,12 +6026,9 @@ class $$OutboxTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer: () =>
-              $$OutboxTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$OutboxTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$OutboxTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () => $$OutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$OutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$OutboxTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> accountId = const Value.absent(),
@@ -7510,11 +6101,7 @@ class $$OutboxTableTableManager
               .map(
                 (e) => (
                   e.readTable<$OutboxTable, OutboxRow>(table),
-                  BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  BaseReferences<_$PostinoDatabase, $OutboxTable, OutboxRow>(db, table, e),
                 ),
               )
               .toList(),
@@ -7541,26 +6128,15 @@ typedef $$OutboxTableProcessedTableManager =
 class $PostinoDatabaseManager {
   final _$PostinoDatabase _db;
   $PostinoDatabaseManager(this._db);
-  $$AccountsTableTableManager get accounts =>
-      $$AccountsTableTableManager(_db, _db.accounts);
-  $$LabelsTableTableManager get labels =>
-      $$LabelsTableTableManager(_db, _db.labels);
-  $$MessagesTableTableManager get messages =>
-      $$MessagesTableTableManager(_db, _db.messages);
-  $$MessageLabelsTableTableManager get messageLabels =>
-      $$MessageLabelsTableTableManager(_db, _db.messageLabels);
-  $$BodiesTableTableManager get bodies =>
-      $$BodiesTableTableManager(_db, _db.bodies);
-  $$SyncCursorsTableTableManager get syncCursors =>
-      $$SyncCursorsTableTableManager(_db, _db.syncCursors);
-  $$IntentsTableTableManager get intents =>
-      $$IntentsTableTableManager(_db, _db.intents);
-  $$TrustedSendersTableTableManager get trustedSenders =>
-      $$TrustedSendersTableTableManager(_db, _db.trustedSenders);
-  $$DeviceSettingsTableTableManager get deviceSettings =>
-      $$DeviceSettingsTableTableManager(_db, _db.deviceSettings);
-  $$DraftsTableTableManager get drafts =>
-      $$DraftsTableTableManager(_db, _db.drafts);
-  $$OutboxTableTableManager get outbox =>
-      $$OutboxTableTableManager(_db, _db.outbox);
+  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db, _db.accounts);
+  $$LabelsTableTableManager get labels => $$LabelsTableTableManager(_db, _db.labels);
+  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db, _db.messages);
+  $$MessageLabelsTableTableManager get messageLabels => $$MessageLabelsTableTableManager(_db, _db.messageLabels);
+  $$BodiesTableTableManager get bodies => $$BodiesTableTableManager(_db, _db.bodies);
+  $$SyncCursorsTableTableManager get syncCursors => $$SyncCursorsTableTableManager(_db, _db.syncCursors);
+  $$IntentsTableTableManager get intents => $$IntentsTableTableManager(_db, _db.intents);
+  $$TrustedSendersTableTableManager get trustedSenders => $$TrustedSendersTableTableManager(_db, _db.trustedSenders);
+  $$DeviceSettingsTableTableManager get deviceSettings => $$DeviceSettingsTableTableManager(_db, _db.deviceSettings);
+  $$DraftsTableTableManager get drafts => $$DraftsTableTableManager(_db, _db.drafts);
+  $$OutboxTableTableManager get outbox => $$OutboxTableTableManager(_db, _db.outbox);
 }

@@ -4,6 +4,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../../../main.dart' show routePaths;
 import '../../posta_views.dart';
+import '../../route_query.dart';
 
 /// Route of a Conversazione: PostaLayout draws it, beside or over its list, from the URI.
 class ConversationPage extends StatelessWidget {
@@ -11,13 +12,13 @@ class ConversationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => postaConversationView(
-    Routefly.query['accountId'],
-    Routefly.query['conversationId'],
+    Routefly.query.param('accountId'),
+    Routefly.query.param('conversationId'),
     onBack: () =>
-        Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': Routefly.query['accountId']})),
+        Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': Routefly.query.param('accountId')})),
     onOpenDraft: (id) => Routefly.navigate(
       routePaths.posta.$accountId.bozza.$messageId.changes({
-        'accountId': Routefly.query['accountId'],
+        'accountId': Routefly.query.param('accountId'),
         'messageId': Uri.encodeComponent(id),
       }),
     ),

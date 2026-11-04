@@ -30,7 +30,7 @@ http.Response _fixture(String name) {
   final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync()) as Map<String, dynamic>;
   final status = j['status'] as int;
   // A 204 (batchModify) has no body.
-  return j['body'] == null ? http.Response('', status) : _json(j['body'], status);
+  return j['body'] == null ? http.Response('', status) : _json(j['body'] as Object, status);
 }
 
 http.Response _json(Object body, [int status = 200]) =>
@@ -223,8 +223,8 @@ class GmailHarness implements ContractHarness {
         ],
         'resultSizeEstimate': _drafts.length,
       }),
-      ['drafts'] => _draftRaw(null, jsonDecode(r.body)),
-      ['drafts', final id] when r.method == 'PUT' => _draftRaw(id, jsonDecode(r.body)),
+      ['drafts'] => _draftRaw(null, jsonDecode(r.body) as Map<String, dynamic>),
+      ['drafts', final id] when r.method == 'PUT' => _draftRaw(id, jsonDecode(r.body) as Map<String, dynamic>),
       ['drafts', final id] when r.method == 'DELETE' => _deleteDraft(id),
       ['messages', 'batchModify'] => _modify(jsonDecode(r.body) as Map<String, dynamic>),
       ['threads', final id] => switch ([
@@ -362,7 +362,7 @@ class GmailHarness implements ContractHarness {
   }
 }
 
-Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
+Matcher _err<F>() => isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<F>());
 
 Map<String, (String, BodyKind)> _contents(Map<String, MessageBody> bodies) => {
   for (final MapEntry(:key, :value) in bodies.entries) key: (value.content, value.kind),
@@ -410,7 +410,7 @@ void main() {
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
-    expect(await h.provider.refreshAuth(), isA<Ok>());
+    expect(await h.provider.refreshAuth(), isA<Ok<Object?>>());
 
     final r = h.requests.single;
     expect(r.url, Uri.parse('https://oauth2.googleapis.com/token'));
@@ -427,14 +427,14 @@ void main() {
 
   test('an expired access token is refreshed before calling Gmail', () async {
     final h = GmailHarness(validFor: Duration.zero);
-    expect(await h.provider.initialSync(), isA<Ok>());
+    expect(await h.provider.initialSync(), isA<Ok<Object?>>());
     expect([for (final r in h.requests.take(2)) r.url.path], ['/token', '/gmail/v1/users/me/profile']);
     expect(h.requests[1].headers['authorization'], 'Bearer ya29.refreshed');
   });
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
-    expect(await h.provider.initialSync(), isA<Ok>());
+    expect(await h.provider.initialSync(), isA<Ok<Object?>>());
     expect(
       [for (final r in h.requests.take(3)) r.headers['authorization'] ?? r.url.path],
       ['Bearer ya29.stale', '/token', 'Bearer ya29.refreshed'],
@@ -1111,7 +1111,7 @@ void main() {
         final g = _Recorded((r, path) => path == 'messages/send' ? 'request_too_large' : route(r, path));
         expect(
           await g.provider.send(messageId, raw),
-          isA<Err>().having(
+          isA<Err<Object?>>().having(
             (e) => e.failure,
             'failure',
             isA<SizeLimitFailure>().having((f) => f.limitBytes, 'limitBytes', gmailSendLimitBytes),

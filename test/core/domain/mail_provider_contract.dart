@@ -56,7 +56,7 @@ T _ok<T>(Result<T> r) => switch (r) {
   Err(:final failure) => fail('expected Ok, got $failure'),
 };
 
-Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
+Matcher _err<F>() => isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<F>());
 
 /// The access part of the contract: what an adapter must honour before it can sync.
 void mailProviderAuthContract(String name, ContractHarness Function() create) {
@@ -72,7 +72,7 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.incrementalSync('0'),
         await h.provider.setRead(['a'], read: true),
       ]) {
-        expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
+        expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
     });
 
@@ -84,7 +84,7 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.fetchConversation('t-a'),
         await h.provider.setRead(['a'], read: true),
       ]) {
-        expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
+        expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
     });
   });

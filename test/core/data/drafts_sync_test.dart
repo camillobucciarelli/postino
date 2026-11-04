@@ -189,7 +189,7 @@ void main() {
     expect(opened, isA<Ok<OutgoingMessage>>().having((r) => r.value.body, 'body', '<p>Da altrove</p>'));
     final r = (await row('<y@example.com>'))!;
     expect((r.pending, r.synced, r.remoteKnown), (false, true, true));
-    expect(await engine.openDraft('a', '<nope>'), isA<Err>());
+    expect(await engine.openDraft('a', '<nope>'), isA<Err<Object?>>());
   });
 
   test('a Bozza written or deleted by another client shows up on the poll, with the change signal up', () async {
@@ -260,7 +260,7 @@ void main() {
       isA<Err<OutgoingMessage>>().having((r) => r.failure, 'failure', isA<DraftReplyFailure>()),
     );
     expect(await row('<r@example.com>'), isNull);
-    expect(await engine.openDraft('a', '<y@example.com>'), isA<Ok>());
+    expect(await engine.openDraft('a', '<y@example.com>'), isA<Ok<Object?>>());
   });
 
   test('openDraft wraps a plain text Bozza in a paragraph', () async {

@@ -79,7 +79,7 @@ void main() {
   test('a token without the Gmail scope (granular consent) is a MissingPermissionFailure', () async {
     token = 'token_exchange_no_gmail';
     final r = await consent().run();
-    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<MissingPermissionFailure>()));
+    expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<MissingPermissionFailure>()));
   });
 
   test('a token without refresh_token is a Failure, not an exception', () async {
@@ -87,7 +87,7 @@ void main() {
     final r = await consent().run();
     expect(
       r,
-      isA<Err>().having(
+      isA<Err<Object?>>().having(
         (e) => e.failure,
         'failure',
         isA<UnexpectedFailure>().having((f) => f.error, 'error', 'no refresh_token in code exchange'),
@@ -110,18 +110,18 @@ void main() {
         return '';
       },
     ).run();
-    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<ConfigurationFailure>()));
+    expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<ConfigurationFailure>()));
     expect(asked, isFalse);
   });
 
   test('closing the browser is a CancelledFailure', () async {
     final r = await consent(browser: (_) => throw PlatformException(code: 'CANCELED')).run();
-    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
+    expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
   });
 
   test('a callback with another state is refused, no code exchanged', () async {
     final r = await consent(browser: (u) => '${u.queryParameters['redirect_uri']}?state=forged&code=x').run();
-    expect(r, isA<Err>());
+    expect(r, isA<Err<Object?>>());
     expect(requests, isEmpty);
   });
 }

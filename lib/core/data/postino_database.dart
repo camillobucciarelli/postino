@@ -15,6 +15,7 @@ import 'daos/device_settings_dao.dart';
 import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
 import 'daos/messages_dao.dart';
+import 'daos/outbox_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
@@ -24,6 +25,7 @@ import 'tables/intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
 import 'tables/messages_table.dart';
+import 'tables/outbox_table.dart';
 import 'tables/sync_cursors_table.dart';
 import 'tables/trusted_senders_table.dart';
 
@@ -42,6 +44,7 @@ part 'postino_database.g.dart';
     TrustedSenders,
     DeviceSettings,
     Drafts,
+    Outbox,
   ],
   daos: [
     AccountsDao,
@@ -50,6 +53,7 @@ part 'postino_database.g.dart';
     TrustedSendersDao,
     DeviceSettingsDao,
     DraftsDao,
+    OutboxDao,
   ],
 )
 class PostinoDatabase extends _$PostinoDatabase {
@@ -86,6 +90,8 @@ class PostinoDatabase extends _$PostinoDatabase {
           // A wrong key fails here.
           sql.select('SELECT count(*) FROM sqlite_master');
           _secureDelete(sql);
+          // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
+          sql.execute('PRAGMA busy_timeout = 5000');
         },
       ),
     );
@@ -99,7 +105,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -165,6 +171,7 @@ class PostinoDatabase extends _$PostinoDatabase {
           await m.addColumn(drafts, drafts.attachments);
         }
       }
+      if (from < 13) await m.createTable(outbox);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

@@ -10,6 +10,7 @@ import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
+import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -116,29 +117,58 @@ class GmailHarness implements ContractHarness {
     if (draftId != null && !_drafts.containsKey(draftId)) {
       return _fixture('not_found');
     }
+    return _json(
+      _putDraft(draftId, _parseRaw(body['message']['raw'] as String)),
+    );
+  }
+
+  /// The base64url `raw` of a draft or a send, back to an [OutgoingMessage].
+  static OutgoingMessage _parseRaw(String raw) {
     final mime = MimeMessage.parseFromText(
-      utf8.decode(
-        base64Url.decode(base64Url.normalize(body['message']['raw'] as String)),
-      ),
+      utf8.decode(base64Url.decode(base64Url.normalize(raw))),
     );
     List<String> addresses(String h) => [
       for (final m in parseMailboxes(mime.getHeaderValue(h) ?? ''))
         formatMailbox(m),
     ];
-    return _json(
-      _putDraft(
-        draftId,
-        OutgoingMessage(
-          messageId: mime.getHeaderValue('message-id')!,
-          from: parseMailbox(mime.getHeaderValue('from')!).address,
-          to: addresses('to'),
-          cc: addresses('cc'),
-          bcc: addresses('bcc'),
-          subject: mime.decodeSubject() ?? '',
-          body: mime.decodeTextHtmlPart() ?? '',
-        ),
+    return OutgoingMessage(
+      messageId: mime.getHeaderValue('message-id')!,
+      from: parseMailbox(mime.getHeaderValue('from')!).address,
+      to: addresses('to'),
+      cc: addresses('cc'),
+      bcc: addresses('bcc'),
+      subject: mime.decodeSubject() ?? '',
+      body: mime.decodeTextHtmlPart() ?? '',
+    );
+  }
+
+  /// What Gmail does with `messages.send`: a SENT message, its Bozza (if any) still there.
+  http.Response _send(String raw) {
+    final d = _parseRaw(raw);
+    final id = 'm-${++_draftSeq}';
+    deliver(
+      Message(
+        id: id,
+        messageId: d.messageId,
+        conversationId: 'th-$id',
+        labelIds: const [sentLabelId],
+        isRead: true,
+        isStarred: false,
+        from: d.from,
+        to: d.to,
+        cc: d.cc,
+        bcc: d.bcc,
+        subject: d.subject,
+        snippet: '',
+        date: _now,
       ),
     );
+    _draftBodies[id] = d.body;
+    return _json({
+      'id': id,
+      'threadId': 'th-$id',
+      'labelIds': [sentLabelId],
+    });
   }
 
   @override
@@ -196,9 +226,15 @@ class GmailHarness implements ContractHarness {
       ['labels'] => _fixture('labels'),
       ['messages'] => _paged('messages', [
         for (final m in _mailbox.values)
-          if (q['labelIds'] == null || _labels(m).contains(q['labelIds']))
+          if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
+              (!(q['q'] ?? '').startsWith('rfc822msgid:') ||
+                  'rfc822msgid:${m.messageId.replaceAll(RegExp('[<>]'), '')}' ==
+                      q['q']))
             {'id': m.id, 'threadId': m.conversationId},
       ], q),
+      ['messages', 'send'] => _send(
+        (jsonDecode(r.body) as Map<String, dynamic>)['raw'] as String,
+      ),
       ['drafts'] when r.method == 'GET' => _json({
         'drafts': [
           for (final MapEntry(:key, :value) in _drafts.entries)
@@ -426,6 +462,7 @@ void main() {
   mailProviderSyncContract('GmailProvider', GmailHarness.new);
   mailProviderAttachmentContract('GmailProvider', GmailHarness.new);
   mailProviderDraftContract('GmailProvider', GmailHarness.new);
+  mailProviderSendContract('GmailProvider', GmailHarness.new);
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
@@ -1136,6 +1173,187 @@ void main() {
           await h.provider.deleteDraft(draft.messageId),
           _err<OfflineFailure>(),
         );
+      });
+    });
+
+    group('Invio', () {
+      const messageId = '<c1d2e3f4@postino.example.com>';
+      final raw = renderMime(
+        OutgoingMessage(
+          messageId: messageId,
+          from: 'ada@gmail.com',
+          to: const ['bruno@example.com'],
+          subject: 'Caffè',
+          body: '<p>Ciao <b>Bruno</b></p>',
+        ),
+        _now,
+      );
+
+      /// Inviati does not hold the Message-ID; the send succeeds; no Bozza holds it either.
+      String route(http.Request r, String path) => switch ((r.method, path)) {
+        ('GET', 'messages') => 'messages_sent_search_empty',
+        ('POST', 'messages/send') => 'message_send',
+        ('GET', 'drafts') => 'drafts_empty',
+        _ => fail('unexpected ${r.method} $path'),
+      };
+
+      test('a send that stalls is aborted and is an OfflineFailure', () async {
+        http.BaseRequest? posted;
+        final provider = GmailProvider(
+          _account,
+          _keychain(),
+          MockClient.streaming((r, _) async {
+            if (r.url.path.endsWith('messages/send')) {
+              posted = r;
+              return Completer<http.StreamedResponse>().future;
+            }
+            final res = _fixture(
+              route(r as http.Request, r.url.path.substring(_api.length)),
+            );
+            return http.StreamedResponse(
+              http.ByteStream.fromBytes(res.bodyBytes),
+              res.statusCode,
+              headers: res.headers,
+            );
+          }),
+          FakeClock(_now),
+          client: _testClient,
+          sleep: (_) async {},
+          stall: const Duration(milliseconds: 50),
+        );
+        expect(await provider.send(messageId, raw), _err<OfflineFailure>());
+        await (posted! as http.Abortable).abortTrigger!.timeout(
+          const Duration(seconds: 1),
+        );
+      });
+
+      test('the first timeout grows with the body: 1 s per 50 KB', () {
+        expect(sendTimeout(0), const Duration(seconds: 30));
+        expect(
+          sendTimeout(5 * 1024 * 1024),
+          const Duration(seconds: 30, milliseconds: 104857),
+        );
+        expect(sendTimeout(35 * 1000 * 1000), const Duration(seconds: 730));
+      });
+
+      test('Inviati is searched by Message-ID, then one POST of the raw as base64url, then the Bozza is looked for', () async {
+        final g = _Recorded(route);
+        expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'GET ${_api}messages',
+            'POST ${_api}messages/send',
+            'GET ${_api}drafts',
+          ],
+        );
+        final search = g.requests.first.url.queryParameters;
+        expect(search['q'], 'rfc822msgid:c1d2e3f4@postino.example.com');
+        expect(search['labelIds'], sentLabelId);
+        final body = jsonDecode(g.requests[1].body) as Map;
+        expect(body.keys, ['raw']);
+        expect(
+          utf8.decode(
+            base64Url.decode(base64Url.normalize(body['raw'] as String)),
+          ),
+          raw,
+        );
+      });
+
+      test(
+        'a reply goes with its threadId, so it stays in the Conversazione',
+        () async {
+          final g = _Recorded(route);
+          _ok(await g.provider.send(messageId, raw, threadId: 't-1'));
+          final body = jsonDecode(g.requests[1].body) as Map;
+          expect(body['threadId'], 't-1');
+        },
+      );
+
+      test('a message already in Inviati is not sent again: no POST, but its Bozza is deleted', () async {
+        final g = _Recorded(
+          (r, path) => switch ((r.method, path)) {
+            ('GET', 'messages') => 'messages_sent_search_hit',
+            ('GET', 'drafts') => 'drafts_list',
+            ('DELETE', 'drafts/r-4410200000000000001') => 'draft_delete',
+            _ => route(r, path),
+          },
+        );
+        expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
+        expect(
+          [for (final r in g.requests) '${r.method} ${r.url.path}'],
+          [
+            'GET ${_api}messages',
+            'GET ${_api}drafts',
+            'DELETE ${_api}drafts/r-4410200000000000001',
+          ],
+        );
+      });
+
+      test(
+        'after the send its Bozza is deleted; a failure there is ignored',
+        () async {
+          final g = _Recorded(
+            (r, path) => switch ((r.method, path)) {
+              ('GET', 'drafts') => 'drafts_list',
+              ('DELETE', 'drafts/r-4410200000000000001') => 'rate_limited',
+              _ => route(r, path),
+            },
+          );
+          expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
+          expect(g.requests.last.method, 'DELETE');
+        },
+      );
+
+      test('a 413 is a SizeLimitFailure with the Gmail limit', () async {
+        final g = _Recorded(
+          (r, path) =>
+              path == 'messages/send' ? 'request_too_large' : route(r, path),
+        );
+        expect(
+          await g.provider.send(messageId, raw),
+          isA<Err>().having(
+            (e) => e.failure,
+            'failure',
+            isA<SizeLimitFailure>().having(
+              (f) => f.limitBytes,
+              'limitBytes',
+              gmailSendLimitBytes,
+            ),
+          ),
+        );
+      });
+
+      test('a 400 «Message too large» is a SizeLimitFailure too', () async {
+        final g = _Recorded(
+          (r, path) => path == 'messages/send'
+              ? 'request_too_large_400'
+              : route(r, path),
+        );
+        expect(await g.provider.send(messageId, raw), _err<SizeLimitFailure>());
+      });
+
+      test('another 400 is a RejectedFailure with Gmail\'s message', () async {
+        final g = _Recorded(
+          (r, path) => path == 'messages/send' ? 'bad_request' : route(r, path),
+        );
+        expect(
+          await g.provider.send(messageId, raw),
+          isA<Err<String>>().having(
+            (e) => e.failure,
+            'failure',
+            isA<RejectedFailure>().having(
+              (f) => f.reason,
+              'reason',
+              contains('Invalid To header'),
+            ),
+          ),
+        );
+      });
+
+      test('offline is an OfflineFailure', () async {
+        final h = GmailHarness()..goOffline();
+        expect(await h.provider.send(messageId, raw), _err<OfflineFailure>());
       });
     });
 

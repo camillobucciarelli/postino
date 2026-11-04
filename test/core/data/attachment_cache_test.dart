@@ -93,24 +93,26 @@ void main() {
     expect(gmail.attachmentCalls, hasLength(2));
   });
 
-  test(
-    'the decrypted copies are gone at the next launch, the cache stays',
-    () async {
-      await _start();
-      final a = gmail.attach('m1', 'a.pdf', _content('a'));
-      final path = _ok(await _file(a));
-      expect(h.fs.file(path).existsSync(), isTrue);
+  test('the decrypted copies older than an hour are gone at the next launch, a recent one stays, the cache stays', () async {
+    await _start();
+    final a = gmail.attach('m1', 'a.pdf', _content('a'));
+    final path = _ok(await _file(a));
+    expect(h.fs.file(path).existsSync(), isTrue);
+    // One left by a previous launch, and the one another app has just opened (the foreground, while a
+    // background isolate starts): the copy just made.
+    final old = h.fs.file('/tmp/postino-attachments/old.pdf')
+      ..writeAsBytesSync([1])
+      ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
 
-      // A new launch on the same disk.
-      await AttachmentStorage.open(
-        _cacheDir,
-        h.fs.directory('/tmp/postino-attachments'),
-      );
-      expect(h.fs.file(path).existsSync(), isFalse);
-      expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
-      expect(_cached, hasLength(1));
-    },
-  );
+    // A new launch on the same disk.
+    await AttachmentStorage.open(
+      _cacheDir,
+      h.fs.directory('/tmp/postino-attachments'),
+    );
+    expect(old.existsSync(), isFalse);
+    expect(h.fs.file(path).existsSync(), isTrue);
+    expect(_cached, hasLength(1));
+  });
 
   test('beyond the cap the least recently used attachment goes', () async {
     // Room for two encrypted 60-byte files, not three.
@@ -221,14 +223,17 @@ void main() {
     expect(await _file(a), isA<Ok<String>>());
   });
 
-  test('a file half written by a crash is gone at the next launch', () async {
+  test('a file half written by a crash is gone at the next launch; a recent one, maybe another isolate\'s write, stays', () async {
     await _start();
-    _cacheDir.childFile('abc.part').writeAsBytesSync([1, 2, 3]);
+    _cacheDir.childFile('old.part')
+      ..writeAsBytesSync([1, 2, 3])
+      ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
+    _cacheDir.childFile('new.part').writeAsBytesSync([1, 2, 3]);
     await AttachmentStorage.open(
       _cacheDir,
       h.fs.directory('/tmp/postino-attachments'),
     );
-    expect(_cached, isEmpty);
+    expect(_cached.map((f) => f.basename), ['new.part']);
   });
 
   for (final (step, where) in [

@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:file/file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pointycastle/export.dart';
 
@@ -20,21 +21,33 @@ import 'sync_engine.dart';
 class AttachmentStorage {
   AttachmentStorage._(this.cache, this.temp, this.cap);
 
+  /// A staging file this old is left from a crash, never a write in progress.
+  static const stalePart = Duration(hours: 1);
+
   final Directory cache;
   final Directory temp;
   final int cap;
 
-  /// Empties [temp]: the decrypted copies of the previous launch go, with any half-written cache file.
+  /// Clears what [stalePart] has left: decrypted copies in [temp] and half-written cache files older than
+  /// that. A younger one may be a copy another app has just opened, or the write of another isolate (#36).
   static Future<AttachmentStorage> open(
     Directory cache,
     Directory temp, {
     int cap = 500 * 1024 * 1024,
   }) async {
-    if (await temp.exists()) await temp.delete(recursive: true);
     await temp.create(recursive: true);
     await cache.create(recursive: true);
+    final before = DateTime.now().subtract(stalePart);
+    await for (final e in temp.list()) {
+      if ((await e.stat()).modified.isBefore(before)) {
+        await e.delete(recursive: true);
+      }
+    }
     await for (final e in cache.list()) {
-      if (e.basename.endsWith('.part')) await e.delete();
+      if (e.basename.endsWith('.part') &&
+          (await e.stat()).modified.isBefore(before)) {
+        await e.delete();
+      }
     }
     return AttachmentStorage._(cache, temp, cap);
   }
@@ -95,11 +108,7 @@ class AttachmentCache implements AttachmentRepository {
     bool Function() cancelled,
   ) async {
     final keys = await (_keys ??= _loadKeys());
-    final cached = _storage.cache.childFile(
-      sha256
-          .convert(utf8.encode('$accountId\n$messageId\n${attachment.id}'))
-          .toString(),
-    );
+    final cached = _cached(accountId, messageId, attachment.id);
     Uint8List? plain;
     if (await cached.exists()) {
       plain = await _crypt(_decrypt, await cached.readAsBytes(), keys);
@@ -177,6 +186,33 @@ class AttachmentCache implements AttachmentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<Result<Uint8List>> bytes(
+    String accountId,
+    String messageId,
+    String attachmentId,
+  ) async {
+    try {
+      final cached = _cached(accountId, messageId, attachmentId);
+      if (await cached.exists()) {
+        final keys = await (_keys ??= _loadKeys());
+        final plain = await _crypt(_decrypt, await cached.readAsBytes(), keys);
+        if (plain != null) return Ok(plain);
+      }
+    } on Exception catch (e) {
+      // Unreadable cache or keychain: the Provider still has it.
+      debugPrint('[attachments] cache read failed, $e');
+    }
+    return _sync.fetchAttachment(accountId, messageId, attachmentId);
+  }
+
+  File _cached(String accountId, String messageId, String attachmentId) =>
+      _storage.cache.childFile(
+        sha256
+            .convert(utf8.encode('$accountId\n$messageId\n$attachmentId'))
+            .toString(),
+      );
 
   /// Deletions in the cache, one at a time: two at once would pick, and delete, the same file.
   /// A failed one does not block the next.

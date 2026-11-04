@@ -8,15 +8,32 @@ class InboxEntry {
     required this.account,
     required this.count,
     required this.unread,
+    this.status,
   });
   final Message message;
   final Account account;
   final int count;
   final bool unread;
+
+  /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
+  final String? status;
 }
 
 /// A message of an open Conversazione, with its body once downloaded.
 typedef ConversationMessage = ({Message message, MessageBody? body});
+
+/// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
+/// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
+class OutgoingEntry {
+  const OutgoingEntry({
+    required this.message,
+    required this.sendAfter,
+    this.failed = false,
+  });
+  final OutgoingMessage message;
+  final int sendAfter;
+  final bool failed;
+}
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).
 abstract interface class InboxRepository {
@@ -33,6 +50,9 @@ abstract interface class InboxRepository {
   /// The Bozze of one Account, newest first: those written here (id and Conversazione are the Message-ID, the
   /// snippet comes from the body) and those of other clients, each once; `labelIds` is `['DRAFT']`.
   Stream<List<Message>> watchDrafts(String accountId);
+
+  /// The messages of one Account waiting to be sent (Annulla invio, offline), newest first.
+  Stream<List<OutgoingEntry>> watchOutbox(String accountId);
 
   /// The Etichette of one Account, by name; never those of another.
   Stream<List<Label>> watchLabels(String accountId);

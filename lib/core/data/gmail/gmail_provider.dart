@@ -2,18 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:enough_mail/enough_mail.dart'
-    show MailAddress, MediaType, MessageBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../domain/mail_provider.dart';
-import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
+import '../mime.dart';
 import 'gmail_tokens.dart';
 import 'google_client.dart';
 
@@ -21,7 +19,6 @@ import 'google_client.dart';
 const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
-// ponytail: send stays a stub until #36.
 class GmailProvider implements MailProvider {
   GmailProvider(
     this._accountId,
@@ -31,6 +28,7 @@ class GmailProvider implements MailProvider {
     this._client = const GoogleClient.fromEnvironment(),
     this._sleep = Future<void>.delayed,
     this._idle = imapIdle,
+    this._stall = const Duration(seconds: 30),
   });
 
   final String _accountId;
@@ -40,6 +38,7 @@ class GmailProvider implements MailProvider {
   final GoogleClient _client;
   final Future<void> Function(Duration) _sleep;
   final ImapIdle _idle;
+  final Duration _stall;
 
   static final _tokenEndpoint = Uri.parse(
     'https://oauth2.googleapis.com/token',
@@ -47,8 +46,6 @@ class GmailProvider implements MailProvider {
   static final _api = Uri.parse(
     'https://gmail.googleapis.com/gmail/v1/users/me/',
   );
-
-  static const _todo = Err<Never>(UnexpectedFailure('Gmail: not yet'));
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.
   /// Gmail allows 250 units per second per user and a message GET costs 5, so about 50.
@@ -249,8 +246,41 @@ class GmailProvider implements MailProvider {
     return Ok(base64Url.decode(base64Url.normalize(data)));
   });
 
+  /// Inviati is searched first: a message already there (a send whose answer was lost) is not sent twice.
+  /// The Bozza holding the Message-ID is then deleted, best effort: Gmail does not drop it on its own.
   @override
-  Future<Result<void>> send(OutgoingMessage message) async => _todo;
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+  }) => _guard(() async {
+    final bare = messageId.replaceAll(RegExp('[<>]'), '');
+    String? id;
+    if (bare.isNotEmpty) {
+      final sent = await _list({
+        'q': 'rfc822msgid:$bare',
+        'labelIds': sentLabelId,
+      });
+      id = sent.firstOrNull;
+    }
+    // Already in Inviati (a lost answer): not sent again, but its Bozza may still be there.
+    id ??=
+        (await _request(
+              'POST',
+              'messages/send',
+              body: {
+                'raw': base64Url.encode(utf8.encode(raw)),
+                // Gmail threads it in the sender's mailbox only with the threadId, besides In-Reply-To/References.
+                'threadId': ?threadId,
+              },
+            ))['id']
+            as String;
+    if (await deleteDraft(messageId) case Err(:final failure)
+        when failure is! NotFoundFailure) {
+      debugPrint('[gmail] draft of sent $messageId not deleted, $failure');
+    }
+    return Ok(id);
+  });
 
   /// Gmail draft ids by Message-ID.
   // ponytail: cache in memory, after a restart the draft is searched again; so a creation always searches
@@ -262,8 +292,20 @@ class GmailProvider implements MailProvider {
     OutgoingMessage draft, {
     required bool isNew,
   }) => _guard(() async {
+    final raw = switch (await renderMimeFetching(
+      draft,
+      _clock.now(),
+      fetchAttachment,
+    )) {
+      Ok(:final value) => value,
+      // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+      Err(failure: NotFoundFailure()) => throw const _Failed(
+        UnexpectedFailure('forwarded attachment gone'),
+      ),
+      Err(:final failure) => throw _Failed(failure),
+    };
     final message = {
-      'raw': base64Url.encode(utf8.encode(await _mime(draft))),
+      'raw': base64Url.encode(utf8.encode(raw)),
       // Gmail threads a Bozza by threadId, besides the headers.
       'threadId': ?draft.conversationId,
     };
@@ -304,56 +346,6 @@ class GmailProvider implements MailProvider {
     final id = (r['drafts'] as List?)?.firstOrNull?['id'] as String?;
     if (id == null) throw const _Failed(NotFoundFailure());
     return _draftIds[messageId] = id;
-  }
-
-  /// The raw RFC 2822 text of [d]: multipart/alternative, the plain text read off the HTML; inside a
-  /// multipart/mixed with the forwarded attachments, fetched now, when there are any (#37).
-  Future<String> _mime(OutgoingMessage d) async {
-    MailAddress address(String s) {
-      final m = parseMailbox(s);
-      return MailAddress(m.name, m.address);
-    }
-
-    final text = htmlText(d.body);
-    final MessageBuilder builder;
-    if (d.attachments.isEmpty) {
-      builder = MessageBuilder.prepareMultipartAlternativeMessage(
-        plainText: text,
-        htmlText: d.body,
-      );
-    } else {
-      builder = MessageBuilder.prepareMultipartMixedMessage()
-        ..addMultipartAlternative(plainText: text, htmlText: d.body);
-      for (final f in d.attachments) {
-        final a = f.attachment;
-        final bytes = switch (await fetchAttachment(f.sourceMessageId, a.id)) {
-          Ok(:final value) => value,
-          // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-          Err(failure: NotFoundFailure()) => throw const _Failed(
-            UnexpectedFailure('forwarded attachment gone'),
-          ),
-          Err(:final failure) => throw _Failed(failure),
-        };
-        builder.addBinary(
-          bytes,
-          MediaType.fromText(a.mimeType ?? 'application/octet-stream'),
-          filename: a.name.isEmpty ? null : a.name,
-        );
-      }
-    }
-    builder
-      ..from = [address(d.from)]
-      ..to = d.to.map(address).toList()
-      ..cc = d.cc.map(address).toList()
-      ..bcc = d.bcc.map(address).toList()
-      ..subject = d.subject
-      ..messageId = d.messageId
-      ..date = _clock.now();
-    if (d.inReplyTo case final id?) builder.setHeader('In-Reply-To', id);
-    if (d.references.isNotEmpty) {
-      builder.setHeader('References', d.references.join(' '));
-    }
-    return builder.buildMimeMessage().renderMessage();
   }
 
   /// Every message id matching [query], following the pages.
@@ -618,28 +610,45 @@ class GmailProvider implements MailProvider {
     final url = _api
         .resolve(path)
         .replace(queryParameters: query.isEmpty ? null : query);
-    // 30 s for the answer to start, then 30 s at most between two chunks: a long download is fine, a stalled one is not.
-    const stall = Duration(seconds: 30);
+    // The answer must start within [sendTimeout] (a big upload needs time), then [_stall] at most between two chunks:
+    // a long download is fine, a stalled one is not.
+    final stall = _stall;
+    final payload = body == null ? null : jsonEncode(body);
     Future<http.Response> send() async {
-      final request = cancel == null
-          ? http.Request(method, url)
-          : http.AbortableRequest(method, url, abortTrigger: cancel);
+      // A timeout aborts the connection too, so a replay can never overlap a request still uploading.
+      final abort = Completer<void>();
+      final request = http.AbortableRequest(
+        method,
+        url,
+        abortTrigger: cancel == null
+            ? abort.future
+            : Future.any([cancel, abort.future]),
+      );
       request.headers['authorization'] = 'Bearer ${tokens.access}';
-      if (body != null) {
+      if (payload != null) {
         request
           ..headers['content-type'] = 'application/json'
-          ..body = jsonEncode(body);
+          ..body = payload;
       }
-      final r = await _http.send(request).timeout(stall);
-      final total = r.contentLength ?? expected;
-      var read = 0;
-      final bytes = await http.ByteStream(
-        r.stream.timeout(stall).map((chunk) {
-          read += chunk.length;
-          if (total > 0) onProgress?.call(min(1, read / total));
-          return chunk;
-        }),
-      ).toBytes();
+      final Uint8List bytes;
+      final http.StreamedResponse r;
+      try {
+        r = await _http
+            .send(request)
+            .timeout(sendTimeout(request.contentLength, stall));
+        final total = r.contentLength ?? expected;
+        var read = 0;
+        bytes = await http.ByteStream(
+          r.stream.timeout(stall).map((chunk) {
+            read += chunk.length;
+            if (total > 0) onProgress?.call(min(1, read / total));
+            return chunk;
+          }),
+        ).toBytes();
+      } on TimeoutException {
+        abort.complete();
+        rethrow;
+      }
       return http.Response.bytes(
         bytes,
         r.statusCode,
@@ -687,9 +696,27 @@ class GmailProvider implements MailProvider {
         const AuthFailure(),
       // An expired history cursor, or a message that no longer exists.
       404 => const NotFoundFailure(),
+      // A message over the 35 MB cap of messages.send.
+      413 => const SizeLimitFailure(gmailSendLimitBytes),
+      400
+          when RegExp(
+            'too large|size limit',
+            caseSensitive: false,
+          ).hasMatch(r.body) =>
+        const SizeLimitFailure(gmailSendLimitBytes),
+      400 => RejectedFailure('Gmail $path: ${_errorMessage(r.body)}'),
       _ when _rateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
       _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
     });
+  }
+
+  /// The `error.message` of a Google error body, else "HTTP 400".
+  static String _errorMessage(String body) {
+    try {
+      final m = (jsonDecode(body) as Map)['error']['message'];
+      if (m is String && m.isNotEmpty) return m;
+    } catch (_) {}
+    return 'HTTP 400';
   }
 
   /// The end of a temporary block: "Retry after" plus an ISO timestamp in the body, else the Retry-After header in seconds.
@@ -752,6 +779,13 @@ class GmailProvider implements MailProvider {
     }
   }
 }
+
+/// Time for the answer to start: [stall] plus 1 s per 50 KB of [bodyBytes] (a 400 kbit/s floor, so 35 MB gets ~12 min).
+@visibleForTesting
+Duration sendTimeout(
+  int bodyBytes, [
+  Duration stall = const Duration(seconds: 30),
+]) => stall + Duration(milliseconds: bodyBytes ~/ 50);
 
 /// A failed Gmail call, unwound to [GmailProvider._guard].
 final class _Failed implements Exception {

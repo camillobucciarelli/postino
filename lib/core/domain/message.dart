@@ -134,6 +134,9 @@ const inboxLabelId = 'INBOX';
 /// Provider-side id of the Bozze label.
 const draftLabelId = 'DRAFT';
 
+/// Provider-side id of the Inviati label.
+const sentLabelId = 'SENT';
+
 class Message {
   const Message({
     required this.id,

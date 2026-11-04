@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,9 @@ import 'package:flutter_quill/flutter_quill.dart'
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
+import 'package:workmanager/workmanager.dart';
 
+import 'core/data/background_send.dart';
 import 'core/data/sync_engine.dart';
 import 'design_system/tokens/postino_theme.dart';
 import 'i18n/strings.g.dart';
@@ -25,6 +28,23 @@ Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
 }
 
+/// Android WorkManager entry point (#36): a fresh isolate wires the app's DI and runs [runOutboxTask].
+@pragma('vm:entry-point')
+void sendOutboxDispatcher() {
+  Workmanager().executeTask((task, input) async {
+    final accountId = input?['accountId'] as String?;
+    if (accountId == null) return true;
+    try {
+      DartPluginRegistrant.ensureInitialized();
+      await configureDependencies(environment: Environment.prod);
+    } catch (e) {
+      debugPrint('[background] $accountId: setup failed, $e');
+      return true;
+    }
+    return runOutboxTask(accountId);
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LicenseRegistry.addLicense(() async* {
@@ -33,6 +53,10 @@ Future<void> main() async {
       'Figtree',
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    // The outbox keeps going after the user leaves the app (#36).
+    await Workmanager().initialize(sendOutboxDispatcher);
+  }
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));

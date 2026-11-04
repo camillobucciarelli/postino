@@ -117,15 +117,24 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
         'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.bcc, d.subject, d.body AS snippet, '
         'd.updated_at AS date, 1 AS is_read, 0 AS is_starred, 1 AS local '
         'FROM drafts d JOIN accounts a ON a.id = d.account_id WHERE d.account_id = ?1 '
+        // Queued to send (also failed: Inviati reopens those through cancelSend, which removes the row first): not editable here.
+        'AND d.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
         'UNION ALL '
         'SELECT m.account_id, m.id, m.message_id, m.conversation_id, m.sender, m.sender_name, '
         'm.recipients, m.cc, m.bcc, m.subject, m.snippet, m.date, m.is_read, m.is_starred, 0 '
         // A Bozza without a Message-ID cannot be addressed (route, update): not listed.
         "FROM messages m WHERE m.account_id = ?1 AND m.message_id <> '' AND $_inFolder "
         'AND m.message_id NOT IN (SELECT message_id FROM drafts WHERE account_id = ?1) '
+        'AND m.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
         'ORDER BY date DESC',
         variables: [Variable(accountId)],
-        readsFrom: {drafts, accounts, messages, messageLabels},
+        readsFrom: {
+          drafts,
+          accounts,
+          messages,
+          messageLabels,
+          attachedDatabase.outbox,
+        },
       ).watch().map(
         (rows) => [
           for (final r in rows) (messages.map(r.data), r.read<bool>('local')),
@@ -188,9 +197,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
       transaction(() async {
         Expression<bool> row(Drafts t) =>
             t.accountId.equals(accountId) & t.messageId.equals(messageId);
-        await (update(
-          drafts,
-        )..where(row)).write(
+        await (update(drafts)..where(row)).write(
           const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)),
         );
         await (update(drafts)
@@ -205,8 +212,39 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
           ))
           .go();
 
+  /// The remote copy is gone: the Bozza goes back to new and pending, so the next upload creates it.
+  Future<void> forgetRemote(String accountId, String messageId) =>
+      (update(drafts)..where(
+            (t) =>
+                t.accountId.equals(accountId) & t.messageId.equals(messageId),
+          ))
+          .write(
+            const DraftsCompanion(
+              pending: Value(true),
+              synced: Value(false),
+              remoteKnown: Value(false),
+            ),
+          );
+
+  /// Moves the local Bozza to [to], as new on the Provider; false when there is none.
+  Future<bool> rekey(String accountId, String from, String to) =>
+      transaction(() async {
+        final d = await byId(accountId, from);
+        if (d == null) return false;
+        await into(drafts).insert(
+          d.copyWith(
+            messageId: to,
+            pending: true,
+            synced: false,
+            remoteKnown: false,
+          ),
+        );
+        await remove(accountId, from);
+        return true;
+      });
+
   /// After a sync: a Bozza the Provider lists as DRAFT is remoteKnown; one it listed before and no longer
-  /// does, with nothing pending here, was deleted or sent elsewhere, so it goes.
+  /// does, with nothing pending here and not queued to send, was deleted or sent elsewhere, so it goes.
   // ponytail: a small window if the Gmail history brings the deletion and the new version in different batches.
   Future<void> reconcile(String accountId) => transaction(() async {
     const inFolder =
@@ -219,7 +257,8 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     );
     await customUpdate(
       'DELETE FROM drafts WHERE account_id = ?1 AND pending = 0 AND remote_known = 1 '
-      'AND NOT $inFolder',
+      'AND NOT $inFolder '
+      'AND message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1)',
       variables: [Variable(accountId)],
       updates: {drafts},
       updateKind: UpdateKind.delete,

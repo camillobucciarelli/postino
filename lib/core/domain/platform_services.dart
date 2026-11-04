@@ -31,3 +31,12 @@ abstract interface class FileSaver {
   /// Asks where to save the file at [path], suggesting [name], and copies it there; nothing if the user backs out.
   Future<void> save(String path, String name);
 }
+
+/// Keeps the outbox going after the user leaves the app (#36): iOS background task, Android WorkManager one-shot, nothing on desktop.
+abstract interface class BackgroundSender {
+  /// Called when an outgoing message is queued: asks the platform for time or work to send it.
+  Future<void> hold(String accountId);
+
+  /// Called when the Account's outbox is empty again.
+  Future<void> release(String accountId);
+}

@@ -37,21 +37,54 @@ void main() {
     );
   });
 
-  testWidgets('an attachment chip without onOpen is a plain label: no button, no Tab stop', (t) async {
-    final semantics = t.ensureSemantics();
+  testWidgets('Tab in the undo snackbar reaches Annulla, Enter runs it', (
+    t,
+  ) async {
+    var undone = 0;
     await t.pumpWidget(
-      _app(const PostinoAttachmentChip(name: 'Contratto.pdf', size: '88 KB')),
+      _app(
+        PostinoSnackbar(
+          message: 'In attesa d’invio',
+          actionLabel: 'Annulla',
+          until: DateTime.now().add(PostinoMotion.undoWindow),
+          onAction: () => undone++,
+        ),
+      ),
     );
-    expect(find.byKey(const ValueKey('attachment-open')), findsNothing);
     await t.sendKeyEvent(LogicalKeyboardKey.tab);
     await t.pump();
-    expect(FocusManager.instance.primaryFocus, isA<FocusScopeNode>());
     expect(
-      t.getSemantics(find.bySemanticsLabel('Contratto.pdf')),
-      isNot(isSemantics(isButton: true)),
+      find.descendant(
+        of: find.byElementPredicate(
+          (e) => e == FocusManager.instance.primaryFocus?.context,
+        ),
+        matching: find.text('Annulla'),
+      ),
+      findsOneWidget,
     );
-    semantics.dispose();
+    await t.sendKeyEvent(LogicalKeyboardKey.enter);
+    await t.pump();
+    expect(undone, 1);
   });
+
+  testWidgets(
+    'an attachment chip without onOpen is a plain label: no button, no Tab stop',
+    (t) async {
+      final semantics = t.ensureSemantics();
+      await t.pumpWidget(
+        _app(const PostinoAttachmentChip(name: 'Contratto.pdf', size: '88 KB')),
+      );
+      expect(find.byKey(const ValueKey('attachment-open')), findsNothing);
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+      expect(FocusManager.instance.primaryFocus, isA<FocusScopeNode>());
+      expect(
+        t.getSemantics(find.bySemanticsLabel('Contratto.pdf')),
+        isNot(isSemantics(isButton: true)),
+      );
+      semantics.dispose();
+    },
+  );
 
   testWidgets('Tab in an empty state does not stop on the text', (t) async {
     await t.pumpWidget(

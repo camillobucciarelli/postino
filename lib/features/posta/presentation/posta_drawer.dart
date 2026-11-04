@@ -20,6 +20,7 @@ class PostaDrawer extends StatefulWidget {
     required this.onOpenAccount,
     required this.onOpenLabel,
     required this.onOpenDrafts,
+    required this.onOpenSent,
   });
 
   final String? accountId;
@@ -28,6 +29,7 @@ class PostaDrawer extends StatefulWidget {
   final void Function(String accountId) onOpenAccount;
   final void Function(String labelId) onOpenLabel;
   final void Function(String accountId) onOpenDrafts;
+  final void Function(String accountId) onOpenSent;
 
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
@@ -113,6 +115,13 @@ class _PostaDrawerState extends State<PostaDrawer> {
                   icon: PostinoIcons.pencil,
                   active: a.id == open && widget.labelId == draftLabelId,
                   onTap: () => widget.onOpenDrafts(a.id),
+                ),
+                PostinoDrawerItem(
+                  key: ValueKey('sent-${a.id}'),
+                  label: t.inviati.title,
+                  icon: PostinoIcons.send,
+                  active: a.id == open && widget.labelId == sentLabelId,
+                  onTap: () => widget.onOpenSent(a.id),
                 ),
               ],
             ],

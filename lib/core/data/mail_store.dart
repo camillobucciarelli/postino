@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart'
+    show BooleanExpressionOperators, Value, Variable;
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
@@ -175,9 +177,17 @@ class MailStore implements InboxRepository {
     ];
   }
 
+  /// True while [messageId] waits in the outbox: a Bozza PUT then would only delay its send in the Account's queue.
+  Future<bool> isQueued(String accountId, String messageId) async =>
+      await _db.outboxDao.byId(accountId, messageId) != null;
+
   /// The content of [updatedAt] reached the Provider.
   Future<void> draftSynced(String accountId, String messageId, int updatedAt) =>
       _db.draftsDao.synced(accountId, messageId, updatedAt);
+
+  /// The remote copy was deleted: the local Bozza is new again.
+  Future<void> forgetRemoteDraft(String accountId, String messageId) =>
+      _db.draftsDao.forgetRemote(accountId, messageId);
 
   Future<void> removeDraft(String accountId, String messageId) =>
       _db.draftsDao.remove(accountId, messageId);
@@ -190,15 +200,170 @@ class MailStore implements InboxRepository {
           for (final (r, local) in rows)
             _message(r, const [
               draftLabelId,
-            ], local ? _snippet(r.snippet) : null),
+            ], local ? listSnippet(r.snippet) : null),
         ],
       );
 
-  /// The body as a list shows it: no tags, spaces compressed, at most 120 characters.
-  static String _snippet(String html) {
-    final text = htmlText(html).replaceAll(RegExp(r'\s+'), ' ').trim();
-    return text.length > 120 ? text.substring(0, 120) : text;
-  }
+  // --- Outbox (#36) ---
+  /// Queues [message] with its rendered MIME [raw]; it goes once [sendAfter] (ms since epoch, UTC) has passed.
+  Future<void> enqueueOutgoing(
+    String accountId,
+    OutgoingMessage message, {
+    required int version,
+    required String raw,
+    required int sendAfter,
+  }) => _db.outboxDao.enqueue(
+    OutboxCompanion.insert(
+      accountId: accountId,
+      messageId: message.messageId,
+      version: version,
+      raw: raw,
+      recipients: message.to.join('\n'),
+      cc: message.cc.join('\n'),
+      bcc: message.bcc.join('\n'),
+      subject: message.subject,
+      body: message.body,
+      conversationId: Value(message.conversationId),
+      sendAfter: sendAfter,
+    ),
+  );
+
+  /// The row of [messageId], if queued (or still being prepared).
+  Future<OutboxRow?> outgoing(String accountId, String messageId) =>
+      _db.outboxDao.byId(accountId, messageId);
+
+  /// The row has its MIME and deadline; false when it was cancelled (or replaced) while preparing.
+  Future<bool> outgoingReady(
+    String accountId,
+    String messageId, {
+    required int version,
+    required String raw,
+    required int sendAfter,
+  }) => _db.outboxDao.ready(accountId, messageId, version, raw, sendAfter);
+
+  /// Drops the row of a preparation that failed.
+  Future<void> dropOutgoing(String accountId, String messageId, int version) =>
+      _db.outboxDao.drop(accountId, messageId, version);
+
+  /// Annulla invio: true when the row was still there and no sender (another isolate) is sending it now.
+  Future<bool> cancelOutgoing(String accountId, String messageId, int nowMs) =>
+      _db.outboxDao.cancel(accountId, messageId, nowMs);
+
+  /// Re-keys the local Bozza [from] as [to], as new; false when there is none.
+  Future<bool> rekeyDraft(String accountId, String from, String to) =>
+      _db.draftsDao.rekey(accountId, from, to);
+
+  /// The outbox rows whose window ended by [nowMs].
+  Future<List<OutboxRow>> dueOutgoing(String accountId, int nowMs) =>
+      _db.outboxDao.due(accountId, nowMs);
+
+  /// True while the Account has anything queued to send (a failed row waits for the user, not the platform).
+  Future<bool> hasOutgoing(String accountId) => _db.outboxDao.any(accountId);
+
+  /// Takes the row version read at [sendAfter] for this sender until [untilMs] (#36); false when another isolate
+  /// holds it or it was cancelled and queued again meanwhile.
+  Future<bool> claimOutgoing(
+    String accountId,
+    String messageId, {
+    required int sendAfter,
+    required int untilMs,
+    required int nowMs,
+  }) => _db.outboxDao.claim(accountId, messageId, sendAfter, untilMs, nowMs);
+
+  /// A send failed and may be retried: the row is free again, for the next replay of either isolate.
+  Future<void> unclaimOutgoing(String accountId, String messageId) =>
+      _db.outboxDao.unclaim(accountId, messageId);
+
+  /// The Provider refused the message for good: it stays, shown as failed, and is not retried.
+  /// With [version], only that preparation's row.
+  Future<void> outgoingFailed(
+    String accountId,
+    String messageId, {
+    int? version,
+  }) => _db.outboxDao.markFailed(accountId, messageId, version: version);
+
+  /// Another isolate (the WorkManager sender) may have written the file: the streams read it again.
+  void refreshAfterExternalWrites() => _db.markTablesUpdated(_db.allTables);
+
+  /// The Provider has the message as [providerId]: the outbox row and the local Bozza go, and the message is
+  /// stored at once under Inviati, so the folder shows it before the next sync upserts the same id.
+  /// Its Conversazione is the one it replies to (#37), else the message itself, until the sync says otherwise.
+  // ponytail: a full snapshot sync may drop it until the Provider lists it (a brief blink); fine for now.
+  Future<void> outgoingSent(
+    String accountId,
+    String messageId, {
+    required String providerId,
+    required int date,
+    required int sendAfter,
+  }) => _db.transaction(() async {
+    final r = await _db.outboxDao.byId(accountId, messageId);
+    // Not the version that was sent (cancelled and queued again meanwhile): it stays.
+    if (r == null || r.sendAfter != sendAfter) return;
+    await _db.outboxDao.remove(accountId, messageId);
+    await _db.draftsDao.remove(accountId, messageId);
+    // The cached remote DRAFT copy goes too, or Bozze shows it again until the next sync.
+    // Ids first: the label rows are what identifies the DRAFT copy.
+    final ids = await _db
+        .customSelect(
+          'SELECT m.id FROM messages m WHERE m.account_id = ?1 AND m.message_id = ?2 '
+          "AND EXISTS (SELECT 1 FROM message_labels l WHERE l.account_id = m.account_id AND l.message_id = m.id AND l.label_id = '$draftLabelId')",
+          variables: [Variable(accountId), Variable(messageId)],
+          readsFrom: {_db.messages, _db.messageLabels},
+        )
+        .map((row) => row.read<String>('id'))
+        .get();
+    await (_db.delete(_db.messageLabels)
+          ..where((l) => l.accountId.equals(accountId) & l.messageId.isIn(ids)))
+        .go();
+    await (_db.delete(
+      _db.messages,
+    )..where((m) => m.accountId.equals(accountId) & m.id.isIn(ids))).go();
+    // A sync may have cached the sent message already (a foreground sync beside the worker's send): that copy is
+    // the Provider's, labels included, and the local one must not replace it.
+    if (await _db.messagesDao.exists(accountId, providerId)) return;
+    await applyPage(accountId, [
+      Message(
+        id: providerId,
+        messageId: messageId,
+        conversationId: r.conversationId ?? providerId,
+        labelIds: const [sentLabelId],
+        isRead: true,
+        isStarred: false,
+        from: await _address(accountId),
+        to: _lines(r.recipients),
+        cc: _lines(r.cc),
+        bcc: _lines(r.bcc),
+        subject: r.subject,
+        snippet: listSnippet(r.body),
+        date: DateTime.fromMillisecondsSinceEpoch(date, isUtc: true),
+      ),
+    ], const {});
+  });
+
+  @override
+  Stream<List<OutgoingEntry>> watchOutbox(String accountId) =>
+      Stream.fromFuture(_address(accountId)).asyncExpand(
+        (from) => _db.outboxDao
+            .watch(accountId)
+            .map(
+              (rows) => [
+                for (final r in rows)
+                  OutgoingEntry(
+                    message: OutgoingMessage(
+                      messageId: r.messageId,
+                      from: from,
+                      to: _lines(r.recipients),
+                      cc: _lines(r.cc),
+                      bcc: _lines(r.bcc),
+                      subject: r.subject,
+                      body: r.body,
+                    ),
+                    sendAfter: r.sendAfter,
+                    failed: r.failed,
+                  ),
+              ],
+            ),
+      );
 
   Future<String> _address(String accountId) async =>
       (await _db.accountsDao.byPosition())

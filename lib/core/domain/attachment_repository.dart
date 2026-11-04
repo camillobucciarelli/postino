@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'message.dart';
 import 'result.dart';
 
@@ -12,4 +14,12 @@ abstract interface class AttachmentRepository {
     void Function(double done)? onProgress,
     Future<void>? cancel,
   });
+
+  /// The bytes of attachment [attachmentId] for a forward (#36): from the cache when there (offline too),
+  /// else downloaded from the Provider, not stored.
+  Future<Result<Uint8List>> bytes(
+    String accountId,
+    String messageId,
+    String attachmentId,
+  );
 }

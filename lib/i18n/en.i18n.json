@@ -112,11 +112,26 @@
     "draftNotFound": "Draft not found",
     "draftWithAttachments": "This draft has attachments: edit it from the client that created it",
     "draftReply": "This Draft is a reply: edit it from the client that created it",
+    "send": "Send",
+    "queued": "Waiting to send",
+    "undo": "Undo",
+    "tooLarge": "The message exceeds Gmail's $mb MB limit",
+    "sendFailed": "Sending failed: try again",
+    "offlineAttachments": "You are offline: the forwarded attachments are not downloaded yet, try again online",
+    "noRecipient": "Add at least one recipient",
     "forwardedAttachments": "Attachments"
   },
   "bozze": {
     "title": "Drafts",
     "emptyTitle": "No drafts",
     "emptyBody": "Drafts you write stay here until you send them."
+  },
+  "inviati": {
+    "title": "Sent",
+    "waiting": "Waiting to send",
+    "offline": "Outgoing, waiting for network",
+    "failed": "Sending failed",
+    "emptyTitle": "No sent messages",
+    "emptyBody": "Messages you send show up here."
   }
 }

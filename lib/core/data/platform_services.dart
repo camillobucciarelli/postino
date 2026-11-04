@@ -4,17 +4,20 @@ import 'package:connectivity_plus/connectivity_plus.dart' as plus;
 import 'package:file/local.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:workmanager/workmanager.dart';
 
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
 import 'postino_database.dart';
+import 'sync_engine.dart' show sendWindow;
 
 /// Keychain (iOS/macOS), Keystore (Android), Credential Manager (Windows), libsecret (Linux).
 // ponytail: first_unlock so the future background isolate can read the key with the device locked.
@@ -163,4 +166,73 @@ abstract class DatabaseModule {
 abstract class HttpModule {
   @Singleton(env: [Environment.prod])
   http.Client client() => http.Client();
+}
+
+/// iOS: a `beginBackgroundTask` per Account, begun at Invia while still in foreground (it only matters once
+/// backgrounded) and ended when the outbox empties or at expiration. Android: a WorkManager one-shot after
+/// [sendWindow] whose isolate flushes the outbox (see background_send.dart). Desktop: the process lives.
+@LazySingleton(as: BackgroundSender, env: [Environment.prod])
+class SystemBackgroundSender implements BackgroundSender {
+  static const channel = MethodChannel('it.postino/background');
+
+  /// Name of the WorkManager task; [workName] is unique per Account.
+  static const task = 'postino.send';
+  static String workName(String accountId) => '$task.$accountId';
+
+  /// iOS task identifiers, one per Account; a second hold replaces the open one, which may have expired.
+  final _tasks = <String, int>{};
+
+  /// The iOS task held for the Account, if any.
+  @visibleForTesting
+  int? taskId(String accountId) => _tasks[accountId];
+
+  static TargetPlatform? get _mobile => kIsWeb
+      ? null
+      : switch (defaultTargetPlatform) {
+          TargetPlatform.iOS || TargetPlatform.android => defaultTargetPlatform,
+          _ => null,
+        };
+
+  @override
+  Future<void> hold(String accountId) async {
+    switch (_mobile) {
+      case TargetPlatform.iOS:
+        // iOS may have expired the open task already (its 30 s are gone): ended (harmless if so) and begun anew.
+        if (_tasks.remove(accountId) case final old?) {
+          try {
+            await channel.invokeMethod<void>('endBackgroundTask', old);
+          } on PlatformException catch (e) {
+            debugPrint('[background] end of task $old failed, $e');
+          }
+        }
+        final id = await channel.invokeMethod<int>('beginBackgroundTask');
+        if (id != null && id != 0) _tasks[accountId] = id;
+      case TargetPlatform.android:
+        await Workmanager().registerOneOffTask(
+          workName(accountId),
+          task,
+          inputData: {'accountId': accountId},
+          initialDelay: sendWindow,
+          constraints: Constraints(networkType: NetworkType.connected),
+          // Maps to APPEND_OR_REPLACE: keeps a worker that is sending right now (replace would cancel it, its row
+          // staying claimed with no retry) and starts a fresh chain after a cancelled or failed one (plain APPEND
+          // would cancel the new work too).
+          existingWorkPolicy: ExistingWorkPolicy.update,
+        );
+      default:
+    }
+  }
+
+  @override
+  Future<void> release(String accountId) async {
+    switch (_mobile) {
+      case TargetPlatform.iOS:
+        if (_tasks.remove(accountId) case final id?) {
+          await channel.invokeMethod<void>('endBackgroundTask', id);
+        }
+      case TargetPlatform.android:
+        await Workmanager().cancelByUniqueName(workName(accountId));
+      default:
+    }
+  }
 }

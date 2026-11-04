@@ -162,6 +162,15 @@ void main() {
         ),
         find.byType(TextButton),
       ),
+      'snackbar action': (
+        PostinoSnackbar(
+          message: 'In attesa d’invio',
+          actionLabel: 'Annulla',
+          until: DateTime.now().add(PostinoMotion.undoWindow),
+          onAction: _noop,
+        ),
+        find.byType(TextButton),
+      ),
       'icon button': (
         PostinoIconButton(
           icon: PostinoIcons.menu,

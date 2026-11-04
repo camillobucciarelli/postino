@@ -63,6 +63,14 @@ _Avoid_: Quote, testo citato (è la parte ripiegata di un messaggio ricevuto)
 La breve attesa dopo Invia durante la quale l'utente può ritirare il messaggio e tornare a modificarlo; trascorsa l'attesa il messaggio parte anche se l'app è stata chiusa.
 _Avoid_: Undo send, ripensamento
 
+**Inviati**:
+La cartella del Provider con i messaggi spediti dall'Account. Vi compare subito anche il messaggio in coda (Annulla invio, offline), con il suo stato, finché non è partito.
+_Avoid_: Sent, posta inviata
+
+**Coda d'uscita**:
+La coda locale dei messaggi da inviare: ogni voce porta il MIME già costruito e il Message-ID; parte dopo l'attesa di Annulla invio, anche offline al ritorno della rete.
+_Avoid_: Outbox, posta in uscita
+
 **Invito**:
 Un messaggio che propone un evento di calendario, a cui l'utente risponde Sì, Forse o No.
 _Avoid_: Evento (è la cosa proposta), meeting

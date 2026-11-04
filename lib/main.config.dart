@@ -46,6 +46,10 @@ extension GetItInjectableX on _i174.GetIt {
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
+    gh.lazySingleton<_i398.BackgroundSender>(
+      () => _i524.SystemBackgroundSender(),
+      registerFor: {_prod},
+    );
     gh.singleton<_i398.Connectivity>(
       () => _i524.SystemConnectivity(),
       registerFor: {_prod},
@@ -88,6 +92,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i385.MailStore>(),
         gh<_i398.Clock>(),
         gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
       ),
     );
     gh.lazySingleton<_i307.SettingsRepository>(

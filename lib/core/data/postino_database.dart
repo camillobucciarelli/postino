@@ -24,6 +24,7 @@ import 'tables/bodies_table.dart';
 import 'tables/device_settings_table.dart';
 import 'tables/drafts_table.dart';
 import 'tables/intents_table.dart';
+import 'tables/label_intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
 import 'tables/messages_table.dart';
@@ -43,6 +44,7 @@ part 'postino_database.g.dart';
     Bodies,
     SyncCursors,
     Intents,
+    LabelIntents,
     TrustedSenders,
     DeviceSettings,
     Drafts,
@@ -100,7 +102,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -164,6 +166,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         }
       }
       if (from < 13) await m.createTable(outbox);
+      if (from < 14) await m.createTable(labelIntents);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

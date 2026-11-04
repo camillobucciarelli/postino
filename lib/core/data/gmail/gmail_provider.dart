@@ -13,6 +13,7 @@ import '../json_objects.dart';
 import '../mime.dart';
 import 'gmail_failure.dart';
 import 'gmail_http.dart';
+import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
 import 'google_client.dart';
 
@@ -33,6 +34,7 @@ class GmailProvider(
   this : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
   final GmailHttp _gmail;
+  late final _labels = GmailLabels(_gmail);
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.
   /// Gmail allows 250 units per second per user and a message GET costs 5, so about 50.
@@ -53,11 +55,7 @@ class GmailProvider(
   Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => gmailGuard(() async {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
     final cursor = (await _gmail.get('profile'))['historyId'] as String;
-    final labels = [
-      for (final l in jsonObjects((await _gmail.get('labels'))['labels']))
-        // System labels (INBOX, STARRED, UNREAD...) are inbox, Stella and read state, not Etichette.
-        if (l['type'] == 'user') Label(id: l['id'] as String, name: l['name'] as String, kind: LabelKind.etichetta),
-    ];
+    final labels = await _labels.list();
     final after = _clock.now().subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
     final ids = await _list({'q': 'after:$after'});
     final inbox = (await _list({'q': 'after:$after', 'labelIds': inboxLabelId})).toSet();
@@ -106,11 +104,14 @@ class GmailProvider(
       page = r['nextPageToken'] as String?;
     } while (page != null);
     // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
-    // ponytail: labels are refreshed by the initial sync only; a label created elsewhere shows up after the next one.
     final fetched = await _fetchAll(changed, full: (_) => true);
+    // The history does not record label changes: the whole list comes every time.
+    // ponytail: one more GET (1 quota unit) per poll; a labels-only refresh every few polls if quota ever matters.
+    final labels = await _labels.list();
     return Ok(
       SyncBatch(
         cursor: latest,
+        labels: labels,
         messages: [for (final (m, _) in fetched.values.nonNulls) m],
         // Gone by the time it was fetched: removed as well.
         removedMessageIds: [
@@ -220,6 +221,15 @@ class GmailProvider(
       debugPrint('[gmail] draft of sent $messageId not deleted, $failure');
     }
     return Ok(id);
+  });
+
+  @override
+  Future<Result<Label>> createLabel(String name) => gmailGuard(() async => Ok(await _labels.create(name)));
+
+  @override
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => gmailGuard(() async {
+    await _labels.set(messageId, labelId, add: add);
+    return const Ok(null);
   });
 
   /// Gmail draft ids by Message-ID.

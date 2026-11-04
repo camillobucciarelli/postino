@@ -16,6 +16,11 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     for (final l in all) LabelsCompanion.insert(accountId: accountId, id: l.id, name: l.name, kind: l.kind),
   ], mode: InsertMode.insertOrReplace);
 
+  /// Stores one Etichetta of the Account, replacing the one with the same id.
+  Future<void> upsert(String accountId, Label l) =>
+      into(labels)
+          .insertOnConflictUpdate(LabelsCompanion.insert(accountId: accountId, id: l.id, name: l.name, kind: l.kind));
+
   /// The Account's own Etichette, by name.
   Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)

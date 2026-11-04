@@ -149,13 +149,9 @@ class SyncEngine(
   @override
   Future<void> flushDrafts(String accountId) async {
     await _draftTimers.remove(accountId)?.cancel();
-    if (_paused(accountId)) return;
-    final account = await _account(accountId);
-    // Da ricollegare: the queue waits for the reconnection, which syncs (and replays) again.
-    if (account == null || account.status != AccountStatus.attivo) return;
-    await _serial(accountId, () async {
-      await _replay(accountId, providerFor(account), flush: true);
-    });
+    if (await _activeAccount(accountId) case final account?) {
+      await _serial(accountId, () => _replay(accountId, providerFor(account), flush: true));
+    }
   }
 
   @override
@@ -168,10 +164,9 @@ class SyncEngine(
   /// and go with the first replay after it (the next poll or sync); so do those of a Da ricollegare Account.
   @override
   Future<void> flushOutbox(String accountId) async {
-    if (_paused(accountId)) return;
-    final account = await _account(accountId);
-    if (account == null || account.status != AccountStatus.attivo) return;
-    await _serial(accountId, () => _replay(accountId, providerFor(account), outboxOnly: true));
+    if (await _activeAccount(accountId) case final account?) {
+      await _serial(accountId, () => _replay(accountId, providerFor(account), outboxOnly: true));
+    }
   }
 
   @override
@@ -194,7 +189,34 @@ class SyncEngine(
     return providerFor(account).fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
   }
 
+  @override
+  Future<Result<Label>> createLabel(String accountId, String name) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    // In the Account's queue: a sync that read the list before the creation cannot drop it afterwards.
+    return _serial(accountId, () async {
+      final created = await providerFor(account).createLabel(name);
+      if (created case Ok(:final value)) await _store.saveLabel(accountId, value);
+      return created;
+    });
+  }
+
+  @override
+  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) async {
+    await _store.queueLabel(accountId, messageId, labelId, add: add);
+    if (await _activeAccount(accountId) case final account?) {
+      await _serial(accountId, () => _replay(accountId, providerFor(account)));
+    }
+  }
+
   Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
+
+  /// The Account if its queue may go to the Provider now: not paused, not Da ricollegare (it waits for the reconnection).
+  Future<Account?> _activeAccount(String id) async {
+    if (_paused(id)) return null;
+    final account = await _account(id);
+    return account?.status == AccountStatus.attivo ? account : null;
+  }
 
   /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
   Future<T> _serial<T>(String accountId, Future<T> Function() op) {

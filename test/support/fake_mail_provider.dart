@@ -93,6 +93,12 @@ class FakeMailProvider() implements MailProvider {
   /// Every [setRead] that reached the Provider: (ids, read).
   final readCalls = <(List<String>, bool)>[];
 
+  /// While set, [setLabel] answers it even though the syncs work: a passing replay failure or a refusal.
+  Failure? setLabelFailure;
+
+  /// Every [setLabel] that reached the Provider, refused ones too: (message id, label id, add).
+  final labelCalls = <(String, String, bool)>[];
+
   /// Body kind of [fetchBody]; the sync bodies are plain text.
   BodyKind bodyKind = BodyKind.testo;
 
@@ -265,7 +271,7 @@ class FakeMailProvider() implements MailProvider {
       return SyncBatch(
         cursor: '$_version',
         messages: _messages.values.toList(),
-        labels: labels,
+        labels: [...labels],
         bodies: _inboxBodies(_messages.values),
       );
     });
@@ -292,6 +298,7 @@ class FakeMailProvider() implements MailProvider {
       return lastIncremental = SyncBatch(
         cursor: '$_version',
         messages: messages,
+        labels: [...labels],
         removedMessageIds: [
           for (final e in latest.values)
             if (e.$2 == null) e.$3,
@@ -337,8 +344,8 @@ class FakeMailProvider() implements MailProvider {
         : _guard(() {
             readCalls.add((messageIds, read));
             for (final id in messageIds) {
-              if (_old[id] case final m?) _old[id] = withRead(m, read: read);
-              if (_messages[id] case final m?) deliver(withRead(m, read: read));
+              if (_old[id] case final m?) _old[id] = copyOf(m, isRead: read);
+              if (_messages[id] case final m?) deliver(copyOf(m, isRead: read));
             }
           });
   }
@@ -435,20 +442,44 @@ class FakeMailProvider() implements MailProvider {
     removeDraftRemotely(messageId);
     return const Ok(null);
   }
+
+  int _labelSeq = 100;
+
+  /// Ids are `Label_<n>`; the name matches case-insensitively, as on Gmail.
+  @override
+  Future<Result<Label>> createLabel(String name) async => _guard(() {
+    if (labels.where((l) => l.name.toLowerCase() == name.toLowerCase()).firstOrNull case final l?) return l;
+    final created = Label(id: 'Label_${++_labelSeq}', name: name, kind: LabelKind.etichetta);
+    labels.add(created);
+    return created;
+  });
+
+  @override
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) async {
+    if (_failure case final f?) return Err(f);
+    labelCalls.add((messageId, labelId, add));
+    if (setLabelFailure case final f?) return Err(f);
+    final m = _messages[messageId];
+    if (m == null) return const Err(NotFoundFailure());
+    final others = m.labelIds.where((l) => l != labelId);
+    deliver(copyOf(m, labelIds: [...others, if (add) labelId]));
+    return const Ok(null);
+  }
 }
 
-/// [m] read (or unread) elsewhere.
-Message withRead(Message m, {required bool read}) => Message(
+/// [m] changed elsewhere: its Etichette or its read state; every other field kept.
+Message copyOf(Message m, {List<String>? labelIds, bool? isRead}) => Message(
   id: m.id,
   messageId: m.messageId,
   conversationId: m.conversationId,
-  labelIds: m.labelIds,
-  isRead: read,
+  labelIds: labelIds ?? m.labelIds,
+  isRead: isRead ?? m.isRead,
   isStarred: m.isStarred,
   from: m.from,
   fromName: m.fromName,
   to: m.to,
   cc: m.cc,
+  bcc: m.bcc,
   subject: m.subject,
   snippet: m.snippet,
   date: m.date,

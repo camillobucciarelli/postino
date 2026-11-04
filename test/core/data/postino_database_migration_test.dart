@@ -191,6 +191,26 @@ void main() {
     expect(await db.select(db.syncCursors).get(), isEmpty);
   });
 
+  test('v14 adds the Etichette queue, keeping what was there', () async {
+    final raw = sqlite3.openInMemory();
+    // A current database taken back to the v13 shape: the Etichette queue dropped, one sync cursor in it.
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    raw
+      ..execute('DROP TABLE label_intents')
+      ..execute("INSERT INTO sync_cursors (account_id, cursor) VALUES ('a1', '7')")
+      ..execute('PRAGMA user_version = 13');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    await db.intentsDao.queueLabel('a1', 'm1', 'Label_12', add: true);
+    final row = (await db.intentsDao.pendingLabels('a1')).single;
+    expect((row.messageId, row.labelId, row.added), ('m1', 'Label_12', true));
+    expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
+    expect(raw.select('PRAGMA user_version').first.values.first, 14);
+  });
+
   test('v13 adds the outbox, keeping what was there', () async {
     final raw = sqlite3.openInMemory();
     // A current database taken back to the v12 shape: the outbox dropped, one sync cursor in it.
@@ -198,6 +218,7 @@ void main() {
     await first.customSelect('SELECT 1').get();
     await first.close();
     raw
+      ..execute('DROP TABLE label_intents')
       ..execute('DROP TABLE outbox')
       ..execute("INSERT INTO sync_cursors (account_id, cursor) VALUES ('a1', '7')")
       ..execute('PRAGMA user_version = 12');
@@ -222,7 +243,7 @@ void main() {
     final row = (await db.outboxDao.due('a1', 1)).single;
     expect((row.failed, row.claimedUntil, row.conversationId), (false, null, 't'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 13);
+    expect(raw.select('PRAGMA user_version').first.values.first, 14);
   });
 
   test(
@@ -260,7 +281,7 @@ void main() {
       );
       final d = await db.select(db.drafts).getSingle();
       expect((d.inReplyTo, d.references, d.conversationId), ('<m1>', '<m1>', 't'));
-      expect(raw.select('PRAGMA user_version').first.values.first, 13);
+      expect(raw.select('PRAGMA user_version').first.values.first, 14);
     },
   );
 
@@ -274,6 +295,7 @@ void main() {
       raw.execute('ALTER TABLE drafts DROP COLUMN $c');
     }
     raw
+      ..execute('DROP TABLE label_intents')
       ..execute('DROP TABLE outbox')
       ..execute('ALTER TABLE messages DROP COLUMN reply_to')
       ..execute('ALTER TABLE messages DROP COLUMN "references"')
@@ -285,7 +307,7 @@ void main() {
     final d = await db.select(db.drafts).getSingle();
     expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
     expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 13);
+    expect(raw.select('PRAGMA user_version').first.values.first, 14);
   });
 
   test('a new database keeps the cursors it saves', () async {

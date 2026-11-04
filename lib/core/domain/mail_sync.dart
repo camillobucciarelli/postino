@@ -51,4 +51,12 @@ abstract interface class MailSync() {
     void Function(double done)? onProgress,
     Future<void>? cancel,
   });
+
+  /// Creates the Etichetta on the Provider and lists it here; not queued: [Err] offline or Da ricollegare.
+  /// Idempotent on the name: an existing Etichetta is returned.
+  Future<Result<Label>> createLabel(String accountId, String name);
+
+  /// Puts the Etichetta [labelId] on the message (with [add] false, takes it off): here at once, on the Provider
+  /// now or when back online (ADR 0008). Completes offline too, the intent stays queued.
+  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add});
 }

@@ -11,8 +11,8 @@ class const SyncBatch({
   /// Messaggi nuovi o modificati.
   final List<Message> messages = const [],
 
-  /// Etichette nuove o modificate.
-  final List<Label> labels = const [],
+  /// Every Etichetta of the Account, which replaces the stored list; null when this sync did not read them.
+  final List<Label>? labels,
 
   /// Id (lato Provider) dei messaggi eliminati.
   final List<String> removedMessageIds = const [],
@@ -20,7 +20,7 @@ class const SyncBatch({
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
   final Map<String, MessageBody> bodies = const {},
 }) extends Equatable {
-  /// Crea un batch; senza argomenti le liste sono vuote.
+  /// Crea un batch; senza argomenti le liste sono vuote e le Etichette non lette.
   this;
 
   @override
@@ -95,4 +95,11 @@ abstract interface class MailProvider() {
 
   /// Elimina dal Provider la Bozza con Message-ID `messageId`.
   Future<Result<void>> deleteDraft(String messageId);
+
+  /// Creates the Etichetta [name]; idempotent on the name: one that already exists is returned, not duplicated.
+  Future<Result<Label>> createLabel(String name);
+
+  /// Adds the Etichetta [labelId] to message [messageId] (with [add] false, removes it); idempotent, so a replayed
+  /// intent is harmless. [NotFoundFailure] when the message is gone from the Provider.
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add});
 }

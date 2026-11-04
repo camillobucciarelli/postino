@@ -2,7 +2,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
-import '../../posta_layout.dart';
+import '../../posta_views.dart';
 
 /// Route of an Etichetta: PostaLayout draws the view from the URI.
 class LabelPage extends StatelessWidget {

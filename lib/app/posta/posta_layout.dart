@@ -25,6 +25,7 @@ import '../../features/posta/presentation/posta_drawer.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
 import '../../features/posta/presentation/write_fab.dart';
 import '../../i18n/strings.g.dart';
+import 'posta_routes.dart';
 
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
 /// so the outgoing view can fade out with its own params. The child route pages just delegate here.
@@ -59,32 +60,19 @@ class _PostaLayoutState extends State<PostaLayout> {
     final own = Routefly.of(context).route.uri.path;
     final uri = Routefly.currentUri;
     // Built from the URI, not from Routefly.query, so the outgoing view keeps its own params while it fades out.
-    final seg = Routefly.currentOriginalPath == own
-        ? const <String>[]
-        : uri.pathSegments;
-    // (account, conversation) or (account, Message-ID): `pathSegments` decodes the percent-encoding.
-    final open = seg.length > 3 && seg[2] == 'conversazione'
-        ? (seg[1], seg[3])
-        : null;
-    final draft = seg.length > 3 && seg[2] == 'bozza' ? (seg[1], seg[3]) : null;
-    final detail = open ?? draft;
-    final String list;
-    if (detail == null) {
-      list = _list = uri.path;
-    } else {
-      final last = _list;
-      // Opened from the Posta unificata or from a list of its Account; else (deep link) its inbox.
-      list =
-          last != null &&
-              (last == routePaths.posta.path ||
-                  Uri.parse(last).pathSegments[1] == detail.$1)
-          ? last
-          : routePaths.posta.$accountId.path.changes({'accountId': detail.$1});
-    }
-    // /posta/<account>[/etichetta/<label>]: the docked drawer reads its selection from the list.
-    final ls = Uri.parse(list).pathSegments;
-    final accountId = ls.length > 1 ? ls[1] : null;
-    final labelId = ls.length > 3 ? ls[3] : null;
+    final PostaRoute(
+      :list,
+      :open,
+      :draft,
+      :detail,
+      :accountId,
+      :labelId,
+    ) = PostaRoute.parse(
+      uri,
+      isLayout: Routefly.currentOriginalPath == own,
+      last: _list,
+    );
+    if (detail == null) _list = list;
     void back() => Routefly.navigate(list);
     // Invia: the composer closes and the Snackbar of Annulla invio shows under this layout's messenger (the
     // app's: PostaLayout outlives the composer in both layouts), so it survives the detail going away.
@@ -170,7 +158,7 @@ class _PostaLayoutState extends State<PostaLayout> {
                               open.$2,
                               onBack: back,
                               cursor: _cursor,
-                              onOpenDraft: (id) => _openDraft(open.$1, id),
+                              onOpenDraft: (id) => openDraft(open.$1, id),
                             ),
                       detailKey: detail,
                       empty: Builder(
@@ -196,13 +184,13 @@ Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) =>
       appBar: const UnifiedAppBar(),
       drawer: postaDrawer(),
       banners: postaBanners,
-      fab: WriteFab(cursor: cursor, onWrite: _openDraft),
+      fab: WriteFab(cursor: cursor, onWrite: openDraft),
       body: MessageList(
         watch: (r) => r.watchUnifiedInbox(),
         showAccount: true,
         selected: selected,
         cursor: cursor,
-        onOpen: _openConversation,
+        onOpen: openConversation,
       ),
     );
 
@@ -217,12 +205,12 @@ Widget postaAccountView(
   appBar: AccountAppBar(accountId: id),
   drawer: postaDrawer(accountId: id),
   banners: postaBanners,
-  fab: WriteFab(accountId: id, cursor: cursor, onWrite: _openDraft),
+  fab: WriteFab(accountId: id, cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(id, inboxLabelId),
     selected: selected,
     cursor: cursor,
-    onOpen: _openConversation,
+    onOpen: openConversation,
   ),
 );
 
@@ -237,12 +225,12 @@ Widget postaLabelView(
   appBar: AccountAppBar(accountId: accountId, labelId: labelId),
   drawer: postaDrawer(accountId: accountId, labelId: labelId),
   banners: postaBanners,
-  fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
+  fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(accountId, labelId),
     selected: selected,
     cursor: cursor,
-    onOpen: _openConversation,
+    onOpen: openConversation,
   ),
 );
 
@@ -261,14 +249,14 @@ Widget postaDraftsView(
     ),
     drawer: postaDrawer(accountId: accountId, labelId: draftLabelId),
     banners: postaBanners,
-    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
+    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
     body: MessageList(
       watch: (r) => _draftEntries(accountId, r),
       selected: selected,
       cursor: cursor,
       emptyTitle: context.t.bozze.emptyTitle,
       emptyBody: context.t.bozze.emptyBody,
-      onOpen: _openDraft,
+      onOpen: openDraft,
     ),
   ),
 );
@@ -322,7 +310,7 @@ Widget postaSentView(
     ),
     drawer: postaDrawer(accountId: accountId, labelId: sentLabelId),
     banners: postaBanners,
-    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: _openDraft),
+    fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
     body: MessageList(
       watch: (r) => _sentEntries(
         accountId,
@@ -337,7 +325,7 @@ Widget postaSentView(
       emptyBody: context.t.inviati.emptyBody,
       // A queued or failed row (its Conversazione is its Message-ID) is cancelled and reopens as a Bozza.
       onOpen: (a, c) =>
-          c.startsWith('<') ? _reopen(a, c) : _openConversation(a, c),
+          c.startsWith('<') ? _reopen(a, c) : openConversation(a, c),
     ),
   ),
 );
@@ -414,7 +402,7 @@ Stream<bool> _connectivity() async* {
 /// Annulla invio of a queued or failed message: when it is still ours, it reopens as a Bozza.
 Future<void> _reopen(String accountId, String messageId) async {
   final id = await GetIt.I<MailSync>().cancelSend(accountId, messageId);
-  if (id != null) _openDraft(accountId, id);
+  if (id != null) openDraft(accountId, id);
 }
 
 /// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.
@@ -459,13 +447,6 @@ Widget postaComposerView(
   onQueued: onQueued,
 );
 
-void _openDraft(String accountId, String messageId) => Routefly.navigate(
-  routePaths.posta.$accountId.bozza.$messageId.changes({
-    'accountId': accountId,
-    'messageId': Uri.encodeComponent(messageId),
-  }),
-);
-
 /// An open Conversazione; its params come from the URI, so a new one is a new view.
 /// [onOpenDraft]: the composer of the Bozza a Rispondi/Inoltra just saved (#37).
 Widget postaConversationView(
@@ -482,14 +463,6 @@ Widget postaConversationView(
   onOpenDraft: onOpenDraft,
   cursor: cursor,
 );
-
-void _openConversation(String accountId, String conversationId) =>
-    Routefly.navigate(
-      routePaths.posta.$accountId.conversazione.$conversationId.changes({
-        'accountId': accountId,
-        'conversationId': conversationId,
-      }),
-    );
 
 /// On top of every list: offline, then the Accounts Da ricollegare.
 const postaBanners = <Widget>[OfflineBanner(), ReconnectBanners()];

@@ -13,7 +13,7 @@ import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import '../domain/link_texts.dart';
+import '../domain/link_table.dart';
 import '../domain/quoted_text.dart';
 import '../domain/reply_kind.dart';
 import '../domain/safe_html.dart';
@@ -57,7 +57,8 @@ class _ConversationBodyState() extends State<ConversationBody> {
   final _safe = <(String, bool), SafeHtml>{};
   final _parts = <(String, bool), BodyParts>{};
   final _measured = <(String, bool), SafeHtml>{};
-  final _links = <String, Map<String, List<String>>>{};
+  final _links = <(String, bool), LinkTable>{};
+  final _nonce = newLinkNonce();
 
   bool _allowRemote(Message message) =>
       widget.trusted.contains(normalizeAddress(message.from)) || _trust.shownOnce(widget.account.id, message.id);
@@ -85,12 +86,13 @@ class _ConversationBodyState() extends State<ConversationBody> {
     // Already clean: this only measures the part's own fixed width.
     final allow = _allowRemote(message);
     final part = _measured[(content, allow)] ??= prepareHtml(content, allowRemote: allow);
+    // Every link is a token: a tap names the link itself, never a URL to compare.
+    final table = _links[(content, allow)] ??= tokenizeLinks(part.html, nonce: _nonce);
     return PostinoHtmlCard(
-      html: part.html,
+      html: table.html,
       contentWidth: part.width,
       quiet: quiet,
-      onTapUrl: (url) =>
-          unawaited(openGuardedLink(context, url, textsOf(_links[content] ??= linkTexts(part.html), url))),
+      onTapUrl: (url) => unawaited(openTokenLink(context, table, url)),
     );
   }
 

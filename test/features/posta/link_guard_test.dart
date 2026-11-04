@@ -141,7 +141,13 @@ void main() {
         expect(find.byKey(const ValueKey('webview')), findsOneWidget);
         expect(web.javaScript, JavaScriptMode.disabled);
         expect(web.loaded.single, contains("img-src data:;"));
-        expect(web.loaded.single, contains('paypal.com.evil.io/login'));
+        // Every link of the document is a token: the sender's own URLs are not in it.
+        expect(web.loaded.single, isNot(contains('paypal.com.evil.io')));
+        final tokens = RegExp(r'href="(https://postino\.invalid/l/[^"]+)"')
+            .allMatches(web.loaded.single)
+            .map((m) => m[1]!)
+            .toList();
+        expect(tokens, hasLength(4));
 
         Future<NavigationDecision> navigate(String url, {bool main = true}) async =>
             web.onNavigationRequest!(NavigationRequest(url: url, isMainFrame: main));
@@ -153,13 +159,13 @@ void main() {
         expect(await navigate('file:///etc/passwd'), NavigationDecision.prevent);
         expect(await navigate('javascript:alert(1)'), NavigationDecision.prevent);
         expect(await navigate('::not a url::'), NavigationDecision.prevent);
-        expect(await navigate('https://www.shop.example/offerte', main: false), NavigationDecision.prevent);
+        expect(await navigate(tokens[1], main: false), NavigationDecision.prevent);
         await tester.pumpAndSettle();
         expect(_dialog, findsNothing);
         expect(h.links.opened, isEmpty);
 
         // A link out never navigates the WebView and asks when its text says another domain...
-        expect(await navigate('https://paypal.com.evil.io/login'), NavigationDecision.prevent);
+        expect(await navigate(tokens[0]), NavigationDecision.prevent);
         await tester.pumpAndSettle();
         expect(_dialog, findsOneWidget);
         expect(h.links.opened, isEmpty);
@@ -175,7 +181,7 @@ void main() {
         await tester.tap(find.text('Non aprire'));
         await tester.pumpAndSettle();
 
-        await navigate('https://www.shop.example/offerte');
+        await navigate(tokens[1]);
         await tester.pumpAndSettle();
         expect(h.links.opened, [Uri.parse('https://www.shop.example/offerte')]);
 

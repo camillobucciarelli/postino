@@ -6,7 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import '../domain/link_texts.dart';
+import '../domain/link_table.dart';
 import '../domain/original_document.dart';
 import 'link_guard.dart';
 
@@ -40,7 +40,7 @@ class _OriginalViewState() extends State<OriginalView> {
   }
 
   Future<void> _load() async {
-    final links = linkTexts(widget.html);
+    final table = tokenizeLinks(widget.html, nonce: newLinkNonce());
     await _controller.setJavaScriptMode(JavaScriptMode.disabled);
     await _controller.setNavigationDelegate(
       NavigationDelegate(
@@ -53,13 +53,13 @@ class _OriginalViewState() extends State<OriginalView> {
             return NavigationDecision.navigate;
           }
           if (request.isMainFrame && const {'http', 'https', 'mailto'}.contains(uri?.scheme)) {
-            unawaited(openGuardedLink(context, request.url, textsOf(links, request.url)));
+            unawaited(openTokenLink(context, table, request.url));
           }
           return NavigationDecision.prevent;
         },
       ),
     );
-    await _controller.loadHtmlString(originalDocument(widget.html, allowRemote: widget.allowRemote));
+    await _controller.loadHtmlString(originalDocument(table.html, allowRemote: widget.allowRemote));
   }
 
   @override

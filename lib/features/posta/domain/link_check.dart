@@ -1,4 +1,4 @@
-import 'link_texts.dart' show unverifiableText;
+import 'link_label.dart' show unverifiableText;
 import 'punycode.dart';
 
 /// Why a link needs a Dialog before it opens: the `domain` it really goes to (decoded), whether it is `punycode`, and whether its text could not be found (`unverified`).

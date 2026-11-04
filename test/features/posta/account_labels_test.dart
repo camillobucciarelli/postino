@@ -29,9 +29,7 @@ Future<void> _tap(WidgetTester tester, String key) async {
 const _viaggi = 'Label_12';
 
 void main() {
-  testWidgets('opening an Account from the drawer shows only its inbox', (
-    tester,
-  ) async {
+  testWidgets('opening an Account from the drawer shows only its inbox', (tester) async {
     final h = await Harness.create();
     (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
@@ -46,50 +44,24 @@ void main() {
     // No bar nor badge on the rows: the AppBar says where you are, with the Account's mark.
     final row = find.byKey(const ValueKey('row-a1-x'));
     expect(accountBar(tester, row), isNull);
-    expect(
-      find.descendant(of: row, matching: find.byType(PostinoAccountMark)),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(PostinoAppBar),
-        matching: find.byType(PostinoAccountMark),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(PostinoAppBar),
-        matching: find.text('a1@example.com'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.descendant(of: row, matching: find.byType(PostinoAccountMark)), findsNothing);
+    expect(find.descendant(of: find.byType(PostinoAppBar), matching: find.byType(PostinoAccountMark)), findsOneWidget);
+    expect(find.descendant(of: find.byType(PostinoAppBar), matching: find.text('a1@example.com')), findsOneWidget);
 
     await _tap(tester, 'drawer-posta-unificata');
     expect(find.text('Da due'), findsOneWidget);
   });
 
-  testWidgets('an Account shows only its own Etichette, and opens one', (
-    tester,
-  ) async {
+  testWidgets('an Account shows only its own Etichette, and opens one', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
     a1
       ..deliver(msg('x', subject: 'Inbox uno'))
-      ..deliver(
-        msg(
-          'l',
-          subject: 'In viaggio',
-          labelIds: const [_viaggi],
-          isStarred: true,
-        ),
-      );
+      ..deliver(msg('l', subject: 'In viaggio', labelIds: const [_viaggi], isStarred: true));
     final a2 = await h.addAccount('a2');
     a2.labels
       ..clear()
-      ..add(
-        const Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta),
-      );
+      ..add(const Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta));
     a2.deliver(msg('z', subject: 'Lavoro due', labelIds: const ['Label_7']));
 
     await _start(tester);
@@ -106,18 +78,10 @@ void main() {
     expect(find.text('Inbox uno'), findsNothing);
     expect(find.text('Lavoro due'), findsNothing);
     // Titled by the Etichetta's name, not its id.
-    expect(
-      find.descendant(
-        of: find.byType(PostinoAppBar),
-        matching: find.text('Viaggi'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.descendant(of: find.byType(PostinoAppBar), matching: find.text('Viaggi')), findsOneWidget);
   });
 
-  testWidgets('from an Account, the drawer opens another Account', (
-    tester,
-  ) async {
+  testWidgets('from an Account, the drawer opens another Account', (tester) async {
     final h = await Harness.create();
     (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
@@ -128,23 +92,13 @@ void main() {
     await _tap(tester, 'account-a2');
     expect(find.text('Da due'), findsOneWidget);
     expect(find.text('Da uno'), findsNothing);
-    expect(
-      find.descendant(
-        of: find.byType(PostinoAppBar),
-        matching: find.text('a2@example.com'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.descendant(of: find.byType(PostinoAppBar), matching: find.text('a2@example.com')), findsOneWidget);
   });
 
-  testWidgets('from an Etichetta, the drawer opens another Etichetta', (
-    tester,
-  ) async {
+  testWidgets('from an Etichetta, the drawer opens another Etichetta', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
-    a1.labels.add(
-      const Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta),
-    );
+    a1.labels.add(const Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta));
     a1
       ..deliver(msg('l', subject: 'In viaggio', labelIds: const [_viaggi]))
       ..deliver(msg('w', subject: 'Al lavoro', labelIds: const ['Label_7']));
@@ -158,18 +112,13 @@ void main() {
     expect(find.text('In viaggio'), findsNothing);
   });
 
-  testWidgets('a message starred on the Provider shows the star everywhere', (
-    tester,
-  ) async {
+  testWidgets('a message starred on the Provider shows the star everywhere', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
     a1.deliver(msg('s', subject: 'Con stella', isStarred: true));
     a1.deliver(msg('n', subject: 'Senza stella'));
 
-    Finder star(String id) => find.descendant(
-      of: find.byKey(ValueKey('row-a1-$id')),
-      matching: starIcon,
-    );
+    Finder star(String id) => find.descendant(of: find.byKey(ValueKey('row-a1-$id')), matching: starIcon);
 
     await _start(tester);
     expect(star('s'), findsOneWidget);
@@ -180,9 +129,7 @@ void main() {
     expect(star('n'), findsNothing);
   });
 
-  testWidgets('an Account Da ricollegare is announced in its own view', (
-    tester,
-  ) async {
+  testWidgets('an Account Da ricollegare is announced in its own view', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
     a1.deliver(msg('x'));

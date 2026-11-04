@@ -31,12 +31,7 @@ class _UnifiedAppBarState extends State<UnifiedAppBar> with AccountsSignal {
 /// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's
 /// ([labelName] for a folder with no Etichetta, the Bozze).
 class AccountAppBar extends StatefulWidget {
-  const AccountAppBar({
-    super.key,
-    required this.accountId,
-    this.labelId,
-    this.labelName,
-  });
+  const AccountAppBar({super.key, required this.accountId, this.labelId, this.labelName});
   final String accountId;
   final String? labelId;
   final String? labelName;
@@ -46,9 +41,7 @@ class AccountAppBar extends StatefulWidget {
 }
 
 class _AccountAppBarState extends State<AccountAppBar> with AccountsSignal {
-  late final labels = streamSignal(
-    () => GetIt.I<InboxRepository>().watchLabels(widget.accountId),
-  );
+  late final labels = streamSignal(() => GetIt.I<InboxRepository>().watchLabels(widget.accountId));
 
   @override
   void dispose() {
@@ -59,21 +52,13 @@ class _AccountAppBarState extends State<AccountAppBar> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
-      final a = accounts.value.value
-          ?.where((a) => a.id == widget.accountId)
-          .firstOrNull;
-      final label = labels.value.value
-          ?.where((l) => l.id == widget.labelId)
-          .firstOrNull;
+      final a = accounts.value.value?.where((a) => a.id == widget.accountId).firstOrNull;
+      final label = labels.value.value?.where((l) => l.id == widget.labelId).firstOrNull;
       final name = a?.name ?? '';
       return PostinoAppBar(
-        title: widget.labelId == null
-            ? name
-            : widget.labelName ?? label?.name ?? '',
+        title: widget.labelId == null ? name : widget.labelName ?? label?.name ?? '',
         subtitle: widget.labelId == null ? context.t.postaInArrivo : name,
-        account: a == null
-            ? null
-            : (color: PostinoAccountColor.values[a.color], initial: a.initial),
+        account: a == null ? null : (color: PostinoAccountColor.values[a.color], initial: a.initial),
       );
     },
   );

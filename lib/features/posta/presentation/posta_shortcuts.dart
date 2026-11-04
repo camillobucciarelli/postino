@@ -5,26 +5,13 @@ import 'package:flutter/widgets.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
-enum PostaAction {
-  next,
-  previous,
-  toggleSidebar,
-  write,
-  reply,
-  replyAll,
-  forward,
-}
+enum PostaAction { next, previous, toggleSidebar, write, reply, replyAll, forward }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
 /// [command]: with the platform's command key, Cmd on macOS and Ctrl elsewhere; without it, the key bare.
 class PostaShortcut {
-  const PostaShortcut(
-    this.key,
-    this.action, {
-    this.listOnly = false,
-    this.command = false,
-  });
+  const PostaShortcut(this.key, this.action, {this.listOnly = false, this.command = false});
   final LogicalKeyboardKey key;
   final PostaAction action;
   final bool listOnly;
@@ -37,16 +24,8 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyJ, PostaAction.next),
   PostaShortcut(LogicalKeyboardKey.keyK, PostaAction.previous),
   PostaShortcut(LogicalKeyboardKey.arrowDown, PostaAction.next, listOnly: true),
-  PostaShortcut(
-    LogicalKeyboardKey.arrowUp,
-    PostaAction.previous,
-    listOnly: true,
-  ),
-  PostaShortcut(
-    LogicalKeyboardKey.keyB,
-    PostaAction.toggleSidebar,
-    command: true,
-  ),
+  PostaShortcut(LogicalKeyboardKey.arrowUp, PostaAction.previous, listOnly: true),
+  PostaShortcut(LogicalKeyboardKey.keyB, PostaAction.toggleSidebar, command: true),
   PostaShortcut(LogicalKeyboardKey.keyC, PostaAction.write),
   PostaShortcut(LogicalKeyboardKey.keyR, PostaAction.reply),
   PostaShortcut(LogicalKeyboardKey.keyA, PostaAction.replyAll),
@@ -91,18 +70,9 @@ class PostaShortcuts extends StatelessWidget {
     return Shortcuts(
       shortcuts: {
         for (final s in postaShortcuts)
-          SingleActivator(
-            s.key,
-            meta: s.command && mac,
-            control: s.command && !mac,
-          ): PostaIntent(
-            s,
-          ),
+          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac): PostaIntent(s),
       },
-      child: Actions(
-        actions: {PostaIntent: _PostaAction(cursor)},
-        child: child,
-      ),
+      child: Actions(actions: {PostaIntent: _PostaAction(cursor)}, child: child),
     );
   }
 }

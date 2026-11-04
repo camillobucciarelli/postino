@@ -27,8 +27,7 @@ Future<void> _start({int? cap}) async {
   gmail.deliver(msg('m1'));
 }
 
-Future<Result<String>> _file(Attachment a, {Future<void>? cancel}) =>
-    cache.file('a1', 'm1', a, cancel: cancel);
+Future<Result<String>> _file(Attachment a, {Future<void>? cancel}) => cache.file('a1', 'm1', a, cancel: cancel);
 
 String _ok(Result<String> r) => switch (r) {
   Ok(:final value) => value,
@@ -41,34 +40,24 @@ List<File> get _cached => _cacheDir.listSync().whereType<File>().toList();
 void main() {
   tearDown(getIt.reset);
 
-  test(
-    'the first use downloads, the next ones open from the cache offline',
-    () async {
-      await _start();
-      final a = gmail.attach('m1', 'Contratto.pdf', _content('contratto'));
-      final first = _ok(await _file(a));
-      expect(h.fs.file(first).readAsBytesSync(), _content('contratto'));
-      expect(h.fs.file(first).basename, 'Contratto.pdf');
+  test('the first use downloads, the next ones open from the cache offline', () async {
+    await _start();
+    final a = gmail.attach('m1', 'Contratto.pdf', _content('contratto'));
+    final first = _ok(await _file(a));
+    expect(h.fs.file(first).readAsBytesSync(), _content('contratto'));
+    expect(h.fs.file(first).basename, 'Contratto.pdf');
 
-      gmail.goOffline();
-      final second = _ok(await _file(a));
-      expect(h.fs.file(second).readAsBytesSync(), _content('contratto'));
-      expect(gmail.attachmentCalls, hasLength(1));
-    },
-  );
+    gmail.goOffline();
+    final second = _ok(await _file(a));
+    expect(h.fs.file(second).readAsBytesSync(), _content('contratto'));
+    expect(gmail.attachmentCalls, hasLength(1));
+  });
 
   test('offline, an attachment never downloaded is OfflineFailure', () async {
     await _start();
     final a = gmail.attach('m1', 'a.pdf', _content('a'));
     gmail.goOffline();
-    expect(
-      await _file(a),
-      isA<Err<String>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<OfflineFailure>(),
-      ),
-    );
+    expect(await _file(a), isA<Err<String>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
   });
 
   test('cached files are not readable in clear', () async {
@@ -93,26 +82,26 @@ void main() {
     expect(gmail.attachmentCalls, hasLength(2));
   });
 
-  test('the decrypted copies older than an hour are gone at the next launch, a recent one stays, the cache stays', () async {
-    await _start();
-    final a = gmail.attach('m1', 'a.pdf', _content('a'));
-    final path = _ok(await _file(a));
-    expect(h.fs.file(path).existsSync(), isTrue);
-    // One left by a previous launch, and the one another app has just opened (the foreground, while a
-    // background isolate starts): the copy just made.
-    final old = h.fs.file('/tmp/postino-attachments/old.pdf')
-      ..writeAsBytesSync([1])
-      ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
+  test(
+    'the decrypted copies older than an hour are gone at the next launch, a recent one stays, the cache stays',
+    () async {
+      await _start();
+      final a = gmail.attach('m1', 'a.pdf', _content('a'));
+      final path = _ok(await _file(a));
+      expect(h.fs.file(path).existsSync(), isTrue);
+      // One left by a previous launch, and the one another app has just opened (the foreground, while a
+      // background isolate starts): the copy just made.
+      final old = h.fs.file('/tmp/postino-attachments/old.pdf')
+        ..writeAsBytesSync([1])
+        ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
 
-    // A new launch on the same disk.
-    await AttachmentStorage.open(
-      _cacheDir,
-      h.fs.directory('/tmp/postino-attachments'),
-    );
-    expect(old.existsSync(), isFalse);
-    expect(h.fs.file(path).existsSync(), isTrue);
-    expect(_cached, hasLength(1));
-  });
+      // A new launch on the same disk.
+      await AttachmentStorage.open(_cacheDir, h.fs.directory('/tmp/postino-attachments'));
+      expect(old.existsSync(), isFalse);
+      expect(h.fs.file(path).existsSync(), isTrue);
+      expect(_cached, hasLength(1));
+    },
+  );
 
   test('beyond the cap the least recently used attachment goes', () async {
     // Room for two encrypted 60-byte files, not three.
@@ -136,20 +125,13 @@ void main() {
     expect(await _file(b), isA<Err<String>>());
   });
 
-  test(
-    'an attachment bigger than the cap opens without entering the cache',
-    () async {
-      await _start(cap: 100);
-      final big = gmail.attach(
-        'm1',
-        'grande.zip',
-        _content('grande') + _content('x'),
-      );
-      final path = _ok(await _file(big));
-      expect(h.fs.file(path).lengthSync(), 120);
-      expect(_cached, isEmpty);
-    },
-  );
+  test('an attachment bigger than the cap opens without entering the cache', () async {
+    await _start(cap: 100);
+    final big = gmail.attach('m1', 'grande.zip', _content('grande') + _content('x'));
+    final path = _ok(await _file(big));
+    expect(h.fs.file(path).lengthSync(), 120);
+    expect(_cached, isEmpty);
+  });
 
   test('a cancelled download leaves nothing in the cache', () async {
     await _start();
@@ -158,34 +140,21 @@ void main() {
     final cancel = Completer<void>();
     final r = _file(a, cancel: cancel.future);
     cancel.complete();
-    expect(
-      await r,
-      isA<Err<String>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<CancelledFailure>(),
-      ),
-    );
+    expect(await r, isA<Err<String>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
     expect(_cached, isEmpty);
   });
 
-  test(
-    'downloads crossing the cap together all open, and the cache fits',
-    () async {
-      await _start(cap: 2 * (60 + AttachmentCache.overhead) + 10);
-      final all = [
-        for (final n in ['a', 'b', 'c', 'd', 'e', 'f'])
-          gmail.attach('m1', '$n.pdf', _content(n)),
-      ];
-      _ok(await _file(all[0]));
-      _ok(await _file(all[1]));
-      final results = await Future.wait([
-        for (final a in all.skip(2)) _file(a),
-      ]);
-      expect(results, everyElement(isA<Ok<String>>()));
-      expect(_cached, hasLength(2));
-    },
-  );
+  test('downloads crossing the cap together all open, and the cache fits', () async {
+    await _start(cap: 2 * (60 + AttachmentCache.overhead) + 10);
+    final all = [
+      for (final n in ['a', 'b', 'c', 'd', 'e', 'f']) gmail.attach('m1', '$n.pdf', _content(n)),
+    ];
+    _ok(await _file(all[0]));
+    _ok(await _file(all[1]));
+    final results = await Future.wait([for (final a in all.skip(2)) _file(a)]);
+    expect(results, everyElement(isA<Ok<String>>()));
+    expect(_cached, hasLength(2));
+  });
 
   test('Annulla after the Provider\'s last abortable moment still drops the result', () async {
     await _start();
@@ -196,14 +165,7 @@ void main() {
     // The Provider answers, then the user cancels before the cache gets the answer.
     hold.complete();
     cancel.complete();
-    expect(
-      await r,
-      isA<Err<String>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<CancelledFailure>(),
-      ),
-    );
+    expect(await r, isA<Err<String>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
     expect(_cached, isEmpty);
   });
 
@@ -211,30 +173,23 @@ void main() {
     await _start();
     final a = gmail.attach('m1', 'a.pdf', _content('a'));
     h.keychain.failure = Exception('keychain locked');
-    expect(
-      await _file(a),
-      isA<Err<String>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<UnexpectedFailure>(),
-      ),
-    );
+    expect(await _file(a), isA<Err<String>>().having((e) => e.failure, 'failure', isA<UnexpectedFailure>()));
     h.keychain.failure = null;
     expect(await _file(a), isA<Ok<String>>());
   });
 
-  test('a file half written by a crash is gone at the next launch; a recent one, maybe another isolate\'s write, stays', () async {
-    await _start();
-    _cacheDir.childFile('old.part')
-      ..writeAsBytesSync([1, 2, 3])
-      ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
-    _cacheDir.childFile('new.part').writeAsBytesSync([1, 2, 3]);
-    await AttachmentStorage.open(
-      _cacheDir,
-      h.fs.directory('/tmp/postino-attachments'),
-    );
-    expect(_cached.map((f) => f.basename), ['new.part']);
-  });
+  test(
+    'a file half written by a crash is gone at the next launch; a recent one, maybe another isolate\'s write, stays',
+    () async {
+      await _start();
+      _cacheDir.childFile('old.part')
+        ..writeAsBytesSync([1, 2, 3])
+        ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
+      _cacheDir.childFile('new.part').writeAsBytesSync([1, 2, 3]);
+      await AttachmentStorage.open(_cacheDir, h.fs.directory('/tmp/postino-attachments'));
+      expect(_cached.map((f) => f.basename), ['new.part']);
+    },
+  );
 
   for (final (step, where) in [
     ('the cache file is written', '.part'),
@@ -245,53 +200,36 @@ void main() {
       final a = gmail.attach('m1', 'a.pdf', _content('a'));
       final cancel = Completer<void>();
       h.onFileOp = (path, op) {
-        if (op == FileSystemOp.write &&
-            path.contains(where) &&
-            !cancel.isCompleted) {
+        if (op == FileSystemOp.write && path.contains(where) && !cancel.isCompleted) {
           cancel.complete();
         }
       };
       expect(
         await _file(a, cancel: cancel.future),
-        isA<Err<String>>().having(
-          (e) => e.failure,
-          'failure',
-          isA<CancelledFailure>(),
-        ),
+        isA<Err<String>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()),
       );
       expect(_cached, isEmpty);
       expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
     });
   }
 
-  test(
-    'a temporary copy that cannot be written is a failure, and leaves nothing',
-    () async {
-      await _start();
-      final a = gmail.attach('m1', 'a.pdf', _content('a'));
-      h.onFileOp = (path, op) {
-        if (op == FileSystemOp.write && path.startsWith('/tmp/')) {
-          throw const FileSystemException('disk full');
-        }
-      };
-      expect(
-        await _file(a),
-        isA<Err<String>>().having(
-          (e) => e.failure,
-          'failure',
-          isA<UnexpectedFailure>(),
-        ),
-      );
-      h.onFileOp = null;
-      expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
-    },
-  );
+  test('a temporary copy that cannot be written is a failure, and leaves nothing', () async {
+    await _start();
+    final a = gmail.attach('m1', 'a.pdf', _content('a'));
+    h.onFileOp = (path, op) {
+      if (op == FileSystemOp.write && path.startsWith('/tmp/')) {
+        throw const FileSystemException('disk full');
+      }
+    };
+    expect(await _file(a), isA<Err<String>>().having((e) => e.failure, 'failure', isA<UnexpectedFailure>()));
+    h.onFileOp = null;
+    expect(h.fs.directory('/tmp/postino-attachments').listSync(), isEmpty);
+  });
 
   test('an eviction that fails does not block the ones after it', () async {
     await _start(cap: 2 * (60 + AttachmentCache.overhead) + 10);
     final all = [
-      for (final n in ['a', 'b', 'c', 'd'])
-        gmail.attach('m1', '$n.pdf', _content(n)),
+      for (final n in ['a', 'b', 'c', 'd']) gmail.attach('m1', '$n.pdf', _content(n)),
     ];
     _ok(await _file(all[0]));
     h.clock.advance(const Duration(minutes: 1));
@@ -299,10 +237,7 @@ void main() {
     h.clock.advance(const Duration(minutes: 1));
     var failOnce = true;
     h.onFileOp = (path, op) {
-      if (op == FileSystemOp.delete &&
-          path.startsWith('/support/') &&
-          !path.endsWith('.part') &&
-          failOnce) {
+      if (op == FileSystemOp.delete && path.startsWith('/support/') && !path.endsWith('.part') && failOnce) {
         failOnce = false;
         throw const FileSystemException('busy');
       }

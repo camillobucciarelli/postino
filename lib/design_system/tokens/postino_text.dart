@@ -54,60 +54,25 @@ abstract final class PostinoText {
   );
 
   /// Mittente non letto in lista e header del messaggio. Flutter: titleMedium.
-  static const sender = TextStyle(
-    fontFamily: sans,
-    fontSize: 16,
-    height: 1.375,
-    fontWeight: FontWeight.w600,
-  );
+  static const sender = TextStyle(fontFamily: sans, fontSize: 16, height: 1.375, fontWeight: FontWeight.w600);
 
   /// Mittente letto in lista. Flutter: PostinoText.senderRead.
-  static const senderRead = TextStyle(
-    fontFamily: sans,
-    fontSize: 16,
-    height: 1.375,
-    fontWeight: FontWeight.w400,
-  );
+  static const senderRead = TextStyle(fontFamily: sans, fontSize: 16, height: 1.375, fontWeight: FontWeight.w400);
 
   /// Oggetto non letto in lista. Flutter: titleSmall.
-  static const subject = TextStyle(
-    fontFamily: sans,
-    fontSize: 15,
-    height: 1.3333,
-    fontWeight: FontWeight.w600,
-  );
+  static const subject = TextStyle(fontFamily: sans, fontSize: 15, height: 1.3333, fontWeight: FontWeight.w600);
 
   /// Oggetto letto in lista. Flutter: PostinoText.subjectRead.
-  static const subjectRead = TextStyle(
-    fontFamily: sans,
-    fontSize: 15,
-    height: 1.3333,
-    fontWeight: FontWeight.w400,
-  );
+  static const subjectRead = TextStyle(fontFamily: sans, fontSize: 15, height: 1.3333, fontWeight: FontWeight.w400);
 
   /// Anteprima sotto l’oggetto, in ink-muted, 1 riga (Comfortable). Flutter: bodyMedium.
-  static const preview = TextStyle(
-    fontFamily: sans,
-    fontSize: 14,
-    height: 1.4286,
-    fontWeight: FontWeight.w400,
-  );
+  static const preview = TextStyle(fontFamily: sans, fontSize: 14, height: 1.4286, fontWeight: FontWeight.w400);
 
   /// Corpo del messaggio e del composer: interlinea 1.625 e misura max reading-max-width per la lettura lunga. Flutter: bodyLarge.
-  static const body = TextStyle(
-    fontFamily: sans,
-    fontSize: 16,
-    height: 1.625,
-    fontWeight: FontWeight.w400,
-  );
+  static const body = TextStyle(fontFamily: sans, fontSize: 16, height: 1.625, fontWeight: FontWeight.w400);
 
   /// Testo citato, firma e intestazioni di citazione, in ink-muted. Flutter: PostinoText.bodyQuote.
-  static const bodyQuote = TextStyle(
-    fontFamily: sans,
-    fontSize: 15,
-    height: 1.6,
-    fontWeight: FontWeight.w400,
-  );
+  static const bodyQuote = TextStyle(fontFamily: sans, fontSize: 15, height: 1.6, fontWeight: FontWeight.w400);
 
   /// Ora, dimensione allegato, conteggio thread; cifre tabellari. Flutter: labelSmall.
   static const meta = TextStyle(
@@ -128,28 +93,13 @@ abstract final class PostinoText {
   );
 
   /// Bottoni, voci di drawer, tab, voci di menu. Flutter: labelLarge.
-  static const label = TextStyle(
-    fontFamily: sans,
-    fontSize: 15,
-    height: 1.3333,
-    fontWeight: FontWeight.w600,
-  );
+  static const label = TextStyle(fontFamily: sans, fontSize: 15, height: 1.3333, fontWeight: FontWeight.w600);
 
   /// Chip, badge, bottoni piccoli. Flutter: labelMedium.
-  static const labelSm = TextStyle(
-    fontFamily: sans,
-    fontSize: 13,
-    height: 1.3846,
-    fontWeight: FontWeight.w600,
-  );
+  static const labelSm = TextStyle(fontFamily: sans, fontSize: 13, height: 1.3846, fontWeight: FontWeight.w600);
 
   /// Testo di aiuto sotto i campi, stati di sync. Flutter: bodySmall.
-  static const caption = TextStyle(
-    fontFamily: sans,
-    fontSize: 12,
-    height: 1.3333,
-    fontWeight: FontWeight.w400,
-  );
+  static const caption = TextStyle(fontFamily: sans, fontSize: 12, height: 1.3333, fontWeight: FontWeight.w400);
 
   /// Intestazioni di gruppo nel drawer, maiuscolo. Flutter: PostinoText.overline.
   static const overline = TextStyle(

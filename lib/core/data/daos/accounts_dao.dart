@@ -7,8 +7,7 @@ import '../tables/accounts_table.dart';
 part 'accounts_dao.g.dart';
 
 @DriftAccessor(tables: [Accounts])
-class AccountsDao extends DatabaseAccessor<PostinoDatabase>
-    with _$AccountsDaoMixin {
+class AccountsDao extends DatabaseAccessor<PostinoDatabase> with _$AccountsDaoMixin {
   AccountsDao(super.attachedDatabase);
 
   Future<void> upsert(Account a) => into(accounts).insert(
@@ -24,9 +23,7 @@ class AccountsDao extends DatabaseAccessor<PostinoDatabase>
   );
 
   Future<void> setStatus(String id, AccountStatus status) =>
-      (update(accounts)..where((t) => t.id.equals(id))).write(
-        AccountsCompanion(status: Value(status)),
-      );
+      (update(accounts)..where((t) => t.id.equals(id))).write(AccountsCompanion(status: Value(status)));
 
   SimpleSelectStatement<$AccountsTable, AccountRow> _byPosition() =>
       select(accounts)..orderBy([(t) => OrderingTerm.asc(t.position)]);

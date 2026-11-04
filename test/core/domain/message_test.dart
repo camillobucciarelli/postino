@@ -86,13 +86,7 @@ void main() {
         String content = 'x',
         BodyKind kind = BodyKind.html,
         List<Attachment>? attachments = const [],
-      }) => MessageBody(
-        content,
-        kind,
-        attachments: attachments == null
-            ? null
-            : [_attachment(), ...attachments],
-      );
+      }) => MessageBody(content, kind, attachments: attachments == null ? null : [_attachment(), ...attachments]);
       expectValueEquality(body, [
         body(content: 'y'),
         body(kind: BodyKind.testo),
@@ -102,11 +96,8 @@ void main() {
     });
 
     test('Conversation', () {
-      Conversation c({
-        String id = 'c1',
-        String accountId = 'a1',
-        List<String> ids = const ['1', '2'],
-      }) => Conversation(id: id, accountId: accountId, messageIds: [...ids]);
+      Conversation c({String id = 'c1', String accountId = 'a1', List<String> ids = const ['1', '2']}) =>
+          Conversation(id: id, accountId: accountId, messageIds: [...ids]);
       expectValueEquality(c, [
         c(id: 'c2'),
         c(accountId: 'a2'),
@@ -126,9 +117,7 @@ void main() {
         _outgoing(inReplyTo: '<0@x.it>'),
         _outgoing(references: ['<0@x.it>']),
         _outgoing(conversationId: 'c9'),
-        _outgoing(
-          attachments: [ForwardedAttachment('1', _attachment(id: 'p2'))],
-        ),
+        _outgoing(attachments: [ForwardedAttachment('1', _attachment(id: 'p2'))]),
       ]);
     });
 
@@ -203,9 +192,5 @@ OutgoingMessage _outgoing({
   attachments: attachments ?? [ForwardedAttachment('1', _attachment())],
 );
 
-Attachment _attachment({
-  String id = 'p1',
-  String name = 'a.pdf',
-  int size = 3,
-  String? mimeType,
-}) => Attachment(id: id, name: name, size: size, mimeType: mimeType);
+Attachment _attachment({String id = 'p1', String name = 'a.pdf', int size = 3, String? mimeType}) =>
+    Attachment(id: id, name: name, size: size, mimeType: mimeType);

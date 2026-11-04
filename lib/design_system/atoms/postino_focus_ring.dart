@@ -9,12 +9,7 @@ import '../tokens/postino_tokens.dart';
 /// Controls with a shape of their own get it `focus-offset` outside; full-width rows ([inset])
 /// get it inside their edges, where nothing clips it.
 class PostinoFocusRing extends StatefulWidget {
-  const PostinoFocusRing({
-    super.key,
-    required this.child,
-    this.borderRadius = BorderRadius.zero,
-    this.inset = false,
-  });
+  const PostinoFocusRing({super.key, required this.child, this.borderRadius = BorderRadius.zero, this.inset = false});
 
   final Widget child;
 
@@ -48,13 +43,7 @@ class _PostinoFocusRingState extends State<PostinoFocusRing> {
         (Focus.maybeOf(context)?.hasPrimaryFocus ?? false) &&
         FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
     return CustomPaint(
-      foregroundPainter: shown
-          ? _RingPainter(
-              context.pc.focusRing,
-              widget.borderRadius,
-              widget.inset,
-            )
-          : null,
+      foregroundPainter: shown ? _RingPainter(context.pc.focusRing, widget.borderRadius, widget.inset) : null,
       child: widget.child,
     );
   }
@@ -82,6 +71,5 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.color != color || old.radius != radius || old.inset != inset;
+  bool shouldRepaint(_RingPainter old) => old.color != color || old.radius != radius || old.inset != inset;
 }

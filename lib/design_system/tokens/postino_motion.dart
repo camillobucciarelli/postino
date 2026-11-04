@@ -73,6 +73,5 @@ abstract final class PostinoMotion {
   static const Curve linear = Curves.linear;
 
   /// Durata effettiva: zero se l’utente ha chiesto meno animazioni.
-  static Duration of(BuildContext context, Duration d) =>
-      MediaQuery.disableAnimationsOf(context) ? Duration.zero : d;
+  static Duration of(BuildContext context, Duration d) => MediaQuery.disableAnimationsOf(context) ? Duration.zero : d;
 }

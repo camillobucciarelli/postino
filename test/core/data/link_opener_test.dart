@@ -14,41 +14,33 @@ void main() {
     (TargetPlatform.windows, 'url_launcher'),
     (TargetPlatform.linux, 'url_launcher'),
   ]) {
-    test(
-      '${platform.name}: a file opens with $fileWith, a link with url_launcher',
-      () async {
-        final calls = <String>[];
-        final opener = SystemLinkOpener.test(
-          launch: (url) async => calls.add('url_launcher $url'),
-          openFile: (path) async => calls.add('open_filex $path'),
-          platform: platform,
-        );
-        await opener.open(file);
-        await opener.open(link);
-        expect(calls, [
-          fileWith == 'open_filex'
-              ? 'open_filex /tmp/postino-attachments/x/Contratto.pdf'
-              : 'url_launcher $file',
-          'url_launcher $link',
-        ]);
-      },
-    );
+    test('${platform.name}: a file opens with $fileWith, a link with url_launcher', () async {
+      final calls = <String>[];
+      final opener = SystemLinkOpener.test(
+        launch: (url) async => calls.add('url_launcher $url'),
+        openFile: (path) async => calls.add('open_filex $path'),
+        platform: platform,
+      );
+      await opener.open(file);
+      await opener.open(link);
+      expect(calls, [
+        fileWith == 'open_filex' ? 'open_filex /tmp/postino-attachments/x/Contratto.pdf' : 'url_launcher $file',
+        'url_launcher $link',
+      ]);
+    });
   }
 
   for (final platform in TargetPlatform.values) {
-    test(
-      '${platform.name}: an executable file is never opened (#75)',
-      () async {
-        final calls = <String>[];
-        final opener = SystemLinkOpener.test(
-          launch: (url) async => calls.add('url_launcher $url'),
-          openFile: (path) async => calls.add('open_filex $path'),
-          platform: platform,
-        );
-        await opener.open(Uri.file('/tmp/postino-attachments/x/setup.exe'));
-        expect(calls, isEmpty);
-      },
-    );
+    test('${platform.name}: an executable file is never opened (#75)', () async {
+      final calls = <String>[];
+      final opener = SystemLinkOpener.test(
+        launch: (url) async => calls.add('url_launcher $url'),
+        openFile: (path) async => calls.add('open_filex $path'),
+        platform: platform,
+      );
+      await opener.open(Uri.file('/tmp/postino-attachments/x/setup.exe'));
+      expect(calls, isEmpty);
+    });
   }
 
   test('a failure to open is swallowed, not thrown', () async {

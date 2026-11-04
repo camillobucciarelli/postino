@@ -19,11 +19,7 @@ class IntentReplayer {
   final Clock _clock;
 
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
-  Future<void> replay(
-    String accountId,
-    MailProvider provider, {
-    bool flush = false,
-  }) async {
+  Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     await _replayReads(accountId, provider);
     await _replayDrafts(accountId, provider, flush: flush);
   }
@@ -44,17 +40,9 @@ class IntentReplayer {
     }
   }
 
-  Future<void> _replayDrafts(
-    String accountId,
-    MailProvider provider, {
-    required bool flush,
-  }) async {
-    for (final (:draft, :isNew, :updatedAt) in await _outbox.pendingDrafts(
-      accountId,
-    )) {
-      if (!flush &&
-          _clock.now().millisecondsSinceEpoch - updatedAt <
-              draftDebounce.inMilliseconds) {
+  Future<void> _replayDrafts(String accountId, MailProvider provider, {required bool flush}) async {
+    for (final (:draft, :isNew, :updatedAt) in await _outbox.pendingDrafts(accountId)) {
+      if (!flush && _clock.now().millisecondsSinceEpoch - updatedAt < draftDebounce.inMilliseconds) {
         continue;
       }
       // Queued while an earlier upload was in flight: it goes with its own MIME.
@@ -64,11 +52,8 @@ class IntentReplayer {
           // The message was queued or sent while the upload ran: the late remote Bozza must not survive.
           if (await _outbox.isQueued(accountId, draft.messageId) ||
               await _outbox.localDraft(accountId, draft.messageId) == null) {
-            if (await provider.deleteDraft(draft.messageId)
-                case Err(:final failure) when failure is! NotFoundFailure) {
-              debugPrint(
-                '[sync] $accountId: late draft delete failed, $failure',
-              );
+            if (await provider.deleteDraft(draft.messageId) case Err(:final failure) when failure is! NotFoundFailure) {
+              debugPrint('[sync] $accountId: late draft delete failed, $failure');
             }
             // A later Annulla reopens the row: it must upload as new, not as an update of the deleted copy.
             await _outbox.forgetRemoteDraft(accountId, draft.messageId);

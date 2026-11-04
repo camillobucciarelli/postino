@@ -121,19 +121,9 @@ final _components = <String, Widget Function()>{
   'account_mark': () => Wrap(
     spacing: 8,
     children: [
-      for (final c in PostinoAccountColor.values)
-        PostinoAccountMark(color: c, initial: c.name[0].toUpperCase()),
-      const PostinoAccountMark(
-        color: PostinoAccountColor.rose,
-        initial: 'P',
-        size: 16,
-      ),
-      const PostinoAccountMark(
-        color: PostinoAccountColor.olive,
-        initial: 'A',
-        size: 40,
-        label: 'Account Atlas',
-      ),
+      for (final c in PostinoAccountColor.values) PostinoAccountMark(color: c, initial: c.name[0].toUpperCase()),
+      const PostinoAccountMark(color: PostinoAccountColor.rose, initial: 'P', size: 16),
+      const PostinoAccountMark(color: PostinoAccountColor.olive, initial: 'A', size: 40, label: 'Account Atlas'),
     ],
   ),
   'avatar': () => const Row(
@@ -142,11 +132,7 @@ final _components = <String, Widget Function()>{
       PostinoAvatar(name: 'Ada Okafor'),
       PostinoAvatar(
         name: 'Marco Lenti',
-        badge: PostinoAccountMark(
-          color: PostinoAccountColor.rose,
-          initial: 'P',
-          size: 16,
-        ),
+        badge: PostinoAccountMark(color: PostinoAccountColor.rose, initial: 'P', size: 16),
       ),
     ],
   ),
@@ -155,23 +141,11 @@ final _components = <String, Widget Function()>{
     runSpacing: 8,
     children: [
       PostinoButton(label: 'Collega Gmail', onPressed: () {}),
-      PostinoButton(
-        label: 'Aggiungi account',
-        onPressed: () {},
-        size: PostinoButtonSize.lg,
-      ),
-      PostinoButton(
-        label: 'Riprova',
-        onPressed: () {},
-        variant: PostinoButtonVariant.ghost,
-      ),
+      PostinoButton(label: 'Aggiungi account', onPressed: () {}, size: PostinoButtonSize.lg),
+      PostinoButton(label: 'Riprova', onPressed: () {}, variant: PostinoButtonVariant.ghost),
     ],
   ),
-  'icon_button': () => PostinoIconButton(
-    icon: PostinoIcons.menu,
-    label: 'Apri menu',
-    onPressed: () {},
-  ),
+  'icon_button': () => PostinoIconButton(icon: PostinoIcons.menu, label: 'Apri menu', onPressed: () {}),
   'skeleton': () => const PostinoSkeleton(label: 'Caricamento', rows: 2),
   'message_tile': () => const Column(
     children: [
@@ -226,8 +200,7 @@ final _components = <String, Widget Function()>{
             tone: PostinoBannerTone.info,
             icon: PostinoIcons.image,
             title: 'Immagini remote bloccate',
-            message:
-                'Caricarle direbbe al mittente che hai aperto il messaggio.',
+            message: 'Caricarle direbbe al mittente che hai aperto il messaggio.',
             spaced: false,
             actionLabel: 'Mostra immagini',
             onAction: _noop,
@@ -252,16 +225,10 @@ final _components = <String, Widget Function()>{
         unread: true,
         expanded: true,
         onToggle: () {},
-        body: const PostinoMessageBody(
-          text: 'Ciao Bruno,\nsì, alle 20 da Mario. Porto io il dolce.',
-        ),
-        signature: const PostinoMessageBody(
-          text: '-- \nAda Okafor\nOkafor Legal · Via Dante 12, Milano',
-          quiet: true,
-        ),
+        body: const PostinoMessageBody(text: 'Ciao Bruno,\nsì, alle 20 da Mario. Porto io il dolce.'),
+        signature: const PostinoMessageBody(text: '-- \nAda Okafor\nOkafor Legal · Via Dante 12, Milano', quiet: true),
         quote: const PostinoMessageBody(
-          text:
-              'Il giorno lun 5 ott, Bruno Verdi ha scritto:\n> Ti va una cena?',
+          text: 'Il giorno lun 5 ott, Bruno Verdi ha scritto:\n> Ti va una cena?',
           quiet: true,
         ),
         quoteLabel: 'Mostra testo citato',
@@ -338,16 +305,9 @@ final _components = <String, Widget Function()>{
   'sync_status': () => const Wrap(
     spacing: 16,
     children: [
-      PostinoSyncStatus(
-        state: PostinoSyncState.reconnect,
-        label: 'Da ricollegare',
-      ),
+      PostinoSyncStatus(state: PostinoSyncState.reconnect, label: 'Da ricollegare'),
       PostinoSyncStatus(state: PostinoSyncState.offline, label: 'Offline'),
-      PostinoSyncStatus(
-        state: PostinoSyncState.reconnect,
-        label: 'Da ricollegare',
-        compact: true,
-      ),
+      PostinoSyncStatus(state: PostinoSyncState.reconnect, label: 'Da ricollegare', compact: true),
     ],
   ),
   // On its own surface, as the SnackBar draws it.
@@ -356,10 +316,7 @@ final _components = <String, Widget Function()>{
       color: context.pc.snackbarBg,
       borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: PostinoSpacing.s4,
-          vertical: PostinoSpacing.s1,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: PostinoSpacing.s1),
         child: PostinoSnackbar(
           message: 'In attesa d’invio',
           actionLabel: 'Annulla',
@@ -399,10 +356,8 @@ final _components = <String, Widget Function()>{
       ),
     ],
   ),
-  'empty_state': () => const PostinoEmptyState(
-    title: 'Niente di nuovo',
-    body: 'I messaggi compaiono qui appena arrivano.',
-  ),
+  'empty_state': () =>
+      const PostinoEmptyState(title: 'Niente di nuovo', body: 'I messaggi compaiono qui appena arrivano.'),
   'composer_field': () => Column(
     children: [
       PostinoComposerField(
@@ -421,40 +376,19 @@ final _components = <String, Widget Function()>{
       ),
     ],
   ),
-  'sender_picker': () => PostinoSenderPicker(
-    options: _senders,
-    selectedId: 'a1',
-    onSelected: (_) {},
-    label: 'Da',
-  ),
+  'sender_picker': () => PostinoSenderPicker(options: _senders, selectedId: 'a1', onSelected: (_) {}, label: 'Da'),
   'format_button': () => const Row(
     children: [
-      PostinoFormatButton(
-        icon: PostinoIcons.bold,
-        label: 'Grassetto',
-        active: true,
-        onPressed: _noop,
-      ),
-      PostinoFormatButton(
-        icon: PostinoIcons.italic,
-        label: 'Corsivo',
-        active: false,
-        onPressed: _noop,
-      ),
+      PostinoFormatButton(icon: PostinoIcons.bold, label: 'Grassetto', active: true, onPressed: _noop),
+      PostinoFormatButton(icon: PostinoIcons.italic, label: 'Corsivo', active: false, onPressed: _noop),
     ],
   ),
   'rich_editor': () => SizedBox(height: 260, child: _editor()),
-  'fab': () =>
-      const PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop),
+  'fab': () => const PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop),
   'composer_layout': () => SizedBox(
     height: 520,
     child: PostinoComposerLayout(
-      sender: PostinoSenderPicker(
-        options: _senders,
-        selectedId: 'a2',
-        onSelected: (_) {},
-        label: 'Da',
-      ),
+      sender: PostinoSenderPicker(options: _senders, selectedId: 'a2', onSelected: (_) {}, label: 'Da'),
       fields: [
         PostinoComposerField(
           label: 'A',
@@ -494,16 +428,11 @@ Widget _grid(Widget Function() build) => MaterialApp(
                     children: [
                       for (final scale in [1.0, 2.0])
                         MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            textScaler: TextScaler.linear(scale),
-                            disableAnimations: true,
-                          ),
+                          data: MediaQuery.of(context)
+                              .copyWith(textScaler: TextScaler.linear(scale), disableAnimations: true),
                           child: Material(
                             type: MaterialType.transparency,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: build(),
-                            ),
+                            child: Padding(padding: const EdgeInsets.all(16), child: build()),
                           ),
                         ),
                     ],
@@ -536,10 +465,7 @@ void main() {
       try {
         await tester.pumpWidget(_grid(build));
         if (Platform.isMacOS) {
-          await expectLater(
-            find.byKey(_golden),
-            matchesGoldenFile('goldens/$name.png'),
-          );
+          await expectLater(find.byKey(_golden), matchesGoldenFile('goldens/$name.png'));
           await expectLater(tester, meetsGuideline(textContrastGuideline));
         }
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -561,9 +487,7 @@ void main() {
             time: '10:05',
             preview: 'Perfetto',
             recipients: 'a me',
-            details: const [
-              PostinoMessageDetail('Ricevuto su', 'me@example.com'),
-            ],
+            details: const [PostinoMessageDetail('Ricevuto su', 'me@example.com')],
             expanded: true,
             onToggle: () {},
             body: const SizedBox(),
@@ -578,62 +502,46 @@ void main() {
     expect(find.text('me@example.com', findRichText: true), findsOneWidget);
   });
 
-  testWidgets(
-    'the recipients toggle is a focusable button: Enter and semantic tap open the details',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: PostinoTheme.light(),
-          home: Scaffold(
-            body: PostinoThreadMessage(
-              sender: 'bruno@example.com',
-              time: '10:05',
-              preview: 'Perfetto',
-              recipients: 'a me',
-              details: const [
-                PostinoMessageDetail('Ricevuto su', 'me@example.com'),
-              ],
-              expanded: true,
-              onToggle: () {},
-              body: const SizedBox(),
-            ),
+  testWidgets('the recipients toggle is a focusable button: Enter and semantic tap open the details', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoThreadMessage(
+            sender: 'bruno@example.com',
+            time: '10:05',
+            preview: 'Perfetto',
+            recipients: 'a me',
+            details: const [PostinoMessageDetail('Ricevuto su', 'me@example.com')],
+            expanded: true,
+            onToggle: () {},
+            body: const SizedBox(),
           ),
         ),
-      );
-      final target = tester.getRect(
-        find.byKey(const ValueKey('recipients-target')),
-      );
-      expect(target.height, greaterThanOrEqualTo(48));
-      expect(
-        tester.getCenter(find.text('a me')).dy,
-        moreOrLessEquals(target.center.dy, epsilon: 1),
-      );
-      final toggle = find.byKey(const ValueKey('recipients-toggle'));
-      // Tab reaches it, Enter opens.
-      // The header takes the first Tab, the toggle the second.
-      for (var i = 0; i < 2; i++) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
-      }
-      final focused = FocusManager.instance.primaryFocus!.context!;
-      expect(
-        find.ancestor(
-          of: find.byElementPredicate((e) => e == focused),
-          matching: toggle,
-        ),
-        findsOneWidget,
-      );
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(find.text('Ricevuto su'), findsOneWidget);
-      // Semantic tap closes it again.
-      tester.semantics.tap(find.semantics.byLabel('a me'));
-      await tester.pumpAndSettle();
-      expect(find.text('Ricevuto su'), findsNothing);
-      semantics.dispose();
-    },
-  );
+      ),
+    );
+    final target = tester.getRect(find.byKey(const ValueKey('recipients-target')));
+    expect(target.height, greaterThanOrEqualTo(48));
+    expect(tester.getCenter(find.text('a me')).dy, moreOrLessEquals(target.center.dy, epsilon: 1));
+    final toggle = find.byKey(const ValueKey('recipients-toggle'));
+    // Tab reaches it, Enter opens.
+    // The header takes the first Tab, the toggle the second.
+    for (var i = 0; i < 2; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    final focused = FocusManager.instance.primaryFocus!.context!;
+    expect(find.ancestor(of: find.byElementPredicate((e) => e == focused), matching: toggle), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('Ricevuto su'), findsOneWidget);
+    // Semantic tap closes it again.
+    tester.semantics.tap(find.semantics.byLabel('a me'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ricevuto su'), findsNothing);
+    semantics.dispose();
+  });
 
   testWidgets('the quote toggle exposes a semantic tap action', (tester) async {
     final semantics = tester.ensureSemantics();
@@ -661,121 +569,107 @@ void main() {
   });
 
   group('PostinoSnackbar', () {
-    testWidgets(
-      'the countdown runs from the deadline, not from when it shows',
-      (tester) async {
-        var now = DateTime.utc(2026);
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: PostinoTheme.light(),
-            home: Scaffold(
-              body: PostinoSnackbar(
-                message: 'In attesa d’invio',
-                actionLabel: 'Annulla',
-                until: now.add(const Duration(milliseconds: 6500)),
-                now: () => now,
-                onAction: _noop,
-              ),
+    testWidgets('the countdown runs from the deadline, not from when it shows', (tester) async {
+      var now = DateTime.utc(2026);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: PostinoSnackbar(
+              message: 'In attesa d’invio',
+              actionLabel: 'Annulla',
+              until: now.add(const Duration(milliseconds: 6500)),
+              now: () => now,
+              onAction: _noop,
             ),
           ),
-        );
-        expect(find.text('7 s'), findsOneWidget);
-        now = now.add(const Duration(seconds: 1));
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('6 s'), findsOneWidget);
-        now = now.add(const Duration(seconds: 10));
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('0 s'), findsOneWidget);
-      },
-    );
+        ),
+      );
+      expect(find.text('7 s'), findsOneWidget);
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('6 s'), findsOneWidget);
+      now = now.add(const Duration(seconds: 10));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('0 s'), findsOneWidget);
+    });
 
-    testWidgets(
-      'show twice leaves only the second one, with its own deadline',
-      (tester) async {
-        final now = DateTime.utc(2026);
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: PostinoTheme.light(),
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => TextButton(
-                  onPressed: () {
-                    PostinoSnackbar.show(
-                      context,
-                      message: 'Primo',
-                      actionLabel: 'Annulla',
-                      onAction: _noop,
-                      until: now.add(const Duration(seconds: 3)),
-                      now: () => now,
-                    );
-                    PostinoSnackbar.show(
-                      context,
-                      message: 'Secondo',
-                      actionLabel: 'Annulla',
-                      onAction: _noop,
-                      until: now.add(const Duration(seconds: 9)),
-                      now: () => now,
-                    );
-                  },
-                  child: const Text('Invia'),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.tap(find.text('Invia'));
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump(const Duration(milliseconds: 500));
-        expect(find.byType(SnackBar), findsOneWidget);
-        expect(find.text('Primo'), findsNothing);
-        expect(find.text('Secondo'), findsOneWidget);
-        expect(find.text('9 s'), findsOneWidget);
-        expect(
-          tester.widget<SnackBar>(find.byType(SnackBar)).duration,
-          const Duration(seconds: 9),
-        );
-      },
-    );
-
-    testWidgets(
-      'show puts it in the ScaffoldMessenger; the action runs and closes it',
-      (tester) async {
-        var undone = 0;
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: PostinoTheme.light(),
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => TextButton(
-                  onPressed: () => PostinoSnackbar.show(
+    testWidgets('show twice leaves only the second one, with its own deadline', (tester) async {
+      final now = DateTime.utc(2026);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () {
+                  PostinoSnackbar.show(
                     context,
-                    message: 'In attesa d’invio',
+                    message: 'Primo',
                     actionLabel: 'Annulla',
-                    onAction: () => undone++,
-                    until: DateTime.now().add(PostinoMotion.undoWindow),
-                  ),
-                  child: const Text('Invia'),
-                ),
+                    onAction: _noop,
+                    until: now.add(const Duration(seconds: 3)),
+                    now: () => now,
+                  );
+                  PostinoSnackbar.show(
+                    context,
+                    message: 'Secondo',
+                    actionLabel: 'Annulla',
+                    onAction: _noop,
+                    until: now.add(const Duration(seconds: 9)),
+                    now: () => now,
+                  );
+                },
+                child: const Text('Invia'),
               ),
             ),
           ),
-        );
-        await tester.tap(find.text('Invia'));
-        await tester.pumpAndSettle();
-        final snack = tester.widget<SnackBar>(find.byType(SnackBar));
-        expect(snack.duration.inSeconds, inInclusiveRange(9, 10));
-        expect(snack.action, isNull);
-        expect(find.text('In attesa d’invio'), findsOneWidget);
-        await tester.tap(find.text('Annulla'));
-        await tester.pumpAndSettle();
-        expect(undone, 1);
-        expect(find.byType(PostinoSnackbar), findsNothing);
-      },
-    );
+        ),
+      );
+      await tester.tap(find.text('Invia'));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Primo'), findsNothing);
+      expect(find.text('Secondo'), findsOneWidget);
+      expect(find.text('9 s'), findsOneWidget);
+      expect(tester.widget<SnackBar>(find.byType(SnackBar)).duration, const Duration(seconds: 9));
+    });
 
-    testWidgets('the screen reader hears the message and the countdown', (
-      tester,
-    ) async {
+    testWidgets('show puts it in the ScaffoldMessenger; the action runs and closes it', (tester) async {
+      var undone = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => PostinoSnackbar.show(
+                  context,
+                  message: 'In attesa d’invio',
+                  actionLabel: 'Annulla',
+                  onAction: () => undone++,
+                  until: DateTime.now().add(PostinoMotion.undoWindow),
+                ),
+                child: const Text('Invia'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Invia'));
+      await tester.pumpAndSettle();
+      final snack = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(snack.duration.inSeconds, inInclusiveRange(9, 10));
+      expect(snack.action, isNull);
+      expect(find.text('In attesa d’invio'), findsOneWidget);
+      await tester.tap(find.text('Annulla'));
+      await tester.pumpAndSettle();
+      expect(undone, 1);
+      expect(find.byType(PostinoSnackbar), findsNothing);
+    });
+
+    testWidgets('the screen reader hears the message and the countdown', (tester) async {
       final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         MaterialApp(

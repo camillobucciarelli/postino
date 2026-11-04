@@ -39,9 +39,7 @@ void main() {
     _ => false,
   };
 
-  testWidgets('iOS: hold begins a background task, release ends it', (
-    tester,
-  ) async {
+  testWidgets('iOS: hold begins a background task, release ends it', (tester) async {
     final sender = SystemBackgroundSender();
     await sender.hold('a');
     final first = sender.taskId('a');
@@ -53,78 +51,48 @@ void main() {
     expect(sender.taskId('a'), isNull);
   }, skip: defaultTargetPlatform != TargetPlatform.iOS);
 
-  testWidgets(
-    'Android: hold schedules the WorkManager task, release cancels it',
-    (tester) async {
-      await Workmanager().initialize(sendOutboxDispatcher);
-      final sender = SystemBackgroundSender();
-      final name = SystemBackgroundSender.workName('a');
-      await sender.hold('a');
-      expect(await Workmanager().isScheduledByUniqueName(name), isTrue);
-      await sender.release('a');
-      expect(await Workmanager().isScheduledByUniqueName(name), isFalse);
-    },
-    skip: defaultTargetPlatform != TargetPlatform.android,
-  );
+  testWidgets('Android: hold schedules the WorkManager task, release cancels it', (tester) async {
+    await Workmanager().initialize(sendOutboxDispatcher);
+    final sender = SystemBackgroundSender();
+    final name = SystemBackgroundSender.workName('a');
+    await sender.hold('a');
+    expect(await Workmanager().isScheduledByUniqueName(name), isTrue);
+    await sender.release('a');
+    expect(await Workmanager().isScheduledByUniqueName(name), isFalse);
+  }, skip: defaultTargetPlatform != TargetPlatform.android);
 
-  testWidgets(
-    'Android: the WorkManager task sends a due row of the real database',
-    (tester) async {
-      final (store, outbox, provider) = await _realStore('it_outbox_task.db');
-      final clock = FakeClock(DateTime.now().toUtc());
-      GetIt.I
-        ..registerSingleton<OutboxRepository>(outbox)
-        ..registerSingleton<SyncEngine>(
-          SyncEngine(
-            store,
-            outbox,
-            clock,
-            FakeConnectivity(),
-            FakeBackgroundSender(),
-          ),
-        );
-      await outbox.enqueueOutgoing(
-        'a',
-        _message,
-        version: 1,
-        raw: renderMime(_message, clock.now()),
-        sendAfter: clock.now().millisecondsSinceEpoch,
-      );
-      expect(await runOutboxTask('a'), isTrue);
-      expect(provider.sent, hasLength(1));
-      expect(await outbox.hasOutgoing('a'), isFalse);
-    },
-    skip: defaultTargetPlatform != TargetPlatform.android,
-  );
+  testWidgets('Android: the WorkManager task sends a due row of the real database', (tester) async {
+    final (store, outbox, provider) = await _realStore('it_outbox_task.db');
+    final clock = FakeClock(DateTime.now().toUtc());
+    GetIt.I
+      ..registerSingleton<OutboxRepository>(outbox)
+      ..registerSingleton<SyncEngine>(SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender()));
+    await outbox.enqueueOutgoing(
+      'a',
+      _message,
+      version: 1,
+      raw: renderMime(_message, clock.now()),
+      sendAfter: clock.now().millisecondsSinceEpoch,
+    );
+    expect(await runOutboxTask('a'), isTrue);
+    expect(provider.sent, hasLength(1));
+    expect(await outbox.hasOutgoing('a'), isFalse);
+  }, skip: defaultTargetPlatform != TargetPlatform.android);
 
-  testWidgets('a message queued in the real database goes at the next start', (
-    tester,
-  ) async {
+  testWidgets('a message queued in the real database goes at the next start', (tester) async {
     final (store, outbox, provider) = await _realStore('it_outbox.db');
     const message = _message;
 
     // Invia, then the app dies before the window ends: the row stays.
     final clock = FakeClock(DateTime.now().toUtc());
-    final first = SyncEngine(
-      store,
-      outbox,
-      clock,
-      FakeConnectivity(),
-      FakeBackgroundSender(),
-    );
+    final first = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender());
     await first.send('a', message);
     await first.stop();
     expect(provider.sent, isEmpty);
 
     // The next start sends what is due.
     clock.advance(const Duration(minutes: 1));
-    final restarted = SyncEngine(
-      store,
-      outbox,
-      clock,
-      FakeConnectivity(),
-      FakeBackgroundSender(),
-    );
+    final restarted = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender());
     restarted.start();
     addTearDown(restarted.stop);
     await tester.pumpAndSettle();
@@ -142,9 +110,7 @@ const _message = OutgoingMessage(
 );
 
 /// A fresh SQLCipher database file with Account `a`, whose fake Provider is registered by its id.
-Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(
-  String name,
-) async {
+Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(String name) async {
   final path = '${(await getTemporaryDirectory()).path}/$name';
   for (final f in [File(path), File('$path-journal')]) {
     if (f.existsSync()) f.deleteSync();
@@ -153,13 +119,7 @@ Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(
   addTearDown(db.close);
   final store = MailStore(db);
   await store.addAccount(
-    const Account(
-      id: 'a',
-      address: 'a@example.com',
-      provider: ProviderKind.gmail,
-      color: 0,
-      position: 0,
-    ),
+    const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
   );
   final provider = FakeMailProvider();
   await GetIt.I.reset();

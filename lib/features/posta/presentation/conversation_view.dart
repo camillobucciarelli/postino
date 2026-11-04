@@ -49,22 +49,17 @@ class ConversationView extends StatefulWidget {
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState extends State<ConversationView>
-    with AccountsSignal {
+class _ConversationViewState extends State<ConversationView> with AccountsSignal {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];
-  late final _attachments = AttachmentActions(
-    widget.accountId,
-    () => setState(() {}),
-  );
+  late final _attachments = AttachmentActions(widget.accountId, () => setState(() {}));
 
   /// Empty until the database answers: blocked meanwhile, never loaded too early.
   Set<String> _trusted = const {};
 
   List<ConversationMessage>? _messages;
-  Account? get _account =>
-      accounts.value.value?.where((a) => a.id == widget.accountId).firstOrNull;
+  Account? get _account => accounts.value.value?.where((a) => a.id == widget.accountId).firstOrNull;
   List<Label> _labels = const [];
 
   /// Decided once per message, when it first shows up: reading it does not collapse it.
@@ -92,21 +87,9 @@ class _ConversationViewState extends State<ConversationView>
       ..replyAll = _replyAll
       ..forward = _forward;
     _subs
-      ..add(
-        GetIt.I<InboxRepository>()
-            .watchConversation(widget.accountId, widget.conversationId)
-            .listen(_onMessages),
-      )
-      ..add(
-        GetIt.I<InboxRepository>()
-            .watchLabels(widget.accountId)
-            .listen((l) => setState(() => _labels = l)),
-      )
-      ..add(
-        GetIt.I<TrustedSendersRepository>().watchTrusted().listen(
-          (t) => setState(() => _trusted = t),
-        ),
-      )
+      ..add(GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).listen(_onMessages))
+      ..add(GetIt.I<InboxRepository>().watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)))
+      ..add(GetIt.I<TrustedSendersRepository>().watchTrusted().listen((t) => setState(() => _trusted = t)))
       ..add(
         GetIt.I<Connectivity>().onChanged.listen((online) {
           if (!online) return;
@@ -130,15 +113,12 @@ class _ConversationViewState extends State<ConversationView>
     });
     // Only now: the expansion above saw which messages were unread. An unread one shown expanded
     // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones.
-    if (first ||
-        messages.any((m) => !m.message.isRead && _expanded[m.message.id]!)) {
+    if (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!)) {
       _open();
     }
     for (final (:message, :body) in messages) {
       // A body stored before attachments were known is downloaded again, shown meanwhile.
-      if ((body == null || body.attachments == null) &&
-          _expanded[message.id]! &&
-          !_failed.containsKey(message.id)) {
+      if ((body == null || body.attachments == null) && _expanded[message.id]! && !_failed.containsKey(message.id)) {
         _fetchBody(message.id);
       }
     }
@@ -171,9 +151,7 @@ class _ConversationViewState extends State<ConversationView>
     final open = !_expanded[id]!;
     setState(() => _expanded[id] = open);
     if (open && !hasBody) _fetchBody(id);
-    final unread = _messages!.any(
-      (m) => m.message.id == id && !m.message.isRead,
-    );
+    final unread = _messages!.any((m) => m.message.id == id && !m.message.isRead);
     if (open && unread) _open();
   }
 
@@ -230,10 +208,7 @@ class _ConversationViewState extends State<ConversationView>
       // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
       appBar: PostinoAppBar(
         title: '',
-        onBack:
-            MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail
-            ? null
-            : widget.onBack,
+        onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
       ),
       body: messages == null || messages.isEmpty || a == null
           ? const SizedBox.shrink()
@@ -263,11 +238,7 @@ class _ConversationViewState extends State<ConversationView>
                   ),
                 PostinoActionBar(
                   children: [
-                    PostinoButton(
-                      key: const ValueKey('reply'),
-                      label: t.reply,
-                      onPressed: _reply,
-                    ),
+                    PostinoButton(key: const ValueKey('reply'), label: t.reply, onPressed: _reply),
                     PostinoButton(
                       key: const ValueKey('reply-all'),
                       label: t.replyAll,

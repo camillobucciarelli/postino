@@ -17,12 +17,9 @@ class ReconnectBanners extends StatefulWidget {
   State<ReconnectBanners> createState() => _ReconnectBannersState();
 }
 
-class _ReconnectBannersState extends State<ReconnectBanners>
-    with AccountsSignal {
+class _ReconnectBannersState extends State<ReconnectBanners> with AccountsSignal {
   Future<void> _reconnect(Account a) async {
-    final r = await GetIt.I<AccountsRepository>().connectGmail(
-      loginHint: a.address,
-    );
+    final r = await GetIt.I<AccountsRepository>().connectGmail(loginHint: a.address);
     if (!mounted) return;
     if (connectError(context, r) case final e?) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e)));
@@ -40,10 +37,7 @@ class _ReconnectBannersState extends State<ReconnectBanners>
               key: ValueKey('da-ricollegare-${a.id}'),
               tone: PostinoBannerTone.warning,
               icon: PostinoIcons.key,
-              account: (
-                color: PostinoAccountColor.values[a.color],
-                initial: a.initial,
-              ),
+              account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
               title: context.t.daRicollegare.title(name: a.name),
               // ponytail: the message names Google, the one Provider of v1 step 1.
               message: context.t.daRicollegare.message,

@@ -64,20 +64,13 @@ class OutboxSender {
     _sendTimers.clear();
   }
 
-  Future<Result<DateTime>> send(
-    String accountId,
-    OutgoingMessage message,
-  ) async {
+  Future<Result<DateTime>> send(String accountId, OutgoingMessage message) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
     // A second Invia of the same Message-ID (a reopened composer): the first one stands, unless it failed preparing.
     var existing = await _outbox.outgoing(accountId, message.messageId);
     if (existing != null && existing.failed) {
-      await _outbox.dropOutgoing(
-        accountId,
-        message.messageId,
-        existing.version,
-      );
+      await _outbox.dropOutgoing(accountId, message.messageId, existing.version);
       existing = null;
     }
     if (existing != null) {
@@ -88,13 +81,7 @@ class OutboxSender {
     // Tags this preparation; random so it is unique across isolates too (collision odds 2^-31 per Message-ID).
     final version = Random.secure().nextInt(1 << 31);
     // The row is born now, without MIME: Bozze hides it, Inviati shows it and Annulla works while it is prepared.
-    await _outbox.enqueueOutgoing(
-      accountId,
-      message,
-      version: version,
-      raw: '',
-      sendAfter: OutboxDao.preparing,
-    );
+    await _outbox.enqueueOutgoing(accountId, message, version: version, raw: '', sendAfter: OutboxDao.preparing);
     // The platform keeps the preparation and the send going if the user leaves now (a slow attachment download
     // would otherwise leave the row preparing); a refusal never fails the Invia. Held at every Invia: the platform
     // renews its protection (iOS replaces a task its expiration handler may have ended, Android appends work);
@@ -112,30 +99,18 @@ class OutboxSender {
     switch (await renderMimeFetching(
       message,
       _clock.now(),
-      (messageId, attachmentId) => GetIt.I<AttachmentRepository>().bytes(
-        accountId,
-        messageId,
-        attachmentId,
-      ),
+      (messageId, attachmentId) => GetIt.I<AttachmentRepository>().bytes(accountId, messageId, attachmentId),
     )) {
       case Ok(:final value):
         raw = value;
       case Err(:final failure):
-        await _outbox.outgoingFailed(
-          accountId,
-          message.messageId,
-          version: version,
-        );
+        await _outbox.outgoingFailed(accountId, message.messageId, version: version);
         await _releaseIfEmpty(accountId);
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
     if (raw.length > gmailSendLimitBytes) {
-      await _outbox.outgoingFailed(
-        accountId,
-        message.messageId,
-        version: version,
-      );
+      await _outbox.outgoingFailed(accountId, message.messageId, version: version);
       await _releaseIfEmpty(accountId);
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
@@ -163,15 +138,10 @@ class OutboxSender {
 
   Future<String?> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
-    final attempted =
-        (await _outbox.outgoing(accountId, messageId))?.attempted ?? false;
+    final attempted = (await _outbox.outgoing(accountId, messageId))?.attempted ?? false;
     // Not behind the Account's queue: a replay waiting on a slow upload would send the row first.
     // The claim in the database refuses the cancel of a row that is going now (false).
-    final cancelled = await _outbox.cancelOutgoing(
-      accountId,
-      messageId,
-      _clock.now().millisecondsSinceEpoch,
-    );
+    final cancelled = await _outbox.cancelOutgoing(accountId, messageId, _clock.now().millisecondsSinceEpoch);
     await _releaseIfEmpty(accountId);
     if (!cancelled) return null;
     final account = attempted ? await _account(accountId) : null;
@@ -179,9 +149,7 @@ class OutboxSender {
     // ponytail: the original may or may not have been delivered; a new Message-ID keeps the two apart (an edit is never
     // taken for the original), and the next sync shows the original in Inviati if it went. The old remote draft is left to reconcile.
     final fresh = newMessageId(account.address);
-    return await _outbox.rekeyDraft(accountId, messageId, fresh)
-        ? fresh
-        : messageId;
+    return await _outbox.rekeyDraft(accountId, messageId, fresh) ? fresh : messageId;
   }
 
   /// Sends the Account's outbox entries whose window has ended: so a restart, a poll and the reconnection all send
@@ -204,25 +172,12 @@ class OutboxSender {
       )) {
         continue;
       }
-      switch (await provider.send(
-        row.messageId,
-        row.raw,
-        threadId: row.conversationId,
-      )) {
+      switch (await provider.send(row.messageId, row.raw, threadId: row.conversationId)) {
         case Ok(:final value):
-          await _outbox.outgoingSent(
-            accountId,
-            row.messageId,
-            providerId: value,
-            date: now,
-            sendAfter: row.sendAfter,
-          );
+          await _outbox.outgoingSent(accountId, row.messageId, providerId: value, date: now, sendAfter: row.sendAfter);
           debugPrint('[sync] $accountId: sent ${row.messageId}');
         // Refused for good (too big, Bozza gone): kept as failed for the UI, never retried (ADR 0008).
-        case Err(
-          failure: final f &&
-              (SizeLimitFailure() || NotFoundFailure() || RejectedFailure()),
-        ):
+        case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure() || RejectedFailure())):
           await _outbox.outgoingFailed(accountId, row.messageId);
           debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
         // Rate limited: the Account waits for the deadline, as after a sync; the rest stays queued.

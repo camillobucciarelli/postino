@@ -31,8 +31,7 @@ class AccountsService implements AccountsRepository {
       case Ok(:final value):
         grant = value;
     }
-    if (loginHint != null &&
-        loginHint.trim().toLowerCase() != grant.address.trim().toLowerCase()) {
+    if (loginHint != null && loginHint.trim().toLowerCase() != grant.address.trim().toLowerCase()) {
       return Err(WrongAccountFailure(loginHint));
     }
     // ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.

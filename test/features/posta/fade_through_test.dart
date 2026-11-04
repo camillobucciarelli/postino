@@ -17,17 +17,10 @@ Future<void> _start(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder get _fade => find
-    .descendant(
-      of: find.byType(PostinoFadeThrough),
-      matching: find.byType(FadeTransition),
-    )
-    .first;
+Finder get _fade => find.descendant(of: find.byType(PostinoFadeThrough), matching: find.byType(FadeTransition)).first;
 
 void main() {
-  testWidgets('switching view fades the new content in, then settles', (
-    tester,
-  ) async {
+  testWidgets('switching view fades the new content in, then settles', (tester) async {
     final h = await Harness.create();
     (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
@@ -46,22 +39,14 @@ void main() {
     final mid = tester.widget<FadeTransition>(_fade).opacity.value;
     expect(mid, greaterThan(0));
     expect(mid, lessThan(1));
-    expect(
-      find.descendant(
-        of: find.byType(PostinoFadeThrough),
-        matching: find.byType(ScaleTransition),
-      ),
-      findsWidgets,
-    );
+    expect(find.descendant(of: find.byType(PostinoFadeThrough), matching: find.byType(ScaleTransition)), findsWidgets);
 
     await tester.pumpAndSettle();
     expect(tester.widget<FadeTransition>(_fade).opacity.value, 1);
     expect(find.text('Da uno'), findsOneWidget);
   });
 
-  testWidgets('Account to Account never shows the Posta unificata', (
-    tester,
-  ) async {
+  testWidgets('Account to Account never shows the Posta unificata', (tester) async {
     final h = await Harness.create();
     (await h.addAccount('a1')).deliver(msg('x', subject: 'Da uno'));
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
@@ -80,9 +65,7 @@ void main() {
     expect(find.text('Da due'), findsOneWidget);
   });
 
-  testWidgets('an opaque surface sits under the fade, in light and dark', (
-    tester,
-  ) async {
+  testWidgets('an opaque surface sits under the fade, in light and dark', (tester) async {
     for (final theme in [PostinoTheme.light(), PostinoTheme.dark()]) {
       await tester.pumpWidget(
         MaterialApp(
@@ -92,12 +75,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       final box = tester.widget<ColoredBox>(
-        find
-            .descendant(
-              of: find.byType(PostinoFadeThrough),
-              matching: find.byType(ColoredBox),
-            )
-            .first,
+        find.descendant(of: find.byType(PostinoFadeThrough), matching: find.byType(ColoredBox)).first,
       );
       expect(box.color.a, 1);
       expect(box.color, theme.extension<PostinoColors>()!.surface);

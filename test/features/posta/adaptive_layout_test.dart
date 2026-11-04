@@ -28,63 +28,49 @@ Future<void> _start(WidgetTester tester, Size size) async {
 }
 
 void main() {
-  testWidgets('on a phone the drawer is modal, behind the menu', (
-    tester,
-  ) async {
+  testWidgets('on a phone the drawer is modal, behind the menu', (tester) async {
     await _start(tester, const Size(390, 844));
     expect(find.byKey(const ValueKey('account-a1')), findsNothing);
     expect(icon(PostinoIcons.menu), findsOneWidget);
 
     await openDrawer(tester);
     expect(find.byKey(const ValueKey('account-a1')), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(PostinoNavigationDrawer)).width,
-      PostinoSize.drawerWidth,
-    );
+    expect(tester.getSize(find.byType(PostinoNavigationDrawer)).width, PostinoSize.drawerWidth);
   });
 
-  testWidgets(
-    'from 840 the drawer is docked beside the list, with no menu, and still navigates',
-    (tester) async {
-      await _start(tester, const Size(1600, 900));
-      final sidebar = find.byType(PostinoNavigationDrawer);
-      expect(sidebar, findsOneWidget);
-      expect(tester.getSize(sidebar).width, PostinoSize.sidebarWidth);
-      expect(tester.getTopLeft(sidebar).dx, 0);
-      expect(icon(PostinoIcons.menu), findsNothing);
-      // The list sits right of the sidebar at list-width, the detail pane after it.
-      final row = find.byKey(const ValueKey('row-a1-x'));
-      expect(tester.getTopLeft(row).dx, PostinoSize.sidebarWidth);
-      expect(
-        tester.getTopRight(row).dx,
-        PostinoSize.sidebarWidth + PostinoSize.listWidth,
-      );
-      expect(find.text('Seleziona una Conversazione'), findsOneWidget);
+  testWidgets('from 840 the drawer is docked beside the list, with no menu, and still navigates', (tester) async {
+    await _start(tester, const Size(1600, 900));
+    final sidebar = find.byType(PostinoNavigationDrawer);
+    expect(sidebar, findsOneWidget);
+    expect(tester.getSize(sidebar).width, PostinoSize.sidebarWidth);
+    expect(tester.getTopLeft(sidebar).dx, 0);
+    expect(icon(PostinoIcons.menu), findsNothing);
+    // The list sits right of the sidebar at list-width, the detail pane after it.
+    final row = find.byKey(const ValueKey('row-a1-x'));
+    expect(tester.getTopLeft(row).dx, PostinoSize.sidebarWidth);
+    expect(tester.getTopRight(row).dx, PostinoSize.sidebarWidth + PostinoSize.listWidth);
+    expect(find.text('Seleziona una Conversazione'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('account-a1')));
+    await tester.tap(find.byKey(const ValueKey('account-a1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Da uno'), findsOneWidget);
+    expect(find.text('Da due'), findsNothing);
+    expect(find.byType(PostinoNavigationDrawer), findsOneWidget);
+  });
+
+  testWidgets('docked, navigating replaces only the content: the drawer State survives', (tester) async {
+    await _start(tester, const Size(1600, 900));
+    State drawer() => tester.state(find.byType(PostaDrawer));
+    final first = drawer();
+    Future<void> go(String key) async {
+      await tester.tap(find.byKey(ValueKey(key)));
       await tester.pumpAndSettle();
-      expect(find.text('Da uno'), findsOneWidget);
-      expect(find.text('Da due'), findsNothing);
-      expect(find.byType(PostinoNavigationDrawer), findsOneWidget);
-    },
-  );
+      expect(drawer(), same(first), reason: 'after $key');
+    }
 
-  testWidgets(
-    'docked, navigating replaces only the content: the drawer State survives',
-    (tester) async {
-      await _start(tester, const Size(1600, 900));
-      State drawer() => tester.state(find.byType(PostaDrawer));
-      final first = drawer();
-      Future<void> go(String key) async {
-        await tester.tap(find.byKey(ValueKey(key)));
-        await tester.pumpAndSettle();
-        expect(drawer(), same(first), reason: 'after $key');
-      }
-
-      await go('account-a1');
-      await go('label-Label_12');
-      await go('account-a2');
-      await go('drawer-posta-unificata');
-    },
-  );
+    await go('account-a1');
+    await go('label-Label_12');
+    await go('account-a2');
+    await go('drawer-posta-unificata');
+  });
 }

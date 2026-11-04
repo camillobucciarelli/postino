@@ -38,6 +38,5 @@ String plainToHtml(String text) => text.trim().isEmpty
     ? '<p></p>'
     : [
         for (final p in text.replaceAll('\r\n', '\n').split(RegExp(r'\n\s*\n')))
-          if (p.trim().isNotEmpty)
-            '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
+          if (p.trim().isNotEmpty) '<p>${_escape.convert(p.trim()).replaceAll('\n', '<br>')}</p>',
       ].join();

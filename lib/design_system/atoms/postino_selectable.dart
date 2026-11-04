@@ -29,8 +29,7 @@ class _PostinoSelectableState extends State<PostinoSelectable> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      SelectionContainer.maybeOf(context) == null
+  Widget build(BuildContext context) => SelectionContainer.maybeOf(context) == null
       ? SelectionArea(focusNode: _focus, child: widget.child)
       : widget.child;
 }

@@ -17,9 +17,7 @@ const _client = GoogleClient('123-abc.apps.googleusercontent.com');
 final _now = DateTime.utc(2026, 10, 28, 12);
 
 http.Response _fixture(String name) {
-  final j = jsonDecode(
-    File('test/fixtures/gmail/$name.json').readAsStringSync(),
-  );
+  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync());
   return http.Response(jsonEncode(j['body']), j['status'] as int);
 }
 
@@ -30,25 +28,22 @@ void main() {
 
   String token = 'token_exchange';
 
-  GoogleWebConsent consent({
-    GoogleClient client = _client,
-    bool loopback = false,
-    String Function(Uri url)? browser,
-  }) => GoogleWebConsent(
-    MockClient((r) async {
-      requests.add(r);
-      return _fixture(token);
-    }),
-    FakeClock(_now),
-    client,
-    ({required url, required callbackUrlScheme}) async {
-      opened = Uri.parse(url);
-      scheme = callbackUrlScheme;
-      return browser?.call(opened) ??
-          '${opened.queryParameters['redirect_uri']}?state=${opened.queryParameters['state']}&code=4/0Ab';
-    },
-    loopback,
-  );
+  GoogleWebConsent consent({GoogleClient client = _client, bool loopback = false, String Function(Uri url)? browser}) =>
+      GoogleWebConsent(
+        MockClient((r) async {
+          requests.add(r);
+          return _fixture(token);
+        }),
+        FakeClock(_now),
+        client,
+        ({required url, required callbackUrlScheme}) async {
+          opened = Uri.parse(url);
+          scheme = callbackUrlScheme;
+          return browser?.call(opened) ??
+              '${opened.queryParameters['redirect_uri']}?state=${opened.queryParameters['state']}&code=4/0Ab';
+        },
+        loopback,
+      );
 
   setUp(() {
     requests = [];
@@ -72,10 +67,7 @@ void main() {
     expect(q['access_type'], 'offline');
     expect(q['code_challenge_method'], 'S256');
     expect(scheme, 'com.googleusercontent.apps.123-abc');
-    expect(
-      q['redirect_uri'],
-      'com.googleusercontent.apps.123-abc:/oauth2redirect',
-    );
+    expect(q['redirect_uri'], 'com.googleusercontent.apps.123-abc:/oauth2redirect');
 
     final exchange = requests.single.bodyFields;
     expect(exchange['code'], '4/0Ab');
@@ -87,35 +79,21 @@ void main() {
   test('a token without the Gmail scope (granular consent) is a MissingPermissionFailure', () async {
     token = 'token_exchange_no_gmail';
     final r = await consent().run();
+    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<MissingPermissionFailure>()));
+  });
+
+  test('a token without refresh_token is a Failure, not an exception', () async {
+    token = 'token_exchange_no_refresh';
+    final r = await consent().run();
     expect(
       r,
       isA<Err>().having(
         (e) => e.failure,
         'failure',
-        isA<MissingPermissionFailure>(),
+        isA<UnexpectedFailure>().having((f) => f.error, 'error', 'no refresh_token in code exchange'),
       ),
     );
   });
-
-  test(
-    'a token without refresh_token is a Failure, not an exception',
-    () async {
-      token = 'token_exchange_no_refresh';
-      final r = await consent().run();
-      expect(
-        r,
-        isA<Err>().having(
-          (e) => e.failure,
-          'failure',
-          isA<UnexpectedFailure>().having(
-            (f) => f.error,
-            'error',
-            'no refresh_token in code exchange',
-          ),
-        ),
-      );
-    },
-  );
 
   test('desktop uses a loopback redirect', () async {
     await consent(loopback: true).run();
@@ -123,44 +101,26 @@ void main() {
     expect(opened.queryParameters['redirect_uri'], scheme);
   });
 
-  test(
-    'without a client ID it fails clearly, before opening anything',
-    () async {
-      var asked = false;
-      final r = await consent(
-        client: const GoogleClient(''),
-        browser: (_) {
-          asked = true;
-          return '';
-        },
-      ).run();
-      expect(
-        r,
-        isA<Err>().having(
-          (e) => e.failure,
-          'failure',
-          isA<ConfigurationFailure>(),
-        ),
-      );
-      expect(asked, isFalse);
-    },
-  );
+  test('without a client ID it fails clearly, before opening anything', () async {
+    var asked = false;
+    final r = await consent(
+      client: const GoogleClient(''),
+      browser: (_) {
+        asked = true;
+        return '';
+      },
+    ).run();
+    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<ConfigurationFailure>()));
+    expect(asked, isFalse);
+  });
 
   test('closing the browser is a CancelledFailure', () async {
-    final r = await consent(
-      browser: (_) => throw PlatformException(code: 'CANCELED'),
-    ).run();
-    expect(
-      r,
-      isA<Err>().having((e) => e.failure, 'failure', isA<CancelledFailure>()),
-    );
+    final r = await consent(browser: (_) => throw PlatformException(code: 'CANCELED')).run();
+    expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
   });
 
   test('a callback with another state is refused, no code exchanged', () async {
-    final r = await consent(
-      browser: (u) =>
-          '${u.queryParameters['redirect_uri']}?state=forged&code=x',
-    ).run();
+    final r = await consent(browser: (u) => '${u.queryParameters['redirect_uri']}?state=forged&code=x').run();
     expect(r, isA<Err>());
     expect(requests, isEmpty);
   });

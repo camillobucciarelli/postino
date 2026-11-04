@@ -27,15 +27,9 @@ class PostinoIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final paint = CustomPaint(
       size: Size.square(size),
-      painter: _IconPainter(
-        icon,
-        color ?? IconTheme.of(context).color ?? const Color(0xFF000000),
-        filled,
-      ),
+      painter: _IconPainter(icon, color ?? IconTheme.of(context).color ?? const Color(0xFF000000), filled),
     );
-    return label == null
-        ? ExcludeSemantics(child: paint)
-        : Semantics(label: label, image: true, child: paint);
+    return label == null ? ExcludeSemantics(child: paint) : Semantics(label: label, image: true, child: paint);
   }
 }
 
@@ -56,18 +50,14 @@ class _IconPainter extends CustomPainter {
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    for (final p in _cache.putIfAbsent(
-      icon,
-      () => icon.paths.map(parseSvgPath).toList(),
-    )) {
+    for (final p in _cache.putIfAbsent(icon, () => icon.paths.map(parseSvgPath).toList())) {
       if (filled) canvas.drawPath(p, Paint()..color = color);
       canvas.drawPath(p, stroke);
     }
   }
 
   @override
-  bool shouldRepaint(_IconPainter old) =>
-      old.icon != icon || old.color != color || old.filled != filled;
+  bool shouldRepaint(_IconPainter old) => old.icon != icon || old.color != color || old.filled != filled;
 }
 
 final _token = RegExp(r'[MmLlHhVvAaZz]|-?(?:\d+\.?\d*|\.\d+)');

@@ -47,9 +47,7 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
-  late final entries = streamSignal(
-    () => widget.watch(GetIt.I<InboxRepository>()),
-  );
+  late final entries = streamSignal(() => widget.watch(GetIt.I<InboxRepository>()));
   final _scroll = ScrollController();
 
   /// One focus per row; only the cursor row is a Tab stop, so the list is one stop.
@@ -62,8 +60,7 @@ class _MessageListState extends State<MessageList> {
   bool? _wasTwoPane;
 
   /// Side by side with the Conversazione: moving opens it (ADR 0014).
-  bool get _twoPane =>
-      MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
+  bool get _twoPane => MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
 
   FocusNode _node((String, String) key) => _nodes.putIfAbsent(key, () {
     final node = FocusNode(skipTraversal: true);
@@ -120,9 +117,7 @@ class _MessageListState extends State<MessageList> {
   }
 
   /// Focus on the list, and the list is in front (not under a full-page Conversazione).
-  bool _listFocused() =>
-      _nodes.values.any((n) => n.hasFocus) &&
-      (_twoPane || widget.selected == null);
+  bool _listFocused() => _nodes.values.any((n) => n.hasFocus) && (_twoPane || widget.selected == null);
 
   void _focusSoon() => WidgetsBinding.instance.addPostFrameCallback((_) {
     if (mounted && _cursor != null) _reveal(_cursor!, 0);
@@ -143,9 +138,7 @@ class _MessageListState extends State<MessageList> {
     }
     final list = _list;
     if (tries == 0 || list == null || !_scroll.hasClients) return;
-    final at = list.indexWhere(
-      (e) => (e.account.id, e.message.conversationId) == key,
-    );
+    final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
     if (at < 0) return;
     final p = _scroll.position;
     final rowExtent = (p.maxScrollExtent + p.viewportDimension) / list.length;
@@ -181,11 +174,7 @@ class _MessageListState extends State<MessageList> {
   void _move(int delta) {
     final list = _list;
     if (list == null || list.isEmpty) return;
-    final from = _cursor == null
-        ? -1
-        : list.indexWhere(
-            (e) => (e.account.id, e.message.conversationId) == _cursor,
-          );
+    final from = _cursor == null ? -1 : list.indexWhere((e) => (e.account.id, e.message.conversationId) == _cursor);
     final to = from < 0 ? 0 : (from + delta).clamp(0, list.length - 1);
     final e = list[to];
     final key = (e.account.id, e.message.conversationId);
@@ -216,12 +205,10 @@ class _MessageListState extends State<MessageList> {
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,
         itemBuilder: (context, i) {
-          final InboxEntry(message: m, account: a, :count, :unread, :status) =
-              list![i];
+          final InboxEntry(message: m, account: a, :count, :unread, :status) = list![i];
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
-          final node = _node(key)
-            ..skipTraversal = key != (_cursor ?? _firstKey(list));
+          final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list));
           return _KeepAlive(
             keep: key == _cursor,
             child: PostinoMessageTile(
@@ -240,12 +227,7 @@ class _MessageListState extends State<MessageList> {
                 node.requestFocus();
                 widget.onOpen(a.id, m.conversationId);
               },
-              account: widget.showAccount
-                  ? (
-                      color: PostinoAccountColor.values[a.color],
-                      initial: a.initial,
-                    )
-                  : null,
+              account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
               semanticLabel: [
                 if (unread) t.unread,
                 m.fromName ?? m.from,
@@ -264,8 +246,7 @@ class _MessageListState extends State<MessageList> {
   );
 }
 
-(String, String) _firstKey(List<InboxEntry> list) =>
-    (list.first.account.id, list.first.message.conversationId);
+(String, String) _firstKey(List<InboxEntry> list) => (list.first.account.id, list.first.message.conversationId);
 
 /// Keeps the cursor row built when it scrolls out of sight, so Tab still finds it.
 class _KeepAlive extends StatefulWidget {
@@ -277,8 +258,7 @@ class _KeepAlive extends StatefulWidget {
   State<_KeepAlive> createState() => _KeepAliveState();
 }
 
-class _KeepAliveState extends State<_KeepAlive>
-    with AutomaticKeepAliveClientMixin {
+class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => widget.keep;
 

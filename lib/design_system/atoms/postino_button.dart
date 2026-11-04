@@ -38,15 +38,14 @@ class PostinoButton extends StatelessWidget {
       minimumSize: WidgetStatePropertyAll(Size(64, height)),
       padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: pad)),
       textStyle: WidgetStatePropertyAll(
-        (size == PostinoButtonSize.sm ? PostinoText.labelSm : PostinoText.label)
-            .copyWith(decoration: underline ? TextDecoration.underline : null),
+        (size == PostinoButtonSize.sm ? PostinoText.labelSm : PostinoText.label).copyWith(
+          decoration: underline ? TextDecoration.underline : null,
+        ),
       ),
       // The filled button is `radius-sm` (theme), the ghost a stadium (M3 TextButton).
       backgroundBuilder: (context, states, child) => PostinoFocusRing(
         borderRadius: BorderRadius.circular(
-          variant == PostinoButtonVariant.primary
-              ? PostinoRadius.sm
-              : PostinoRadius.full,
+          variant == PostinoButtonVariant.primary ? PostinoRadius.sm : PostinoRadius.full,
         ),
         child: child!,
       ),
@@ -54,16 +53,8 @@ class PostinoButton extends StatelessWidget {
     // Buttons are controls, not content: out of any selection.
     final child = SelectionContainer.disabled(child: Text(label));
     return switch (variant) {
-      PostinoButtonVariant.primary => FilledButton(
-        onPressed: onPressed,
-        style: style,
-        child: child,
-      ),
-      PostinoButtonVariant.ghost => TextButton(
-        onPressed: onPressed,
-        style: style,
-        child: child,
-      ),
+      PostinoButtonVariant.primary => FilledButton(onPressed: onPressed, style: style, child: child),
+      PostinoButtonVariant.ghost => TextButton(onPressed: onPressed, style: style, child: child),
     };
   }
 }

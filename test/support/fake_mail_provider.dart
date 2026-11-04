@@ -47,11 +47,9 @@ class FakeMailProvider implements MailProvider {
   /// Outside the sync window (older than 90 days): only [fetchConversation] and [fetchBody] see them.
   final _old = <String, Message>{};
   final _log = <(int, Message?, String)>[]; // (version, upsert, removedId)
-  late final StreamController<ChangeSignal> _changes =
-      StreamController.broadcast(
-        onListen: () =>
-            _changes.add(_signalUp ? ChangeSignal.up : ChangeSignal.down),
-      );
+  late final StreamController<ChangeSignal> _changes = StreamController.broadcast(
+    onListen: () => _changes.add(_signalUp ? ChangeSignal.up : ChangeSignal.down),
+  );
   int _version = 0;
 
   /// Cursors older than this have expired.
@@ -113,9 +111,7 @@ class FakeMailProvider implements MailProvider {
   Completer<void>? holdBody;
 
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
-  final labels = [
-    const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
-  ];
+  final labels = [const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta)];
 
   /// The Bozze folder, by Message-ID; a saved or delivered Bozza is also a DRAFT message for the syncs.
   final drafts = <String, OutgoingMessage>{};
@@ -141,30 +137,15 @@ class FakeMailProvider implements MailProvider {
 
   // --- simulation ---
   /// Gives message [messageId] an attachment [name] holding [bytes]; its id is `att-<name>`.
-  Attachment attach(
-    String messageId,
-    String name,
-    List<int> bytes, {
-    String? mimeType,
-  }) {
-    final a = Attachment(
-      id: 'att-$name',
-      name: name,
-      size: bytes.length,
-      mimeType: mimeType,
-    );
+  Attachment attach(String messageId, String name, List<int> bytes, {String? mimeType}) {
+    final a = Attachment(id: 'att-$name', name: name, size: bytes.length, mimeType: mimeType);
     attachmentData[(messageId, a.id)] = Uint8List.fromList(bytes);
     final old = bodies[messageId] ?? _defaultBody(messageId);
-    bodies[messageId] = MessageBody(
-      old.content,
-      old.kind,
-      attachments: [...?old.attachments, a],
-    );
+    bodies[messageId] = MessageBody(old.content, old.kind, attachments: [...?old.attachments, a]);
     return a;
   }
 
-  MessageBody _defaultBody(String id, [BodyKind kind = BodyKind.testo]) =>
-      MessageBody('Corpo di $id', kind);
+  MessageBody _defaultBody(String id, [BodyKind kind = BodyKind.testo]) => MessageBody('Corpo di $id', kind);
 
   /// A new message, or a change to one (read, Stella, Etichette) made elsewhere.
   /// The change signal watches the inbox only ([signal] false: a Bozza change raises none, as on Gmail).
@@ -184,11 +165,7 @@ class FakeMailProvider implements MailProvider {
   }
 
   /// A Bozza written by another client: in the Bozze folder, with its HTML body; its Provider id is `d-<n>`.
-  void deliverDraft(
-    OutgoingMessage d, {
-    DateTime? date,
-    String? conversationId,
-  }) {
+  void deliverDraft(OutgoingMessage d, {DateTime? date, String? conversationId}) {
     drafts[d.messageId] = d;
     final id = _draftIds[d.messageId] ??= 'd-${++_draftSeq}';
     bodies[id] = MessageBody(d.body, BodyKind.html);
@@ -265,8 +242,7 @@ class FakeMailProvider implements MailProvider {
 
   Map<String, MessageBody> _inboxBodies(Iterable<Message> ms) => {
     for (final m in ms)
-      if (m.labelIds.contains(inboxLabelId))
-        m.id: bodies[m.id] ?? _defaultBody(m.id),
+      if (m.labelIds.contains(inboxLabelId)) m.id: bodies[m.id] ?? _defaultBody(m.id),
   };
 
   @override
@@ -353,10 +329,7 @@ class FakeMailProvider implements MailProvider {
   }
 
   @override
-  Future<Result<void>> setRead(
-    List<String> messageIds, {
-    required bool read,
-  }) async {
+  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) async {
     await holdRead?.future;
     return failSetRead
         ? const Err(OfflineFailure())
@@ -384,10 +357,7 @@ class FakeMailProvider implements MailProvider {
     if (holdAttachment case final hold?) {
       onProgress?.call(0.5);
       var cancelled = false;
-      await Future.any([
-        hold.future,
-        if (cancel != null) cancel.then((_) => cancelled = true),
-      ]);
+      await Future.any([hold.future, if (cancel != null) cancel.then((_) => cancelled = true)]);
       if (cancelled) return const Err(CancelledFailure());
     }
     onProgress?.call(1);
@@ -396,25 +366,18 @@ class FakeMailProvider implements MailProvider {
 
   /// Idempotent on the Message-ID: a message already in Inviati is not stored twice.
   @override
-  Future<Result<String>> send(
-    String messageId,
-    String raw, {
-    String? threadId,
-  }) async {
+  Future<Result<String>> send(String messageId, String raw, {String? threadId}) async {
     sendCalls++;
     await holdSend?.future;
     final f = _failure ?? sendFailure;
     if (f != null) return Err(f);
     final existing = _messages.values
-        .where(
-          (m) => m.messageId == messageId && m.labelIds.contains(sentLabelId),
-        )
+        .where((m) => m.messageId == messageId && m.labelIds.contains(sentLabelId))
         .firstOrNull;
     if (existing != null) return Ok(existing.id);
     final mime = MimeMessage.parseFromText(raw);
     List<String> addresses(String h) => [
-      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? ''))
-        formatMailbox(m),
+      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? '')) formatMailbox(m),
     ];
     final id = 's-${++_sentSeq}';
     final from = parseMailbox(mime.getHeaderValue('from') ?? '');
@@ -449,10 +412,7 @@ class FakeMailProvider implements MailProvider {
   }
 
   @override
-  Future<Result<void>> saveDraft(
-    OutgoingMessage draft, {
-    required bool isNew,
-  }) async {
+  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) async {
     draftHeld = draft.messageId;
     await holdDraft?.future;
     final f = _failure;

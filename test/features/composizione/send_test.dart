@@ -44,25 +44,20 @@ Future<void> _start(WidgetTester tester) async {
 }
 
 /// flutter_quill reads the platform once: macOS, as the app in QA; semantics on, for the labels.
-void _onMac(
-  String name,
-  Future<void> Function(WidgetTester) body, {
-  bool skip = false,
-}) => testWidgets(name, skip: skip, (tester) async {
-  debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-  final semantics = tester.ensureSemantics();
-  try {
-    await body(tester);
-  } finally {
-    semantics.dispose();
-    debugDefaultTargetPlatformOverride = null;
-  }
-});
+void _onMac(String name, Future<void> Function(WidgetTester) body, {bool skip = false}) =>
+    testWidgets(name, skip: skip, (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      final semantics = tester.ensureSemantics();
+      try {
+        await body(tester);
+      } finally {
+        semantics.dispose();
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
 
 Finder _field(String label) => find.descendant(
-  of: find.byWidgetPredicate(
-    (w) => w is PostinoComposerField && w.label == label,
-  ),
+  of: find.byWidgetPredicate((w) => w is PostinoComposerField && w.label == label),
   matching: find.byType(TextField),
 );
 
@@ -112,10 +107,7 @@ Future<void> _afterWindow(WidgetTester tester) async {
 Finder get _undo => find.widgetWithText(PostinoButton, 'Annulla');
 
 /// The text [s] inside a row of the list (not in the Snackbar).
-Finder _inTile(String s) => find.descendant(
-  of: find.byType(PostinoMessageTile),
-  matching: find.textContaining(s),
-);
+Finder _inTile(String s) => find.descendant(of: find.byType(PostinoMessageTile), matching: find.textContaining(s));
 
 Future<void> _openSent(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('sent-$_id')));
@@ -123,114 +115,87 @@ Future<void> _openSent(WidgetTester tester) async {
 }
 
 void main() {
-  _onMac(
-    'after Invia «Annulla» shows; the Provider gets the message only after 10 s, once',
-    (tester) async {
-      await _start(tester);
-      await _write(tester);
-      await _send(tester);
-      expect(find.byType(PostinoComposerField), findsNothing);
-      expect(_undo, findsOneWidget);
-      expect(gmail.sent, isEmpty);
+  _onMac('after Invia «Annulla» shows; the Provider gets the message only after 10 s, once', (tester) async {
+    await _start(tester);
+    await _write(tester);
+    await _send(tester);
+    expect(find.byType(PostinoComposerField), findsNothing);
+    expect(_undo, findsOneWidget);
+    expect(gmail.sent, isEmpty);
 
-      await _afterWindow(tester);
-      expect(gmail.sent, hasLength(1));
-      expect(gmail.sent.single.$1, matches(RegExp(r'^<.+@example\.com>$')));
+    await _afterWindow(tester);
+    expect(gmail.sent, hasLength(1));
+    expect(gmail.sent.single.$1, matches(RegExp(r'^<.+@example\.com>$')));
 
-      // The Snackbar lives on real time: the window over, it goes.
-      await tester.pump(PostinoMotion.undoWindow);
-      await tester.pump(const Duration(seconds: 1));
-      expect(_undo, findsNothing);
-      await _afterWindow(tester);
-      expect(gmail.sent, hasLength(1));
-    },
-  );
+    // The Snackbar lives on real time: the window over, it goes.
+    await tester.pump(PostinoMotion.undoWindow);
+    await tester.pump(const Duration(seconds: 1));
+    expect(_undo, findsNothing);
+    await _afterWindow(tester);
+    expect(gmail.sent, hasLength(1));
+  });
 
-  _onMac(
-    '«Annulla» reopens the composition with the text; the message stays a Bozza',
-    (tester) async {
-      await _start(tester);
-      await _write(tester);
-      final id = _openId();
-      await _send(tester);
-      await tester.tap(_undo);
-      await _settle(tester);
+  _onMac('«Annulla» reopens the composition with the text; the message stays a Bozza', (tester) async {
+    await _start(tester);
+    await _write(tester);
+    final id = _openId();
+    await _send(tester);
+    await tester.tap(_undo);
+    await _settle(tester);
 
-      expect(_openId(), id);
-      expect(
-        tester.widget<TextField>(_field('Oggetto')).controller!.text,
-        'Saluti',
-      );
-      expect(
-        tester
-            .widget<QuillEditor>(find.byType(QuillEditor))
-            .controller
-            .document
-            .toPlainText(),
-        contains('Ciao Ada'),
-      );
-      final drafts = await GetIt.I<InboxRepository>().watchDrafts(_id).first;
-      expect(drafts.single.subject, 'Saluti');
-      await _afterWindow(tester);
-      expect(gmail.sent, isEmpty);
-    },
-  );
+    expect(_openId(), id);
+    expect(tester.widget<TextField>(_field('Oggetto')).controller!.text, 'Saluti');
+    expect(
+      tester.widget<QuillEditor>(find.byType(QuillEditor)).controller.document.toPlainText(),
+      contains('Ciao Ada'),
+    );
+    final drafts = await GetIt.I<InboxRepository>().watchDrafts(_id).first;
+    expect(drafts.single.subject, 'Saluti');
+    await _afterWindow(tester);
+    expect(gmail.sent, isEmpty);
+  });
 
-  _onMac(
-    'Inviati lists the message as «In attesa d\'invio» at once, then as sent without a state',
-    (tester) async {
-      await _start(tester);
-      await _write(tester);
-      await _send(tester);
-      await _openSent(tester);
-      expect(find.text('Inviati'), findsWidgets);
-      expect(_inTile(_waiting), findsOneWidget);
-      expect(_inTile('Saluti'), findsOneWidget);
-      // The state is spoken with the row (ADR 0014), not only shown in its preview.
-      expect(
-        find.bySemanticsLabel(RegExp("Saluti, In attesa d'invio")),
-        findsOneWidget,
-      );
+  _onMac('Inviati lists the message as «In attesa d\'invio» at once, then as sent without a state', (tester) async {
+    await _start(tester);
+    await _write(tester);
+    await _send(tester);
+    await _openSent(tester);
+    expect(find.text('Inviati'), findsWidgets);
+    expect(_inTile(_waiting), findsOneWidget);
+    expect(_inTile('Saluti'), findsOneWidget);
+    // The state is spoken with the row (ADR 0014), not only shown in its preview.
+    expect(find.bySemanticsLabel(RegExp("Saluti, In attesa d'invio")), findsOneWidget);
 
-      await _afterWindow(tester);
-      expect(_inTile(_waiting), findsNothing);
-      expect(_inTile(_offline), findsNothing);
-      expect(_inTile('Saluti'), findsOneWidget);
-      expect(gmail.sent, hasLength(1));
-    },
-  );
+    await _afterWindow(tester);
+    expect(_inTile(_waiting), findsNothing);
+    expect(_inTile(_offline), findsNothing);
+    expect(_inTile('Saluti'), findsOneWidget);
+    expect(gmail.sent, hasLength(1));
+  });
 
-  _onMac(
-    'offline the message waits as «In uscita, in attesa di rete» and goes once with the network',
-    (tester) async {
-      await _start(tester);
-      h.connectivity.online = false;
-      gmail.goOffline();
-      await _write(tester);
-      await _send(tester);
-      await _openSent(tester);
-      expect(_inTile(_waiting), findsOneWidget);
+  _onMac('offline the message waits as «In uscita, in attesa di rete» and goes once with the network', (tester) async {
+    await _start(tester);
+    h.connectivity.online = false;
+    gmail.goOffline();
+    await _write(tester);
+    await _send(tester);
+    await _openSent(tester);
+    expect(_inTile(_waiting), findsOneWidget);
 
-      await _afterWindow(tester);
-      expect(gmail.sent, isEmpty);
-      expect(_inTile(_offline), findsOneWidget);
-      expect(
-        find.bySemanticsLabel(RegExp('Saluti, $_offline')),
-        findsOneWidget,
-      );
+    await _afterWindow(tester);
+    expect(gmail.sent, isEmpty);
+    expect(_inTile(_offline), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Saluti, $_offline')), findsOneWidget);
 
-      gmail.goOnline();
-      h.connectivity.online = true;
-      await _settle(tester);
-      expect(gmail.sent, hasLength(1));
-      expect(_inTile(_offline), findsNothing);
-      expect(_inTile('Saluti'), findsOneWidget);
-    },
-  );
+    gmail.goOnline();
+    h.connectivity.online = true;
+    await _settle(tester);
+    expect(gmail.sent, hasLength(1));
+    expect(_inTile(_offline), findsNothing);
+    expect(_inTile('Saluti'), findsOneWidget);
+  });
 
-  _onMac('Invia without a recipient asks for one and queues nothing', (
-    tester,
-  ) async {
+  _onMac('Invia without a recipient asks for one and queues nothing', (tester) async {
     await _start(tester);
     await _write(tester, recipient: false);
     await _send(tester);
@@ -246,34 +211,29 @@ void main() {
     await _afterWindow(tester);
   });
 
-  _onMac(
-    'the composer is frozen while the engine prepares the message: no edit, no Bozza save',
-    (tester) async {
-      await _start(tester);
-      final hold = Completer<void>();
-      final held = _TooBig(GetIt.I<MailSync>(), hold: hold);
-      GetIt.I
-        ..unregister<MailSync>()
-        ..registerSingleton<MailSync>(held);
-      await _write(tester);
-      final saved = held.saves;
-      await _send(tester);
-      await _typeInEditor(tester, 'Modifica tardiva');
-      await tester.enterText(_field('Oggetto'), 'Tardivo');
-      await _settle(tester);
-      expect(find.text('Modifica tardiva'), findsNothing);
-      expect(find.text('Tardivo'), findsNothing);
-      expect(held.saves, saved);
-      hold.complete();
-      await _settle(tester);
-      // The Bozza reaches the Provider: left pending, the composer's flush on dispose blocks the next database reset.
-      await _afterWindow(tester);
-    },
-  );
+  _onMac('the composer is frozen while the engine prepares the message: no edit, no Bozza save', (tester) async {
+    await _start(tester);
+    final hold = Completer<void>();
+    final held = _TooBig(GetIt.I<MailSync>(), hold: hold);
+    GetIt.I
+      ..unregister<MailSync>()
+      ..registerSingleton<MailSync>(held);
+    await _write(tester);
+    final saved = held.saves;
+    await _send(tester);
+    await _typeInEditor(tester, 'Modifica tardiva');
+    await tester.enterText(_field('Oggetto'), 'Tardivo');
+    await _settle(tester);
+    expect(find.text('Modifica tardiva'), findsNothing);
+    expect(find.text('Tardivo'), findsNothing);
+    expect(held.saves, saved);
+    hold.complete();
+    await _settle(tester);
+    // The Bozza reaches the Provider: left pending, the composer's flush on dispose blocks the next database reset.
+    await _afterWindow(tester);
+  });
 
-  _onMac('a message over the Gmail limit is refused, naming the 35 MB limit', (
-    tester,
-  ) async {
+  _onMac('a message over the Gmail limit is refused, naming the 35 MB limit', (tester) async {
     await _start(tester);
     // ponytail: 37 MB put in the Quill document never lays out in a widget test (tried: it hangs); the engine's refusal of a real
     // oversized message is outbox_sync_test's, here the composer only has to show it.
@@ -283,19 +243,14 @@ void main() {
       ..registerSingleton<MailSync>(_TooBig(real));
     await _write(tester);
     await _send(tester);
-    expect(
-      find.text('Il messaggio supera il limite di 35 MB di Gmail'),
-      findsOneWidget,
-    );
+    expect(find.text('Il messaggio supera il limite di 35 MB di Gmail'), findsOneWidget);
     expect(find.byType(PostinoComposerField), findsWidgets);
     expect(_undo, findsNothing);
     await _afterWindow(tester);
     expect(gmail.sent, isEmpty);
   });
 
-  _onMac('closing the composer while the engine prepares still shows Annulla', (
-    tester,
-  ) async {
+  _onMac('closing the composer while the engine prepares still shows Annulla', (tester) async {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
@@ -314,60 +269,47 @@ void main() {
     await _afterWindow(tester);
   });
 
-  _onMac(
-    'a preparation that fails after the composer was closed is listed as «Invio non riuscito»',
-    (tester) async {
-      await _start(tester);
-      final hold = Completer<void>();
-      final held = _TooBig(
-        GetIt.I<MailSync>(),
-        hold: hold,
-        delegate: true,
-        oversize: true,
-      );
-      GetIt.I
-        ..unregister<MailSync>()
-        ..registerSingleton<MailSync>(held);
-      await _write(tester);
-      await _send(tester);
-      await tester.tap(find.byTooltip('Chiudi'));
-      await _settle(tester);
-      hold.complete();
-      await _settle(tester);
-      expect(_undo, findsNothing);
-      await _openSent(tester);
-      expect(_inTile('Invio non riuscito'), findsOneWidget);
-      await _afterWindow(tester);
-    },
-  );
+  _onMac('a preparation that fails after the composer was closed is listed as «Invio non riuscito»', (tester) async {
+    await _start(tester);
+    final hold = Completer<void>();
+    final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true, oversize: true);
+    GetIt.I
+      ..unregister<MailSync>()
+      ..registerSingleton<MailSync>(held);
+    await _write(tester);
+    await _send(tester);
+    await tester.tap(find.byTooltip('Chiudi'));
+    await _settle(tester);
+    hold.complete();
+    await _settle(tester);
+    expect(_undo, findsNothing);
+    await _openSent(tester);
+    expect(_inTile('Invio non riuscito'), findsOneWidget);
+    await _afterWindow(tester);
+  });
 
-  _onMac(
-    'Invia from a composer opened under Account A, sending as B, still closes it',
-    (tester) async {
-      await _start(tester);
-      await h.addAccount('b2');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Scrivi'));
-      await tester.pumpAndSettle();
-      // The sender can only change before the Bozza is first saved.
-      await tester.tap(find.byType(PostinoSenderPicker));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('b2@example.com').last);
-      await tester.pumpAndSettle();
-      await tester.enterText(_field('A'), 'ada@example.com');
-      await tester.enterText(_field('Oggetto'), 'Saluti');
-      await _typeInEditor(tester, 'Ciao Ada');
-      await tester.pumpAndSettle();
-      await _send(tester);
-      expect(find.byType(PostinoComposerField), findsNothing);
-      expect(_undo, findsOneWidget);
-      await _afterWindow(tester);
-    },
-  );
+  _onMac('Invia from a composer opened under Account A, sending as B, still closes it', (tester) async {
+    await _start(tester);
+    await h.addAccount('b2');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Scrivi'));
+    await tester.pumpAndSettle();
+    // The sender can only change before the Bozza is first saved.
+    await tester.tap(find.byType(PostinoSenderPicker));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('b2@example.com').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('A'), 'ada@example.com');
+    await tester.enterText(_field('Oggetto'), 'Saluti');
+    await _typeInEditor(tester, 'Ciao Ada');
+    await tester.pumpAndSettle();
+    await _send(tester);
+    expect(find.byType(PostinoComposerField), findsNothing);
+    expect(_undo, findsOneWidget);
+    await _afterWindow(tester);
+  });
 
-  _onMac('a slow preparation does not close the composer opened meanwhile', (
-    tester,
-  ) async {
+  _onMac('a slow preparation does not close the composer opened meanwhile', (tester) async {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
@@ -408,38 +350,30 @@ void main() {
     },
   );
 
-  _onMac(
-    'the Snackbar announces «In attesa d\'invio»; Tab reaches «Annulla», Enter runs it',
-    (tester) async {
-      await _start(tester);
-      await _write(tester);
-      final id = _openId();
-      await _send(tester);
-      expect(find.bySemanticsLabel(RegExp(_waiting)), findsOneWidget);
-      expect(
-        find.semantics.byLabel('Annulla'),
-        isSemantics(isButton: true, isEnabled: true),
-      );
+  _onMac('the Snackbar announces «In attesa d\'invio»; Tab reaches «Annulla», Enter runs it', (tester) async {
+    await _start(tester);
+    await _write(tester);
+    final id = _openId();
+    await _send(tester);
+    expect(find.bySemanticsLabel(RegExp(_waiting)), findsOneWidget);
+    expect(find.semantics.byLabel('Annulla'), isSemantics(isButton: true, isEnabled: true));
 
-      // The focus sits inside the «Annulla» button (a scope above it would also contain the text).
-      Finder focused() => find.ancestor(
-        of: find.byElementPredicate(
-          (e) => e == FocusManager.instance.primaryFocus?.context,
-        ),
-        matching: _undo,
-      );
-      for (var i = 0; i < 40 && focused().evaluate().isEmpty; i++) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
-      }
-      expect(focused(), findsOneWidget);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await _settle(tester);
-      expect(_openId(), id);
-      await _afterWindow(tester);
-      expect(gmail.sent, isEmpty);
-    },
-  );
+    // The focus sits inside the «Annulla» button (a scope above it would also contain the text).
+    Finder focused() => find.ancestor(
+      of: find.byElementPredicate((e) => e == FocusManager.instance.primaryFocus?.context),
+      matching: _undo,
+    );
+    for (var i = 0; i < 40 && focused().evaluate().isEmpty; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    expect(focused(), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await _settle(tester);
+    expect(_openId(), id);
+    await _afterWindow(tester);
+    expect(gmail.sent, isEmpty);
+  });
 
   _onMac('Cmd+Enter in the editor sends', (tester) async {
     await _start(tester);
@@ -493,8 +427,7 @@ class _TooBig implements MailSync {
   @override
   Future<void> syncAll() => real.syncAll();
   @override
-  Future<Result<void>> openConversation(String a, String c) =>
-      real.openConversation(a, c);
+  Future<Result<void>> openConversation(String a, String c) => real.openConversation(a, c);
   @override
   Future<Result<void>> fetchBody(String a, String m) => real.fetchBody(a, m);
   @override
@@ -510,8 +443,7 @@ class _TooBig implements MailSync {
   @override
   Future<void> flushOutbox(String a) => real.flushOutbox(a);
   @override
-  Future<Result<OutgoingMessage>> openDraft(String a, String m) =>
-      real.openDraft(a, m);
+  Future<Result<OutgoingMessage>> openDraft(String a, String m) => real.openDraft(a, m);
   @override
   Future<Result<AttachmentBytes>> fetchAttachment(
     String a,

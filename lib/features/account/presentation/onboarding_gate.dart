@@ -48,11 +48,7 @@ class _OnboardingState extends State<_Onboarding> {
     title: context.t.appTitle,
     message: context.t.onboarding.body,
     error: switch (error) {
-      final e? => PostinoBanner(
-        tone: PostinoBannerTone.danger,
-        title: context.t.connect.title,
-        message: e,
-      ),
+      final e? => PostinoBanner(tone: PostinoBannerTone.danger, title: context.t.connect.title, message: e),
       null => null,
     },
     primaryAction: PostinoButton(

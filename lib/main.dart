@@ -5,8 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart'
-    show FlutterQuillLocalizations;
+import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
@@ -77,9 +76,7 @@ class _PostinoAppState extends State<PostinoApp> {
   void initState() {
     super.initState();
     getIt<SyncEngine>().start();
-    _lifecycle = AppLifecycleListener(
-      onResume: () => unawaited(getIt<SyncEngine>().syncAll()),
-    );
+    _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
   }
 
   @override
@@ -92,10 +89,7 @@ class _PostinoAppState extends State<PostinoApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      routerConfig: Routefly.routerConfig(
-        routes: routes,
-        initialPath: routePaths.posta.path,
-      ),
+      routerConfig: Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path),
       theme: PostinoTheme.light(),
       darkTheme: PostinoTheme.dark(),
       onGenerateTitle: (context) => context.t.appTitle,

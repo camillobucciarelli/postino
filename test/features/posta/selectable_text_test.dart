@@ -23,21 +23,13 @@ String? _clipboard;
 
 void _mockClipboard(WidgetTester tester) {
   _clipboard = null;
-  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-    SystemChannels.platform,
-    (call) async {
-      if (call.method == 'Clipboard.setData') {
-        _clipboard = (call.arguments as Map)['text'] as String?;
-      }
-      return null;
-    },
-  );
-  addTearDown(
-    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    ),
-  );
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    if (call.method == 'Clipboard.setData') {
+      _clipboard = (call.arguments as Map)['text'] as String?;
+    }
+    return null;
+  });
+  addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
 }
 
 Future<void> _start(WidgetTester tester) async {
@@ -66,13 +58,7 @@ Future<void> _start(WidgetTester tester) async {
       BodyKind.html,
     )
     ..deliver(
-      msg(
-        'n1',
-        conversationId: 'n',
-        from: 'news@shop.example',
-        subject: 'Offerte',
-        date: DateTime.utc(2026, 10, 2, 9),
-      ),
+      msg('n1', conversationId: 'n', from: 'news@shop.example', subject: 'Offerte', date: DateTime.utc(2026, 10, 2, 9)),
     );
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
@@ -89,18 +75,12 @@ Finder _text(String s) => find.textContaining(s, findRichText: true);
 Finder get _conversation => find.byType(ConversationView);
 Finder get _sender => find.descendant(
   of: _conversation,
-  matching: find.byWidgetPredicate(
-    (w) => w is Text && (w.textSpan?.toPlainText() ?? '').startsWith('Ada'),
-  ),
+  matching: find.byWidgetPredicate((w) => w is Text && (w.textSpan?.toPlainText() ?? '').startsWith('Ada')),
 );
 
 const _ctrl = LogicalKeyboardKey.controlLeft;
 
-Future<void> _chord(
-  WidgetTester tester,
-  LogicalKeyboardKey mod,
-  LogicalKeyboardKey key,
-) async {
+Future<void> _chord(WidgetTester tester, LogicalKeyboardKey mod, LogicalKeyboardKey key) async {
   await tester.sendKeyDownEvent(mod);
   await tester.sendKeyEvent(key);
   await tester.sendKeyUpEvent(mod);
@@ -129,18 +109,15 @@ Future<void> _selectAll(WidgetTester tester, LogicalKeyboardKey mod) async {
   await _chord(tester, mod, LogicalKeyboardKey.keyA);
 }
 
-bool _expanded(WidgetTester tester) => tester
-    .widget<PostinoThreadMessage>(find.byType(PostinoThreadMessage).first)
-    .expanded;
+bool _expanded(WidgetTester tester) =>
+    tester.widget<PostinoThreadMessage>(find.byType(PostinoThreadMessage).first).expanded;
 
 void main() {
   for (final (name, platform, mod) in [
     ('Ctrl', TargetPlatform.windows, _ctrl),
     ('Cmd', TargetPlatform.macOS, LogicalKeyboardKey.metaLeft),
   ]) {
-    testWidgets('$name+A stays in the Conversazione and $name+C copies it', (
-      tester,
-    ) async {
+    testWidgets('$name+A stays in the Conversazione and $name+C copies it', (tester) async {
       debugDefaultTargetPlatformOverride = platform;
       try {
         await _start(tester);
@@ -175,9 +152,7 @@ void main() {
   });
 
   group('header', () {
-    testWidgets('a tap on the empty space or on the avatar collapses it', (
-      tester,
-    ) async {
+    testWidgets('a tap on the empty space or on the avatar collapses it', (tester) async {
       await _start(tester);
       await _open(tester, 'h1');
       expect(_expanded(tester), isTrue);
@@ -194,42 +169,31 @@ void main() {
       expect(_expanded(tester), isFalse);
     });
 
-    testWidgets('a drag over the text selects it without collapsing', (
-      tester,
-    ) async {
+    testWidgets('a drag over the text selects it without collapsing', (tester) async {
       await _start(tester);
       await _open(tester, 'h1');
       final text = tester.getRect(_sender);
-      await _drag(
-        tester,
-        Offset(text.left + 1, text.center.dy),
-        Offset(text.left + 60, text.center.dy),
-      );
+      await _drag(tester, Offset(text.left + 1, text.center.dy), Offset(text.left + 60, text.center.dy));
       expect(_expanded(tester), isTrue);
       await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
       expect(_clipboard, isNotEmpty);
       expect('Ada Okafor ada@okafor-legal.it', contains(_clipboard!));
     });
 
-    testWidgets(
-      'a double click selects a word, collapses nothing, opens no details',
-      (tester) async {
-        await _start(tester);
-        await _open(tester, 'h1');
-        final at = tester.getTopLeft(_sender) + const Offset(5, 8);
-        await tester.tapAt(at, kind: PointerDeviceKind.mouse);
-        await tester.pump(const Duration(milliseconds: 50));
-        await tester.tapAt(at, kind: PointerDeviceKind.mouse);
-        await tester.pumpAndSettle();
-        expect(_expanded(tester), isTrue);
-        expect(find.text('Cc'), findsNothing);
-      },
-    );
+    testWidgets('a double click selects a word, collapses nothing, opens no details', (tester) async {
+      await _start(tester);
+      await _open(tester, 'h1');
+      final at = tester.getTopLeft(_sender) + const Offset(5, 8);
+      await tester.tapAt(at, kind: PointerDeviceKind.mouse);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(at, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      expect(_expanded(tester), isTrue);
+      expect(find.text('Cc'), findsNothing);
+    });
   });
 
-  testWidgets('Esc: the first clears the selection, the second closes', (
-    tester,
-  ) async {
+  testWidgets('Esc: the first clears the selection, the second closes', (tester) async {
     await _start(tester);
     await _open(tester, 'h1');
     await _selectAll(tester, _ctrl);
@@ -269,108 +233,83 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('conversation-a1/n'), skipOffstage: false),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('conversation-a1/n'), skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets(
-    'the semantics stay: subject as header, message expanded, one custom action',
-    (tester) async {
-      final handle = tester.ensureSemantics();
-      await _start(tester);
-      await _open(tester, 'h1');
-      final subject = tester.getSemantics(
-        find
-            .descendant(
-              of: _conversation,
-              matching: find.text('Contratto Rossi'),
-            )
-            .first,
-      );
-      expect(subject.getSemanticsData().flagsCollection.isHeader, isTrue);
-      final message = tester.getSemantics(
-        find.byType(PostinoThreadMessage).first,
-      );
-      expect(
-        message.getSemanticsData().flagsCollection.isExpanded,
-        Tristate.isTrue,
-      );
-      expect(message.getSemanticsData().customSemanticsActionIds, hasLength(1));
-      handle.dispose();
-    },
-  );
+  testWidgets('the semantics stay: subject as header, message expanded, one custom action', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _start(tester);
+    await _open(tester, 'h1');
+    final subject = tester.getSemantics(
+      find.descendant(of: _conversation, matching: find.text('Contratto Rossi')).first,
+    );
+    expect(subject.getSemanticsData().flagsCollection.isHeader, isTrue);
+    final message = tester.getSemantics(find.byType(PostinoThreadMessage).first);
+    expect(message.getSemanticsData().flagsCollection.isExpanded, Tristate.isTrue);
+    expect(message.getSemanticsData().customSemanticsActionIds, hasLength(1));
+    handle.dispose();
+  });
 
-  testWidgets(
-    'banner text is selectable, its button is not (and an empty state has its own area)',
-    (tester) async {
-      _mockClipboard(tester);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: PostinoTheme.light(),
-          home: Scaffold(
-            body: Column(
-              children: [
-                PostinoBanner(
-                  tone: PostinoBannerTone.danger,
-                  title: 'Titolo errore',
-                  message: 'Dettaglio errore',
-                  actionLabel: 'Riprova',
-                  onAction: () {},
-                ),
-                const Expanded(
-                  child: PostinoEmptyState(
-                    title: 'Tutto letto',
-                    body: 'Niente da fare',
-                  ),
-                ),
-              ],
-            ),
+  testWidgets('banner text is selectable, its button is not (and an empty state has its own area)', (tester) async {
+    _mockClipboard(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              PostinoBanner(
+                tone: PostinoBannerTone.danger,
+                title: 'Titolo errore',
+                message: 'Dettaglio errore',
+                actionLabel: 'Riprova',
+                onAction: () {},
+              ),
+              const Expanded(
+                child: PostinoEmptyState(title: 'Tutto letto', body: 'Niente da fare'),
+              ),
+            ],
           ),
         ),
-      );
-      await tester.tap(find.text('Dettaglio errore'));
-      await tester.pump();
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
-      expect(_clipboard, contains('Titolo errore'));
-      expect(_clipboard, contains('Dettaglio errore'));
-      expect(_clipboard, isNot(contains('Riprova')));
-      expect(_clipboard, isNot(contains('Tutto letto')));
+      ),
+    );
+    await tester.tap(find.text('Dettaglio errore'));
+    await tester.pump();
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
+    expect(_clipboard, contains('Titolo errore'));
+    expect(_clipboard, contains('Dettaglio errore'));
+    expect(_clipboard, isNot(contains('Riprova')));
+    expect(_clipboard, isNot(contains('Tutto letto')));
 
-      await tester.tap(find.text('Niente da fare'));
-      await tester.pump();
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
-      expect(_clipboard, contains('Tutto letto'));
-      expect(_clipboard, contains('Niente da fare'));
-    },
-  );
+    await tester.tap(find.text('Niente da fare'));
+    await tester.pump();
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
+    expect(_clipboard, contains('Tutto letto'));
+    expect(_clipboard, contains('Niente da fare'));
+  });
 
-  testWidgets(
-    'the Snackbar of Annulla invio: its state text is selectable, «Annulla» is not',
-    (tester) async {
-      _mockClipboard(tester);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: PostinoTheme.light(),
-          home: Scaffold(
-            body: PostinoSnackbar(
-              message: "In attesa d'invio",
-              actionLabel: 'Annulla',
-              until: DateTime.now().add(PostinoMotion.undoWindow),
-              onAction: () {},
-            ),
+  testWidgets('the Snackbar of Annulla invio: its state text is selectable, «Annulla» is not', (tester) async {
+    _mockClipboard(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: PostinoSnackbar(
+            message: "In attesa d'invio",
+            actionLabel: 'Annulla',
+            until: DateTime.now().add(PostinoMotion.undoWindow),
+            onAction: () {},
           ),
         ),
-      );
-      await tester.tap(find.text("In attesa d'invio"));
-      await tester.pump();
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
-      await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
-      expect(_clipboard, contains("In attesa d'invio"));
-      expect(_clipboard, isNot(contains('Annulla')));
-    },
-  );
+      ),
+    );
+    await tester.tap(find.text("In attesa d'invio"));
+    await tester.pump();
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyA);
+    await _chord(tester, _ctrl, LogicalKeyboardKey.keyC);
+    expect(_clipboard, contains("In attesa d'invio"));
+    expect(_clipboard, isNot(contains('Annulla')));
+  });
 }

@@ -81,11 +81,7 @@ class PostinoMessageTile extends StatelessWidget {
             child: Container(
               constraints: BoxConstraints(minHeight: d.rowHeight),
               decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: c.listItemDivider,
-                  ),
-                ),
+                border: Border(bottom: BorderSide(color: c.listItemDivider)),
               ),
               child: Stack(
                 children: [
@@ -99,10 +95,7 @@ class PostinoMessageTile extends StatelessWidget {
                       child: ColoredBox(color: c.account(a.color).color),
                     ),
                   Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: PostinoSpacing.s4,
-                      vertical: d.padY,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: d.padY),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: d.gap,
@@ -112,11 +105,7 @@ class PostinoMessageTile extends StatelessWidget {
                           size: d.avatar,
                           badge: a == null
                               ? null
-                              : PostinoAccountMark(
-                                  color: a.color,
-                                  initial: a.initial,
-                                  size: PostinoSize.accountBadge,
-                                ),
+                              : PostinoAccountMark(color: a.color, initial: a.initial, size: PostinoSize.accountBadge),
                         ),
                         Expanded(
                           child: Column(
@@ -130,46 +119,29 @@ class PostinoMessageTile extends StatelessWidget {
                                       key: const ValueKey('unread'),
                                       width: PostinoSpacing.s2,
                                       height: PostinoSpacing.s2,
-                                      decoration: BoxDecoration(
-                                        color: c.unread,
-                                        shape: BoxShape.circle,
-                                      ),
+                                      decoration: BoxDecoration(color: c.unread, shape: BoxShape.circle),
                                     ),
                                   Expanded(
                                     child: Text(
                                       sender,
                                       maxLines: wrap ? null : 1,
-                                      overflow: wrap
-                                          ? TextOverflow.visible
-                                          : TextOverflow.ellipsis,
-                                      style:
-                                          (unread
-                                                  ? PostinoText.sender
-                                                  : PostinoText.senderRead)
-                                              .copyWith(color: fg),
+                                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                      style: (unread ? PostinoText.sender : PostinoText.senderRead).copyWith(color: fg),
                                     ),
                                   ),
                                   if (count > 1)
                                     Container(
                                       key: const ValueKey('count'),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: PostinoSpacing.s1,
-                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s1),
                                       decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: c.borderSubtle,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          PostinoRadius.xs,
-                                        ),
+                                        border: Border.all(color: c.borderSubtle),
+                                        borderRadius: BorderRadius.circular(PostinoRadius.xs),
                                       ),
                                       child: Text(
                                         '$count',
                                         style: PostinoText.meta.copyWith(
                                           color: c.listItemMeta,
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
+                                          fontFeatures: const [FontFeature.tabularFigures()],
                                         ),
                                       ),
                                     ),
@@ -184,14 +156,10 @@ class PostinoMessageTile extends StatelessWidget {
                                     child: Text(
                                       subject,
                                       maxLines: wrap ? null : 1,
-                                      overflow: wrap
-                                          ? TextOverflow.visible
-                                          : TextOverflow.ellipsis,
-                                      style:
-                                          (unread
-                                                  ? PostinoText.subject
-                                                  : PostinoText.subjectRead)
-                                              .copyWith(color: fg),
+                                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                      style: (unread ? PostinoText.subject : PostinoText.subjectRead).copyWith(
+                                        color: fg,
+                                      ),
                                     ),
                                   ),
                                   if (starred)
@@ -207,12 +175,8 @@ class PostinoMessageTile extends StatelessWidget {
                                 Text(
                                   preview,
                                   maxLines: wrap ? null : d.previewLines,
-                                  overflow: wrap
-                                      ? TextOverflow.visible
-                                      : TextOverflow.ellipsis,
-                                  style: PostinoText.preview.copyWith(
-                                    color: c.listItemFgRead,
-                                  ),
+                                  overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                  style: PostinoText.preview.copyWith(color: c.listItemFgRead),
                                 ),
                             ],
                           ),

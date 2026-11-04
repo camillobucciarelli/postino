@@ -29,11 +29,7 @@ class AttachmentStorage {
 
   /// Clears what [stalePart] has left: decrypted copies in [temp] and half-written cache files older than
   /// that. A younger one may be a copy another app has just opened, or the write of another isolate (#36).
-  static Future<AttachmentStorage> open(
-    Directory cache,
-    Directory temp, {
-    int cap = 500 * 1024 * 1024,
-  }) async {
+  static Future<AttachmentStorage> open(Directory cache, Directory temp, {int cap = 500 * 1024 * 1024}) async {
     await temp.create(recursive: true);
     await cache.create(recursive: true);
     final before = DateTime.now().subtract(stalePart);
@@ -43,8 +39,7 @@ class AttachmentStorage {
       }
     }
     await for (final e in cache.list()) {
-      if (e.basename.endsWith('.part') &&
-          (await e.stat()).modified.isBefore(before)) {
+      if (e.basename.endsWith('.part') && (await e.stat()).modified.isBefore(before)) {
         await e.delete();
       }
     }
@@ -84,14 +79,7 @@ class AttachmentCache implements AttachmentRepository {
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
     try {
-      return await _file(
-        accountId,
-        messageId,
-        attachment,
-        onProgress,
-        cancel,
-        () => cancelled,
-      );
+      return await _file(accountId, messageId, attachment, onProgress, cancel, () => cancelled);
     } on Exception catch (e, s) {
       return Err(UnexpectedFailure(e, s));
     }
@@ -145,9 +133,7 @@ class AttachmentCache implements AttachmentRepository {
         if (cancelled()) return const Err(CancelledFailure());
         // Written aside then renamed: a crash never leaves half a file under the real name.
         // A name of its own per write: two downloads of the same attachment never share a staging file.
-        final part = _storage.cache.childFile(
-          '${cached.basename}.${hex(randomBytes(4))}.part',
-        );
+        final part = _storage.cache.childFile('${cached.basename}.${hex(randomBytes(4))}.part');
         try {
           await part.writeAsBytes(sealed, flush: true);
           if (cancelled()) return const Err(CancelledFailure());
@@ -186,20 +172,12 @@ class AttachmentCache implements AttachmentRepository {
   }
 
   @override
-  Future<Result<Uint8List>> bytes(
-    String accountId,
-    String messageId,
-    String attachmentId,
-  ) async {
+  Future<Result<Uint8List>> bytes(String accountId, String messageId, String attachmentId) async {
     try {
       final cached = _cached(accountId, messageId, attachmentId);
       if (await cached.exists()) {
         final keys = await (_keys ??= _loadKeys());
-        final plain = await _crypt(
-          decryptAttachment,
-          await cached.readAsBytes(),
-          keys,
-        );
+        final plain = await _crypt(decryptAttachment, await cached.readAsBytes(), keys);
         if (plain != null) return Ok(plain);
       }
     } on Exception catch (e) {
@@ -210,11 +188,7 @@ class AttachmentCache implements AttachmentRepository {
   }
 
   File _cached(String accountId, String messageId, String attachmentId) =>
-      _storage.cache.childFile(
-        sha256
-            .convert(utf8.encode('$accountId\n$messageId\n$attachmentId'))
-            .toString(),
-      );
+      _storage.cache.childFile(sha256.convert(utf8.encode('$accountId\n$messageId\n$attachmentId')).toString());
 
   /// Deletions in the cache, one at a time: two at once would pick, and delete, the same file.
   /// A failed one does not block the next.
@@ -266,7 +240,5 @@ class AttachmentCache implements AttachmentRepository {
     Uint8List? Function(Uint8List, AttachmentKeys) op,
     Uint8List data,
     AttachmentKeys keys,
-  ) async => data.length > 1 << 20
-      ? Isolate.run(() => op(data, keys))
-      : op(data, keys);
+  ) async => data.length > 1 << 20 ? Isolate.run(() => op(data, keys)) : op(data, keys);
 }

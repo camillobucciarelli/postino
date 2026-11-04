@@ -28,9 +28,7 @@ class PostinoOnboardingLayout extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: PostinoSize.readingMaxWidth,
-            ),
+            constraints: const BoxConstraints(maxWidth: PostinoSize.readingMaxWidth),
             child: CustomScrollView(
               slivers: [
                 SliverFillRemaining(
@@ -41,15 +39,9 @@ class PostinoOnboardingLayout extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: PostinoSpacing.s16),
-                        Text(
-                          title,
-                          style: PostinoText.display.copyWith(color: c.ink),
-                        ),
+                        Text(title, style: PostinoText.display.copyWith(color: c.ink)),
                         const SizedBox(height: PostinoSpacing.s2),
-                        Text(
-                          message,
-                          style: PostinoText.body.copyWith(color: c.inkMuted),
-                        ),
+                        Text(message, style: PostinoText.body.copyWith(color: c.inkMuted)),
                         const Spacer(),
                         ?error,
                         primaryAction,

@@ -1,5 +1,4 @@
-import 'package:enough_mail/enough_mail.dart'
-    show MailAddress, MediaType, MessageBuilder;
+import 'package:enough_mail/enough_mail.dart' show MailAddress, MediaType, MessageBuilder;
 
 import '../domain/html_text.dart';
 import '../domain/mailbox.dart';
@@ -14,11 +13,7 @@ const gmailSendLimitBytes = 36700160;
 /// with In-Reply-To and References of a reply; inside a multipart/mixed with [attachments] (the bytes of
 /// [OutgoingMessage.attachments], in order) when a forward carries any (#37).
 /// Rendered once: the same text goes to the Bozza and to the send.
-String renderMime(
-  OutgoingMessage m,
-  DateTime date, [
-  List<AttachmentBytes> attachments = const [],
-]) {
+String renderMime(OutgoingMessage m, DateTime date, [List<AttachmentBytes> attachments = const []]) {
   MailAddress address(String s) {
     final p = parseMailbox(s);
     return MailAddress(p.name, p.address);
@@ -27,13 +22,9 @@ String renderMime(
   final text = htmlText(m.body);
   final MessageBuilder builder;
   if (m.attachments.isEmpty) {
-    builder = MessageBuilder.prepareMultipartAlternativeMessage(
-      plainText: text,
-      htmlText: m.body,
-    );
+    builder = MessageBuilder.prepareMultipartAlternativeMessage(plainText: text, htmlText: m.body);
   } else {
-    builder = MessageBuilder.prepareMultipartMixedMessage()
-      ..addMultipartAlternative(plainText: text, htmlText: m.body);
+    builder = MessageBuilder.prepareMultipartMixedMessage()..addMultipartAlternative(plainText: text, htmlText: m.body);
     for (final (i, f) in m.attachments.indexed) {
       final a = f.attachment;
       builder.addBinary(
@@ -63,11 +54,7 @@ String renderMime(
 Future<Result<String>> renderMimeFetching(
   OutgoingMessage m,
   DateTime date,
-  Future<Result<AttachmentBytes>> Function(
-    String messageId,
-    String attachmentId,
-  )
-  fetch,
+  Future<Result<AttachmentBytes>> Function(String messageId, String attachmentId) fetch,
 ) async {
   final bytes = <AttachmentBytes>[];
   for (final f in m.attachments) {

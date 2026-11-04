@@ -44,10 +44,7 @@ class PostinoSnackbar extends StatefulWidget {
     return messenger.showSnackBar(
       SnackBar(
         duration: left.isNegative ? Duration.zero : left,
-        padding: const EdgeInsets.symmetric(
-          horizontal: PostinoSpacing.s4,
-          vertical: PostinoSpacing.s1,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: PostinoSpacing.s1),
         content: PostinoSnackbar(
           message: message,
           actionLabel: actionLabel,
@@ -109,17 +106,9 @@ class _PostinoSnackbarState extends State<PostinoSnackbar> {
                   spacing: PostinoSpacing.s3,
                   children: [
                     Flexible(
-                      child: Text(
-                        widget.message,
-                        style: PostinoText.label.copyWith(color: c.snackbarFg),
-                      ),
+                      child: Text(widget.message, style: PostinoText.label.copyWith(color: c.snackbarFg)),
                     ),
-                    Text(
-                      countdown,
-                      style: PostinoText.metaStrong.copyWith(
-                        color: c.snackbarFg,
-                      ),
-                    ),
+                    Text(countdown, style: PostinoText.metaStrong.copyWith(color: c.snackbarFg)),
                   ],
                 ),
               ),
@@ -127,9 +116,7 @@ class _PostinoSnackbarState extends State<PostinoSnackbar> {
           ),
           // The design's snackbar action: a ghost button in snackbar-action (as the Banner restyles its ghost).
           TextButtonTheme(
-            data: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: c.snackbarAction),
-            ),
+            data: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: c.snackbarAction)),
             child: PostinoButton(
               label: widget.actionLabel,
               onPressed: widget.onAction,

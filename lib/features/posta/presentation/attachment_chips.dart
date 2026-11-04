@@ -14,12 +14,11 @@ import 'attachment_actions.dart';
 /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
 /// so it opens in the right app (open_filex picks the app by extension only); [safeFileName] strips bidi
 /// and invisible characters, so the chip shows the name the file gets (#75).
-String _name(Attachment a, Translations$conversazione$it t) =>
-    safeFileName(switch (a.name) {
-      '' => '${t.attachmentUntitled}${a.fallbackExtension}',
-      final n when !n.contains('.') => '$n${a.fallbackExtension}',
-      final n => n,
-    });
+String _name(Attachment a, Translations$conversazione$it t) => safeFileName(switch (a.name) {
+  '' => '${t.attachmentUntitled}${a.fallbackExtension}',
+  final n when !n.contains('.') => '$n${a.fallbackExtension}',
+  final n => n,
+});
 
 /// The chips of [message]'s attachments, with their download, failure and actions from [actions].
 List<PostinoAttachmentChip> attachmentChips(
@@ -30,23 +29,16 @@ List<PostinoAttachmentChip> attachmentChips(
   String locale,
 ) => [
   for (final a in body?.attachments ?? const <Attachment>[])
-    if ((actions.download(message.id, a.id), _name(a, t)) case (
-      final d,
-      final name,
-    ))
+    if ((actions.download(message.id, a.id), _name(a, t)) case (final d, final name))
       PostinoAttachmentChip(
         key: ValueKey('attachment-${message.id}-${a.id}'),
         name: name,
         size: fileSize(a.size, locale),
         openLabel: t.attachmentOpen,
-        onOpen: isExecutableName(name)
-            ? null
-            : () => actions.start(message.id, a, name),
+        onOpen: isExecutableName(name) ? null : () => actions.start(message.id, a, name),
         warning: isExecutableName(name) ? t.attachmentExecutable : null,
         progress: d?.done,
-        progressLabel: d == null
-            ? null
-            : t.attachmentDownloading(percent: (d.done * 100).round()),
+        progressLabel: d == null ? null : t.attachmentDownloading(percent: (d.done * 100).round()),
         cancelLabel: t.attachmentCancel,
         onCancel: () {
           if (d case (done: _, :final cancel) when !cancel.isCompleted) {
@@ -55,8 +47,7 @@ List<PostinoAttachmentChip> attachmentChips(
         },
         error: switch (actions.failure(message.id, a.id)) {
           null => null,
-          (failure: OfflineFailure(), save: _, saving: _) =>
-            t.attachmentOffline,
+          (failure: OfflineFailure(), save: _, saving: _) => t.attachmentOffline,
           (failure: _, save: _, saving: true) => t.attachmentSaveFailed,
           _ => t.attachmentFailed,
         },
@@ -65,14 +56,10 @@ List<PostinoAttachmentChip> attachmentChips(
           message.id,
           a,
           name,
-          save:
-              isExecutableName(name) ||
-              (actions.failure(message.id, a.id)?.save ?? false),
+          save: isExecutableName(name) || (actions.failure(message.id, a.id)?.save ?? false),
         ),
         moreLabel: t.attachmentMore,
         saveLabel: t.attachmentSave,
-        onSave: GetIt.I<FileSaver>().available
-            ? () => actions.start(message.id, a, name, save: true)
-            : null,
+        onSave: GetIt.I<FileSaver>().available ? () => actions.start(message.id, a, name, save: true) : null,
       ),
 ];

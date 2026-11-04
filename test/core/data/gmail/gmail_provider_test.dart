@@ -27,43 +27,27 @@ const _testClient = GoogleClient('test-client.apps.googleusercontent.com');
 const _api = '/gmail/v1/users/me/';
 
 http.Response _fixture(String name) {
-  final j = jsonDecode(
-    File('test/fixtures/gmail/$name.json').readAsStringSync(),
-  );
+  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync());
   final status = j['status'] as int;
   // A 204 (batchModify) has no body.
-  return j['body'] == null
-      ? http.Response('', status)
-      : _json(j['body'], status);
+  return j['body'] == null ? http.Response('', status) : _json(j['body'], status);
 }
 
-http.Response _json(Object body, [int status = 200]) => http.Response(
-  jsonEncode(body),
-  status,
-  headers: {'content-type': 'application/json; charset=utf-8'},
-);
+http.Response _json(Object body, [int status = 200]) =>
+    http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json; charset=utf-8'});
 
-FakeSecureStore _keychain({
-  String access = 'ya29.initial',
-  Duration validFor = const Duration(hours: 1),
-}) {
+FakeSecureStore _keychain({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)}) {
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
-  GmailTokens(
-    access: access,
-    refresh: '1//refresh',
-    expiresAt: _now.add(validFor),
-  ).write(keychain, _account);
+  GmailTokens(access: access, refresh: '1//refresh', expiresAt: _now.add(validFor)).write(keychain, _account);
   return keychain;
 }
 
 /// Google as seen over HTTP: the token endpoint and a simulated Gmail API mailbox,
 /// shaped like the recorded responses.
 class GmailHarness implements ContractHarness {
-  GmailHarness({
-    String access = 'ya29.initial',
-    Duration validFor = const Duration(hours: 1),
-  }) : keychain = _keychain(access: access, validFor: validFor);
+  GmailHarness({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)})
+    : keychain = _keychain(access: access, validFor: validFor);
 
   final FakeSecureStore keychain;
   final requests = <http.Request>[];
@@ -118,19 +102,14 @@ class GmailHarness implements ContractHarness {
     if (draftId != null && !_drafts.containsKey(draftId)) {
       return _fixture('not_found');
     }
-    return _json(
-      _putDraft(draftId, _parseRaw(body['message']['raw'] as String)),
-    );
+    return _json(_putDraft(draftId, _parseRaw(body['message']['raw'] as String)));
   }
 
   /// The base64url `raw` of a draft or a send, back to an [OutgoingMessage].
   static OutgoingMessage _parseRaw(String raw) {
-    final mime = MimeMessage.parseFromText(
-      utf8.decode(base64Url.decode(base64Url.normalize(raw))),
-    );
+    final mime = MimeMessage.parseFromText(utf8.decode(base64Url.decode(base64Url.normalize(raw))));
     List<String> addresses(String h) => [
-      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? ''))
-        formatMailbox(m),
+      for (final m in parseMailboxes(mime.getHeaderValue(h) ?? '')) formatMailbox(m),
     ];
     return OutgoingMessage(
       messageId: mime.getHeaderValue('message-id')!,
@@ -221,27 +200,20 @@ class GmailHarness implements ContractHarness {
     final q = r.url.queryParameters;
     // ponytail: the 90-day `after:` window is not simulated; the recorded-response test checks the query.
     return switch (r.url.path.substring(_api.length).split('/')) {
-      ['profile'] => _json({
-        'emailAddress': 'ada@gmail.com',
-        'historyId': '$_historyId',
-      }),
+      ['profile'] => _json({'emailAddress': 'ada@gmail.com', 'historyId': '$_historyId'}),
       ['labels'] => _fixture('labels'),
       ['messages'] => _paged('messages', [
         for (final m in _mailbox.values)
           if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
               (!(q['q'] ?? '').startsWith('rfc822msgid:') ||
-                  'rfc822msgid:${m.messageId.replaceAll(RegExp('[<>]'), '')}' ==
-                      q['q']))
+                  'rfc822msgid:${m.messageId.replaceAll(RegExp('[<>]'), '')}' == q['q']))
             {'id': m.id, 'threadId': m.conversationId},
       ], q),
-      ['messages', 'send'] => _send(
-        (jsonDecode(r.body) as Map<String, dynamic>)['raw'] as String,
-      ),
+      ['messages', 'send'] => _send((jsonDecode(r.body) as Map<String, dynamic>)['raw'] as String),
       ['drafts'] when r.method == 'GET' => _json({
         'drafts': [
           for (final MapEntry(:key, :value) in _drafts.entries)
-            if ('rfc822msgid:${value.messageId.replaceAll(RegExp('[<>]'), '')}' ==
-                q['q'])
+            if ('rfc822msgid:${value.messageId.replaceAll(RegExp('[<>]'), '')}' == q['q'])
               {
                 'id': key,
                 'message': {'id': value.id},
@@ -250,14 +222,9 @@ class GmailHarness implements ContractHarness {
         'resultSizeEstimate': _drafts.length,
       }),
       ['drafts'] => _draftRaw(null, jsonDecode(r.body)),
-      ['drafts', final id] when r.method == 'PUT' => _draftRaw(
-        id,
-        jsonDecode(r.body),
-      ),
+      ['drafts', final id] when r.method == 'PUT' => _draftRaw(id, jsonDecode(r.body)),
       ['drafts', final id] when r.method == 'DELETE' => _deleteDraft(id),
-      ['messages', 'batchModify'] => _modify(
-        jsonDecode(r.body) as Map<String, dynamic>,
-      ),
+      ['messages', 'batchModify'] => _modify(jsonDecode(r.body) as Map<String, dynamic>),
       ['threads', final id] => switch ([
         for (final m in _mailbox.values)
           if (m.conversationId == id) _resource(m, full: false),
@@ -265,21 +232,17 @@ class GmailHarness implements ContractHarness {
         [] => _fixture('not_found'),
         final messages => _json({'id': id, 'messages': messages}),
       },
-      ['messages', final id, 'attachments', final aid] => switch (_attached[id]
-          ?.elementAtOrNull(int.parse(aid.substring(aid.indexOf('_') + 1)))) {
+      ['messages', final id, 'attachments', final aid] => switch (_attached[id]?.elementAtOrNull(
+        int.parse(aid.substring(aid.indexOf('_') + 1)),
+      )) {
         null => _fixture('not_found'),
-        (_, final bytes) => _json({
-          'size': bytes.length,
-          'data': base64Url.encode(bytes),
-        }),
+        (_, final bytes) => _json({'size': bytes.length, 'data': base64Url.encode(bytes)}),
       },
       ['messages', final id] => switch (_mailbox[id]) {
         null => _fixture('not_found'),
         final m => _json(_resource(m, full: q['format'] == 'full')),
       },
-      ['history'] when int.parse(q['startHistoryId']!) < _oldest => _fixture(
-        'not_found',
-      ),
+      ['history'] when int.parse(q['startHistoryId']!) < _oldest => _fixture('not_found'),
       ['history'] => _paged(
         'history',
         [
@@ -301,12 +264,7 @@ class GmailHarness implements ContractHarness {
     };
   }
 
-  http.Response _paged(
-    String key,
-    List<Object> all,
-    Map<String, String> q, [
-    Map<String, Object> extra = const {},
-  ]) {
+  http.Response _paged(String key, List<Object> all, Map<String, String> q, [Map<String, Object> extra = const {}]) {
     final from = int.parse(q['pageToken'] ?? '0');
     final page = all.skip(from).take(_page).toList();
     return _json({
@@ -329,11 +287,7 @@ class GmailHarness implements ContractHarness {
     return http.Response('', 204);
   }
 
-  static List<String> _labels(Message m) => [
-    ...m.labelIds,
-    if (!m.isRead) 'UNREAD',
-    if (m.isStarred) 'STARRED',
-  ];
+  static List<String> _labels(Message m) => [...m.labelIds, if (!m.isRead) 'UNREAD', if (m.isStarred) 'STARRED'];
 
   String _html(Message m) => _draftBodies[m.id] ?? '<p>Corpo di ${m.id}</p>';
 
@@ -346,27 +300,21 @@ class GmailHarness implements ContractHarness {
     'payload': {
       'mimeType': 'text/html',
       'headers': [
-        {
-          'name': 'From',
-          'value': m.fromName == null ? m.from : '"${m.fromName}" <${m.from}>',
-        },
+        {'name': 'From', 'value': m.fromName == null ? m.from : '"${m.fromName}" <${m.from}>'},
         {'name': 'To', 'value': m.to.join(', ')},
         if (m.cc.isNotEmpty) {'name': 'Cc', 'value': m.cc.join(', ')},
         if (m.bcc.isNotEmpty) {'name': 'Bcc', 'value': m.bcc.join(', ')},
         {'name': 'Subject', 'value': m.subject},
         {'name': 'Message-Id', 'value': m.messageId},
       ],
-      if (full && _attached[m.id] == null)
-        'body': {'data': base64Url.encode(utf8.encode(_html(m)))},
+      if (full && _attached[m.id] == null) 'body': {'data': base64Url.encode(utf8.encode(_html(m)))},
       if (_attached[m.id] case final attached? when full)
         'parts': [
           {
             'partId': '0',
             'mimeType': 'text/html',
             'filename': '',
-            'body': {
-              'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>')),
-            },
+            'body': {'data': base64Url.encode(utf8.encode('<p>Corpo di ${m.id}</p>'))},
           },
           for (final (i, (name, bytes)) in attached.indexed)
             {
@@ -374,23 +322,16 @@ class GmailHarness implements ContractHarness {
               'mimeType': 'application/octet-stream',
               'filename': name,
               'headers': [
-                {
-                  'name': 'Content-Disposition',
-                  'value': 'attachment; filename="$name"',
-                },
+                {'name': 'Content-Disposition', 'value': 'attachment; filename="$name"'},
               ],
-              'body': {
-                'attachmentId': 'ANG${++_fetches}_$i',
-                'size': bytes.length,
-              },
+              'body': {'attachmentId': 'ANG${++_fetches}_$i', 'size': bytes.length},
             },
         ],
     },
   };
 
   @override
-  void attach(String messageId, String name, List<int> bytes) =>
-      (_attached[messageId] ??= []).add((name, bytes));
+  void attach(String messageId, String name, List<int> bytes) => (_attached[messageId] ??= []).add((name, bytes));
 
   @override
   void deliver(Message m) {
@@ -422,8 +363,7 @@ class GmailHarness implements ContractHarness {
 Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
 
 Map<String, (String, BodyKind)> _contents(Map<String, MessageBody> bodies) => {
-  for (final MapEntry(:key, :value) in bodies.entries)
-    key: (value.content, value.kind),
+  for (final MapEntry(:key, :value) in bodies.entries) key: (value.content, value.kind),
 };
 
 T _ok<T>(Result<T> r) => switch (r) {
@@ -486,10 +426,7 @@ void main() {
   test('an expired access token is refreshed before calling Gmail', () async {
     final h = GmailHarness(validFor: Duration.zero);
     expect(await h.provider.initialSync(), isA<Ok>());
-    expect(
-      [for (final r in h.requests.take(2)) r.url.path],
-      ['/token', '/gmail/v1/users/me/profile'],
-    );
+    expect([for (final r in h.requests.take(2)) r.url.path], ['/token', '/gmail/v1/users/me/profile']);
     expect(h.requests[1].headers['authorization'], 'Bearer ya29.refreshed');
   });
 
@@ -497,10 +434,7 @@ void main() {
     final h = GmailHarness(access: 'ya29.stale');
     expect(await h.provider.initialSync(), isA<Ok>());
     expect(
-      [
-        for (final r in h.requests.take(3))
-          r.headers['authorization'] ?? r.url.path,
-      ],
+      [for (final r in h.requests.take(3)) r.headers['authorization'] ?? r.url.path],
       ['Bearer ya29.stale', '/token', 'Bearer ya29.refreshed'],
     );
   });
@@ -527,10 +461,8 @@ void main() {
     String initialRoute(http.Request r, String path) => switch (path) {
       'profile' => 'profile',
       'labels' => 'labels',
-      'messages' when r.url.queryParameters['labelIds'] == inboxLabelId =>
-        'messages_inbox',
-      'messages' when r.url.queryParameters['pageToken'] == null =>
-        'messages_page1',
+      'messages' when r.url.queryParameters['labelIds'] == inboxLabelId => 'messages_inbox',
+      'messages' when r.url.queryParameters['pageToken'] == null => 'messages_page1',
       'messages' => 'messages_page2',
       'messages/$_f1' => 'message_f1',
       'messages/$_f2' => 'message_f2',
@@ -538,116 +470,98 @@ void main() {
       _ => fail('unexpected $path'),
     };
 
-    test('initial sync: 90 days of headers over every page, with Etichette, Conversazioni and the inbox bodies', () async {
-      final g = _Recorded(initialRoute);
+    test(
+      'initial sync: 90 days of headers over every page, with Etichette, Conversazioni and the inbox bodies',
+      () async {
+        final g = _Recorded(initialRoute);
+        final batch = _ok(await g.provider.initialSync());
+
+        expect(batch.cursor, '4242');
+        expect(batch.labels.map((l) => (l.id, l.name)), [
+          ('Label_12', 'Viaggi'),
+        ], reason: 'user labels only: INBOX and the other system ones are not Etichette');
+        final after = _now.subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
+        final lists = g.urls.where((u) => u.path.endsWith('/messages'));
+        expect(lists.map((u) => u.queryParameters['q']).toSet(), {'after:$after'});
+        expect(lists.map((u) => u.queryParameters['pageToken']), [
+          null,
+          '08765432109876543210',
+          null,
+        ], reason: 'second page, then the inbox list');
+
+        final byId = {for (final m in batch.messages) m.id: m};
+        expect(byId.keys, unorderedEquals([_f1, _f2, _f3]));
+        final f1 = byId[_f1]!;
+        expect((f1.from, f1.fromName), ('bruno@example.com', 'Bruno Verdi'));
+        expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
+        expect(f1.cc, [
+          '"Rossi, Carla" <carla.rossi@example.org>',
+          'Nicolò Neri <nicolo@example.com>',
+        ], reason: 'a quoted name keeps its comma; an RFC 2047 one is decoded');
+        expect(f1.labelIds, contains('IMPORTANT'));
+        expect(f1.subject, 'Cena di venerdì');
+        expect(f1.messageId, '<CAF1x7Yk2b@mail.example.com>');
+        expect(f1.conversationId, _f1);
+        expect(f1.snippet, endsWith('Porto io il vino & il dolce.'));
+        expect(f1.date, DateTime.utc(2026, 10, 26, 8, 15, 2));
+        expect((f1.isRead, f1.isStarred), (false, false));
+        final f2 = byId[_f2]!;
+        expect(f2.conversationId, _f1, reason: 'same Conversazione');
+        expect((f2.isRead, f2.isStarred), (true, true));
+        expect(f2.labelIds, contains('Label_12'));
+        expect(f2.snippet, contains("c'è"));
+        expect((f2.from, f2.fromName), ('ada@gmail.com', 'Ada Rossi – Studio'));
+        expect(f2.replyTo, 'Studio <studio@example.com>');
+        expect(f2.references, [
+          '<CAF0@mail.example.com>',
+          '<CAF1x7Yk2b@mail.example.com>',
+        ], reason: 'folded References, one id per token');
+        expect(f1.replyTo, isNull);
+        expect(f1.references, isEmpty);
+        expect(byId[_f3]!.labelIds, ['SENT']);
+
+        expect(_contents(batch.bodies), {
+          _f1: ('<div dir="ltr">Ciao Ada,<br>ci vediamo alle 20 da Mario?</div>\r\n', BodyKind.html),
+          _f2: ("Perfetto, a venerdì!\r\nIl 31 c'è anche Carla.\r\n", BodyKind.testo),
+        });
+        String format(String id) => g.urls.singleWhere((u) => u.path.endsWith(id)).queryParameters['format']!;
+        expect([format(_f1), format(_f2), format(_f3)], ['full', 'full', 'metadata']);
+      },
+    );
+
+    test('initial sync of an empty mailbox: no messages, still a cursor', () async {
+      final g = _Recorded(
+        (r, path) => switch (path) {
+          'messages' => 'messages_empty',
+          _ => initialRoute(r, path),
+        },
+      );
       final batch = _ok(await g.provider.initialSync());
-
+      expect(batch.messages, isEmpty);
+      expect(batch.bodies, isEmpty);
       expect(batch.cursor, '4242');
-      expect(
-        batch.labels.map((l) => (l.id, l.name)),
-        [('Label_12', 'Viaggi')],
-        reason: 'user labels only: INBOX and the other system ones are not Etichette',
-      );
-      final after = _now.subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
-      final lists = g.urls.where((u) => u.path.endsWith('/messages'));
-      expect(lists.map((u) => u.queryParameters['q']).toSet(), {
-        'after:$after',
-      });
-      expect(lists.map((u) => u.queryParameters['pageToken']), [
-        null,
-        '08765432109876543210',
-        null,
-      ], reason: 'second page, then the inbox list');
-
-      final byId = {for (final m in batch.messages) m.id: m};
-      expect(byId.keys, unorderedEquals([_f1, _f2, _f3]));
-      final f1 = byId[_f1]!;
-      expect((f1.from, f1.fromName), ('bruno@example.com', 'Bruno Verdi'));
-      expect(f1.to, ['ada@gmail.com', 'carla@example.org']);
-      expect(f1.cc, [
-        '"Rossi, Carla" <carla.rossi@example.org>',
-        'Nicolò Neri <nicolo@example.com>',
-      ], reason: 'a quoted name keeps its comma; an RFC 2047 one is decoded');
-      expect(f1.labelIds, contains('IMPORTANT'));
-      expect(f1.subject, 'Cena di venerdì');
-      expect(f1.messageId, '<CAF1x7Yk2b@mail.example.com>');
-      expect(f1.conversationId, _f1);
-      expect(f1.snippet, endsWith('Porto io il vino & il dolce.'));
-      expect(f1.date, DateTime.utc(2026, 10, 26, 8, 15, 2));
-      expect((f1.isRead, f1.isStarred), (false, false));
-      final f2 = byId[_f2]!;
-      expect(f2.conversationId, _f1, reason: 'same Conversazione');
-      expect((f2.isRead, f2.isStarred), (true, true));
-      expect(f2.labelIds, contains('Label_12'));
-      expect(f2.snippet, contains("c'è"));
-      expect((f2.from, f2.fromName), ('ada@gmail.com', 'Ada Rossi – Studio'));
-      expect(f2.replyTo, 'Studio <studio@example.com>');
-      expect(f2.references, [
-        '<CAF0@mail.example.com>',
-        '<CAF1x7Yk2b@mail.example.com>',
-      ], reason: 'folded References, one id per token');
-      expect(f1.replyTo, isNull);
-      expect(f1.references, isEmpty);
-      expect(byId[_f3]!.labelIds, ['SENT']);
-
-      expect(_contents(batch.bodies), {
-        _f1: (
-          '<div dir="ltr">Ciao Ada,<br>ci vediamo alle 20 da Mario?</div>\r\n',
-          BodyKind.html,
-        ),
-        _f2: (
-          "Perfetto, a venerdì!\r\nIl 31 c'è anche Carla.\r\n",
-          BodyKind.testo,
-        ),
-      });
-      String format(String id) => g.urls
-          .singleWhere((u) => u.path.endsWith(id))
-          .queryParameters['format']!;
-      expect(
-        [format(_f1), format(_f2), format(_f3)],
-        ['full', 'full', 'metadata'],
-      );
     });
 
-    test(
-      'initial sync of an empty mailbox: no messages, still a cursor',
-      () async {
-        final g = _Recorded(
-          (r, path) => switch (path) {
-            'messages' => 'messages_empty',
-            _ => initialRoute(r, path),
-          },
-        );
-        final batch = _ok(await g.provider.initialSync());
-        expect(batch.messages, isEmpty);
-        expect(batch.bodies, isEmpty);
-        expect(batch.cursor, '4242');
-      },
-    );
+    test('incremental sync from historyId: new, read and starred, deleted', () async {
+      final g = _Recorded(
+        (r, path) => switch (path) {
+          'history' => 'history',
+          'messages/$_f1' => 'message_f1_read',
+          'messages/$_f4' => 'message_f4',
+          _ => fail('unexpected $path'),
+        },
+      );
+      final batch = _ok(await g.provider.incrementalSync('4242'));
 
-    test(
-      'incremental sync from historyId: new, read and starred, deleted',
-      () async {
-        final g = _Recorded(
-          (r, path) => switch (path) {
-            'history' => 'history',
-            'messages/$_f1' => 'message_f1_read',
-            'messages/$_f4' => 'message_f4',
-            _ => fail('unexpected $path'),
-          },
-        );
-        final batch = _ok(await g.provider.incrementalSync('4242'));
-
-        expect(g.urls.first.queryParameters['startHistoryId'], '4242');
-        expect(batch.cursor, '4301');
-        final byId = {for (final m in batch.messages) m.id: m};
-        expect(byId.keys, unorderedEquals([_f1, _f4]));
-        expect((byId[_f1]!.isRead, byId[_f1]!.isStarred), (true, true));
-        expect(byId[_f4]!.subject, 'Il tuo biglietto per Bologna');
-        expect(batch.removedMessageIds, [_f3]);
-        expect(batch.bodies.keys, unorderedEquals([_f1, _f4]));
-      },
-    );
+      expect(g.urls.first.queryParameters['startHistoryId'], '4242');
+      expect(batch.cursor, '4301');
+      final byId = {for (final m in batch.messages) m.id: m};
+      expect(byId.keys, unorderedEquals([_f1, _f4]));
+      expect((byId[_f1]!.isRead, byId[_f1]!.isStarred), (true, true));
+      expect(byId[_f4]!.subject, 'Il tuo biglietto per Bologna');
+      expect(batch.removedMessageIds, [_f3]);
+      expect(batch.bodies.keys, unorderedEquals([_f1, _f4]));
+    });
 
     test('incremental sync with nothing new keeps the cursor moving', () async {
       final g = _Recorded((r, path) => 'history_empty');
@@ -662,32 +576,27 @@ void main() {
       expect(await g.provider.incrementalSync('1'), _err<NotFoundFailure>());
     });
 
-    test(
-      'a message gone before it could be fetched counts as removed',
-      () async {
-        final g = _Recorded(
-          (r, path) => switch (path) {
-            'history' => 'history',
-            _ => 'not_found',
-          },
-        );
-        final batch = _ok(await g.provider.incrementalSync('4242'));
-        expect(batch.messages, isEmpty);
-        expect(batch.removedMessageIds, unorderedEquals([_f1, _f3, _f4]));
-      },
-    );
+    test('a message gone before it could be fetched counts as removed', () async {
+      final g = _Recorded(
+        (r, path) => switch (path) {
+          'history' => 'history',
+          _ => 'not_found',
+        },
+      );
+      final batch = _ok(await g.provider.incrementalSync('4242'));
+      expect(batch.messages, isEmpty);
+      expect(batch.removedMessageIds, unorderedEquals([_f1, _f3, _f4]));
+    });
 
     group('a text part referenced by attachmentId', () {
       const f5 = '18f3a2b4c5d6e7f5';
-      const text =
-          'Ciao Bruno,\r\nti scrivo il resoconto lungo della riunione di giovedì: il budget è approvato.\r\n';
+      const text = 'Ciao Bruno,\r\nti scrivo il resoconto lungo della riunione di giovedì: il budget è approvato.\r\n';
       String route(http.Request r, String path) => switch (path) {
         'profile' => 'profile',
         'labels' => 'labels',
         'messages' => 'messages_f5',
         'messages/$f5' => 'message_f5_attachment_body',
-        'messages/$f5/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nC6' =>
-          'attachment_f5_body',
+        'messages/$f5/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nC6' => 'attachment_f5_body',
         _ => fail('unexpected $path'),
       };
 
@@ -705,8 +614,7 @@ void main() {
 
     group('an HTML attachment next to a plain text body', () {
       const f6 = '18f3a2b4c5d6e7f6';
-      const text =
-          'Ciao Bruno,\r\nil verbale della riunione è in allegato.\r\n';
+      const text = 'Ciao Bruno,\r\nil verbale della riunione è in allegato.\r\n';
       String route(http.Request r, String path) => switch (path) {
         'profile' => 'profile',
         'labels' => 'labels',
@@ -721,10 +629,7 @@ void main() {
       });
 
       test('is not the body from fetchBody', () async {
-        expect(
-          _ok(await _Recorded(route).provider.fetchBody(f6)).content,
-          text,
-        );
+        expect(_ok(await _Recorded(route).provider.fetchBody(f6)).content, text);
       });
     });
 
@@ -733,32 +638,26 @@ void main() {
       const pdf = '%PDF-1.4\n% preventivo sintetico per i test\n%%EOF\n';
       String route(http.Request r, String path) => switch (path) {
         'messages/$f7' => 'message_f7_attachments',
-        'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' =>
-          'attachment_f7_pdf',
+        'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' => 'attachment_f7_pdf',
         _ => fail('unexpected $path'),
       };
 
       test('fetchBody lists the PDF and the nameless part, not the logo the HTML shows by cid:', () async {
         final body = _ok(await _Recorded(route).provider.fetchBody(f7));
         expect(body.content, startsWith('Ciao Bruno,'));
-        expect(
-          body.attachments!.map((a) => (a.id, a.name, a.size, a.mimeType)),
-          [
-            ('1', 'Preventivo 2027.pdf', 49, 'application/pdf'),
-            // `Content-Disposition: attachment` without a filename: listed, nameless, with its type.
-            ('2', '', 3, 'text/plain'),
-            // An empty file: listed all the same.
-            ('3', 'vuoto.txt', 0, 'text/plain'),
-          ],
-        );
+        expect(body.attachments!.map((a) => (a.id, a.name, a.size, a.mimeType)), [
+          ('1', 'Preventivo 2027.pdf', 49, 'application/pdf'),
+          // `Content-Disposition: attachment` without a filename: listed, nameless, with its type.
+          ('2', '', 3, 'text/plain'),
+          // An empty file: listed all the same.
+          ('3', 'vuoto.txt', 0, 'text/plain'),
+        ]);
       });
 
       test('fetchAttachment finds the part, then downloads its data', () async {
         final g = _Recorded(route);
         final progress = <double>[];
-        final bytes = _ok(
-          await g.provider.fetchAttachment(f7, '1', onProgress: progress.add),
-        );
+        final bytes = _ok(await g.provider.fetchAttachment(f7, '1', onProgress: progress.add));
         expect(utf8.decode(bytes), pdf);
         expect(g.urls.map((u) => u.path), [
           '${_api}messages/$f7',
@@ -774,12 +673,7 @@ void main() {
         final provider = GmailProvider(
           _account,
           _keychain(),
-          _Hanging(
-            (path) => path.contains('/attachments/')
-                ? null
-                : _fixture('message_f7_attachments'),
-            started,
-          ),
+          _Hanging((path) => path.contains('/attachments/') ? null : _fixture('message_f7_attachments'), started),
           FakeClock(_now),
           client: _testClient,
         );
@@ -791,27 +685,18 @@ void main() {
 
       test('a nameless attachment with inline data downloads without a second request', () async {
         final g = _Recorded(route);
-        expect(
-          utf8.decode(_ok(await g.provider.fetchAttachment(f7, '2'))),
-          'abc',
-        );
+        expect(utf8.decode(_ok(await g.provider.fetchAttachment(f7, '2'))), 'abc');
         expect(g.urls, hasLength(1));
       });
 
-      test(
-        'an empty file downloads as no bytes, without a second request',
-        () async {
-          final g = _Recorded(route);
-          expect(_ok(await g.provider.fetchAttachment(f7, '3')), isEmpty);
-          expect(g.urls, hasLength(1));
-        },
-      );
+      test('an empty file downloads as no bytes, without a second request', () async {
+        final g = _Recorded(route);
+        expect(_ok(await g.provider.fetchAttachment(f7, '3')), isEmpty);
+        expect(g.urls, hasLength(1));
+      });
 
       test('the inline logo is not an attachment to download', () async {
-        expect(
-          await _Recorded(route).provider.fetchAttachment(f7, '0.1'),
-          _err<NotFoundFailure>(),
-        );
+        expect(await _Recorded(route).provider.fetchAttachment(f7, '0.1'), _err<NotFoundFailure>());
       });
     });
 
@@ -894,10 +779,7 @@ void main() {
 
       String route(http.Request r, String path) => switch ((r.method, path)) {
         ('POST', 'drafts') => 'draft_create',
-        ('GET', 'drafts') =>
-          r.url.queryParameters['q']!.contains('nope')
-              ? 'drafts_empty'
-              : 'drafts_list',
+        ('GET', 'drafts') => r.url.queryParameters['q']!.contains('nope') ? 'drafts_empty' : 'drafts_list',
         ('PUT', 'drafts/$draftId') => 'draft_update',
         ('DELETE', 'drafts/$draftId') => 'draft_delete',
         _ => 'not_found',
@@ -905,17 +787,10 @@ void main() {
 
       /// As [route], but no draft holds the Message-ID yet.
       String routeEmpty(http.Request r, String path) =>
-          r.method == 'GET' && path == 'drafts'
-          ? 'drafts_empty'
-          : route(r, path);
+          r.method == 'GET' && path == 'drafts' ? 'drafts_empty' : route(r, path);
 
-      String raw(http.Request r) => utf8.decode(
-        base64Url.decode(
-          base64Url.normalize(
-            (jsonDecode(r.body) as Map)['message']['raw'] as String,
-          ),
-        ),
-      );
+      String raw(http.Request r) =>
+          utf8.decode(base64Url.decode(base64Url.normalize((jsonDecode(r.body) as Map)['message']['raw'] as String)));
 
       test('a new Bozza is searched by Message-ID, then one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
         final g = _Recorded(routeEmpty);
@@ -936,10 +811,7 @@ void main() {
         final parsed = MimeMessage.parseFromText(mime);
         expect(parsed.decodeSubject(), 'Caffè è più buono');
         expect(parsed.getHeaderValue('bcc'), contains('dario@example.com'));
-        expect(
-          parsed.decodeTextPlainPart(),
-          contains('Ciao Bruno, è tutto più semplice.'),
-        );
+        expect(parsed.decodeTextPlainPart(), contains('Ciao Bruno, è tutto più semplice.'));
         expect(parsed.decodeTextPlainPart(), isNot(contains('<b>')));
         expect(parsed.decodeTextHtmlPart()?.trim(), draft.body);
       });
@@ -962,32 +834,25 @@ void main() {
         expect((body['message'] as Map)['threadId'], 'thread-7');
         final parsed = MimeMessage.parseFromText(raw(g.requests.last));
         expect(parsed.getHeaderValue('in-reply-to'), '<orig@example.com>');
-        expect(
-          parsed.getHeaderValue('references'),
-          '<first@example.com> <orig@example.com>',
-        );
+        expect(parsed.getHeaderValue('references'), '<first@example.com> <orig@example.com>');
       });
 
-      test(
-        'a plain Bozza carries no threadId and no threading headers',
-        () async {
-          final g = _Recorded(routeEmpty);
-          _ok(await g.provider.saveDraft(draft, isNew: true));
-          final body = jsonDecode(g.requests.last.body) as Map;
-          expect((body['message'] as Map).containsKey('threadId'), isFalse);
-          final parsed = MimeMessage.parseFromText(raw(g.requests.last));
-          expect(parsed.getHeaderValue('in-reply-to'), isNull);
-          expect(parsed.getHeaderValue('references'), isNull);
-        },
-      );
+      test('a plain Bozza carries no threadId and no threading headers', () async {
+        final g = _Recorded(routeEmpty);
+        _ok(await g.provider.saveDraft(draft, isNew: true));
+        final body = jsonDecode(g.requests.last.body) as Map;
+        expect((body['message'] as Map).containsKey('threadId'), isFalse);
+        final parsed = MimeMessage.parseFromText(raw(g.requests.last));
+        expect(parsed.getHeaderValue('in-reply-to'), isNull);
+        expect(parsed.getHeaderValue('references'), isNull);
+      });
 
       test('a forward (#37) fetches each attachment and adds it as a part beside the text and HTML', () async {
         const f7 = '18f3a2b4c5d6e7f7';
         final g = _Recorded(
           (r, path) => switch (path) {
             'messages/$f7' => 'message_f7_attachments',
-            'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' =>
-              'attachment_f7_pdf',
+            'messages/$f7/attachments/ANGjdJ9kX2mQ7vL4pR1sT8wYzB3nP7' => 'attachment_f7_pdf',
             _ => routeEmpty(r, path),
           },
         );
@@ -1000,12 +865,7 @@ void main() {
           attachments: const [
             ForwardedAttachment(
               f7,
-              Attachment(
-                id: '1',
-                name: 'Preventivo 2027.pdf',
-                size: 49,
-                mimeType: 'application/pdf',
-              ),
+              Attachment(id: '1', name: 'Preventivo 2027.pdf', size: 49, mimeType: 'application/pdf'),
             ),
           ],
         );
@@ -1034,27 +894,16 @@ void main() {
       });
 
       test('a forward whose attachment is gone fails as Unexpected (never NotFound: the Bozza is kept), nothing is written', () async {
-        final g = _Recorded(
-          (r, path) =>
-              path.startsWith('messages/') ? 'not_found' : routeEmpty(r, path),
-        );
+        final g = _Recorded((r, path) => path.startsWith('messages/') ? 'not_found' : routeEmpty(r, path));
         final forward = OutgoingMessage(
           messageId: draft.messageId,
           from: draft.from,
           to: draft.to,
           subject: 'Fwd: Caffè',
           body: '<p>Guarda</p>',
-          attachments: const [
-            ForwardedAttachment(
-              'gone',
-              Attachment(id: '1', name: 'a', size: 1),
-            ),
-          ],
+          attachments: const [ForwardedAttachment('gone', Attachment(id: '1', name: 'a', size: 1))],
         );
-        expect(
-          await g.provider.saveDraft(forward, isNew: true),
-          _err<UnexpectedFailure>(),
-        );
+        expect(await g.provider.saveDraft(forward, isNew: true), _err<UnexpectedFailure>());
         expect(g.requests.map((r) => r.method), isNot(contains('POST')));
       });
 
@@ -1065,11 +914,7 @@ void main() {
 
         expect(
           [for (final r in g.requests) '${r.method} ${r.url.path}'],
-          [
-            'GET ${_api}drafts',
-            'POST ${_api}drafts',
-            'PUT ${_api}drafts/$draftId',
-          ],
+          ['GET ${_api}drafts', 'POST ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
         );
         final put = jsonDecode(g.requests.last.body) as Map;
         expect(put['id'], draftId);
@@ -1084,39 +929,25 @@ void main() {
           [for (final r in g.requests) '${r.method} ${r.url.path}'],
           ['GET ${_api}drafts', 'PUT ${_api}drafts/$draftId'],
         );
-        expect(
-          g.requests.first.url.queryParameters['q'],
-          'rfc822msgid:c1d2e3f4@postino.example.com',
-        );
+        expect(g.requests.first.url.queryParameters['q'], 'rfc822msgid:c1d2e3f4@postino.example.com');
       });
 
-      test(
-        'no draft found by the search is NotFound, nothing is written',
-        () async {
-          final g = _Recorded(route);
-          const d = OutgoingMessage(
-            messageId: '<nope@example.com>',
-            from: 'ada@gmail.com',
-            to: ['bruno@example.com'],
-            subject: 's',
-            body: '<p>x</p>',
-          );
-          expect(
-            await g.provider.saveDraft(d, isNew: false),
-            _err<NotFoundFailure>(),
-          );
-          expect(g.requests.map((r) => r.method), ['GET']);
-        },
-      );
+      test('no draft found by the search is NotFound, nothing is written', () async {
+        final g = _Recorded(route);
+        const d = OutgoingMessage(
+          messageId: '<nope@example.com>',
+          from: 'ada@gmail.com',
+          to: ['bruno@example.com'],
+          subject: 's',
+          body: '<p>x</p>',
+        );
+        expect(await g.provider.saveDraft(d, isNew: false), _err<NotFoundFailure>());
+        expect(g.requests.map((r) => r.method), ['GET']);
+      });
 
       test('a 404 on the PUT is NotFound', () async {
-        final g = _Recorded(
-          (r, path) => r.method == 'PUT' ? 'not_found' : route(r, path),
-        );
-        expect(
-          await g.provider.saveDraft(draft, isNew: false),
-          _err<NotFoundFailure>(),
-        );
+        final g = _Recorded((r, path) => r.method == 'PUT' ? 'not_found' : route(r, path));
+        expect(await g.provider.saveDraft(draft, isNew: false), _err<NotFoundFailure>());
       });
 
       test('deleting searches the draft, then DELETEs it', () async {
@@ -1131,10 +962,7 @@ void main() {
 
       test('deleting an unknown draft is NotFound', () async {
         final g = _Recorded(route);
-        expect(
-          await g.provider.deleteDraft('<nope@example.com>'),
-          _err<NotFoundFailure>(),
-        );
+        expect(await g.provider.deleteDraft('<nope@example.com>'), _err<NotFoundFailure>());
       });
 
       test('a creation after a restart finds the Bozza the lost reply left, and updates it', () async {
@@ -1146,35 +974,23 @@ void main() {
         );
       });
 
-      test(
-        'a draft without a Message-ID is never searched: NotFound',
-        () async {
-          final g = _Recorded(route);
-          const d = OutgoingMessage(
-            messageId: '',
-            from: 'ada@gmail.com',
-            to: ['bruno@example.com'],
-            subject: 's',
-            body: '<p>x</p>',
-          );
-          expect(
-            await g.provider.saveDraft(d, isNew: false),
-            _err<NotFoundFailure>(),
-          );
-          expect(g.requests, isEmpty);
-        },
-      );
+      test('a draft without a Message-ID is never searched: NotFound', () async {
+        final g = _Recorded(route);
+        const d = OutgoingMessage(
+          messageId: '',
+          from: 'ada@gmail.com',
+          to: ['bruno@example.com'],
+          subject: 's',
+          body: '<p>x</p>',
+        );
+        expect(await g.provider.saveDraft(d, isNew: false), _err<NotFoundFailure>());
+        expect(g.requests, isEmpty);
+      });
 
       test('offline is an OfflineFailure', () async {
         final h = GmailHarness()..goOffline();
-        expect(
-          await h.provider.saveDraft(draft, isNew: true),
-          _err<OfflineFailure>(),
-        );
-        expect(
-          await h.provider.deleteDraft(draft.messageId),
-          _err<OfflineFailure>(),
-        );
+        expect(await h.provider.saveDraft(draft, isNew: true), _err<OfflineFailure>());
+        expect(await h.provider.deleteDraft(draft.messageId), _err<OfflineFailure>());
       });
     });
 
@@ -1209,9 +1025,7 @@ void main() {
               posted = r;
               return Completer<http.StreamedResponse>().future;
             }
-            final res = _fixture(
-              route(r as http.Request, r.url.path.substring(_api.length)),
-            );
+            final res = _fixture(route(r as http.Request, r.url.path.substring(_api.length)));
             return http.StreamedResponse(
               http.ByteStream.fromBytes(res.bodyBytes),
               res.statusCode,
@@ -1224,53 +1038,39 @@ void main() {
           stall: const Duration(milliseconds: 50),
         );
         expect(await provider.send(messageId, raw), _err<OfflineFailure>());
-        await (posted! as http.Abortable).abortTrigger!.timeout(
-          const Duration(seconds: 1),
-        );
+        await (posted! as http.Abortable).abortTrigger!.timeout(const Duration(seconds: 1));
       });
 
       test('the first timeout grows with the body: 1 s per 50 KB', () {
         expect(sendTimeout(0), const Duration(seconds: 30));
-        expect(
-          sendTimeout(5 * 1024 * 1024),
-          const Duration(seconds: 30, milliseconds: 104857),
-        );
+        expect(sendTimeout(5 * 1024 * 1024), const Duration(seconds: 30, milliseconds: 104857));
         expect(sendTimeout(35 * 1000 * 1000), const Duration(seconds: 730));
       });
 
-      test('Inviati is searched by Message-ID, then one POST of the raw as base64url, then the Bozza is looked for', () async {
-        final g = _Recorded(route);
-        expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
-        expect(
-          [for (final r in g.requests) '${r.method} ${r.url.path}'],
-          [
-            'GET ${_api}messages',
-            'POST ${_api}messages/send',
-            'GET ${_api}drafts',
-          ],
-        );
-        final search = g.requests.first.url.queryParameters;
-        expect(search['q'], 'rfc822msgid:c1d2e3f4@postino.example.com');
-        expect(search['labelIds'], sentLabelId);
-        final body = jsonDecode(g.requests[1].body) as Map;
-        expect(body.keys, ['raw']);
-        expect(
-          utf8.decode(
-            base64Url.decode(base64Url.normalize(body['raw'] as String)),
-          ),
-          raw,
-        );
-      });
-
       test(
-        'a reply goes with its threadId, so it stays in the Conversazione',
+        'Inviati is searched by Message-ID, then one POST of the raw as base64url, then the Bozza is looked for',
         () async {
           final g = _Recorded(route);
-          _ok(await g.provider.send(messageId, raw, threadId: 't-1'));
+          expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
+          expect(
+            [for (final r in g.requests) '${r.method} ${r.url.path}'],
+            ['GET ${_api}messages', 'POST ${_api}messages/send', 'GET ${_api}drafts'],
+          );
+          final search = g.requests.first.url.queryParameters;
+          expect(search['q'], 'rfc822msgid:c1d2e3f4@postino.example.com');
+          expect(search['labelIds'], sentLabelId);
           final body = jsonDecode(g.requests[1].body) as Map;
-          expect(body['threadId'], 't-1');
+          expect(body.keys, ['raw']);
+          expect(utf8.decode(base64Url.decode(base64Url.normalize(body['raw'] as String))), raw);
         },
       );
+
+      test('a reply goes with its threadId, so it stays in the Conversazione', () async {
+        final g = _Recorded(route);
+        _ok(await g.provider.send(messageId, raw, threadId: 't-1'));
+        final body = jsonDecode(g.requests[1].body) as Map;
+        expect(body['threadId'], 't-1');
+      });
 
       test('a message already in Inviati is not sent again: no POST, but its Bozza is deleted', () async {
         final g = _Recorded(
@@ -1284,71 +1084,47 @@ void main() {
         expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
         expect(
           [for (final r in g.requests) '${r.method} ${r.url.path}'],
-          [
-            'GET ${_api}messages',
-            'GET ${_api}drafts',
-            'DELETE ${_api}drafts/r-4410200000000000001',
-          ],
+          ['GET ${_api}messages', 'GET ${_api}drafts', 'DELETE ${_api}drafts/r-4410200000000000001'],
         );
       });
 
-      test(
-        'after the send its Bozza is deleted; a failure there is ignored',
-        () async {
-          final g = _Recorded(
-            (r, path) => switch ((r.method, path)) {
-              ('GET', 'drafts') => 'drafts_list',
-              ('DELETE', 'drafts/r-4410200000000000001') => 'rate_limited',
-              _ => route(r, path),
-            },
-          );
-          expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
-          expect(g.requests.last.method, 'DELETE');
-        },
-      );
+      test('after the send its Bozza is deleted; a failure there is ignored', () async {
+        final g = _Recorded(
+          (r, path) => switch ((r.method, path)) {
+            ('GET', 'drafts') => 'drafts_list',
+            ('DELETE', 'drafts/r-4410200000000000001') => 'rate_limited',
+            _ => route(r, path),
+          },
+        );
+        expect(_ok(await g.provider.send(messageId, raw)), 'm-sent-1');
+        expect(g.requests.last.method, 'DELETE');
+      });
 
       test('a 413 is a SizeLimitFailure with the Gmail limit', () async {
-        final g = _Recorded(
-          (r, path) =>
-              path == 'messages/send' ? 'request_too_large' : route(r, path),
-        );
+        final g = _Recorded((r, path) => path == 'messages/send' ? 'request_too_large' : route(r, path));
         expect(
           await g.provider.send(messageId, raw),
           isA<Err>().having(
             (e) => e.failure,
             'failure',
-            isA<SizeLimitFailure>().having(
-              (f) => f.limitBytes,
-              'limitBytes',
-              gmailSendLimitBytes,
-            ),
+            isA<SizeLimitFailure>().having((f) => f.limitBytes, 'limitBytes', gmailSendLimitBytes),
           ),
         );
       });
 
       test('a 400 «Message too large» is a SizeLimitFailure too', () async {
-        final g = _Recorded(
-          (r, path) => path == 'messages/send'
-              ? 'request_too_large_400'
-              : route(r, path),
-        );
+        final g = _Recorded((r, path) => path == 'messages/send' ? 'request_too_large_400' : route(r, path));
         expect(await g.provider.send(messageId, raw), _err<SizeLimitFailure>());
       });
 
       test('another 400 is a RejectedFailure with Gmail\'s message', () async {
-        final g = _Recorded(
-          (r, path) => path == 'messages/send' ? 'bad_request' : route(r, path),
-        );
+        final g = _Recorded((r, path) => path == 'messages/send' ? 'bad_request' : route(r, path));
         expect(
           await g.provider.send(messageId, raw),
           isA<Err<String>>().having(
             (e) => e.failure,
             'failure',
-            isA<RejectedFailure>().having(
-              (f) => f.reason,
-              'reason',
-              contains('Invalid To header'),
-            ),
+            isA<RejectedFailure>().having((f) => f.reason, 'reason', contains('Invalid To header')),
           ),
         );
       });
@@ -1364,18 +1140,15 @@ void main() {
       expect(await g.provider.fetchBody(_f1), _err<NotFoundFailure>());
     });
 
-    test(
-      'a 429 is retried with backoff and jitter, then is a RateLimitFailure',
-      () async {
-        final g = _Recorded((r, path) => 'rate_limited');
-        expect(await g.provider.initialSync(), _err<RateLimitFailure>());
-        expect(g.requests, hasLength(6));
-        for (var n = 0; n < 5; n++) {
-          final ms = g.sleeps[n].inMilliseconds;
-          expect(ms, inInclusiveRange((1 << n) * 1000, (1 << n) * 1250));
-        }
-      },
-    );
+    test('a 429 is retried with backoff and jitter, then is a RateLimitFailure', () async {
+      final g = _Recorded((r, path) => 'rate_limited');
+      expect(await g.provider.initialSync(), _err<RateLimitFailure>());
+      expect(g.requests, hasLength(6));
+      for (var n = 0; n < 5; n++) {
+        final ms = g.sleeps[n].inMilliseconds;
+        expect(ms, inInclusiveRange((1 << n) * 1000, (1 << n) * 1250));
+      }
+    });
 
     test('the temporary block end is parsed from the body, else the header', () async {
       final g = _Recorded((r, path) => 'rate_limited');
@@ -1384,19 +1157,13 @@ void main() {
         isA<Err<SyncBatch>>().having(
           (e) => e.failure,
           'failure',
-          isA<RateLimitFailure>().having(
-            (f) => f.retryAfter,
-            'retryAfter',
-            DateTime.utc(2026, 10, 28, 12, 0, 5),
-          ),
+          isA<RateLimitFailure>().having((f) => f.retryAfter, 'retryAfter', DateTime.utc(2026, 10, 28, 12, 0, 5)),
         ),
       );
       final h = GmailProvider(
         _account,
         _keychain(),
-        MockClient(
-          (r) async => http.Response('{}', 429, headers: {'retry-after': '90'}),
-        ),
+        MockClient((r) async => http.Response('{}', 429, headers: {'retry-after': '90'})),
         FakeClock(_now),
         client: _testClient,
         sleep: (d) async {},
@@ -1430,101 +1197,82 @@ void main() {
       }
     });
 
-    test(
-      'a 429 on one message mid-page is retried and the sync completes',
-      () async {
-        final ids = [for (var i = 0; i < 12; i++) 'm$i'];
-        var failedOnce = false;
-        final sleeps = <Duration>[];
-        final stored = <int>[];
-        final p = GmailProvider(
-          _account,
-          _keychain(),
-          MockClient((r) async {
-            final path = r.url.path.substring(_api.length);
-            if (path == 'messages/m7' && !failedOnce) {
-              failedOnce = true;
-              return _fixture('rate_limited');
-            }
-            if (path == 'messages') {
-              return _json({
-                'messages': [
-                  for (final id in ids) {'id': id, 'threadId': 't$id'},
-                ],
-              });
-            }
-            if (path.startsWith('messages/')) {
-              return _json({
-                'id': path.substring(9),
-                'threadId': 't',
-                'labelIds': <String>[],
-                'snippet': '',
-                'internalDate': '1000',
-                'payload': {'headers': []},
-              });
-            }
-            return path == 'profile'
-                ? _json({'historyId': '1'})
-                : _json({'labels': []});
-          }),
-          FakeClock(_now),
-          client: _testClient,
-          sleep: (d) async => sleeps.add(d),
-        );
-        final batch = _ok(
-          await p.initialSync(onPage: (m, _) async => stored.add(m.length)),
-        );
-        expect(batch.messages, hasLength(12));
-        expect(stored, [12]);
-        expect(
-          sleeps.where((d) => d >= const Duration(seconds: 1)),
-          hasLength(1),
-        );
-        expect(
-          sleeps.where((d) => d == const Duration(milliseconds: 125)),
-          hasLength(2),
-        );
-      },
-    );
+    test('a 429 on one message mid-page is retried and the sync completes', () async {
+      final ids = [for (var i = 0; i < 12; i++) 'm$i'];
+      var failedOnce = false;
+      final sleeps = <Duration>[];
+      final stored = <int>[];
+      final p = GmailProvider(
+        _account,
+        _keychain(),
+        MockClient((r) async {
+          final path = r.url.path.substring(_api.length);
+          if (path == 'messages/m7' && !failedOnce) {
+            failedOnce = true;
+            return _fixture('rate_limited');
+          }
+          if (path == 'messages') {
+            return _json({
+              'messages': [
+                for (final id in ids) {'id': id, 'threadId': 't$id'},
+              ],
+            });
+          }
+          if (path.startsWith('messages/')) {
+            return _json({
+              'id': path.substring(9),
+              'threadId': 't',
+              'labelIds': <String>[],
+              'snippet': '',
+              'internalDate': '1000',
+              'payload': {'headers': []},
+            });
+          }
+          return path == 'profile' ? _json({'historyId': '1'}) : _json({'labels': []});
+        }),
+        FakeClock(_now),
+        client: _testClient,
+        sleep: (d) async => sleeps.add(d),
+      );
+      final batch = _ok(await p.initialSync(onPage: (m, _) async => stored.add(m.length)));
+      expect(batch.messages, hasLength(12));
+      expect(stored, [12]);
+      expect(sleeps.where((d) => d >= const Duration(seconds: 1)), hasLength(1));
+      expect(sleeps.where((d) => d == const Duration(milliseconds: 125)), hasLength(2));
+    });
 
-    test(
-      'persistent 429s on page two still fail, with page one stored',
-      () async {
-        final stored = <int>[];
-        final p = GmailProvider(
-          _account,
-          _keychain(),
-          MockClient((r) async {
-            final path = r.url.path.substring(_api.length);
-            return switch (path) {
-              'messages/m120' => _fixture('rate_limited'),
-              'messages' => _json({
-                'messages': [
-                  for (var i = 0; i < 150; i++) {'id': 'm$i', 'threadId': 't'},
-                ],
-              }),
-              'profile' => _json({'historyId': '1'}),
-              'labels' => _json({'labels': []}),
-              _ => _json({
-                'id': path.substring(9),
-                'threadId': 't',
-                'labelIds': <String>[],
-                'internalDate': '1000',
-                'payload': {'headers': []},
-              }),
-            };
-          }),
-          FakeClock(_now),
-          client: _testClient,
-          sleep: (_) async {},
-        );
-        expect(
-          await p.initialSync(onPage: (m, _) async => stored.add(m.length)),
-          _err<RateLimitFailure>(),
-        );
-        expect(stored, [100]);
-      },
-    );
+    test('persistent 429s on page two still fail, with page one stored', () async {
+      final stored = <int>[];
+      final p = GmailProvider(
+        _account,
+        _keychain(),
+        MockClient((r) async {
+          final path = r.url.path.substring(_api.length);
+          return switch (path) {
+            'messages/m120' => _fixture('rate_limited'),
+            'messages' => _json({
+              'messages': [
+                for (var i = 0; i < 150; i++) {'id': 'm$i', 'threadId': 't'},
+              ],
+            }),
+            'profile' => _json({'historyId': '1'}),
+            'labels' => _json({'labels': []}),
+            _ => _json({
+              'id': path.substring(9),
+              'threadId': 't',
+              'labelIds': <String>[],
+              'internalDate': '1000',
+              'payload': {'headers': []},
+            }),
+          };
+        }),
+        FakeClock(_now),
+        client: _testClient,
+        sleep: (_) async {},
+      );
+      expect(await p.initialSync(onPage: (m, _) async => stored.add(m.length)), _err<RateLimitFailure>());
+      expect(stored, [100]);
+    });
 
     test('a 429 that clears on retry is not a failure', () async {
       var limited = true;
@@ -1549,12 +1297,11 @@ void main() {
       MockClient((_) async => fail('no HTTP')),
       FakeClock(_now),
       client: _testClient,
-      idle:
-          ({required String host, required String user, required accessToken}) {
-            seen = (host, user);
-            token = accessToken;
-            return Stream.value(ChangeSignal.changed);
-          },
+      idle: ({required String host, required String user, required accessToken}) {
+        seen = (host, user);
+        token = accessToken;
+        return Stream.value(ChangeSignal.changed);
+      },
     );
     expect(await p.changes.toList(), [ChangeSignal.changed]);
     expect(seen, ('imap.gmail.com', 'ada@gmail.com'));
@@ -1571,11 +1318,7 @@ class _Hanging extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (answer(request.url.path) case final r?) {
-      return http.StreamedResponse(
-        Stream.value(r.bodyBytes),
-        r.statusCode,
-        contentLength: r.bodyBytes.length,
-      );
+      return http.StreamedResponse(Stream.value(r.bodyBytes), r.statusCode, contentLength: r.bodyBytes.length);
     }
     started.complete();
     await (request as http.Abortable).abortTrigger;

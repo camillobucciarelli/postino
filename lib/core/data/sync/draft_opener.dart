@@ -12,11 +12,7 @@ class DraftOpener {
   final MailStore _store;
   final OutboxRepository _outbox;
 
-  Future<Result<OutgoingMessage>> open(
-    Account account,
-    String messageId,
-    MailProvider provider,
-  ) async {
+  Future<Result<OutgoingMessage>> open(Account account, String messageId, MailProvider provider) async {
     // ponytail: no guard on a queued Message-ID; the Bozze list hides it (watchAll) and Inviati reopens through cancelSend.
     final accountId = account.id;
     final local = await _outbox.localDraft(accountId, messageId);
@@ -70,11 +66,7 @@ class DraftOpener {
         BodyKind.testo => plainToHtml(body.content),
       },
     );
-    await _outbox.adoptDraft(
-      accountId,
-      draft,
-      updatedAt: remote.message.date.millisecondsSinceEpoch,
-    );
+    await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch);
     return Ok(draft);
   }
 }

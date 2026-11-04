@@ -10,13 +10,7 @@ import 'safe_html.dart' show dropHeadContent;
 /// A message body split for the Conversazione (ThreadView): what it says, its signature and the text it
 /// quotes. Every part is in the body's own format (cleaned HTML or plain text); [original] is the whole.
 class BodyParts extends Equatable {
-  const BodyParts({
-    required this.original,
-    required this.body,
-    required this.bodyVisible,
-    this.signature,
-    this.quote,
-  });
+  const BodyParts({required this.original, required this.body, required this.bodyVisible, this.signature, this.quote});
 
   final String original;
   final String body;
@@ -31,11 +25,7 @@ class BodyParts extends Equatable {
     final s = signature;
     if (s == null) return null;
     final text = _looksLikeHtml(s) ? htmlText(s) : s;
-    final key = text
-        .replaceFirst(RegExp(r'^\s*--[ \t]*'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim()
-        .toLowerCase();
+    final key = text.replaceFirst(RegExp(r'^\s*--[ \t]*'), '').replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
     return key.isEmpty ? null : key;
   }
 
@@ -61,11 +51,7 @@ FoldedBody foldBody(BodyParts p, {required bool repeated}) {
   if (!p.bodyVisible && shownSignature == null) {
     return (body: p.original, signature: null, folded: null);
   }
-  return (
-    body: p.body,
-    signature: shownSignature,
-    folded: folded.isEmpty ? null : folded.join('\n'),
-  );
+  return (body: p.body, signature: shownSignature, folded: folded.isEmpty ? null : folded.join('\n'));
 }
 
 /// For each signature key, oldest message first: true when the same signature already appeared before.
@@ -82,10 +68,7 @@ final _forward = RegExp(
 );
 
 /// Outlook's reply header says Subject/Oggetto; a forward's starts with FW:, Fwd: or I:.
-final _outlookForward = RegExp(
-  r'(subject|oggetto)\s*:\s*(fw|fwd|i|inoltro)\s*:',
-  caseSensitive: false,
-);
+final _outlookForward = RegExp(r'(subject|oggetto)\s*:\s*(fw|fwd|i|inoltro)\s*:', caseSensitive: false);
 
 const quoteSelectors = [
   '.gmail_quote', // Gmail, its gmail_attr header inside
@@ -140,25 +123,18 @@ List<Node>? _takeQuote(Element root) {
       if (!_hasAncestorIn(e, set)) e,
   ];
   if (candidates.isEmpty) return null;
-  final outlook = candidates
-      .where((e) => e.id == 'divRplyFwdMsg' || e.id == 'appendonsend')
-      .firstOrNull;
+  final outlook = candidates.where((e) => e.id == 'divRplyFwdMsg' || e.id == 'appendonsend').firstOrNull;
   final last = candidates.last;
   // A header beside its quote (Thunderbird's cite prefix, a Gmail attribution) goes with it.
-  final previous = candidates.length > 1
-      ? candidates[candidates.length - 2]
-      : null;
+  final previous = candidates.length > 1 ? candidates[candidates.length - 2] : null;
   final start =
       previous != null &&
           previous.parent == last.parent &&
-          (previous.classes.contains('moz-cite-prefix') ||
-              previous.classes.contains('gmail_attr'))
+          (previous.classes.contains('moz-cite-prefix') || previous.classes.contains('gmail_attr'))
       ? previous
       : last;
   final from = outlook ?? start;
-  final nodes = outlook != null
-      ? _fromHere(outlook, root)
-      : _siblingsUntil(start, last);
+  final nodes = outlook != null ? _fromHere(outlook, root) : _siblingsUntil(start, last);
   final text = nodes.map((n) => n.text ?? '').join(' ');
   final header = text.length > 600 ? text.substring(0, 600) : text;
   if (_forward.hasMatch(header) ||
@@ -205,10 +181,7 @@ List<Node> _fromHere(Element start, Element root) {
 String _previousText(Element e) {
   final siblings = e.parent?.nodes;
   if (siblings == null) return '';
-  final text = siblings
-      .take(siblings.indexOf(e))
-      .map((n) => n.text ?? '')
-      .join(' ');
+  final text = siblings.take(siblings.indexOf(e)).map((n) => n.text ?? '').join(' ');
   return text.length > 200 ? text.substring(text.length - 200) : text;
 }
 
@@ -216,10 +189,7 @@ String _previousText(Element e) {
 /// left in place (a forward) is the original sender's, not the author's.
 List<Node>? _takeSignature(Element root) {
   final quotes = root.querySelectorAll(quoteSelectors.join(',')).toSet();
-  final sig = root
-      .querySelectorAll(signatureSelectors.join(','))
-      .where((e) => !_hasAncestorIn(e, quotes))
-      .firstOrNull;
+  final sig = root.querySelectorAll(signatureSelectors.join(',')).where((e) => !_hasAncestorIn(e, quotes)).firstOrNull;
   if (sig == null) return null;
   final prefix = sig.parent?.querySelector('.gmail_signature_prefix');
   prefix?.remove();
@@ -227,8 +197,7 @@ List<Node>? _takeSignature(Element root) {
   return [sig];
 }
 
-bool _visible(Element root) =>
-    root.text.trim().isNotEmpty || root.querySelector('img') != null;
+bool _visible(Element root) => root.text.trim().isNotEmpty || root.querySelector('img') != null;
 
 /// A plain text body: the trailing block of `>` lines with the «Il giorno … ha scritto:» / «On … wrote:»
 /// line before it, and the signature after a `-- ` line. A forward is never a quote.
@@ -254,20 +223,12 @@ BodyParts splitText(String text) {
       quoteStart = _withHeader(lines, start);
     }
   }
-  final quote = quoteStart < end
-      ? lines.sublist(quoteStart).join('\n').trim()
-      : null;
+  final quote = quoteStart < end ? lines.sublist(quoteStart).join('\n').trim() : null;
   final before = lines.sublist(0, quoteStart);
   final dash = before.lastIndexWhere((l) => l == '-- ' || l == '--');
   final body = (dash < 0 ? before : before.sublist(0, dash)).join('\n').trim();
   final signature = dash < 0 ? null : before.sublist(dash).join('\n').trim();
-  return BodyParts(
-    original: text.trim(),
-    body: body,
-    bodyVisible: body.isNotEmpty,
-    signature: signature,
-    quote: quote,
-  );
+  return BodyParts(original: text.trim(), body: body, bodyVisible: body.isNotEmpty, signature: signature, quote: quote);
 }
 
 /// «On Mon, 26 Oct 2026 at 09:15, Ada `<ada@x.it>` wrote:», maybe wrapped on two lines, maybe a blank line
@@ -286,7 +247,4 @@ int _withHeader(List<String> lines, int quoteStart) {
   return quoteStart;
 }
 
-final _header = RegExp(
-  r'^(on\b.*\bwrote|il giorno\b.*\bha scritto)\s*:$',
-  caseSensitive: false,
-);
+final _header = RegExp(r'^(on\b.*\bwrote|il giorno\b.*\bha scritto)\s*:$', caseSensitive: false);

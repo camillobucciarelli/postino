@@ -8,12 +8,7 @@ import '../tokens/postino_tokens.dart';
 
 /// One entry of a [PostinoMenu]: [label] (a verb), an optional leading [icon], [onPressed].
 class PostinoMenuItem {
-  const PostinoMenuItem({
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    this.key,
-  });
+  const PostinoMenuItem({required this.label, required this.onPressed, this.icon, this.key});
 
   final String label;
   final VoidCallback onPressed;
@@ -61,17 +56,11 @@ class _PostinoMenuState extends State<PostinoMenu> {
     final c = context.pc;
     return MenuAnchor(
       style: MenuStyle(
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(vertical: PostinoSpacing.s1),
-        ),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: PostinoSpacing.s1)),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
-            borderRadius: const BorderRadius.all(
-              Radius.circular(PostinoRadius.md),
-            ),
-            side: BorderSide(
-              color: c.borderSubtle,
-            ),
+            borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
+            side: BorderSide(color: c.borderSubtle),
           ),
         ),
       ),
@@ -83,9 +72,7 @@ class _PostinoMenuState extends State<PostinoMenu> {
             onPressed: item.onPressed,
             style: MenuItemButton.styleFrom(
               minimumSize: const Size(220, PostinoSize.touchTargetAndroid),
-              padding: const EdgeInsets.symmetric(
-                horizontal: PostinoSpacing.s4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4),
               foregroundColor: c.ink,
               iconColor: c.inkMuted,
               textStyle: PostinoText.label,
@@ -101,9 +88,7 @@ class _PostinoMenuState extends State<PostinoMenu> {
         onPressed: () {
           if (menu.isOpen) return menu.close();
           menu.open();
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _first.requestFocus(),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) => _first.requestFocus());
         },
       ),
     );

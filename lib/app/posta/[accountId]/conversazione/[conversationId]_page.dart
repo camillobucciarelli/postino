@@ -13,11 +13,8 @@ class ConversationPage extends StatelessWidget {
   Widget build(BuildContext context) => postaConversationView(
     Routefly.query['accountId'],
     Routefly.query['conversationId'],
-    onBack: () => Routefly.navigate(
-      routePaths.posta.$accountId.path.changes({
-        'accountId': Routefly.query['accountId'],
-      }),
-    ),
+    onBack: () =>
+        Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': Routefly.query['accountId']})),
     onOpenDraft: (id) => Routefly.navigate(
       routePaths.posta.$accountId.bozza.$messageId.changes({
         'accountId': Routefly.query['accountId'],

@@ -16,18 +16,13 @@ const _inFolder =
     "AND l.message_id = m.id AND l.label_id = '$draftLabelId')";
 
 @DriftAccessor(tables: [Drafts, Accounts, Messages, MessageLabels, Bodies])
-class DraftsDao extends DatabaseAccessor<PostinoDatabase>
-    with _$DraftsDaoMixin {
+class DraftsDao extends DatabaseAccessor<PostinoDatabase> with _$DraftsDaoMixin {
   DraftsDao(super.attachedDatabase);
 
   /// Writes the content and marks the Bozza pending; the synced and remoteKnown marks stay.
   /// [updatedAt] is also the version the ack matches, so it is bumped past the previous save's when the clock has not moved.
   // ponytail: a version in the timestamp, no revision column; a clock set back keeps counting up from the last save.
-  Future<void> save(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  }) => transaction(() async {
+  Future<void> save(String accountId, OutgoingMessage draft, {required int updatedAt}) => transaction(() async {
     final prev = (await byId(accountId, draft.messageId))?.updatedAt;
     if (prev != null && updatedAt <= prev) updatedAt = prev + 1;
     final content = DraftsCompanion(
@@ -67,11 +62,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
 
   /// A Bozza taken over from the Provider (another client's, or a newer version of one here with nothing
   /// pending): already synced, nothing pending; it replaces the local row.
-  Future<void> adopt(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  }) => into(drafts).insert(
+  Future<void> adopt(String accountId, OutgoingMessage draft, {required int updatedAt}) => into(drafts).insert(
     DraftsCompanion.insert(
       accountId: accountId,
       messageId: draft.messageId,
@@ -92,15 +83,10 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     mode: InsertMode.insertOrReplace,
   );
 
-  static String? _references(OutgoingMessage d) =>
-      d.references.isEmpty ? null : d.references.join('\n');
+  static String? _references(OutgoingMessage d) => d.references.isEmpty ? null : d.references.join('\n');
 
   Future<DraftRow?> byId(String accountId, String messageId) =>
-      (select(drafts)..where(
-            (t) =>
-                t.accountId.equals(accountId) & t.messageId.equals(messageId),
-          ))
-          .getSingleOrNull();
+      (select(drafts)..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).getSingleOrNull();
 
   /// The Account's local Bozze, newest first.
   Stream<List<DraftRow>> watch(String accountId) =>
@@ -111,55 +97,33 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
 
   /// What the Bozze folder shows: the local rows (as messages: id and Conversazione are the Message-ID, the body
   /// stands as snippet) and the Provider's DRAFT messages without a local row, newest first; [local] tells them apart.
-  Stream<List<(MessageRow, bool local)>> watchAll(String accountId) =>
-      customSelect(
-        'SELECT d.account_id, d.message_id AS id, d.message_id, d.message_id AS conversation_id, '
-        'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.bcc, d.subject, d.body AS snippet, '
-        'd.updated_at AS date, 1 AS is_read, 0 AS is_starred, 1 AS local '
-        'FROM drafts d JOIN accounts a ON a.id = d.account_id WHERE d.account_id = ?1 '
-        // Queued to send (also failed: Inviati reopens those through cancelSend, which removes the row first): not editable here.
-        'AND d.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
-        'UNION ALL '
-        'SELECT m.account_id, m.id, m.message_id, m.conversation_id, m.sender, m.sender_name, '
-        'm.recipients, m.cc, m.bcc, m.subject, m.snippet, m.date, m.is_read, m.is_starred, 0 '
-        // A Bozza without a Message-ID cannot be addressed (route, update): not listed.
-        "FROM messages m WHERE m.account_id = ?1 AND m.message_id <> '' AND $_inFolder "
-        'AND m.message_id NOT IN (SELECT message_id FROM drafts WHERE account_id = ?1) '
-        'AND m.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
-        'ORDER BY date DESC',
-        variables: [Variable(accountId)],
-        readsFrom: {
-          drafts,
-          accounts,
-          messages,
-          messageLabels,
-          attachedDatabase.outbox,
-        },
-      ).watch().map(
-        (rows) => [
-          for (final r in rows) (messages.map(r.data), r.read<bool>('local')),
-        ],
-      );
+  Stream<List<(MessageRow, bool local)>> watchAll(String accountId) => customSelect(
+    'SELECT d.account_id, d.message_id AS id, d.message_id, d.message_id AS conversation_id, '
+    'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.bcc, d.subject, d.body AS snippet, '
+    'd.updated_at AS date, 1 AS is_read, 0 AS is_starred, 1 AS local '
+    'FROM drafts d JOIN accounts a ON a.id = d.account_id WHERE d.account_id = ?1 '
+    // Queued to send (also failed: Inviati reopens those through cancelSend, which removes the row first): not editable here.
+    'AND d.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
+    'UNION ALL '
+    'SELECT m.account_id, m.id, m.message_id, m.conversation_id, m.sender, m.sender_name, '
+    'm.recipients, m.cc, m.bcc, m.subject, m.snippet, m.date, m.is_read, m.is_starred, 0 '
+    // A Bozza without a Message-ID cannot be addressed (route, update): not listed.
+    "FROM messages m WHERE m.account_id = ?1 AND m.message_id <> '' AND $_inFolder "
+    'AND m.message_id NOT IN (SELECT message_id FROM drafts WHERE account_id = ?1) '
+    'AND m.message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1) '
+    'ORDER BY date DESC',
+    variables: [Variable(accountId)],
+    readsFrom: {drafts, accounts, messages, messageLabels, attachedDatabase.outbox},
+  ).watch().map((rows) => [for (final r in rows) (messages.map(r.data), r.read<bool>('local'))]);
 
   /// The Provider's DRAFT message with this Message-ID, with its body if downloaded.
-  Future<(MessageRow, BodyRow?)?> remote(
-    String accountId,
-    String messageId,
-  ) async {
+  Future<(MessageRow, BodyRow?)?> remote(String accountId, String messageId) async {
     final m = alias(messages, 'm');
     final b = bodies;
     final r =
-        await (select(m).join([
-                leftOuterJoin(
-                  b,
-                  b.accountId.equalsExp(m.accountId) &
-                      b.messageId.equalsExp(m.id),
-                ),
-              ])
+        await (select(m).join([leftOuterJoin(b, b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id))])
               ..where(
-                m.accountId.equals(accountId) &
-                    m.messageId.equals(messageId) &
-                    const CustomExpression<bool>(_inFolder),
+                m.accountId.equals(accountId) & m.messageId.equals(messageId) & const CustomExpression<bool>(_inFolder),
               )
               ..limit(1))
             .getSingleOrNull();
@@ -186,64 +150,37 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
   }
 
   Future<List<DraftRow>> pending(String accountId) =>
-      (select(drafts)..where(
-            (t) => t.accountId.equals(accountId) & t.pending.equals(true),
-          ))
-          .get();
+      (select(drafts)..where((t) => t.accountId.equals(accountId) & t.pending.equals(true))).get();
 
   /// The content of [updatedAt] reached the Provider: the Bozza exists there from now on (the next save is an
   /// update, also when it was edited meanwhile), and is no longer pending unless edited meanwhile.
   /// The ack proves the Provider has it, so it is remoteKnown too: if it is sent or deleted elsewhere before
   /// a sync lists it, the next [reconcile] still drops it.
-  Future<void> synced(String accountId, String messageId, int updatedAt) =>
-      transaction(() async {
-        Expression<bool> row(Drafts t) =>
-            t.accountId.equals(accountId) & t.messageId.equals(messageId);
-        await (update(drafts)..where(row)).write(
-          const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)),
-        );
-        await (update(drafts)
-              ..where((t) => row(t) & t.updatedAt.equals(updatedAt)))
-            .write(const DraftsCompanion(pending: Value(false)));
-      });
+  Future<void> synced(String accountId, String messageId, int updatedAt) => transaction(() async {
+    Expression<bool> row(Drafts t) => t.accountId.equals(accountId) & t.messageId.equals(messageId);
+    await (update(drafts)..where(row)).write(const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)));
+    await (update(
+      drafts,
+    )..where((t) => row(t) & t.updatedAt.equals(updatedAt))).write(const DraftsCompanion(pending: Value(false)));
+  });
 
   Future<void> remove(String accountId, String messageId) =>
-      (delete(drafts)..where(
-            (t) =>
-                t.accountId.equals(accountId) & t.messageId.equals(messageId),
-          ))
-          .go();
+      (delete(drafts)..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).go();
 
   /// The remote copy is gone: the Bozza goes back to new and pending, so the next upload creates it.
   Future<void> forgetRemote(String accountId, String messageId) =>
-      (update(drafts)..where(
-            (t) =>
-                t.accountId.equals(accountId) & t.messageId.equals(messageId),
-          ))
-          .write(
-            const DraftsCompanion(
-              pending: Value(true),
-              synced: Value(false),
-              remoteKnown: Value(false),
-            ),
-          );
+      (update(drafts)..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).write(
+        const DraftsCompanion(pending: Value(true), synced: Value(false), remoteKnown: Value(false)),
+      );
 
   /// Moves the local Bozza to [to], as new on the Provider; false when there is none.
-  Future<bool> rekey(String accountId, String from, String to) =>
-      transaction(() async {
-        final d = await byId(accountId, from);
-        if (d == null) return false;
-        await into(drafts).insert(
-          d.copyWith(
-            messageId: to,
-            pending: true,
-            synced: false,
-            remoteKnown: false,
-          ),
-        );
-        await remove(accountId, from);
-        return true;
-      });
+  Future<bool> rekey(String accountId, String from, String to) => transaction(() async {
+    final d = await byId(accountId, from);
+    if (d == null) return false;
+    await into(drafts).insert(d.copyWith(messageId: to, pending: true, synced: false, remoteKnown: false));
+    await remove(accountId, from);
+    return true;
+  });
 
   /// After a sync: a Bozza the Provider lists as DRAFT is remoteKnown; one it listed before and no longer
   /// does, with nothing pending here and not queued to send, was deleted or sent elsewhere, so it goes.

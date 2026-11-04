@@ -12,13 +12,7 @@ Future<MailStore> _store() async {
   addTearDown(db.close);
   final store = MailStore(db);
   await store.addAccount(
-    const Account(
-      id: 'a',
-      address: 'a@example.com',
-      provider: ProviderKind.gmail,
-      color: 0,
-      position: 0,
-    ),
+    const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
   );
   return store;
 }
@@ -51,10 +45,7 @@ void main() {
 
   test('an id both upserted and removed in one batch is kept', () async {
     final store = await _store();
-    await store.applySync(
-      'a',
-      SyncBatch(cursor: '1', messages: [msg('1')], removedMessageIds: ['1']),
-    );
+    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')], removedMessageIds: ['1']));
     final inbox = await store.watchUnifiedInbox().first;
     expect([for (final e in inbox) e.message.id], ['1']);
   });
@@ -69,13 +60,7 @@ void main() {
         messages: [
           msg('1', conversationId: 't', date: day(1)),
           // The reply sits in Inviati only, yet it is the latest of the Conversazione.
-          msg(
-            '2',
-            conversationId: 't',
-            date: day(3),
-            isRead: true,
-            labelIds: const ['SENT'],
-          ),
+          msg('2', conversationId: 't', date: day(3), isRead: true, labelIds: const ['SENT']),
           msg('3', date: day(2), isRead: true),
           // A Conversazione with nothing in the inbox stays out.
           msg('4', date: day(4), labelIds: const ['SENT']),
@@ -83,10 +68,7 @@ void main() {
       ),
     );
     final rows = await store.watchUnifiedInbox().first;
-    expect(
-      [for (final e in rows) (e.message.id, e.count, e.unread)],
-      [('2', 2, true), ('3', 1, false)],
-    );
+    expect([for (final e in rows) (e.message.id, e.count, e.unread)], [('2', 2, true), ('3', 1, false)]);
   });
 
   test('a read made here survives a sync that still says unread', () async {
@@ -95,13 +77,7 @@ void main() {
     await store.markConversationRead('a', 't-1');
     await store.applySync('a', SyncBatch(cursor: '2', messages: [msg('1')]));
     expect((await store.watchUnifiedInbox().first).single.unread, isFalse);
-    expect(
-      [
-        for (final i in await store.pendingIntents('a'))
-          (i.messageId, i.isRead),
-      ],
-      [('1', true)],
-    );
+    expect([for (final i in await store.pendingIntents('a')) (i.messageId, i.isRead)], [('1', true)]);
 
     await store.readDone('a', ['1'], isRead: true);
     expect(await store.pendingIntents('a'), isEmpty);

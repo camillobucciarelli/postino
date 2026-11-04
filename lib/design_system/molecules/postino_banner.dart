@@ -49,9 +49,7 @@ class PostinoBanner extends StatelessWidget {
     final large = MediaQuery.textScalerOf(context).scale(1) > 1.5;
     // The design's banner action: a ghost button in ink, underlined.
     Widget button(String label, VoidCallback? onPressed) => TextButtonTheme(
-      data: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: c.ink),
-      ),
+      data: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: c.ink)),
       child: PostinoButton(
         label: label,
         onPressed: onPressed,
@@ -85,19 +83,14 @@ class PostinoBanner extends StatelessWidget {
                 PostinoBannerTone.info => c.brandSubtle,
                 PostinoBannerTone.offline => c.surfacePressed,
               },
-              borderRadius: const BorderRadius.all(
-                Radius.circular(PostinoRadius.md),
-              ),
+              borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: PostinoSpacing.s3,
               children: [
                 PostinoIcon(
-                  icon ??
-                      (tone == PostinoBannerTone.offline
-                          ? PostinoIcons.cloudOff
-                          : PostinoIcons.alert),
+                  icon ?? (tone == PostinoBannerTone.offline ? PostinoIcons.cloudOff : PostinoIcons.alert),
                   size: PostinoSize.iconLg,
                   color: switch (tone) {
                     PostinoBannerTone.danger => c.danger,
@@ -132,20 +125,12 @@ class PostinoBanner extends StatelessWidget {
                           ),
                           style: PostinoText.subject.copyWith(color: c.ink),
                         ),
-                        if (message case final m?)
-                          Text(
-                            m,
-                            style: PostinoText.preview.copyWith(color: c.ink),
-                          ),
+                        if (message case final m?) Text(m, style: PostinoText.preview.copyWith(color: c.ink)),
                         if (under && actions.isNotEmpty)
                           // The buttons' own padding is not part of the text's edge.
                           Transform.translate(
                             offset: const Offset(-PostinoSpacing.s3, 0),
-                            child: Wrap(
-                              spacing: PostinoSpacing.s3,
-                              runSpacing: PostinoSpacing.s1,
-                              children: actions,
-                            ),
+                            child: Wrap(spacing: PostinoSpacing.s3, runSpacing: PostinoSpacing.s1, children: actions),
                           ),
                       ],
                     ),

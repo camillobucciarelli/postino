@@ -12,16 +12,14 @@ class DeviceSettingsStore implements SettingsRepository {
   static const _listWidth = 'list_width';
 
   @override
-  Future<bool?> sidebarExpanded() async =>
-      switch (await _db.deviceSettingsDao.read(_sidebar)) {
-        'true' => true,
-        'false' => false,
-        _ => null,
-      };
+  Future<bool?> sidebarExpanded() async => switch (await _db.deviceSettingsDao.read(_sidebar)) {
+    'true' => true,
+    'false' => false,
+    _ => null,
+  };
 
   @override
-  Future<void> setSidebarExpanded(bool? expanded) =>
-      _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
+  Future<void> setSidebarExpanded(bool? expanded) => _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
 
   @override
   Future<double?> listWidth() async {
@@ -30,6 +28,5 @@ class DeviceSettingsStore implements SettingsRepository {
   }
 
   @override
-  Future<void> setListWidth(double width) =>
-      _db.deviceSettingsDao.write(_listWidth, width.toString());
+  Future<void> setListWidth(double width) => _db.deviceSettingsDao.write(_listWidth, width.toString());
 }

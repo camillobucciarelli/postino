@@ -9,12 +9,7 @@ import '../tokens/postino_tokens.dart';
 /// Of `PostinoThreadMessage` only (not in the barrel).
 /// «…»: shows or hides the quoted text. A `surface-pressed` pill 32×20, in a 48 high target.
 class PostinoQuoteToggle extends StatelessWidget {
-  const PostinoQuoteToggle({
-    super.key,
-    required this.label,
-    required this.open,
-    required this.onTap,
-  });
+  const PostinoQuoteToggle({super.key, required this.label, required this.open, required this.onTap});
 
   /// Its name for screen readers («Mostra il testo citato»).
   final String label;
@@ -26,8 +21,7 @@ class PostinoQuoteToggle extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) =>
-      SelectionContainer.disabled(child: _toggle(context));
+  Widget build(BuildContext context) => SelectionContainer.disabled(child: _toggle(context));
 
   Widget _toggle(BuildContext context) {
     final c = context.pc;
@@ -49,29 +43,19 @@ class PostinoQuoteToggle extends StatelessWidget {
             child: InkWell(
               key: const ValueKey('quote-toggle'),
               onTap: onTap,
-              borderRadius: const BorderRadius.all(
-                Radius.circular(PostinoRadius.xs),
-              ),
+              borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
               child: PostinoFocusRing(
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(PostinoRadius.xs),
-                ),
+                borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: c.surfacePressed,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(PostinoRadius.xs),
-                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
                   ),
                   child: SizedBox(
                     width: PostinoSize.controlSm,
                     height: PostinoSize.iconMd,
                     child: Center(
-                      child: PostinoIcon(
-                        PostinoIcons.more,
-                        size: PostinoSize.iconSm,
-                        color: c.inkMuted,
-                      ),
+                      child: PostinoIcon(PostinoIcons.more, size: PostinoSize.iconSm, color: c.inkMuted),
                     ),
                   ),
                 ),

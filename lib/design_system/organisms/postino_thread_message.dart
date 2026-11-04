@@ -95,9 +95,7 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
     final avatar = expanded ? PostinoSize.avatarMd : PostinoSize.controlSm;
     final recipients = w.recipients;
     final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
-    final radius = expanded
-        ? const BorderRadius.all(Radius.circular(PostinoRadius.sm))
-        : BorderRadius.zero;
+    final radius = expanded ? const BorderRadius.all(Radius.circular(PostinoRadius.sm)) : BorderRadius.zero;
     final header = InkWell(
       onTap: w.onToggle,
       // Expanded: the highlight gets room via s2 inside; the outer padding gives it back, so content stays aligned.
@@ -106,20 +104,13 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
         inset: true,
         borderRadius: radius,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: PostinoSize.touchTargetAndroid,
-          ),
+          constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
           child: Padding(
             padding: expanded
                 ? const EdgeInsets.all(PostinoSpacing.s2)
-                : const EdgeInsets.symmetric(
-                    horizontal: PostinoSpacing.s4,
-                    vertical: PostinoSpacing.s3,
-                  ),
+                : const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: PostinoSpacing.s3),
             child: Row(
-              crossAxisAlignment: expanded
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.center,
+              crossAxisAlignment: expanded ? CrossAxisAlignment.start : CrossAxisAlignment.center,
               spacing: PostinoSpacing.s3,
               children: [
                 PostinoAvatar(name: w.sender, size: avatar),
@@ -136,16 +127,12 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                               if (expanded && w.address != null)
                                 TextSpan(
                                   text: ' ${w.address}',
-                                  style: PostinoText.caption.copyWith(
-                                    color: c.inkMuted,
-                                  ),
+                                  style: PostinoText.caption.copyWith(color: c.inkMuted),
                                 ),
                             ],
                           ),
                           maxLines: wrap ? null : 1,
-                          overflow: wrap
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
+                          overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
                           style: PostinoText.sender.copyWith(color: c.ink),
                         ),
                       ),
@@ -153,38 +140,26 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                         Text(
                           w.preview,
                           maxLines: wrap ? null : 1,
-                          overflow: wrap
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
-                          style: PostinoText.preview.copyWith(
-                            color: c.inkMuted,
-                          ),
+                          overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                          style: PostinoText.preview.copyWith(color: c.inkMuted),
                         )
                       else if (recipients != null)
                         PostinoMessageRecipients(
                           label: recipients,
                           open: _details,
-                          onTap: w.details.isEmpty
-                              ? null
-                              : () => setState(() => _details = !_details),
+                          onTap: w.details.isEmpty ? null : () => setState(() => _details = !_details),
                         ),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(
-                    top: expanded ? PostinoSpacing.s0_5 : 0,
-                  ),
+                  padding: EdgeInsets.only(top: expanded ? PostinoSpacing.s0_5 : 0),
                   child: _TextHit(
                     enabled: expanded,
-                    child: Text(
-                      w.time,
-                      style: PostinoText.meta.copyWith(color: c.inkSubtle),
-                    ),
+                    child: Text(w.time, style: PostinoText.meta.copyWith(color: c.inkSubtle)),
                   ),
                 ),
-                if (w.actions case final actions?)
-                  SelectionContainer.disabled(child: actions),
+                if (w.actions case final actions?) SelectionContainer.disabled(child: actions),
               ],
             ),
           ),
@@ -196,16 +171,11 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
       expanded: expanded,
       customSemanticsActions: {
         if (expanded && w.details.isNotEmpty)
-          CustomSemanticsAction(label: w.recipients ?? ''): () =>
-              setState(() => _details = !_details),
+          CustomSemanticsAction(label: w.recipients ?? ''): () => setState(() => _details = !_details),
       },
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: c.borderSubtle,
-            ),
-          ),
+          border: Border(top: BorderSide(color: c.borderSubtle)),
         ),
         child: AnimatedSize(
           duration: PostinoMotion.of(context, PostinoMotion.threadExpand),
@@ -224,46 +194,32 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                     children: [
                       header,
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: PostinoSpacing.s2,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (_details && w.details.isNotEmpty)
-                              PostinoMessageDetailsPanel(w.details),
+                            if (_details && w.details.isNotEmpty) PostinoMessageDetailsPanel(w.details),
                             if (w.notices.isNotEmpty)
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  top: PostinoSpacing.s2,
-                                ),
+                                padding: const EdgeInsets.only(top: PostinoSpacing.s2),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   spacing: PostinoSpacing.s3,
                                   children: w.notices,
                                 ),
                               ),
                             Padding(
-                              padding: EdgeInsets.only(
-                                top: w.notices.isEmpty
-                                    ? PostinoSpacing.s2
-                                    : PostinoSpacing.s4,
-                              ),
+                              padding: EdgeInsets.only(top: w.notices.isEmpty ? PostinoSpacing.s2 : PostinoSpacing.s4),
                               child: w.body,
                             ),
                             if (w.signature case final signature?)
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  top: PostinoSpacing.s4,
-                                ),
+                                padding: const EdgeInsets.only(top: PostinoSpacing.s4),
                                 child: signature,
                               ),
                             if (w.quote case final quote?) ...[
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  top: PostinoSpacing.s2,
-                                ),
+                                padding: const EdgeInsets.only(top: PostinoSpacing.s2),
                                 child: PostinoQuoteToggle(
                                   label: w.quoteLabel,
                                   open: _quote,
@@ -274,9 +230,7 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
                             ],
                             if (w.attachments.isNotEmpty)
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  top: PostinoSpacing.s4,
-                                ),
+                                padding: const EdgeInsets.only(top: PostinoSpacing.s4),
                                 child: Wrap(
                                   spacing: PostinoSpacing.s2,
                                   runSpacing: PostinoSpacing.s2,
@@ -307,7 +261,6 @@ class _TextHit extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => enabled
-      ? GestureDetector(onTap: () {}, excludeFromSemantics: true, child: child)
-      : child;
+  Widget build(BuildContext context) =>
+      enabled ? GestureDetector(onTap: () {}, excludeFromSemantics: true, child: child) : child;
 }

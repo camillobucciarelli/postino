@@ -9,6 +9,5 @@ class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      postaAccountView(Routefly.query['accountId']);
+  Widget build(BuildContext context) => postaAccountView(Routefly.query['accountId']);
 }

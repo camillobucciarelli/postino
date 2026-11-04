@@ -39,8 +39,7 @@ class ComposerView extends StatefulWidget {
   final VoidCallback onClose;
 
   /// [until]: the end of the Annulla invio window, as the engine computed it.
-  final void Function(String accountId, String messageId, DateTime until)
-  onQueued;
+  final void Function(String accountId, String messageId, DateTime until) onQueued;
 
   @override
   State<ComposerView> createState() => _ComposerViewState();
@@ -117,8 +116,7 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
     final c = _controller;
     final address = _accounts.where((a) => a.id == _from).firstOrNull?.address;
     if (c == null || address == null) return null;
-    List<String> addresses(String s) =>
-        parseMailboxes(s).map(formatMailbox).toList();
+    List<String> addresses(String s) => parseMailboxes(s).map(formatMailbox).toList();
     return OutgoingMessage(
       messageId: widget.messageId,
       from: address,
@@ -142,9 +140,7 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
     if (_sendError != null) setState(() => _sendError = null);
     final fields = [_to.text, _cc.text, _bcc.text, _subject.text];
     // Nothing written yet: no Bozza. Once saved, emptying it is an edit like any other.
-    if (!_saved &&
-        fields.every((s) => s.trim().isEmpty) &&
-        c.document.isEmpty()) {
+    if (!_saved && fields.every((s) => s.trim().isEmpty) && c.document.isEmpty()) {
       return;
     }
     if (!_saved) setState(() => _saved = true);
@@ -176,9 +172,7 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
       case Err(failure: OfflineFailure()):
         setState(() => _sendError = t.offlineAttachments);
       case Err(failure: SizeLimitFailure(:final limitBytes)):
-        setState(
-          () => _sendError = t.tooLarge(mb: limitBytes ~/ (1024 * 1024)),
-        );
+        setState(() => _sendError = t.tooLarge(mb: limitBytes ~/ (1024 * 1024)));
       case Err():
         setState(() => _sendError = t.sendFailed);
     }
@@ -205,13 +199,9 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
   Widget _content(BuildContext context) {
     final t = context.t.composizione;
     final controller = _controller;
-    final narrow =
-        MediaQuery.sizeOf(context).width < PostinoSize.breakpointListDetail;
-    PostinoSenderOption option(Account a) => (
-      id: a.id,
-      mark: (color: PostinoAccountColor.values[a.color], initial: a.initial),
-      address: a.address,
-    );
+    final narrow = MediaQuery.sizeOf(context).width < PostinoSize.breakpointListDetail;
+    PostinoSenderOption option(Account a) =>
+        (id: a.id, mark: (color: PostinoAccountColor.values[a.color], initial: a.initial), address: a.address);
     final senders = _accounts.map(option).toList();
     final mac = defaultTargetPlatform == TargetPlatform.macOS;
     return PostinoSinglePaneLayout(
@@ -219,26 +209,13 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
         title: t.title,
         onBack: narrow ? widget.onClose : null,
         actions: [
-          if (!_failed)
-            PostinoIconButton(
-              icon: PostinoIcons.send,
-              label: t.send,
-              onPressed: _sending ? null : _send,
-            ),
-          PostinoIconButton(
-            icon: PostinoIcons.close,
-            label: t.close,
-            onPressed: widget.onClose,
-          ),
+          if (!_failed) PostinoIconButton(icon: PostinoIcons.send, label: t.send, onPressed: _sending ? null : _send),
+          PostinoIconButton(icon: PostinoIcons.close, label: t.close, onPressed: widget.onClose),
         ],
       ),
       banners: [
         if (_sendError case final e?)
-          PostinoBanner(
-            key: const ValueKey('send-error'),
-            tone: PostinoBannerTone.danger,
-            title: e,
-          ),
+          PostinoBanner(key: const ValueKey('send-error'), tone: PostinoBannerTone.danger, title: e),
       ],
       body: _failed
           ? PostinoEmptyState(
@@ -252,13 +229,7 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
           ? const SizedBox.shrink()
           // Cmd/Ctrl+Enter sends from any field or the editor (ADR 0014); the Posta registry skips text fields.
           : CallbackShortcuts(
-              bindings: {
-                SingleActivator(
-                  LogicalKeyboardKey.enter,
-                  meta: mac,
-                  control: !mac,
-                ): _send,
-              },
+              bindings: {SingleActivator(LogicalKeyboardKey.enter, meta: mac, control: !mac): _send},
               child: AbsorbPointer(
                 absorbing: _sending,
                 child: ExcludeFocus(
@@ -282,28 +253,21 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
                           label: label,
                           controller: c,
                           autofocus: first && !_saved,
-                          keyboardType: c == _subject
-                              ? TextInputType.text
-                              : TextInputType.emailAddress,
+                          keyboardType: c == _subject ? TextInputType.text : TextInputType.emailAddress,
                           onChanged: (_) => _save(),
                         ),
                       // The attachments a forward carries over (#37), read-only.
                       // ponytail: adding and removing attachments is #75.
-                      if (_opened?.attachments case final atts?
-                          when atts.isNotEmpty)
+                      if (_opened?.attachments case final atts? when atts.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: PostinoSpacing.s3,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s3),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             spacing: PostinoSpacing.s3,
                             children: [
                               Text(
                                 t.forwardedAttachments,
-                                style: PostinoText.label.copyWith(
-                                  color: context.pc.inkMuted,
-                                ),
+                                style: PostinoText.label.copyWith(color: context.pc.inkMuted),
                               ),
                               Expanded(
                                 child: Wrap(
@@ -312,16 +276,10 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
                                   children: [
                                     for (final a in atts)
                                       PostinoAttachmentChip(
-                                        key: ValueKey(
-                                          'draft-attachment-${a.attachment.id}',
-                                        ),
+                                        key: ValueKey('draft-attachment-${a.attachment.id}'),
                                         // safeFileName: un override bidi non deve falsare l'estensione mostrata.
                                         name: safeFileName(a.attachment.name),
-                                        size: fileSize(
-                                          a.attachment.size,
-                                          Localizations.localeOf(context)
-                                              .languageCode,
-                                        ),
+                                        size: fileSize(a.attachment.size, Localizations.localeOf(context).languageCode),
                                       ),
                                   ],
                                 ),

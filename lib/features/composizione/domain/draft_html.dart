@@ -10,10 +10,8 @@ const _inline = {'bold', 'italic', 'underline', 'strike', 'link'};
 const _lists = {'bullet', 'ordered'};
 
 /// The body of a Bozza as HTML (text/plain is the adapter's), with only the allowed formats.
-String deltaToHtml(List<Map<String, dynamic>> ops) => QuillDeltaToHtmlConverter(
-  _clean(ops),
-  ConverterOptions.forEmail(),
-).convert();
+String deltaToHtml(List<Map<String, dynamic>> ops) =>
+    QuillDeltaToHtmlConverter(_clean(ops), ConverterOptions.forEmail()).convert();
 
 /// The HTML of a Bozza (ours or another client's) as Delta ops, the adjacent runs not merged
 /// (quill's Document does it); empty HTML is the empty document. A `<blockquote>` (the Citazione of a
@@ -46,16 +44,14 @@ List<Map<String, dynamic>> _walk(List<Node> nodes) {
     if (n is Element && n.localName == 'blockquote') {
       flush();
       out.addAll(_quoted(_walk(n.nodes)));
-    } else if (n is Element &&
-        (n.localName == 'div' || n.querySelector('blockquote') != null)) {
+    } else if (n is Element && (n.localName == 'div' || n.querySelector('blockquote') != null)) {
       // A div is only a wrapper (the parser would add a line after it).
       flush();
       out.addAll(_walk(n.nodes));
     } else if (n is Element && _blocks.contains(n.localName)) {
       flush();
       out.addAll(_convert(n.outerHtml));
-    } else if (n is Element ||
-        n is Text && (n.data.trim().isNotEmpty || run.isNotEmpty)) {
+    } else if (n is Element || n is Text && (n.data.trim().isNotEmpty || run.isNotEmpty)) {
       // A text goes back to the parser as HTML: `&lt;b&gt;` must stay literal. Blank between inlines is kept.
       run.write(n is Element ? n.outerHtml : _escape.convert((n as Text).data));
     }
@@ -66,19 +62,7 @@ List<Map<String, dynamic>> _walk(List<Node> nodes) {
 
 const _escape = HtmlEscape(HtmlEscapeMode.element);
 
-const _blocks = {
-  'p',
-  'ul',
-  'ol',
-  'pre',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'table',
-};
+const _blocks = {'p', 'ul', 'ol', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table'};
 
 /// Every line of [ops] as a blockquote line: a newline inside an insert is split out and marked.
 List<Map<String, dynamic>> _quoted(List<Map<String, dynamic>> ops) => [
@@ -92,8 +76,7 @@ List<Map<String, dynamic>> _quoted(List<Map<String, dynamic>> ops) => [
       if (part.isNotEmpty)
         {
           'insert': part,
-          if (op['attributes'] case final Map a
-              when a.keys.any(_inline.contains))
+          if (op['attributes'] case final Map a when a.keys.any(_inline.contains))
             'attributes': {
               for (final MapEntry(:key, :value) in a.entries)
                 if (_inline.contains(key)) key: value,
@@ -124,9 +107,7 @@ List<Map<String, dynamic>> _clean(List<Map<String, dynamic>> ops) => [
         if (op['attributes'] case final Map a)
           if (<String, dynamic>{
                 for (final MapEntry(:key, :value) in a.entries)
-                  if (_inline.contains(key) ||
-                      key == 'blockquote' ||
-                      key == 'list' && _lists.contains(value))
+                  if (_inline.contains(key) || key == 'blockquote' || key == 'list' && _lists.contains(value))
                     key: value,
               }
               case final kept when kept.isNotEmpty)

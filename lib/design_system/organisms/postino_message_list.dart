@@ -45,12 +45,7 @@ class PostinoMessageList extends StatelessWidget {
                   PostinoEmptyState(title: emptyTitle, body: emptyBody),
               ],
             )
-          : ListView.builder(
-              controller: controller,
-              physics: physics,
-              itemCount: itemCount,
-              itemBuilder: itemBuilder,
-            ),
+          : ListView.builder(controller: controller, physics: physics, itemCount: itemCount, itemBuilder: itemBuilder),
     );
   }
 }

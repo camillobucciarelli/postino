@@ -236,15 +236,11 @@ List<Color> _all(PostinoColors c) => [
 ];
 
 /// Distinct color per field (`0xFF000000 + shift + i`), so cross-wired fields differ.
-List<Color> _palette(int shift) => [
-  for (var i = 0; i < _names.length; i++) Color(0xFF000000 + shift + i),
-];
+List<Color> _palette(int shift) => [for (var i = 0; i < _names.length; i++) Color(0xFF000000 + shift + i)];
 
-PostinoColors _build(List<Color> colors) => Function.apply(
-  PostinoColors.new,
-  [],
-  {for (var i = 0; i < _names.length; i++) Symbol(_names[i]): colors[i]},
-) as PostinoColors;
+PostinoColors _build(List<Color> colors) =>
+    Function.apply(PostinoColors.new, [], {for (var i = 0; i < _names.length; i++) Symbol(_names[i]): colors[i]})
+        as PostinoColors;
 
 void main() {
   test('light and dark themes map the brand token to primary', () {
@@ -278,8 +274,6 @@ void main() {
     final to = _build(b);
     expect(_all(from.lerp(to, 0)), a);
     expect(_all(from.lerp(to, 1)), b);
-    expect(_all(from.lerp(to, 0.5)), [
-      for (var i = 0; i < a.length; i++) Color.lerp(a[i], b[i], 0.5),
-    ]);
+    expect(_all(from.lerp(to, 0.5)), [for (var i = 0; i < a.length; i++) Color.lerp(a[i], b[i], 0.5)]);
   });
 }

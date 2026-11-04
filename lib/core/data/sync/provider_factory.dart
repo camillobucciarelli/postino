@@ -10,10 +10,7 @@ MailProvider providerFor(Account account) {
   final g = GetIt.I;
   if (!g.isRegistered<MailProvider>(instanceName: account.id)) {
     // ponytail: Gmail is the only Provider of step 1; Microsoft and IMAP adapters branch on account.provider at steps 4-5.
-    g.registerLazySingleton<MailProvider>(
-      () => GmailProvider(account.id, g(), g(), g()),
-      instanceName: account.id,
-    );
+    g.registerLazySingleton<MailProvider>(() => GmailProvider(account.id, g(), g(), g()), instanceName: account.id);
   }
   return g<MailProvider>(instanceName: account.id);
 }

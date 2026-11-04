@@ -38,9 +38,7 @@ class PostaDrawer extends StatefulWidget {
 class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
   // The docked drawer outlives navigation: the open Account is a signal, the Etichette follow it.
   late final openAccount = signal(widget.accountId);
-  late final unread = streamSignal(
-    () => GetIt.I<InboxRepository>().watchUnreadFolders(),
-  );
+  late final unread = streamSignal(() => GetIt.I<InboxRepository>().watchUnreadFolders());
   late final labels = streamSignal(
     () => switch (openAccount.value) {
       final id? => GetIt.I<InboxRepository>().watchLabels(id),
@@ -78,9 +76,7 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
                 label: t.postaUnificata,
                 icon: PostinoIcons.inboxAll,
                 active: open == null,
-                unreadLabel: unreadLabel(
-                  folders.any((f) => f.$2 == inboxLabelId),
-                ),
+                unreadLabel: unreadLabel(folders.any((f) => f.$2 == inboxLabelId)),
                 onTap: widget.onOpenUnified,
               ),
             ],
@@ -92,17 +88,10 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
                 PostinoDrawerItem(
                   key: ValueKey('account-${a.id}'),
                   label: a.name,
-                  account: (
-                    color: PostinoAccountColor.values[a.color],
-                    initial: a.initial,
-                  ),
+                  account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
                   active: a.id == open && widget.labelId == null,
-                  unreadLabel: unreadLabel(
-                    folders.contains((a.id, inboxLabelId)),
-                  ),
-                  reconnectLabel: a.status == AccountStatus.daRicollegare
-                      ? t.daRicollegare.status
-                      : null,
+                  unreadLabel: unreadLabel(folders.contains((a.id, inboxLabelId))),
+                  reconnectLabel: a.status == AccountStatus.daRicollegare ? t.daRicollegare.status : null,
                   onTap: () => widget.onOpenAccount(a.id),
                 ),
                 PostinoDrawerItem(

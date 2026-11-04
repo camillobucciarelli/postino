@@ -11,10 +11,7 @@ const maxFileNameBytes = 150;
 /// extension and whole characters, never empty.
 String safeFileName(String name) {
   var s = name
-      .replaceAll(
-        RegExp(r'[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]'),
-        '',
-      )
+      .replaceAll(RegExp(r'[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]'), '')
       .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f\x7f-\x9f]'), '_')
       .trim()
       .replaceAll(RegExp(r'[. ]+$'), '');
@@ -35,7 +32,5 @@ String safeFileName(String name) {
   }
   if (s.isEmpty) return 'allegato';
   final stem = s.split('.').first.trim().toUpperCase();
-  return RegExp(r'^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])$').hasMatch(stem)
-      ? '_$s'
-      : s;
+  return RegExp(r'^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])$').hasMatch(stem) ? '_$s' : s;
 }

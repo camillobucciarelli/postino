@@ -27,18 +27,14 @@ void main() {
     }
 
     test('drops a form but keeps what it says', () {
-      final out = _blocked(
-        '<form action="https://evil.example/x"><p>Testo</p><input></form>',
-      ).html;
+      final out = _blocked('<form action="https://evil.example/x"><p>Testo</p><input></form>').html;
       expect(out, isNot(contains('<form')));
       expect(out, isNot(contains('evil')));
       expect(out, contains('<p>Testo</p>'));
     });
 
     test('drops on* attributes', () {
-      final out = _blocked(
-        '<p onclick="x()" ONMOUSEOVER="y()" class="c">Ciao</p>',
-      ).html;
+      final out = _blocked('<p onclick="x()" ONMOUSEOVER="y()" class="c">Ciao</p>').html;
       expect(out.toLowerCase(), isNot(contains('on')));
       expect(out, contains('class="c"'));
     });
@@ -55,11 +51,7 @@ void main() {
 
   group('blocking', () {
     test('img src, http and https and protocol-relative', () {
-      for (final src in [
-        'http://t.example/p.gif',
-        'https://t.example/p.gif',
-        '//t.example/p.gif',
-      ]) {
+      for (final src in ['http://t.example/p.gif', 'https://t.example/p.gif', '//t.example/p.gif']) {
         final r = _blocked('<img src="$src" alt="Logo">');
         expect(r.blocked, isTrue, reason: src);
         expect(r.html, isNot(contains('t.example')));
@@ -95,18 +87,14 @@ body { background-image: url(//t.example/bg.png); }
     });
 
     test('<link rel=stylesheet>', () {
-      final r = _blocked(
-        '<link rel="stylesheet" href="https://t.example/a.css"><p>x</p>',
-      );
+      final r = _blocked('<link rel="stylesheet" href="https://t.example/a.css"><p>x</p>');
       expect(r.blocked, isFalse);
       expect(r.html, isNot(contains('<link')));
     });
 
     test('data: passes, and blocks nothing', () {
       const png = 'data:image/png;base64,iVBORw0KGgo=';
-      final r = _blocked(
-        '<img src="$png"><p style="background: url($png)">x</p>',
-      );
+      final r = _blocked('<img src="$png"><p style="background: url($png)">x</p>');
       expect(r.blocked, isFalse);
       expect(RegExp('data:image').allMatches(r.html), hasLength(2));
     });
@@ -119,10 +107,7 @@ body { background-image: url(//t.example/bg.png); }
     });
 
     test('a body without remote resources blocks nothing', () {
-      expect(
-        _blocked('<p><a href="https://x.example">link</a></p>').blocked,
-        isFalse,
-      );
+      expect(_blocked('<p><a href="https://x.example">link</a></p>').blocked, isFalse);
     });
 
     test('allowed, remote resources stay but cleaning still runs', () {
@@ -151,8 +136,7 @@ body { background-image: url(//t.example/bg.png); }
   });
 
   group('table widths (fwfh sizes them badly)', () {
-    String style(String html, String tag) =>
-        parse(_blocked(html).html).querySelector(tag)!.attributes['style']!;
+    String style(String html, String tag) => parse(_blocked(html).html).querySelector(tag)!.attributes['style']!;
 
     test('td and th lose width, min-width, max-width, keep the rest', () {
       for (final tag in ['td', 'th']) {
@@ -167,32 +151,17 @@ body { background-image: url(//t.example/bg.png); }
       }
     });
 
-    test(
-      'a multi-column table loses a percentage width, keeps px and the rest',
-      () {
-        expect(
-          style(
-            '<table style="width:100%;background:#eee"><tr><td>x</td><td>y</td></tr></table>',
-            'table',
-          ),
-          'background:#eee',
-        );
-        expect(
-          style(
-            '<table style="width: 50% !important"><tr><th>a</th><td>b</td></tr></table>',
-            'table',
-          ),
-          '',
-        );
-        expect(
-          style(
-            '<table style="width:600px;color:red"><tr><td>a</td><td>b</td></tr></table>',
-            'table',
-          ),
-          'width:600px;color:red',
-        );
-      },
-    );
+    test('a multi-column table loses a percentage width, keeps px and the rest', () {
+      expect(
+        style('<table style="width:100%;background:#eee"><tr><td>x</td><td>y</td></tr></table>', 'table'),
+        'background:#eee',
+      );
+      expect(style('<table style="width: 50% !important"><tr><th>a</th><td>b</td></tr></table>', 'table'), '');
+      expect(
+        style('<table style="width:600px;color:red"><tr><td>a</td><td>b</td></tr></table>', 'table'),
+        'width:600px;color:red',
+      );
+    });
 
     group('card tables (#63)', () {
       const card =
@@ -254,13 +223,7 @@ body { background-image: url(//t.example/bg.png); }
     });
 
     test('a one-column table keeps its percentage width (#63)', () {
-      expect(
-        style(
-          '<table style="width:100%;color:red"><tr><td>x</td></tr></table>',
-          'table',
-        ),
-        'width:100%;color:red',
-      );
+      expect(style('<table style="width:100%;color:red"><tr><td>x</td></tr></table>', 'table'), 'width:100%;color:red');
     });
 
     test('a one-column table with nested multi-column one keeps its width', () {
@@ -277,22 +240,13 @@ body { background-image: url(//t.example/bg.png); }
     });
 
     test('width="100%" on a one-column table becomes style width (#63)', () {
+      expect(style('<table width="100%"><tr><td>x</td></tr></table>', 'table'), startsWith('width:100%'));
+      expect(style('<table width="80%" style="color:red"><tr><td>x</td></tr></table>', 'table'), 'width:80%;color:red');
       expect(
-        style('<table width="100%"><tr><td>x</td></tr></table>', 'table'),
-        startsWith('width:100%'),
-      );
-      expect(
-        style(
-          '<table width="80%" style="color:red"><tr><td>x</td></tr></table>',
-          'table',
-        ),
-        'width:80%;color:red',
-      );
-      expect(
-        parse(
-          _blocked('<table width="100%"><tr><td>a</td><td>b</td></tr></table>')
-              .html,
-        ).querySelector('table')!.attributes.containsKey('style'),
+        parse(_blocked('<table width="100%"><tr><td>a</td><td>b</td></tr></table>').html)
+            .querySelector('table')!
+            .attributes
+            .containsKey('style'),
         isFalse,
       );
     });
@@ -307,18 +261,12 @@ body { background-image: url(//t.example/bg.png); }
     });
 
     test('contentWidth is measured before stripping', () {
-      expect(
-        _blocked('<table><tr><td style="width:640px">x</td></tr></table>')
-            .width,
-        640,
-      );
+      expect(_blocked('<table><tr><td style="width:640px">x</td></tr></table>').width, 640);
     });
   });
 
   group('newsletter patches (#67)', () {
-    String style(String html, String sel) =>
-        parse(_blocked(html).html).querySelector(sel)!.attributes['style'] ??
-        '';
+    String style(String html, String sel) => parse(_blocked(html).html).querySelector(sel)!.attributes['style'] ?? '';
 
     test('bgcolor becomes background-color, inline style wins', () {
       expect(
@@ -344,60 +292,37 @@ body { background-image: url(//t.example/bg.png); }
       );
       final div = doc.querySelector('div')!;
       expect(div.attributes['style'], contains('background-color:#112233'));
-      expect(
-        doc.querySelector('table')!.attributes['style'],
-        isNot(contains('background')),
-      );
+      expect(doc.querySelector('table')!.attributes['style'], isNot(contains('background')));
     });
 
     test('td height becomes min-height', () {
-      final s = style(
-        '<table><tr><td height="16" style="font-size:0">&nbsp;</td></tr></table>',
-        'td',
-      );
+      final s = style('<table><tr><td height="16" style="font-size:0">&nbsp;</td></tr></table>', 'td');
       expect(s, contains('min-height:16px'));
       expect(s, isNot(contains(RegExp(r'(^|;)\s*height'))));
     });
 
     test('an explicit inline min-height wins over the height attribute', () {
-      final s = style(
-        '<table><tr><td height="16" style="min-height:48px">a</td></tr></table>',
-        'td',
-      );
-      expect(
-        s.lastIndexOf('min-height:48px'),
-        greaterThan(s.indexOf('min-height:16px')),
-      );
+      final s = style('<table><tr><td height="16" style="min-height:48px">a</td></tr></table>', 'td');
+      expect(s.lastIndexOf('min-height:48px'), greaterThan(s.indexOf('min-height:16px')));
     });
 
-    for (final style in [
-      'display:none',
-      'display:none!important',
-      'color:red; DISPLAY : NONE !important',
-    ]) {
+    for (final style in ['display:none', 'display:none!important', 'color:red; DISPLAY : NONE !important']) {
       test('hidden img is removed: $style', () {
-        final doc = parse(
-          _blocked(
-            '<p>x<img style="$style"><img src="data:image/gif;base64,R0lG"></p>',
-          ).html,
-        );
+        final doc = parse(_blocked('<p>x<img style="$style"><img src="data:image/gif;base64,R0lG"></p>').html);
         expect(doc.querySelectorAll('img'), hasLength(1));
       });
     }
 
-    test(
-      'bgcolor is converted even with a <style> background (fwfh ignores it)',
-      () {
-        expect(
-          style(
-            '<style>td{background-color:black}</style>'
-                '<table><tr><td bgcolor="white">a</td></tr></table>',
-            'td',
-          ),
-          startsWith('background-color:white;'),
-        );
-      },
-    );
+    test('bgcolor is converted even with a <style> background (fwfh ignores it)', () {
+      expect(
+        style(
+          '<style>td{background-color:black}</style>'
+              '<table><tr><td bgcolor="white">a</td></tr></table>',
+          'td',
+        ),
+        startsWith('background-color:white;'),
+      );
+    });
 
     for (final c in {
       'display:none;display:block': 2,
@@ -407,11 +332,7 @@ body { background-image: url(//t.example/bg.png); }
       'display:block;display:none': 1,
     }.entries) {
       test('effective display of img: ${c.key}', () {
-        final doc = parse(
-          _blocked(
-            '<p><img style="${c.key}"><img src="data:image/gif;base64,R0lG"></p>',
-          ).html,
-        );
+        final doc = parse(_blocked('<p><img style="${c.key}"><img src="data:image/gif;base64,R0lG"></p>').html);
         expect(doc.querySelectorAll('img'), hasLength(c.value));
       });
     }

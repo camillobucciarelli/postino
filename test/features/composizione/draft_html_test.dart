@@ -58,19 +58,11 @@ void main() {
       expect(_normal(htmlToDelta(deltaToHtml(ops))), _normal(ops));
     });
 
-    test(
-      'the HTML of Gmail and Mail with <div> and <br> keeps its line breaks',
-      () {
-        expect(
-          _normal(
-            htmlToDelta('<div>Prima riga<br>Seconda</div><div>Terza</div>'),
-          ),
-          [
-            {'insert': 'Prima riga\nSeconda\nTerza\n'},
-          ],
-        );
-      },
-    );
+    test('the HTML of Gmail and Mail with <div> and <br> keeps its line breaks', () {
+      expect(_normal(htmlToDelta('<div>Prima riga<br>Seconda</div><div>Terza</div>')), [
+        {'insert': 'Prima riga\nSeconda\nTerza\n'},
+      ]);
+    });
 
     test('header, image and colour are flattened to text', () {
       expect(
@@ -101,23 +93,16 @@ void main() {
 
     test('a blockquote of two paragraphs keeps two quoted lines (#37)', () {
       const bq = {'blockquote': true};
-      expect(
-        _normal(htmlToDelta('<blockquote><p>a</p><p>b</p></blockquote>')),
-        [
-          {'insert': 'a'},
-          {'insert': '\n', 'attributes': bq},
-          {'insert': 'b'},
-          {'insert': '\n', 'attributes': bq},
-        ],
-      );
+      expect(_normal(htmlToDelta('<blockquote><p>a</p><p>b</p></blockquote>')), [
+        {'insert': 'a'},
+        {'insert': '\n', 'attributes': bq},
+        {'insert': 'b'},
+        {'insert': '\n', 'attributes': bq},
+      ]);
     });
 
     test('the Citazione of a reply: attribution as a paragraph, the quoted lines after', () {
-      final m = msg(
-        'o',
-        fromName: 'Ada',
-        subject: 'Cena',
-      );
+      final m = msg('o', fromName: 'Ada', subject: 'Cena');
       final html = quoteHtml(
         m,
         dateLabel: 'lunedì 2 novembre 2026 alle 10:00',
@@ -125,9 +110,7 @@ void main() {
       );
       const bq = {'blockquote': true};
       expect(_normal(htmlToDelta('<p>Prima</p>$html')), [
-        {
-          'insert': 'Prima\nIl giorno lunedì 2 novembre 2026 alle 10:00 Ada <ada@example.com> ha scritto:\nVenerdì?',
-        },
+        {'insert': 'Prima\nIl giorno lunedì 2 novembre 2026 alle 10:00 Ada <ada@example.com> ha scritto:\nVenerdì?'},
         {'insert': '\n', 'attributes': bq},
         {
           'insert': 'Alle 20',
@@ -139,9 +122,7 @@ void main() {
 
     test('text nodes stay literal: a typed <address> and an escaped tag are not parsed', () {
       expect(
-        Document.fromJson(
-          htmlToDelta('<div>Scrivi a &lt;alice@example.com&gt;</div>'),
-        ).toPlainText(),
+        Document.fromJson(htmlToDelta('<div>Scrivi a &lt;alice@example.com&gt;</div>')).toPlainText(),
         'Scrivi a <alice@example.com>\n',
       );
       final ops = htmlToDelta('<div>&lt;b&gt;no&lt;/b&gt;</div>');
@@ -150,11 +131,7 @@ void main() {
     });
 
     test('the space between two inline elements is kept', () {
-      expect(
-        Document.fromJson(htmlToDelta('<div><b>uno</b> <i>due</i></div>'))
-            .toPlainText(),
-        'uno due\n',
-      );
+      expect(Document.fromJson(htmlToDelta('<div><b>uno</b> <i>due</i></div>')).toPlainText(), 'uno due\n');
     });
 
     test('empty HTML is the empty document', () {

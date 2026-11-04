@@ -10,14 +10,7 @@ Account _account({
   int color = 0,
   int position = 0,
   AccountStatus status = AccountStatus.attivo,
-}) => Account(
-  id: id,
-  address: address,
-  provider: provider,
-  color: color,
-  position: position,
-  status: status,
-);
+}) => Account(id: id, address: address, provider: provider, color: color, position: position, status: status);
 
 void main() {
   test('Account compares by value (#94)', () {

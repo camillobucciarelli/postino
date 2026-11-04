@@ -8,11 +8,7 @@ import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
 /// One Account a message can leave from.
-typedef PostinoSenderOption = ({
-  String id,
-  PostinoAccountRef mark,
-  String address,
-});
+typedef PostinoSenderOption = ({String id, PostinoAccountRef mark, String address});
 
 /// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap;
 /// not [enabled], it only shows the sender.
@@ -41,10 +37,7 @@ class PostinoSenderPicker extends StatelessWidget {
         for (final o in options)
           MenuItemButton(
             onPressed: () => onSelected(o.id),
-            leadingIcon: PostinoAccountMark(
-              color: o.mark.color,
-              initial: o.mark.initial,
-            ),
+            leadingIcon: PostinoAccountMark(color: o.mark.color, initial: o.mark.initial),
             child: Text(o.address),
           ),
       ],
@@ -54,44 +47,26 @@ class PostinoSenderPicker extends StatelessWidget {
           enabled: enabled,
           label: '$label: ${selected.address}',
           child: InkWell(
-            onTap: enabled
-                ? () => menu.isOpen ? menu.close() : menu.open()
-                : null,
+            onTap: enabled ? () => menu.isOpen ? menu.close() : menu.open() : null,
             // A control, not content: its address is out of any selection and of the merged label.
             child: ExcludeSemantics(
               child: SelectionContainer.disabled(
                 child: PostinoFocusRing(
                   inset: true,
                   child: Container(
-                    constraints: const BoxConstraints(
-                      minHeight: PostinoSize.touchTargetAndroid,
-                    ),
+                    constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
                     decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: c.composerFieldDivider),
-                      ),
+                      border: Border(bottom: BorderSide(color: c.composerFieldDivider)),
                     ),
                     child: Row(
                       spacing: PostinoSpacing.s3,
                       children: [
-                        Text(
-                          label,
-                          style: PostinoText.label.copyWith(color: c.inkMuted),
-                        ),
-                        PostinoAccountMark(
-                          color: selected.mark.color,
-                          initial: selected.mark.initial,
-                        ),
+                        Text(label, style: PostinoText.label.copyWith(color: c.inkMuted)),
+                        PostinoAccountMark(color: selected.mark.color, initial: selected.mark.initial),
                         Expanded(
-                          child: Text(
-                            selected.address,
-                            style: PostinoText.body.copyWith(color: c.ink),
-                          ),
+                          child: Text(selected.address, style: PostinoText.body.copyWith(color: c.ink)),
                         ),
-                        PostinoIcon(
-                          PostinoIcons.chevronDown,
-                          color: c.inkMuted,
-                        ),
+                        PostinoIcon(PostinoIcons.chevronDown, color: c.inkMuted),
                       ],
                     ),
                   ),

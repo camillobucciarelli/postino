@@ -8,12 +8,7 @@ import '../tokens/postino_tokens.dart';
 /// The composer: the sender row, the header fields (each with its own hairline) and the editor
 /// filling the rest, on `composer-bg` with `space-5` at the sides.
 class PostinoComposerLayout extends StatelessWidget {
-  const PostinoComposerLayout({
-    super.key,
-    required this.sender,
-    required this.fields,
-    required this.editor,
-  });
+  const PostinoComposerLayout({super.key, required this.sender, required this.fields, required this.editor});
 
   final Widget sender;
   final List<Widget> fields;
@@ -35,10 +30,7 @@ class PostinoComposerLayout extends StatelessWidget {
           SliverLayoutBuilder(
             builder: (context, c) => SliverToBoxAdapter(
               child: SizedBox(
-                height: math.max(
-                  minEditorHeight,
-                  c.viewportMainAxisExtent - c.precedingScrollExtent,
-                ),
+                height: math.max(minEditorHeight, c.viewportMainAxisExtent - c.precedingScrollExtent),
                 child: editor,
               ),
             ),

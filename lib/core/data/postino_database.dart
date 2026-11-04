@@ -64,22 +64,15 @@ class PostinoDatabase extends _$PostinoDatabase {
   PostinoDatabase(super.executor);
 
   /// Host tests: same schema, plain SQLite, no key. Streams close synchronously: drift's close timer would outlive widget tests.
-  factory PostinoDatabase.inMemory() => PostinoDatabase(
-    DatabaseConnection(
-      NativeDatabase.memory(setup: _secureDelete),
-      closeStreamsSynchronously: true,
-    ),
-  );
+  factory PostinoDatabase.inMemory() =>
+      PostinoDatabase(DatabaseConnection(NativeDatabase.memory(setup: _secureDelete), closeStreamsSynchronously: true));
 
   /// On device: SQLCipher file, key generated at first launch and kept in the [keychain].
   static Future<PostinoDatabase> open(String path, SecureStore keychain) async {
     var key = await keychain.read(_keyName);
     if (key == null) {
       final random = Random.secure();
-      key = [
-        for (var i = 0; i < 32; i++)
-          random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-      ].join();
+      key = [for (var i = 0; i < 32; i++) random.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
       await keychain.write(_keyName, key);
     }
     final db = PostinoDatabase(
@@ -128,10 +121,7 @@ class PostinoDatabase extends _$PostinoDatabase {
       }
       if (from < 4) {
         // Account color: its place in the palette instead of the light-theme ARGB, so dark mode has its own.
-        final cases = [
-          for (final (i, argb) in _v3AccountColors.indexed)
-            'WHEN $argb THEN $i',
-        ].join(' ');
+        final cases = [for (final (i, argb) in _v3AccountColors.indexed) 'WHEN $argb THEN $i'].join(' ');
         await customStatement(
           'UPDATE accounts SET color = CASE color $cases '
           'ELSE position % $accountColorCount END',
@@ -180,9 +170,7 @@ class PostinoDatabase extends _$PostinoDatabase {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);
         // v1-v6 kept the raw From header and comma-joined To: split into address and name, one recipient per line.
-        final rows = await customSelect(
-          'SELECT account_id, id, sender, recipients FROM messages',
-        ).get();
+        final rows = await customSelect('SELECT account_id, id, sender, recipients FROM messages').get();
         for (final r in rows) {
           final from = parseMailbox(r.read<String>('sender'));
           await customUpdate(
@@ -191,12 +179,7 @@ class PostinoDatabase extends _$PostinoDatabase {
             variables: [
               Variable(from.address),
               Variable(from.name),
-              Variable(
-                [
-                  for (final m in parseMailboxes(r.read<String>('recipients')))
-                    formatMailbox(m),
-                ].join('\n'),
-              ),
+              Variable([for (final m in parseMailboxes(r.read<String>('recipients'))) formatMailbox(m)].join('\n')),
               Variable(r.read<String>('account_id')),
               Variable(r.read<String>('id')),
             ],
@@ -207,8 +190,7 @@ class PostinoDatabase extends _$PostinoDatabase {
   );
 }
 
-void _secureDelete(sqlite3.Database sql) =>
-    sql.execute('PRAGMA secure_delete = ON');
+void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
 

@@ -7,22 +7,15 @@ import '../tokens/postino_tokens.dart';
 /// The body of an expanded message: its [text] in `body` (selectable through the Conversazione's SelectionArea);
 /// or, while it is not there, a quiet note and maybe a retry.
 class PostinoMessageBody extends StatelessWidget {
-  const PostinoMessageBody({
-    super.key,
-    required String this.text,
-    this.quiet = false,
-  }) : note = null,
-       actionLabel = null,
-       onAction = null;
+  const PostinoMessageBody({super.key, required String this.text, this.quiet = false})
+    : note = null,
+      actionLabel = null,
+      onAction = null;
 
   /// No body yet: [note] says why (“Caricamento…”, “Corpo non disponibile offline”), [actionLabel] retries.
-  const PostinoMessageBody.missing({
-    super.key,
-    required String this.note,
-    this.actionLabel,
-    this.onAction,
-  }) : text = null,
-       quiet = false;
+  const PostinoMessageBody.missing({super.key, required String this.note, this.actionLabel, this.onAction})
+    : text = null,
+      quiet = false;
 
   final String? text;
   final String? note;
@@ -38,9 +31,7 @@ class PostinoMessageBody extends StatelessWidget {
     if (text case final t?) {
       return Text(
         t,
-        style: quiet
-            ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
-            : PostinoText.body.copyWith(color: c.ink),
+        style: quiet ? PostinoText.bodyQuote.copyWith(color: c.inkMuted) : PostinoText.body.copyWith(color: c.ink),
       );
     }
     final label = actionLabel;
@@ -48,10 +39,7 @@ class PostinoMessageBody extends StatelessWidget {
       spacing: PostinoSpacing.s2,
       children: [
         Flexible(
-          child: Text(
-            note!,
-            style: PostinoText.preview.copyWith(color: c.inkMuted),
-          ),
+          child: Text(note!, style: PostinoText.preview.copyWith(color: c.inkMuted)),
         ),
         if (label != null)
           PostinoButton(

@@ -13,10 +13,7 @@ Widget _pane(double height, double textScale) => MaterialApp(
         child: SizedBox(
           width: 447,
           height: height,
-          child: const PostinoEmptyState(
-            title: 'Niente di nuovo',
-            body: 'I messaggi compaiono qui appena arrivano.',
-          ),
+          child: const PostinoEmptyState(title: 'Niente di nuovo', body: 'I messaggi compaiono qui appena arrivano.'),
         ),
       ),
     ),

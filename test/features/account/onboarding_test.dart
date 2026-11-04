@@ -32,21 +32,13 @@ void main() {
       expect(find.text('Collega Gmail'), findsNothing);
       expect(find.text('Posta unificata'), findsOneWidget);
       final row = find.byKey(const ValueKey('row-gmail:ada@gmail.com-m1'));
-      expect(
-        find.descendant(of: row, matching: find.text('Ciao')),
-        findsOneWidget,
-      );
+      expect(find.descendant(of: row, matching: find.text('Ciao')), findsOneWidget);
       // The first Account gets the first color of the palette.
-      expect(
-        accountBar(tester, row),
-        PostinoColors.light.account(PostinoAccountColor.sky).color,
-      );
+      expect(accountBar(tester, row), PostinoColors.light.account(PostinoAccountColor.sky).color);
     },
   );
 
-  testWidgets('without a Google client ID the onboarding says so', (
-    tester,
-  ) async {
+  testWidgets('without a Google client ID the onboarding says so', (tester) async {
     final h = await Harness.create();
     h.consent.failure = const ConfigurationFailure('GOOGLE_CLIENT_ID');
 
@@ -58,18 +50,15 @@ void main() {
     expect(find.text('Collega Gmail'), findsOneWidget);
   });
 
-  testWidgets(
-    'without the Gmail permission the onboarding asks to retry granting it',
-    (tester) async {
-      final h = await Harness.create();
-      h.consent.failure = const MissingPermissionFailure();
+  testWidgets('without the Gmail permission the onboarding asks to retry granting it', (tester) async {
+    final h = await Harness.create();
+    h.consent.failure = const MissingPermissionFailure();
 
-      await _start(tester);
-      await tester.tap(find.text('Collega Gmail'));
-      await tester.pumpAndSettle();
+    await _start(tester);
+    await tester.tap(find.text('Collega Gmail'));
+    await tester.pumpAndSettle();
 
-      expect(find.textContaining('accesso a Gmail'), findsOneWidget);
-      expect(find.text('Collega Gmail'), findsOneWidget);
-    },
-  );
+    expect(find.textContaining('accesso a Gmail'), findsOneWidget);
+    expect(find.text('Collega Gmail'), findsOneWidget);
+  });
 }

@@ -16,15 +16,9 @@ const _msg = OutgoingMessage(
 Future<OutboxStore> _store() async {
   final db = PostinoDatabase.inMemory();
   addTearDown(db.close);
-  await MailStore(db).addAccount(
-    const Account(
-      id: 'a',
-      address: 'a@example.com',
-      provider: ProviderKind.gmail,
-      color: 0,
-      position: 0,
-    ),
-  );
+  await MailStore(
+    db,
+  ).addAccount(const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0));
   return OutboxStore(db);
 }
 
@@ -37,17 +31,14 @@ void main() {
     expect((await s.outgoing('a', 'm1'))!.raw, 'RAW');
   });
 
-  test(
-    'a local Bozza is saved and read back with the Account address',
-    () async {
-      final s = await _store();
-      await s.saveDraft('a', _msg, updatedAt: 5);
-      final d = (await s.localDraft('a', 'm1'))!;
-      expect(d.draft.from, 'a@example.com');
-      expect(d.draft.subject, 'Hi');
-      expect(d.pending, isTrue);
-    },
-  );
+  test('a local Bozza is saved and read back with the Account address', () async {
+    final s = await _store();
+    await s.saveDraft('a', _msg, updatedAt: 5);
+    final d = (await s.localDraft('a', 'm1'))!;
+    expect(d.draft.from, 'a@example.com');
+    expect(d.draft.subject, 'Hi');
+    expect(d.pending, isTrue);
+  });
 
   test('a removed Bozza is gone', () async {
     final s = await _store();

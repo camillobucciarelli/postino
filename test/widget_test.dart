@@ -5,9 +5,7 @@ import 'package:postino/main.dart';
 import 'support/harness.dart';
 
 void main() {
-  testWidgets('opens on the Posta route, translated in Italian', (
-    tester,
-  ) async {
+  testWidgets('opens on the Posta route, translated in Italian', (tester) async {
     await (await Harness.create()).addAccount('a1');
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
@@ -16,9 +14,7 @@ void main() {
     expect(find.text('1 account'), findsOneWidget);
   });
 
-  testWidgets('opens on the Posta route, translated in English', (
-    tester,
-  ) async {
+  testWidgets('opens on the Posta route, translated in English', (tester) async {
     await (await Harness.create()).addAccount('a1');
     LocaleSettings.setLocaleSync(AppLocale.en);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));

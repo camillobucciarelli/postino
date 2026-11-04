@@ -8,12 +8,7 @@ import '../tokens/postino_tokens.dart';
 
 /// Fills a view with no content and says what comes next. Calm: no illustration, no jokes.
 class PostinoEmptyState extends StatelessWidget {
-  const PostinoEmptyState({
-    super.key,
-    required this.title,
-    this.body,
-    this.icon = PostinoIcons.check,
-  });
+  const PostinoEmptyState({super.key, required this.title, this.body, this.icon = PostinoIcons.check});
 
   final String title;
   final String? body;
@@ -27,10 +22,7 @@ class PostinoEmptyState extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: PostinoSpacing.s6,
-              vertical: PostinoSpacing.s10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s6, vertical: PostinoSpacing.s10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               spacing: PostinoSpacing.s2,
@@ -39,13 +31,8 @@ class PostinoEmptyState extends StatelessWidget {
                   width: PostinoSpacing.s16,
                   height: PostinoSpacing.s16,
                   margin: const EdgeInsets.only(bottom: PostinoSpacing.s2),
-                  decoration: BoxDecoration(
-                    color: c.surfaceSelected,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: PostinoIcon(icon, size: 30, color: c.brand),
-                  ),
+                  decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
+                  child: Center(child: PostinoIcon(icon, size: 30, color: c.brand)),
                 ),
                 Text(
                   title,

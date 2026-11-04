@@ -17,28 +17,14 @@ class PostinoFileTypeBadge extends StatelessWidget {
     'pdf': _Kind.pdf,
     for (final e in ['doc', 'docx', 'odt', 'rtf', 'txt', 'pages']) e: _Kind.doc,
     for (final e in ['xls', 'xlsx', 'ods', 'csv', 'numbers']) e: _Kind.sheet,
-    for (final e in [
-      'png',
-      'jpg',
-      'jpeg',
-      'gif',
-      'webp',
-      'heic',
-      'bmp',
-      'tif',
-      'tiff',
-      'svg',
-    ])
-      e: _Kind.image,
+    for (final e in ['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'bmp', 'tif', 'tiff', 'svg']) e: _Kind.image,
   };
 
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
     final dot = name.lastIndexOf('.');
-    final ext = dot > 0 && dot < name.length - 1
-        ? name.substring(dot + 1).toLowerCase()
-        : '';
+    final ext = dot > 0 && dot < name.length - 1 ? name.substring(dot + 1).toLowerCase() : '';
     final kind = _kinds[ext] ?? _Kind.other;
     final (bg, fg) = switch (kind) {
       _Kind.pdf => (c.dangerSubtle, c.danger),
@@ -53,12 +39,7 @@ class PostinoFileTypeBadge extends StatelessWidget {
         width: PostinoSize.controlMd,
         height: PostinoSize.controlMd,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
-        ),
+        decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm))),
         child: kind == _Kind.image
             ? PostinoIcon(PostinoIcons.image, color: fg)
             : Text(

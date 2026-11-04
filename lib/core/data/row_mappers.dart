@@ -3,21 +3,11 @@ import '../domain/message.dart';
 import 'postino_database.dart';
 
 /// Database rows to domain values, shared by the stores.
-Account accountOf(AccountRow r) => Account(
-  id: r.id,
-  address: r.address,
-  provider: r.provider,
-  color: r.color,
-  position: r.position,
-  status: r.status,
-);
+Account accountOf(AccountRow r) =>
+    Account(id: r.id, address: r.address, provider: r.provider, color: r.color, position: r.position, status: r.status);
 
 /// [labelIds]: only where they are read (an open Conversazione); lists pass the inbox.
-Message messageOf(
-  MessageRow r, [
-  List<String> labelIds = const [inboxLabelId],
-  String? snippet,
-]) => Message(
+Message messageOf(MessageRow r, [List<String> labelIds = const [inboxLabelId], String? snippet]) => Message(
   id: r.id,
   messageId: r.messageId,
   conversationId: r.conversationId,
@@ -43,11 +33,8 @@ List<String> lines(String s) => [
 ];
 
 /// A stored body with its attachments.
-MessageBody bodyOf(BodyRow b) =>
-    MessageBody(b.body, b.kind, attachments: b.attachments);
+MessageBody bodyOf(BodyRow b) => MessageBody(b.body, b.kind, attachments: b.attachments);
 
 /// The address of an Account of this database.
 Future<String> addressOf(PostinoDatabase db, String accountId) async =>
-    (await db.accountsDao.byPosition())
-        .firstWhere((a) => a.id == accountId)
-        .address;
+    (await db.accountsDao.byPosition()).firstWhere((a) => a.id == accountId).address;

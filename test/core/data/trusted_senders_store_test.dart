@@ -8,14 +8,8 @@ import 'package:postino/core/domain/trusted_senders_repository.dart';
 void main() {
   test('normalizeAddress: the exact address, trimmed and lowercase', () {
     expect(normalizeAddress('  Ada@Example.COM '), 'ada@example.com');
-    expect(
-      normalizeAddress('Ada Lovelace <Ada@Example.com>'),
-      'ada@example.com',
-    );
-    expect(
-      normalizeAddress('"Lovelace, Ada" < ada@example.com >'),
-      'ada@example.com',
-    );
+    expect(normalizeAddress('Ada Lovelace <Ada@Example.com>'), 'ada@example.com');
+    expect(normalizeAddress('"Lovelace, Ada" < ada@example.com >'), 'ada@example.com');
   });
 
   late PostinoDatabase db;

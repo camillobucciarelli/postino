@@ -13,12 +13,10 @@ class Bodies extends Table {
   TextColumn get body => text()();
 
   /// HTML or plain text; the default only fills the rows of v1-v4, which the migration then sorts.
-  TextColumn get kind =>
-      textEnum<BodyKind>().withDefault(Constant(BodyKind.testo.name))();
+  TextColumn get kind => textEnum<BodyKind>().withDefault(Constant(BodyKind.testo.name))();
 
   /// The attachments, as JSON `[{"id", "name", "size"}]` (v9); null in rows stored before, which did not know them.
-  TextColumn get attachments =>
-      text().map(const AttachmentsConverter()).nullable()();
+  TextColumn get attachments => text().map(const AttachmentsConverter()).nullable()();
 
   @override
   Set<Column> get primaryKey => {accountId, messageId};
@@ -41,12 +39,6 @@ class AttachmentsConverter extends TypeConverter<List<Attachment>, String> {
 
   @override
   String toSql(List<Attachment> value) => jsonEncode([
-    for (final a in value)
-      {
-        'id': a.id,
-        'name': a.name,
-        'size': a.size,
-        if (a.mimeType != null) 'mimeType': a.mimeType,
-      },
+    for (final a in value) {'id': a.id, 'name': a.name, 'size': a.size, if (a.mimeType != null) 'mimeType': a.mimeType},
   ]);
 }

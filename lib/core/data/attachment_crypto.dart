@@ -18,8 +18,7 @@ String newAttachmentKeyHex() => hex(randomBytes(64));
 
 AttachmentKeys attachmentKeysFromHex(String hex) {
   final bytes = Uint8List.fromList([
-    for (var i = 0; i < hex.length; i += 2)
-      int.parse(hex.substring(i, i + 2), radix: 16),
+    for (var i = 0; i < hex.length; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
   ]);
   return (enc: bytes.sublist(0, 32), mac: bytes.sublist(32));
 }
@@ -49,21 +48,15 @@ Uint8List? decryptAttachment(Uint8List sealed, AttachmentKeys keys) {
     diff |= mac[i] ^ tag[i];
   }
   if (diff != 0) return null;
-  return _ctr(
-    keys.enc,
-    Uint8List.sublistView(body, 0, _ivLength),
-    Uint8List.sublistView(body, _ivLength),
-  );
+  return _ctr(keys.enc, Uint8List.sublistView(body, 0, _ivLength), Uint8List.sublistView(body, _ivLength));
 }
 
-Uint8List _ctr(Uint8List key, Uint8List iv, Uint8List data) => (CTRStreamCipher(
-  AESEngine(),
-)..init(true, ParametersWithIV(KeyParameter(key), iv))).process(data);
+Uint8List _ctr(Uint8List key, Uint8List iv, Uint8List data) =>
+    (CTRStreamCipher(AESEngine())..init(true, ParametersWithIV(KeyParameter(key), iv))).process(data);
 
 Uint8List randomBytes(int n) {
   final r = Random.secure();
   return Uint8List.fromList([for (var i = 0; i < n; i++) r.nextInt(256)]);
 }
 
-String hex(List<int> bytes) =>
-    [for (final b in bytes) b.toRadixString(16).padLeft(2, '0')].join();
+String hex(List<int> bytes) => [for (final b in bytes) b.toRadixString(16).padLeft(2, '0')].join();

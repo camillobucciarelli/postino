@@ -54,16 +54,8 @@ Stream<List<InboxEntry>> sentEntries(
   required String offline,
   required String failed,
 }) => _latest(
-  _latest(
-    GetIt.I<AccountsRepository>().watchAccounts(),
-    _connectivity(),
-    (accounts, online) => (accounts, online),
-  ),
-  _latest(
-    r.watchOutbox(accountId),
-    r.watchMessages(accountId, sentLabelId),
-    (outbox, sent) => (outbox, sent),
-  ),
+  _latest(GetIt.I<AccountsRepository>().watchAccounts(), _connectivity(), (accounts, online) => (accounts, online)),
+  _latest(r.watchOutbox(accountId), r.watchMessages(accountId, sentLabelId), (outbox, sent) => (outbox, sent)),
   (context, lists) {
     final (accounts, online) = context;
     final (outbox, sent) = lists;
@@ -75,8 +67,7 @@ Stream<List<InboxEntry>> sentEntries(
         : offline;
     return [
       for (final a in accounts.where((a) => a.id == accountId))
-        for (final OutgoingEntry(message: m, :sendAfter, failed: refused)
-            in outbox)
+        for (final OutgoingEntry(message: m, :sendAfter, failed: refused) in outbox)
           InboxEntry(
             message: Message(
               id: m.messageId,

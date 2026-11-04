@@ -17,42 +17,26 @@ class PostinoMessageDetailsPanel extends StatelessWidget {
     final c = context.pc;
     const style = PostinoText.caption;
     return Padding(
-      padding: const EdgeInsets.only(
-        top: PostinoSpacing.s3,
-        left: PostinoSize.avatarMd + PostinoSpacing.s3,
-      ),
+      padding: const EdgeInsets.only(top: PostinoSpacing.s3, left: PostinoSize.avatarMd + PostinoSpacing.s3),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: c.surfaceGround,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(PostinoSpacing.s3),
           child: Table(
-            columnWidths: const {
-              0: IntrinsicColumnWidth(),
-              1: FlexColumnWidth(),
-            },
+            columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
             children: [
               for (final r in rows)
                 TableRow(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(
-                        right: PostinoSpacing.s3,
-                        bottom: PostinoSpacing.s0_5,
-                      ),
-                      child: Text(
-                        r.label,
-                        style: style.copyWith(color: c.inkSubtle),
-                      ),
+                      padding: const EdgeInsets.only(right: PostinoSpacing.s3, bottom: PostinoSpacing.s0_5),
+                      child: Text(r.label, style: style.copyWith(color: c.inkSubtle)),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: PostinoSpacing.s0_5,
-                      ),
+                      padding: const EdgeInsets.only(bottom: PostinoSpacing.s0_5),
                       child: Text.rich(
                         TextSpan(
                           children: [

@@ -27,9 +27,7 @@ class Harness {
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
-  late final fs = MemoryFileSystem(
-    opHandle: (path, op) => onFileOp?.call(path, op),
-  );
+  late final fs = MemoryFileSystem(opHandle: (path, op) => onFileOp?.call(path, op));
   void Function(String path, FileSystemOp op)? onFileOp;
 
   /// [attachmentCap]: the attachment cache's cap in bytes, small to test eviction.
@@ -37,10 +35,7 @@ class Harness {
     await getIt.reset();
     final h = Harness._();
     getIt
-      ..registerSingleton<PostinoDatabase>(
-        PostinoDatabase.inMemory(),
-        dispose: (db) => db.close(),
-      )
+      ..registerSingleton<PostinoDatabase>(PostinoDatabase.inMemory(), dispose: (db) => db.close())
       ..registerSingleton<GoogleConsent>(h.consent)
       ..registerSingleton<SecureStore>(h.keychain)
       ..registerSingleton<Clock>(h.clock)
@@ -71,13 +66,7 @@ class Harness {
   /// Adds an Account backed by a fake Provider registered in get_it.
   Future<FakeMailProvider> addAccount(String id, {int color = 0}) async {
     await getIt<MailStore>().addAccount(
-      Account(
-        id: id,
-        address: '$id@example.com',
-        provider: ProviderKind.gmail,
-        color: color,
-        position: _next++,
-      ),
+      Account(id: id, address: '$id@example.com', provider: ProviderKind.gmail, color: color, position: _next++),
     );
     return providerFor(id);
   }

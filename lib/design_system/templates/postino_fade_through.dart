@@ -8,11 +8,7 @@ import '../tokens/postino_tokens.dart';
 /// The previous child is the widget given before, so it must carry its own params.
 /// With reduced motion ([MediaQuery.disableAnimationsOf]) the swap is instant.
 class PostinoFadeThrough extends StatefulWidget {
-  const PostinoFadeThrough({
-    super.key,
-    required this.transitionKey,
-    required this.child,
-  });
+  const PostinoFadeThrough({super.key, required this.transitionKey, required this.child});
 
   final Object transitionKey;
   final Widget child;
@@ -21,30 +17,22 @@ class PostinoFadeThrough extends StatefulWidget {
   State<PostinoFadeThrough> createState() => _PostinoFadeThroughState();
 }
 
-class _PostinoFadeThroughState extends State<PostinoFadeThrough>
-    with SingleTickerProviderStateMixin {
-  static final _total =
-      PostinoMotion.fadeThroughOut + PostinoMotion.fadeThroughIn;
-  static final _split =
-      PostinoMotion.fadeThroughOut.inMicroseconds / _total.inMicroseconds;
+class _PostinoFadeThroughState extends State<PostinoFadeThrough> with SingleTickerProviderStateMixin {
+  static final _total = PostinoMotion.fadeThroughOut + PostinoMotion.fadeThroughIn;
+  static final _split = PostinoMotion.fadeThroughOut.inMicroseconds / _total.inMicroseconds;
 
   // Starts finished: the first build does not animate.
-  late final _controller =
-      AnimationController(vsync: this, duration: _total, value: 1)
-        ..addStatusListener((s) {
-          if (s.isCompleted) setState(() => _outgoing = null);
-        });
+  late final _controller = AnimationController(vsync: this, duration: _total, value: 1)
+    ..addStatusListener((s) {
+      if (s.isCompleted) setState(() => _outgoing = null);
+    });
   Widget? _outgoing;
 
   @override
   void didUpdateWidget(PostinoFadeThrough old) {
     super.didUpdateWidget(old);
-    if (old.transitionKey != widget.transitionKey &&
-        !MediaQuery.disableAnimationsOf(context)) {
-      _outgoing = KeyedSubtree(
-        key: ValueKey(old.transitionKey),
-        child: old.child,
-      );
+    if (old.transitionKey != widget.transitionKey && !MediaQuery.disableAnimationsOf(context)) {
+      _outgoing = KeyedSubtree(key: ValueKey(old.transitionKey), child: old.child);
       _controller.forward(from: 0);
     }
   }
@@ -67,26 +55,18 @@ class _PostinoFadeThroughState extends State<PostinoFadeThrough>
         final fadingOut = out != null && t < _split;
         final k = fadingOut
             ? 1 - PostinoMotion.standardAccelerate.transform(t / _split)
-            : PostinoMotion.emphasizedDecelerate.transform(
-                ((t - _split) / (1 - _split)).clamp(0.0, 1.0),
-              );
+            : PostinoMotion.emphasizedDecelerate.transform(((t - _split) / (1 - _split)).clamp(0.0, 1.0));
         // Same widget types in both phases, so the outgoing page keeps its State
         // (scroll, subscriptions) while it fades out.
         return FadeTransition(
           opacity: AlwaysStoppedAnimation(k),
           child: ScaleTransition(
             scale: AlwaysStoppedAnimation(
-              fadingOut
-                  ? 1.0
-                  : PostinoMotion.fadeThroughScaleBegin +
-                        (1 - PostinoMotion.fadeThroughScaleBegin) * k,
+              fadingOut ? 1.0 : PostinoMotion.fadeThroughScaleBegin + (1 - PostinoMotion.fadeThroughScaleBegin) * k,
             ),
             child: out != null && fadingOut
                 ? out
-                : KeyedSubtree(
-                    key: ValueKey(widget.transitionKey),
-                    child: widget.child,
-                  ),
+                : KeyedSubtree(key: ValueKey(widget.transitionKey), child: widget.child),
           ),
         );
       },

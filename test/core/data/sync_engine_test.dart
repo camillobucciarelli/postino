@@ -16,10 +16,9 @@ void main() {
   late FakeMailProvider a;
   late FakeMailProvider b;
 
-  Future<List<String>> inbox() async => [
-    for (final e in await getIt<InboxRepository>().watchUnifiedInbox().first)
-      '${e.account.id}:${e.message.id}',
-  ]..sort();
+  Future<List<String>> inbox() async =>
+      [for (final e in await getIt<InboxRepository>().watchUnifiedInbox().first) '${e.account.id}:${e.message.id}']
+        ..sort();
 
   setUp(() async {
     h = await Harness.create();
@@ -44,9 +43,7 @@ void main() {
     slow.complete();
     await (sync, open).wait;
 
-    final [(:message, body: _)] = await getIt<InboxRepository>()
-        .watchConversation('a', 't-1')
-        .first;
+    final [(:message, body: _)] = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
     expect(message.isRead, isTrue);
     expect(a.readCalls.map((c) => (c.$1.join(), c.$2)), [('1', true)]);
   });
@@ -91,88 +88,60 @@ void main() {
     expect(await inbox(), ['a:1', 'a:2']);
   });
 
-  test(
-    'an empty initial snapshot clears the Account cache, labels included',
-    () async {
-      a
-        ..removeRemotely('1')
-        ..removeRemotely('2')
-        ..expireCursors(); // forces the initial sync, i.e. a full snapshot
-      await GetIt.I<SyncEngine>().syncAll();
-      expect(await inbox(), ['b:1']);
-      final db = GetIt.I<PostinoDatabase>();
-      for (final table in ['messages', 'message_labels']) {
-        expect(
-          await db
-              .customSelect("SELECT 1 FROM $table WHERE account_id = 'a'")
-              .get(),
-          isEmpty,
-        );
-      }
-    },
-  );
+  test('an empty initial snapshot clears the Account cache, labels included', () async {
+    a
+      ..removeRemotely('1')
+      ..removeRemotely('2')
+      ..expireCursors(); // forces the initial sync, i.e. a full snapshot
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(await inbox(), ['b:1']);
+    final db = GetIt.I<PostinoDatabase>();
+    for (final table in ['messages', 'message_labels']) {
+      expect(await db.customSelect("SELECT 1 FROM $table WHERE account_id = 'a'").get(), isEmpty);
+    }
+  });
 
-  test(
-    'a snapshot larger than the SQL variable limit still reconciles',
-    () async {
-      for (var i = 0; i < 40000; i++) {
-        a.deliver(msg('big$i'));
-      }
-      await GetIt.I<SyncEngine>().syncAll();
-      a
-        ..removeRemotely('1')
-        ..expireCursors(); // full snapshot again
-      await GetIt.I<SyncEngine>().syncAll();
-      expect(
-        (await inbox()).length,
-        40000 + 1 + 1,
-      ); // a: 2 + big - '1', plus b:1
-    },
-  );
+  test('a snapshot larger than the SQL variable limit still reconciles', () async {
+    for (var i = 0; i < 40000; i++) {
+      a.deliver(msg('big$i'));
+    }
+    await GetIt.I<SyncEngine>().syncAll();
+    a
+      ..removeRemotely('1')
+      ..expireCursors(); // full snapshot again
+    await GetIt.I<SyncEngine>().syncAll();
+    expect((await inbox()).length, 40000 + 1 + 1); // a: 2 + big - '1', plus b:1
+  });
 
-  test(
-    'after the first sync, only the changes since the saved cursor are fetched',
-    () async {
-      a.deliver(msg('3'));
-      await GetIt.I<SyncEngine>().syncAll();
-      expect(a.initialSyncs, 1);
-      expect(a.lastIncremental!.messages.map((m) => m.id), ['3']);
-      expect(await inbox(), ['a:1', 'a:2', 'a:3', 'b:1']);
-    },
-  );
+  test('after the first sync, only the changes since the saved cursor are fetched', () async {
+    a.deliver(msg('3'));
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(a.initialSyncs, 1);
+    expect(a.lastIncremental!.messages.map((m) => m.id), ['3']);
+    expect(await inbox(), ['a:1', 'a:2', 'a:3', 'b:1']);
+  });
 
-  test(
-    'an expired cursor redoes the initial sync, which drops what is gone',
-    () async {
-      a
-        ..removeRemotely('2')
-        ..deliver(msg('3'))
-        ..expireCursors();
-      await GetIt.I<SyncEngine>().syncAll();
-      expect(a.initialSyncs, 2);
-      expect(await inbox(), ['a:1', 'a:3', 'b:1']);
-    },
-  );
+  test('an expired cursor redoes the initial sync, which drops what is gone', () async {
+    a
+      ..removeRemotely('2')
+      ..deliver(msg('3'))
+      ..expireCursors();
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(a.initialSyncs, 2);
+    expect(await inbox(), ['a:1', 'a:3', 'b:1']);
+  });
 
-  test(
-    'the inbox bodies are stored with the sync, and removed with their message',
-    () async {
-      final db = GetIt.I<PostinoDatabase>();
-      Future<List<String>> bodies() async => [
-        for (final r
-            in await db
-                .customSelect(
-                  "SELECT body FROM bodies WHERE account_id = 'a' ORDER BY message_id",
-                )
-                .get())
-          r.read<String>('body'),
-      ];
-      expect(await bodies(), ['Corpo di 1', 'Corpo di 2']);
-      a.removeRemotely('2');
-      await GetIt.I<SyncEngine>().syncAll();
-      expect(await bodies(), ['Corpo di 1']);
-    },
-  );
+  test('the inbox bodies are stored with the sync, and removed with their message', () async {
+    final db = GetIt.I<PostinoDatabase>();
+    Future<List<String>> bodies() async => [
+      for (final r in await db.customSelect("SELECT body FROM bodies WHERE account_id = 'a' ORDER BY message_id").get())
+        r.read<String>('body'),
+    ];
+    expect(await bodies(), ['Corpo di 1', 'Corpo di 2']);
+    a.removeRemotely('2');
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(await bodies(), ['Corpo di 1']);
+  });
 
   test('a rate-limited sync is retried on the next poll, even with the change signal up', () async {
     final engine = GetIt.I<SyncEngine>()..start();
@@ -217,9 +186,7 @@ void main() {
     await pumpEventQueue();
     a.failSetRead = true;
     await engine.openConversation('a', 't-1');
-    a.deliver(
-      msg('3'),
-    ); // change signal -> sync: mail fetched, replay fails again
+    a.deliver(msg('3')); // change signal -> sync: mail fetched, replay fails again
     await pumpEventQueue();
     expect(await inbox(), contains('a:3'));
     expect(a.readCalls, isEmpty);
@@ -230,22 +197,25 @@ void main() {
     expect(a.readCalls.map((c) => (c.$1.join(), c.$2)), [('1', true)]);
   });
 
-  test('a Conversazione opened while another one\'s read is being sent is read on the Provider too, without a poll', () async {
-    final engine = GetIt.I<SyncEngine>();
-    final sending = a.holdRead = Completer<void>();
-    final first = engine.openConversation('a', 't-1');
-    await pumpEventQueue();
-    expect(a.readCalls, isEmpty); // the read of t-1 is in flight
+  test(
+    'a Conversazione opened while another one\'s read is being sent is read on the Provider too, without a poll',
+    () async {
+      final engine = GetIt.I<SyncEngine>();
+      final sending = a.holdRead = Completer<void>();
+      final first = engine.openConversation('a', 't-1');
+      await pumpEventQueue();
+      expect(a.readCalls, isEmpty); // the read of t-1 is in flight
 
-    final second = engine.openConversation('a', 't-2');
-    await pumpEventQueue();
-    a.holdRead = null;
-    sending.complete();
-    await (first, second).wait;
+      final second = engine.openConversation('a', 't-2');
+      await pumpEventQueue();
+      a.holdRead = null;
+      sending.complete();
+      await (first, second).wait;
 
-    expect(a.readCalls.map((c) => c.$1.join()), ['1', '2']);
-    expect(await GetIt.I<MailStore>().pendingIntents('a'), isEmpty);
-  });
+      expect(a.readCalls.map((c) => c.$1.join()), ['1', '2']);
+      expect(await GetIt.I<MailStore>().pendingIntents('a'), isEmpty);
+    },
+  );
 
   test('a Conversazione snapshot fetched before a deletion does not bring the message back', () async {
     final engine = GetIt.I<SyncEngine>();

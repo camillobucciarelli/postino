@@ -39,6 +39,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
 
   @override
   Future<void> setLaunchAtLogin({required bool enabled}) async {}
+
+  @override
+  Future<bool> notificationsAsked() async => true;
+
+  @override
+  Future<void> setNotificationsAsked() async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {

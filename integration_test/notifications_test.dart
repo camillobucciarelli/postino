@@ -1,8 +1,9 @@
 // Notifiche con deep link ad avvio a freddo (#39). Run on an iOS simulator and an Android emulator.
 //
-// What this verifies: the real plugin starts (a run not launched by a notification has no Conversazione to open),
-// shows a notification and answers about the permission; and the app started with the Conversazione of a cold
-// launch opens it over the Posta unificata, with real frames and the real router, Indietro coming back to it.
+// What this verifies: the real plugin starts (a run not launched by a notification has no Conversazione to open)
+// and its show and permission check do not throw (a smoke check: whether the banner appears is QA's); the app
+// started with the Conversazione of a cold launch opens it over the Posta unificata, with real frames and the real
+// router, Indietro coming back to it.
 //
 // What QA must still verify by hand, since a test cannot kill the app and tap the notification: with notifications
 // allowed, receive a new message (the app open), close the app (swipe it away), tap the notification: the
@@ -41,7 +42,9 @@ void main() {
     expect(find.byType(ConversationView), findsNothing);
   }, skip: !mobile);
 
-  testWidgets('the real plugin starts, shows a notification and answers about the permission', (tester) async {
+  testWidgets('smoke: the real plugin starts with no launch, and show and the permission check do not throw', (
+    tester,
+  ) async {
     final notifications = LocalNotifications();
     expect(await notifications.start(channelName: 'Posta nuova', openLabel: 'Apri'), isNull);
     await notifications.show(
@@ -52,6 +55,6 @@ void main() {
         preview: 'Notifica di prova',
       ),
     );
-    expect(await notifications.permissionNeeded(), isA<bool>());
+    await notifications.permissionNeeded();
   }, skip: !mobile);
 }

@@ -55,7 +55,7 @@ class LocalNotifications() implements Notifications {
     final body = [subject, preview].where((s) => s.isNotEmpty).join('\n');
     return _plugin.show(
       // One per Conversazione: a newer message replaces its notification.
-      id: Object.hash(conversation.accountId, conversation.conversationId) & 0x7fffffff,
+      id: notificationId(conversation),
       title: sender,
       body: body,
       payload: encodePayload(conversation),

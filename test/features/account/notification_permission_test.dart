@@ -1,5 +1,6 @@
 // The notification permission (#39): asked after the first Account is connected, with what the notifications show.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
@@ -56,8 +57,20 @@ void main() {
     expect(find.text(_title), findsNothing);
   });
 
-  testWidgets('a start with an Account already there does not ask', (tester) async {
-    final h = await _start(tester, withAccount: true);
+  testWidgets('a device with an Account never asked (before #39) gets the explanation at the start', (tester) async {
+    await _start(tester, withAccount: true);
+    expect(find.text(_title), findsOneWidget);
+  });
+
+  testWidgets('once explained, a later start does not ask again', (tester) async {
+    final h = await Harness.create();
+    await getIt<SettingsRepository>().setNotificationsAsked();
+    h.notifications.needed = true;
+    (await h.addAccount('a1')).deliver(msg('a'));
+    LocaleSettings.setLocaleSync(AppLocale.it);
+    await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+    await tester.pumpAndSettle();
+
     expect(find.text(_title), findsNothing);
     expect(h.notifications.requests, 0);
   });

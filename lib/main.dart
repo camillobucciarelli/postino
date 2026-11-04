@@ -141,7 +141,7 @@ class _PostinoAppState() extends State<PostinoApp> {
       if (widget.launch case final launch?) _open(launch);
       _taps = getIt<Notifications>().taps.listen((key) {
         // On desktop the window may be hidden in the tray.
-        if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[notifiche] $e')));
+        if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
         _open(key);
       });
     });
@@ -164,7 +164,12 @@ class _PostinoAppState() extends State<PostinoApp> {
     delegate.addListener(listener);
   }
 
-  void _open(ConversationKey key) => openConversation(key.accountId, key.conversationId);
+  /// Over the Posta unificata, whichever list was in front: its frame first, so Indietro comes back to it.
+  void _open(ConversationKey key) => unawaited(
+    Routefly.navigate(routePaths.posta.path)
+        .then((_) => WidgetsBinding.instance.endOfFrame)
+        .then((_) => openConversation(key.accountId, key.conversationId)),
+  );
 
   @override
   void dispose() {

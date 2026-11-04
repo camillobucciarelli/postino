@@ -73,13 +73,26 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
 
-  /// Its new messages are not notified while it is on screen (#39).
+  /// Its new messages are not notified while it is on screen (#39): open and the app in front. In the tray, in the
+  /// background or behind another app they are.
   late final ConversationKey _key = (accountId: widget.accountId, conversationId: widget.conversationId);
+  late final _lifecycle = AppLifecycleListener(onStateChange: (_) => _onScreen());
+
+  void _onScreen() {
+    final open = GetIt.I<OpenConversation>();
+    switch (WidgetsBinding.instance.lifecycleState) {
+      case null || AppLifecycleState.resumed:
+        open.show(_key);
+      case _:
+        open.hide(_key);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    GetIt.I<OpenConversation>().show(_key);
+    _lifecycle;
+    _onScreen();
     widget.cursor
       ?..reply = _reply
       ..replyAll = _replyAll
@@ -182,6 +195,7 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     GetIt.I<OpenConversation>().hide(_key);
     final cursor = widget.cursor;
     if (cursor != null) {

@@ -1,5 +1,6 @@
 // Notifiche della posta nuova con deep link (#39): the sync notifies the new inbox messages (never at the first
-// sync, never for the open Conversazione), and a tap opens the Conversazione over the Posta unificata.
+// sync, never for the Conversazione on screen), and a tap opens the Conversazione over the Posta unificata.
+// The cold start is in notification_cold_start_test.dart: it needs routefly's statics fresh.
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
@@ -15,53 +16,31 @@ import 'package:routefly/routefly.dart';
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 import '../../support/ui.dart';
-
-const _id = 'a1';
+import 'notification_steps.dart';
 
 late Harness h;
 late FakeMailProvider gmail;
 
-/// Starts the app at 390×844 with Account a1, whose inbox already has message `a` (the first sync).
-Future<void> _start(WidgetTester tester, {ConversationKey? launch}) async {
+/// Starts the app at 390×844 on the Posta unificata with Account a1, whose inbox already has message `a`.
+Future<void> _start(WidgetTester tester) async {
   tester.view
     ..physicalSize = const Size(390, 844)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   h = await Harness.create();
-  gmail = (await h.addAccount(_id))..deliver(msg('a', subject: 'Primo'));
+  gmail = (await h.addAccount(notifiedAccount))..deliver(msg('a', subject: 'Primo'));
   LocaleSettings.setLocaleSync(AppLocale.it);
-  await tester.pumpWidget(TranslationProvider(child: PostinoApp(launch: launch)));
+  await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+  // Routefly keeps the last navigation in statics.
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 
-/// The Posta unificata is in front, with no Conversazione open.
-void _expectUnified() {
-  expect(Routefly.currentUri.path, routePaths.posta.path);
-  expect(find.byType(ConversationView), findsNothing);
-  expect(find.text('Posta unificata'), findsOneWidget);
-}
-
-Future<void> _back(WidgetTester tester) async {
-  await tester.tap(icon(PostinoIcons.arrowLeft));
-  await tester.pumpAndSettle();
-}
+List<String> _notified() => [for (final n in h.notifications.shown) n.conversation.conversationId];
 
 void main() {
-  // First: routefly keeps the last navigation in statics, and this start must not be moved by it.
-  testWidgets('launched by a tap on a notification, the Conversazione opens; Indietro goes to the Posta unificata', (
-    tester,
-  ) async {
-    await _start(tester, launch: (accountId: _id, conversationId: 't-a'));
-
-    expect(tester.widget<ConversationView>(find.byType(ConversationView)).conversationId, 't-a');
-    await _back(tester);
-    _expectUnified();
-  });
-
   testWidgets('the first sync notifies nothing; a new inbox message of the next one is notified', (tester) async {
     await _start(tester);
-    unawaited(Routefly.navigate(routePaths.posta.path));
-    await tester.pumpAndSettle();
     expect(find.text('Primo'), findsOneWidget);
     expect(h.notifications.shown, isEmpty);
 
@@ -70,7 +49,7 @@ void main() {
 
     expect(h.notifications.shown, [
       const MailNotification(
-        conversation: (accountId: _id, conversationId: 't-b'),
+        conversation: (accountId: notifiedAccount, conversationId: 't-b'),
         sender: 'Ada Lovelace',
         subject: 'Cena',
         preview: 'Venerdì?',
@@ -94,10 +73,21 @@ void main() {
     expect(h.notifications.shown.single.sender, 'ada@example.com', reason: 'the address without a name');
   });
 
+  testWidgets('a notification the OS refuses does not stop the next ones nor the sync', (tester) async {
+    await _start(tester);
+    h.notifications.failures = 1;
+    gmail
+      ..deliver(msg('b', subject: 'Rifiutata'), signal: false)
+      ..deliver(msg('c', subject: 'Mostrata'));
+    await tester.pumpAndSettle();
+
+    expect(_notified(), ['t-c']);
+    expect(find.text('Rifiutata'), findsOneWidget);
+    expect(find.text('Mostrata'), findsOneWidget);
+  });
+
   testWidgets('no notification for a message of the Conversazione on screen', (tester) async {
     await _start(tester);
-    unawaited(Routefly.navigate(routePaths.posta.path));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Primo'));
     await tester.pumpAndSettle();
     expect(find.byType(ConversationView), findsOneWidget);
@@ -108,29 +98,73 @@ void main() {
 
     gmail.deliver(msg('b', subject: 'Altro'));
     await tester.pumpAndSettle();
-    expect(h.notifications.shown.map((n) => n.conversation.conversationId), ['t-b']);
+    expect(_notified(), ['t-b']);
 
     // Closed, its next message is notified again.
-    await _back(tester);
+    await tapBack(tester);
     gmail.deliver(msg('a3', conversationId: 't-a'));
     await tester.pumpAndSettle();
-    expect(h.notifications.shown.map((n) => n.conversation.conversationId), ['t-b', 't-a']);
+    expect(_notified(), ['t-b', 't-a']);
+  });
+
+  testWidgets('the Conversazione open with the app in the tray or the background is notified', (tester) async {
+    await _start(tester);
+    await tester.tap(find.text('Primo'));
+    await tester.pumpAndSettle();
+
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    gmail.deliver(msg('a2', conversationId: 't-a'));
+    await tester.pumpAndSettle();
+    expect(_notified(), ['t-a']);
+
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    gmail.deliver(msg('a3', conversationId: 't-a'));
+    await tester.pumpAndSettle();
+    expect(_notified(), ['t-a'], reason: 'back in front, on screen again');
   });
 
   testWidgets(
     'a tap on a notification while the app runs opens the Conversazione; Indietro goes to the Posta unificata',
     (tester) async {
       await _start(tester);
-      unawaited(Routefly.navigate(routePaths.posta.path));
-      await tester.pumpAndSettle();
-      _expectUnified();
+      expectUnified();
 
-      h.notifications.tap((accountId: _id, conversationId: 't-a'));
+      h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
       await tester.pumpAndSettle();
       expect(tester.widget<ConversationView>(find.byType(ConversationView)).conversationId, 't-a');
 
-      await _back(tester);
-      _expectUnified();
+      await tapBack(tester);
+      expectUnified();
     },
   );
+
+  testWidgets('tapped while another list is in front, Indietro still goes to the Posta unificata', (tester) async {
+    await _start(tester);
+    unawaited(Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': notifiedAccount})));
+    await tester.pumpAndSettle();
+    expect(find.text('Posta unificata'), findsNothing);
+
+    h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsOneWidget);
+
+    await tapBack(tester);
+    expectUnified();
+  });
+
+  testWidgets("the system's Indietro (Android) from a tapped notification goes to the Posta unificata", (tester) async {
+    await _start(tester);
+    h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expectUnified();
+    expect(icon(PostinoIcons.arrowLeft), findsNothing);
+  });
 }

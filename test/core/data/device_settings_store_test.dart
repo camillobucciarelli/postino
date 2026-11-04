@@ -39,4 +39,10 @@ void main() {
     await store.setLaunchAtLogin(enabled: false);
     expect(await store.launchAtLogin(), isFalse);
   });
+
+  test('the notifications are not asked until the explanation was shown (#39)', () async {
+    expect(await store.notificationsAsked(), isFalse);
+    await store.setNotificationsAsked();
+    expect(await store.notificationsAsked(), isTrue);
+  });
 }

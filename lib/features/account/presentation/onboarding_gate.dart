@@ -11,16 +11,15 @@ import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 import 'notification_permission.dart';
 
-/// Shows the onboarding while there is no Account, [child] afterwards; the first Account connected asks for the
-/// notifications.
+/// Shows the onboarding while there is no Account, [child] afterwards, offering the notifications once per device.
 class const OnboardingGate({super.key, required final Widget child}) extends StatefulWidget {
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
 
 class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
-  /// Set while the onboarding shows: the Account connected from it asks for the notifications (#39).
-  bool _onboarding = false;
+  /// Set once the Accounts showed up: then the notifications are offered, once per device (#39).
+  bool _offered = false;
 
   @override
   Widget build(BuildContext context) => SignalBuilder(builder: _content);
@@ -30,11 +29,10 @@ class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
       case null:
         return const SizedBox.shrink();
       case []:
-        _onboarding = true;
         return const _Onboarding();
       case _:
-        if (_onboarding) {
-          _onboarding = false;
+        if (!_offered) {
+          _offered = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) unawaited(askNotificationPermission(this.context));
           });

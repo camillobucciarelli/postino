@@ -36,6 +36,14 @@ _Avoid_: Rubrica (è la fonte), destinatario (è un ruolo in un singolo messaggi
 L'unico concetto con cui si organizzano i messaggi. Su Gmail un messaggio può avere molte Etichette; sui Provider basati su cartelle ne ha al massimo una, e assegnarla equivale a spostare il messaggio.
 _Avoid_: Cartella, label, tag
 
+**Etichetta automatica**:
+Un'Etichetta per cui l'utente ha attivato l'Etichettatura automatica, con una descrizione facoltativa. Appartiene a un solo Account.
+_Avoid_: Etichetta intelligente, smart label
+
+**Etichettatura automatica**:
+L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi dopo l'attivazione, al massimo una per messaggio e solo se non ne ha già una scelta dall'utente. Funziona con un modello di embedding che non lascia mai il dispositivo (ADR 0015).
+_Avoid_: Classificazione, smistamento automatico, tag automatici
+
 **Stella**:
 Il segno che marca un messaggio come importante. Non è la stessa cosa di Posticipa.
 _Avoid_: Preferito, flag, importante

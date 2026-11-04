@@ -9,7 +9,6 @@ import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_notification.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
-import '../../../core/domain/open_conversation.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
@@ -20,6 +19,7 @@ import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_body.dart';
+import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
 
 /// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
@@ -43,7 +43,7 @@ class const ConversationView({
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState() extends State<ConversationView> with AccountsSignal {
+class _ConversationViewState() extends State<ConversationView> with AccountsSignal, ConversationOnScreen {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];
@@ -73,26 +73,12 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
 
-  /// Its new messages are not notified while it is on screen (#39): open and the app in front. In the tray, in the
-  /// background or behind another app they are.
-  late final ConversationKey _key = (accountId: widget.accountId, conversationId: widget.conversationId);
-  late final _lifecycle = AppLifecycleListener(onStateChange: (_) => _onScreen());
-
-  void _onScreen() {
-    final open = GetIt.I<OpenConversation>();
-    switch (WidgetsBinding.instance.lifecycleState) {
-      case null || AppLifecycleState.resumed:
-        open.show(_key);
-      case _:
-        open.hide(_key);
-    }
-  }
+  @override
+  late final ConversationKey conversationKey = (accountId: widget.accountId, conversationId: widget.conversationId);
 
   @override
   void initState() {
     super.initState();
-    _lifecycle;
-    _onScreen();
     widget.cursor
       ?..reply = _reply
       ..replyAll = _replyAll
@@ -195,8 +181,6 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
 
   @override
   void dispose() {
-    _lifecycle.dispose();
-    GetIt.I<OpenConversation>().hide(_key);
     final cursor = widget.cursor;
     if (cursor != null) {
       if (cursor.reply == _reply) cursor.reply = null;

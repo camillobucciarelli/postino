@@ -3,6 +3,7 @@
 // The cold start is in notification_cold_start_test.dart: it needs routefly's statics fresh.
 import 'dart:async';
 
+import 'package:flutter/material.dart' show showDialog;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_notification.dart';
@@ -126,6 +127,35 @@ void main() {
     await tester.pumpAndSettle();
     expect(_notified(), ['t-a'], reason: 'back in front, on screen again');
   });
+
+  testWidgets(
+    'under a page pushed over it (Impostazioni) the open Conversazione is notified; a dialog does not hide it',
+    (tester) async {
+      await _start(tester);
+      await tester.tap(find.text('Primo'));
+      await tester.pumpAndSettle();
+
+      unawaited(Routefly.push<void>(routePaths.impostazioni));
+      await tester.pumpAndSettle();
+      gmail.deliver(msg('a2', conversationId: 't-a'));
+      await tester.pumpAndSettle();
+      expect(_notified(), ['t-a']);
+
+      Navigator.of(tester.element(find.byType(ConversationView, skipOffstage: false))).pop();
+      await tester.pumpAndSettle();
+      gmail.deliver(msg('a3', conversationId: 't-a'));
+      await tester.pumpAndSettle();
+      expect(_notified(), ['t-a'], reason: 'back on screen');
+
+      unawaited(
+        showDialog<void>(context: tester.element(find.byType(ConversationView)), builder: (_) => const SizedBox()),
+      );
+      await tester.pumpAndSettle();
+      gmail.deliver(msg('a4', conversationId: 't-a'));
+      await tester.pumpAndSettle();
+      expect(_notified(), ['t-a'], reason: 'a dialog leaves it on screen');
+    },
+  );
 
   testWidgets(
     'a tap on a notification while the app runs opens the Conversazione; Indietro goes to the Posta unificata',

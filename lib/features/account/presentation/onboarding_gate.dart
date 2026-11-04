@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/accounts_repository.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
@@ -16,17 +17,7 @@ class OnboardingGate extends StatefulWidget {
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
 
-class _OnboardingGateState extends State<OnboardingGate> {
-  late final accounts = streamSignal(
-    () => GetIt.I<AccountsRepository>().watchAccounts(),
-  );
-
-  @override
-  void dispose() {
-    accounts.dispose();
-    super.dispose();
-  }
-
+class _OnboardingGateState extends State<OnboardingGate> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => switch (accounts.value.value) {

@@ -4,6 +4,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/accounts_repository.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
@@ -16,17 +17,8 @@ class ReconnectBanners extends StatefulWidget {
   State<ReconnectBanners> createState() => _ReconnectBannersState();
 }
 
-class _ReconnectBannersState extends State<ReconnectBanners> {
-  late final accounts = streamSignal(
-    () => GetIt.I<AccountsRepository>().watchAccounts(),
-  );
-
-  @override
-  void dispose() {
-    accounts.dispose();
-    super.dispose();
-  }
-
+class _ReconnectBannersState extends State<ReconnectBanners>
+    with AccountsSignal {
   Future<void> _reconnect(Account a) async {
     final r = await GetIt.I<AccountsRepository>().connectGmail(
       loginHint: a.address,

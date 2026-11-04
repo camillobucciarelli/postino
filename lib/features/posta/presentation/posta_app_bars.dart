@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
@@ -15,17 +15,7 @@ class UnifiedAppBar extends StatefulWidget {
   State<UnifiedAppBar> createState() => _UnifiedAppBarState();
 }
 
-class _UnifiedAppBarState extends State<UnifiedAppBar> {
-  late final accounts = streamSignal(
-    () => GetIt.I<AccountsRepository>().watchAccounts(),
-  );
-
-  @override
-  void dispose() {
-    accounts.dispose();
-    super.dispose();
-  }
-
+class _UnifiedAppBarState extends State<UnifiedAppBar> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => PostinoAppBar(
@@ -55,17 +45,13 @@ class AccountAppBar extends StatefulWidget {
   State<AccountAppBar> createState() => _AccountAppBarState();
 }
 
-class _AccountAppBarState extends State<AccountAppBar> {
-  late final accounts = streamSignal(
-    () => GetIt.I<AccountsRepository>().watchAccounts(),
-  );
+class _AccountAppBarState extends State<AccountAppBar> with AccountsSignal {
   late final labels = streamSignal(
     () => GetIt.I<InboxRepository>().watchLabels(widget.accountId),
   );
 
   @override
   void dispose() {
-    accounts.dispose();
     labels.dispose();
     super.dispose();
   }

@@ -1,6 +1,7 @@
 // Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
 import 'package:flutter/material.dart';
 
+import 'postino_account_swatch.dart';
 import 'postino_colors_lerp.dart';
 import 'postino_palette.dart';
 
@@ -13,13 +14,6 @@ enum PostinoAccountColor {
   olive,
   slate,
   graphite,
-}
-
-/// Le tre tinte di un colore account in un tema.
-@immutable
-class PostinoAccountSwatch {
-  const PostinoAccountSwatch(this.color, this.subtle, this.onColor);
-  final Color color, subtle, onColor;
 }
 
 /// Livello 2 e 3 — token semantici e di componente, light e dark.

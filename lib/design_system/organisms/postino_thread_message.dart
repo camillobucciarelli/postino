@@ -4,13 +4,16 @@ import 'package:flutter/semantics.dart';
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../molecules/postino_attachment_chip.dart';
+import '../molecules/postino_message_detail.dart';
+import '../molecules/postino_message_details_panel.dart';
 import '../molecules/postino_message_recipients.dart';
+import '../molecules/postino_quote.dart';
 import '../molecules/postino_quote_toggle.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 // The detail rows stay where consumers of the message find them.
-export '../molecules/postino_message_recipients.dart' show PostinoMessageDetail;
+export '../molecules/postino_message_detail.dart' show PostinoMessageDetail;
 
 /// One message of a Conversazione. Collapsed: avatar 32, sender, one line of [preview], time, at least 48 high.
 /// Expanded: avatar 40, sender and its [address], [recipients] (a tap opens the [details]), time,

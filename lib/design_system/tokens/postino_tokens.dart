@@ -3,6 +3,7 @@
 /// Token del design system Postino: palette, colori, metriche, densità, motion e testo.
 library;
 
+export 'postino_account_swatch.dart';
 export 'postino_colors.dart';
 export 'postino_density.dart';
 export 'postino_metrics.dart';

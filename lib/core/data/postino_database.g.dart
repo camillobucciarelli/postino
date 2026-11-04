@@ -4891,6 +4891,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   );
   late final AccountsDao accountsDao = AccountsDao(this as PostinoDatabase);
   late final MessagesDao messagesDao = MessagesDao(this as PostinoDatabase);
+  late final LabelsDao labelsDao = LabelsDao(this as PostinoDatabase);
+  late final BodiesDao bodiesDao = BodiesDao(this as PostinoDatabase);
   late final IntentsDao intentsDao = IntentsDao(this as PostinoDatabase);
   late final TrustedSendersDao trustedSendersDao = TrustedSendersDao(
     this as PostinoDatabase,

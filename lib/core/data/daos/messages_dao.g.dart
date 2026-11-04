@@ -5,7 +5,6 @@ part of 'messages_dao.dart';
 // ignore_for_file: type=lint
 mixin _$MessagesDaoMixin on DatabaseAccessor<PostinoDatabase> {
   $AccountsTable get accounts => attachedDatabase.accounts;
-  $LabelsTable get labels => attachedDatabase.labels;
   $MessagesTable get messages => attachedDatabase.messages;
   $MessageLabelsTable get messageLabels => attachedDatabase.messageLabels;
   $BodiesTable get bodies => attachedDatabase.bodies;
@@ -19,8 +18,6 @@ class MessagesDaoManager {
   MessagesDaoManager(this._db);
   $$AccountsTableTableManager get accounts =>
       $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
-  $$LabelsTableTableManager get labels =>
-      $$LabelsTableTableManager(_db.attachedDatabase, _db.labels);
   $$MessagesTableTableManager get messages =>
       $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>

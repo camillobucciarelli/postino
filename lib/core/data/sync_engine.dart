@@ -207,6 +207,15 @@ class SyncEngine implements MailSync {
       raw: '',
       sendAfter: OutboxDao.preparing,
     );
+    // The platform keeps the preparation and the send going if the user leaves now (a slow attachment download
+    // would otherwise leave the row preparing); a refusal never fails the Invia. Held once per Account.
+    if (_held.add(accountId)) {
+      unawaited(
+        _background.hold(accountId).catchError((Object e) {
+          debugPrint('[sync] $accountId: background hold failed, $e');
+        }),
+      );
+    }
     // A forward's attachments are read now, from the cache (offline too) or the Provider, so the queued text is complete.
     // ponytail: an attachment never opened here needs the network at Invia (OfflineFailure); persist copies of the
     // attachments when the forward is composed to queue those offline too.
@@ -228,6 +237,7 @@ class SyncEngine implements MailSync {
           message.messageId,
           version: version,
         );
+        await _releaseIfEmpty(accountId);
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
@@ -237,6 +247,7 @@ class SyncEngine implements MailSync {
         message.messageId,
         version: version,
       );
+      await _releaseIfEmpty(accountId);
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
@@ -249,6 +260,7 @@ class SyncEngine implements MailSync {
       sendAfter: sendAfter.millisecondsSinceEpoch,
     )) {
       // Cancelled, or replaced by a newer Invia: this preparation is obsolete and leaves the row alone.
+      await _releaseIfEmpty(accountId);
       return const Err(CancelledFailure());
     }
     final key = (accountId, message.messageId);
@@ -257,13 +269,6 @@ class SyncEngine implements MailSync {
       unawaited(_sendTimers.remove(key)?.cancel());
       unawaited(flushOutbox(accountId));
     });
-    // The platform keeps the send going if the user leaves now; a refusal never fails the Invia.
-    _held.add(accountId);
-    unawaited(
-      _background.hold(accountId).catchError((Object e) {
-        debugPrint('[sync] $accountId: background hold failed, $e');
-      }),
-    );
     return Ok(sendAfter);
   }
 

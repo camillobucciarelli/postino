@@ -734,6 +734,55 @@ void main() {
     expect(h.background.releases, ['a']);
   });
 
+  test('the platform is held before the forwarded attachments download; a failed or cancelled preparation releases it', () async {
+    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+    a.holdAttachment = Completer();
+    final sending = engine.send('a', forward(att));
+    await pumpEventQueue();
+    expect(h.background.holds, ['a']);
+    expect(h.background.releases, isEmpty);
+    expect(await engine.cancelSend('a', id), id);
+    expect(h.background.releases, ['a']);
+    a.holdAttachment!.complete();
+    expect(await sending, isA<Err<DateTime>>());
+
+    a.goOffline();
+    final never = a.attach('m0', 'Altro.pdf', [4, 5]);
+    expect(await engine.send('a', forward(never)), isA<Err<DateTime>>());
+    expect(h.background.holds, ['a', 'a']);
+    expect(h.background.releases, ['a', 'a']);
+  });
+
+  test('the sent copy does not replace the message a sync cached already: its INBOX label stays', () async {
+    // A message to oneself, synced before the send completed (the Provider answers the send with the same id).
+    a.deliver(
+      Message(
+        id: 's-1',
+        messageId: id,
+        conversationId: 's-1',
+        labelIds: const [inboxLabelId, sentLabelId],
+        isRead: true,
+        isStarred: false,
+        from: 'a@example.com',
+        to: const ['a@example.com'],
+        subject: 's',
+        snippet: 'Ciao',
+        date: DateTime.utc(2026, 1, 1),
+      ),
+    );
+    await engine.syncAll();
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+    expect(await outbox(), isEmpty);
+    final inbox = await GetIt.I<InboxRepository>()
+        .watchMessages('a', inboxLabelId)
+        .first;
+    expect(inbox.single.message.id, 's-1');
+    expect((await inviati()).single.message.id, 's-1');
+  });
+
   test('send for an unknown Account is NotFound', () async {
     expect(
       await engine.send('zzz', _message(id)),

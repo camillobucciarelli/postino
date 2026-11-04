@@ -33,6 +33,14 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     syncCursors,
   )..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;
 
+  /// True when the Account has the message with Provider id [id] in cache.
+  Future<bool> exists(String accountId, String id) async =>
+      (await (select(messages)
+                ..where((t) => t.accountId.equals(accountId) & t.id.equals(id))
+                ..limit(1))
+              .get())
+          .isNotEmpty;
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   /// The batch's cursor is saved in the same transaction, so data and cursor never disagree;
   /// [saveCursor] false stores a partial page of the initial sync, whose cursor must wait for the end.

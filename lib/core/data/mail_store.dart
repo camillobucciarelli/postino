@@ -318,6 +318,9 @@ class MailStore implements InboxRepository {
     await (_db.delete(
       _db.messages,
     )..where((m) => m.accountId.equals(accountId) & m.id.isIn(ids))).go();
+    // A sync may have cached the sent message already (a foreground sync beside the worker's send): that copy is
+    // the Provider's, labels included, and the local one must not replace it.
+    if (await _db.messagesDao.exists(accountId, providerId)) return;
     await applyPage(accountId, [
       Message(
         id: providerId,

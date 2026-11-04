@@ -18,7 +18,7 @@ jobs:
   check:
     # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc
@@ -48,7 +48,7 @@ jobs:
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc
@@ -112,7 +112,7 @@ jobs:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the
     # runner's PATH (~/fvm/versions/stable), no flutter-action.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc

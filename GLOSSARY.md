@@ -41,7 +41,7 @@ Un'Etichetta per cui l'utente ha attivato l'Etichettatura automatica, con una de
 _Avoid_: Etichetta intelligente, smart label
 
 **Etichettatura automatica**:
-L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi dopo l'attivazione, al massimo una per messaggio e solo se non ne ha già una scelta dall'utente. Funziona con un modello di embedding che non lascia mai il dispositivo (ADR 0015).
+L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi dopo l'attivazione, al massimo una per messaggio e solo se non ne ha già una scelta dall'utente.
 _Avoid_: Classificazione, smistamento automatico, tag automatici
 
 **Stella**:

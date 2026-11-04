@@ -48,7 +48,7 @@ class _OriginalViewState() extends State<OriginalView> {
           final uri = Uri.tryParse(request.url);
           // Deny by default. Only the document's own load goes through, once; a link out (http, https,
           // mailto) goes to the guard, which asks when it cannot verify it; anything else stays out.
-          if (!_loaded && request.isMainFrame && const {'about', 'data'}.contains(uri?.scheme)) {
+          if (!_loaded && request.isMainFrame && request.url == 'about:blank') {
             _loaded = true;
             return NavigationDecision.navigate;
           }

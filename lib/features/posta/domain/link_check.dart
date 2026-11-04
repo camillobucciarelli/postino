@@ -37,7 +37,7 @@ List<String> displayedHosts(String text) {
   for (final raw in trimmed.split(RegExp(r'\s+'))) {
     final token = raw.replaceAll(_edges, '');
     if (!_scheme.hasMatch(token) && !token.toLowerCase().startsWith('www.') && raw != trimmed) continue;
-    final host = _url.firstMatch(token)?[1]?.toLowerCase().replaceAll(RegExp(r'\.+$'), '');
+    final host = _url.firstMatch(token)?[1]?.toLowerCase().split('@').last.replaceAll(RegExp(r'\.+$'), '');
     if (host != null && _domain.hasMatch(host)) hosts.add(host);
   }
   return hosts;
@@ -47,7 +47,7 @@ List<String> displayedHosts(String text) {
 /// null otherwise, and for `mailto:` or a text with no domain. Subdomains of the same site are fine.
 LinkWarning? deceptiveLink(Uri target, String text) {
   if (target.scheme != 'http' && target.scheme != 'https' || target.host.isEmpty) return null;
-  final real = decodeHost(target.host.toLowerCase());
+  final real = decodeHost(target.host.toLowerCase().replaceAll(RegExp(r'\.+$'), ''));
   final mismatch = displayedHosts(text).any((h) => registrableDomain(real) != registrableDomain(decodeHost(h)));
   return mismatch ? (domain: real, punycode: hasPunycode(target.host), unverified: false) : null;
 }
@@ -57,7 +57,7 @@ LinkWarning? deceptiveLink(Uri target, String text) {
 LinkWarning? linkWarning(Uri target, Iterable<String> texts) {
   if (target.scheme != 'http' && target.scheme != 'https') return null;
   if (texts.isEmpty) {
-    final real = decodeHost(target.host.toLowerCase());
+    final real = decodeHost(target.host.toLowerCase().replaceAll(RegExp(r'\.+$'), ''));
     return (domain: real, punycode: hasPunycode(target.host), unverified: true);
   }
   return texts.map((t) => deceptiveLink(target, t)).nonNulls.firstOrNull;

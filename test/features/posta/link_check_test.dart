@@ -54,6 +54,8 @@ void main() {
 
     test('trailing punctuation does not hide a domain; every domain shown counts', () {
       expect(check('https://evil.io', 'https://paypal.com.')?.domain, 'evil.io');
+      expect(check('https://paypal.com./x', 'paypal.com'), isNull);
+      expect(check('https://paypal.com/x', 'ada@paypal.com'), isNull);
       expect(check('https://evil.io', '(www.paypal.com),')?.domain, 'evil.io');
       expect(check('https://paypal.com/x', 'www.paypal.com e www.evil.io')?.domain, 'paypal.com');
     });

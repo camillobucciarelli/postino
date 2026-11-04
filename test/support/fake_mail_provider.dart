@@ -109,6 +109,9 @@ class FakeMailProvider implements MailProvider {
   /// While set, [fetchAttachment] reports half done and answers once it completes, or the download is cancelled.
   Completer<void>? holdAttachment;
 
+  /// While set, [fetchBody] answers only once it completes: a body download in flight.
+  Completer<void>? holdBody;
+
   /// The Account's Etichette; same as the recorded Gmail fixture by default.
   final labels = [
     const Label(id: 'Label_12', name: 'Viaggi', kind: LabelKind.etichetta),
@@ -328,6 +331,7 @@ class FakeMailProvider implements MailProvider {
 
   @override
   Future<Result<MessageBody>> fetchBody(String messageId) async {
+    await holdBody?.future;
     final f = _failure;
     if (f != null) return Err(f);
     return _messages.containsKey(messageId) || _old.containsKey(messageId)

@@ -25,6 +25,7 @@ export 'molecules/postino_banner.dart';
 export 'molecules/postino_empty_state.dart';
 export 'molecules/postino_html_card.dart';
 export 'molecules/postino_menu.dart';
+export 'molecules/postino_message_body.dart';
 export 'molecules/postino_message_tile.dart';
 export 'molecules/postino_snackbar.dart';
 export 'molecules/postino_sync_status.dart';
@@ -34,6 +35,7 @@ export 'organisms/postino_app_bar.dart';
 export 'organisms/postino_message_list.dart';
 export 'organisms/postino_navigation_drawer.dart';
 export 'organisms/postino_rich_editor.dart';
+export 'organisms/postino_thread_message.dart';
 export 'organisms/postino_thread_view.dart';
 
 export 'templates/postino_adaptive_layout.dart';

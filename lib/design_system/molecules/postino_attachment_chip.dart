@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../atoms/postino_file_type_badge.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../atoms/postino_icon_button.dart';
@@ -88,7 +89,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
       child: Row(
         spacing: PostinoSpacing.s3,
         children: [
-          SelectionContainer.disabled(child: _TypeBadge(w.name)),
+          SelectionContainer.disabled(child: PostinoFileTypeBadge(w.name)),
           Expanded(
             child: PostinoSelectable(
               child: Column(
@@ -256,76 +257,3 @@ class _Meta extends StatelessWidget {
     );
   }
 }
-
-/// 40 square, `radius-sm`: the extension (up to 4 letters) or the image icon, colored by kind.
-class _TypeBadge extends StatelessWidget {
-  const _TypeBadge(this.name);
-
-  final String name;
-
-  static final _kinds = {
-    'pdf': _Kind.pdf,
-    for (final e in ['doc', 'docx', 'odt', 'rtf', 'txt', 'pages']) e: _Kind.doc,
-    for (final e in ['xls', 'xlsx', 'ods', 'csv', 'numbers']) e: _Kind.sheet,
-    for (final e in [
-      'png',
-      'jpg',
-      'jpeg',
-      'gif',
-      'webp',
-      'heic',
-      'bmp',
-      'tif',
-      'tiff',
-      'svg',
-    ])
-      e: _Kind.image,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.pc;
-    final dot = name.lastIndexOf('.');
-    final ext = dot > 0 && dot < name.length - 1
-        ? name.substring(dot + 1).toLowerCase()
-        : '';
-    final kind = _kinds[ext] ?? _Kind.other;
-    final (bg, fg) = switch (kind) {
-      _Kind.pdf => (c.dangerSubtle, c.danger),
-      _Kind.doc => (c.brandSubtle, c.brand),
-      _Kind.sheet => (c.successSubtle, c.success),
-      _Kind.image => (c.labelSeaBg, c.labelSeaFg),
-      _Kind.other => (c.surfacePressed, c.inkMuted),
-    };
-    final label = (ext.isEmpty ? 'file' : ext).toUpperCase();
-    return ExcludeSemantics(
-      child: Container(
-        width: PostinoSize.controlMd,
-        height: PostinoSize.controlMd,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
-        ),
-        child: kind == _Kind.image
-            ? PostinoIcon(PostinoIcons.image, color: fg)
-            : Text(
-                label.length > 4 ? label.substring(0, 4) : label,
-                maxLines: 1,
-                // Inside its fixed 40 square: it does not grow with the text size.
-                textScaler: TextScaler.noScaling,
-                style: PostinoText.overline.copyWith(
-                  color: fg,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-enum _Kind { pdf, doc, sheet, image, other }

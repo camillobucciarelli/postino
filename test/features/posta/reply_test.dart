@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -131,7 +131,7 @@ String _openId() {
 
 /// The Bozza as the database keeps it.
 Future<OutgoingMessage> _draft(String id) async =>
-    (await GetIt.I<MailStore>().localDraft('a1', id))!.draft;
+    (await GetIt.I<OutboxStore>().localDraft('a1', id))!.draft;
 
 /// m1 without its body and the Provider unreachable: the body cannot be downloaded.
 Future<void> _forgetBodyOfM1(WidgetTester tester) async {
@@ -145,7 +145,7 @@ Future<void> _forgetBodyOfM1(WidgetTester tester) async {
 
 /// The Message-IDs of the Bozze waiting in the database.
 Future<List<String>> _pendingIds() async =>
-    (await GetIt.I<MailStore>().pendingDrafts('a1'))
+    (await GetIt.I<OutboxStore>().pendingDrafts('a1'))
         .map((d) => d.draft.messageId)
         .toList();
 

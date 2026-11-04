@@ -6,14 +6,18 @@ import 'package:drift/drift.dart' show BooleanExpressionOperators;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/background_send.dart';
-import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/daos/outbox_dao.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/intent_replayer.dart';
+import 'package:postino/core/data/sync/outbox_sender.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
 
@@ -53,7 +57,7 @@ void main() {
   });
 
   test('Android worker: a row still preparing re-holds the platform and sends nothing; a due row is sent with no extra hold', () async {
-    await GetIt.I<MailStore>().enqueueOutgoing(
+    await GetIt.I<OutboxStore>().enqueueOutgoing(
       'a',
       _message(id),
       version: 1,
@@ -172,6 +176,7 @@ void main() {
 
     final restarted = SyncEngine(
       GetIt.I<MailStore>(),
+      GetIt.I<OutboxRepository>(),
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
@@ -454,6 +459,7 @@ void main() {
     h.clock.advance(sendWindow);
     final other = SyncEngine(
       GetIt.I<MailStore>(),
+      GetIt.I<OutboxRepository>(),
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
@@ -696,6 +702,7 @@ void main() {
     await pumpEventQueue();
     final other = SyncEngine(
       GetIt.I<MailStore>(),
+      GetIt.I<OutboxRepository>(),
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),

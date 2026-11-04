@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/intent_replayer.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';

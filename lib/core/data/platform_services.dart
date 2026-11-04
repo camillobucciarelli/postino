@@ -17,7 +17,7 @@ import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
 import 'postino_database.dart';
-import 'sync_engine.dart' show sendWindow;
+import 'sync/outbox_sender.dart' show sendWindow;
 
 /// Keychain (iOS/macOS), Keystore (Android), Credential Manager (Windows), libsecret (Linux).
 // ponytail: first_unlock so the future background isolate can read the key with the device locked.

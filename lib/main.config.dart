@@ -18,6 +18,7 @@ import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
@@ -27,6 +28,7 @@ import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
+import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
@@ -86,22 +88,38 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i385.MailStore>(
       () => _i385.MailStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i37.OutboxStore>(
+      () => _i37.OutboxStore(gh<_i1028.PostinoDatabase>()),
+    );
+    gh.lazySingleton<_i700.OutboxRepository>(
+      () => mailStoreModule.outboxRepository(gh<_i37.OutboxStore>()),
+    );
     gh.lazySingleton<_i359.TrustedSendersRepository>(
       () => _i412.TrustedSendersStore(gh<_i1028.PostinoDatabase>()),
-    );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-      ),
     );
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+      ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    );
+    gh.factory<_i510.ReplyDraftUseCase>(
+      () => _i510.ReplyDraftUseCase(
+        gh<_i705.MailSync>(),
+        gh<_i845.InboxRepository>(),
+      ),
     );
     gh.lazySingleton<_i382.AccountsRepository>(
       () => _i413.AccountsService(
@@ -113,19 +131,10 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i278.AttachmentRepository>(
       () => _i696.AttachmentCache(
-        gh<_i893.SyncEngine>(),
+        gh<_i705.MailSync>(),
         gh<_i398.SecureStore>(),
         gh<_i398.Clock>(),
         gh<_i696.AttachmentStorage>(),
-      ),
-    );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
-    );
-    gh.factory<_i510.ReplyDraftUseCase>(
-      () => _i510.ReplyDraftUseCase(
-        gh<_i705.MailSync>(),
-        gh<_i845.InboxRepository>(),
       ),
     );
     return this;

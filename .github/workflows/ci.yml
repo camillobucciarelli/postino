@@ -47,7 +47,9 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev
       - run: flutter test
 
+  # Build hosted: solo manuali (workflow_dispatch) per risparmiare minuti Actions.
   android:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +71,7 @@ jobs:
       - run: flutter build apk --debug
 
   linux:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +93,7 @@ jobs:
       - run: flutter build linux
 
   windows:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-2022
     defaults:
       run:

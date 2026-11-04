@@ -52,9 +52,14 @@ class const PostinoAppBar({
     final subtitleStyle = PostinoText.appBarTitle.merge(PostinoText.meta.copyWith(color: c.inkSubtle));
     return LayoutBuilder(
       builder: (context, box) {
-        // The title's room in the NavigationToolbar: no leading square, spacing on both sides.
+        // The title's room in the NavigationToolbar: no leading square, no trailing actions, spacing on both sides.
+        // ponytail: actions counted as icon buttons (one tap target each); a wider action needs measuring.
         final room =
-            box.maxWidth - MediaQuery.paddingOf(context).horizontal - (leading ? kToolbarHeight : 0) - 2 * spacing;
+            box.maxWidth -
+            MediaQuery.paddingOf(context).horizontal -
+            (leading ? kToolbarHeight : 0) -
+            actions.length * kMinInteractiveDimension -
+            2 * spacing;
         double height(String text, TextStyle style, double width) {
           final p = TextPainter(
             text: TextSpan(text: text, style: style),

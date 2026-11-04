@@ -59,4 +59,46 @@ void main() {
       });
     }
   }
+
+  // The composer's bar: back, then Send and Close at the end take room from the title.
+  for (final width in [300.0, 328.0, 360.0]) {
+    testWidgets('title with actions wraps and the bar grows at 200% in $width', (tester) async {
+      tester.view
+        ..physicalSize = const Size(720, 2400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PostinoTheme.light(),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2), disableAnimations: true),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: width,
+                  child: PostinoSinglePaneLayout(
+                    appBar: PostinoAppBar(
+                      title: 'Nuovo messaggio',
+                      onBack: () {},
+                      actions: [
+                        PostinoIconButton(icon: PostinoIcons.send, label: 'Invia', onPressed: () {}),
+                        PostinoIconButton(icon: PostinoIcons.close, label: 'Chiudi', onPressed: () {}),
+                      ],
+                    ),
+                    body: const SizedBox(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      final p = tester.renderObject<RenderParagraph>(find.text('Nuovo messaggio'));
+      expect(p.didExceedMaxLines, isFalse);
+      final bar = tester.getRect(find.byType(AppBar));
+      expect(tester.getRect(find.text('Nuovo messaggio')).bottom, lessThanOrEqualTo(bar.bottom));
+    });
+  }
 }

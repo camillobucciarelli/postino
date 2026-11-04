@@ -38,8 +38,14 @@ void addConversationLabel(String accountId, List<Message> messages, String label
     setLabelOn(accountId, messages.where((m) => !m.labelIds.contains(labelId)), labelId, add: true);
 
 /// Takes [label] off every message of a Conversazione that has it, then shows «Etichetta «X» tolta» under
-/// [context]'s messenger, whose Annulla puts it back on those very messages.
-void removeConversationLabel(BuildContext context, String accountId, List<Message> messages, Label label) {
+/// [context]'s messenger, whose Annulla puts it back on those very messages (and calls [onUndo]).
+void removeConversationLabel(
+  BuildContext context,
+  String accountId,
+  List<Message> messages,
+  Label label, {
+  VoidCallback? onUndo,
+}) {
   final had = messages.where((m) => m.labelIds.contains(label.id)).toList();
   setLabelOn(accountId, had, label.id, add: false);
   if (!context.mounted) return;
@@ -51,6 +57,9 @@ void removeConversationLabel(BuildContext context, String accountId, List<Messag
     actionLabel: t.undo,
     until: clock.now().add(PostinoMotion.undoWindow),
     now: clock.now,
-    onAction: () => setLabelOn(accountId, had, label.id, add: true),
+    onAction: () {
+      onUndo?.call();
+      setLabelOn(accountId, had, label.id, add: true);
+    },
   );
 }

@@ -309,6 +309,53 @@ void main() {
     await _escape(tester);
   });
 
+  // A slow fetch of the whole Conversazione (behind a sync, say): the tick lands on the local messages at once and
+  // on the older ones when the fetch ends, even if the picker was closed by then. The last tick on an Etichetta wins.
+  Future<void> openSlowPicker(WidgetTester tester) async {
+    await _start(tester);
+    gmail.deliverOutsideWindow(
+      msg('o0', conversationId: 'o', subject: 'Altro', date: _day(1), isRead: true, labelIds: ['INBOX', 'Label_12']),
+    );
+    gmail.holdConversation = Completer<void>();
+    await tester.tap(_row('o1'), buttons: kSecondaryButton);
+    await _settle(tester);
+    await _tap(tester, find.byKey(const ValueKey('row-labels-a1-o1')));
+  }
+
+  Future<void> endFetch(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 3));
+    gmail.holdConversation!.complete();
+    await _settle(tester);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await _settle(tester);
+  }
+
+  _onMac('a tick during a slow fetch reaches the older messages when it ends, picker closed or not', (tester) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Fatture'));
+    await _escape(tester);
+    await endFetch(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_13', true), ('o0', 'Label_13', true)]));
+  });
+
+  _onMac('an untick during a slow fetch reaches the older messages when it ends', (tester) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Viaggi'));
+    await endFetch(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_12', false), ('o0', 'Label_12', false)]));
+  });
+
+  _onMac('a tick then an untick during a slow fetch leaves the older messages alone', (tester) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Fatture'));
+    await _tap(tester, _tile('Fatture'));
+    await endFetch(tester);
+    expect(_calls(from).where((c) => c.$1 == 'o0' && c.$2 == 'Label_13'), isEmpty);
+  });
+
   _onMac('offline, the picker still labels the local messages at once', (tester) async {
     await _start(tester);
     gmail.goOffline();

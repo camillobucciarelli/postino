@@ -77,6 +77,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$inviati$it inviati = Translations$inviati$it.internal(_root);
 	late final Translations$impostazioni$it impostazioni = Translations$impostazioni$it.internal(_root);
 	late final Translations$tray$it tray = Translations$tray$it.internal(_root);
+	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
 }
 
 // Path: sidebar
@@ -556,6 +557,33 @@ class Translations$tray$it {
 	String get quit => 'Esci';
 }
 
+// Path: notifiche
+class Translations$notifiche$it {
+	Translations$notifiche$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Posta nuova'
+	String get channel => 'Posta nuova';
+
+	/// it: 'Apri'
+	String get open => 'Apri';
+
+	/// it: 'Notifiche della posta nuova'
+	String get permissionTitle => 'Notifiche della posta nuova';
+
+	/// it: 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.'
+	String get permissionBody => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.';
+
+	/// it: 'Continua'
+	String get permissionAllow => 'Continua';
+
+	/// it: 'Non ora'
+	String get permissionLater => 'Non ora';
+}
+
 /// The flat map containing all translations for locale <it>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -688,6 +716,12 @@ extension on Translations {
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
 			'tray.open' => 'Apri Postino',
 			'tray.quit' => 'Esci',
+			'notifiche.channel' => 'Posta nuova',
+			'notifiche.open' => 'Apri',
+			'notifiche.permissionTitle' => 'Notifiche della posta nuova',
+			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
+			'notifiche.permissionAllow' => 'Continua',
+			'notifiche.permissionLater' => 'Non ora',
 			_ => null,
 		};
 	}

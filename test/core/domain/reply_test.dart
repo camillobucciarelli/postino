@@ -192,18 +192,21 @@ void main() {
         all: false,
         dateLabel: 'd',
       );
-      expect(r.messageId, '<new@example.com>');
-      expect(r.from, _self);
-      expect(r.to, ['ada@example.com']);
-      expect(r.cc, isEmpty);
-      expect(r.bcc, isEmpty);
-      expect(r.subject, 'Re: Caffè');
       expect(r.body, startsWith('<p><br></p><div class="postino-quote">'));
       expect(r.body, contains('<blockquote><p>x</p></blockquote>'));
-      expect(r.inReplyTo, '<m@example.com>');
-      expect(r.references, ['<a@example.com>', '<m@example.com>']);
-      expect(r.conversationId, 't-1');
-      expect(r.attachments, isEmpty);
+      expect(
+        r,
+        OutgoingMessage(
+          messageId: '<new@example.com>',
+          from: _self,
+          to: ['ada@example.com'],
+          subject: 'Re: Caffè',
+          body: r.body,
+          inReplyTo: '<m@example.com>',
+          references: ['<a@example.com>', '<m@example.com>'],
+          conversationId: 't-1',
+        ),
+      );
     });
 
     test('to all: to and cc as replyAllRecipients', () {
@@ -265,15 +268,18 @@ void main() {
       dateLabel: 'd',
       attachments: const [pdf],
     );
-    expect(f.to, isEmpty);
-    expect(f.cc, isEmpty);
-    expect(f.subject, 'Fwd: Caffè');
     expect(f.body, startsWith('<p><br></p><div class="postino-forward">'));
     expect(f.body, endsWith('<p>x</p></div>'));
-    expect(f.inReplyTo, isNull);
-    expect(f.references, isEmpty);
-    expect(f.conversationId, isNull);
-    expect(f.attachments.single.sourceMessageId, 'm');
-    expect(f.attachments.single.attachment, same(pdf));
+    expect(
+      f,
+      OutgoingMessage(
+        messageId: '<new@example.com>',
+        from: _self,
+        to: const [],
+        subject: 'Fwd: Caffè',
+        body: f.body,
+        attachments: const [ForwardedAttachment('m', pdf)],
+      ),
+    );
   });
 }

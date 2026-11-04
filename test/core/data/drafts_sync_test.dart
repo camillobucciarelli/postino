@@ -396,10 +396,7 @@ void main() {
     );
     await engine.syncAll();
     final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
-    expect(opened.value.to, ['b@example.com']);
-    expect(opened.value.subject, 'Re: s');
-    expect(opened.value.body, '<p>Risposta</p>');
-    expect(opened.value.inReplyTo, '<m-1@example.com>');
+    expect(opened.value, reply);
   });
 
   test('a forward with attachments created here stays openable after the Provider returns it', () async {

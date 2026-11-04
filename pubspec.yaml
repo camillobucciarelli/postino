@@ -63,6 +63,7 @@ dependencies:
   file: ^7.0.1
   open_filex: ^5.0.0
   workmanager: ^0.10.10
+  equatable: ^3.0.0
 
 dev_dependencies:
   flutter_test:

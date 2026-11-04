@@ -1,8 +1,10 @@
+import 'package:equatable/equatable.dart';
+
 import 'message.dart';
 import 'result.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
-class SyncBatch {
+class SyncBatch extends Equatable {
   const SyncBatch({
     required this.cursor,
     this.messages = const [],
@@ -19,6 +21,15 @@ class SyncBatch {
 
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
   final Map<String, MessageBody> bodies;
+
+  @override
+  List<Object?> get props => [
+    cursor,
+    messages,
+    labels,
+    removedMessageIds,
+    bodies,
+  ];
 }
 
 /// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.

@@ -1,7 +1,9 @@
+import 'package:equatable/equatable.dart';
+
 import 'result.dart';
 
 /// What Google hands back after the user consents.
-class GoogleGrant {
+class GoogleGrant extends Equatable {
   const GoogleGrant({
     required this.address,
     required this.accessToken,
@@ -12,6 +14,13 @@ class GoogleGrant {
   final String accessToken;
   final String refreshToken;
   final DateTime expiresAt;
+
+  /// Never stringified: the tokens must not end up in logs.
+  @override
+  bool get stringify => false;
+
+  @override
+  List<Object?> get props => [address, accessToken, refreshToken, expiresAt];
 }
 
 /// Thin seam over the Google OAuth consent (real one in core/data, fake in widget tests).

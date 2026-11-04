@@ -1,5 +1,6 @@
 import 'dart:convert' show HtmlEscape, HtmlEscapeMode;
 
+import 'package:equatable/equatable.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
@@ -8,7 +9,7 @@ import 'safe_html.dart' show dropHeadContent;
 
 /// A message body split for the Conversazione (ThreadView): what it says, its signature and the text it
 /// quotes. Every part is in the body's own format (cleaned HTML or plain text); [original] is the whole.
-class BodyParts {
+class BodyParts extends Equatable {
   const BodyParts({
     required this.original,
     required this.body,
@@ -37,6 +38,9 @@ class BodyParts {
         .toLowerCase();
     return key.isEmpty ? null : key;
   }
+
+  @override
+  List<Object?> get props => [original, body, bodyVisible, signature, quote];
 }
 
 const _escape = HtmlEscape(HtmlEscapeMode.element);

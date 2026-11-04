@@ -162,12 +162,14 @@ void main() {
         expect(violations('core/domain/x.dart', "import '$uri';"), isNotEmpty);
       });
     }
-    test('domain may import pure Dart packages', () {
-      expect(
-        violations('core/domain/x.dart', "import 'package:meta/meta.dart';"),
-        isEmpty,
-      );
-    });
+    for (final uri in [
+      'package:meta/meta.dart',
+      'package:equatable/equatable.dart',
+    ]) {
+      test('domain may import pure Dart package $uri', () {
+        expect(violations('core/domain/x.dart', "import '$uri';"), isEmpty);
+      });
+    }
     for (final uri in [
       '../../design_system/tokens/postino_tokens.dart',
       'package:postino/i18n/strings.g.dart',

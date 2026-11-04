@@ -14,10 +14,16 @@ import '../tokens/postino_tokens.dart';
 /// never scrolling sideways. An `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
 /// by its `alt`. A tap on a link calls [onTapUrl] with its real URL.
 class PostinoHtmlCard extends StatelessWidget {
+  /// Crea la scheda per `html`; `onTapUrl` riceve i link toccati.
   const PostinoHtmlCard({super.key, required this.html, required this.onTapUrl, this.contentWidth, this.quiet = false});
 
+  /// Corpo HTML già ripulito.
   final String html;
+
+  /// Chiamata con l'URL reale di un link toccato.
   final ValueChanged<String> onTapUrl;
+
+  /// Larghezza fissa in px chiesta dal contenuto; se maggiore della colonna lo si riduce.
   final double? contentWidth;
 
   /// A signature or a quote: `body-quote` in `ink-muted` where the sender set no style.

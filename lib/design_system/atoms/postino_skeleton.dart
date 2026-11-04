@@ -6,10 +6,13 @@ import '../tokens/postino_tokens.dart';
 /// The shape of the message list while the first page loads: Comfortable rows, avatar and three bars.
 /// Still with reduced motion.
 class PostinoSkeleton extends StatefulWidget {
+  /// Crea lo scheletro della lista.
   const PostinoSkeleton({super.key, required this.label, this.rows = 4});
 
   /// Accessible name, e.g. “Caricamento dei messaggi”.
   final String label;
+
+  /// Numero di righe mostrate.
   final int rows;
 
   @override

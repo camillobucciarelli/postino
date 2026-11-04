@@ -11,6 +11,7 @@ import 'postino_sync_status.dart';
 
 /// One row of `PostinoNavigationDrawer` (not in the barrel): [item] as a row, or, [collapsed], as a rail icon.
 class PostinoDrawerItemTile extends StatelessWidget {
+  /// Crea la riga per `item`; `collapsed` la riduce all'icona.
   const PostinoDrawerItemTile(this.item, {required this.collapsed, super.key});
 
   /// The destination it shows and opens.

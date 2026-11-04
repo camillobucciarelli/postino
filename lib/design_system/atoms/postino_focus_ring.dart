@@ -9,12 +9,16 @@ import '../tokens/postino_tokens.dart';
 /// Controls with a shape of their own get it `focus-offset` outside; full-width rows ([inset])
 /// get it inside their edges, where nothing clips it.
 class PostinoFocusRing extends StatefulWidget {
+  /// Crea l'anello di focus attorno a `child`.
   const PostinoFocusRing({super.key, required this.child, this.borderRadius = BorderRadius.zero, this.inset = false});
 
+  /// Forma visibile attorno a cui disegnare l'anello.
   final Widget child;
 
   /// The shape of [child]; the ring follows it at its distance.
   final BorderRadius borderRadius;
+
+  /// Se l'anello sta dentro i bordi (righe a tutta larghezza) invece che fuori.
   final bool inset;
 
   @override

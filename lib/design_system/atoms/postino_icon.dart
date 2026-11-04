@@ -6,6 +6,7 @@ import '../tokens/postino_tokens.dart';
 /// An icon of [PostinoIcons], colored like the surrounding [IconTheme] unless [color] is given.
 /// Decorative unless [label] is given.
 class PostinoIcon extends StatelessWidget {
+  /// Crea un'icona.
   const PostinoIcon(
     this.icon, {
     super.key,
@@ -15,12 +16,19 @@ class PostinoIcon extends StatelessWidget {
     this.label,
   });
 
+  /// Icona da disegnare.
   final PostinoIconData icon;
+
+  /// Lato dell'icona.
   final double size;
+
+  /// Colore; se nullo quello dell'`IconTheme`.
   final Color? color;
 
   /// Fills the shape too (the active Stella).
   final bool filled;
+
+  /// Nome accessibile; se nullo l'icona è decorativa.
   final String? label;
 
   @override

@@ -23,11 +23,13 @@ typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt});
 /// Only the sync engine writes here; the UI reads through [InboxRepository].
 abstract interface class OutboxRepository {
   // --- Bozze (#35) ---
+  /// Salva o aggiorna la copia locale della Bozza, in attesa di arrivare al Provider.
   Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// A Bozza as the Provider has it (another client's, or edited elsewhere), kept here as already synced.
   Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
+  /// La copia locale della Bozza, se c'è.
   Future<LocalDraft?> localDraft(String accountId, String messageId);
 
   /// The Provider's DRAFT message with this Message-ID, as stored, with its body if downloaded.
@@ -36,6 +38,7 @@ abstract interface class OutboxRepository {
   /// Whether another message shares the Conversazione of this one.
   Future<bool> hasSiblings(String accountId, String messageId);
 
+  /// Le Bozze dell'Account il cui contenuto non è ancora sul Provider.
   Future<List<PendingDraft>> pendingDrafts(String accountId);
 
   /// True while [messageId] waits in the outbox: a Bozza PUT then would only delay its send in the Account's queue.
@@ -47,6 +50,7 @@ abstract interface class OutboxRepository {
   /// The remote copy was deleted: the local Bozza is new again.
   Future<void> forgetRemoteDraft(String accountId, String messageId);
 
+  /// Elimina la copia locale della Bozza.
   Future<void> removeDraft(String accountId, String messageId);
 
   /// Re-keys the local Bozza [from] as [to], as new; false when there is none.

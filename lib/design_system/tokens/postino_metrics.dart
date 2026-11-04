@@ -1,5 +1,6 @@
 // Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
 
+/// Scala di spaziatura (padding, gap, margini).
 abstract final class PostinoSpacing {
   /// Distanza fra badge account e avatar; micro-aggiustamenti.
   static const double s0_5 = 2;
@@ -35,6 +36,7 @@ abstract final class PostinoSpacing {
   static const double s16 = 64;
 }
 
+/// Raggi degli angoli.
 abstract final class PostinoRadius {
   /// Checkbox, tasti scorciatoia.
   static const double xs = 4;
@@ -55,6 +57,7 @@ abstract final class PostinoRadius {
   static const double full = 999;
 }
 
+/// Dimensioni fisse di componenti e breakpoint.
 abstract final class PostinoSize {
   /// Area minima di tocco su iOS (HIG). Flutter: kMinInteractiveDimensionCupertino.
   static const double touchTargetIos = 44;
@@ -127,6 +130,8 @@ abstract final class PostinoSize {
 
   /// Maniglia visibile al centro del divisore (resize-grip).
   static const double resizeGripWidth = 4;
+
+  /// Altezza della maniglia visibile del divisore.
   static const double resizeGripHeight = 32;
 
   /// Larghezza massima della colonna di lettura (testata e testo; i corpi HTML la superano).
@@ -145,6 +150,7 @@ abstract final class PostinoSize {
   static const double breakpointSidebarCollapse = 1440;
 }
 
+/// Spessori dei bordi.
 abstract final class PostinoBorder {
   /// Filetti border-subtle tra righe e pannelli.
   static const double borderWidthHairline = 1;

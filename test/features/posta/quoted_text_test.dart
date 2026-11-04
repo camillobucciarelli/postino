@@ -151,6 +151,37 @@ void main() {
       expect(_text(p.signature), 'Marco Lenti Ufficio acquisti');
     });
 
+    test('Outlook forward: the original sender signature after divRplyFwdMsg is not the message signature', () {
+      final p = splitHtml(
+        '<p>Ciao</p><div id="divRplyFwdMsg">Da: Ada Oggetto: Fwd: Prezzi</div>'
+        '<div id="Signature">Ada Okafor</div>',
+      );
+      expect(p.signature, isNull);
+    });
+
+    test('Outlook forward: the current sender signature before divRplyFwdMsg is still recognized', () {
+      final p = splitHtml(
+        '<p>Ciao</p><div id="Signature">Marco Lenti</div>'
+        '<div id="divRplyFwdMsg">Da: Ada Oggetto: Fwd: Prezzi</div><div id="Signature">Ada Okafor</div>',
+      );
+      expect(_text(p.signature), 'Marco Lenti');
+    });
+
+    test('Outlook forward with #appendonsend: the signature after it is not the message signature', () {
+      final p = splitHtml(
+        '<p>Ciao</p><div id="appendonsend"></div><hr>Da: Ada Oggetto: Fwd: Prezzi<div id="Signature">Ada</div>',
+      );
+      expect(p.signature, isNull);
+    });
+
+    test('an Outlook marker inside a Gmail quote does not hide the current Gmail signature', () {
+      final p = splitHtml(
+        '<p>Ciao</p><div class="gmail_quote"><div id="divRplyFwdMsg">Da: Ada</div></div>'
+        '<div class="gmail_signature">Marco Lenti</div>',
+      );
+      expect(_text(p.signature), 'Marco Lenti');
+    });
+
     test('plain text: after a «-- » line, before the quote', () {
       final p = splitText(_fixture('plain_reply.txt'));
       expect(p.signature, '-- \nAda Okafor\nOkafor Legal');

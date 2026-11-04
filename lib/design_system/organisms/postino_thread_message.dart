@@ -21,6 +21,7 @@ export '../molecules/postino_message_detail.dart' show PostinoMessageDetail;
 /// ([quoteLabel] for screen readers; a tap shows it, another hides it), and last the [attachments]. A tap on the header toggles,
 /// in `duration-thread-expand` with `easing-emphasized-decelerate`.
 class PostinoThreadMessage extends StatefulWidget {
+  /// Crea un messaggio di una conversazione: compresso come riga, oppure espanso con i dettagli.
   const PostinoThreadMessage({
     super.key,
     required this.sender,
@@ -41,6 +42,7 @@ class PostinoThreadMessage extends StatefulWidget {
     this.actions,
   });
 
+  /// Nome del mittente, mostrato nell'intestazione.
   final String sender;
 
   /// Beside the sender when expanded, in `ink-muted`; null when [sender] is already the address.
@@ -48,8 +50,14 @@ class PostinoThreadMessage extends StatefulWidget {
 
   /// Already formatted, like the list's.
   final String time;
+
+  /// Anteprima di una riga, mostrata quando il messaggio è compresso.
   final String preview;
+
+  /// Vero se il messaggio è espanso e mostra corpo e allegati.
   final bool expanded;
+
+  /// Chiamato al tocco sull'intestazione, per espandere o comprimere il messaggio.
   final VoidCallback onToggle;
 
   /// Shown only when expanded: a `PostinoMessageBody`.
@@ -57,10 +65,14 @@ class PostinoThreadMessage extends StatefulWidget {
 
   /// “a me”, under the sender when expanded; with [details] it opens them.
   final String? recipients;
+
+  /// Dettagli del messaggio (mittente, destinatari, data) mostrati aprendo i destinatari.
   final List<PostinoMessageDetail> details;
 
   /// Under the header, above the body: a Banner for blocked images…
   final List<Widget> notices;
+
+  /// Vero se il messaggio non è ancora letto.
   final bool unread;
 
   /// Under the body, in `body-quote` `ink-muted` (`PostinoMessageBody.quiet`, `PostinoHtmlCard.quiet`).
@@ -68,6 +80,8 @@ class PostinoThreadMessage extends StatefulWidget {
 
   /// The quoted text (and a signature seen before), hidden until «…» is tapped.
   final Widget? quote;
+
+  /// Etichetta letta dagli screen reader per il pulsante che mostra il testo citato.
   final String quoteLabel;
 
   /// At the bottom, wrapping.

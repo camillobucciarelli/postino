@@ -8,10 +8,16 @@ import '../tokens/postino_tokens.dart';
 
 /// One entry of a [PostinoMenu]: [label] (a verb), an optional leading [icon], [onPressed].
 class PostinoMenuItem {
+  /// Crea una voce di menu.
   const PostinoMenuItem({required this.label, required this.onPressed, this.icon, this.key});
 
+  /// Verbo che dice cosa fa la voce.
   final String label;
+
+  /// Chiamata alla scelta della voce.
   final VoidCallback onPressed;
+
+  /// Icona a sinistra, se serve.
   final PostinoIconData? icon;
 
   /// For the tests, on the item's button.
@@ -22,6 +28,7 @@ class PostinoMenuItem {
 /// «Azioni del messaggio»), [icon] its glyph. Opening it (click, Enter, Space) focuses the first item,
 /// so the keyboard lands inside; Esc closes it. The items are at least 220 wide and 48 high.
 class PostinoMenu extends StatefulWidget {
+  /// Crea il menu con il suo pulsante.
   const PostinoMenu({
     super.key,
     required this.label,
@@ -30,8 +37,13 @@ class PostinoMenu extends StatefulWidget {
     this.buttonKey,
   });
 
+  /// Nome del pulsante per lo screen reader.
   final String label;
+
+  /// Icona del pulsante; di default i tre puntini verticali.
   final PostinoIconData icon;
+
+  /// Le voci, nell'ordine mostrato.
   final List<PostinoMenuItem> items;
 
   /// For the tests, on the trigger button.

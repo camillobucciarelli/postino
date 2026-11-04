@@ -13,6 +13,7 @@ import 'postino_single_pane_layout.dart';
 /// The list + detail split is [PostinoListDetailLayout]'s, around this.
 // ponytail: 600–839 stays one pane (the Conversazione a full page); LayoutTablet's two panes if tablets need them.
 class PostinoAdaptiveLayout extends StatelessWidget {
+  /// Crea il layout adattivo in base alla larghezza della finestra.
   const PostinoAdaptiveLayout({
     super.key,
     required this.appBar,
@@ -22,10 +23,19 @@ class PostinoAdaptiveLayout extends StatelessWidget {
     this.fab,
   });
 
+  /// Barra superiore della schermata.
   final Widget appBar;
+
+  /// Contenuto principale della schermata.
   final Widget body;
+
+  /// Drawer di navigazione, usato sotto la soglia di larghezza espansa.
   final Widget drawer;
+
+  /// Banner mostrati sopra il contenuto.
   final List<Widget> banners;
+
+  /// Pulsante di azione flottante facoltativo, sovrapposto al contenuto.
   final Widget? fab;
 
   @override
@@ -43,6 +53,7 @@ class PostinoAdaptiveLayout extends StatelessWidget {
 
 /// Opens or closes the docked sidebar (the shortcut of the Posta views sends it).
 class ToggleSidebarIntent extends Intent {
+  /// Crea l'intent per aprire o chiudere la barra laterale.
   const ToggleSidebarIntent();
 }
 
@@ -53,6 +64,7 @@ class ToggleSidebarIntent extends Intent {
 /// [ToggleSidebarIntent]) holds until the window crosses 1440 either way; each change goes to [onExpandedChanged]
 /// (null: no choice, the width decides).
 class PostinoSidebarShell extends StatefulWidget {
+  /// Crea lo shell con la barra laterale, il contenuto e le etichette dei pulsanti.
   const PostinoSidebarShell({
     super.key,
     required this.drawer,
@@ -63,13 +75,22 @@ class PostinoSidebarShell extends StatefulWidget {
     this.onExpandedChanged,
   });
 
+  /// Contenuto della barra laterale, mostrato solo quando la finestra è abbastanza larga.
   final Widget drawer;
+
+  /// Contenuto principale, sempre visibile accanto alla barra laterale.
   final Widget child;
 
   /// The button's name while the sidebar is extended / icons only.
   final String closeLabel;
+
+  /// Nome del pulsante quando la barra laterale è ridotta a icone.
   final String openLabel;
+
+  /// Scelta iniziale dell'utente sull'apertura della barra; null lascia decidere la larghezza.
   final bool? expanded;
+
+  /// Chiamato a ogni cambio di stato della barra, con null quando la decisione torna alla larghezza.
   final ValueChanged<bool?>? onExpandedChanged;
 
   @override

@@ -3,9 +3,16 @@ import 'package:flutter/material.dart';
 
 /// Scala tipografica (come KeyVault): Caprasimo per i titoli, Figtree per il testo, monospace di sistema per header grezzi. Il colore viene dal tema.
 abstract final class PostinoText {
+  /// Famiglia dei titoli (serif).
   static const serif = 'Caprasimo';
+
+  /// Famiglia del testo (sans).
   static const sans = 'Figtree';
+
+  /// Famiglia monospace per header grezzi.
   static const mono = 'monospace';
+
+  /// Font di ripiego per la monospace.
   static const monoFallback = ['SFMono-Regular', 'Menlo', 'Consolas'];
 
   /// Titolo grande della schermata, onboarding. Flutter: textTheme.displaySmall.
@@ -119,6 +126,7 @@ abstract final class PostinoText {
     fontWeight: FontWeight.w400,
   );
 
+  /// `TextTheme` del tema Material costruito dagli stili sopra.
   static const textTheme = TextTheme(
     displaySmall: largeTitle,
     headlineMedium: display,

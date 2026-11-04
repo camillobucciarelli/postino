@@ -77,6 +77,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$inviati$it inviati = Translations$inviati$it.internal(_root);
 	late final Translations$impostazioni$it impostazioni = Translations$impostazioni$it.internal(_root);
 	late final Translations$tray$it tray = Translations$tray$it.internal(_root);
+	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
+	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 }
 
 // Path: sidebar
@@ -519,6 +521,9 @@ class Translations$impostazioni$it {
 	/// it: 'Impostazioni'
 	String get title => 'Impostazioni';
 
+	/// it: 'Dispositivo'
+	String get deviceSection => 'Dispositivo';
+
 	/// it: 'Impostazioni del dispositivo'
 	String get device => 'Impostazioni del dispositivo';
 
@@ -545,6 +550,186 @@ class Translations$tray$it {
 
 	/// it: 'Esci'
 	String get quit => 'Esci';
+}
+
+// Path: selettoreEtichette
+class Translations$selettoreEtichette$it {
+	Translations$selettoreEtichette$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Etichette'
+	String get button => 'Etichette';
+
+	/// it: 'Etichette…'
+	String get menuItem => 'Etichette…';
+
+	/// it: 'Chiudi le Etichette'
+	String get close => 'Chiudi le Etichette';
+
+	/// it: 'Cerca o crea un'Etichetta'
+	String get search => 'Cerca o crea un\'Etichetta';
+
+	/// it: 'Usa «/» per annidarla, es. Progetti/Postino.'
+	String get nestHelp => 'Usa «/» per annidarla, es. Progetti/Postino.';
+
+	/// it: 'Crea «$name»'
+	String create({required Object name}) => 'Crea «${name}»';
+
+	/// it: '(zero) {Etichette, nessuna selezionata} (one) {Etichette, $n selezionata} (other) {Etichette, $n selezionate}'
+	String selected({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		zero: 'Etichette, nessuna selezionata',
+		one: 'Etichette, ${n} selezionata',
+		other: 'Etichette, ${n} selezionate',
+	);
+
+	/// it: 'Nessuna Etichetta'
+	String get empty => 'Nessuna Etichetta';
+
+	/// it: 'Etichetta «$name» tolta'
+	String removed({required Object name}) => 'Etichetta «${name}» tolta';
+
+	/// it: 'Annulla'
+	String get undo => 'Annulla';
+
+	/// it: 'Togli Etichetta $name'
+	String remove({required Object name}) => 'Togli Etichetta ${name}';
+
+	/// it: 'Scrivi un nome per l'Etichetta.'
+	String get errorEmpty => 'Scrivi un nome per l\'Etichetta.';
+
+	/// it: 'Ogni livello ha bisogno di un nome: niente «/» all'inizio, alla fine o doppie.'
+	String get errorEmptyLevel => 'Ogni livello ha bisogno di un nome: niente «/» all\'inizio, alla fine o doppie.';
+
+	/// it: 'Esiste già un'Etichetta con questo nome.'
+	String get errorDuplicate => 'Esiste già un\'Etichetta con questo nome.';
+}
+
+// Path: etichetteAutomatiche
+class Translations$etichetteAutomatiche$it {
+	Translations$etichetteAutomatiche$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Etichette automatiche'
+	String get title => 'Etichette automatiche';
+
+	/// it: 'Impostazioni · $account'
+	String page({required Object account}) => 'Impostazioni · ${account}';
+
+	/// it: 'Un modello che gira sul tuo dispositivo assegna le Etichette alle email in arrivo. Vale solo per le email nuove arrivate dopo l'attivazione. Ogni email riceve al massimo un'Etichetta, e quelle che ne hanno già una vengono saltate. L'Etichetta viene scritta su Gmail.'
+	String get intro => 'Un modello che gira sul tuo dispositivo assegna le Etichette alle email in arrivo.\nVale solo per le email nuove arrivate dopo l\'attivazione.\nOgni email riceve al massimo un\'Etichetta, e quelle che ne hanno già una vengono saltate.\nL\'Etichetta viene scritta su Gmail.';
+
+	/// it: 'Etichette'
+	String get labels => 'Etichette';
+
+	/// it: 'Nessuna Etichetta: creane una per iniziare.'
+	String get empty => 'Nessuna Etichetta: creane una per iniziare.';
+
+	/// it: 'Automatica'
+	String get automatic => 'Automatica';
+
+	/// it: 'Descrizione (facoltativa)'
+	String get description => 'Descrizione (facoltativa)';
+
+	/// it: 'Descrivi che email ci vanno, es. fatture e ricevute dei fornitori'
+	String get descriptionHelp => 'Descrivi che email ci vanno, es. fatture e ricevute dei fornitori';
+
+	/// it: 'Descrizione salvata'
+	String get descriptionSaved => 'Descrizione salvata';
+
+	/// it: 'Crea Etichetta'
+	String get create => 'Crea Etichetta';
+
+	/// it: 'Crea Etichetta'
+	String get createTitle => 'Crea Etichetta';
+
+	/// it: 'Nome dell'Etichetta'
+	String get createName => 'Nome dell\'Etichetta';
+
+	/// it: 'Usa «/» per annidarla, es. Progetti/Postino.'
+	String get createHelp => 'Usa «/» per annidarla, es. Progetti/Postino.';
+
+	/// it: 'Crea'
+	String get createAction => 'Crea';
+
+	/// it: 'Annulla'
+	String get createCancel => 'Annulla';
+
+	/// it: 'Non è stato possibile creare l'Etichetta. Controlla la connessione e riprova.'
+	String get createFailed => 'Non è stato possibile creare l\'Etichetta. Controlla la connessione e riprova.';
+
+	/// it: 'Scrivi un nome per l'Etichetta.'
+	String get errorEmpty => 'Scrivi un nome per l\'Etichetta.';
+
+	/// it: 'Ogni livello ha bisogno di un nome: niente «/» all'inizio, alla fine o doppie.'
+	String get errorEmptyLevel => 'Ogni livello ha bisogno di un nome: niente «/» all\'inizio, alla fine o doppie.';
+
+	/// it: 'Esiste già un'Etichetta con questo nome.'
+	String get errorDuplicate => 'Esiste già un\'Etichetta con questo nome.';
+
+	late final Translations$etichetteAutomatiche$model$it model = Translations$etichetteAutomatiche$model$it.internal(_root);
+}
+
+// Path: etichetteAutomatiche.model
+class Translations$etichetteAutomatiche$model$it {
+	Translations$etichetteAutomatiche$model$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Preparazione del modello'
+	String get preparing => 'Preparazione del modello';
+
+	/// it: 'In attesa del Wi-Fi'
+	String get waitingTitle => 'In attesa del Wi-Fi';
+
+	/// it: 'Il modello ($size) si scarica quando sei in Wi-Fi.'
+	String waitingBody({required Object size}) => 'Il modello (${size}) si scarica quando sei in Wi-Fi.';
+
+	/// it: 'Scarica ora'
+	String get downloadNow => 'Scarica ora';
+
+	/// it: 'Download del modello'
+	String get downloading => 'Download del modello';
+
+	/// it: '$received di $total · $percent%'
+	String progress({required Object received, required Object total, required Object percent}) => '${received} di ${total} · ${percent}%';
+
+	/// it: 'Download del modello non riuscito'
+	String get failedTitle => 'Download del modello non riuscito';
+
+	/// it: 'Connessione interrotta.'
+	String get failedOffline => 'Connessione interrotta.';
+
+	/// it: 'Errore imprevisto.'
+	String get failedOther => 'Errore imprevisto.';
+
+	/// it: 'Riprova'
+	String get retry => 'Riprova';
+
+	/// it: 'Modello pronto'
+	String get ready => 'Modello pronto';
+
+	/// it: 'Le email nuove ricevono le Etichette automatiche.'
+	String get readyBody => 'Le email nuove ricevono le Etichette automatiche.';
+
+	/// it: 'Etichette automatiche pronte'
+	String get readySnackbar => 'Etichette automatiche pronte';
+
+	/// it: 'Ok'
+	String get dismiss => 'Ok';
+
+	/// it: 'Scaricare $size su rete cellulare?'
+	String confirmTitle({required Object size}) => 'Scaricare ${size} su rete cellulare?';
+
+	/// it: 'Aspetta il Wi-Fi'
+	String get confirmWait => 'Aspetta il Wi-Fi';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -671,12 +856,62 @@ extension on Translations {
 			'inviati.emptyTitle' => 'Nessun messaggio inviato',
 			'inviati.emptyBody' => 'I messaggi che invii compaiono qui.',
 			'impostazioni.title' => 'Impostazioni',
+			'impostazioni.deviceSection' => 'Dispositivo',
 			'impostazioni.device' => 'Impostazioni del dispositivo',
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
 			'tray.open' => 'Apri Postino',
 			'tray.quit' => 'Esci',
+			'selettoreEtichette.button' => 'Etichette',
+			'selettoreEtichette.menuItem' => 'Etichette…',
+			'selettoreEtichette.close' => 'Chiudi le Etichette',
+			'selettoreEtichette.search' => 'Cerca o crea un\'Etichetta',
+			'selettoreEtichette.nestHelp' => 'Usa «/» per annidarla, es. Progetti/Postino.',
+			'selettoreEtichette.create' => ({required Object name}) => 'Crea «${name}»',
+			'selettoreEtichette.selected' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, zero: 'Etichette, nessuna selezionata', one: 'Etichette, ${n} selezionata', other: 'Etichette, ${n} selezionate', ), 
+			'selettoreEtichette.empty' => 'Nessuna Etichetta',
+			'selettoreEtichette.removed' => ({required Object name}) => 'Etichetta «${name}» tolta',
+			'selettoreEtichette.undo' => 'Annulla',
+			'selettoreEtichette.remove' => ({required Object name}) => 'Togli Etichetta ${name}',
+			'selettoreEtichette.errorEmpty' => 'Scrivi un nome per l\'Etichetta.',
+			'selettoreEtichette.errorEmptyLevel' => 'Ogni livello ha bisogno di un nome: niente «/» all\'inizio, alla fine o doppie.',
+			'selettoreEtichette.errorDuplicate' => 'Esiste già un\'Etichetta con questo nome.',
+			'etichetteAutomatiche.title' => 'Etichette automatiche',
+			'etichetteAutomatiche.page' => ({required Object account}) => 'Impostazioni · ${account}',
+			'etichetteAutomatiche.intro' => 'Un modello che gira sul tuo dispositivo assegna le Etichette alle email in arrivo.\nVale solo per le email nuove arrivate dopo l\'attivazione.\nOgni email riceve al massimo un\'Etichetta, e quelle che ne hanno già una vengono saltate.\nL\'Etichetta viene scritta su Gmail.',
+			'etichetteAutomatiche.labels' => 'Etichette',
+			'etichetteAutomatiche.empty' => 'Nessuna Etichetta: creane una per iniziare.',
+			'etichetteAutomatiche.automatic' => 'Automatica',
+			'etichetteAutomatiche.description' => 'Descrizione (facoltativa)',
+			'etichetteAutomatiche.descriptionHelp' => 'Descrivi che email ci vanno, es. fatture e ricevute dei fornitori',
+			'etichetteAutomatiche.descriptionSaved' => 'Descrizione salvata',
+			'etichetteAutomatiche.create' => 'Crea Etichetta',
+			'etichetteAutomatiche.createTitle' => 'Crea Etichetta',
+			'etichetteAutomatiche.createName' => 'Nome dell\'Etichetta',
+			'etichetteAutomatiche.createHelp' => 'Usa «/» per annidarla, es. Progetti/Postino.',
+			'etichetteAutomatiche.createAction' => 'Crea',
+			'etichetteAutomatiche.createCancel' => 'Annulla',
+			'etichetteAutomatiche.createFailed' => 'Non è stato possibile creare l\'Etichetta. Controlla la connessione e riprova.',
+			'etichetteAutomatiche.errorEmpty' => 'Scrivi un nome per l\'Etichetta.',
+			'etichetteAutomatiche.errorEmptyLevel' => 'Ogni livello ha bisogno di un nome: niente «/» all\'inizio, alla fine o doppie.',
+			'etichetteAutomatiche.errorDuplicate' => 'Esiste già un\'Etichetta con questo nome.',
+			'etichetteAutomatiche.model.preparing' => 'Preparazione del modello',
+			'etichetteAutomatiche.model.waitingTitle' => 'In attesa del Wi-Fi',
+			'etichetteAutomatiche.model.waitingBody' => ({required Object size}) => 'Il modello (${size}) si scarica quando sei in Wi-Fi.',
+			'etichetteAutomatiche.model.downloadNow' => 'Scarica ora',
+			'etichetteAutomatiche.model.downloading' => 'Download del modello',
+			'etichetteAutomatiche.model.progress' => ({required Object received, required Object total, required Object percent}) => '${received} di ${total} · ${percent}%',
+			'etichetteAutomatiche.model.failedTitle' => 'Download del modello non riuscito',
+			'etichetteAutomatiche.model.failedOffline' => 'Connessione interrotta.',
+			'etichetteAutomatiche.model.failedOther' => 'Errore imprevisto.',
+			'etichetteAutomatiche.model.retry' => 'Riprova',
+			'etichetteAutomatiche.model.ready' => 'Modello pronto',
+			'etichetteAutomatiche.model.readyBody' => 'Le email nuove ricevono le Etichette automatiche.',
+			'etichetteAutomatiche.model.readySnackbar' => 'Etichette automatiche pronte',
+			'etichetteAutomatiche.model.dismiss' => 'Ok',
+			'etichetteAutomatiche.model.confirmTitle' => ({required Object size}) => 'Scaricare ${size} su rete cellulare?',
+			'etichetteAutomatiche.model.confirmWait' => 'Aspetta il Wi-Fi',
 			_ => null,
 		};
 	}

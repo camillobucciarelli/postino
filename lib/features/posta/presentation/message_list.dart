@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
+import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'conversation_labels.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
 
@@ -49,6 +53,20 @@ class _MessageListState() extends State<MessageList> {
   (String, String)? _cursor;
   List<InboxEntry>? _list;
   bool? _wasTwoPane;
+
+  /// The Etichette of each Account in the list, to name the ids of the rows; subscribed when a row first needs them.
+  final _labels = <String, List<Label>>{};
+  final _labelSubs = <String, StreamSubscription<List<Label>>>{};
+
+  List<Label> _labelsOf(String accountId) {
+    _labelSubs.putIfAbsent(
+      accountId,
+      () => GetIt.I<InboxRepository>()
+          .watchLabels(accountId)
+          .listen((l) => mounted ? setState(() => _labels[accountId] = l) : null),
+    );
+    return _labels[accountId] ?? const [];
+  }
 
   /// Side by side with the Conversazione: moving opens it (ADR 0014).
   bool get _twoPane => MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
@@ -101,6 +119,9 @@ class _MessageListState() extends State<MessageList> {
     }
     for (final n in _nodes.values) {
       n.dispose();
+    }
+    for (final s in _labelSubs.values) {
+      unawaited(s.cancel());
     }
     _scroll.dispose();
     entries.dispose();
@@ -197,39 +218,62 @@ class _MessageListState() extends State<MessageList> {
         emptyBody: widget.emptyBody ?? t.emptyBody,
         itemBuilder: (context, i) {
           final InboxEntry(message: m, account: a, :count, :unread, :status) = list![i];
+          final labels = [
+            for (final l in _labelsOf(a.id))
+              if (l.kind == LabelKind.etichetta && m.labelIds.contains(l.id)) l.name,
+          ];
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
           final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list));
+          final tile = PostinoMessageTile(
+            key: ValueKey('row-${a.id}-${m.id}'),
+            focusNode: node,
+            sender: m.fromName ?? m.from,
+            subject: m.subject,
+            preview: m.snippet,
+            time: time,
+            unread: unread,
+            starred: m.isStarred,
+            count: count,
+            labels: labels,
+            selected: widget.selected == key,
+            onTap: () {
+              setState(() => _cursor = key);
+              node.requestFocus();
+              widget.onOpen(a.id, m.conversationId);
+            },
+            account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
+            semanticLabel: [
+              if (unread) t.unread,
+              m.fromName ?? m.from,
+              m.subject,
+              if (count > 1) t.messages(n: count),
+              ?status,
+              if (m.isStarred) t.starred,
+              if (widget.showAccount) t.account(name: a.name),
+              ...labels,
+              time,
+            ].join(', '),
+          );
           return _KeepAlive(
             keep: key == _cursor,
-            child: PostinoMessageTile(
-              key: ValueKey('row-${a.id}-${m.id}'),
-              focusNode: node,
-              sender: m.fromName ?? m.from,
-              subject: m.subject,
-              preview: m.snippet,
-              time: time,
-              unread: unread,
-              starred: m.isStarred,
-              count: count,
-              selected: widget.selected == key,
-              onTap: () {
-                setState(() => _cursor = key);
-                node.requestFocus();
-                widget.onOpen(a.id, m.conversationId);
-              },
-              account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
-              semanticLabel: [
-                if (unread) t.unread,
-                m.fromName ?? m.from,
-                m.subject,
-                if (count > 1) t.messages(n: count),
-                ?status,
-                if (m.isStarred) t.starred,
-                if (widget.showAccount) t.account(name: a.name),
-                time,
-              ].join(', '),
-            ),
+            // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
+            child: m.conversationId.startsWith('<')
+                ? tile
+                : Builder(
+                    builder: (row) => PostinoContextMenu(
+                      items: [
+                        PostinoMenuItem(
+                          key: ValueKey('row-labels-${a.id}-${m.id}'),
+                          label: context.t.selettoreEtichette.menuItem,
+                          onPressed: () => unawaited(
+                            openLabelPicker(row, accountId: a.id, conversationId: m.conversationId, returnFocus: node),
+                          ),
+                        ),
+                      ],
+                      child: tile,
+                    ),
+                  ),
           );
         },
       );

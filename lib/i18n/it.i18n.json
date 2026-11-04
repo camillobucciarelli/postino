@@ -144,6 +144,7 @@
   },
   "impostazioni": {
     "title": "Impostazioni",
+    "deviceSection": "Dispositivo",
     "device": "Impostazioni del dispositivo",
     "launchAtLogin": "Avvio al login",
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
@@ -152,5 +153,64 @@
   "tray": {
     "open": "Apri Postino",
     "quit": "Esci"
+  },
+  "selettoreEtichette": {
+    "button": "Etichette",
+    "menuItem": "Etichette…",
+    "close": "Chiudi le Etichette",
+    "search": "Cerca o crea un'Etichetta",
+    "nestHelp": "Usa «/» per annidarla, es. Progetti/Postino.",
+    "create": "Crea «$name»",
+    "selected": {
+      "zero": "Etichette, nessuna selezionata",
+      "one": "Etichette, $n selezionata",
+      "other": "Etichette, $n selezionate"
+    },
+    "empty": "Nessuna Etichetta",
+    "removed": "Etichetta «$name» tolta",
+    "undo": "Annulla",
+    "remove": "Togli Etichetta $name",
+    "errorEmpty": "Scrivi un nome per l'Etichetta.",
+    "errorEmptyLevel": "Ogni livello ha bisogno di un nome: niente «/» all'inizio, alla fine o doppie.",
+    "errorDuplicate": "Esiste già un'Etichetta con questo nome."
+  },
+  "etichetteAutomatiche": {
+    "title": "Etichette automatiche",
+    "page": "Impostazioni · $account",
+    "intro": "Un modello che gira sul tuo dispositivo assegna le Etichette alle email in arrivo.\nVale solo per le email nuove arrivate dopo l'attivazione.\nOgni email riceve al massimo un'Etichetta, e quelle che ne hanno già una vengono saltate.\nL'Etichetta viene scritta su Gmail.",
+    "labels": "Etichette",
+    "empty": "Nessuna Etichetta: creane una per iniziare.",
+    "automatic": "Automatica",
+    "description": "Descrizione (facoltativa)",
+    "descriptionHelp": "Descrivi che email ci vanno, es. fatture e ricevute dei fornitori",
+    "descriptionSaved": "Descrizione salvata",
+    "create": "Crea Etichetta",
+    "createTitle": "Crea Etichetta",
+    "createName": "Nome dell'Etichetta",
+    "createHelp": "Usa «/» per annidarla, es. Progetti/Postino.",
+    "createAction": "Crea",
+    "createCancel": "Annulla",
+    "createFailed": "Non è stato possibile creare l'Etichetta. Controlla la connessione e riprova.",
+    "errorEmpty": "Scrivi un nome per l'Etichetta.",
+    "errorEmptyLevel": "Ogni livello ha bisogno di un nome: niente «/» all'inizio, alla fine o doppie.",
+    "errorDuplicate": "Esiste già un'Etichetta con questo nome.",
+    "model": {
+      "preparing": "Preparazione del modello",
+      "waitingTitle": "In attesa del Wi-Fi",
+      "waitingBody": "Il modello ($size) si scarica quando sei in Wi-Fi.",
+      "downloadNow": "Scarica ora",
+      "downloading": "Download del modello",
+      "progress": "$received di $total · $percent%",
+      "failedTitle": "Download del modello non riuscito",
+      "failedOffline": "Connessione interrotta.",
+      "failedOther": "Errore imprevisto.",
+      "retry": "Riprova",
+      "ready": "Modello pronto",
+      "readyBody": "Le email nuove ricevono le Etichette automatiche.",
+      "readySnackbar": "Etichette automatiche pronte",
+      "dismiss": "Ok",
+      "confirmTitle": "Scaricare $size su rete cellulare?",
+      "confirmWait": "Aspetta il Wi-Fi"
+    }
   }
 }

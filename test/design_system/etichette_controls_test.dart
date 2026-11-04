@@ -179,6 +179,34 @@ void main() {
       });
     }
 
+    testWidgets('the arrows inside the child stay the caller\'s (the list moves with them)', (t) async {
+      var down = 0;
+      await t.pumpWidget(
+        _app(
+          CallbackShortcuts(
+            bindings: {const SingleActivator(LogicalKeyboardKey.arrowDown): () => down++},
+            child: const PostinoContextMenu(
+              items: [PostinoMenuItem(label: 'Etichette…', onPressed: _noop)],
+              child: PostinoMessageTile(
+                sender: 'Ada',
+                subject: 'Fattura',
+                preview: 'In allegato.',
+                time: '09:42',
+                unread: false,
+                starred: false,
+                onTap: _noop,
+                semanticLabel: 'Ada, Fattura',
+              ),
+            ),
+          ),
+        ),
+      );
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(down, 1);
+    });
+
     testWidgets('the items are custom actions of the row for the screen reader', (t) async {
       final semantics = t.ensureSemantics();
       final picked = await pump(t);

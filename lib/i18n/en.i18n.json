@@ -144,6 +144,7 @@
   },
   "impostazioni": {
     "title": "Settings",
+    "deviceSection": "Device",
     "device": "Device settings",
     "launchAtLogin": "Launch at login",
     "launchAtLoginBody": "Postino opens when you log in and stays in the tray, so mail keeps arriving.",
@@ -152,5 +153,64 @@
   "tray": {
     "open": "Open Postino",
     "quit": "Quit"
+  },
+  "selettoreEtichette": {
+    "button": "Labels",
+    "menuItem": "Labels…",
+    "close": "Close labels",
+    "search": "Search or create a label",
+    "nestHelp": "Use “/” to nest it, e.g. Projects/Postino.",
+    "create": "Create “$name”",
+    "selected": {
+      "zero": "Labels, none selected",
+      "one": "Labels, $n selected",
+      "other": "Labels, $n selected"
+    },
+    "empty": "No labels",
+    "removed": "Label “$name” removed",
+    "undo": "Undo",
+    "remove": "Remove label $name",
+    "errorEmpty": "Type a name for the label.",
+    "errorEmptyLevel": "Every level needs a name: no “/” at the start, at the end or doubled.",
+    "errorDuplicate": "A label with this name already exists."
+  },
+  "etichetteAutomatiche": {
+    "title": "Automatic labels",
+    "page": "Settings · $account",
+    "intro": "A model running on your device assigns labels to incoming email.\nIt only applies to new email that arrives after you turn it on.\nEach email gets at most one label, and email that already has one is skipped.\nThe label is written to Gmail.",
+    "labels": "Labels",
+    "empty": "No labels: create one to start.",
+    "automatic": "Automatic",
+    "description": "Description (optional)",
+    "descriptionHelp": "Describe which email goes here, e.g. invoices and receipts from suppliers",
+    "descriptionSaved": "Description saved",
+    "create": "Create label",
+    "createTitle": "Create label",
+    "createName": "Label name",
+    "createHelp": "Use “/” to nest it, e.g. Projects/Postino.",
+    "createAction": "Create",
+    "createCancel": "Cancel",
+    "createFailed": "The label could not be created. Check your connection and try again.",
+    "errorEmpty": "Type a name for the label.",
+    "errorEmptyLevel": "Every level needs a name: no “/” at the start, at the end or doubled.",
+    "errorDuplicate": "A label with this name already exists.",
+    "model": {
+      "preparing": "Preparing the model",
+      "waitingTitle": "Waiting for Wi-Fi",
+      "waitingBody": "The model ($size) downloads when you are on Wi-Fi.",
+      "downloadNow": "Download now",
+      "downloading": "Downloading the model",
+      "progress": "$received of $total · $percent%",
+      "failedTitle": "Model download failed",
+      "failedOffline": "Connection lost.",
+      "failedOther": "Unexpected error.",
+      "retry": "Retry",
+      "ready": "Model ready",
+      "readyBody": "New email gets automatic labels.",
+      "readySnackbar": "Automatic labels ready",
+      "dismiss": "OK",
+      "confirmTitle": "Download $size over cellular?",
+      "confirmWait": "Wait for Wi-Fi"
+    }
   }
 }

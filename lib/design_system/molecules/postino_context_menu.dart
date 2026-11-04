@@ -51,28 +51,38 @@ class PostinoContextMenuState() extends State<PostinoContextMenu> {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
-    return MenuAnchor(
-      controller: _controller,
-      style: postinoMenuStyle(c),
-      menuChildren: postinoMenuChildren(c, widget.items, _first),
-      child: MergeSemantics(
-        child: Semantics(
-          customSemanticsActions: {
-            for (final item in widget.items) CustomSemanticsAction(label: item.label): item.onPressed,
-          },
-          child: CallbackShortcuts(
-            bindings: {
-              const SingleActivator(LogicalKeyboardKey.contextMenu): open,
-              const SingleActivator(LogicalKeyboardKey.f10, shift: true): open,
+    // The anchor is an empty box over the child, not its parent: MenuAnchor binds the arrows to its own traversal
+    // for everything under it, which would take them from the list (j/k and the arrows, ADR 0014).
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        MergeSemantics(
+          child: Semantics(
+            customSemanticsActions: {
+              for (final item in widget.items) CustomSemanticsAction(label: item.label): item.onPressed,
             },
-            child: GestureDetector(
-              onSecondaryTapUp: (d) => open(d.localPosition),
-              onLongPressStart: (d) => open(d.localPosition),
-              child: widget.child,
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.contextMenu): open,
+                const SingleActivator(LogicalKeyboardKey.f10, shift: true): open,
+              },
+              child: GestureDetector(
+                onSecondaryTapUp: (d) => open(d.localPosition),
+                onLongPressStart: (d) => open(d.localPosition),
+                child: widget.child,
+              ),
             ),
           ),
         ),
-      ),
+        Positioned.fill(
+          child: MenuAnchor(
+            controller: _controller,
+            style: postinoMenuStyle(c),
+            menuChildren: postinoMenuChildren(c, widget.items, _first),
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ],
     );
   }
 }

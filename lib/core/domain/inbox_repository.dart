@@ -5,7 +5,7 @@ import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
 class const InboxEntry({
-  /// L'ultimo messaggio della Conversazione.
+  /// The latest message of the Conversazione; its `labelIds` are those of every message of it.
   required final Message message,
 
   /// L'Account a cui appartiene.

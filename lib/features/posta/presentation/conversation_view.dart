@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show ScaffoldMessenger;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -18,6 +19,7 @@ import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_body.dart';
+import 'conversation_labels.dart';
 import 'posta_shortcuts.dart';
 
 /// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
@@ -71,13 +73,31 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
 
+  /// The «Etichette» button: the picker anchors to it and gives it the focus back (`l` opens it too).
+  final _labelsKey = GlobalKey();
+  final _labelsFocus = FocusNode(debugLabel: 'Etichette');
+
+  void _openLabels() {
+    final anchor = _labelsKey.currentContext;
+    if (anchor == null) return;
+    unawaited(
+      openLabelPicker(
+        anchor,
+        accountId: widget.accountId,
+        conversationId: widget.conversationId,
+        returnFocus: _labelsFocus,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     widget.cursor
       ?..reply = _reply
       ..replyAll = _replyAll
-      ..forward = _forward;
+      ..forward = _forward
+      ..labels = _openLabels;
     _subs
       ..add(GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).listen(_onMessages))
       ..add(GetIt.I<InboxRepository>().watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)))
@@ -181,28 +201,42 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
       if (cursor.reply == _reply) cursor.reply = null;
       if (cursor.replyAll == _replyAll) cursor.replyAll = null;
       if (cursor.forward == _forward) cursor.forward = null;
+      if (cursor.labels == _openLabels) cursor.labels = null;
     }
     for (final s in _subs) {
       unawaited(s.cancel());
     }
     _attachments.dispose();
+    _labelsFocus.dispose();
     super.dispose();
   }
 
+  // Its own messenger: beside the list (two Scaffolds) a snackbar shown from here, or from the list, appears once.
   @override
-  Widget build(BuildContext context) => SignalBuilder(builder: _content);
+  Widget build(BuildContext context) => ScaffoldMessenger(child: SignalBuilder(builder: _content));
 
   Widget _content(BuildContext context) {
     final t = context.t.conversazione;
     final messages = _messages;
     final a = _account;
+    final ready = messages != null && messages.isNotEmpty && a != null;
     return PostinoSinglePaneLayout(
       // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
       appBar: PostinoAppBar(
         title: '',
         onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
+        actions: [
+          if (ready)
+            PostinoIconButton(
+              key: _labelsKey,
+              icon: PostinoIcons.tag,
+              label: context.t.selettoreEtichette.button,
+              focusNode: _labelsFocus,
+              onPressed: _openLabels,
+            ),
+        ],
       ),
-      body: messages == null || messages.isEmpty || a == null
+      body: !ready
           ? const SizedBox.shrink()
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -219,6 +253,9 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
                     onToggle: _toggle,
                     onFetchBody: _fetchBody,
                     onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
+                    onRemoveLabel: (label) => removeConversationLabel(context, widget.accountId, [
+                      for (final m in messages) m.message,
+                    ], label),
                   ),
                 ),
                 // Under the thread, always in view: on the last message (ADR 0014: r, a, f).

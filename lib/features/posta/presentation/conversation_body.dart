@@ -45,6 +45,9 @@ class const ConversationBody({
   required final void Function(String id, {required bool hasBody}) onToggle,
   required final void Function(String id) onFetchBody,
   required final void Function(ReplyKind kind, String messageId) onAct,
+
+  /// The × of an Etichetta's chip: takes it off the whole Conversazione.
+  required final ValueChanged<Label> onRemoveLabel,
 }) extends StatefulWidget {
   @override
   State<ConversationBody> createState() => _ConversationBodyState();
@@ -135,6 +138,10 @@ class _ConversationBodyState() extends State<ConversationBody> {
         if (body != null) message.id: _split(message, body),
     };
     final flags = repeatedSignatures(parts.values.map((p) => p.signatureKey));
+    final labels = [
+      for (final l in widget.labels)
+        if (l.kind == LabelKind.etichetta && messages.any((m) => m.message.labelIds.contains(l.id))) l,
+    ];
     final shown = {
       for (final (i, MapEntry(:key, :value)) in parts.entries.indexed) key: foldBody(value, repeated: flags[i]),
     };
@@ -143,10 +150,9 @@ class _ConversationBodyState() extends State<ConversationBody> {
       account: accountRef,
       accountName: a.name,
       importantLabel: messages.any((m) => m.message.labelIds.contains('IMPORTANT')) ? t.important : null,
-      labels: [
-        for (final l in widget.labels)
-          if (l.kind == LabelKind.etichetta && messages.any((m) => m.message.labelIds.contains(l.id))) l.name,
-      ],
+      labels: [for (final l in labels) l.name],
+      onRemoveLabel: (name) => widget.onRemoveLabel(labels.firstWhere((l) => l.name == name)),
+      removeLabelName: (name) => context.t.selettoreEtichette.remove(name: name),
       messages: [
         for (final (:message, :body) in messages.reversed)
           PostinoThreadMessage(

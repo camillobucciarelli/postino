@@ -50,7 +50,7 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
   Stream<List<InboxEntry>> _entries(String? accountId, String labelId) =>
       _db.messagesDao.watchMessages(accountId: accountId, labelId: labelId).map((rows) {
-        final groups = <(String, String), List<(AccountRow, MessageRow)>>{};
+        final groups = <(String, String), List<(AccountRow, MessageRow, List<String>)>>{};
         for (final r in rows) {
           (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
         }
@@ -58,7 +58,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
           for (final g in groups.values)
             InboxEntry(
               account: accountOf(g.first.$1),
-              message: messageOf(g.first.$2),
+              // The Conversazione's labels: those of any of its messages.
+              message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
               count: g.length,
               unread: g.any((r) => !r.$2.isRead),
             ),

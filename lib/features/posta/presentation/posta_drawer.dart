@@ -10,7 +10,7 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]).
-/// Routing is the caller's: features don't know the routes.
+/// [onOpenSettings], when given (desktop, #38), adds the Impostazioni at the end. Routing is the caller's: features don't know the routes.
 class const PostaDrawer({
   super.key,
   final String? accountId,
@@ -20,6 +20,7 @@ class const PostaDrawer({
   required final void Function(String labelId) onOpenLabel,
   required final void Function(String accountId) onOpenDrafts,
   required final void Function(String accountId) onOpenSent,
+  final VoidCallback? onOpenSettings,
 }) extends StatefulWidget {
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
@@ -114,6 +115,17 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
                     unreadLabel: unreadLabel(any: folders.contains((open!, l.id))),
                     onTap: () => widget.onOpenLabel(l.id),
                   ),
+              ],
+            ),
+          if (widget.onOpenSettings case final open?)
+            PostinoDrawerSection(
+              items: [
+                PostinoDrawerItem(
+                  key: const ValueKey('drawer-impostazioni'),
+                  label: t.impostazioni.title,
+                  icon: PostinoIcons.sliders,
+                  onTap: open,
+                ),
               ],
             ),
         ],

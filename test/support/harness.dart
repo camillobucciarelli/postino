@@ -4,6 +4,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/google_consent.dart';
+import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/main.dart';
@@ -13,7 +14,7 @@ import 'fake_mail_provider.dart';
 import 'fake_platform.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
-/// links, Save As, background sender and file system.
+/// links, Save As, background sender, avvio al login and file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
   final keychain = FakeSecureStore();
@@ -22,6 +23,7 @@ class Harness._() {
   final links = FakeLinkOpener();
   final saver = FakeFileSaver();
   final background = FakeBackgroundSender();
+  final launchAtLogin = FakeLaunchAtLogin();
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
@@ -41,6 +43,7 @@ class Harness._() {
       ..registerSingleton<LinkOpener>(h.links)
       ..registerSingleton<FileSaver>(h.saver)
       ..registerSingleton<BackgroundSender>(h.background)
+      ..registerSingleton<LaunchAtLogin>(h.launchAtLogin)
       ..registerSingleton<AttachmentStorage>(
         await AttachmentStorage.open(
           h.fs.directory('/support/attachments'),

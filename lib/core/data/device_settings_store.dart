@@ -7,13 +7,10 @@ import 'postino_database.dart';
 class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsRepository {
   static const _sidebar = 'sidebar_expanded';
   static const _listWidth = 'list_width';
+  static const _launchAtLogin = 'launch_at_login';
 
   @override
-  Future<bool?> sidebarExpanded() async => switch (await _db.deviceSettingsDao.read(_sidebar)) {
-    'true' => true,
-    'false' => false,
-    _ => null,
-  };
+  Future<bool?> sidebarExpanded() => _bool(_sidebar);
 
   @override
   Future<void> setSidebarExpanded({required bool? expanded}) =>
@@ -27,4 +24,17 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
 
   @override
   Future<void> setListWidth(double width) => _db.deviceSettingsDao.write(_listWidth, width.toString());
+
+  @override
+  Future<bool?> launchAtLogin() => _bool(_launchAtLogin);
+
+  @override
+  Future<void> setLaunchAtLogin({required bool enabled}) =>
+      _db.deviceSettingsDao.write(_launchAtLogin, enabled.toString());
+
+  Future<bool?> _bool(String key) async => switch (await _db.deviceSettingsDao.read(key)) {
+    'true' => true,
+    'false' => false,
+    _ => null,
+  };
 }

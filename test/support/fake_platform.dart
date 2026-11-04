@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
 
 class FakeSecureStore() implements SecureStore {
@@ -98,4 +99,35 @@ class FakeBackgroundSender() implements BackgroundSender {
   Future<void> hold(String accountId) async => holds.add(accountId);
   @override
   Future<void> release(String accountId) async => releases.add(accountId);
+}
+
+/// The OS's login items, in memory: [supported] false like a phone, until a test makes it a desktop.
+class FakeLaunchAtLogin() implements LaunchAtLogin {
+  @override
+  bool supported = false;
+
+  /// Whether the OS would start Postino at login.
+  bool enabled = false;
+
+  /// While set, a change throws it: the OS refused.
+  Exception? failure;
+
+  /// Every change asked, in order.
+  final changes = <bool>[];
+
+  /// While set, reading the state throws it.
+  Exception? readFailure;
+
+  @override
+  Future<bool> isEnabled() async {
+    if (readFailure case final f?) throw f;
+    return enabled;
+  }
+
+  @override
+  Future<void> setEnabled({required bool enabled}) async {
+    changes.add(enabled);
+    if (failure case final f?) throw f;
+    this.enabled = enabled;
+  }
 }

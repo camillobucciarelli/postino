@@ -71,6 +71,11 @@
     "toCc": "to $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Show quoted text",
+    "blockedImage": "Blocked image",
+    "announcement": {
+      "one": "$subject, $n message",
+      "other": "$subject, $n messages"
+    },
     "important": "Important",
     "attachmentOpen": "Open",
     "attachmentDownloading": "Downloading… $percent%",

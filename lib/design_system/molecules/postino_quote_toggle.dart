@@ -29,6 +29,8 @@ class const PostinoQuoteToggle({
   Widget _toggle(BuildContext context) {
     final c = context.pc;
     return Semantics(
+      // Its own node: it never merges into the message around it.
+      container: true,
       button: true,
       expanded: open,
       label: label,

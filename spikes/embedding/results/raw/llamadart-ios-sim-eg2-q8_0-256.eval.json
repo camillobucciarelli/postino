@@ -1,0 +1,44 @@
+{
+  "runtime": "llamadart",
+  "model": "eg2-q8_0 (prefisso \"task: classification, query:\")",
+  "maxTokens": 256,
+  "dim": 768,
+  "n": 80,
+  "zeroShot": {
+    "all": 0.7875,
+    "en": 0.75,
+    "it": 0.825
+  },
+  "knn3": {
+    "all": 0.75,
+    "en": 0.75,
+    "it": 0.75
+  },
+  "knn5": {
+    "all": 0.7875,
+    "en": 0.775,
+    "it": 0.8
+  },
+  "centroid": {
+    "all": 0.8375,
+    "en": 0.825,
+    "it": 0.85
+  },
+  "zeroShotMargin": [
+    {
+      "margin": 0.0,
+      "coverage": 1.0,
+      "precision": 0.7875
+    },
+    {
+      "margin": 0.02,
+      "coverage": 0.675,
+      "precision": 0.9259259259259259
+    },
+    {
+      "margin": 0.05,
+      "coverage": 0.25,
+      "precision": 0.95
+    }
+  ]
+}

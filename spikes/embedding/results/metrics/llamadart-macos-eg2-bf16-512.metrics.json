@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "eg2-bf16 (prefisso \"task: classification, query:\")",
+  "modelFile": "eg2-bf16.gguf",
+  "modelBytes": 557950176,
+  "maxTokens": 512,
+  "maxTokensEffective": 512,
+  "dim": 768,
+  "platform": "macos",
+  "os": "macos Version 27.2 (Build 26B123)",
+  "cpus": 18,
+  "deviceRequested": "auto",
+  "backend": "Metal",
+  "gpuLayers": 999,
+  "loadMs": 1668,
+  "firstEmbedMs": 94,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 57.268,
+    "p95": 86.048,
+    "mean": 56.043200000000034,
+    "min": 22.789,
+    "max": 134.156
+  },
+  "rssMb": {
+    "beforeLoad": 108.65625,
+    "afterLoad": 650.6875,
+    "maxAtEnd": 702.5625
+  }
+}

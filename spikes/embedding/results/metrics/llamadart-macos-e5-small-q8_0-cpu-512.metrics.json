@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "e5-small-q8_0-cpu (prefisso \"query:\")",
+  "modelFile": "e5-small-q8_0.gguf",
+  "modelBytes": 132439008,
+  "maxTokens": 512,
+  "maxTokensEffective": 511,
+  "dim": 384,
+  "platform": "macos",
+  "os": "macos Version 27.2 (Build 26B123)",
+  "cpus": 18,
+  "deviceRequested": "cpu",
+  "backend": "CPU",
+  "gpuLayers": 0,
+  "loadMs": 220,
+  "firstEmbedMs": 18,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 13.071,
+    "p95": 67.104,
+    "mean": 24.053262500000002,
+    "min": 7.273,
+    "max": 69.922
+  },
+  "rssMb": {
+    "beforeLoad": 140.875,
+    "afterLoad": 451.390625,
+    "maxAtEnd": 476.53125
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "runtime": "llamadart",
+  "model": "granite-97m-r2-q8_0-cpu (nessun prefisso)",
+  "maxTokens": 512,
+  "dim": 384,
+  "n": 80,
+  "zeroShot": {
+    "all": 0.7625,
+    "en": 0.75,
+    "it": 0.775
+  },
+  "knn3": {
+    "all": 0.775,
+    "en": 0.825,
+    "it": 0.725
+  },
+  "knn5": {
+    "all": 0.7625,
+    "en": 0.8,
+    "it": 0.725
+  },
+  "centroid": {
+    "all": 0.875,
+    "en": 0.95,
+    "it": 0.8
+  },
+  "zeroShotMargin": [
+    {
+      "margin": 0.0,
+      "coverage": 1.0,
+      "precision": 0.7625
+    },
+    {
+      "margin": 0.02,
+      "coverage": 0.6125,
+      "precision": 0.8979591836734694
+    },
+    {
+      "margin": 0.05,
+      "coverage": 0.2625,
+      "precision": 1.0
+    }
+  ]
+}

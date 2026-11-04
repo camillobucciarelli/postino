@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "eg2-740m-litertlm (prefisso \"task: classification, query:\")",
+  "modelFile": "eg2-740m.litertlm",
+  "modelBytes": 484622336,
+  "maxTokens": 512,
+  "maxTokensEffective": 512,
+  "dim": 768,
+  "platform": "ios-sim",
+  "os": "ios Version 26.5 (Build 23F77)",
+  "cpus": 18,
+  "deviceRequested": "cpu",
+  "backend": "LiteRT-LM cpu",
+  "gpuLayers": 0,
+  "loadMs": 48,
+  "firstEmbedMs": 4469,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 98.68,
+    "p95": 257.07,
+    "mean": 126.7049,
+    "min": 46.321,
+    "max": 425.252
+  },
+  "rssMb": {
+    "beforeLoad": 305.4375,
+    "afterLoad": 305.515625,
+    "maxAtEnd": 628.375
+  }
+}

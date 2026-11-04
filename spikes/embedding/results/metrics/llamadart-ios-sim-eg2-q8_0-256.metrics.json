@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "eg2-q8_0 (prefisso \"task: classification, query:\")",
+  "modelFile": "eg2-q8_0.gguf",
+  "modelBytes": 309855456,
+  "maxTokens": 256,
+  "maxTokensEffective": 256,
+  "dim": 768,
+  "platform": "ios-sim",
+  "os": "ios Version 26.5 (Build 23F77)",
+  "cpus": 18,
+  "deviceRequested": "auto",
+  "backend": "CPU",
+  "gpuLayers": 0,
+  "loadMs": 1326,
+  "firstEmbedMs": 434,
+  "emailsTruncated": 18,
+  "latencyMs": {
+    "p50": 219.491,
+    "p95": 414.441,
+    "mean": 242.12746249999995,
+    "min": 107.926,
+    "max": 460.257
+  },
+  "rssMb": {
+    "beforeLoad": 277.78125,
+    "afterLoad": 708.890625,
+    "maxAtEnd": 731.765625
+  }
+}

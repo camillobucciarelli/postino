@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "granite-97m-r2-q8_0 (nessun prefisso)",
+  "modelFile": "granite-97m-r2-q8_0.gguf",
+  "modelBytes": 115061088,
+  "maxTokens": 256,
+  "maxTokensEffective": 256,
+  "dim": 384,
+  "platform": "android-emu",
+  "os": "android sdk_gphone64_arm64-userdebug 16 BE2A.250530.026.F3 13894323 dev-keys",
+  "cpus": 4,
+  "deviceRequested": "auto",
+  "backend": "CPU",
+  "gpuLayers": 0,
+  "loadMs": 1449,
+  "firstEmbedMs": 49,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 21.39,
+    "p95": 46.801,
+    "mean": 26.112412499999998,
+    "min": 12.988,
+    "max": 60.484
+  },
+  "rssMb": {
+    "beforeLoad": 172.2265625,
+    "afterLoad": 388.96484375,
+    "maxAtEnd": 413.25
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "granite-97m-r2-q8_0 (nessun prefisso)",
+  "modelFile": "granite-97m-r2-q8_0.gguf",
+  "modelBytes": 115061088,
+  "maxTokens": 512,
+  "maxTokensEffective": 512,
+  "dim": 384,
+  "platform": "macos",
+  "os": "macos Version 27.2 (Build 26B123)",
+  "cpus": 18,
+  "deviceRequested": "auto",
+  "backend": "Metal",
+  "gpuLayers": 999,
+  "loadMs": 268,
+  "firstEmbedMs": 15,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 6.636,
+    "p95": 12.297,
+    "mean": 7.367787500000001,
+    "min": 4.802,
+    "max": 13.155
+  },
+  "rssMb": {
+    "beforeLoad": 134.265625,
+    "afterLoad": 376.515625,
+    "maxAtEnd": 385.796875
+  }
+}

@@ -85,3 +85,51 @@ cd ../eval && dart run bin/eval.dart ../results/raw/edge_ai-*-256.json ../result
 
 Su mobile il 740m si sceglie con `--dart-define=MODEL=embeddinggemma-2-740m` in build. Gli embedding grezzi
 (`results/raw/*.json`) non si committano; metriche ed `.eval.json` sì.
+
+## Prototipo llamadart (`llamadart_app/`)
+
+App Flutter headless (`llamadart` 0.17.5 + companion SwiftPM `llamadart_llama_cpp_flutter` e
+`llamadart_litert_lm_flutter`): per ogni modello e maxTokens carica il modello, tronca i testi col tokenizer del
+runtime (prefisso e token speciali inclusi, mai oltre il `context_length` del GGUF), fa 3 email di warmup, poi
+embedda le 80 email una alla volta e le 8 Etichette, e scrive in `<BASE>/out/` il JSON di scambio (più la variante
+EG2 a 256 dim, Matryoshka) e un `*.metrics.json` (load, primo embed, latenze p50/p95, RSS, backend). Risultati in
+`results/llamadart.md`.
+
+Prefissi: EG2 usa `LlamaTextEmbedder` (profilo `embeddingGemma2`, `LlamaEmbeddingText.query(task: classification)`)
+sia per le email sia per le Etichette, perché lo zero-shot confronta testi dello stesso tipo; e5 `query: ` su
+entrambi; granite nessuno. LiteRT-LM in modalità embedding non espone il tokenizer: i `.litertlm` riusano i testi
+troncati dal run GGUF di EG2 (stesso tokenizer Gemma), che li salva in `<BASE>/eg2-texts-<maxTok>.json`, quindi
+`eg2-q8_0.gguf` va eseguito prima.
+
+Configurazione: variabili d'ambiente (macOS, simulatore iOS via `SIMCTL_CHILD_*`), `<BASE>/job.json` (Android) o
+`--dart-define`: `BASE`, `DATA`, `MODEL` (vuoto = tutti in sequenza), `MAXTOK` (vuoto = 256 e 512), `DEVICE`
+(`auto|cpu|gpu`, solo GGUF), `PLATFORM`.
+
+Modelli (fuori dal repo, nomi attesi dagli script):
+
+```sh
+M=/percorso/models; mkdir -p $M; cd $M
+HF=https://huggingface.co
+curl -L -o eg2-q8_0.gguf $HF/ggml-org/embeddinggemma-2-GGUF/resolve/main/embeddinggemma-2-Q8_0.gguf
+curl -L -o eg2-bf16.gguf $HF/ggml-org/embeddinggemma-2-GGUF/resolve/main/embeddinggemma-2-BF16.gguf
+curl -L -o eg2-740m.litertlm $HF/litert-community/embeddinggemma-2-740m-litert-lm/resolve/main/embeddinggemma-2-740m.litertlm
+curl -L -o eg2-270m.litertlm $HF/litert-community/embeddinggemma-2-text-270m-litert-lm/resolve/main/embeddinggemma-2-text-270m.litertlm
+curl -L -o granite-97m-r2-q8_0.gguf $HF/mykor/granite-embedding-97m-multilingual-r2-GGUF/resolve/main/granite-embedding-97M-multilingual-r2-Q8_0.gguf
+# e5: serve una conversione con tokenizer t5/unigram; cstr/… non si carica, keisuke-miyako/… ha tokenizer WordPiece errato
+curl -L -o e5-small-q8_0.gguf $HF/TwinSunsLLC/multilingual-e5-small-gguf/resolve/main/multilingual-e5-small-q8_0.gguf
+```
+
+Esecuzione (un processo per combinazione, così l'RSS è pulito; gli script spostano i risultati in
+`results/raw/` e `results/metrics/`):
+
+```sh
+cd spikes/embedding/llamadart_app
+flutter build macos --release && ./run_macos.sh $M            # GGUF su Metal; DEVICE=cpu ./run_macos.sh $M … per CPU
+flutter build ios --simulator --debug                         # il simulatore non supporta release; solo CPU
+xcrun simctl boot <udid> && ./run_ios_sim.sh <udid> $M        # copia (clone APFS) i modelli in <container>/Documents
+flutter build apk --release --split-per-abi
+./run_android.sh $M                                           # adb push in /sdcard/Android/data/<pkg>/files, job.json per run
+DEVICE=gpu PLATFORM=android-emu-vulkan ./run_android.sh $M     # Vulkan (sperimentale)
+dart run tool/cosine.dart ../results/raw/llamadart-macos-eg2-q8_0-512.json ../results/raw/llamadart-macos-eg2-bf16-512.json
+cd ../eval && dart run bin/eval.dart $(ls ../results/raw/llamadart-*.json | grep -v eval.json)
+```

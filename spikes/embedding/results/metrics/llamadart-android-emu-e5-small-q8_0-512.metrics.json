@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "e5-small-q8_0 (prefisso \"query:\")",
+  "modelFile": "e5-small-q8_0.gguf",
+  "modelBytes": 132439008,
+  "maxTokens": 512,
+  "maxTokensEffective": 511,
+  "dim": 384,
+  "platform": "android-emu",
+  "os": "android sdk_gphone64_arm64-userdebug 16 BE2A.250530.026.F3 13894323 dev-keys",
+  "cpus": 4,
+  "deviceRequested": "auto",
+  "backend": "CPU",
+  "gpuLayers": 0,
+  "loadMs": 748,
+  "firstEmbedMs": 63,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 23.229,
+    "p95": 118.615,
+    "mean": 43.46871250000001,
+    "min": 10.168,
+    "max": 158.324
+  },
+  "rssMb": {
+    "beforeLoad": 176.125,
+    "afterLoad": 441.91015625,
+    "maxAtEnd": 461.75390625
+  }
+}

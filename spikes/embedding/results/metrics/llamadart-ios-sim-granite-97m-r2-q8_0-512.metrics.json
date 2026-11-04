@@ -1,0 +1,30 @@
+{
+  "runtime": "llamadart 0.17.5",
+  "model": "granite-97m-r2-q8_0 (nessun prefisso)",
+  "modelFile": "granite-97m-r2-q8_0.gguf",
+  "modelBytes": 115061088,
+  "maxTokens": 512,
+  "maxTokensEffective": 512,
+  "dim": 384,
+  "platform": "ios-sim",
+  "os": "ios Version 26.5 (Build 23F77)",
+  "cpus": 18,
+  "deviceRequested": "auto",
+  "backend": "CPU",
+  "gpuLayers": 0,
+  "loadMs": 592,
+  "firstEmbedMs": 46,
+  "emailsTruncated": 17,
+  "latencyMs": {
+    "p50": 21.325,
+    "p95": 111.981,
+    "mean": 38.7934625,
+    "min": 10.188,
+    "max": 116.349
+  },
+  "rssMb": {
+    "beforeLoad": 280.0625,
+    "afterLoad": 461.59375,
+    "maxAtEnd": 486.34375
+  }
+}

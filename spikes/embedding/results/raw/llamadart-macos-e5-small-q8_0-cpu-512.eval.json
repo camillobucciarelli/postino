@@ -1,0 +1,44 @@
+{
+  "runtime": "llamadart",
+  "model": "e5-small-q8_0-cpu (prefisso \"query:\")",
+  "maxTokens": 512,
+  "dim": 384,
+  "n": 80,
+  "zeroShot": {
+    "all": 0.6625,
+    "en": 0.725,
+    "it": 0.6
+  },
+  "knn3": {
+    "all": 0.675,
+    "en": 0.65,
+    "it": 0.7
+  },
+  "knn5": {
+    "all": 0.7125,
+    "en": 0.65,
+    "it": 0.775
+  },
+  "centroid": {
+    "all": 0.8375,
+    "en": 0.85,
+    "it": 0.825
+  },
+  "zeroShotMargin": [
+    {
+      "margin": 0.0,
+      "coverage": 1.0,
+      "precision": 0.6625
+    },
+    {
+      "margin": 0.02,
+      "coverage": 0.25,
+      "precision": 0.9
+    },
+    {
+      "margin": 0.05,
+      "coverage": 0.0125,
+      "precision": 1.0
+    }
+  ]
+}

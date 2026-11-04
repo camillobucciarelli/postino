@@ -1,0 +1,44 @@
+{
+  "runtime": "llamadart",
+  "model": "granite-97m-r2-q8_0 (nessun prefisso)",
+  "maxTokens": 256,
+  "dim": 384,
+  "n": 80,
+  "zeroShot": {
+    "all": 0.75,
+    "en": 0.725,
+    "it": 0.775
+  },
+  "knn3": {
+    "all": 0.75,
+    "en": 0.75,
+    "it": 0.75
+  },
+  "knn5": {
+    "all": 0.7375,
+    "en": 0.775,
+    "it": 0.7
+  },
+  "centroid": {
+    "all": 0.85,
+    "en": 0.925,
+    "it": 0.775
+  },
+  "zeroShotMargin": [
+    {
+      "margin": 0.0,
+      "coverage": 1.0,
+      "precision": 0.75
+    },
+    {
+      "margin": 0.02,
+      "coverage": 0.65,
+      "precision": 0.8653846153846154
+    },
+    {
+      "margin": 0.05,
+      "coverage": 0.2625,
+      "precision": 1.0
+    }
+  ]
+}

@@ -11,7 +11,7 @@ permissions:
 
 # Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

@@ -152,5 +152,13 @@
   "tray": {
     "open": "Apri Postino",
     "quit": "Esci"
+  },
+  "notifiche": {
+    "channel": "Posta nuova",
+    "open": "Apri",
+    "permissionTitle": "Notifiche della posta nuova",
+    "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
+    "permissionAllow": "Continua",
+    "permissionLater": "Non ora"
   }
 }

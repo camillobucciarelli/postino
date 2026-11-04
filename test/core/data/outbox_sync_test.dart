@@ -12,6 +12,7 @@ import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/intent_replayer.dart';
+import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/data/sync/outbox_sender.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
@@ -167,6 +168,7 @@ void main() {
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
+      GetIt.I<NewMailNotifier>(),
     )..start();
     addTearDown(restarted.stop);
     await pumpEventQueue();
@@ -409,6 +411,7 @@ void main() {
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
+      GetIt.I<NewMailNotifier>(),
     );
     await Future.wait([engine.flushOutbox('a'), other.flushOutbox('a')]);
     expect(a.sendCalls, 1);
@@ -629,6 +632,7 @@ void main() {
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
+      GetIt.I<NewMailNotifier>(),
     );
     await other.send('a', _message(id));
     h.clock.advance(sendWindow);

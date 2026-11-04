@@ -152,5 +152,13 @@
   "tray": {
     "open": "Open Postino",
     "quit": "Quit"
+  },
+  "notifiche": {
+    "channel": "New mail",
+    "open": "Open",
+    "permissionTitle": "New mail notifications",
+    "permissionBody": "Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.",
+    "permissionAllow": "Continue",
+    "permissionLater": "Not now"
   }
 }

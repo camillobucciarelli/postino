@@ -11,11 +11,14 @@ import 'package:injectable/injectable.dart';
 import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
 import 'core/data/postino_database.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/launch_at_login_use_case.dart';
+import 'core/domain/mail_notification.dart';
+import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
 import 'design_system/tokens/postino_theme.dart';
@@ -63,10 +66,23 @@ Future<void> main() async {
   }
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
-  runApp(TranslationProvider(child: const PostinoApp()));
-  if (!kIsWeb &&
-      const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform)) {
-    unawaited(_startDesktop());
+  final launch = await _startNotifications();
+  runApp(TranslationProvider(child: PostinoApp(launch: launch)));
+  if (_desktop) unawaited(_startDesktop());
+}
+
+bool get _desktop =>
+    !kIsWeb &&
+    const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform);
+
+/// Before `runApp` (#39): the notifications ready, and the Conversazione whose notification launched the app.
+/// Failing keeps Postino from notifying, not from running.
+Future<ConversationKey?> _startNotifications() async {
+  try {
+    return await getIt<Notifications>().start(channelName: t.notifiche.channel, openLabel: t.notifiche.open);
+  } on Object catch (e) {
+    debugPrint('[notifiche] start: $e');
+    return null;
   }
 }
 
@@ -99,23 +115,60 @@ Future<void> _startDesktop() async {
 }
 
 @Main('lib/app')
-class const PostinoApp({super.key}) extends StatefulWidget {
+class const PostinoApp({
+  super.key,
+
+  /// The Conversazione whose notification launched the app (cold start): it opens over the Posta unificata.
+  final ConversationKey? launch,
+}) extends StatefulWidget {
   @override
   State<PostinoApp> createState() => _PostinoAppState();
 }
 
 class _PostinoAppState() extends State<PostinoApp> {
   late final AppLifecycleListener _lifecycle;
+  StreamSubscription<ConversationKey>? _taps;
+
+  /// Built once: routefly keeps its router in statics.
+  late final RouterConfig<Object> _router = Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path)!;
 
   @override
   void initState() {
     super.initState();
     getIt<SyncEngine>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
+    _whenRouted(() {
+      if (widget.launch case final launch?) _open(launch);
+      _taps = getIt<Notifications>().taps.listen((key) {
+        // On desktop the window may be hidden in the tray.
+        if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[notifiche] $e')));
+        _open(key);
+      });
+    });
   }
+
+  /// routefly has no initial stack (#8): the app starts on the Posta unificata, and [then] runs after the frame that
+  /// drew it, so a Conversazione opened from there comes back to it with Indietro. The taps before are not heard.
+  void _whenRouted(VoidCallback then) {
+    final delegate = _router.routerDelegate;
+    void drawn() => WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) then();
+    });
+    if (delegate.currentConfiguration != null) return drawn();
+    void listener() {
+      if (delegate.currentConfiguration == null) return;
+      delegate.removeListener(listener);
+      drawn();
+    }
+
+    delegate.addListener(listener);
+  }
+
+  void _open(ConversationKey key) => openConversation(key.accountId, key.conversationId);
 
   @override
   void dispose() {
+    unawaited(_taps?.cancel());
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
     super.dispose();
@@ -124,7 +177,7 @@ class _PostinoAppState() extends State<PostinoApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      routerConfig: Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path),
+      routerConfig: _router,
       theme: PostinoTheme.light(),
       darkTheme: PostinoTheme.dark(),
       onGenerateTitle: (context) => context.t.appTitle,

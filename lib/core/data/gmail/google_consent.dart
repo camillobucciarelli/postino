@@ -120,7 +120,7 @@ class GoogleWebConsent implements GoogleConsent {
       return e.code == 'CANCELED' ? const Err(CancelledFailure()) : Err(UnexpectedFailure(e));
     } on http.ClientException {
       return const Err(OfflineFailure());
-    } catch (e, s) {
+    } on Object catch (e, s) {
       return Err(UnexpectedFailure(e, s));
     }
   }

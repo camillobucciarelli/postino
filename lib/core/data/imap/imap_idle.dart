@@ -61,7 +61,7 @@ Stream<ChangeSignal> imapIdle({
           if (stopped || lost.isCompleted) break;
           await c.idleDone();
         }
-      } catch (e) {
+      } on Object catch (e) {
         // Down below, and retried.
         debugPrint('[idle] $user: $e');
       } finally {

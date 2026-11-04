@@ -22,7 +22,7 @@ Future<Result<T>> gmailGuard<T>(Future<Result<T>> Function() body) async {
     return const Err(OfflineFailure());
   } on TimeoutException {
     return const Err(OfflineFailure());
-  } catch (e, s) {
+  } on Object catch (e, s) {
     return Err(UnexpectedFailure(e, s));
   }
 }

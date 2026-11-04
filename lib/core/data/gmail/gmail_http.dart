@@ -191,7 +191,7 @@ class GmailHttp {
     try {
       final m = (jsonDecode(body) as Map)['error']['message'];
       if (m is String && m.isNotEmpty) return m;
-    } catch (_) {}
+    } on Object catch (_) {}
     return 'HTTP 400';
   }
 

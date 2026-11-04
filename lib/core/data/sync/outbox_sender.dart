@@ -202,7 +202,7 @@ class OutboxSender {
     _held.remove(accountId);
     try {
       await _background.release(accountId);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[sync] $accountId: background release failed, $e');
     }
   }

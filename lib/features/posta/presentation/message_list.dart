@@ -10,9 +10,9 @@ import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import 'conversation_labels.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
+import 'row_labels_menu.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
@@ -260,19 +260,12 @@ class _MessageListState() extends State<MessageList> {
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')
                 ? tile
-                : Builder(
-                    builder: (row) => PostinoContextMenu(
-                      items: [
-                        PostinoMenuItem(
-                          key: ValueKey('row-labels-${a.id}-${m.id}'),
-                          label: context.t.selettoreEtichette.menuItem,
-                          onPressed: () => unawaited(
-                            openLabelPicker(row, accountId: a.id, conversationId: m.conversationId, returnFocus: node),
-                          ),
-                        ),
-                      ],
-                      child: tile,
-                    ),
+                : RowLabelsMenu(
+                    accountId: a.id,
+                    messageId: m.id,
+                    conversationId: m.conversationId,
+                    focusNode: node,
+                    child: tile,
                   ),
           );
         },

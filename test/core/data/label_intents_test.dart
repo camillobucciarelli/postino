@@ -166,6 +166,28 @@ void main() {
     expect(await queued(), hasLength(2));
   });
 
+  test('a Conversazione\'s Etichetta replays once for all its messages; a rate limit pauses the Account', () async {
+    a
+      ..deliver(msg('2'))
+      ..deliver(msg('3'));
+    await engine.syncAll();
+    a.setLabelFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.setConversationLabel('a', ['1', '2', '3'], _viaggi, add: true);
+    expect(a.labelCalls, hasLength(1));
+    expect(await queued(), hasLength(3));
+    // Paused: the next change is queued without calling the Provider again.
+    await engine.setLabel('a', '1', _lavoro.id, add: true);
+    expect(a.labelCalls, hasLength(1));
+  });
+
+  test('completeConversation brings the older messages and does not read the Conversazione', () async {
+    a.deliverOutsideWindow(msg('old', conversationId: 't-1'));
+    await engine.completeConversation('a', 't-1');
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+    expect(c.map((m) => m.message.id), containsAll(['1', 'old']));
+    expect(c.every((m) => !m.message.isRead), isTrue);
+  });
+
   test('while the Provider\'s pause holds: done here, queued, the Provider not called', () async {
     a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     await engine.syncAll();

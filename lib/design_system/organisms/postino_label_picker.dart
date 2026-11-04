@@ -67,11 +67,11 @@ class _PostinoLabelPickerState() extends State<PostinoLabelPicker> {
     setState(() {});
   }
 
-  /// Enter in the field: ticks the etichetta named exactly so, or creates it.
+  /// Enter in the field: ticks the etichetta named exactly so (one already ticked stays so), or creates it.
   void _submit(String text) {
     final exact = _exact(text.trim());
     if (exact == null) return _create();
-    widget.onToggle(exact.id);
+    if (!widget.selected.contains(exact.id)) widget.onToggle(exact.id);
   }
 
   @override

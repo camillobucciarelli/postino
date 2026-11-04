@@ -53,6 +53,7 @@ export 'templates/postino_list_detail_layout.dart';
 export 'templates/postino_onboarding_layout.dart';
 export 'templates/postino_settings_page.dart';
 export 'templates/postino_single_pane_layout.dart';
+export 'templates/postino_snackbar_host.dart';
 export 'tokens/postino_icons.dart';
 export 'tokens/postino_theme.dart';
 export 'tokens/postino_tokens.dart';

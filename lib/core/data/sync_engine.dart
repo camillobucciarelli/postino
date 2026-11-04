@@ -30,7 +30,7 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock);
+  late final _intents = IntentReplayer(_store, _outboxStore, _clock, pause: _pauseAccount);
   late final _drafts = DraftOpener(_store, _outboxStore);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
@@ -40,8 +40,10 @@ class SyncEngine(
     _background,
     account: _account,
     flushOutbox: flushOutbox,
-    pause: (id, until) => _pausedUntil[id] = until,
+    pause: _pauseAccount,
   );
+
+  void _pauseAccount(String id, DateTime until) => _pausedUntil[id] = until;
 
   final _subs = <StreamSubscription<Object?>>[];
   final _signals = <String, StreamSubscription<ChangeSignal>>{};
@@ -202,11 +204,40 @@ class SyncEngine(
   }
 
   @override
-  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) async {
-    await _store.queueLabel(accountId, messageId, labelId, add: add);
+  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) =>
+      setConversationLabel(accountId, [messageId], labelId, add: add);
+
+  @override
+  Future<void> setConversationLabel(
+    String accountId,
+    Iterable<String> messageIds,
+    String labelId, {
+    required bool add,
+  }) async {
+    for (final id in messageIds) {
+      await _store.queueLabel(accountId, id, labelId, add: add);
+    }
+    // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
     if (await _activeAccount(accountId) case final account?) {
       await _serial(accountId, () => _replay(accountId, providerFor(account)));
     }
+  }
+
+  @override
+  Future<Result<void>> completeConversation(String accountId, String conversationId) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    final provider = providerFor(account);
+    // Unlike openConversation it does not mark the Conversazione read.
+    final fetched = await _serial(accountId, () async {
+      final fetched = await provider.fetchConversation(conversationId);
+      if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
+      return fetched;
+    });
+    return switch (fetched) {
+      Ok() => const Ok(null),
+      Err(:final failure) => Err(failure),
+    };
   }
 
   Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;

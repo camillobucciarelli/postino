@@ -29,13 +29,9 @@ Future<void> openLabelPicker(
 }
 
 /// Puts the Etichetta [labelId] on [messages] (with [add] false, takes it off): here at once, on the Provider
-/// through the offline queue (#105).
-void setLabelOn(String accountId, Iterable<Message> messages, String labelId, {required bool add}) {
-  final sync = GetIt.I<MailSync>();
-  for (final m in messages) {
-    unawaited(sync.setLabel(accountId, m.id, labelId, add: add));
-  }
-}
+/// through the offline queue (#105), with a single replay for all of them.
+void setLabelOn(String accountId, Iterable<Message> messages, String labelId, {required bool add}) =>
+    unawaited(GetIt.I<MailSync>().setConversationLabel(accountId, [for (final m in messages) m.id], labelId, add: add));
 
 /// Puts [labelId] on every message of a Conversazione that lacks it.
 void addConversationLabel(String accountId, List<Message> messages, String labelId) =>

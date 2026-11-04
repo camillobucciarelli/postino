@@ -151,6 +151,12 @@ void main() {
     expect(host.selected.value, {'l1', 'l2'});
     expect(host.created, isEmpty);
 
+    // Already ticked: Enter leaves it ticked, never unticks.
+    await t.enterText(_field, 'progetti');
+    await t.testTextInput.receiveAction(TextInputAction.done);
+    await t.pump();
+    expect(host.selected.value, {'l1', 'l2'});
+
     await t.enterText(_field, 'Progetti/Casa');
     await t.testTextInput.receiveAction(TextInputAction.done);
     await t.pump();

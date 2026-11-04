@@ -30,10 +30,15 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   List<Message> _messages = const [];
   List<Label> _labels = const [];
 
+  /// The whole Conversazione brought here: from the list it may never have been opened, and the sync window leaves
+  /// its older messages out. Offline or failed, the local messages are what there is.
+  late final Future<Result<void>> _complete;
+
   @override
   void initState() {
     super.initState();
     final repo = GetIt.I<InboxRepository>();
+    _complete = GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId);
     _subs
       ..add(
         repo
@@ -53,19 +58,30 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
 
   Set<String> get _selected => {for (final m in _messages) ...m.labelIds};
 
-  void _toggle(String id) {
+  /// The messages to act on: the fetch of the whole Conversazione is waited for a moment (it is started when the
+  /// picker opens); late or failed, the local ones go, never losing the intent.
+  Future<List<Message>> _all() async {
+    await _complete.timeout(const Duration(seconds: 2), onTimeout: () => const Ok(null));
+    final c = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
+    return [for (final m in c) m.message];
+  }
+
+  Future<void> _toggle(String id) async {
     final label = _labels.firstWhere((l) => l.id == id);
-    if (_selected.contains(id)) {
-      removeConversationLabel(widget.snackbarContext, widget.accountId, _messages, label);
+    final remove = _selected.contains(id);
+    final messages = await _all();
+    if (remove) {
+      // ignore: use_build_context_synchronously, the removal goes through anyway; the snackbar checks `mounted`
+      removeConversationLabel(widget.snackbarContext, widget.accountId, messages, label);
     } else {
-      addConversationLabel(widget.accountId, _messages, id);
+      addConversationLabel(widget.accountId, messages, id);
     }
   }
 
   // ponytail: a creation refused (offline, Da ricollegare) leaves no trace; say it when the picker gets an error slot.
   Future<void> _create(String name) async {
     final r = await GetIt.I<MailSync>().createLabel(widget.accountId, name);
-    if (r case Ok(:final value)) addConversationLabel(widget.accountId, _messages, value.id);
+    if (r case Ok(:final value)) addConversationLabel(widget.accountId, await _all(), value.id);
   }
 
   @override
@@ -77,7 +93,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
           if (l.kind == LabelKind.etichetta) (id: l.id, name: l.name),
       ],
       selected: _selected,
-      onToggle: _toggle,
+      onToggle: (id) => unawaited(_toggle(id)),
       onCreate: (name) => unawaited(_create(name)),
       validateName: (name) => switch (labelNameError(name, _labels.map((l) => l.name))) {
         null => null,

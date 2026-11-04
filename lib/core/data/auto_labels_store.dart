@@ -27,7 +27,7 @@ class AutoLabelsStore(final PostinoDatabase _db) implements AutoLabelsRepository
       _db.transaction(() async {
         final key = _key(accountId);
         final labels = decodeAutoLabels(await _db.postinoSettingsDao.read(key));
-        labels[labelId] = change(labels[labelId] ?? (automatic: false, description: null));
+        labels[labelId] = change(labels[labelId] ?? autoLabelDefault);
         await _db.postinoSettingsDao.write(key, encodeAutoLabels(labels));
       });
 

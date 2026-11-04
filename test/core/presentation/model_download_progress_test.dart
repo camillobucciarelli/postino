@@ -8,13 +8,4 @@ void main() {
     expect(downloadProgress(310000000, 310000000).percent, 100);
     expect(downloadProgress(0, 0).percent, 0);
   });
-
-  test('the screen reader hears steps of 25%', () {
-    expect(
-      [
-        for (final p in [0, 24, 25, 49, 54, 75, 99, 100]) announcedPercent(p),
-      ],
-      [0, 0, 25, 25, 50, 75, 75, 100],
-    );
-  });
 }

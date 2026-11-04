@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart' show ScaffoldMessenger;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -211,9 +210,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     super.dispose();
   }
 
-  // Its own messenger: beside the list (two Scaffolds) a snackbar shown from here, or from the list, appears once.
   @override
-  Widget build(BuildContext context) => ScaffoldMessenger(child: SignalBuilder(builder: _content));
+  Widget build(BuildContext context) => SignalBuilder(builder: _content);
 
   Widget _content(BuildContext context) {
     final t = context.t.conversazione;

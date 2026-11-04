@@ -13,7 +13,17 @@ const draftDebounce = Duration(seconds: 5);
 /// not on the Provider yet.
 /// What fails stays queued and the next poll retries it. Called only from inside the Account's serial queue
 /// of the sync engine: it never runs beside a sync or a send of the same Account.
-class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, final Clock _clock) {
+class IntentReplayer(
+  final MailStore _store,
+  final OutboxRepository _outbox,
+  final Clock _clock, {
+
+  /// The Provider rate-limited the Account: no sync nor send before the deadline.
+  required final void Function(String accountId, DateTime until) _pause,
+}) {
+  /// `pause` tells the engine the Provider rate-limited the Account.
+  this;
+
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     await _replayReads(accountId, provider);
@@ -52,6 +62,8 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           await _store.labelRejected(accountId, i.messageId, i.labelId, added: i.added);
         case Err(:final failure):
           debugPrint('[sync] $accountId: label replay failed, $failure');
+          // Rate limited: the Account waits for the deadline, as after a sync or a send.
+          if (failure case RateLimitFailure(:final retryAfter?)) _pause(accountId, retryAfter);
           return;
       }
     }

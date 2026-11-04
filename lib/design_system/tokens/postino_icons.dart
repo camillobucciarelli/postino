@@ -125,10 +125,6 @@ abstract final class PostinoIcons() {
   /// Invia.
   static const send = PostinoIconData(['M4 12l16-8-6 16-2.5-6.5z', 'M11.5 13.5L20 4']);
 
-  // ponytail: not in the Icon card; drawn in its style.
-  /// Impostazioni (cursori).
-  static const sliders = PostinoIconData(['M4 7h9', 'M17 7h3', 'M15 5v4', 'M4 17h3', 'M11 17h9', 'M9 15v4']);
-
   // ponytail: plus, search, settings and chevronRight are not in the Icon card; drawn in its style.
   /// Più (crea, aggiungi).
   static const plus = PostinoIconData(['M12 5v14', 'M5 12h14']);

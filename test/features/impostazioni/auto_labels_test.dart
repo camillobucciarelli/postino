@@ -152,6 +152,25 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('turning the switch off while typing keeps the description; on again shows it', (tester) async {
+    await _start(tester);
+    _simulated(wifi: true);
+    await _run(tester);
+    await _openPage(tester);
+    await tester.tap(_row);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'fatture');
+    await tester.tap(_row);
+    await tester.pumpAndSettle();
+    expect(_on(tester), isFalse);
+    final stored = (await tester.runAsync(() => getIt<AutoLabelsRepository>().watch('a1').first))!;
+    expect(stored.values.single, (automatic: false, description: 'fatture'));
+
+    await tester.tap(_row);
+    await tester.pumpAndSettle();
+    expect(find.text('fatture'), findsOneWidget);
+  });
+
   testWidgets('what was saved is read back when the page opens again', (tester) async {
     await _start(tester);
     _simulated(wifi: true);
@@ -331,6 +350,28 @@ void main() {
     expect(find.text('Nome dell\'Etichetta'), findsNothing);
     expect(provider.labels.map((l) => l.name), contains('Progetti/Postino'));
     expect(find.text('Progetti/Postino'), findsOneWidget);
+    expect(h, isNotNull);
+  });
+
+  testWidgets('«Crea Etichetta» offline says so, stays open, and can be retried', (tester) async {
+    final (:h, :provider) = await _start(tester);
+    _simulated(wifi: true);
+    await _run(tester);
+    await _openPage(tester);
+    await tester.tap(find.text('Crea Etichetta'));
+    await tester.pumpAndSettle();
+    provider.goOffline();
+    await tester.enterText(find.byType(TextField), 'Fatture');
+    await tester.tap(find.text('Crea').last);
+    await tester.pumpAndSettle();
+    expect(find.text("Non è stato possibile creare l'Etichetta. Controlla la connessione e riprova."), findsOneWidget);
+    expect(find.text("Nome dell'Etichetta"), findsOneWidget, reason: 'the dialog stays open');
+
+    provider.goOnline();
+    await tester.tap(find.text('Crea').last);
+    await tester.pumpAndSettle();
+    expect(find.text("Nome dell'Etichetta"), findsNothing);
+    expect(provider.labels.map((l) => l.name), contains('Fatture'));
     expect(h, isNotNull);
   });
 }

@@ -10,6 +10,8 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/model_download.dart';
+import 'package:postino/core/domain/model_download_state.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/posta_shortcuts.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -17,10 +19,12 @@ import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
+import '../../support/fake_model_download.dart';
 import '../../support/harness.dart';
 
 late Harness h;
 late FakeMailProvider gmail;
+late FakeModelDownload model;
 
 DateTime _day(int d) => DateTime.utc(2026, 10, d, 9);
 
@@ -31,6 +35,8 @@ Future<void> _start(WidgetTester tester, {Size size = const Size(1600, 900)}) as
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   h = await Harness.create();
+  await getIt.unregister<ModelDownload>();
+  getIt.registerSingleton<ModelDownload>(model = FakeModelDownload());
   gmail = await h.addAccount('a1');
   gmail.labels.add(const Label(id: 'Label_13', name: 'Fatture', kind: LabelKind.etichetta));
   gmail
@@ -181,6 +187,31 @@ void main() {
     expect(find.byTooltip('Togli Etichetta Viaggi'), findsOneWidget);
   });
 
+  _onMac('«Etichetta tolta» outlives the Conversazione: another one opens and Annulla still works', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('m2'));
+    final from = gmail.labelCalls.length;
+    await _tap(tester, find.byTooltip('Togli Etichetta Viaggi'));
+    expect(_snackbar, findsOneWidget);
+
+    await _tap(tester, _row('o1'));
+    expect(_snackbar, findsOneWidget);
+    await _tap(tester, _undo);
+    expect(_calls(from).last, ('m1', 'Label_12', true));
+  });
+
+  for (final (name, size) in const [('beside the list', Size(1600, 900)), ('over the list', Size(600, 900))]) {
+    _onMac('«Etichette automatiche pronte» shows once with a Conversazione open $name', (tester) async {
+      await _start(tester, size: size);
+      await _tap(tester, _row('m2'));
+      model
+        ..emit(const ModelDownloadInProgress(1, 2))
+        ..emit(const ModelDownloadReady());
+      await _settle(tester);
+      expect(find.text('Etichette automatiche pronte'), findsOneWidget);
+    });
+  }
+
   _onMac('l opens the picker on the open Conversazione; Esc gives the focus back to the button', (tester) async {
     await _start(tester);
     await _tap(tester, _row('m2'));
@@ -261,6 +292,32 @@ void main() {
     await _settle(tester);
     expect(find.byKey(const ValueKey('row-labels-a1-o1')), findsOneWidget);
     await _escape(tester);
+  });
+
+  _onMac('from the list, a Conversazione never opened is labelled whole, its older messages too', (tester) async {
+    await _start(tester);
+    gmail.deliverOutsideWindow(
+      msg('o0', conversationId: 'o', subject: 'Altro', date: _day(1), isRead: true, labelIds: ['INBOX', 'Label_12']),
+    );
+    await tester.tap(_row('o1'), buttons: kSecondaryButton);
+    await _settle(tester);
+    await _tap(tester, find.byKey(const ValueKey('row-labels-a1-o1')));
+
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Viaggi'));
+    expect(_calls(from), unorderedEquals([('o1', 'Label_12', false), ('o0', 'Label_12', false)]));
+    await _escape(tester);
+  });
+
+  _onMac('offline, the picker still labels the local messages at once', (tester) async {
+    await _start(tester);
+    gmail.goOffline();
+    await tester.tap(_row('o1'), buttons: kSecondaryButton);
+    await _settle(tester);
+    await _tap(tester, find.byKey(const ValueKey('row-labels-a1-o1')));
+    await _tap(tester, _tile('Viaggi'));
+    await _escape(tester);
+    expect(tester.widget<PostinoMessageTile>(_row('o1')).labels, isEmpty);
   });
 
   _onMac('«Etichette…» is a custom action of the row for the screen reader', (tester) async {

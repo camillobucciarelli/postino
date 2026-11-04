@@ -63,16 +63,23 @@ class _DescriptionFieldState() extends State<_DescriptionField> {
     });
   }
 
-  Future<void> _save() async {
+  /// Saves a changed text; false when there was nothing new.
+  Future<bool> _persist() async {
     final text = _text.text.trim();
-    if (text == _kept) return;
+    if (text == _kept) return false;
     _kept = text;
     await GetIt.I<AutoLabelsRepository>().setDescription(widget.accountId, widget.labelId, text);
-    if (mounted) setState(() => _announce = true);
+    return true;
+  }
+
+  Future<void> _save() async {
+    if (await _persist() && mounted) setState(() => _announce = true);
   }
 
   @override
   void dispose() {
+    // Switched off while typing: the field goes away without a blur, and the description is kept.
+    unawaited(_persist());
     _focus.dispose();
     _text.dispose();
     super.dispose();

@@ -92,7 +92,7 @@ class _AutoLabelsViewState() extends State<AutoLabelsView> with AccountsSignal {
                     key: ValueKey('auto-label-${l.id}'),
                     accountId: widget.accountId,
                     label: l,
-                    config: config[l.id] ?? (automatic: false, description: null),
+                    config: config[l.id] ?? autoLabelDefault,
                   ),
                 Align(
                   alignment: AlignmentDirectional.centerStart,

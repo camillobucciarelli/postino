@@ -50,3 +50,4 @@ linter:
     # missing_whitespace_between_adjacent_strings, avoid_dynamic_calls, cascade_invocations,
     # comment_references, unawaited_futures, avoid_slow_async_io, avoid_positional_boolean_parameters,
     # avoid_catches_without_on_clauses, discarded_futures, close_sinks.
+    # use_if_null_to_convert_nulls_to_bools: omessa, deprecata nell'SDK 3.13.7.

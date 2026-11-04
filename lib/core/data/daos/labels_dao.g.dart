@@ -11,5 +11,6 @@ mixin _$LabelsDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class LabelsDaoManager {
   final _$LabelsDaoMixin _db;
   LabelsDaoManager(this._db);
-  $$LabelsTableTableManager get labels => $$LabelsTableTableManager(_db.attachedDatabase, _db.labels);
+  $$LabelsTableTableManager get labels =>
+      $$LabelsTableTableManager(_db.attachedDatabase, _db.labels);
 }

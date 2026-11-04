@@ -15,10 +15,14 @@ mixin _$DraftsDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class DraftsDaoManager {
   final _$DraftsDaoMixin _db;
   DraftsDaoManager(this._db);
-  $$DraftsTableTableManager get drafts => $$DraftsTableTableManager(_db.attachedDatabase, _db.drafts);
-  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
-  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$DraftsTableTableManager get drafts =>
+      $$DraftsTableTableManager(_db.attachedDatabase, _db.drafts);
+  $$AccountsTableTableManager get accounts =>
+      $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
+  $$MessagesTableTableManager get messages =>
+      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
-  $$BodiesTableTableManager get bodies => $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
+  $$BodiesTableTableManager get bodies =>
+      $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
 }

@@ -1,4 +1,5 @@
 // The Gmail transport on its own, over a MockClient: no Provider, no fixtures.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -19,8 +20,10 @@ http.Response _json(Object body, [int status = 200]) =>
     http.Response(jsonEncode(body), status);
 
 ({GmailHttp gmail, List<http.Request> requests, List<Duration> sleeps}) _gmail(
-  Future<http.Response> Function(http.Request) handler,
-) {
+  Future<http.Response> Function(http.Request) handler, {
+  Future<http.StreamedResponse> Function(http.BaseRequest)? streaming,
+  Duration stall = const Duration(seconds: 30),
+}) {
   final keychain = FakeSecureStore();
   GmailTokens(
     access: 'ya29.initial',
@@ -32,14 +35,16 @@ http.Response _json(Object body, [int status = 200]) =>
   final gmail = GmailHttp(
     _account,
     keychain,
-    MockClient((r) {
-      requests.add(r);
-      return handler(r);
-    }),
+    streaming != null
+        ? MockClient.streaming((r, _) => streaming(r))
+        : MockClient((r) {
+            requests.add(r);
+            return handler(r);
+          }),
     FakeClock(_now),
     client: const GoogleClient('test-client.apps.googleusercontent.com'),
     sleep: (d) async => sleeps.add(d),
-    stall: const Duration(seconds: 30),
+    stall: stall,
   );
   return (gmail: gmail, requests: requests, sleeps: sleeps);
 }
@@ -93,11 +98,56 @@ void main() {
     expect((r as Err).failure, isA<NotFoundFailure>());
   });
 
-  test('the response is read with progress out of the expected size', () async {
-    final t = _gmail((r) async => _json({'data': 'abcd'}));
+  test('without a content length the progress is out of expected', () async {
+    final body = utf8.encode(jsonEncode({'data': 'abcd'}));
+    final t = _gmail(
+      (r) async => throw StateError('unused'),
+      streaming: (r) async =>
+          http.StreamedResponse(Stream.value(body), 200), // no contentLength
+    );
     final progress = <double>[];
     await t.gmail.get('messages/x', expected: 1000, onProgress: progress.add);
-    expect(progress, isNotEmpty);
-    expect(progress.last, 1);
+    expect(progress.last, closeTo(body.length / 1000, 1e-9));
+  });
+
+  test('a stalled body times out, aborts the request, is offline', () async {
+    final never = StreamController<List<int>>();
+    addTearDown(never.close);
+    late http.BaseRequest sent;
+    final t = _gmail(
+      (r) async => throw StateError('unused'),
+      streaming: (r) async {
+        sent = r;
+        return http.StreamedResponse(never.stream, 200);
+      },
+      stall: const Duration(milliseconds: 50),
+    );
+    final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
+    expect((r as Err).failure, isA<OfflineFailure>());
+    await (sent as http.AbortableRequest).abortTrigger!.timeout(
+      const Duration(seconds: 1),
+    );
+  });
+
+  test('a permanent 429 is retried 5 times, then a RateLimitFailure', () async {
+    final t = _gmail((r) async => http.Response('{}', 429));
+    final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
+    expect((r as Err).failure, isA<RateLimitFailure>());
+    expect(t.sleeps, hasLength(5));
+    expect(t.requests, hasLength(6));
+  });
+
+  test('a 403 rateLimitExceeded is retried like a 429', () async {
+    var calls = 0;
+    final t = _gmail((r) async {
+      return ++calls == 1
+          ? http.Response(
+              '{"error":{"errors":[{"reason":"rateLimitExceeded"}]}}',
+              403,
+            )
+          : _json({'ok': true});
+    });
+    expect(await t.gmail.get('profile'), {'ok': true});
+    expect(t.sleeps, hasLength(1));
   });
 }

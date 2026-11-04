@@ -61,7 +61,7 @@ part 'postino_database.g.dart';
   ],
 )
 class PostinoDatabase extends _$PostinoDatabase {
-  PostinoDatabase(super.executor);
+  PostinoDatabase(super.e);
 
   /// Host tests: same schema, plain SQLite, no key. Streams close synchronously: drift's close timer would outlive widget tests.
   factory PostinoDatabase.inMemory() =>

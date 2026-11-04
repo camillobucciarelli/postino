@@ -46,7 +46,8 @@ class PostaRoute {
   final (String, String)? draft;
 
   /// The Account and Etichetta of [list].
-  final String? accountId, labelId;
+  final String? accountId;
+  final String? labelId;
 
   /// What opens beside the list: the Conversazione or the Bozza.
   (String, String)? get detail => open ?? draft;

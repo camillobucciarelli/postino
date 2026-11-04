@@ -11,6 +11,5 @@ mixin _$AccountsDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class AccountsDaoManager {
   final _$AccountsDaoMixin _db;
   AccountsDaoManager(this._db);
-  $$AccountsTableTableManager get accounts =>
-      $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
+  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
 }

@@ -45,7 +45,7 @@ void main() {
 
   test('an id both upserted and removed in one batch is kept', () async {
     final store = await _store();
-    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')], removedMessageIds: ['1']));
+    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')], removedMessageIds: const ['1']));
     final inbox = await store.watchUnifiedInbox().first;
     expect([for (final e in inbox) e.message.id], ['1']);
   });

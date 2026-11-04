@@ -68,7 +68,8 @@ class FakeMailProvider implements MailProvider {
   Completer<void>? hold;
 
   /// While set, [fetchConversation] and [setRead] answer only once it completes: in-flight requests.
-  Completer<void>? holdConversation, holdRead;
+  Completer<void>? holdConversation;
+  Completer<void>? holdRead;
 
   /// Every send that reached the Provider and was not already in Inviati: (Message-ID, Provider id).
   final sent = <(String, String)>[];

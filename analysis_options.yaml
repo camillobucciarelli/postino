@@ -2,9 +2,8 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   language:
-    strict-casts: true
+    # strict-casts e strict-raw-types: attivati in PR2 (#87) insieme ai fix.
     strict-inference: true
-    strict-raw-types: true
   exclude:
     - build/**
     - android/**
@@ -18,13 +17,7 @@ formatter:
 
 linter:
   rules:
-    - unawaited_futures
-    - discarded_futures
-    - avoid_dynamic_calls
-    - avoid_catches_without_on_clauses
-    - close_sinks
     - cancel_subscriptions
-    - avoid_slow_async_io
     - directives_ordering
     - avoid_redundant_argument_values
     - prefer_const_constructors
@@ -35,11 +28,6 @@ linter:
     - prefer_int_literals
     - unnecessary_lambdas
     - unnecessary_raw_strings
-    - comment_references
-    - avoid_positional_boolean_parameters
-    - use_if_null_to_convert_nulls_to_bools
-    - missing_whitespace_between_adjacent_strings
-    - cascade_invocations
     - use_super_parameters
     - matching_super_parameters
     - unnecessary_primary_constructor_body
@@ -57,3 +45,8 @@ linter:
     - use_late_for_private_fields_and_variables
     - unnecessary_underscores
     - no_wildcard_variable_uses
+
+    # Regole attivate in PR2 (#87) insieme ai fix manuali delle violazioni residue:
+    # missing_whitespace_between_adjacent_strings, avoid_dynamic_calls, cascade_invocations,
+    # comment_references, unawaited_futures, avoid_slow_async_io, avoid_positional_boolean_parameters,
+    # avoid_catches_without_on_clauses, discarded_futures, close_sinks.

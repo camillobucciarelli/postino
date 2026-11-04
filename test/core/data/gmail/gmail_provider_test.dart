@@ -1225,10 +1225,10 @@ void main() {
               'labelIds': <String>[],
               'snippet': '',
               'internalDate': '1000',
-              'payload': {'headers': []},
+              'payload': {'headers': <Object?>[]},
             });
           }
-          return path == 'profile' ? _json({'historyId': '1'}) : _json({'labels': []});
+          return path == 'profile' ? _json({'historyId': '1'}) : _json({'labels': <Object?>[]});
         }),
         FakeClock(_now),
         client: _testClient,
@@ -1256,13 +1256,13 @@ void main() {
               ],
             }),
             'profile' => _json({'historyId': '1'}),
-            'labels' => _json({'labels': []}),
+            'labels' => _json({'labels': <Object?>[]}),
             _ => _json({
               'id': path.substring(9),
               'threadId': 't',
               'labelIds': <String>[],
               'internalDate': '1000',
-              'payload': {'headers': []},
+              'payload': {'headers': <Object?>[]},
             }),
           };
         }),

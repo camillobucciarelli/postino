@@ -133,11 +133,11 @@ void main() {
         OutgoingMessage(
           messageId: '<new@example.com>',
           from: _self,
-          to: ['ada@example.com'],
+          to: const ['ada@example.com'],
           subject: 'Re: Caffè',
           body: r.body,
           inReplyTo: '<m@example.com>',
-          references: ['<a@example.com>', '<m@example.com>'],
+          references: const ['<a@example.com>', '<m@example.com>'],
           conversationId: 't-1',
         ),
       );

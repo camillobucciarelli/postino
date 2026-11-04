@@ -45,6 +45,7 @@ linter:
     - use_late_for_private_fields_and_variables
     - unnecessary_underscores
     - no_wildcard_variable_uses
+    - missing_whitespace_between_adjacent_strings
 
     # Regole attivate in PR2 (#87) insieme ai fix manuali delle violazioni residue:
     # missing_whitespace_between_adjacent_strings, avoid_dynamic_calls, cascade_invocations,

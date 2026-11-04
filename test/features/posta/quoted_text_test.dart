@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Quote and signature recognition (#47, ThreadView): one real-looking fixture per client,
 // through the same cleaning the Conversazione does first.
 

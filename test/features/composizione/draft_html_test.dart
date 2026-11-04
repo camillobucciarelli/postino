@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Editor <-> HTML of a Bozza (#35): the seven formats survive the round trip, everything else flattens to text.
 import 'package:flutter_quill/flutter_quill.dart' show Document;
 import 'package:flutter_quill/quill_delta.dart';

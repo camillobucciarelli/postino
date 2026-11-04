@@ -77,8 +77,8 @@ String forwardHeaderHtml(Message original, {required String dateLabel, required 
     'A: ${_esc(original.to.join(', '))}',
     if (original.cc.isNotEmpty) 'Cc: ${_esc(original.cc.join(', '))}',
   ].join('<br>');
-  return '<div class="postino-forward"><p>---------- Messaggio inoltrato ----------'
-      '<br>$lines</p>$bodyHtml</div>';
+  return '<div class="postino-forward"><p>---------- Messaggio inoltrato ----------<br>'
+      '$lines</p>$bodyHtml</div>';
 }
 
 /// An empty paragraph for the new text, above the quoted original.

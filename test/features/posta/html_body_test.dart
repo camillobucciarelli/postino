@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // HTML bodies in a Conversazione (#47, ADR 0007): rendered, remote resources blocked until
 // «Mostra immagini» (that message only) or «Sempre da questo mittente» (that exact address), links.
 

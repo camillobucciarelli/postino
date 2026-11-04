@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // PostinoHtmlCard (#47): the cartoncino in dark theme, wide newsletters scaled down, links.
 
 import 'package:flutter/material.dart';

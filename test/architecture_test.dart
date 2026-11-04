@@ -90,12 +90,12 @@ List<String> violations(String file, String source) {
         file.startsWith('app/') || file.split('/').contains('presentation');
     if (file.startsWith('app/') && segments.contains('data')) {
       bad('pages must not import data');
-    } else if (isUi && t.startsWith('core/data/')) {
+    }
+    if (isUi && t.startsWith('core/data/')) {
       bad('presentation and pages must not import core/data');
     }
     // ADR 0003: the UI reads only from the local database, never from a Provider.
-    if ((file.startsWith('app/') || file.split('/').contains('presentation')) &&
-        t.endsWith('core/domain/mail_provider.dart')) {
+    if (isUi && t.endsWith('core/domain/mail_provider.dart')) {
       bad('the UI must not import the Provider interface');
     }
   }
@@ -213,7 +213,7 @@ void main() {
           'app/posta/posta_layout.dart',
           "import 'package:postino/core/data/sync_engine.dart';",
         ),
-        isNotEmpty,
+        contains(contains('must not import core/data')),
       );
     });
     test('presentation may import core/domain', () {

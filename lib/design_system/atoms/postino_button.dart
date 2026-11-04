@@ -3,12 +3,30 @@ import 'package:flutter/material.dart';
 import '../tokens/postino_tokens.dart';
 import 'postino_focus_ring.dart';
 
-enum PostinoButtonVariant { primary, ghost }
+/// Aspetto di un `PostinoButton`.
+enum PostinoButtonVariant {
+  /// Pieno: l'azione principale.
+  primary,
 
-enum PostinoButtonSize { sm, md, lg }
+  /// Solo testo: azione secondaria.
+  ghost,
+}
+
+/// Altezza di un `PostinoButton`.
+enum PostinoButtonSize {
+  /// Compatto.
+  sm,
+
+  /// Standard.
+  md,
+
+  /// Grande.
+  lg,
+}
 
 /// A command; [label] is a verb with only the first letter capitalised.
 class PostinoButton extends StatelessWidget {
+  /// Crea un pulsante.
   const PostinoButton({
     super.key,
     required this.label,
@@ -18,9 +36,16 @@ class PostinoButton extends StatelessWidget {
     this.underline = false,
   });
 
+  /// Verbo mostrato nel pulsante.
   final String label;
+
+  /// Chiamata al tocco; se nulla il pulsante è disabilitato.
   final VoidCallback? onPressed;
+
+  /// Aspetto del pulsante.
   final PostinoButtonVariant variant;
+
+  /// Altezza del pulsante.
   final PostinoButtonSize size;
 
   /// A ghost on a tinted surface (Banner) reads as a link.

@@ -6,6 +6,7 @@ import 'postino_colors.dart';
 /// Interpolazione di [PostinoColors] fra due temi: [PostinoColors.lerp] delega qui.
 /// Non esportata dal barrel.
 extension PostinoColorsLerp on PostinoColors {
+  /// Interpola ogni colore verso `other` con fattore `t`.
   PostinoColors lerpColors(PostinoColors? other, double t) {
     if (other == null) return this;
     return PostinoColors(

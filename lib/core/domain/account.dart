@@ -1,8 +1,10 @@
+import 'package:equatable/equatable.dart';
+
 enum ProviderKind { gmail, microsoft, icloud, imap }
 
 enum AccountStatus { attivo, daRicollegare }
 
-class Account {
+class Account extends Equatable {
   const Account({
     required this.id,
     required this.address,
@@ -24,6 +26,9 @@ class Account {
   // ponytail: no name nor chosen initial in the domain yet, both come from the address.
   String get name => address;
   String get initial => address.isEmpty ? '?' : address[0].toUpperCase();
+
+  @override
+  List<Object?> get props => [id, address, provider, color, position, status];
 }
 
 /// Colors of the Account palette, assigned in turn to new Accounts.

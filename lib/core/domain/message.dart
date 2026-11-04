@@ -1,8 +1,10 @@
 import 'dart:math' show Random;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:equatable/equatable.dart';
+
 /// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
-class Attachment {
+class Attachment extends Equatable {
   const Attachment({
     required this.id,
     required this.name,
@@ -36,6 +38,9 @@ class Attachment {
     'application/zip': '.zip',
     'message/rfc822': '.eml',
   };
+
+  @override
+  List<Object?> get props => [id, name, size, mimeType];
 }
 
 enum LabelKind { etichetta, cartella }
@@ -121,11 +126,14 @@ const _executable = {
 };
 
 /// Per Account; on folder-based Providers a message has at most one.
-class Label {
+class Label extends Equatable {
   const Label({required this.id, required this.name, required this.kind});
   final String id;
   final String name;
   final LabelKind kind;
+
+  @override
+  List<Object?> get props => [id, name, kind];
 }
 
 /// Provider-side id of the INBOX label.
@@ -137,7 +145,7 @@ const draftLabelId = 'DRAFT';
 /// Provider-side id of the Inviati label.
 const sentLabelId = 'SENT';
 
-class Message {
+class Message extends Equatable {
   const Message({
     required this.id,
     required this.messageId,
@@ -186,23 +194,46 @@ class Message {
 
   /// The Message-IDs of the `References` header, oldest first (#37).
   final List<String> references;
+
+  @override
+  List<Object?> get props => [
+    id,
+    messageId,
+    conversationId,
+    labelIds,
+    isRead,
+    isStarred,
+    from,
+    fromName,
+    to,
+    cc,
+    bcc,
+    subject,
+    snippet,
+    date,
+    replyTo,
+    references,
+  ];
 }
 
 enum BodyKind { html, testo }
 
 /// A downloaded message body, with whether it is HTML or plain text, and its attachments
 /// (they come with the full message, as the body does).
-class MessageBody {
+class MessageBody extends Equatable {
   const MessageBody(this.content, this.kind, {this.attachments = const []});
   final String content;
   final BodyKind kind;
 
   /// Null for a body stored before attachments were (database v8 and older): not known until downloaded again.
   final List<Attachment>? attachments;
+
+  @override
+  List<Object?> get props => [content, kind, attachments];
 }
 
 /// Always inside a single Account.
-class Conversation {
+class Conversation extends Equatable {
   const Conversation({
     required this.id,
     required this.accountId,
@@ -211,10 +242,13 @@ class Conversation {
   final String id;
   final String accountId;
   final List<String> messageIds;
+
+  @override
+  List<Object?> get props => [id, accountId, messageIds];
 }
 
 /// A message to send or to keep as a Bozza; [messageId] is generated on the device ([newMessageId]) and stays stable.
-class OutgoingMessage {
+class OutgoingMessage extends Equatable {
   const OutgoingMessage({
     required this.messageId,
     required this.from,
@@ -248,13 +282,31 @@ class OutgoingMessage {
 
   /// Attachments taken over from another message (a forward, #37): the adapter fetches their bytes when it builds the MIME.
   final List<ForwardedAttachment> attachments;
+
+  @override
+  List<Object?> get props => [
+    messageId,
+    from,
+    to,
+    cc,
+    bcc,
+    subject,
+    body,
+    inReplyTo,
+    references,
+    conversationId,
+    attachments,
+  ];
 }
 
 /// An [Attachment] of the Provider message [sourceMessageId], re-attached to an [OutgoingMessage].
-class ForwardedAttachment {
+class ForwardedAttachment extends Equatable {
   const ForwardedAttachment(this.sourceMessageId, this.attachment);
   final String sourceMessageId;
   final Attachment attachment;
+
+  @override
+  List<Object?> get props => [sourceMessageId, attachment];
 }
 
 const _alphanumerics =

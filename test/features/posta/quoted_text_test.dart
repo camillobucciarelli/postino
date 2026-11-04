@@ -8,6 +8,8 @@ import 'package:postino/core/domain/html_text.dart';
 import 'package:postino/features/posta/domain/quoted_text.dart';
 import 'package:postino/features/posta/domain/safe_html.dart';
 
+import '../../support/value_equality.dart';
+
 String _fixture(String name) =>
     File('test/fixtures/quote/$name').readAsStringSync();
 
@@ -237,5 +239,28 @@ void main() {
         expect(p.body, isNot(contains('<div')));
       });
     }
+  });
+
+  test('BodyParts compares by value (#94)', () {
+    BodyParts parts({
+      String original = 'o',
+      String body = 'b',
+      bool bodyVisible = true,
+      String? signature = 's',
+      String? quote = 'q',
+    }) => BodyParts(
+      original: original,
+      body: body,
+      bodyVisible: bodyVisible,
+      signature: signature,
+      quote: quote,
+    );
+    expectValueEquality(() => parts(), [
+      parts(original: 'x'),
+      parts(body: 'x'),
+      parts(bodyVisible: false),
+      parts(signature: null),
+      parts(quote: null),
+    ]);
   });
 }

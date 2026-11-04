@@ -1,8 +1,10 @@
+import 'package:equatable/equatable.dart';
+
 import 'account.dart';
 import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
-class InboxEntry {
+class InboxEntry extends Equatable {
   const InboxEntry({
     required this.message,
     required this.account,
@@ -17,6 +19,9 @@ class InboxEntry {
 
   /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
   final String? status;
+
+  @override
+  List<Object?> get props => [message, account, count, unread, status];
 }
 
 /// A message of an open Conversazione, with its body once downloaded.
@@ -24,7 +29,7 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
-class OutgoingEntry {
+class OutgoingEntry extends Equatable {
   const OutgoingEntry({
     required this.message,
     required this.sendAfter,
@@ -33,6 +38,9 @@ class OutgoingEntry {
   final OutgoingMessage message;
   final int sendAfter;
   final bool failed;
+
+  @override
+  List<Object?> get props => [message, sendAfter, failed];
 }
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).

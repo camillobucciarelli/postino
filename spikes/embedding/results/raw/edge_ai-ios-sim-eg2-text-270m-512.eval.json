@@ -1,0 +1,44 @@
+{
+  "runtime": "flutter_edge_ai",
+  "model": "embeddinggemma-2-text-270m.litertlm +prefisso classification",
+  "maxTokens": 512,
+  "dim": 768,
+  "n": 80,
+  "zeroShot": {
+    "all": 0.825,
+    "en": 0.775,
+    "it": 0.875
+  },
+  "knn3": {
+    "all": 0.8125,
+    "en": 0.825,
+    "it": 0.8
+  },
+  "knn5": {
+    "all": 0.8625,
+    "en": 0.875,
+    "it": 0.85
+  },
+  "centroid": {
+    "all": 0.9125,
+    "en": 0.925,
+    "it": 0.9
+  },
+  "zeroShotMargin": [
+    {
+      "margin": 0.0,
+      "coverage": 1.0,
+      "precision": 0.825
+    },
+    {
+      "margin": 0.02,
+      "coverage": 0.7625,
+      "precision": 0.9180327868852459
+    },
+    {
+      "margin": 0.05,
+      "coverage": 0.3875,
+      "precision": 0.967741935483871
+    }
+  ]
+}

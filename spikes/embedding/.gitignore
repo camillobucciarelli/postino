@@ -1,0 +1,4 @@
+# JSON di embedding grezzi: rigenerabili, non si committano (sì metriche e valutazioni).
+results/raw/*.json
+!results/raw/*metrics*.json
+!results/raw/*.eval.json

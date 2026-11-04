@@ -26,6 +26,10 @@ final class const Err<T>(
 sealed class const Failure() {
   /// Costruttore delle varianti.
   this;
+
+  /// The variant's name, as the error log shows it (#116); variants with data add it.
+  @override
+  String toString() => '$runtimeType';
 }
 
 // ponytail: single catch-all variant; add specific failures (network, auth, ...) with the first feature that needs them.
@@ -87,6 +91,9 @@ final class const SizeLimitFailure(
 ) extends Failure {
   /// Crea il fallimento con il limite [limitBytes].
   this;
+
+  @override
+  String toString() => 'SizeLimitFailure($limitBytes)';
 }
 
 /// The Provider refused the request for good (HTTP 400, e.g. an invalid header): retrying cannot help.
@@ -96,6 +103,9 @@ final class const RejectedFailure(
 ) extends Failure {
   /// Crea il fallimento con il [reason] dato dal Provider.
   this;
+
+  @override
+  String toString() => 'RejectedFailure($reason)';
 }
 
 /// The Provider asks to slow down.
@@ -117,6 +127,9 @@ final class const ConfigurationFailure(
 ) extends Failure {
   /// Crea il fallimento per l'impostazione [setting] mancante.
   this;
+
+  @override
+  String toString() => 'ConfigurationFailure($setting)';
 }
 
 /// The user backed out (for example closed the consent page).

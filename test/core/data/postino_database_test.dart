@@ -43,6 +43,18 @@ void main() {
     expect(() => PostinoDatabase.open(path, FakeSecureStore()), throwsA(anything));
   });
 
+  test('the key is created once and then read from the keychain only once; a failed read is asked again', () async {
+    final keychain = FakeSecureStore()..failure = Exception('keychain bloccato');
+    await expectLater(PostinoDatabase.keyFrom(keychain), throwsException);
+
+    keychain.failure = null;
+    final key = await PostinoDatabase.keyFrom(keychain);
+    expect(key, hasLength(64));
+    keychain.failure = Exception('a second read would prompt again');
+    expect(await PostinoDatabase.keyFrom(keychain), key);
+    expect(await PostinoDatabase.keyFrom(FakeSecureStore()..values.addAll(keychain.values)), key);
+  });
+
   test('deleted content is overwritten (secure_delete)', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
     final row = await db.customSelect('PRAGMA secure_delete').getSingle();

@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../domain/account.dart';
 import '../../domain/attachment_repository.dart';
+import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/outbox_repository.dart';
@@ -28,7 +29,8 @@ const sendClaim = Duration(minutes: 10);
 class OutboxSender(
   final OutboxRepository _outbox,
   final Clock _clock,
-  final BackgroundSender _background, {
+  final BackgroundSender _background,
+  final ErrorLog _log, {
   required final Future<Account?> Function(String accountId) _account,
   required final Future<void> Function(String accountId) _flushOutbox,
 
@@ -167,6 +169,7 @@ class OutboxSender(
         case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure() || RejectedFailure())):
           await _outbox.outgoingFailed(accountId, row.messageId);
           debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
+          _log.failure('send $accountId', f);
         // Rate limited: the Account waits for the deadline, as after a sync; the rest stays queued.
         case Err(failure: RateLimitFailure(:final retryAfter?)):
           _pause(accountId, retryAfter);
@@ -176,6 +179,7 @@ class OutboxSender(
         case Err(:final failure):
           await _outbox.unclaimOutgoing(accountId, row.messageId);
           debugPrint('[sync] $accountId: send failed, $failure');
+          _log.failure('send $accountId', failure);
       }
     }
     await _releaseIfEmpty(accountId);

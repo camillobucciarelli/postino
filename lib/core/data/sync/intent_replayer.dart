@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/outbox_repository.dart';
 import '../../domain/platform_services.dart';
@@ -13,7 +14,7 @@ const draftDebounce = Duration(seconds: 5);
 /// not on the Provider yet.
 /// What fails stays queued and the next poll retries it. Called only from inside the Account's serial queue
 /// of the sync engine: it never runs beside a sync or a send of the same Account.
-class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, final Clock _clock) {
+class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, final Clock _clock, final ErrorLog _log) {
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     await _replayReads(accountId, provider);
@@ -33,6 +34,7 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           await _store.readDone(accountId, ids, isRead: read);
         case Err(:final failure):
           debugPrint('[sync] $accountId: replay failed, $failure');
+          _log.failure('replay $accountId', failure);
           return;
       }
     }
@@ -52,6 +54,7 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           await _store.labelRejected(accountId, i.messageId, i.labelId, added: i.added);
         case Err(:final failure):
           debugPrint('[sync] $accountId: label replay failed, $failure');
+          _log.failure('label replay $accountId', failure);
           return;
       }
     }
@@ -88,6 +91,7 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           }
         case Err(:final failure):
           debugPrint('[sync] $accountId: draft replay failed, $failure');
+          _log.failure('draft replay $accountId', failure);
       }
     }
   }

@@ -19,6 +19,7 @@ import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
 import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
+import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
@@ -29,6 +30,7 @@ import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
 import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
+import 'package:postino/core/domain/error_log.dart' as _i346;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
@@ -54,6 +56,7 @@ extension GetItInjectableX on _i174.GetIt {
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
+    final errorLogModule = _$ErrorLogModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
@@ -100,6 +103,11 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i524.SystemLinkOpener(),
       registerFor: {_prod},
     );
+    await gh.singletonAsync<_i346.ErrorLog>(
+      () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
+      registerFor: {_prod},
+      preResolve: true,
+    );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
       () => databaseModule.database(gh<_i398.SecureStore>()),
       registerFor: {_prod},
@@ -130,6 +138,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
         gh<_i398.Connectivity>(),
         gh<_i398.BackgroundSender>(),
+        gh<_i346.ErrorLog>(),
       ),
     );
     gh.lazySingleton<_i705.MailSync>(
@@ -172,6 +181,8 @@ class _$AttachmentModule extends _i524.AttachmentModule {}
 class _$HttpModule extends _i524.HttpModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
+
+class _$ErrorLogModule extends _i907.ErrorLogModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
 
@@ -130,4 +131,21 @@ class FakeLaunchAtLogin() implements LaunchAtLogin {
     if (failure case final f?) throw f;
     this.enabled = enabled;
   }
+}
+
+/// Keeps what it is given in memory: (error, crash).
+class FakeErrorLog() implements ErrorLog {
+  final entries = <(Object, bool)>[];
+
+  @override
+  void record(Object error, {StackTrace? stack, String? context, bool crash = false}) => entries.add((error, crash));
+
+  @override
+  Future<String> read() async => [for (final (e, _) in entries) '$e'].join('\n');
+
+  @override
+  Future<void> clear() async => entries.clear();
+
+  @override
+  Future<bool> takeCrashMark() async => false;
 }

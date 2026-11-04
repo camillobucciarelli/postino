@@ -69,12 +69,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 
   /// On device: SQLCipher file, key generated at first launch and kept in the [keychain].
   static Future<PostinoDatabase> open(String path, SecureStore keychain) async {
-    var key = await keychain.read(_keyName);
-    if (key == null) {
-      final random = Random.secure();
-      key = [for (var i = 0; i < 32; i++) random.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
-      await keychain.write(_keyName, key);
-    }
+    final key = await keyFrom(keychain);
     final db = PostinoDatabase(
       NativeDatabase(
         File(path),
@@ -99,6 +94,28 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       await db.close();
       rethrow;
     }
+  }
+
+  /// The database key (hex) from the [keychain], generated and saved at the first launch; the error log's keys
+  /// derive from it too (#116). Read once per [keychain]: each read may be a system prompt (#76).
+  /// A failed read is not remembered: the next call asks again.
+  static Future<String> keyFrom(SecureStore keychain) async {
+    try {
+      return await (_keys[keychain] ??= _readOrCreateKey(keychain));
+    } on Object catch (_) {
+      _keys[keychain] = null;
+      rethrow;
+    }
+  }
+
+  static final _keys = Expando<Future<String>>();
+
+  static Future<String> _readOrCreateKey(SecureStore keychain) async {
+    if (await keychain.read(_keyName) case final key?) return key;
+    final random = Random.secure();
+    final key = [for (var i = 0; i < 32; i++) random.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
+    await keychain.write(_keyName, key);
+    return key;
   }
 
   @override

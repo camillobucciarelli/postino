@@ -12,9 +12,11 @@ import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'core/data/background_send.dart';
+import 'core/data/error_log/uncaught_errors.dart';
 import 'core/data/postino_database.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
+import 'core/domain/error_log.dart';
 import 'core/domain/launch_at_login_use_case.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
@@ -62,6 +64,7 @@ Future<void> main() async {
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);
+  captureUncaughtErrors(getIt<ErrorLog>());
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));
   if (!kIsWeb &&

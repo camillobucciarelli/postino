@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -13,7 +15,7 @@ import '../../support/ui.dart';
 Future<void> _start(WidgetTester tester) async {
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 

@@ -1,6 +1,8 @@
 // Testi della Conversazione selezionabili e copiabili (#69): una sola SelectionArea, Cmd/Ctrl+C e Cmd/Ctrl+A,
 // l'intestazione (tap contro trascinamento), il doppio Esc, i link, j/k e Cmd/Ctrl+B, le etichette semantiche.
 
+import 'dart:async';
+
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/foundation.dart';
@@ -62,7 +64,7 @@ Future<void> _start(WidgetTester tester) async {
     );
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 

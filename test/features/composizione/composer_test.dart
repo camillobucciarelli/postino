@@ -1,6 +1,8 @@
 // Composition and Bozze (#35): the Bozza reaches the fake Provider after the 5 s debounce and at once on
 // closing, a Bozza of another client is resumed with its formats, one deleted elsewhere drops the local
 // edit in silence, offline it waits; the entry points, the semantics and the single pane under 900 px.
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,7 +35,7 @@ Future<void> _start(WidgetTester tester, {Size size = _desktop}) async {
   gmail = await h.addAccount(_id);
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 

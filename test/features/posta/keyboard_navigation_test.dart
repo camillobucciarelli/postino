@@ -1,6 +1,8 @@
 // Keyboard navigation (#54, ADR 0014): arrows and j/k in the list, Enter and Esc, one Tab stop,
 // focus = selection, scrolling, j/k in the Conversazione, layout changes, text fields, the registry.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,7 +36,7 @@ Future<FakeMailProvider> _start(WidgetTester tester, Size size, {int n = 5}) asy
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   // Routefly keeps the last navigation in statics.
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
   return p;
 }

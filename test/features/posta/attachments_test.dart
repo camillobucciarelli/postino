@@ -41,7 +41,7 @@ Future<void> _start(WidgetTester tester, {int? cap}) async {
     ..deliver(msg('m1', conversationId: 't', subject: 'Contratto'));
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('row-a1-m1')));
   await tester.pumpAndSettle();

@@ -1,5 +1,7 @@
 // The resizable list (#62): drag, double click, limits, preferred vs shown width, keyboard, semantics, saving.
 
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -50,7 +52,7 @@ Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}
     ..registerSingleton<SettingsRepository>(settings);
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
   return settings;
 }
@@ -205,7 +207,7 @@ void main() {
     final w = _listWidth(tester);
     expect(w, isNot(380));
     expect(s.saved, w);
-    Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': 'a1'}));
+    unawaited(Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': 'a1'})));
     await tester.pumpAndSettle();
     expect(_listWidth(tester), w);
   });

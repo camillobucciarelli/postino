@@ -1,6 +1,8 @@
 // The icon sidebar and the two panes from 900 (#60): collapse threshold, button and shortcut,
 // the manual choice and when it resets, the rail's items, the registry.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,7 +46,7 @@ Future<void> _start(WidgetTester tester, double width, {bool? stored, int many =
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 
@@ -223,7 +225,7 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-      Routefly.navigate(routePaths.posta.path);
+      unawaited(Routefly.navigate(routePaths.posta.path));
       await tester.pumpAndSettle();
       expect(_barWidth(tester), PostinoSize.sidebarCollapsedWidth);
     });
@@ -338,7 +340,7 @@ void main() {
         ..deliver(msg('u', conversationId: 'c', labelIds: const ['SENT']));
       LocaleSettings.setLocaleSync(AppLocale.it);
       await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-      Routefly.navigate(routePaths.posta.path);
+      unawaited(Routefly.navigate(routePaths.posta.path));
       await tester.pumpAndSettle();
       Finder dot(String key) =>
           find.descendant(of: find.byKey(ValueKey(key)), matching: find.byKey(const ValueKey('unread-dot')));

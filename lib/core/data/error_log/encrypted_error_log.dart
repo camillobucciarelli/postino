@@ -26,8 +26,15 @@ class EncryptedErrorLog(
   File get _previous => _dir.childFile('postino.log.1');
   File get _crashMark => _dir.childFile('crashed');
 
+  /// The last crash recorded: the same error object, rethrown up to the uncaught handler, is written once.
+  Object? _lastCrash;
+
   @override
   void record(Object error, {StackTrace? stack, String? context, bool crash = false}) {
+    if (crash) {
+      if (identical(error, _lastCrash)) return;
+      _lastCrash = error;
+    }
     try {
       if (crash) _crashMark.createSync(recursive: true);
       final trace = stack ?? (error is UnexpectedFailure ? error.stackTrace : null);

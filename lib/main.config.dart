@@ -109,7 +109,10 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
-      () => databaseModule.database(gh<_i398.SecureStore>()),
+      () => databaseModule.database(
+        gh<_i398.SecureStore>(),
+        gh<_i346.ErrorLog>(),
+      ),
       registerFor: {_prod},
       preResolve: true,
     );

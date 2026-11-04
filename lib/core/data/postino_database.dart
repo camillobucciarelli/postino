@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3 show Database;
 
 // The generated part maps enum columns to these types.
 import '../domain/account.dart';
+import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
@@ -68,7 +69,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       PostinoDatabase(DatabaseConnection(NativeDatabase.memory(setup: _secureDelete), closeStreamsSynchronously: true));
 
   /// On device: SQLCipher file, key generated at first launch and kept in the [keychain].
-  static Future<PostinoDatabase> open(String path, SecureStore keychain) async {
+  /// A file that does not open (damaged, wrong key) is a crash for [log] before it propagates (#116): Postino cannot
+  /// start, and the next start proposes the Segnalazione di un problema.
+  static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
     final key = await keyFrom(keychain);
     final db = PostinoDatabase(
       NativeDatabase(
@@ -90,7 +93,8 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     try {
       await db.customSelect('SELECT 1').get(); // open now, not on first query
       return db;
-    } catch (_) {
+    } catch (e, s) {
+      log?.record(e, stack: s, context: 'database', crash: true);
       await db.close();
       rethrow;
     }

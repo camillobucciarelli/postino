@@ -2,11 +2,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/error_log/log_redaction.dart';
 
 void main() {
-  test('Bearer tokens are redacted', () {
-    final out = redactSecrets('GET /gmail/v1 failed, Authorization: Bearer ya29.a0AfB_xyz-123');
-    expect(out, isNot(contains('a0AfB_xyz')));
-    expect(out, contains('Bearer [redatto]'));
+  test('Bearer tokens are redacted, in a header and on their own', () {
+    final header = redactSecrets('GET /gmail/v1 failed, Authorization: Bearer ya29.a0AfB_xyz-123');
+    expect(header, isNot(contains('a0AfB_xyz')));
+    expect(header, contains('Authorization: [redatto]'));
+    expect(
+      redactSecrets('sasl user=a@example.com auth=Bearer abc123 end'),
+      'sasl user=a@example.com auth=Bearer [redatto] end',
+    );
   });
+
+  // Every secret below contains SECRET; none of it may survive, and the quotes around a field stay balanced.
+  const table = {
+    r'{"password":"prefix Bearer abc\"SECRET"}': '{"password":"[redatto]"}',
+    r"{'password': 'pre fix\'SECRET'}": "{'password': '[redatto]'}",
+    r'{"token": "a b\\\"SECRET c"}': '{"token": "[redatto]"}',
+    '{"Authorization": "Bearer SECRET"}': '{"Authorization": "[redatto]"}',
+    r'{"body":"{\"refresh_token\":\"SEC,RET\"}"}': r'{"body":"{\"refresh_token\":\"[redatto]\"}"}',
+    'password=SECRET&x=1': 'password=[redatto]&x=1',
+    "client_secret='SEC RET' next": "client_secret='[redatto]' next",
+    '{password: first SECRET, user: u}': '{password: [redatto], user: u}',
+    'Authorization: Bearer SECRET': 'Authorization: [redatto]',
+    r'a1 LOGIN "u" "pa\"SECRET"': 'a1 LOGIN [redatto]',
+    'msg "Bearer SECRET" end': 'msg "Bearer [redatto]" end',
+    "msg 'x Bearer SECRET' end": "msg 'x Bearer [redatto]' end",
+  };
+  for (final MapEntry(key: input, value: expected) in table.entries) {
+    test('no fragment survives: $input', () {
+      final out = redactSecrets(input);
+      expect(out, isNot(contains('SECRET')));
+      expect(out, isNot(contains('RET')));
+      expect(out, expected);
+    });
+  }
 
   test('token and password fields are redacted, in JSON, forms and query strings', () {
     final out = redactSecrets(

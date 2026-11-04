@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/error_log/encrypted_error_log.dart';
+import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/postino_database.dart';
 
 import '../../support/fake_platform.dart';
@@ -41,6 +44,20 @@ void main() {
     await db.close();
 
     expect(() => PostinoDatabase.open(path, FakeSecureStore()), throwsA(anything));
+  });
+
+  test('a database that does not open is in the error log as a crash', () async {
+    final db = await PostinoDatabase.open(path, FakeSecureStore());
+    await db.close();
+    final log = EncryptedErrorLog(
+      MemoryFileSystem().directory('/logs'),
+      logKeysFrom('0f' * 32),
+      FakeClock(DateTime.utc(2026, 11, 4)),
+    );
+
+    await expectLater(PostinoDatabase.open(path, FakeSecureStore(), log: log), throwsA(anything));
+    expect(await log.read(), contains('[database]'));
+    expect(await log.takeCrashMark(), isTrue);
   });
 
   test('the key is created once and then read from the keychain only once; a failed read is asked again', () async {

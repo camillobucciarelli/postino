@@ -10,6 +10,7 @@ void main() {
   late FlutterExceptionHandler? flutterBefore;
   late ErrorCallback? platformBefore;
   late FakeErrorLog log;
+  FakeErrorLog? ready;
   late List<FlutterErrorDetails> forwarded;
 
   setUp(() {
@@ -18,7 +19,8 @@ void main() {
     forwarded = [];
     FlutterError.onError = forwarded.add;
     log = FakeErrorLog();
-    captureUncaughtErrors(log);
+    ready = log;
+    captureUncaughtErrors(() => ready);
   });
 
   tearDown(() {
@@ -42,5 +44,14 @@ void main() {
     final error = StateError('async');
     expect(PlatformDispatcher.instance.onError!(error, StackTrace.current), isFalse);
     expect(log.entries, [(error, true)]);
+  });
+
+  test('before the log exists an error still reaches the previous handler, and nothing breaks', () {
+    ready = null;
+    final details = FlutterErrorDetails(exception: StateError('avvio'));
+    FlutterError.onError!(details);
+    expect(PlatformDispatcher.instance.onError!(StateError('avvio'), StackTrace.current), isFalse);
+    expect(forwarded, [details]);
+    expect(log.entries, isEmpty);
   });
 }

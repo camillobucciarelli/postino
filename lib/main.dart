@@ -53,6 +53,7 @@ void sendOutboxDispatcher() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  captureUncaughtErrors(() => getIt.isRegistered<ErrorLog>() ? getIt<ErrorLog>() : null);
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(const [
       'Caprasimo',
@@ -64,7 +65,6 @@ Future<void> main() async {
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);
-  captureUncaughtErrors(getIt<ErrorLog>());
   LocaleSettings.useDeviceLocaleSync();
   runApp(TranslationProvider(child: const PostinoApp()));
   if (!kIsWeb &&

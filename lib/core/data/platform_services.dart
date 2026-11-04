@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../domain/error_log.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
@@ -135,9 +136,10 @@ abstract class AttachmentModule() {
 abstract class DatabaseModule() {
   @preResolve
   @Singleton(env: [Environment.prod])
-  Future<PostinoDatabase> database(SecureStore keychain) async {
+  /// After the [log]: a database that does not open is recorded (#116).
+  Future<PostinoDatabase> database(SecureStore keychain, ErrorLog log) async {
     final dir = await getApplicationSupportDirectory();
-    return PostinoDatabase.open('${dir.path}/postino.db', keychain);
+    return PostinoDatabase.open('${dir.path}/postino.db', keychain, log: log);
   }
 }
 

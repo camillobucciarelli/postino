@@ -113,6 +113,19 @@ void main() {
     expect(await restarted.read(), contains('crash'));
   });
 
+  test('the same crash rethrown up to the uncaught handler is written once; a repeated Failure every time', () async {
+    final error = StateError('database');
+    final l = log()
+      ..record(error, context: 'database', crash: true)
+      ..record(error, context: 'uncaught', crash: true)
+      ..record(const OfflineFailure())
+      ..record(const OfflineFailure());
+    final text = await l.read();
+    expect('[database]'.allMatches(text), hasLength(1));
+    expect(text, isNot(contains('[uncaught]')));
+    expect('OfflineFailure'.allMatches(text), hasLength(2));
+  });
+
   test('a disk that fails never throws from record', () {
     final failing = MemoryFileSystem(opHandle: (_, op) => throw const FileSystemException('disco pieno'));
     expect(() => EncryptedErrorLog(failing.directory('/logs'), keys, clock).record('x', crash: true), returnsNormally);

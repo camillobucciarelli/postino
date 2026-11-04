@@ -36,7 +36,7 @@ class OutboxStore implements OutboxRepository {
     final r = await _db.draftsDao.byId(accountId, messageId);
     if (r == null) return null;
     return (
-      draft: _draft(r, await _address(accountId)),
+      draft: _draft(r, await addressOf(_db, accountId)),
       pending: r.pending,
       updatedAt: r.updatedAt,
     );
@@ -52,9 +52,7 @@ class OutboxStore implements OutboxRepository {
     final (m, b) = r;
     return (
       message: messageOf(m, const [draftLabelId]),
-      body: b == null
-          ? null
-          : MessageBody(b.body, b.kind, attachments: b.attachments),
+      body: b == null ? null : bodyOf(b),
     );
   }
 
@@ -64,7 +62,7 @@ class OutboxStore implements OutboxRepository {
 
   @override
   Future<List<PendingDraft>> pendingDrafts(String accountId) async {
-    final from = await _address(accountId);
+    final from = await addressOf(_db, accountId);
     return [
       for (final r in await _db.draftsDao.pending(accountId))
         (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt),
@@ -214,7 +212,7 @@ class OutboxStore implements OutboxRepository {
             labelIds: const [sentLabelId],
             isRead: true,
             isStarred: false,
-            from: await _address(accountId),
+            from: await addressOf(_db, accountId),
             to: lines(r.recipients),
             cc: lines(r.cc),
             bcc: lines(r.bcc),
@@ -227,11 +225,6 @@ class OutboxStore implements OutboxRepository {
       saveCursor: false,
     );
   });
-
-  Future<String> _address(String accountId) async =>
-      (await _db.accountsDao.byPosition())
-          .firstWhere((a) => a.id == accountId)
-          .address;
 
   static OutboxItem _item(OutboxRow r) => (
     messageId: r.messageId,

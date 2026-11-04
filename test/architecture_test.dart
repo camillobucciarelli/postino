@@ -101,6 +101,7 @@ List<String> violations(String file, String source) {
     // ADR 0002: the choice of adapter lives in one factory, not in switches across core/data.
     if (file.startsWith('core/data/') &&
         file != 'core/data/sync/provider_factory.dart' &&
+        !file.startsWith('core/data/gmail/') &&
         t.endsWith('core/data/gmail/gmail_provider.dart')) {
       bad('only the provider factory may import a concrete Provider');
     }
@@ -294,6 +295,15 @@ void main() {
         violations(
           'core/data/sync/provider_factory.dart',
           "import '../gmail/gmail_provider.dart';",
+        ),
+        isEmpty,
+      );
+    });
+    test('the Gmail package may import its own Provider', () {
+      expect(
+        violations(
+          'core/data/gmail/gmail_sync.dart',
+          "import 'gmail_provider.dart';",
         ),
         isEmpty,
       );

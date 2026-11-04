@@ -98,9 +98,7 @@ class MailStore implements InboxRepository {
           for (final (m, b, labelIds) in rows)
             (
               message: messageOf(m, labelIds),
-              body: b == null
-                  ? null
-                  : MessageBody(b.body, b.kind, attachments: b.attachments),
+              body: b == null ? null : bodyOf(b),
             ),
         ],
       );
@@ -137,7 +135,7 @@ class MailStore implements InboxRepository {
 
   @override
   Stream<List<OutgoingEntry>> watchOutbox(String accountId) =>
-      Stream.fromFuture(_address(accountId)).asyncExpand(
+      Stream.fromFuture(addressOf(_db, accountId)).asyncExpand(
         (from) => _db.outboxDao
             .watch(accountId)
             .map(
@@ -159,11 +157,6 @@ class MailStore implements InboxRepository {
               ],
             ),
       );
-
-  Future<String> _address(String accountId) async =>
-      (await _db.accountsDao.byPosition())
-          .firstWhere((a) => a.id == accountId)
-          .address;
 
   @override
   Stream<Set<(String, String)>> watchUnreadFolders() =>

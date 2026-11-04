@@ -41,3 +41,13 @@ List<String> lines(String s) => [
   for (final l in s.split('\n'))
     if (l.isNotEmpty) l,
 ];
+
+/// A stored body with its attachments.
+MessageBody bodyOf(BodyRow b) =>
+    MessageBody(b.body, b.kind, attachments: b.attachments);
+
+/// The address of an Account of this database.
+Future<String> addressOf(PostinoDatabase db, String accountId) async =>
+    (await db.accountsDao.byPosition())
+        .firstWhere((a) => a.id == accountId)
+        .address;

@@ -242,12 +242,14 @@ class AttachmentCache implements AttachmentRepository {
   }
 
   Future<AttachmentKeys> _loadKeys() async {
+    final String hex;
     try {
-      return attachmentKeysFromHex(await _readOrCreateKey());
+      hex = await _readOrCreateKey();
     } catch (_) {
       _keys = null;
       rethrow;
     }
+    return attachmentKeysFromHex(hex);
   }
 
   Future<String> _readOrCreateKey() async {

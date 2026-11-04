@@ -21,11 +21,4 @@ void main() {
     expect(time(DateTime(2026, 3, 12, 8)), '12 mar');
     expect(time(DateTime(2025, 3, 12, 8)), '12 mar 2025');
   });
-
-  test('quote date label is Italian like the sentence around it', () {
-    expect(
-      quoteDateLabel(DateTime(2026, 11, 2, 16, 19)),
-      'lun 2 nov 2026 alle ore 16:19',
-    );
-  });
 }

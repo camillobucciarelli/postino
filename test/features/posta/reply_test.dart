@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Rispondi, Rispondi a tutti and Inoltra (#37): from the bar under the Conversazione, from the menu of a
 // message and with r / a / f, a Bozza with the Citazione is saved and opened in the composer; the
 // composer keeps the reply headers and the forwarded attachments on every save.
@@ -294,6 +296,22 @@ void main() {
     // Nothing replied: still the same open Bozza, and no second one.
     expect(_openId(), id);
     expect(await _pendingIds(), [id]);
+  });
+
+  _onMac('closing the Conversazione while the body for Rispondi downloads '
+      'makes no Bozza and opens no composer', (tester) async {
+    await _start(tester);
+    gmail.holdBody = Completer<void>();
+    await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+    await _tap(tester, find.byKey(const ValueKey('message-reply-m1')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('message-actions-m1')), findsNothing);
+    gmail.holdBody!.complete();
+    await _settle(tester);
+    expect(await _pendingIds(), isEmpty);
+    expect(find.byType(PostinoComposerLayout), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   _onMac('Rispondi when the body cannot be downloaded quotes the snippet', (

@@ -175,6 +175,26 @@ void main() {
     },
   );
 
+  testWidgets('closing the Conversazione mid-download cancels it: no open, '
+      'no save, no error', (tester) async {
+    await _start(tester);
+    gmail.holdAttachment = Completer<void>();
+    await _tap(tester, _chip('Contratto.pdf'));
+    expect(
+      _in('Contratto.pdf', const ValueKey('attachment-cancel')),
+      findsOneWidget,
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(_chip('Contratto.pdf'), findsNothing);
+    gmail.holdAttachment!.complete();
+    await tester.pumpAndSettle();
+    expect(h.links.opened, isEmpty);
+    expect(h.saver.saved, isEmpty);
+    expect(_cached, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'an attachment bigger than the cache opens without being cached',
     (tester) async {

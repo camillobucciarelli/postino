@@ -6,6 +6,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_notification.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
@@ -18,6 +19,7 @@ import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_body.dart';
+import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
 
 /// An open Conversazione, read from the database: every message newest first, the latest and the unread ones
@@ -41,7 +43,7 @@ class const ConversationView({
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState() extends State<ConversationView> with AccountsSignal {
+class _ConversationViewState() extends State<ConversationView> with AccountsSignal, ConversationOnScreen {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];
@@ -70,6 +72,9 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _reply() => unawaited(_act(ReplyKind.reply));
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
+
+  @override
+  late final ConversationKey conversationKey = (accountId: widget.accountId, conversationId: widget.conversationId);
 
   @override
   void initState() {

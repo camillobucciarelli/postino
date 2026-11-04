@@ -20,4 +20,10 @@ abstract interface class SettingsRepository() {
 
   /// Ricorda la scelta dell'avvio al login.
   Future<void> setLaunchAtLogin({required bool enabled});
+
+  /// Whether this device already explained the notifications and offered the OS's permission (#39).
+  Future<bool> notificationsAsked();
+
+  /// Ricorda che la spiegazione delle notifiche è stata mostrata.
+  Future<void> setNotificationsAsked();
 }

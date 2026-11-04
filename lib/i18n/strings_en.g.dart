@@ -61,6 +61,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$inviati$en inviati = _Translations$inviati$en._(_root);
 	@override late final _Translations$impostazioni$en impostazioni = _Translations$impostazioni$en._(_root);
 	@override late final _Translations$tray$en tray = _Translations$tray$en._(_root);
+	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
 }
 
 // Path: sidebar
@@ -304,6 +305,21 @@ class _Translations$tray$en extends Translations$tray$it {
 	@override String get quit => 'Quit';
 }
 
+// Path: notifiche
+class _Translations$notifiche$en extends Translations$notifiche$it {
+	_Translations$notifiche$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get channel => 'New mail';
+	@override String get open => 'Open';
+	@override String get permissionTitle => 'New mail notifications';
+	@override String get permissionBody => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.';
+	@override String get permissionAllow => 'Continue';
+	@override String get permissionLater => 'Not now';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -436,6 +452,12 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
 			'tray.open' => 'Open Postino',
 			'tray.quit' => 'Quit',
+			'notifiche.channel' => 'New mail',
+			'notifiche.open' => 'Open',
+			'notifiche.permissionTitle' => 'New mail notifications',
+			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
+			'notifiche.permissionAllow' => 'Continue',
+			'notifiche.permissionLater' => 'Not now',
 			_ => null,
 		};
 	}

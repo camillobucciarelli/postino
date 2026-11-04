@@ -75,7 +75,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
     }
 
     // One shell above the content: only the content is replaced on navigation.
-    return OnboardingGate(
+    final shell = OnboardingGate(
       child: FutureBuilder<(bool?, double?)>(
         future: _saved,
         builder: (context, saved) => saved.connectionState != ConnectionState.done
@@ -130,6 +130,17 @@ class _PostaLayoutState() extends State<PostaLayout> {
                 ),
               ),
       ),
+    );
+    // The system's Indietro (Android) closes the open Conversazione or Bozza like its own Indietro: the detail is
+    // drawn here, not pushed, so there is no page to pop (#39, a Conversazione opened from a notification).
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        // A page pushed over it (Impostazioni) pops first.
+        if (detail == null || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
+        back();
+        return true;
+      },
+      child: shell,
     );
   }
 }

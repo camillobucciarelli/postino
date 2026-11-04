@@ -33,7 +33,8 @@ jobs:
         run: |
           git diff --exit-code -- . ':!lib/main.route.dart' ':!lib/main.g.dart'
           test -z "$(git status --porcelain -- . ':!lib/main.route.dart' ':!lib/main.g.dart')"
-      - run: flutter analyze
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze --fatal-infos
       - run: flutter test
 
   android:

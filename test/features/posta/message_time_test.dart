@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:postino/features/posta/domain/quote_date_label.dart';
 import 'package:postino/features/posta/presentation/message_time.dart';
 
 void main() {

@@ -30,6 +30,8 @@ import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
+import 'package:postino/features/posta/domain/reply_draft_use_case.dart'
+    as _i510;
 
 const String _prod = 'prod';
 
@@ -119,6 +121,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    );
+    gh.factory<_i510.ReplyDraftUseCase>(
+      () => _i510.ReplyDraftUseCase(
+        gh<_i705.MailSync>(),
+        gh<_i845.InboxRepository>(),
+      ),
     );
     return this;
   }

@@ -1,0 +1,678 @@
+{
+  "labels": [
+    {
+      "name": "Fatture e pagamenti",
+      "description": "Fatture, bollette, ricevute, rinnovi e solleciti di pagamento da fornitori e servizi."
+    },
+    {
+      "name": "Viaggi",
+      "description": "Prenotazioni e conferme di voli, treni, hotel, noleggi auto, check-in e itinerari di viaggio."
+    },
+    {
+      "name": "Lavoro",
+      "description": "Progetti, riunioni, scadenze, trasferte e comunicazioni con colleghi, clienti e partner."
+    },
+    {
+      "name": "Newsletter",
+      "description": "Newsletter, digest, promozioni e contenuti editoriali a cui sono iscritto."
+    },
+    {
+      "name": "Banca",
+      "description": "Estratti conto, movimenti, bonifici, mutui, carte e comunicazioni della banca."
+    },
+    {
+      "name": "Orders & Shipping",
+      "description": "Order confirmations, shipping and tracking updates, deliveries and returns from online shops."
+    },
+    {
+      "name": "Famiglia e amici",
+      "description": "Messaggi personali da familiari e amici: inviti, foto, organizzazione di feste e incontri."
+    },
+    {
+      "name": "Security alerts",
+      "description": "Sign-in alerts, password resets, verification codes and account security notifications."
+    }
+  ],
+  "emails": [
+    {
+      "id": "fat-it-01",
+      "label": "Fatture e pagamenti",
+      "lang": "it",
+      "from": "fatturazione@luceverde-energia.example",
+      "subject": "La tua bolletta luce di ottobre è disponibile",
+      "body": "Gentile cliente,\n\nla bolletta n. 2026/104882 relativa alla fornitura di energia elettrica per il periodo 1-31 ottobre è ora disponibile nell'area riservata.\n\nImporto da pagare: 68,40 €\nScadenza: 25 novembre 2026\nModalità di pagamento: addebito diretto SEPA sul conto indicato in fase di attivazione.\n\nIl consumo del periodo è stato di 212 kWh, in linea con lo stesso mese dell'anno scorso. Nella seconda pagina trovi il dettaglio delle quote fisse, della quota energia e degli oneri di sistema.\n\nNon devi fare nulla: l'importo verrà addebitato automaticamente alla scadenza. Se vuoi cambiare metodo di pagamento o ricevere la bolletta solo in formato elettronico, puoi farlo dall'app.\n\nCordiali saluti,\nServizio Clienti Luce Verde Energia"
+    },
+    {
+      "id": "fat-it-02",
+      "label": "Fatture e pagamenti",
+      "lang": "it",
+      "from": "amministrazione@studiorossi-commercialisti.example",
+      "subject": "Fattura n. 87/2026 - consulenza fiscale terzo trimestre",
+      "body": "Buongiorno,\n\nin allegato la fattura n. 87/2026 per la consulenza fiscale e la tenuta della contabilità del terzo trimestre.\n\nImponibile 450,00 €, IVA 22% 99,00 €, totale 549,00 €. Pagamento con bonifico entro 30 giorni data fattura sull'IBAN riportato in calce al documento.\n\nGrazie e buona giornata,\nLaura - Studio Rossi"
+    },
+    {
+      "id": "fat-it-03",
+      "label": "Fatture e pagamenti",
+      "lang": "it",
+      "from": "noreply@acquedotto-comunale.example",
+      "subject": "Sollecito di pagamento - fattura servizio idrico",
+      "body": "Gentile utente,\n\ndai nostri controlli risulta non ancora pagata la fattura n. 5531/A del servizio idrico integrato, scaduta il 15 ottobre 2026, per un importo di 94,12 €.\n\nTi invitiamo a regolarizzare la posizione entro 15 giorni dal ricevimento di questa comunicazione, utilizzando l'avviso PagoPA allegato oppure presso gli sportelli convenzionati. In caso di mancato pagamento verranno applicati gli interessi di mora previsti dalla Carta del Servizio e, successivamente, potrà essere avviata la procedura di limitazione della fornitura.\n\nSe hai già effettuato il pagamento, ti preghiamo di non tenere conto di questo avviso e di inviarci la ricevuta rispondendo a questa email, così da aggiornare la tua posizione.\n\nPer rateizzare l'importo puoi contattare il numero verde dal lunedì al venerdì, dalle 8:30 alle 17:00.\n\nUfficio Gestione Crediti"
+    },
+    {
+      "id": "fat-it-04",
+      "label": "Fatture e pagamenti",
+      "lang": "it",
+      "from": "ricevute@palestra-fitlab.example",
+      "subject": "Ricevuta abbonamento trimestrale",
+      "body": "Ciao! Ti confermiamo il rinnovo del tuo abbonamento trimestrale (novembre-gennaio). Abbiamo addebitato 135,00 € sulla carta che termina con 4417. In allegato la ricevuta valida ai fini della detrazione per attività sportiva. Ci vediamo in sala!"
+    },
+    {
+      "id": "fat-it-05",
+      "label": "Fatture e pagamenti",
+      "lang": "it",
+      "from": "fatture@telefonia-mobile.example",
+      "subject": "Riepilogo annuale costi e nuova fattura di novembre",
+      "body": "Gentile cliente,\n\nti scriviamo per inviarti la fattura di novembre e, come ogni anno, il riepilogo dei costi sostenuti per la tua linea mobile e per la linea fissa di casa.\n\nTi segnaliamo anche che nel corso dell'anno abbiamo migliorato la copertura della rete fibra nella tua zona: secondo le nostre misurazioni la velocità media in download sulla tua linea è passata da 870 Mbit/s a 1,6 Gbit/s, senza alcun costo aggiuntivo. Se noti rallentamenti o disservizi puoi eseguire un test di linea direttamente dall'app e, se necessario, aprire una segnalazione tecnica che verrà gestita entro 48 ore lavorative.\n\nFATTURA DI NOVEMBRE\nNumero documento: TM-26-0911827\nPeriodo di riferimento: 1-30 novembre 2026\nOfferta Casa Fibra 2.5 Giga: 27,90 €\nOfferta Mobile Giga 150: 9,99 €\nNoleggio modem: 0,00 € (incluso)\nTotale IVA inclusa: 37,89 €\nData di addebito: 5 dicembre 2026, sulla carta di credito registrata.\n\nRIEPILOGO DELL'ANNO\nNel corso degli ultimi dodici mesi hai pagato complessivamente 449,62 €. A marzo è stato applicato l'adeguamento annuale all'inflazione previsto dalle condizioni generali di contratto, che ha portato il canone della fibra da 26,90 € a 27,90 €. A luglio hai attivato per un mese l'opzione Roaming Extra Europa, del costo di 12,00 €, utilizzata durante il tuo soggiorno all'estero. Non risultano altri servizi a pagamento né abbonamenti a contenuti di terze parti.\n\nTi ricordiamo che dalla sezione \"Fatture\" dell'app puoi scaricare tutte le fatture in PDF, verificare lo stato dei pagamenti e impostare un promemoria qualche giorno prima di ogni addebito. Se preferisci pagare con domiciliazione bancaria invece che con carta, puoi modificare il metodo di pagamento in qualsiasi momento: la modifica sarà attiva dalla fattura successiva.\n\nCOMUNICAZIONI IMPORTANTI\nDal 1° febbraio 2027 la fattura cartacea, per chi l'ha ancora richiesta, avrà un costo di spedizione di 1,50 € per documento. La fattura elettronica resta gratuita ed è inviata a questo indirizzo email ogni mese. Se oggi ricevi ancora la fattura per posta e vuoi passare al formato elettronico, basta un clic nella sezione \"Preferenze\".\n\nTi informiamo inoltre che, a seguito della delibera dell'Autorità, a partire dal prossimo anno le fatture riporteranno in prima pagina un riquadro sintetico con il consumo dati medio mensile e il confronto con l'offerta più conveniente disponibile nel nostro listino per il tuo profilo di utilizzo. L'obiettivo è aiutarti a capire se il piano che hai scelto è ancora adatto alle tue abitudini.\n\nIn caso di contestazione di un importo puoi aprire una segnalazione entro 45 giorni dalla data di emissione della fattura, dall'app o chiamando il servizio clienti. La segnalazione sospende i termini di pagamento per la sola parte contestata fino alla nostra risposta, che arriverà entro 30 giorni.\n\nGrazie per aver scelto i nostri servizi anche quest'anno.\n\nIl team Fatturazione"
+    },
+    {
+      "id": "fat-en-01",
+      "label": "Fatture e pagamenti",
+      "lang": "en",
+      "from": "billing@cloudnotes.example",
+      "subject": "Your CloudNotes Pro invoice #INV-20481",
+      "body": "Hi there,\n\nThanks for your payment. Here is your receipt for CloudNotes Pro (annual plan).\n\nInvoice: INV-20481\nAmount paid: $47.88\nBilling period: Nov 4, 2026 - Nov 3, 2027\nPayment method: Visa ending in 0932\n\nYou can download a PDF copy of this invoice from Settings > Billing. If you need to add a VAT number or a company address to future invoices, update your billing profile before the next renewal.\n\nQuestions? Just reply to this email.\n\nThe CloudNotes team"
+    },
+    {
+      "id": "fat-en-02",
+      "label": "Fatture e pagamenti",
+      "lang": "en",
+      "from": "accounts@greenfield-design.example",
+      "subject": "Invoice 2026-118 for logo redesign - due in 14 days",
+      "body": "Hello,\n\nPlease find attached invoice 2026-118 for the logo redesign project we completed last week. The total is EUR 1,200.00, payable by bank transfer within 14 days. Bank details are on the second page.\n\nLet me know if anything needs to be adjusted on your side.\n\nBest,\nMia Green\nGreenfield Design Studio"
+    },
+    {
+      "id": "fat-en-03",
+      "label": "Fatture e pagamenti",
+      "lang": "en",
+      "from": "no-reply@streamflix.example",
+      "subject": "Payment failed - please update your payment method",
+      "body": "We couldn't process your monthly payment of $15.49 for your StreamFlix Standard plan. Your bank declined the charge. To avoid any interruption, please update your payment details within 7 days. We'll retry the charge automatically in 3 days."
+    },
+    {
+      "id": "fat-en-04",
+      "label": "Fatture e pagamenti",
+      "lang": "en",
+      "from": "invoices@coworking-hub.example",
+      "subject": "Your monthly desk membership invoice and changes to our pricing",
+      "body": "Dear member,\n\nYour invoice for November is ready. You can find it attached to this email and in your member dashboard.\n\nFinally, a small note about late payments: if a direct debit fails, we'll retry it once after five days. If the second attempt also fails, a late payment fee of EUR 10 will be added to your next invoice and your access card may be temporarily suspended until the balance is settled. We'd much rather avoid that, so please let us know in advance if you expect any issue.\n\nInvoice number: CH-11-2026-0342\nPlan: Flex Desk (10 days per month)\nMonthly fee: EUR 160.00\nMeeting room credits used: 3 hours (included in your plan)\nAdditional printing: EUR 4.20\nTotal due: EUR 164.20\nDue date: November 20, 2026\n\nPayment will be collected automatically by direct debit on the due date. If you'd rather pay by card or bank transfer this month, please reply to this email at least three working days before the due date so we can pause the direct debit.\n\nUpcoming changes to our pricing\n\nWe want to be transparent about some changes that will take effect from January 1, 2027. Over the past year our energy and maintenance costs have risen considerably, and we've also invested in faster internet, new phone booths and a quieter second floor. To keep offering the same level of service, we're adjusting our prices as follows:\n\n- Flex Desk (10 days): from EUR 160 to EUR 172 per month\n- Dedicated Desk: from EUR 290 to EUR 310 per month\n- Private Office (4 people): from EUR 1,150 to EUR 1,220 per month\n- Day Pass: unchanged at EUR 22\n\nMembers who switch to annual billing before December 15 will keep their current monthly price for the whole of 2027. Annual invoices are issued in January and can be paid in a single instalment or in two halves, in January and July.\n\nWe know that price increases are never welcome news. If the new price doesn't work for you, you can downgrade or cancel your membership at any time with 30 days' notice, and there are no cancellation fees. Our community team is also happy to help you find the plan that best fits how often you actually come in: many members discover they could save money by switching from a dedicated desk to a flex plan, or vice versa.\n\nReminders about invoices and receipts\n\nAll invoices are issued in the name and VAT number stored in your billing profile. If your company details have changed, please update them before the end of the month, because we cannot reissue invoices once they've been sent to the tax authority's exchange system. Receipts for day passes and meeting room bookings made by guests are emailed to the person who booked them, not to the main account holder.\n\nThank you for being part of our community. We're looking forward to another year of working side by side.\n\nWarm regards,\nThe Coworking Hub team"
+    },
+    {
+      "id": "fat-en-05",
+      "label": "Fatture e pagamenti",
+      "lang": "en",
+      "from": "billing@hosting-provider.example",
+      "subject": "Renewal reminder: your domain and hosting renew on November 18",
+      "body": "Hi,\n\nThis is a friendly reminder that the following services will renew automatically on November 18, 2026:\n\n- Domain example-portfolio.example (1 year): $14.99\n- Starter Hosting plan (12 months): $59.88\n\nTotal: $74.87, charged to the card on file ending in 2290.\n\nIf you no longer need one of these services, you can turn off auto-renew from your account before the renewal date. After renewal, refunds are only available for hosting within 30 days.\n\nThanks,\nBilling Team"
+    },
+    {
+      "id": "via-it-01",
+      "label": "Viaggi",
+      "lang": "it",
+      "from": "conferme@treni-veloci.example",
+      "subject": "Il tuo biglietto Milano Centrale - Roma Termini",
+      "body": "Gentile viaggiatore,\n\ngrazie per aver acquistato con noi. Ecco il riepilogo del tuo viaggio:\n\nTreno 9531 - venerdì 14 novembre 2026\nPartenza: Milano Centrale ore 08:10\nArrivo: Roma Termini ore 11:20\nCarrozza 6, posto 8A - livello Smart\nCodice prenotazione: QX7P2M\n\nIl biglietto è nominativo e va mostrato al personale di bordo insieme a un documento di identità. Puoi effettuare il self check-in dall'app fino a 5 minuti dalla partenza. Cambi gratuiti fino a 3 giorni prima della partenza.\n\nBuon viaggio!"
+    },
+    {
+      "id": "via-it-02",
+      "label": "Viaggi",
+      "lang": "it",
+      "from": "booking@hotel-lagodigarda.example",
+      "subject": "Conferma prenotazione - Hotel Belvedere, 2 notti",
+      "body": "Buongiorno,\n\nle confermiamo la prenotazione di una camera doppia vista lago dal 21 al 23 novembre 2026, colazione inclusa, per un totale di 236,00 €. Il check-in è dalle 14:00, il check-out entro le 11:00. Il parcheggio interno è gratuito su richiesta.\n\nLa cancellazione è gratuita fino a 48 ore prima dell'arrivo.\n\nA presto,\nReception Hotel Belvedere"
+    },
+    {
+      "id": "via-it-03",
+      "label": "Viaggi",
+      "lang": "it",
+      "from": "checkin@volaitalia.example",
+      "subject": "Check-in aperto per il tuo volo per Palermo",
+      "body": "Il check-in online per il volo VI 1742 Bologna - Palermo di domani alle 07:05 è aperto. Fai il check-in dall'app e scarica la carta d'imbarco. Bagaglio a mano incluso: 1 pezzo da 8 kg. L'imbarco chiude 20 minuti prima della partenza."
+    },
+    {
+      "id": "via-it-04",
+      "label": "Viaggi",
+      "lang": "it",
+      "from": "giulia.ferri@example.org",
+      "subject": "Itinerario Portogallo - bozza definitiva",
+      "body": "Ciao!\n\nho finalmente messo insieme l'itinerario per il viaggio in Portogallo di aprile, dimmi cosa ne pensi prima che blocchiamo gli ultimi alloggi.\n\nAh, un'ultima cosa: ho controllato i documenti e basta la carta d'identità valida per l'espatrio, ma Marta deve rinnovarla perché le scade a marzo. Per l'auto serve la carta di credito del conducente principale, quindi direi che guidiamo soprattutto io e te. Ho anche scaricato le mappe offline, perché in alcune zone dell'Alentejo il telefono non prende quasi per niente e non voglio perdermi di notte tra gli ulivi.\n\nGiorno 1 (sabato 10 aprile): volo da Milano Malpensa alle 9:40, arrivo a Lisbona alle 11:30 ora locale. Ritiriamo l'auto a noleggio in aeroporto ma la lasciamo in garage per i primi tre giorni, perché a Lisbona si gira meglio a piedi e con i tram. L'appartamento è nell'Alfama, vicino al Miradouro de Santa Luzia, check-in dalle 15.\n\nGiorno 2: mattina a Belém (torre, monastero dos Jerónimos e ovviamente pastéis), pomeriggio LX Factory e tramonto al Miradouro da Senhora do Monte.\n\nGiorno 3: gita a Sintra in treno dal Rossio. Ho prenotato gli ingressi per il Palácio da Pena alle 10:00, che è l'unico orario in cui non si fa la coda infinita. Se avanza tempo andiamo alla Quinta da Regaleira.\n\nGiorno 4: prendiamo l'auto e scendiamo verso sud. Sosta a Comporta per il pranzo, poi proseguiamo fino a Lagos in Algarve. Sono circa tre ore e mezza di guida senza fermate.\n\nGiorno 5 e 6: Algarve. Ho trovato una casetta a Lagos con piscina, 95 euro a notte. Il giro in barca alle grotte di Benagil parte da Portimão; c'è anche il sentiero dei sette valli sospesi, che è bellissimo ma richiede scarpe comode e almeno quattro ore.\n\nGiorno 7: risaliamo verso nord con una tappa a Évora, che merita almeno mezza giornata, e dormiamo lì.\n\nGiorno 8 e 9: Porto. Lasciamo l'auto a Porto (il noleggio permette la riconsegna in un'altra città con un supplemento di 60 euro, che secondo me conviene), giro delle cantine a Vila Nova de Gaia, libreria Lello (bisogna prenotare online), e una giornata nella valle del Douro con un tour organizzato, così nessuno deve guidare dopo le degustazioni.\n\nGiorno 10: volo di rientro da Porto alle 18:20, arrivo a Malpensa alle 22:00.\n\nCosti stimati a persona: voli 180 euro, alloggi circa 420, auto e benzina 150, ingressi e tour 120, più cibo. Direi che stiamo intorno ai 1.100-1.200 euro a testa, che mi sembra onesto per dieci giorni.\n\nCose da decidere: (1) se vogliamo una notte in più a Lisbona e togliere Évora; (2) se prendere l'assicurazione completa sull'auto, che costa 12 euro al giorno ma azzera la franchigia; (3) chi si occupa di prenotare il tour del Douro.\n\nFammi sapere entro venerdì, perché il prezzo dei voli sta salendo.\n\nUn abbraccio,\nGiulia"
+    },
+    {
+      "id": "via-it-05",
+      "label": "Viaggi",
+      "lang": "it",
+      "from": "noreply@autonoleggio-sud.example",
+      "subject": "Promemoria ritiro auto - aeroporto di Catania",
+      "body": "Gentile cliente,\n\nti ricordiamo che giovedì 20 novembre alle ore 13:30 è previsto il ritiro della tua auto a noleggio (categoria C, Fiat Tipo o similare) presso il nostro banco nell'area arrivi dell'aeroporto di Catania.\n\nPorta con te patente valida, documento d'identità e una carta di credito intestata al conducente principale per il deposito cauzionale di 500 €. Le carte di debito non sono accettate per il deposito.\n\nLa riconsegna è prevista lunedì 24 novembre entro le 18:00 con il pieno di carburante.\n\nBuon viaggio in Sicilia!"
+    },
+    {
+      "id": "via-en-01",
+      "label": "Viaggi",
+      "lang": "en",
+      "from": "reservations@skylink-air.example",
+      "subject": "Booking confirmed: London (LHR) to New York (JFK)",
+      "body": "Your booking is confirmed.\n\nBooking reference: K4T9WZ\nPassenger: 1 adult\n\nOutbound: SK 117, Thu 4 Dec 2026, London Heathrow T5 10:25 - New York JFK T7 13:40\nReturn: SK 118, Wed 10 Dec 2026, New York JFK T7 19:05 - London Heathrow T5 07:15 (+1)\n\nFare: Economy Standard, 1 checked bag (23 kg) included.\nTotal paid: GBP 512.30\n\nOnline check-in opens 24 hours before departure. Don't forget that you need an approved ESTA to travel to the United States.\n\nHave a great trip!"
+    },
+    {
+      "id": "via-en-02",
+      "label": "Viaggi",
+      "lang": "en",
+      "from": "hello@cityhostels.example",
+      "subject": "See you soon in Berlin!",
+      "body": "Hey traveller! Your bed in a 4-bed mixed dorm at City Hostel Berlin Mitte is booked for 3 nights from Nov 27. Check-in from 3pm, lockers are free (bring your own padlock). Our walking tour leaves the lobby every day at 11am."
+    },
+    {
+      "id": "via-en-03",
+      "label": "Viaggi",
+      "lang": "en",
+      "from": "trips@travelplanner.example",
+      "subject": "Your trip to Kyoto: complete itinerary and travel tips",
+      "body": "Hello,\n\nYour trip to Kyoto is coming up in three weeks. We've put together everything you booked in one place, along with some tips to help you make the most of your stay.\n\nFinally, remember to check your baggage allowance: on the Doha connection the checked bag limit is 30 kg, but domestic trains in Japan have limited space for large suitcases. Consider using a luggage forwarding service between hotels.\n\nFLIGHTS\nOutbound: Rome Fiumicino (FCO) to Osaka Kansai (KIX) via Doha, departing 18 Nov at 21:15, arriving 19 Nov at 22:30 local time.\nReturn: Osaka Kansai to Rome Fiumicino via Doha, departing 29 Nov at 23:55, arriving 30 Nov at 13:05.\n\nGETTING TO KYOTO\nFrom Kansai airport, the Haruka limited express takes about 75 minutes to Kyoto Station. Trains run until around 22:30, so if your flight is delayed you may need the late-night bus or a taxi. We recommend buying an ICOCA card at the airport: it works on trains, buses and in most convenience stores.\n\nACCOMMODATION\nNights 1-6: Machiya townhouse in Higashiyama, a short walk from Yasaka Shrine. Self check-in with a key box; the code will be sent 48 hours before arrival. Please note the house has steep traditional stairs and you're asked to remove shoes indoors.\nNights 7-10: Business hotel near Kyoto Station, convenient for day trips to Nara, Osaka and Himeji.\n\nACTIVITIES YOU BOOKED\n- 20 Nov: Fushimi Inari early morning guided walk, meeting at 6:30 at the main gate.\n- 22 Nov: Tea ceremony in a private house in the Gion district, 14:00.\n- 24 Nov: Day trip to Nara with entrance to Todai-ji temple.\n- 26 Nov: Cooking class (vegetarian menu requested).\n\nTIPS FOR LATE NOVEMBER\nThis is peak autumn foliage season, which means beautiful maple leaves but also big crowds at famous spots such as Kiyomizu-dera, Eikando and Tofuku-ji. Go early in the morning or late in the afternoon, and consider less famous temples in the northern hills, like those around Ohara, which are just as beautiful and much quieter. Temperatures range from about 6 to 15 degrees Celsius, so pack layers.\n\nCash is still widely used in small restaurants and temples. International ATMs are available in 7-Eleven stores and post offices. Tipping is not customary and can sometimes cause confusion.\n\nBuses in central Kyoto can get very crowded; for longer distances the subway and the JR lines are usually faster. Many sights close around 16:30 or 17:00, earlier than you might expect, so plan your afternoons accordingly.\n\nTRAVEL DOCUMENTS\nItalian citizens do not need a visa for tourist stays of up to 90 days. Make sure your passport is valid for the entire duration of your stay. We also recommend completing the arrival forms online before departure to speed up immigration and customs at the airport.\n\nYou can view and edit your full itinerary at any time in the app, and share it with travel companions.\n\nHave a wonderful trip!\nThe TravelPlanner team"
+    },
+    {
+      "id": "via-en-04",
+      "label": "Viaggi",
+      "lang": "en",
+      "from": "no-reply@railpass-europe.example",
+      "subject": "Your Interrail pass is ready to activate",
+      "body": "Hi Alex,\n\nYour Interrail Global Pass (7 travel days within 1 month, 2nd class) has been added to the Rail Planner app. Remember to activate it before your first journey and to add each trip to your pass before boarding.\n\nSome high-speed and night trains require a seat reservation that is not included in the pass, for example on routes in France, Italy and Spain. You can book reservations directly in the app.\n\nHappy travels!"
+    },
+    {
+      "id": "via-en-05",
+      "label": "Viaggi",
+      "lang": "en",
+      "from": "support@ferryline.example",
+      "subject": "Schedule change: your ferry to Mykonos",
+      "body": "Due to updated port schedules, your ferry from Piraeus to Mykonos on 12 Jun will now depart at 07:30 instead of 07:00. Arrival time is now 12:10. Your tickets remain valid; no action is required. Please be at the port at least 45 minutes before departure."
+    },
+    {
+      "id": "lav-it-01",
+      "label": "Lavoro",
+      "lang": "it",
+      "from": "marco.bianchi@azienda-software.example",
+      "subject": "Re: Rilascio versione 3.2 - slittamento di una settimana",
+      "body": "Ciao a tutti,\n\ndopo la call di stamattina con il cliente abbiamo deciso di spostare il rilascio della 3.2 da giovedì 13 a giovedì 20 novembre. I motivi sono due: il modulo di esportazione PDF ha ancora due bug bloccanti aperti, e il cliente vuole fare un ultimo giro di test di accettazione con i loro utenti chiave.\n\nNuova pianificazione:\n- entro lunedì 17: chiusura dei bug bloccanti (Sara e Davide);\n- martedì 18: build candidata in staging;\n- mercoledì 19: test di accettazione del cliente;\n- giovedì 20: rilascio in produzione alle 18:00.\n\nVi chiedo di aggiornare le stime nei vostri ticket entro domani. Se qualcuno vede rischi sulla nuova data, scrivetemelo subito.\n\nGrazie,\nMarco"
+    },
+    {
+      "id": "lav-it-02",
+      "label": "Lavoro",
+      "lang": "it",
+      "from": "elena.conti@azienda-software.example",
+      "subject": "Trasferta a Torino per il workshop con il cliente",
+      "body": "Ciao,\n\nti confermo la trasferta a Torino per il workshop di analisi con il cliente, martedì 25 e mercoledì 26 novembre. L'ufficio viaggi ha già prenotato il treno delle 7:05 da Milano e una notte all'hotel vicino alla sede del cliente; i biglietti ti arrivano direttamente da loro.\n\nPer il workshop servono: la demo aggiornata del flusso ordini, le slide sull'architettura e la lista delle domande aperte che abbiamo raccolto la settimana scorsa. Prepariamo insieme l'agenda venerdì mattina?\n\nRicordati di conservare tutte le ricevute per la nota spese, il rimborso pasti è fino a 30 euro al giorno.\n\nElena"
+    },
+    {
+      "id": "lav-it-03",
+      "label": "Lavoro",
+      "lang": "it",
+      "from": "calendar@azienda-software.example",
+      "subject": "Invito: Retrospettiva sprint 42 - giovedì 15:00",
+      "body": "Sei stato invitato alla riunione \"Retrospettiva sprint 42\", giovedì 13 novembre dalle 15:00 alle 16:00, sala Volta e su videochiamata. Organizzatore: Sara Galli. Partecipa / Forse / Rifiuta."
+    },
+    {
+      "id": "lav-it-04",
+      "label": "Lavoro",
+      "lang": "it",
+      "from": "davide.moretti@azienda-software.example",
+      "subject": "Re: Re: Proposta di migrazione del database",
+      "body": "Ciao Marco,\n\nrispondo qui per tenere tutto nel thread. Ho fatto le prove che ci eravamo detti sul database di staging e ti riassumo i risultati, poi metto sotto i messaggi precedenti per chi si unisce adesso alla discussione.\n\nPer la reperibilità propongo di dividerci così: io seguo la migrazione dalle 7 alle 11, Sara resta disponibile al telefono fino alle 14 e lunedì mattina facciamo insieme il controllo dei report notturni. Ho già preparato una bozza del messaggio per il cliente, con la finestra di manutenzione e il contatto del supporto: te la mando in privato così la rivedi prima che la inoltriamo all'account manager.\n\nLa migrazione dello schema con lo strumento nuovo ha richiesto 14 minuti sulla copia completa dei dati di produzione di settembre. Il downtime vero e proprio, cioè il tempo in cui l'applicazione deve stare in manutenzione, è di circa 4 minuti se facciamo la copia delle tabelle grandi prima in modalità online. Gli indici sulla tabella ordini sono la parte più lenta. Non ho visto errori, ma due query del report mensile sono diventate più lente del 30% perché cambia il piano di esecuzione; credo si risolva con un indice composto, lo provo domani.\n\nProposta: facciamo la migrazione di sabato 29 alle 7:00, con il rollback già pronto e testato. Mi serve una persona di supporto in reperibilità.\n\nDavide\n\n> Il giorno 6 nov 2026, Marco Bianchi ha scritto:\n>\n> Grazie Davide, la proposta mi convince. Prima di decidere vorrei però due numeri concreti: quanto dura la migrazione sui dati reali e quanto downtime dobbiamo comunicare al cliente. Riesci a fare una prova su staging con il dump di settembre entro la settimana prossima? Se i tempi sono accettabili la mettiamo nel piano del prossimo sprint. Ricordiamoci anche di avvisare il supporto, perché durante la manutenzione arriveranno sicuramente segnalazioni.\n>\n> Marco\n>\n>> Il giorno 5 nov 2026, Davide Moretti ha scritto:\n>>\n>> Ciao Marco, ciao a tutti,\n>>\n>> come anticipato alla daily, propongo di migrare il database principale dalla versione 12 alla 16 entro fine mese. Le ragioni principali sono tre. Primo, la versione 12 esce dal supporto ufficiale tra pochi mesi e non riceverà più aggiornamenti di sicurezza. Secondo, la 16 migliora molto le prestazioni sulle query con molte join, che sono proprio quelle dei report che il cliente lamenta come lenti. Terzo, ci permette di usare la replica logica, che ci servirà il prossimo anno per separare il database di analisi da quello transazionale.\n>>\n>> I rischi che vedo sono: tempi di fermo durante la migrazione, possibili regressioni in qualche query e la compatibilità della libreria di accesso ai dati, che però ho già verificato in locale. Il piano sarebbe: prova completa in staging, stima del downtime, comunicazione al cliente con una settimana di anticipo, migrazione in una finestra di sabato mattina e monitoraggio rafforzato per i tre giorni successivi.\n>>\n>> Fatemi sapere se siete d'accordo, così preparo il ticket con tutti i passaggi e la checklist di rollback.\n>>\n>> Davide"
+    },
+    {
+      "id": "lav-it-05",
+      "label": "Lavoro",
+      "lang": "it",
+      "from": "hr@azienda-software.example",
+      "subject": "Promemoria: valutazioni di fine anno entro il 30 novembre",
+      "body": "Ciao,\n\nti ricordiamo che l'autovalutazione di fine anno va compilata sul portale HR entro il 30 novembre. Dopo la scadenza il tuo responsabile fisserà il colloquio individuale, da tenersi entro il 19 dicembre. Ci vogliono circa 30 minuti: ti consigliamo di avere sotto mano gli obiettivi concordati a inizio anno.\n\nGrazie,\nUfficio Risorse Umane"
+    },
+    {
+      "id": "lav-en-01",
+      "label": "Lavoro",
+      "lang": "en",
+      "from": "james.porter@clientcorp.example",
+      "subject": "Feedback on the Q4 roadmap proposal",
+      "body": "Hi,\n\nThanks for sending over the Q4 roadmap. We reviewed it with our product team yesterday and overall we're happy with the direction.\n\nA few points:\n1. We'd like the reporting dashboard to move up to October, ahead of the mobile redesign. Our sales team relies on it for the year-end review.\n2. The SSO integration is a must-have before January, as our IT department is enforcing it company-wide.\n3. Can you give us a rough estimate for the data export API? We'd consider it for Q1.\n\nCould we schedule a call next week to go through these? Tuesday or Wednesday afternoon works for us.\n\nBest regards,\nJames Porter\nHead of Operations, ClientCorp"
+    },
+    {
+      "id": "lav-en-02",
+      "label": "Lavoro",
+      "lang": "en",
+      "from": "noreply@issuetracker.example",
+      "subject": "[backend] Build failed on main (#4821)",
+      "body": "The pipeline for commit 9f3a2c1 on branch main failed at stage \"test\". 3 tests failed in payments/refund_test. Triggered by: Sara Galli. View the full log in the pipeline details."
+    },
+    {
+      "id": "lav-en-03",
+      "label": "Lavoro",
+      "lang": "en",
+      "from": "priya.shah@partner-agency.example",
+      "subject": "Re: Conference trip to Lisbon - travel and booth logistics",
+      "body": "Hi team,\n\nQuick recap after today's call so we're all aligned on the Lisbon conference next month. I've kept the earlier messages below for reference.\n\nBudget: each person has a daily allowance of EUR 60 for meals, and taxis between the hotel and the venue are covered. Please keep all receipts and submit your expense report within two weeks of returning, using the new expense tool. The team dinner on Wednesday evening is already booked and paid for by the company, so don't expense that one.\n\nTravel: Everyone flies out on Monday the 8th and returns on Friday the 12th. Our travel desk will book flights and the hotel next to the venue, so please don't book anything yourselves; expenses outside the policy won't be reimbursed. If you need to extend your stay for personal reasons, let me know by Friday and pay the extra nights yourself.\n\nBooth: We have a 3x3 booth in Hall 2. Tom is in charge of the banners and the demo screens, which need to be shipped by the 28th at the latest. We need two people at the booth at all times, so I'll share a rota tomorrow. Please block the slots in your calendar once you get it.\n\nTalks: Ana's talk on our data platform is confirmed for Wednesday at 11:30. We'll do a dry run next Thursday with the whole team. Please send her your comments on the slides by Tuesday.\n\nLeads: We'll scan badges with the event app. At the end of each day, export the leads and upload them to the shared CRM list. Sales will follow up within a week.\n\nPriya\n\n> On Nov 3, Tom Walsh wrote:\n> Do we already know who's covering the booth on Thursday afternoon? I'm in the partner meeting until 4pm, so I can only start after that. Also, should we print new brochures or reuse the ones from the Berlin event? The pricing page has changed since then, so I'd vote for a reprint, but it needs to be ordered this week to arrive in time.\n>\n>> On Nov 2, Priya Shah wrote:\n>> Hi all, the conference in Lisbon has been confirmed and we've secured both the booth and a speaking slot. This is a big opportunity for us to meet new clients in the Iberian market and to show the new analytics features before the official launch in January. I'll organise a call this week to split up the work: travel, booth setup, talk preparation and lead collection. In the meantime, please check your availability for the week of the 8th and let me know if you have any conflicts, including holidays or other client commitments. Thanks!"
+    },
+    {
+      "id": "lav-en-04",
+      "label": "Lavoro",
+      "lang": "en",
+      "from": "lisa.wong@azienda-software.example",
+      "subject": "Can you review my pull request today?",
+      "body": "Hey, I opened PR #312 with the fix for the timezone bug in the scheduling module. It's small (about 80 lines) but touches the date utilities, so I'd like a second pair of eyes before the release freeze tonight. Thanks!"
+    },
+    {
+      "id": "lav-en-05",
+      "label": "Lavoro",
+      "lang": "en",
+      "from": "recruiting@talentbridge.example",
+      "subject": "Interview schedule for the Senior Flutter Developer role",
+      "body": "Hello,\n\nThank you for agreeing to be on the interview panel for the Senior Flutter Developer position. Here is the schedule for next week:\n\n- Monday 17, 10:00-11:00: candidate A, technical interview (you and Marco)\n- Wednesday 19, 14:00-15:00: candidate B, technical interview (you and Lisa)\n- Friday 21, 09:30-10:30: debrief with the hiring manager\n\nThe CVs and the coding exercise results are in the shared folder. Please fill in the scorecard within 24 hours of each interview so we can move quickly with feedback.\n\nKind regards,\nRecruiting team"
+    },
+    {
+      "id": "new-it-01",
+      "label": "Newsletter",
+      "lang": "it",
+      "from": "newsletter@ilpostodeilibri.example",
+      "subject": "Le letture della settimana: romanzi d'autunno e un saggio sul lavoro",
+      "body": "Ciao lettrice, ciao lettore,\n\nanche questa settimana ti portiamo una manciata di consigli per riempire le serate che si accorciano. Come sempre, nessun algoritmo: solo libri che abbiamo letto e che ci sono rimasti addosso.\n\nLA CLASSIFICA DEL MESE\nIn cima alle vendite della libreria, questo mese, c'è un memoir di una scalatrice che racconta la sua prima spedizione himalayana, seguito dal nuovo giallo di un autore torinese e da un manuale di giardinaggio sul balcone che, a quanto pare, è diventato il regalo di compleanno più gettonato del quartiere.\n\nIL ROMANZO DELLA SETTIMANA\nUna famiglia, una casa sul Delta del Po e quarant'anni di storia raccontati attraverso le alluvioni che hanno segnato la zona. L'autrice alterna le voci di tre generazioni di donne con una lingua asciutta, quasi documentaria, che però nei capitoli finali si apre in un lirismo inaspettato. È uno di quei libri che si leggono lentamente, una ventina di pagine per sera, e che lasciano la voglia di andare a vedere quei luoghi di persona.\n\nIL SAGGIO\nPerché lavoriamo così tanto, se la tecnologia avrebbe dovuto liberarci tempo? Un economista e una sociologa provano a rispondere mettendo insieme dati storici, interviste e un po' di sana polemica. Non tutte le tesi convincono, in particolare il capitolo sullo smart working ci è sembrato frettoloso, ma il libro ha il merito di porre domande che di solito evitiamo. Perfetto da discutere con gli amici.\n\nDAL CATALOGO\nRiscopriamo un classico del Novecento che quest'anno compie settant'anni: la storia di un maestro elementare in un paese di montagna, scritta da chi quel mestiere l'aveva fatto davvero. È ancora attualissimo nel modo in cui racconta la scuola come luogo di riscatto e di conflitto. La nuova edizione ha una bella postfazione che ricostruisce l'accoglienza del libro all'epoca.\n\nPER I PIÙ PICCOLI\nUn albo illustrato senza parole, in cui un gatto attraversa una città che cambia con le stagioni. Ogni doppia pagina nasconde dettagli da scoprire alla decima lettura. Consigliato dai 3 anni, ma noi adulti ce lo siamo passati in redazione per una settimana.\n\nAPPUNTAMENTI\nGiovedì 20 novembre alle 18:30 presentiamo in libreria il romanzo della settimana, alla presenza dell'autrice. L'ingresso è libero, ma i posti sono limitati: prenota rispondendo a questa email. Sabato 22 torna il gruppo di lettura del mattino, con caffè e cornetti offerti; il libro del mese è il saggio di cui sopra, quindi hai giusto il tempo di leggerlo.\n\nIL CONSIGLIO DEI LETTORI\nOgni mese pubblichiamo la recensione di un lettore. Questo mese Paola ci ha scritto di un giallo ambientato in un'isola delle Eolie, «da leggere sotto la coperta con un tè bollente, ma con la finestra aperta per sentire il mare». Se vuoi partecipare, mandaci al massimo 150 parole su un libro che hai amato.\n\nBuone letture e a giovedì prossimo,\nla redazione\n\nRicevi questa email perché ti sei iscritto alla newsletter. Puoi disiscriverti in qualsiasi momento con un clic dal link in fondo alla pagina."
+    },
+    {
+      "id": "new-it-02",
+      "label": "Newsletter",
+      "lang": "it",
+      "from": "digest@tecnologia-oggi.example",
+      "subject": "Il punto tech del lunedì: chip, regole europee e app da provare",
+      "body": "Buongiorno e buon lunedì,\n\necco le notizie tecnologiche della settimana in cinque minuti di lettura.\n\n1. Nuovi chip per portatili: i primi test indipendenti confermano un'autonomia superiore alle 20 ore in uso misto. Il prezzo dei modelli base però sale di circa 100 euro.\n\n2. Regole europee sull'intelligenza artificiale: da febbraio entrano in vigore nuovi obblighi di trasparenza per i sistemi che generano testi e immagini. Abbiamo chiesto a due avvocati cosa cambia per le piccole imprese.\n\n3. Privacy: un'indagine rivela che molte app per il fitness condividono dati di localizzazione con inserzionisti. Ecco come controllare i permessi sul tuo telefono.\n\n4. L'app della settimana: un client di posta open source che classifica automaticamente le email in locale, senza inviare nulla al cloud.\n\nAlla prossima settimana!"
+    },
+    {
+      "id": "new-it-03",
+      "label": "Newsletter",
+      "lang": "it",
+      "from": "news@cucina-di-casa.example",
+      "subject": "3 ricette con la zucca per questo weekend",
+      "body": "Risotto zucca e salvia, vellutata con zenzero e una torta morbida senza burro: le nostre tre ricette d'autunno, pronte in meno di un'ora. In fondo trovi anche il consiglio del sommelier per l'abbinamento."
+    },
+    {
+      "id": "new-it-04",
+      "label": "Newsletter",
+      "lang": "it",
+      "from": "redazione@lettera-economica.example",
+      "subject": "La Lettera economica - n. 212: tassi, mutui e il prezzo del caffè",
+      "body": "Cari lettori,\n\nil numero di questa settimana è un po' più lungo del solito, perché le notizie non sono mancate.\n\nMERCATI\nLa borsa di Milano ha chiuso la settimana in lieve rialzo, trainata dai titoli bancari e dall'energia. Lo spread tra i titoli di Stato italiani e quelli tedeschi è sceso sotto i 110 punti base, un livello che non si vedeva da tempo. Gli analisti restano però cauti sulle prospettive dell'industria manifatturiera, con gli ordini dall'estero ancora in calo.\n\nTASSI E MUTUI\nLa banca centrale ha lasciato i tassi invariati, come previsto dalla maggior parte degli analisti, ma nel comunicato ha usato un linguaggio più prudente rispetto a settembre. Tradotto: un taglio a dicembre non è più scontato. Per chi ha un mutuo a tasso variabile significa che la rata difficilmente scenderà nei prossimi mesi; per chi deve sceglierne uno nuovo, la differenza tra fisso e variabile si è ridotta a circa mezzo punto percentuale, il minimo degli ultimi due anni. Nella sezione approfondimenti trovate una tabella con le simulazioni per tre importi tipici.\n\nIL PREZZO DEL CAFFÈ\nUna tazzina al bar costa in media il 18% in più rispetto a due anni fa. Le cause sono note: raccolti scarsi in Brasile e Vietnam per la siccità, costi di trasporto più alti e un euro debole rispetto al dollaro. Abbiamo intervistato il titolare di una torrefazione di Napoli, che spiega perché molti bar stanno riducendo la grammatura anziché alzare il prezzo, e perché secondo lui il caffè a un euro è destinato a sparire.\n\nLAVORO\nI dati trimestrali mostrano un'occupazione stabile ma una crescita dei contratti a termine, soprattutto nel turismo e nella logistica. Gli stipendi reali sono tornati a crescere per il secondo trimestre consecutivo, ma restano ancora sotto il livello di inizio decennio. Un nostro collaboratore ha messo a confronto i salari di ingresso in cinque professioni in Italia, Spagna e Germania, con risultati che fanno riflettere.\n\nENERGIA\nIl prezzo all'ingrosso del gas è sceso ai livelli più bassi dall'estate, grazie a stoccaggi quasi pieni e a un inizio d'autunno mite. Non aspettatevi però bollette molto più leggere a breve: gran parte delle offerte sul mercato libero è a prezzo fisso e si adegua solo al rinnovo.\n\nLA DOMANDA DEI LETTORI\nMarco da Bologna ci chiede se convenga anticipare l'estinzione del mutuo con la liquidità che ha sul conto. La risposta breve è: dipende dal tasso del mutuo, da quanto rende la liquidità e da quanta riserva di emergenza volete tenere. La risposta lunga, con un esempio numerico, è nella rubrica di questa settimana.\n\nDA LEGGERE\nTre articoli che ci sono piaciuti, da fonti diverse: un'inchiesta sul costo nascosto delle consegne gratuite, un'analisi sulle pensioni dei lavoratori autonomi e un ritratto dei piccoli produttori di olio che resistono alla crisi.\n\nGrazie per leggerci, e ricordate che potete inoltrare questa lettera a chi pensate possa interessare.\n\nLa redazione"
+    },
+    {
+      "id": "new-it-05",
+      "label": "Newsletter",
+      "lang": "it",
+      "from": "info@museo-civico.example",
+      "subject": "Novembre al museo: mostre, visite guidate e laboratori",
+      "body": "Gentile amica, gentile amico del museo,\n\na novembre inauguriamo la mostra dedicata alla fotografia di paesaggio degli anni Cinquanta, con oltre 120 stampe originali. Ogni domenica alle 11 c'è una visita guidata compresa nel biglietto, mentre il sabato pomeriggio proponiamo laboratori per bambini dai 6 ai 10 anni.\n\nLa prima domenica del mese l'ingresso è gratuito. Ti aspettiamo!"
+    },
+    {
+      "id": "new-en-01",
+      "label": "Newsletter",
+      "lang": "en",
+      "from": "hello@weekly-dev-digest.example",
+      "subject": "Weekly Dev Digest #389: state management, Rust in the kernel, and more",
+      "body": "Welcome to issue #389 of Weekly Dev Digest. Here's what caught our eye this week.\n\nFEATURED\nA long, thoughtful post on why most apps don't need a global state management library. The author walks through three real refactors where moving state closer to where it's used removed hundreds of lines of boilerplate and a whole class of bugs. The comparison tables at the end are worth bookmarking, even if you don't agree with every conclusion.\n\nCOMMUNITY\nThanks to everyone who sent us links this week. Reader submissions made up almost a third of this issue, which is a record. Keep them coming.\n\nLANGUAGES\n- The latest stable release of a popular systems language adds async closures and improves compile times on large workspaces by up to 15%.\n- A deep dive into how pattern matching and sealed classes work together in modern mobile languages, with examples of exhaustive switch statements catching bugs at compile time.\n- An honest retrospective from a team that migrated a 200,000-line codebase from one typed language to another over 18 months: what went well, what they'd do differently, and what it cost.\n\nINFRASTRUCTURE\n- More drivers written in Rust have been merged into the Linux kernel. The article explains which subsystems are next and why some maintainers remain sceptical.\n- A practical guide to running small language models on CPUs, with benchmarks across laptops and single-board computers. Spoiler: quantisation matters more than the model size you'd expect.\n- How a mid-sized company cut its cloud bill by 40% by moving batch jobs to spot instances and adding proper retries.\n\nTOOLS\n- A new open-source terminal multiplexer written from scratch, with a plugin system and sane defaults.\n- A database migration tool that generates rollback scripts automatically and refuses to run destructive changes without an explicit flag.\n- A browser extension that shows which accessibility checks your page fails, inline, as you navigate.\n\nTALKS\nOur pick this week is a 40-minute conference talk on designing offline-first apps. The speaker covers conflict resolution, sync protocols and why \"last write wins\" is almost never what users actually want. The Q&A at the end has some excellent questions about encryption and multi-device sync.\n\nJOBS\nA dozen remote-friendly roles, from junior frontend positions to staff platform engineers, are listed on our jobs page. Companies pay to be listed; we never accept sponsored content in the editorial sections.\n\nONE MORE THING\nWe're running our yearly reader survey. It takes three minutes and helps us decide what to cover next year. As a thank you, we'll share the aggregated results in a future issue, including the most loved and most hated tools of the year.\n\nThanks for reading, and see you next week!\nThe Weekly Dev Digest team\n\nYou're receiving this because you subscribed at our website. Unsubscribe or change your preferences at any time."
+    },
+    {
+      "id": "new-en-02",
+      "label": "Newsletter",
+      "lang": "en",
+      "from": "newsletter@outdoor-gear.example",
+      "subject": "Winter is coming: new arrivals and 20% off for members",
+      "body": "New insulated jackets, merino base layers and our best-selling waterproof boots are back in stock. Members get 20% off everything until Sunday. Plus: our guide to choosing the right sleeping bag for winter camping."
+    },
+    {
+      "id": "new-en-03",
+      "label": "Newsletter",
+      "lang": "en",
+      "from": "editor@the-morning-brief.example",
+      "subject": "The Morning Brief: markets, climate talks and a very lucky dog",
+      "body": "Good morning. Here's what you need to know today.\n\nMarkets: Stocks closed slightly higher yesterday after better-than-expected retail sales figures. Oil prices fell for the third day in a row.\n\nClimate: Negotiators at the international climate summit reached a preliminary agreement on a fund for countries most affected by extreme weather. Details on financing are still being discussed.\n\nScience: Astronomers have confirmed the discovery of a rocky exoplanet in the habitable zone of a nearby star, about 40 light years away.\n\nAnd finally: a dog lost during a hiking trip in Scotland was found safe and well after eleven days, having apparently befriended a herd of sheep.\n\nHave a great day."
+    },
+    {
+      "id": "new-en-04",
+      "label": "Newsletter",
+      "lang": "en",
+      "from": "news@skylink-air.example",
+      "subject": "Fly to the sun this winter: fares from GBP 49",
+      "body": "Escape the cold! This week only, fares to the Canary Islands, Cyprus and Morocco start from GBP 49 one way. Book by Sunday for travel between January and March. Members also earn double miles on all bookings made this week. Terms apply."
+    },
+    {
+      "id": "new-en-05",
+      "label": "Newsletter",
+      "lang": "en",
+      "from": "letters@slow-living.example",
+      "subject": "Sunday letter: on doing less, and doing it well",
+      "body": "Dear reader,\n\nThis week I want to write about something that has been on my mind since the summer: the strange guilt of doing less.\n\nP.S. Several of you asked about the bread recipe I mentioned last month. I'll include it in next week's letter.\n\nIn July I took three weeks off. Not a \"working holiday\", not a \"digital detox with occasional emails\", but three real weeks without my laptop. The first few days were uncomfortable. I kept reaching for my phone and feeling a jolt of anxiety, as if something important was happening without me. By the second week, that feeling faded. By the third, I started noticing things again: the way the light changes in the late afternoon, the sound of the neighbours' children playing, the taste of food I hadn't cooked in a hurry.\n\nWhen I came back, I made a few small changes. I'd like to share them, not as advice, but as an invitation to try your own experiments.\n\nFirst, I stopped checking email before 10am. The mornings are when I think most clearly, and I used to spend them reacting to other people's priorities. Now I write, walk or read first. Nothing has fallen apart.\n\nSecond, I cut my to-do list in half. Every Monday I write down only three things that would make the week feel worthwhile. Everything else is optional. Some weeks I do more; often I don't. Either way, I finish the week feeling that I did what mattered.\n\nThird, I started saying no more often, and more kindly. I used to say yes to things I didn't want to do and then resent them. Now I try to answer honestly and quickly. People are usually more understanding than I expected.\n\nFourth, I made more room for slow, unproductive pleasures: baking bread, repairing an old chair, writing letters by hand to friends I hadn't heard from in years. None of these things are efficient. All of them make me happier.\n\nI'm not writing this from a place of having figured it out. Last week, I fell back into old habits: late nights, too many meetings, lunch at my desk. But I noticed it sooner, and I found my way back more easily. Maybe that's the real change.\n\nThis week's reading: a short book of essays on attention by a philosopher who spent a year without the internet, and a beautiful piece on the history of the Sunday walk.\n\nThis week's question: what's one thing you could do less of, so that you could do something else better? Reply and tell me; I read every message, even if I can't answer them all.\n\nWith warmth,\nHannah\n\nYou're receiving the Sunday letter because you signed up on my website. If it no longer brings you joy, you can unsubscribe with one click."
+    },
+    {
+      "id": "ban-it-01",
+      "label": "Banca",
+      "lang": "it",
+      "from": "comunicazioni@bancadelcentro.example",
+      "subject": "Estratto conto di ottobre disponibile",
+      "body": "Gentile cliente,\n\nl'estratto conto del conto corrente n. ****3381 relativo al mese di ottobre è disponibile nella sezione Documenti dell'home banking.\n\nSaldo contabile al 31/10: 4.218,55 €\nEntrate del mese: 2.640,00 €\nUscite del mese: 2.112,37 €\n\nTi ricordiamo che hai 60 giorni di tempo dalla ricezione per contestare eventuali movimenti. Per qualsiasi chiarimento puoi rivolgerti alla tua filiale o al servizio clienti.\n\nBanca del Centro"
+    },
+    {
+      "id": "ban-it-02",
+      "label": "Banca",
+      "lang": "it",
+      "from": "notifiche@bancadelcentro.example",
+      "subject": "Bonifico in entrata accreditato",
+      "body": "Ti informiamo che sul tuo conto è stato accreditato un bonifico di 1.850,00 € da AZIENDA SOFTWARE SRL con causale \"Stipendio ottobre 2026\". Data valuta: 27/10/2026."
+    },
+    {
+      "id": "ban-it-03",
+      "label": "Banca",
+      "lang": "it",
+      "from": "filiale.verona@bancadelcentro.example",
+      "subject": "Appuntamento per la rinegoziazione del mutuo",
+      "body": "Buongiorno,\n\ncome concordato telefonicamente, le confermo l'appuntamento in filiale per giovedì 20 novembre alle ore 10:00 per valutare la rinegoziazione del suo mutuo a tasso variabile.\n\nLe chiedo di portare: ultima busta paga, dichiarazione dei redditi, documento d'identità e il piano di ammortamento in suo possesso. Durante l'incontro le illustrerò le due proposte a tasso fisso che abbiamo preparato, a 15 e a 20 anni residui, con le relative simulazioni di rata.\n\nL'operazione non comporta costi notarili trattandosi di rinegoziazione con la stessa banca.\n\nCordiali saluti,\nPaolo Ferrara - Consulente Mutui"
+    },
+    {
+      "id": "ban-it-04",
+      "label": "Banca",
+      "lang": "it",
+      "from": "comunicazioni@bancadelcentro.example",
+      "subject": "Proposta di modifica unilaterale delle condizioni contrattuali",
+      "body": "Gentile cliente,\n\nai sensi dell'articolo 118 del Testo Unico Bancario, con la presente le comunichiamo una proposta di modifica unilaterale delle condizioni economiche del contratto di conto corrente e dei servizi collegati da lei sottoscritti. Le modifiche entreranno in vigore il 1° febbraio 2027, salvo suo rifiuto come indicato più avanti.\n\nMOTIVAZIONE\nLe modifiche si rendono necessarie a seguito dell'aumento strutturale dei costi operativi sostenuti dalla banca per la gestione dei servizi di pagamento, in particolare dei costi delle infrastrutture informatiche e dei presidi di sicurezza richiesti dalla normativa europea, nonché dell'incremento dei costi dei circuiti internazionali delle carte di pagamento.\n\nCONDIZIONI MODIFICATE\n1. Canone mensile del conto corrente: da 3,00 € a 4,00 €. Il canone resta azzerato per i titolari di età inferiore a 30 anni e per i clienti con accredito dello stipendio o della pensione.\n2. Canone annuo della carta di debito: invariato a 0,00 € per la prima carta; per le carte aggiuntive da 10,00 € a 12,00 €.\n3. Prelievo di contante presso sportelli automatici di altre banche in Italia: da 1,50 € a 2,00 € per operazione, a partire dal quinto prelievo del mese.\n4. Bonifico SEPA disposto allo sportello: da 4,50 € a 5,50 €. I bonifici disposti tramite home banking e app, compresi quelli istantanei, restano gratuiti.\n5. Invio dell'estratto conto cartaceo: da 0,70 € a 1,00 € per invio. L'estratto conto in formato elettronico resta gratuito.\n6. Commissione per il rilascio di documentazione relativa a singole operazioni con data anteriore a 12 mesi: da 5,00 € a 7,00 € per documento.\n\nLe altre condizioni economiche e normative del contratto restano invariate. Il Documento di sintesi aggiornato è disponibile nella sezione Trasparenza del sito e presso tutte le filiali.\n\nDIRITTO DI RECESSO\nLei ha diritto di recedere dal contratto, senza spese di chiusura e con l'applicazione delle condizioni precedentemente praticate, entro la data prevista per l'applicazione delle modifiche. In assenza di recesso entro tale data, le modifiche si intenderanno da lei approvate. Per esercitare il diritto di recesso può recarsi presso la sua filiale, inviare una comunicazione scritta tramite raccomandata con avviso di ricevimento oppure utilizzare l'apposita funzione nell'home banking, sezione Documenti e Contratti.\n\nIn caso di recesso, la banca provvederà alla chiusura del rapporto e all'estinzione dei servizi collegati entro i termini previsti dalla normativa, mettendo a sua disposizione il saldo residuo secondo le modalità da lei indicate. La invitiamo in tal caso a revocare tempestivamente le domiciliazioni attive e a comunicare il nuovo IBAN ai soggetti che le effettuano accrediti periodici. Il servizio di trasferibilità previsto dalla legge le consente di trasferire gratuitamente ordini permanenti, addebiti diretti e accrediti ricorrenti su un conto presso un altro intermediario.\n\nRECLAMI\nPer eventuali reclami può rivolgersi all'Ufficio Reclami della banca, che risponderà entro 60 giorni, oppure, in caso di risposta insoddisfacente, all'Arbitro Bancario Finanziario.\n\nRestiamo a disposizione per ogni chiarimento presso la sua filiale di riferimento.\n\nDistinti saluti,\nBanca del Centro S.p.A."
+    },
+    {
+      "id": "ban-it-05",
+      "label": "Banca",
+      "lang": "it",
+      "from": "notifiche@bancadelcentro.example",
+      "subject": "Addebito SEPA eseguito: Luce Verde Energia",
+      "body": "È stato eseguito l'addebito diretto SEPA di 68,40 € a favore di LUCE VERDE ENERGIA SPA, riferimento bolletta 2026/104882. Saldo disponibile dopo l'operazione: 3.982,10 €. Se non riconosci l'operazione, hai 8 settimane per chiederne il rimborso."
+    },
+    {
+      "id": "ban-en-01",
+      "label": "Banca",
+      "lang": "en",
+      "from": "statements@northbank.example",
+      "subject": "Your monthly credit card statement is ready",
+      "body": "Dear customer,\n\nYour NorthBank Platinum credit card statement for the period ending 31 October 2026 is now available online.\n\nStatement balance: GBP 842.17\nMinimum payment: GBP 25.00\nPayment due date: 25 November 2026\n\nIf you pay your full statement balance by the due date, you won't be charged interest on purchases. Your Direct Debit is set to pay the minimum amount; you can change this in online banking.\n\nNorthBank Customer Services"
+    },
+    {
+      "id": "ban-en-02",
+      "label": "Banca",
+      "lang": "en",
+      "from": "alerts@northbank.example",
+      "subject": "Transfer sent: GBP 300.00 to Savings",
+      "body": "You transferred GBP 300.00 from Current Account ****4410 to Easy Saver ****9921 on 3 Nov at 08:14. Your new current account balance is GBP 1,476.08."
+    },
+    {
+      "id": "ban-en-03",
+      "label": "Banca",
+      "lang": "en",
+      "from": "advice@northbank.example",
+      "subject": "Your savings rate is changing on 1 December",
+      "body": "Dear customer,\n\nWe're writing to let you know that the interest rate on your Easy Saver account will change on 1 December 2026, following the recent decision by the central bank.\n\nCurrent rate: 3.40% AER (variable)\nNew rate: 3.15% AER (variable)\n\nBased on your current balance of GBP 6,250, this means you'd earn approximately GBP 16 less in interest over a year. You don't need to do anything. If you'd prefer to move your money, you can do so at any time without penalty.\n\nYou may also be interested in our 1-Year Fixed Saver, currently paying 3.75% AER, which you can open in the app in a few minutes.\n\nKind regards,\nNorthBank Savings Team"
+    },
+    {
+      "id": "ban-en-04",
+      "label": "Banca",
+      "lang": "en",
+      "from": "mortgages@northbank.example",
+      "subject": "Your mortgage annual review and what happens when your fixed rate ends",
+      "body": "Dear customer,\n\nEvery year we send you a summary of your mortgage so you can see how things are progressing. This year's review is particularly important, because your current fixed rate ends in five months.\n\nIf you have more than one mortgage account with us, you'll receive a separate review for each of them. Please also remember to keep your contact details up to date in online banking, as we'll write to you again before your fixed rate ends with personalised product offers, and we don't want you to miss them. Your annual mortgage statement for tax purposes will be sent separately in January.\n\nYOUR MORTGAGE AT A GLANCE\nMortgage account: ****7720\nOutstanding balance on 31 October 2026: GBP 182,410.55\nCurrent interest rate: 2.19% fixed until 31 March 2027\nMonthly payment: GBP 913.42\nRemaining term: 21 years and 4 months\nTotal paid over the last 12 months: GBP 10,961.04, of which GBP 4,072.18 interest and GBP 6,888.86 capital.\n\nWHAT HAPPENS WHEN YOUR FIXED RATE ENDS\nIf you don't choose a new product, from 1 April 2027 your mortgage will move to our Standard Variable Rate, currently 7.24%. Based on today's rate, your monthly payment would increase to approximately GBP 1,431.60, an increase of around GBP 518 per month. The Standard Variable Rate can go up or down at any time.\n\nYOUR OPTIONS\nYou can choose a new fixed or tracker product with us from four months before your current deal ends, so from 1 December 2026. Today, existing customers can switch to the following products with no arrangement fee:\n- 2-year fixed at 4.39%: estimated monthly payment GBP 1,099.30\n- 5-year fixed at 4.19%: estimated monthly payment GBP 1,081.75\n- 2-year tracker at 0.49% above the central bank rate: currently 4.24%, estimated monthly payment GBP 1,086.10\n\nThese rates are for information only and may change before you apply. Switching to a new product with us doesn't require a new affordability assessment as long as you don't borrow more or change the term.\n\nOVERPAYMENTS\nWhile you are on your current fixed rate, you can overpay up to 10% of your outstanding balance each year without an early repayment charge. You've overpaid GBP 0 this year, so you could still overpay up to GBP 18,241 before 31 March. Overpaying reduces the interest you pay and can shorten your mortgage term.\n\nIF YOU'RE STRUGGLING\nIf you're worried about meeting your payments now or after your rate changes, please contact us as early as possible. We can talk through options such as temporarily extending your term or switching to interest-only payments for a limited period. Getting in touch won't affect your credit file.\n\nYou'll find more information, a payment calculator and a comparison of all our products in the Mortgages section of the app.\n\nYours sincerely,\nNorthBank Mortgages"
+    },
+    {
+      "id": "ban-en-05",
+      "label": "Banca",
+      "lang": "en",
+      "from": "service@credit-union.example",
+      "subject": "Card replacement on its way",
+      "body": "Hi Sam,\n\nYour debit card ending in 5512 expires at the end of this month, so we've sent you a replacement by post. It should arrive within 5 working days. Your PIN stays the same. Please activate the new card by making a chip and PIN transaction, then cut up the old one.\n\nCredit Union Member Services"
+    },
+    {
+      "id": "ord-it-01",
+      "label": "Orders & Shipping",
+      "lang": "it",
+      "from": "ordini@elettronica-shop.example",
+      "subject": "Conferma ordine n. 300418 e fattura",
+      "body": "Ciao,\n\ngrazie per il tuo acquisto! Abbiamo ricevuto il tuo ordine n. 300418.\n\nArticoli:\n- Cuffie wireless con cancellazione del rumore x1: 189,00 €\n- Custodia rigida x1: 14,90 €\nSpedizione: gratuita\nTotale: 203,90 € (IVA inclusa)\n\nIn allegato trovi la fattura elettronica dell'ordine, che puoi usare anche per la garanzia. Riceverai un'altra email con il codice di tracciamento non appena il pacco sarà affidato al corriere, di solito entro 24 ore lavorative.\n\nIl team Elettronica Shop"
+    },
+    {
+      "id": "ord-it-02",
+      "label": "Orders & Shipping",
+      "lang": "it",
+      "from": "tracking@corriere-espresso.example",
+      "subject": "Il tuo pacco è in consegna oggi",
+      "body": "Il pacco con codice di tracciamento CE2026448812 è in consegna oggi tra le 14:00 e le 18:00. Se non sei in casa, il corriere lascerà un avviso e potrai scegliere una nuova data o il ritiro in un punto convenzionato."
+    },
+    {
+      "id": "ord-it-03",
+      "label": "Orders & Shipping",
+      "lang": "it",
+      "from": "assistenza@arredocasa.example",
+      "subject": "Aggiornamento sulla consegna del divano",
+      "body": "Gentile cliente,\n\nti scriviamo per aggiornarti sul tuo ordine n. AC-77120 (divano tre posti in tessuto, colore grigio antracite).\n\nPurtroppo il fornitore ci ha comunicato un ritardo nella produzione del tessuto, per cui la consegna prevista per il 15 novembre slitta alla settimana del 1° dicembre. Il nostro reparto logistica ti contatterà telefonicamente qualche giorno prima per fissare giorno e fascia oraria; la consegna al piano e il montaggio restano inclusi.\n\nCi scusiamo per l'inconveniente. Se preferisci annullare l'ordine, puoi farlo senza costi rispondendo a questa email: ti rimborseremo l'intero importo entro 14 giorni.\n\nServizio Clienti ArredoCasa"
+    },
+    {
+      "id": "ord-it-04",
+      "label": "Orders & Shipping",
+      "lang": "it",
+      "from": "resi@modaonline.example",
+      "subject": "Reso ricevuto: rimborso in elaborazione",
+      "body": "Ciao Chiara,\n\nabbiamo ricevuto il tuo reso per l'ordine 88213 (giacca impermeabile, taglia M). Il rimborso di 79,95 € verrà accreditato sul metodo di pagamento originale entro 5-7 giorni lavorativi. Grazie per aver acquistato da noi!"
+    },
+    {
+      "id": "ord-it-05",
+      "label": "Orders & Shipping",
+      "lang": "it",
+      "from": "noreply@mercatino-online.example",
+      "subject": "Il venditore ha spedito il tuo articolo",
+      "body": "Buone notizie! Il venditore \"librivintage_bo\" ha spedito l'articolo che hai acquistato: \"Atlante storico illustrato, edizione 1972\". Spedizione con posta tracciata, consegna stimata in 3-5 giorni lavorativi. Ricordati di confermare la ricezione quando arriva, così il pagamento verrà sbloccato al venditore."
+    },
+    {
+      "id": "ord-en-01",
+      "label": "Orders & Shipping",
+      "lang": "en",
+      "from": "orders@bookhaven.example",
+      "subject": "Your order has shipped! (Order #BH-559201)",
+      "body": "Hi Alex,\n\nGreat news: part of your order is on its way.\n\nShipped today:\n- \"The Art of Slow Travel\" (paperback)\n- \"Designing Data Systems\" (hardcover)\n\nCarrier: Royal Mail Tracked 48\nTracking number: RM5592011GB\nEstimated delivery: Thursday, 6 November\n\nStill to come:\n- \"A Field Guide to Mushrooms\" (pre-order, releases 20 November)\n\nYou won't be charged extra shipping for the pre-order. We'll email you again when it ships.\n\nHappy reading!\nBookHaven"
+    },
+    {
+      "id": "ord-en-02",
+      "label": "Orders & Shipping",
+      "lang": "en",
+      "from": "no-reply@megamart.example",
+      "subject": "Delivered: your package was left at the front door",
+      "body": "Your package was delivered at 11:42 today and left at the front door. Order #114-5532189: 1 x Stainless steel water bottle, 1 x USB-C charging cable. Not what you expected? Report a problem with your delivery in Your Orders."
+    },
+    {
+      "id": "ord-en-03",
+      "label": "Orders & Shipping",
+      "lang": "en",
+      "from": "support@gadgetstore.example",
+      "subject": "Re: Re: Damaged item in order #GS-30219 - replacement and return instructions",
+      "body": "Hi Alex,\n\nThanks again for sending the photos, and sorry for the trouble. I've reviewed your case with our warehouse team and here's what will happen next. I've left our previous messages below so you have everything in one place.\n\nOne more thing: since the speaker was meant as a gift, I've added a 10% discount code to your account that you can use on your next order within six months. It will be applied automatically at checkout, and it can be combined with our seasonal offers. We really appreciate your patience, and we've also shared your feedback with the courier.\n\nReplacement: we've created a free replacement order, #GS-30544, for the smart speaker (charcoal). It will ship today by express courier and should arrive within two working days. You'll get a separate email with the tracking link as soon as the courier collects it.\n\nReturn of the damaged item: you don't need to pay anything. Attached to this email you'll find a prepaid return label. Please pack the damaged speaker in its original box if you still have it, or in any sturdy box, attach the label and drop it off at any parcel point within 30 days. You don't need to include the power cable or the manual. If we don't receive the return within 30 days we may need to charge for the replacement, so please keep the drop-off receipt.\n\nInvoice: the replacement order has a zero-value invoice that you can ignore for accounting purposes. The original invoice for order #GS-30219 remains valid for your warranty, which now starts from the delivery date of the replacement.\n\nLet me know if anything is unclear.\n\nKind regards,\nDaniel\nGadgetStore Customer Care\n\n> On 2 Nov, Alex wrote:\n> Hi Daniel, thanks for the quick reply. Photos attached: you can see the crack along the top of the speaker and the dent in the box, which makes me think it happened during shipping. The speaker turns on but makes a buzzing noise at any volume. I'd prefer a replacement rather than a refund, if possible, as I bought it as a gift for next week. Also, will I need to pay for the return shipping? The courier point near me charges for unlabelled parcels.\n>\n>> On 1 Nov, Daniel (GadgetStore) wrote:\n>> Hi Alex, I'm sorry to hear your order arrived damaged. To help us process your claim quickly, could you please reply with a few photos of the item and of the outer packaging, including the shipping label? Please also let us know whether you'd prefer a replacement or a full refund. Once we have the photos, we usually resolve claims within one working day. In the meantime, please keep all the original packaging, as the courier may ask to inspect it.\n>>\n>>> On 31 Oct, Alex wrote:\n>>> Hello, my order #GS-30219 arrived today but the smart speaker is cracked on the top and makes a buzzing sound. The outer box was dented too. What should I do?"
+    },
+    {
+      "id": "ord-en-04",
+      "label": "Orders & Shipping",
+      "lang": "en",
+      "from": "updates@furniture-direct.example",
+      "subject": "Your delivery slot is confirmed",
+      "body": "Hello,\n\nYour delivery for order FD-882140 (oak dining table and 4 chairs) is confirmed for Saturday 15 November between 08:00 and 12:00. Our two-person team will bring the items to the room of your choice and remove the packaging. Please make sure there is parking space nearby and that doorways are clear. We'll text you a one-hour window on the morning of delivery.\n\nFurniture Direct"
+    },
+    {
+      "id": "ord-en-05",
+      "label": "Orders & Shipping",
+      "lang": "en",
+      "from": "customs@parcelglobal.example",
+      "subject": "Action needed: import duties for your parcel",
+      "body": "Your international parcel PG-77450129 from the United States is being held at customs. Import VAT and handling fees of EUR 23.40 must be paid before it can be delivered. Pay online within 10 days; otherwise the parcel will be returned to the sender. Your order was a pair of running shoes declared at USD 95."
+    },
+    {
+      "id": "fam-it-01",
+      "label": "Famiglia e amici",
+      "lang": "it",
+      "from": "mamma.rossi@example.org",
+      "subject": "Pranzo di domenica",
+      "body": "Ciao tesoro, domenica facciamo il pranzo per il compleanno del nonno. Vengono anche gli zii da Parma. Porti tu il dolce? Il nonno ha detto che vuole la torta di mele come la faceva la nonna. Ci vediamo verso mezzogiorno e mezza, baci!"
+    },
+    {
+      "id": "fam-it-02",
+      "label": "Famiglia e amici",
+      "lang": "it",
+      "from": "luca.esposito@example.org",
+      "subject": "Foto del matrimonio di Anna e Pietro",
+      "body": "Ciao!\n\nfinalmente ho messo tutte le foto del matrimonio in una cartella condivisa, sono più di trecento quindi prenditi un po' di tempo. Ce ne sono alcune bellissime di voi due durante il ballo, e una del brindisi in cui sembri un personaggio di un film degli anni Sessanta.\n\nSe vuoi stamparne qualcuna dimmelo che le faccio fare insieme alle mie, il fotografo sotto casa fa il 20% di sconto sopra le cinquanta stampe.\n\nCi vediamo presto, magari una pizza la settimana prossima?\n\nLuca"
+    },
+    {
+      "id": "fam-it-03",
+      "label": "Famiglia e amici",
+      "lang": "it",
+      "from": "sorella.chiara@example.org",
+      "subject": "Re: Re: Organizzazione Natale dai genitori",
+      "body": "Ciao fratellone,\n\nallora ricapitolo quello che ci siamo detti al telefono e nei messaggi, così lo giriamo anche a papà che con le chat di gruppo si perde sempre. Sotto trovi la conversazione di prima.\n\nAh, quasi dimenticavo: i bambini vogliono assolutamente fare il presepe con te come l'anno scorso, quindi preparati a passare il pomeriggio del 24 a incollare muschio e statuine. E porta il gioco da tavolo nuovo che dicevi, così la sera dopo la messa facciamo una partita tutti insieme mentre i grandi chiacchierano.\n\nArrivi: io e Marco arriviamo il 23 sera con i bambini, tu il 24 mattina col treno delle 9. Zia Rosa arriva il 24 pomeriggio e dorme da noi nella camera degli ospiti, quindi tu ti prendi il divano letto in studio (scusa!).\n\nCena della vigilia: la mamma fa il baccalà e i fritti come sempre, io porto gli antipasti e il panettone artigianale della pasticceria di via Mazzini, tu ti occupi del vino e dei dolci di mandorle. Siamo in undici.\n\nPranzo di Natale: lasagne della mamma, arrosto che fa papà, contorni li dividiamo io e te. Facciamo come l'anno scorso, cioè ognuno lava i piatti di quello che ha cucinato, così nessuno si lamenta.\n\nRegali: abbiamo deciso di fare il Babbo Natale segreto tra gli adulti con un tetto di 30 euro, mentre per i bambini ognuno fa quello che vuole. Ti mando stasera il nome che ti è toccato. Per mamma e papà invece facciamo un regalo insieme: io proporrei il weekend alle terme che dicevano da anni di voler fare. Costa circa 380 euro in tutto, quindi 190 a testa. Che ne dici?\n\nSanto Stefano: tombola dalla zia Rosa, e chi vince il primo premio offre il caffè a tutti.\n\nFammi sapere se ti va tutto bene, così mando il riepilogo anche a mamma.\n\nChiara\n\n> Il 2 nov, hai scritto:\n> Per me va bene arrivare la mattina del 24, prima non riesco perché il 23 ho ancora una consegna di lavoro. Il vino lo porto volentieri, ma non chiedetemi di cucinare il baccalà, ricordate cosa è successo tre anni fa. Per il regalo ai genitori sono d'accordo su qualcosa di insieme, ma pensiamoci bene: papà dice sempre che non vuole niente e poi si offende se non riceve nulla. Le terme potrebbero essere un'idea, la mamma ne parla da anni. Sentiamo anche Marco?\n>\n>> Il 1 nov, Chiara ha scritto:\n>> Ciao! Mamma mi ha chiesto di cominciare a organizzare Natale perché quest'anno siamo di più, viene anche zia Rosa che non è più tanto sicura a stare da sola. Io pensavo di arrivare il 23 con Marco e i bambini, tu quando riesci? Dobbiamo anche decidere chi porta cosa per la vigilia e se facciamo i regali a tutti o il Babbo Natale segreto, perché l'anno scorso ci siamo svenati. E per mamma e papà facciamo un regalo insieme? Fammi sapere, così poi ci sentiamo tutti e tre con Marco."
+    },
+    {
+      "id": "fam-it-04",
+      "label": "Famiglia e amici",
+      "lang": "it",
+      "from": "zio.giorgio@example.org",
+      "subject": "Ti ricordi la ricetta del ragù?",
+      "body": "Caro nipote,\n\nla settimana scorsa ho provato a rifare il ragù che preparavi tu quando sei venuto a trovarci in estate, ma non mi è venuto uguale. Mi ricordo che mettevi il latte alla fine, o era all'inizio? E quante ore lo lasciavi cuocere? La zia dice che era il più buono che abbia mai mangiato fuori dall'Emilia e io non posso deluderla.\n\nTi abbraccio, e salutami la tua compagna,\nZio Giorgio"
+    },
+    {
+      "id": "fam-it-05",
+      "label": "Famiglia e amici",
+      "lang": "it",
+      "from": "francesca.martini@example.org",
+      "subject": "Weekend in montagna a gennaio?",
+      "body": "Ciao! Con Matteo stavamo pensando di affittare una baita in Val di Fassa per un weekend di gennaio, siamo già in sei e c'è posto per altri due. Si scia, si mangia, si gioca a carte. Ci state? Costerebbe sui 120 euro a testa per due notti. Fammi sapere entro la fine della settimana!"
+    },
+    {
+      "id": "fam-en-01",
+      "label": "Famiglia e amici",
+      "lang": "en",
+      "from": "dad.thompson@example.org",
+      "subject": "Thanksgiving plans",
+      "body": "Hi kiddo,\n\nMom and I were wondering if you're still planning to come home for Thanksgiving. Your brother is driving up on Wednesday night with the kids, and Aunt Linda is coming for dinner on Thursday. We'd love to have everyone around the table this year.\n\nIf you're flying, let me know your arrival time and I'll pick you up from the airport. Mom says you can choose the pie this year, but I'm voting for pecan.\n\nLove,\nDad"
+    },
+    {
+      "id": "fam-en-02",
+      "label": "Famiglia e amici",
+      "lang": "en",
+      "from": "emma.clarke@example.org",
+      "subject": "Long overdue catch-up (and big news!)",
+      "body": "Hi you!\n\nI can't believe it's been almost a year since we last properly talked. I keep meaning to call, and then the week disappears. So I'm writing instead, and it's going to be a long one, so make yourself a cup of tea.\n\nFirst, the big news: Tom and I are moving to Edinburgh in the spring! He got the job at the university, the one he interviewed for back in June, and after a lot of back and forth we decided to go for it. I'll keep working remotely for my current company, at least for the first year, and then we'll see. We've already been up twice to look at flats. Prices are a bit scary, but we found a lovely place near the Meadows with a tiny garden and a kitchen that's actually bigger than our whole living room in London. Fingers crossed the paperwork goes through.\n\nSecond, Mum is doing much better. You know she had her knee operation in August; the first few weeks were hard, but she's walking without a stick now and has started going to her Tuesday choir again. She asked about you the other day and said to say hello. She still has the photo of the two of us at graduation on her fridge.\n\nThird, and less exciting: work has been intense. We launched the new product in September and I basically lived on coffee and crisps for a month. It went well in the end, and my manager has hinted at a promotion in the new year, so maybe it was worth it. I've promised myself I'll take a proper holiday before the move, no laptop.\n\nWhich brings me to my question: would you like to come and visit before we leave London? We have a spare room until March, and I'd love to show you the neighbourhood properly before it becomes a memory. We could go to that little Italian place where we celebrated your birthday, if it's still open, and maybe do a day trip to Brighton if the weather is kind. Any weekend in January or February works for us, except the second weekend of February when Tom's parents are visiting.\n\nAnd of course, once we're settled, you have a standing invitation to Edinburgh. I've heard the festival in August is wonderful and chaotic, and I'm determined to go to at least one terrible comedy show with you.\n\nHow are you? How's the new flat, and is your neighbour still playing the drums at midnight? Tell me everything: work, family, the cat, whatever you're reading. I miss our long dinners.\n\nLots of love,\nEmma\n\nP.S. I found the mixtape you made me in 2009 while packing. It still works. I'm listening to it right now."
+    },
+    {
+      "id": "fam-en-03",
+      "label": "Famiglia e amici",
+      "lang": "en",
+      "from": "jake.miller@example.org",
+      "subject": "Five-a-side on Thursday?",
+      "body": "We're one player short for five-a-side on Thursday at 8pm, same pitch as usual. You in? Loser buys the first round."
+    },
+    {
+      "id": "fam-en-04",
+      "label": "Famiglia e amici",
+      "lang": "en",
+      "from": "grandma.rose@example.org",
+      "subject": "Thank you for the flowers",
+      "body": "My dear,\n\nThe flowers arrived this morning and they are beautiful. Yellow roses, my favourite, you remembered! I've put them in the blue vase on the kitchen table where I can see them while I do my crossword.\n\nYour cousin Sarah came for tea yesterday and showed me photos of your trip on her telephone. You looked very happy. Come and see me when you can, and bring that nice friend of yours.\n\nAll my love,\nGrandma"
+    },
+    {
+      "id": "fam-en-05",
+      "label": "Famiglia e amici",
+      "lang": "en",
+      "from": "ben.carter@example.org",
+      "subject": "Moving day help?",
+      "body": "Hey mate,\n\nWe're finally moving into the new place on Saturday the 22nd. Any chance you could give us a hand for a few hours in the morning? We've hired a van, so it's mostly carrying boxes and the dreaded sofa up two flights of stairs. Pizza and beer are on us afterwards.\n\nNo worries if you can't make it!\nBen"
+    },
+    {
+      "id": "sec-it-01",
+      "label": "Security alerts",
+      "lang": "it",
+      "from": "sicurezza@posta-italiana-web.example",
+      "subject": "Nuovo accesso al tuo account da Mac",
+      "body": "Ciao,\n\nabbiamo rilevato un nuovo accesso al tuo account.\n\nDispositivo: Mac (Safari)\nPosizione approssimativa: Milano, Italia\nData e ora: 4 novembre 2026, 09:12\n\nSe sei stato tu, puoi ignorare questo messaggio. Se non riconosci questo accesso, cambia subito la password e controlla i dispositivi collegati dalla pagina Sicurezza del tuo account."
+    },
+    {
+      "id": "sec-it-02",
+      "label": "Security alerts",
+      "lang": "it",
+      "from": "noreply@bancadelcentro.example",
+      "subject": "Codice di verifica per l'accesso all'home banking",
+      "body": "Il tuo codice di verifica è 482913. Inseriscilo entro 5 minuti per completare l'accesso. Non comunicare mai questo codice a nessuno, nemmeno a operatori della banca."
+    },
+    {
+      "id": "sec-it-03",
+      "label": "Security alerts",
+      "lang": "it",
+      "from": "account@social-network.example",
+      "subject": "Richiesta di reimpostazione della password",
+      "body": "Ciao,\n\nabbiamo ricevuto una richiesta di reimpostazione della password per il tuo account. Se sei stato tu, usa il pulsante nell'app entro 30 minuti. Se non hai richiesto il cambio, ignora questa email: la tua password attuale resta valida e nessuno può modificarla senza accesso alla tua casella di posta.\n\nTi consigliamo comunque di attivare la verifica in due passaggi."
+    },
+    {
+      "id": "sec-it-04",
+      "label": "Security alerts",
+      "lang": "it",
+      "from": "sicurezza@cloud-archivio.example",
+      "subject": "Importante: aggiornamento di sicurezza e verifica in due passaggi obbligatoria",
+      "body": "Gentile utente,\n\nti scriviamo per informarti di alcune modifiche importanti alla sicurezza del tuo account, che entreranno in vigore nelle prossime settimane, e per spiegarti cosa devi fare per continuare ad accedere ai tuoi file senza interruzioni.\n\nSe utilizzi il servizio per lavoro tramite un account aziendale, la configurazione della verifica in due passaggi potrebbe essere gestita dall'amministratore della tua organizzazione: in quel caso segui le istruzioni del tuo reparto IT. Gli account familiari condivisi dovranno attivare il secondo fattore per ciascun membro.\n\nCOSA CAMBIA\nA partire dal 1° dicembre 2026 la verifica in due passaggi diventerà obbligatoria per tutti gli account. Dopo aver inserito la password ti verrà chiesto un secondo fattore: un codice generato da un'app di autenticazione, una notifica da approvare sull'app del servizio installata sul telefono oppure una chiave di sicurezza fisica. Gli SMS resteranno disponibili solo come metodo di riserva, perché sono più vulnerabili ad attacchi di sostituzione della SIM.\n\nInoltre, dal 15 gennaio 2027 le sessioni rimarranno attive al massimo per 30 giorni sui computer e 90 giorni sui dispositivi mobili, dopodiché ti verrà chiesto di accedere di nuovo. Le applicazioni di terze parti collegate al tuo account con le vecchie password per app smetteranno di funzionare e dovranno essere ricollegate usando il nuovo sistema di autorizzazione.\n\nPERCHÉ LO FACCIAMO\nNegli ultimi mesi abbiamo osservato un aumento significativo dei tentativi di accesso con password rubate su altri siti, la cosiddetta tecnica del credential stuffing. Nella maggior parte dei casi questi tentativi sono stati bloccati dai nostri sistemi, ma un secondo fattore di autenticazione è la protezione più efficace per impedire che qualcuno entri nel tuo account anche conoscendo la tua password.\n\nCOSA DEVI FARE\n1. Accedi al tuo account dal sito o dall'app e vai su Impostazioni > Sicurezza.\n2. Scegli \"Attiva verifica in due passaggi\" e segui le istruzioni. Ci vogliono circa tre minuti.\n3. Salva in un posto sicuro i codici di recupero che ti mostreremo alla fine: ti servono se perdi il telefono.\n4. Controlla l'elenco dei dispositivi e delle applicazioni collegate e rimuovi quelli che non riconosci o non usi più.\n\nSe non attivi la verifica in due passaggi entro il 1° dicembre, al primo accesso successivo ti verrà chiesto di configurarla prima di poter vedere i tuoi file. Nessun file verrà cancellato.\n\nATTENZIONE AI TENTATIVI DI TRUFFA\nApprofittando di questa comunicazione, qualcuno potrebbe inviarti email false che sembrano provenire da noi. Ricorda che non ti chiederemo mai la password o i codici di verifica via email, telefono o chat, e che non ti invieremo mai link per \"sbloccare\" l'account con urgenza. In caso di dubbio, non cliccare sui link ma apri direttamente l'app o digita l'indirizzo del sito nel browser.\n\nPer qualsiasi domanda puoi consultare le domande frequenti nella sezione Sicurezza del centro assistenza.\n\nGrazie per la collaborazione,\nIl team Sicurezza"
+    },
+    {
+      "id": "sec-it-05",
+      "label": "Security alerts",
+      "lang": "it",
+      "from": "noreply@posta-italiana-web.example",
+      "subject": "Password modificata",
+      "body": "La password del tuo account è stata modificata il 3 novembre alle 22:47. Se non sei stato tu, recupera subito l'account dalla pagina di assistenza: per sicurezza abbiamo disconnesso tutte le altre sessioni."
+    },
+    {
+      "id": "sec-en-01",
+      "label": "Security alerts",
+      "lang": "en",
+      "from": "security@codehost.example",
+      "subject": "[CodeHost] A new SSH key was added to your account",
+      "body": "Hey there,\n\nThe following SSH key was added to your account:\n\n  Title: work-laptop-2026\n  Fingerprint: SHA256:k3Xb9vPq...redacted\n\nIf you believe this key was added in error, you can remove it and review your security log from your account settings. If you don't recognise this activity, please change your password and check your active sessions immediately.\n\nThanks,\nThe CodeHost Team"
+    },
+    {
+      "id": "sec-en-02",
+      "label": "Security alerts",
+      "lang": "en",
+      "from": "no-reply@accounts.mailcloud.example",
+      "subject": "Security alert: sign-in attempt blocked",
+      "body": "Someone just tried to sign in to your account from an unrecognised device in São Paulo, Brazil. We blocked the attempt because it didn't pass two-step verification. If this was you, you can try again from a trusted device. If not, we recommend changing your password now."
+    },
+    {
+      "id": "sec-en-03",
+      "label": "Security alerts",
+      "lang": "en",
+      "from": "trust@payapp.example",
+      "subject": "Your account security review and an important change to how we verify you",
+      "body": "Hello,\n\nAs part of our regular security review, we're writing to all customers to explain some changes we're making to how we verify your identity, and to share a few steps you can take today to keep your account safe.\n\nWHAT'S CHANGING\nStarting next month, we'll ask you to confirm sensitive actions with a passkey or with our app, instead of a one-time code sent by text message. Sensitive actions include adding a new payee, changing your email address or phone number, and signing in from a new device. Passkeys are stored securely on your phone or computer and are protected by your fingerprint, face or device PIN. They can't be phished, because they only work on our genuine website and app.\n\nYou can still use text message codes as a backup if you lose access to your devices, but we'll ask you some additional questions in that case and may delay the action by up to 24 hours to protect you.\n\nWHY WE'RE DOING THIS\nScammers are increasingly tricking people into reading out one-time codes over the phone, often pretending to be from our fraud team. Passkeys remove this risk, because there's no code to share. We'll never call you and ask you to read out a code, move money to a \"safe account\" or install remote access software. If someone does, it's a scam: hang up and contact us through the app.\n\nWHAT YOU SHOULD DO NOW\n1. Open the app, go to Settings > Security and create a passkey. It takes less than a minute.\n2. Check the list of devices that have access to your account and remove any you don't recognise.\n3. Make sure your email address and phone number are up to date, so we can reach you if we spot unusual activity.\n4. Review the apps and websites you've connected to your account, and revoke access for any you no longer use.\n\nRECENT ACTIVITY ON YOUR ACCOUNT\nFor your information, in the last 90 days your account was accessed from two devices: an iPhone and a Mac, both in Italy. We didn't detect any suspicious sign-in attempts. Your password was last changed 14 months ago; while it isn't required, you may want to update it, especially if you've used it on any other website.\n\nIF YOU NEED HELP\nOur help centre has step-by-step guides with screenshots for creating a passkey on every major device. If you think your account may have been compromised, use the \"Report a problem\" option in the app and choose \"Security\": a specialist will get back to you, usually within a few hours.\n\nThank you for helping us keep your money and your data safe.\n\nThe PayApp Trust & Safety team\n\nThis is a service message. You're receiving it even if you've opted out of marketing emails, because it contains important information about your account."
+    },
+    {
+      "id": "sec-en-04",
+      "label": "Security alerts",
+      "lang": "en",
+      "from": "no-reply@streamflix.example",
+      "subject": "New device signed in to your StreamFlix account",
+      "body": "A new device, \"Living Room TV\", signed in to your account on 3 Nov from Turin, Italy. If this was you, enjoy watching! If not, sign out of all devices and change your password in Account settings."
+    },
+    {
+      "id": "sec-en-05",
+      "label": "Security alerts",
+      "lang": "en",
+      "from": "security@workspace-suite.example",
+      "subject": "Your verification code",
+      "body": "Your verification code is 771 204. It expires in 10 minutes. If you didn't request this code, someone may be trying to access your account; you can safely ignore this email, but consider reviewing your security settings."
+    }
+  ]
+}

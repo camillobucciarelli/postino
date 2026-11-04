@@ -1,0 +1,9 @@
+name: embedding_eval
+description: Valutatore usa e getta dello spike #103 (embedding per l'Etichettatura automatica).
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  test: ^1.25.0

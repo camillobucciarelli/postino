@@ -1,0 +1,9 @@
+# Package isolato: non eredita flutter_lints dalla root del repo.
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+formatter:
+  page_width: 120

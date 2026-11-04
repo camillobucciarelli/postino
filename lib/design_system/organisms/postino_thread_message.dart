@@ -53,6 +53,9 @@ class const PostinoThreadMessage({
   /// Vero se il messaggio non è ancora letto.
   final bool unread = false,
 
+  /// «Non letto»: read by screen readers before the header of an [unread] message.
+  final String? unreadLabel,
+
   /// Beside the sender when expanded, in `ink-muted`; null when [sender] is already the address.
   final String? address,
 
@@ -93,7 +96,7 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
     final recipients = w.recipients;
     final wrap = MediaQuery.textScalerOf(context).scale(1) > 1;
     final radius = expanded ? const BorderRadius.all(Radius.circular(PostinoRadius.sm)) : BorderRadius.zero;
-    final header = InkWell(
+    final tap = InkWell(
       onTap: w.onToggle,
       // Expanded: the highlight gets room via s2 inside; the outer padding gives it back, so content stays aligned.
       borderRadius: radius,
@@ -163,13 +166,20 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
         ),
       ),
     );
+    // For screen readers the header is the message's toggle: a button with its expanded state, and
+    // the focused node, so it carries the details action too.
+    final header = Semantics(
+      container: true,
+      button: true,
+      expanded: expanded,
+      label: w.unread ? w.unreadLabel : null,
+      customSemanticsActions: expanded && w.details.isNotEmpty
+          ? {CustomSemanticsAction(label: w.recipients ?? ''): () => setState(() => _details = !_details)}
+          : null,
+      child: tap,
+    );
     return Semantics(
       container: true,
-      expanded: expanded,
-      customSemanticsActions: {
-        if (expanded && w.details.isNotEmpty)
-          CustomSemanticsAction(label: w.recipients ?? ''): () => setState(() => _details = !_details),
-      },
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: c.borderSubtle)),
@@ -205,14 +215,15 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
                                   children: w.notices,
                                 ),
                               ),
+                            // Body, signature and quote are nodes of their own: read after the header and the notices.
                             Padding(
                               padding: EdgeInsets.only(top: w.notices.isEmpty ? PostinoSpacing.s2 : PostinoSpacing.s4),
-                              child: w.body,
+                              child: Semantics(container: true, child: w.body),
                             ),
                             if (w.signature case final signature?)
                               Padding(
                                 padding: const EdgeInsets.only(top: PostinoSpacing.s4),
-                                child: signature,
+                                child: Semantics(container: true, child: signature),
                               ),
                             if (w.quote case final quote?) ...[
                               Padding(
@@ -223,7 +234,7 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
                                   onTap: () => setState(() => _quote = !_quote),
                                 ),
                               ),
-                              if (_quote) PostinoQuote(quote),
+                              if (_quote) Semantics(container: true, child: PostinoQuote(quote)),
                             ],
                             if (w.attachments.isNotEmpty)
                               Padding(

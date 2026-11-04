@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../mime.dart';
+import 'gmail_failure.dart';
 import 'gmail_tokens.dart';
 import 'google_client.dart';
 
@@ -100,52 +101,16 @@ class GmailHttp {
     final url = _api
         .resolve(path)
         .replace(queryParameters: query.isEmpty ? null : query);
-    // The answer must start within [sendTimeout] (a big upload needs time), then [_stall] at most between two chunks:
-    // a long download is fine, a stalled one is not.
-    final stall = _stall;
     final payload = body == null ? null : jsonEncode(body);
-    Future<http.Response> send() async {
-      // A timeout aborts the connection too, so a replay can never overlap a request still uploading.
-      final abort = Completer<void>();
-      final request = http.AbortableRequest(
-        method,
-        url,
-        abortTrigger: cancel == null
-            ? abort.future
-            : Future.any([cancel, abort.future]),
-      );
-      request.headers['authorization'] = 'Bearer ${tokens.access}';
-      if (payload != null) {
-        request
-          ..headers['content-type'] = 'application/json'
-          ..body = payload;
-      }
-      final Uint8List bytes;
-      final http.StreamedResponse r;
-      try {
-        r = await _http
-            .send(request)
-            .timeout(sendTimeout(request.contentLength, stall));
-        final total = r.contentLength ?? expected;
-        var read = 0;
-        bytes = await http.ByteStream(
-          r.stream.timeout(stall).map((chunk) {
-            read += chunk.length;
-            if (total > 0) onProgress?.call(min(1, read / total));
-            return chunk;
-          }),
-        ).toBytes();
-      } on TimeoutException {
-        abort.complete();
-        rethrow;
-      }
-      return http.Response.bytes(
-        bytes,
-        r.statusCode,
-        headers: r.headers,
-        request: r.request,
-      );
-    }
+    Future<http.Response> send() => _attempt(
+      method,
+      url,
+      tokens.access,
+      payload,
+      cancel,
+      expected,
+      onProgress,
+    );
 
     var r = await send();
     if (r.statusCode == 401) {
@@ -198,6 +163,81 @@ class GmailHttp {
       _ when _rateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
       _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
     });
+  }
+
+  /// One try: sends the request, then reads the answer. A timeout in either step aborts the connection too,
+  /// so a replay can never overlap a request still uploading.
+  Future<http.Response> _attempt(
+    String method,
+    Uri url,
+    String access,
+    String? payload,
+    Future<void>? cancel,
+    int expected,
+    void Function(double done)? onProgress,
+  ) async {
+    final abort = Completer<void>();
+    try {
+      final r = await _dispatch(
+        method,
+        url,
+        access,
+        payload,
+        cancel == null ? abort.future : Future.any([cancel, abort.future]),
+      );
+      return await _readBody(r, expected, onProgress);
+    } on TimeoutException {
+      abort.complete();
+      rethrow;
+    }
+  }
+
+  /// Sends the request; the answer must start within [sendTimeout] (a big upload needs time).
+  Future<http.StreamedResponse> _dispatch(
+    String method,
+    Uri url,
+    String access,
+    String? payload,
+    Future<void> abortTrigger,
+  ) {
+    final request = http.AbortableRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+    request.headers['authorization'] = 'Bearer $access';
+    if (payload != null) {
+      request
+        ..headers['content-type'] = 'application/json'
+        ..body = payload;
+    }
+    return _http
+        .send(request)
+        .timeout(sendTimeout(request.contentLength, _stall));
+  }
+
+  /// Reads the answer, at most [_stall] between two chunks: a long download is fine, a stalled one is not.
+  /// [onProgress] gets the share read, out of the response length or else [expected] bytes.
+  Future<http.Response> _readBody(
+    http.StreamedResponse r,
+    int expected,
+    void Function(double done)? onProgress,
+  ) async {
+    final total = r.contentLength ?? expected;
+    var read = 0;
+    final bytes = await http.ByteStream(
+      r.stream.timeout(_stall).map((chunk) {
+        read += chunk.length;
+        if (total > 0) onProgress?.call(min(1, read / total));
+        return chunk;
+      }),
+    ).toBytes();
+    return http.Response.bytes(
+      bytes,
+      r.statusCode,
+      headers: r.headers,
+      request: r.request,
+    );
   }
 
   /// The `error.message` of a Google error body, else "HTTP 400".
@@ -255,32 +295,9 @@ class GmailHttp {
   }
 }
 
-/// Adapters never throw: no network is [OfflineFailure], anything else [UnexpectedFailure].
-Future<Result<T>> gmailGuard<T>(Future<Result<T>> Function() body) async {
-  try {
-    return await body();
-  } on GmailFailed catch (e) {
-    return Err(e.failure);
-  } on http.RequestAbortedException {
-    return const Err(CancelledFailure());
-  } on http.ClientException {
-    return const Err(OfflineFailure());
-  } on TimeoutException {
-    return const Err(OfflineFailure());
-  } catch (e, s) {
-    return Err(UnexpectedFailure(e, s));
-  }
-}
-
 /// Time for the answer to start: [stall] plus 1 s per 50 KB of [bodyBytes] (a 400 kbit/s floor, so 35 MB gets ~12 min).
 @visibleForTesting
 Duration sendTimeout(
   int bodyBytes, [
   Duration stall = const Duration(seconds: 30),
 ]) => stall + Duration(milliseconds: bodyBytes ~/ 50);
-
-/// A failed Gmail call, unwound to [gmailGuard].
-final class GmailFailed implements Exception {
-  const GmailFailed(this.failure);
-  final Failure failure;
-}

@@ -93,6 +93,31 @@ Map<String, dynamic>? gmailBodyPart(Map<String, dynamic> part, String mime) {
   return null;
 }
 
+/// The part that is the message text: the HTML one if there is one, else the plain text one; null for neither.
+Map<String, dynamic>? gmailTextPart(Map<String, dynamic> payload) =>
+    gmailBodyPart(payload, 'text/html') ?? gmailBodyPart(payload, 'text/plain');
+
+/// The [MessageBody] of a message [payload], given the base64url [data] of its text [part]
+/// (null when [part] is null: attachments only, or nothing at all, which is no body).
+MessageBody? gmailBody(
+  Map<String, dynamic> payload,
+  Map<String, dynamic>? part,
+  String? data,
+) {
+  final attachments = gmailAttachments(payload);
+  if (part == null || data == null) {
+    return attachments.isEmpty
+        ? null
+        : MessageBody('', BodyKind.testo, attachments: attachments);
+  }
+  // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
+  return MessageBody(
+    utf8.decode(decodeGmailData(data), allowMalformed: true),
+    part['mimeType'] == 'text/html' ? BodyKind.html : BodyKind.testo,
+    attachments: attachments,
+  );
+}
+
 /// Gmail's base64url `data`, padding optional.
 Uint8List decodeGmailData(String data) =>
     base64Url.decode(base64Url.normalize(data));

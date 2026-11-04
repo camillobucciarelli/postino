@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/gmail/gmail_message_parser.dart';
+import 'package:postino/core/domain/message.dart';
 
 Map<String, dynamic> _message(String name) =>
     jsonDecode(
@@ -66,5 +67,22 @@ void main() {
   test('base64url data decodes with or without padding', () {
     expect(utf8.decode(decodeGmailData('Y2lhbw')), 'ciao');
     expect(utf8.decode(decodeGmailData('Y2lhbw==')), 'ciao');
+  });
+
+  test('the body: HTML over text, attachments only, or none', () {
+    final f1 = _payload('message_f1');
+    final html = gmailTextPart(f1);
+    expect(html?['partId'], '1');
+    final body = gmailBody(f1, html, 'PGI-Y2lhbzwvYj4');
+    expect((body?.kind, body?.content), (BodyKind.html, '<b>ciao</b>'));
+    final plain = gmailTextPart(_payload('message_f6_html_attachment'));
+    expect(
+      gmailBody(_payload('message_f6_html_attachment'), plain, 'Y2lhbw')?.kind,
+      BodyKind.testo,
+    );
+    // Attachments and no text part: an empty body; nothing at all: none.
+    final f7 = _payload('message_f7_attachments');
+    expect(gmailBody(f7, null, null)?.attachments, hasLength(3));
+    expect(gmailBody(const {}, null, null), isNull);
   });
 }

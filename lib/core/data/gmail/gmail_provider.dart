@@ -10,6 +10,7 @@ import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
 import '../mime.dart';
+import 'gmail_failure.dart';
 import 'gmail_http.dart';
 import 'gmail_message_parser.dart';
 import 'google_client.dart';
@@ -445,14 +446,8 @@ class GmailProvider implements MailProvider {
     String messageId,
     Map<String, dynamic> payload,
   ) async {
-    final html = gmailBodyPart(payload, 'text/html');
-    final part = html ?? gmailBodyPart(payload, 'text/plain');
-    final attachments = gmailAttachments(payload);
-    if (part == null) {
-      return attachments.isEmpty
-          ? null
-          : MessageBody('', BodyKind.testo, attachments: attachments);
-    }
+    final part = gmailTextPart(payload);
+    if (part == null) return gmailBody(payload, null, null);
     final body = part['body'] as Map;
     // A big part comes as an attachmentId instead of inline data.
     final data =
@@ -461,11 +456,6 @@ class GmailProvider implements MailProvider {
               'messages/$messageId/attachments/${body['attachmentId']}',
             ))['data']
             as String;
-    // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
-    return MessageBody(
-      utf8.decode(decodeGmailData(data), allowMalformed: true),
-      html != null ? BodyKind.html : BodyKind.testo,
-      attachments: attachments,
-    );
+    return gmailBody(payload, part, data);
   }
 }

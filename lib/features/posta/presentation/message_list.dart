@@ -224,6 +224,7 @@ class _MessageListState() extends State<MessageList> {
                 m.fromName ?? m.from,
                 m.subject,
                 if (count > 1) t.messages(n: count),
+                if (m.snippet.isNotEmpty) m.snippet,
                 ?status,
                 if (m.isStarred) t.starred,
                 if (widget.showAccount) t.account(name: a.name),

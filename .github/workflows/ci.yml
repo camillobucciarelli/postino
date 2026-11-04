@@ -132,5 +132,7 @@ jobs:
           test -z "$(git status --porcelain)"
       # Goldens are compared only on macOS, where they are recorded.
       - run: flutter test test/design_system
+      # Text contrast on the list and the Conversazione needs the real fonts too (#55).
+      - run: flutter test test/features/posta/screen_reader_test.dart
       - run: flutter build macos --debug
       - run: flutter build ios --no-codesign

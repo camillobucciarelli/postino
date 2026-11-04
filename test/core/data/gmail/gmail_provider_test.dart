@@ -7,6 +7,7 @@ import 'package:enough_mail/enough_mail.dart' show MimeMessage;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';

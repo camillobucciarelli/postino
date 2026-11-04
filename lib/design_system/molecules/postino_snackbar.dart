@@ -10,6 +10,7 @@ import '../tokens/postino_tokens.dart';
 /// Undo snackbar: a message, a countdown and one action; the content of a Material SnackBar.
 /// The action sits in the content (not in SnackBar.action), so the component owns its styling and focus.
 class PostinoSnackbar extends StatefulWidget {
+  /// Crea lo snackbar con il conto alla rovescia fino a `until`.
   const PostinoSnackbar({
     super.key,
     required this.message,
@@ -19,8 +20,13 @@ class PostinoSnackbar extends StatefulWidget {
     this.now = DateTime.now,
   });
 
+  /// Cosa è appena successo («Messaggio archiviato»).
   final String message;
+
+  /// Nome dell'azione (Annulla).
   final String actionLabel;
+
+  /// Chiamata all'azione; lo snackbar poi si chiude.
   final VoidCallback onAction;
 
   /// When the action stops being available; the countdown shows the whole seconds left to it.

@@ -12,6 +12,7 @@ import '../tokens/postino_tokens.dart';
 /// With [account] (Posta unificata) it carries the Account's bar and the badge on the avatar;
 /// inside one Account the AppBar already says where you are. [selected]: open in the detail pane.
 class PostinoMessageTile extends StatelessWidget {
+  /// Crea la riga di una Conversazione.
   const PostinoMessageTile({
     super.key,
     required this.sender,
@@ -28,20 +29,37 @@ class PostinoMessageTile extends StatelessWidget {
     this.focusNode,
   });
 
+  /// Mittente dell'ultimo messaggio.
   final String sender;
+
+  /// Oggetto della Conversazione.
   final String subject;
+
+  /// Anteprima del testo.
   final String preview;
 
   /// Already formatted (“09:42”, “Ieri”, “lun”, “12 mar”).
   final String time;
+
+  /// Se ci sono messaggi non letti.
   final bool unread;
+
+  /// Se la Conversazione ha la Stella.
   final bool starred;
 
   /// The whole row read out as one node: state, sender, subject, Stella, Account, time.
   final String semanticLabel;
+
+  /// Account a cui appartiene, in Posta unificata.
   final PostinoAccountRef? account;
+
+  /// Numero di messaggi della Conversazione.
   final int count;
+
+  /// Se è aperta nel pannello di dettaglio.
   final bool selected;
+
+  /// Chiamata al tocco; senza, la riga non è un pulsante.
   final VoidCallback? onTap;
 
   /// The row's focus, owned by the list so it can move it with the keyboard.

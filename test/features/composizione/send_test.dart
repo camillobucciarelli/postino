@@ -512,4 +512,12 @@ class _TooBig implements MailSync {
   @override
   Future<Result<OutgoingMessage>> openDraft(String a, String m) =>
       real.openDraft(a, m);
+  @override
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String a,
+    String m,
+    String id, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) => real.fetchAttachment(a, m, id, onProgress: onProgress, cancel: cancel);
 }

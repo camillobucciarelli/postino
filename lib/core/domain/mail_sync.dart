@@ -41,4 +41,14 @@ abstract interface class MailSync {
   /// The Bozza to resume: the local one, or one of another client (its body downloaded if missing,
   /// then kept here); [NotFoundFailure] when there is none.
   Future<Result<OutgoingMessage>> openDraft(String accountId, String messageId);
+
+  /// One attachment straight from the Provider, outside the Account's queue (a download never waits behind
+  /// a sync); for the attachment cache, the UI goes through `AttachmentRepository`.
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String accountId,
+    String messageId,
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  });
 }

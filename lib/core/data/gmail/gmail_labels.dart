@@ -1,5 +1,6 @@
 import '../../domain/message.dart';
 import '../json_objects.dart';
+import 'gmail_failure.dart';
 import 'gmail_http.dart';
 
 /// The Account's Etichette on Gmail: `users.labels` and the label changes of `users.messages.modify`.
@@ -13,15 +14,24 @@ class GmailLabels(final GmailHttp _gmail) {
   /// Listed first, so a repeated creation returns the existing Etichetta instead of Gmail's 409.
   /// Gmail label names are unique regardless of case.
   Future<Label> create(String name) async {
-    final existing = (await list()).where((l) => l.name.toLowerCase() == name.toLowerCase()).firstOrNull;
-    if (existing != null) return existing;
-    final r = await _gmail.send(
-      'POST',
-      'labels',
-      body: {'name': name, 'labelListVisibility': 'labelShow', 'messageListVisibility': 'show'},
-    );
-    return Label(id: r['id'] as String, name: r['name'] as String, kind: LabelKind.etichetta);
+    if (await _named(name) case final existing?) return existing;
+    try {
+      final r = await _gmail.send(
+        'POST',
+        'labels',
+        body: {'name': name, 'labelListVisibility': 'labelShow', 'messageListVisibility': 'show'},
+      );
+      return Label(id: r['id'] as String, name: r['name'] as String, kind: LabelKind.etichetta);
+    } on GmailFailed {
+      // Another client created it between the list and the post: Gmail's 409.
+      // ponytail: any refused post lists again (one GET); match the 409 alone if that ever costs.
+      if (await _named(name) case final existing?) return existing;
+      rethrow;
+    }
   }
+
+  Future<Label?> _named(String name) async =>
+      (await list()).where((l) => l.name.toLowerCase() == name.toLowerCase()).firstOrNull;
 
   /// Idempotent on Gmail: adding a label the message has, or removing one it lacks, changes nothing.
   Future<void> set(String messageId, String labelId, {required bool add}) => _gmail.send(

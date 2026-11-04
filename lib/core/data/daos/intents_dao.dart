@@ -24,24 +24,16 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
 
   /// Puts the Etichetta [labelId] on message [messageId] here at once ([add] false: takes it off)
   /// and queues the same intent for the Provider, replacing any earlier one on the pair.
-  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) => transaction(
-    () async {
-      final row = MessageLabelsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId);
-      if (add) {
-        await into(messageLabels).insert(row, mode: InsertMode.insertOrIgnore);
-      } else {
-        await (delete(messageLabels)
-              ..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId) & t.labelId.equals(labelId)))
-            .go();
-      }
-      await into(labelIntents).insertOnConflictUpdate(
-        LabelIntentsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId, added: add),
-      );
-    },
-  );
+  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) =>
+      transaction(() async {
+        await _setLocal(accountId, messageId, labelId, add: add);
+        await into(labelIntents).insertOnConflictUpdate(
+          LabelIntentsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId, added: add),
+        );
+      });
 
   /// The intent reached the Provider as [added]; one changed meanwhile stays.
-  Future<void> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
+  Future<int> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
       (delete(labelIntents)..where(
             (t) =>
                 t.accountId.equals(accountId) &
@@ -50,4 +42,34 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
                 t.added.equals(added),
           ))
           .go();
+
+  /// The Provider refused the intent [added]: it leaves the queue and the message gets back its Etichetta
+  /// (or loses it) here. One changed meanwhile stays, with its local change.
+  Future<void> labelRejected(String accountId, String messageId, String labelId, {required bool added}) =>
+      transaction(() async {
+        if (await labelDone(accountId, messageId, labelId, added: added) == 0) return;
+        // Put back only on a message still here: one removed meanwhile gets no orphan label.
+        if (!added && await _messageMissing(accountId, messageId)) return;
+        await _setLocal(accountId, messageId, labelId, add: !added);
+      });
+
+  Future<bool> _messageMissing(String accountId, String messageId) async =>
+      await customSelect(
+        'SELECT 1 FROM messages WHERE account_id = ?1 AND id = ?2',
+        variables: [Variable(accountId), Variable(messageId)],
+      ).getSingleOrNull() ==
+      null;
+
+  Future<void> _setLocal(String accountId, String messageId, String labelId, {required bool add}) async {
+    if (add) {
+      await into(messageLabels).insert(
+        MessageLabelsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId),
+        mode: InsertMode.insertOrIgnore,
+      );
+    } else {
+      await (delete(
+        messageLabels,
+      )..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId) & t.labelId.equals(labelId))).go();
+    }
+  }
 }

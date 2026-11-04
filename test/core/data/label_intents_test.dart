@@ -1,7 +1,9 @@
 // Etichette through the offline queue (#105, ADR 0008): here at once, on the Provider when it can.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
@@ -14,6 +16,7 @@ const _viaggi = 'Label_12';
 const _lavoro = Label(id: 'Label_7', name: 'Lavoro', kind: LabelKind.etichetta);
 
 void main() {
+  late Harness h;
   late FakeMailProvider a;
   late SyncEngine engine;
 
@@ -28,8 +31,13 @@ void main() {
     return db.select(db.labelIntents).get();
   }
 
+  Future<List<MessageLabelRow>> labelRows(String id) {
+    final db = getIt<PostinoDatabase>();
+    return (db.select(db.messageLabels)..where((t) => t.messageId.equals(id))).get();
+  }
+
   setUp(() async {
-    final h = await Harness.create();
+    h = await Harness.create();
     a = (await h.addAccount('a'))..deliver(msg('1'));
     engine = getIt<SyncEngine>();
     await engine.syncAll();
@@ -72,7 +80,7 @@ void main() {
   test('a sync before the replay does not undo what was done here', () async {
     a
       ..deliver(msg('2', labelIds: const [inboxLabelId, _viaggi]))
-      ..failSetLabel = true;
+      ..setLabelFailure = const OfflineFailure();
     await engine.syncAll();
     await engine.setLabel('a', '1', _viaggi, add: true);
     await engine.setLabel('a', '2', _viaggi, add: false);
@@ -84,7 +92,7 @@ void main() {
     expect(await here('1'), contains(_viaggi));
     expect(await here('2'), isNot(contains(_viaggi)));
 
-    a.failSetLabel = false;
+    a.setLabelFailure = null;
     await engine.syncAll();
     expect(await there('1'), contains(_viaggi));
     expect(await there('2'), isNot(contains(_viaggi)));
@@ -128,9 +136,61 @@ void main() {
         await engine.syncAll();
         expect(await queued(), isEmpty);
         expect(await getIt<InboxRepository>().watchConversation('a', 't-1').first, isEmpty);
+        expect(await labelRows('1'), isEmpty, reason: 'no orphan label on the removed message');
+      });
+
+      test('refused by the Provider (an Etichetta deleted elsewhere): dropped, and undone here', () async {
+        a.deliver(msg('2', labelIds: const [inboxLabelId, _viaggi]));
+        await engine.syncAll();
+        a.setLabelFailure = const RejectedFailure('no such label');
+        await engine.setLabel('a', '1', _viaggi, add: true);
+        await engine.setLabel('a', '2', _viaggi, add: false);
+        expect(await queued(), isEmpty);
+        expect(await here('1'), isNot(contains(_viaggi)));
+        expect(await here('2'), contains(_viaggi));
       });
     },
   );
+
+  test('a passing failure stops the Etichette replay at the first intent: the rest waits for the next one', () async {
+    a.deliver(msg('2'));
+    await engine.syncAll();
+    a.goOffline();
+    await engine.setLabel('a', '1', _viaggi, add: true);
+    await engine.setLabel('a', '2', _viaggi, add: true);
+    a
+      ..goOnline()
+      ..setLabelFailure = const RateLimitFailure();
+    await engine.flushDrafts('a');
+    expect(a.labelCalls, hasLength(1));
+    expect(await queued(), hasLength(2));
+  });
+
+  test('while the Provider\'s pause holds: done here, queued, the Provider not called', () async {
+    a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.syncAll();
+    a.rateLimit(on: false);
+    await engine.setLabel('a', '1', _viaggi, add: true);
+    expect(await here('1'), contains(_viaggi));
+    expect(await queued(), hasLength(1));
+    expect(a.labelCalls, isEmpty);
+  });
+
+  test('while Da ricollegare: done here, queued, the Provider not called', () async {
+    await getIt<MailStore>().setStatus('a', AccountStatus.daRicollegare);
+    await engine.setLabel('a', '1', _viaggi, add: true);
+    expect(await here('1'), contains(_viaggi));
+    expect(await queued(), hasLength(1));
+    expect(a.labelCalls, isEmpty);
+  });
+
+  test('an intent replaced while the replay ran stays: only the replayed value leaves', () async {
+    final store = getIt<MailStore>();
+    await store.queueLabel('a', '1', _viaggi, add: true);
+    await store.queueLabel('a', '1', _viaggi, add: false);
+    await store.labelDone('a', '1', _viaggi, added: true);
+    expect((await queued()).map((i) => i.added), [false]);
+  });
 
   test('a created Etichetta is listed here at once; offline it is an Err and nothing is stored', () async {
     final created = await engine.createLabel('a', 'Fatture');

@@ -298,7 +298,7 @@ void main() {
       _thread(p);
       // An older unread one in the middle stays expanded too.
       p.deliver(
-        withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), read: false),
+        copyOf(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), isRead: false),
       );
     });
     await _open(tester, 'm3');

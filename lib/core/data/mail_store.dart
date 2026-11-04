@@ -94,6 +94,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
       _db.intentsDao.labelDone(accountId, messageId, labelId, added: added);
 
+  /// The Provider refused the intent: it leaves the queue and the change is undone here.
+  Future<void> labelRejected(String accountId, String messageId, String labelId, {required bool added}) =>
+      _db.intentsDao.labelRejected(accountId, messageId, labelId, added: added);
+
   /// An Etichetta just created on the Provider, listed before the next sync brings it.
   Future<void> saveLabel(String accountId, Label label) => _db.labelsDao.upsert(accountId, label);
 

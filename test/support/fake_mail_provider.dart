@@ -93,10 +93,10 @@ class FakeMailProvider() implements MailProvider {
   /// Every [setRead] that reached the Provider: (ids, read).
   final readCalls = <(List<String>, bool)>[];
 
-  /// While set, [setLabel] fails as offline even though the syncs work: a passing replay failure.
-  bool failSetLabel = false;
+  /// While set, [setLabel] answers it even though the syncs work: a passing replay failure or a refusal.
+  Failure? setLabelFailure;
 
-  /// Every [setLabel] that reached the Provider: (message id, label id, add).
+  /// Every [setLabel] that reached the Provider, refused ones too: (message id, label id, add).
   final labelCalls = <(String, String, bool)>[];
 
   /// Body kind of [fetchBody]; the sync bodies are plain text.
@@ -344,8 +344,8 @@ class FakeMailProvider() implements MailProvider {
         : _guard(() {
             readCalls.add((messageIds, read));
             for (final id in messageIds) {
-              if (_old[id] case final m?) _old[id] = withRead(m, read: read);
-              if (_messages[id] case final m?) deliver(withRead(m, read: read));
+              if (_old[id] case final m?) _old[id] = copyOf(m, isRead: read);
+              if (_messages[id] case final m?) deliver(copyOf(m, isRead: read));
             }
           });
   }
@@ -456,48 +456,30 @@ class FakeMailProvider() implements MailProvider {
 
   @override
   Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) async {
-    final f = _failure ?? (failSetLabel ? const OfflineFailure() : null);
-    if (f != null) return Err(f);
+    if (_failure case final f?) return Err(f);
     labelCalls.add((messageId, labelId, add));
+    if (setLabelFailure case final f?) return Err(f);
     final m = _messages[messageId];
     if (m == null) return const Err(NotFoundFailure());
     final others = m.labelIds.where((l) => l != labelId);
-    deliver(withLabels(m, [...others, if (add) labelId]));
+    deliver(copyOf(m, labelIds: [...others, if (add) labelId]));
     return const Ok(null);
   }
 }
 
-/// [m] with its Etichette changed elsewhere.
-Message withLabels(Message m, List<String> labelIds) => Message(
+/// [m] changed elsewhere: its Etichette or its read state; every other field kept.
+Message copyOf(Message m, {List<String>? labelIds, bool? isRead}) => Message(
   id: m.id,
   messageId: m.messageId,
   conversationId: m.conversationId,
-  labelIds: labelIds,
-  isRead: m.isRead,
+  labelIds: labelIds ?? m.labelIds,
+  isRead: isRead ?? m.isRead,
   isStarred: m.isStarred,
   from: m.from,
   fromName: m.fromName,
   to: m.to,
   cc: m.cc,
-  subject: m.subject,
-  snippet: m.snippet,
-  date: m.date,
-  replyTo: m.replyTo,
-  references: m.references,
-);
-
-/// [m] read (or unread) elsewhere.
-Message withRead(Message m, {required bool read}) => Message(
-  id: m.id,
-  messageId: m.messageId,
-  conversationId: m.conversationId,
-  labelIds: m.labelIds,
-  isRead: read,
-  isStarred: m.isStarred,
-  from: m.from,
-  fromName: m.fromName,
-  to: m.to,
-  cc: m.cc,
+  bcc: m.bcc,
   subject: m.subject,
   snippet: m.snippet,
   date: m.date,

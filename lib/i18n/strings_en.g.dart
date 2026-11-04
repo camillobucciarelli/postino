@@ -182,7 +182,7 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get cc => 'Cc';
 	@override String get showQuoted => 'Show quoted text';
 	@override String get blockedImage => 'Blocked image';
-	@override String opened({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+	@override String announcement({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
 		one: '${subject}, ${n} message',
 		other: '${subject}, ${n} messages',
 	);
@@ -364,7 +364,7 @@ extension on TranslationsEn {
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Show quoted text',
 			'conversazione.blockedImage' => 'Blocked image',
-			'conversazione.opened' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${subject}, ${n} message', other: '${subject}, ${n} messages', ), 
+			'conversazione.announcement' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${subject}, ${n} message', other: '${subject}, ${n} messages', ), 
 			'conversazione.important' => 'Important',
 			'conversazione.attachmentOpen' => 'Open',
 			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Downloading… ${percent}%',

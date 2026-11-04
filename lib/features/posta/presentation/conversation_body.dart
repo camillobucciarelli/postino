@@ -92,7 +92,8 @@ class _ConversationBodyState() extends State<ConversationBody> {
       html: table.html,
       contentWidth: part.width,
       quiet: quiet,
-      blockedImageLabel: context.t.conversazione.blockedImage,
+      // A trusted sender's images are not blocked: a src-less one there is a `cid:` one, labelled by its alt.
+      blockedImageLabel: allow ? null : context.t.conversazione.blockedImage,
       onTapUrl: (url) => unawaited(openTokenLink(context, table, url)),
     );
   }
@@ -142,7 +143,7 @@ class _ConversationBodyState() extends State<ConversationBody> {
     final subject = messages.first.message.subject;
     return PostinoThreadView(
       subject: subject,
-      announcement: t.opened(subject: subject, n: messages.length),
+      announcement: t.announcement(subject: subject, n: messages.length),
       account: accountRef,
       accountName: a.name,
       importantLabel: messages.any((m) => m.message.labelIds.contains('IMPORTANT')) ? t.important : null,

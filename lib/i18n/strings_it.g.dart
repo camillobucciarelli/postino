@@ -292,7 +292,7 @@ class Translations$conversazione$it {
 	String get blockedImage => 'Immagine bloccata';
 
 	/// it: '(one) {$subject, $n messaggio} (other) {$subject, $n messaggi}'
-	String opened({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+	String announcement({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
 		one: '${subject}, ${n} messaggio',
 		other: '${subject}, ${n} messaggi',
 	);
@@ -616,7 +616,7 @@ extension on Translations {
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Mostra testo citato',
 			'conversazione.blockedImage' => 'Immagine bloccata',
-			'conversazione.opened' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${subject}, ${n} messaggio', other: '${subject}, ${n} messaggi', ), 
+			'conversazione.announcement' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${subject}, ${n} messaggio', other: '${subject}, ${n} messaggi', ), 
 			'conversazione.important' => 'Importante',
 			'conversazione.attachmentOpen' => 'Apri',
 			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Scaricamento… ${percent}%',

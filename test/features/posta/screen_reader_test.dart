@@ -4,10 +4,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -124,6 +125,30 @@ void main() {
     expect(body.label, 'Prima risposta');
     final order = node.parent!.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder);
     expect(order.indexOf(node), lessThan(order.indexOf(body)));
+    semantics.dispose();
+  });
+
+  testWidgets('an unread header starts with «Non letto», a read one does not', (tester) async {
+    final semantics = tester.ensureSemantics();
+    Widget message({required bool unread}) => MaterialApp(
+      theme: PostinoTheme.light(),
+      home: Scaffold(
+        body: PostinoThreadMessage(
+          sender: 'Bruno Bianchi',
+          time: '10:05',
+          preview: 'Il logo',
+          expanded: false,
+          onToggle: () {},
+          body: const SizedBox(),
+          unread: unread,
+          unreadLabel: 'Non letto',
+        ),
+      ),
+    );
+    await tester.pumpWidget(message(unread: true));
+    expect(find.bySemanticsLabel('Non letto\nBruno Bianchi\nIl logo\n10:05'), findsOneWidget);
+    await tester.pumpWidget(message(unread: false));
+    expect(find.bySemanticsLabel('Bruno Bianchi\nIl logo\n10:05'), findsOneWidget);
     semantics.dispose();
   });
 

@@ -246,12 +246,12 @@ void main() {
       find.descendant(of: _conversation, matching: find.text('Contratto Rossi')).first,
     );
     expect(subject.getSemanticsData().flagsCollection.isHeader, isTrue);
-    final message = tester.getSemantics(find.byType(PostinoThreadMessage).first);
     final header = tester.getSemantics(
       find.descendant(of: find.byType(PostinoThreadMessage).first, matching: find.byType(InkWell)).first,
     );
     expect(header.getSemanticsData().flagsCollection.isExpanded, Tristate.isTrue);
-    expect(message.getSemanticsData().customSemanticsActionIds, hasLength(1));
+    // On the header, the node screen readers focus, so its details action can be reached.
+    expect(header.getSemanticsData().customSemanticsActionIds, hasLength(1));
     handle.dispose();
   });
 

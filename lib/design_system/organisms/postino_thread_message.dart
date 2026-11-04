@@ -166,19 +166,20 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
         ),
       ),
     );
-    // For screen readers the header is the message's toggle: a button with its expanded state.
+    // For screen readers the header is the message's toggle: a button with its expanded state, and
+    // the focused node, so it carries the details action too.
     final header = Semantics(
       container: true,
       button: true,
       expanded: expanded,
       label: w.unread ? w.unreadLabel : null,
+      customSemanticsActions: expanded && w.details.isNotEmpty
+          ? {CustomSemanticsAction(label: w.recipients ?? ''): () => setState(() => _details = !_details)}
+          : null,
       child: tap,
     );
     return Semantics(
       container: true,
-      customSemanticsActions: expanded && w.details.isNotEmpty
-          ? {CustomSemanticsAction(label: w.recipients ?? ''): () => setState(() => _details = !_details)}
-          : null,
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: c.borderSubtle)),

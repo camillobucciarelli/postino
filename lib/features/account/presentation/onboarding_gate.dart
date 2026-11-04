@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -7,22 +9,37 @@ import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
+import 'notification_permission.dart';
 
-/// Shows the onboarding while there is no Account, [child] afterwards.
+/// Shows the onboarding while there is no Account, [child] afterwards, offering the notifications once per device.
 class const OnboardingGate({super.key, required final Widget child}) extends StatefulWidget {
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
 
 class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
+  /// Set once the Accounts showed up: then the notifications are offered, once per device (#39).
+  bool _offered = false;
+
   @override
-  Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) => switch (accounts.value.value) {
-      null => const SizedBox.shrink(),
-      [] => const _Onboarding(),
-      _ => widget.child,
-    },
-  );
+  Widget build(BuildContext context) => SignalBuilder(builder: _content);
+
+  Widget _content(BuildContext context) {
+    switch (accounts.value.value) {
+      case null:
+        return const SizedBox.shrink();
+      case []:
+        return const _Onboarding();
+      case _:
+        if (!_offered) {
+          _offered = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) unawaited(askNotificationPermission(this.context));
+          });
+        }
+        return widget.child;
+    }
+  }
 }
 
 class const _Onboarding() extends StatefulWidget {

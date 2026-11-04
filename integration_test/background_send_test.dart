@@ -21,15 +21,18 @@ import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/platform_services.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/open_conversation.dart';
 import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/main.dart' show sendOutboxDispatcher;
 import 'package:workmanager/workmanager.dart';
 
 import '../test/support/fake_mail_provider.dart';
+import '../test/support/fake_notifications.dart';
 import '../test/support/fake_platform.dart';
 
 void main() {
@@ -67,7 +70,7 @@ void main() {
     GetIt.I
       ..registerSingleton<OutboxRepository>(outbox)
       ..registerSingleton<SyncEngine>(
-        SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), FakeErrorLog()),
+        SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store), FakeErrorLog()),
       );
     await outbox.enqueueOutgoing(
       'a',
@@ -87,15 +90,30 @@ void main() {
 
     // Invia, then the app dies before the window ends: the row stays.
     final clock = FakeClock(DateTime.now().toUtc());
-    final first = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), FakeErrorLog());
+    final first = SyncEngine(
+      store,
+      outbox,
+      clock,
+      FakeConnectivity(),
+      FakeBackgroundSender(),
+      _notifier(store),
+      FakeErrorLog(),
+    );
     await first.send('a', message);
     await first.stop();
     expect(provider.sent, isEmpty);
 
     // The next start sends what is due.
     clock.advance(const Duration(minutes: 1));
-    final restarted = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), FakeErrorLog())
-      ..start();
+    final restarted = SyncEngine(
+      store,
+      outbox,
+      clock,
+      FakeConnectivity(),
+      FakeBackgroundSender(),
+      _notifier(store),
+      FakeErrorLog(),
+    )..start();
     addTearDown(restarted.stop);
     await tester.pumpAndSettle();
     expect(provider.sent, hasLength(1));
@@ -110,6 +128,9 @@ const _message = OutgoingMessage(
   subject: 's',
   body: '<p>Ciao</p>',
 );
+
+/// The engine's notifier, with notifications that are only recorded.
+NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotifications(), OpenConversation());
 
 /// A fresh SQLCipher database file with Account `a`, whose fake Provider is registered by its id.
 Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(String name) async {

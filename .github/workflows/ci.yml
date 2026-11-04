@@ -64,49 +64,10 @@ jobs:
           dart run build_runner build
       - run: flutter build apk --debug
 
-  # Build hosted: solo manuali (workflow_dispatch) per risparmiare minuti Actions.
-  linux:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-      - name: Linux build dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev
-      - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
-      - run: flutter build linux
-
-  windows:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: windows-2022
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-      - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
-      - run: flutter build windows
+  # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
+  # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
+  # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history
+  # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
 
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the

@@ -14,6 +14,7 @@ import '../domain/result.dart';
 import 'mail_store.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
+import 'sync/new_mail_notifier.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
 
@@ -30,6 +31,7 @@ class SyncEngine(
   final Clock _clock,
   final Connectivity _connectivity,
   final BackgroundSender _background,
+  final NewMailNotifier _newMail,
   final ErrorLog _log,
 ) implements MailSync {
   late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log);
@@ -310,8 +312,12 @@ class SyncEngine(
     }
     switch (result) {
       case Ok(:final value):
+        // Before the apply, which makes every message known; the initial sync notifies nothing (#39).
+        // ponytail: a sync redone for an expired cursor notifies nothing either; diff against the database if that loses mail.
+        final fresh = full ? const <Message>[] : await _newMail.fresh(accountId, value.messages);
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
+        await _newMail.notify(accountId, fresh);
         debugPrint(
           '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
           '${value.messages.length} messages, ${value.removedMessageIds.length} removed',

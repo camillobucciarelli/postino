@@ -90,32 +90,38 @@ class const PostinoAppBar({
               : null,
           actions: actions,
           titleSpacing: spacing,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                spacing: PostinoSpacing.s2,
-                children: [
-                  if (a != null) PostinoAccountMark(color: a.color, initial: a.initial, size: _markSize),
-                  Flexible(
-                    child: Text(
-                      title,
-                      maxLines: wrap ? null : 1,
-                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
-                      style: titleStyle,
+          // The AppBar clamps its title to 1.34 and sets `softWrap: false`: undo both, the text is at the user's size.
+          title: MediaQuery(
+            data: MediaQuery.of(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  spacing: PostinoSpacing.s2,
+                  children: [
+                    if (a != null) PostinoAccountMark(color: a.color, initial: a.initial, size: _markSize),
+                    Flexible(
+                      child: Text(
+                        title,
+                        softWrap: true,
+                        maxLines: wrap ? null : 1,
+                        overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                        style: titleStyle,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              if (subtitle case final s?)
-                Text(
-                  s,
-                  maxLines: wrap ? null : 1,
-                  overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
-                  style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                  ],
                 ),
-            ],
+                if (subtitle case final s?)
+                  Text(
+                    s,
+                    softWrap: true,
+                    maxLines: wrap ? null : 1,
+                    overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                    style: PostinoText.meta.copyWith(color: c.inkSubtle),
+                  ),
+              ],
+            ),
           ),
         );
       },

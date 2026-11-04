@@ -39,6 +39,8 @@ Future<Harness> _start(WidgetTester tester, {bool supported = true, bool firstRu
 Future<void> _openSettings(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('drawer-impostazioni')));
   await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('settings-device')));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -105,18 +107,22 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('Esc goes back to the Posta', (tester) async {
+  testWidgets('Esc goes back to the Impostazioni, then to the Posta', (tester) async {
     await _start(tester);
     await _openSettings(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    expect(find.text('Impostazioni del dispositivo'), findsNothing);
+    expect(find.text('Impostazioni del dispositivo'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-device')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-device')), findsNothing);
     expect(find.text('Posta unificata'), findsWidgets);
   });
 
   testWidgets('opened by a link with nothing under it, back goes to the Posta unificata', (tester) async {
     await _start(tester);
-    unawaited(Routefly.navigate(routePaths.impostazioni));
+    unawaited(Routefly.navigate(routePaths.impostazioni.dispositivo));
     await tester.pumpAndSettle();
     expect(find.text('Impostazioni del dispositivo'), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -137,9 +143,11 @@ void main() {
     expect(_switchOn(tester), isTrue);
   });
 
-  testWidgets('no Impostazioni in the drawer where there is no avvio al login (mobile)', (tester) async {
+  testWidgets('no device settings where there is no avvio al login (mobile)', (tester) async {
     final h = await _start(tester, supported: false);
-    expect(find.byKey(const ValueKey('drawer-impostazioni')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('drawer-impostazioni')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-device')), findsNothing);
     expect(h.launchAtLogin.changes, isEmpty);
   });
 }

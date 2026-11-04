@@ -32,15 +32,11 @@ class PostinoSinglePaneLayout extends StatelessWidget {
         Padding(
           // Side margins: space-4 on the phone, space-6 from the tablet up.
           padding: EdgeInsets.symmetric(
-            horizontal:
-                MediaQuery.sizeOf(context).width < PostinoSize.breakpointMedium
+            horizontal: MediaQuery.sizeOf(context).width < PostinoSize.breakpointMedium
                 ? PostinoSpacing.s4
                 : PostinoSpacing.s6,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: banners,
-          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: banners),
         ),
         Expanded(child: body),
       ],

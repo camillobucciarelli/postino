@@ -13,14 +13,11 @@ class TrustedSendersStore implements TrustedSendersRepository {
   Stream<Set<String>> watchTrusted() => _db.trustedSendersDao.watchAll();
 
   @override
-  Future<void> trust(String from) =>
-      _db.trustedSendersDao.add(normalizeAddress(from));
+  Future<void> trust(String from) => _db.trustedSendersDao.add(normalizeAddress(from));
 
   @override
-  void showOnce(String accountId, String messageId) =>
-      _shown.add((accountId, messageId));
+  void showOnce(String accountId, String messageId) => _shown.add((accountId, messageId));
 
   @override
-  bool shownOnce(String accountId, String messageId) =>
-      _shown.contains((accountId, messageId));
+  bool shownOnce(String accountId, String messageId) => _shown.contains((accountId, messageId));
 }

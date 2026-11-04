@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/molecules/postino_message_details_panel.dart' show PostinoMessageDetailsPanel;
 
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
@@ -9,12 +10,7 @@ import '../tokens/postino_tokens.dart';
 /// Of `PostinoThreadMessage` only (not in the barrel), like [PostinoMessageDetailsPanel].
 /// “a me, cc Marco”: opens the details when there are some.
 class PostinoMessageRecipients extends StatelessWidget {
-  const PostinoMessageRecipients({
-    super.key,
-    required this.label,
-    required this.open,
-    required this.onTap,
-  });
+  const PostinoMessageRecipients({super.key, required this.label, required this.open, required this.onTap});
 
   /// The recipients, already formatted.
   final String label;
@@ -27,8 +23,7 @@ class PostinoMessageRecipients extends StatelessWidget {
 
   // The compact row is a button (it opens the details): out of any selection.
   @override
-  Widget build(BuildContext context) =>
-      SelectionContainer.disabled(child: _row(context));
+  Widget build(BuildContext context) => SelectionContainer.disabled(child: _row(context));
 
   Widget _row(BuildContext context) {
     final c = context.pc;
@@ -53,9 +48,7 @@ class PostinoMessageRecipients extends StatelessWidget {
         onTap: onTap,
         child: ConstrainedBox(
           key: const ValueKey('recipients-target'),
-          constraints: const BoxConstraints(
-            minHeight: PostinoSize.touchTargetAndroid,
-          ),
+          constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
           child: Align(
             alignment: Alignment.centerLeft,
             widthFactor: 1,
@@ -65,18 +58,11 @@ class PostinoMessageRecipients extends StatelessWidget {
               child: InkWell(
                 key: const ValueKey('recipients-toggle'),
                 onTap: onTap,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(PostinoRadius.sm),
-                ),
+                borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
                 child: PostinoFocusRing(
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(PostinoRadius.sm),
-                  ),
+                  borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: PostinoSpacing.s2,
-                      vertical: PostinoSpacing.s1,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2, vertical: PostinoSpacing.s1),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       spacing: PostinoSpacing.s1,
@@ -84,11 +70,7 @@ class PostinoMessageRecipients extends StatelessWidget {
                         Flexible(child: text),
                         RotatedBox(
                           quarterTurns: open ? 2 : 0,
-                          child: PostinoIcon(
-                            PostinoIcons.chevronDown,
-                            size: PostinoSize.iconSm,
-                            color: c.inkMuted,
-                          ),
+                          child: PostinoIcon(PostinoIcons.chevronDown, size: PostinoSize.iconSm, color: c.inkMuted),
                         ),
                       ],
                     ),

@@ -37,30 +37,10 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     [(c) => c.listItemBg, (c) => c.listItemBgSelected],
     _text,
   ),
-  (
-    'MessageTile unread time',
-    (c) => c.brand,
-    [(c) => c.listItemBg, (c) => c.listItemBgSelected],
-    _text,
-  ),
-  (
-    'MessageTile unread dot',
-    (c) => c.unread,
-    [(c) => c.listItemBg, (c) => c.listItemBgSelected],
-    _ui,
-  ),
-  (
-    'unread dot of the icon sidebar',
-    (c) => c.unread,
-    [(c) => c.drawerBg, (c) => c.drawerItemBgActive],
-    _ui,
-  ),
-  (
-    'Da ricollegare badge of the icon sidebar',
-    (c) => c.warning,
-    [(c) => c.drawerBg],
-    _ui,
-  ),
+  ('MessageTile unread time', (c) => c.brand, [(c) => c.listItemBg, (c) => c.listItemBgSelected], _text),
+  ('MessageTile unread dot', (c) => c.unread, [(c) => c.listItemBg, (c) => c.listItemBgSelected], _ui),
+  ('unread dot of the icon sidebar', (c) => c.unread, [(c) => c.drawerBg, (c) => c.drawerItemBgActive], _ui),
+  ('Da ricollegare badge of the icon sidebar', (c) => c.warning, [(c) => c.drawerBg], _ui),
   (
     'star in the list, Importante in the Conversazione',
     (c) => c.star,
@@ -70,20 +50,10 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
   (
     'ink text',
     (c) => c.ink,
-    [
-      (c) => c.surface,
-      (c) => c.surfaceRaised,
-      (c) => c.surfaceGround,
-      (c) => c.surfaceSelected,
-    ],
+    [(c) => c.surface, (c) => c.surfaceRaised, (c) => c.surfaceGround, (c) => c.surfaceSelected],
     _text,
   ),
-  (
-    'ink-muted text',
-    (c) => c.inkMuted,
-    [(c) => c.surface, (c) => c.surfaceGround],
-    _text,
-  ),
+  ('ink-muted text', (c) => c.inkMuted, [(c) => c.surface, (c) => c.surfaceGround], _text),
   (
     'ink-muted icons (IconButton, chevron, quote toggle)',
     (c) => c.inkMuted,
@@ -97,34 +67,14 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     _text,
   ),
   ('drawer section title', (c) => c.inkSubtle, [(c) => c.drawerBg], _text),
-  (
-    'drawer item',
-    (c) => c.drawerItemFg,
-    [(c) => c.drawerBg, (c) => c.drawerItemBgActive],
-    _text,
-  ),
+  ('drawer item', (c) => c.drawerItemFg, [(c) => c.drawerBg, (c) => c.drawerItemBgActive], _text),
   ('drawer item icon', (c) => c.drawerItemIcon, [(c) => c.drawerBg], _ui),
-  (
-    'drawer active item icon',
-    (c) => c.drawerItemIconActive,
-    [(c) => c.drawerItemBgActive],
-    _ui,
-  ),
-  (
-    'SyncStatus icon',
-    (c) => c.warning,
-    [(c) => c.drawerBg, (c) => c.surface],
-    _ui,
-  ),
+  ('drawer active item icon', (c) => c.drawerItemIconActive, [(c) => c.drawerItemBgActive], _ui),
+  ('SyncStatus icon', (c) => c.warning, [(c) => c.drawerBg, (c) => c.surface], _ui),
   (
     'Banner text',
     (c) => c.ink,
-    [
-      (c) => c.dangerSubtle,
-      (c) => c.warningSubtle,
-      (c) => c.brandSubtle,
-      (c) => c.surfacePressed,
-    ],
+    [(c) => c.dangerSubtle, (c) => c.warningSubtle, (c) => c.brandSubtle, (c) => c.surfacePressed],
     _text,
   ),
   ('Banner danger icon', (c) => c.danger, [(c) => c.dangerSubtle], _ui),
@@ -133,12 +83,7 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
   ('Banner offline icon', (c) => c.inkMuted, [(c) => c.surfacePressed], _ui),
   ('EmptyState icon', (c) => c.brand, [(c) => c.surfaceSelected], _ui),
   ('primary button', (c) => c.onBrand, [(c) => c.brand], _text),
-  (
-    'ghost button',
-    (c) => c.brand,
-    [(c) => c.surface, (c) => c.surfaceRaised],
-    _text,
-  ),
+  ('ghost button', (c) => c.brand, [(c) => c.surface, (c) => c.surfaceRaised], _text),
   ('FAB', (c) => c.fabFg, [(c) => c.fabBg], _text),
   (
     'AccountMark initial',
@@ -153,75 +98,25 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
       [(c) => c.listItemBg, (c) => c.drawerBg, (c) => c.surface],
       _ui,
     ),
-  (
-    'Avatar, LabelChip (stone)',
-    (c) => c.labelStoneFg,
-    [(c) => c.labelStoneBg],
-    _text,
-  ),
-  (
-    'Avatar, LabelChip (sand)',
-    (c) => c.labelSandFg,
-    [(c) => c.labelSandBg],
-    _text,
-  ),
-  (
-    'Avatar, LabelChip (sage)',
-    (c) => c.labelSageFg,
-    [(c) => c.labelSageBg],
-    _text,
-  ),
-  (
-    'Avatar, LabelChip (sea)',
-    (c) => c.labelSeaFg,
-    [(c) => c.labelSeaBg],
-    _text,
-  ),
-  (
-    'Avatar, LabelChip (lilac)',
-    (c) => c.labelLilacFg,
-    [(c) => c.labelLilacBg],
-    _text,
-  ),
-  (
-    'Avatar, LabelChip (blush)',
-    (c) => c.labelBlushFg,
-    [(c) => c.labelBlushBg],
-    _text,
-  ),
+  ('Avatar, LabelChip (stone)', (c) => c.labelStoneFg, [(c) => c.labelStoneBg], _text),
+  ('Avatar, LabelChip (sand)', (c) => c.labelSandFg, [(c) => c.labelSandBg], _text),
+  ('Avatar, LabelChip (sage)', (c) => c.labelSageFg, [(c) => c.labelSageBg], _text),
+  ('Avatar, LabelChip (sea)', (c) => c.labelSeaFg, [(c) => c.labelSeaBg], _text),
+  ('Avatar, LabelChip (lilac)', (c) => c.labelLilacFg, [(c) => c.labelLilacBg], _text),
+  ('Avatar, LabelChip (blush)', (c) => c.labelBlushFg, [(c) => c.labelBlushBg], _text),
   (
     'strong borders (outlined button, checkbox, switch, drag handle, list resize handle)',
     (c) => c.borderStrong,
-    [
-      (c) => c.surface,
-      (c) => c.surfaceRaised,
-      (c) => c.surfaceGround,
-      (c) => c.listItemBg,
-    ],
+    [(c) => c.surface, (c) => c.surfaceRaised, (c) => c.surfaceGround, (c) => c.listItemBg],
     _ui,
   ),
-  (
-    'input border',
-    (c) => c.inputBorder,
-    [(c) => c.inputBg, (c) => c.surface],
-    _ui,
-  ),
-  (
-    'input border with focus',
-    (c) => c.inputBorderFocus,
-    [(c) => c.inputBg],
-    _ui,
-  ),
+  ('input border', (c) => c.inputBorder, [(c) => c.inputBg, (c) => c.surface], _ui),
+  ('input border with focus', (c) => c.inputBorderFocus, [(c) => c.inputBg], _ui),
   ('input border in error', (c) => c.inputBorderError, [(c) => c.inputBg], _ui),
   ('tooltip', (c) => c.inkInverse, [(c) => c.surfaceInverse], _text),
   ('SnackBar text', (c) => c.snackbarFg, [(c) => c.snackbarBg], _text),
   ('SnackBar action', (c) => c.snackbarAction, [(c) => c.snackbarBg], _text),
-  (
-    'Material Chip',
-    (c) => c.chipFg,
-    [(c) => c.chipBg, (c) => c.chipBgSelected],
-    _text,
-  ),
+  ('Material Chip', (c) => c.chipFg, [(c) => c.chipBg, (c) => c.chipBgSelected], _text),
   ('TabBar indicator', (c) => c.tabIndicator, [(c) => c.surface], _ui),
   ('Switch track on', (c) => c.switchTrackOn, [(c) => c.surface], _ui),
   (
@@ -261,29 +156,18 @@ final _rows = <(String, List<_Token>, List<(String, _Token, double)>)>[
   (
     'ThreadMessage header',
     [(c) => c.surface],
-    [
-      ('ink', (c) => c.ink, _text),
-      ('ink-muted', (c) => c.inkMuted, _text),
-      ('ink-subtle', (c) => c.inkSubtle, _text),
-    ],
+    [('ink', (c) => c.ink, _text), ('ink-muted', (c) => c.inkMuted, _text), ('ink-subtle', (c) => c.inkSubtle, _text)],
   ),
 ];
 
 void main() {
-  for (final (theme, data) in [
-    ('light', PostinoTheme.light()),
-    ('dark', PostinoTheme.dark()),
-  ]) {
+  for (final (theme, data) in [('light', PostinoTheme.light()), ('dark', PostinoTheme.dark())]) {
     final c = data.extension<PostinoColors>()!;
     group(theme, () {
       for (final (where, fg, bgs, min) in _pairs) {
         test(where, () {
           for (final bg in bgs) {
-            expect(
-              _ratio(fg(c), bg(c)),
-              greaterThanOrEqualTo(min),
-              reason: '${fg(c)} on ${bg(c)}',
-            );
+            expect(_ratio(fg(c), bg(c)), greaterThanOrEqualTo(min), reason: '${fg(c)} on ${bg(c)}');
           }
         });
       }
@@ -303,11 +187,7 @@ void main() {
             for (final (state, layers) in overlays) {
               final lit = layers.fold(bg(c), (b, o) => Color.alphaBlend(o, b));
               for (final (name, fg, min) in texts) {
-                expect(
-                  _ratio(fg(c), lit),
-                  greaterThanOrEqualTo(min),
-                  reason: '$name on ${bg(c)} + $state',
-                );
+                expect(_ratio(fg(c), lit), greaterThanOrEqualTo(min), reason: '$name on ${bg(c)} + $state');
               }
             }
           }
@@ -315,22 +195,10 @@ void main() {
       }
 
       test('the inset focus ring stands out from the rows it lights up', () {
-        for (final bg in [
-          c.listItemBg,
-          c.listItemBgSelected,
-          c.surface,
-          c.drawerBg,
-          c.drawerItemBgActive,
-        ]) {
-          for (final (state, layers) in overlays.where(
-            (o) => o.$1.startsWith('focus'),
-          )) {
+        for (final bg in [c.listItemBg, c.listItemBgSelected, c.surface, c.drawerBg, c.drawerItemBgActive]) {
+          for (final (state, layers) in overlays.where((o) => o.$1.startsWith('focus'))) {
             final lit = layers.fold(bg, (b, o) => Color.alphaBlend(o, b));
-            expect(
-              _ratio(c.focusRing, lit),
-              greaterThanOrEqualTo(_ui),
-              reason: 'focus-ring on $bg + $state',
-            );
+            expect(_ratio(c.focusRing, lit), greaterThanOrEqualTo(_ui), reason: 'focus-ring on $bg + $state');
           }
         }
       });

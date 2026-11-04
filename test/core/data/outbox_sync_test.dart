@@ -25,16 +25,9 @@ import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
 OutgoingMessage _message(String messageId, {String body = '<p>Ciao</p>'}) =>
-    OutgoingMessage(
-      messageId: messageId,
-      from: 'a@example.com',
-      to: const ['b@example.com'],
-      subject: 's',
-      body: body,
-    );
+    OutgoingMessage(messageId: messageId, from: 'a@example.com', to: const ['b@example.com'], subject: 's', body: body);
 
-Matcher _okAt(DateTime deadline) =>
-    isA<Ok<DateTime>>().having((r) => r.value, 'value', deadline);
+Matcher _okAt(DateTime deadline) => isA<Ok<DateTime>>().having((r) => r.value, 'value', deadline);
 
 void main() {
   late Harness h;
@@ -42,12 +35,9 @@ void main() {
   late SyncEngine engine;
   const id = '<x@example.com>';
 
-  Future<List<OutboxRow>> outbox() =>
-      GetIt.I<PostinoDatabase>().outboxDao.watch('a').first;
-  Future<DraftRow?> draftRow() =>
-      GetIt.I<PostinoDatabase>().draftsDao.byId('a', id);
-  Future<List<InboxEntry>> inviati() =>
-      GetIt.I<InboxRepository>().watchMessages('a', sentLabelId).first;
+  Future<List<OutboxRow>> outbox() => GetIt.I<PostinoDatabase>().outboxDao.watch('a').first;
+  Future<DraftRow?> draftRow() => GetIt.I<PostinoDatabase>().draftsDao.byId('a', id);
+  Future<List<InboxEntry>> inviati() => GetIt.I<InboxRepository>().watchMessages('a', sentLabelId).first;
 
   setUp(() async {
     h = await Harness.create();
@@ -129,26 +119,23 @@ void main() {
     expect(await engine.cancelSend('a', id), isNull);
   });
 
-  test(
-    'offline the message stays queued and goes once when the network returns',
-    () async {
-      engine.start();
-      addTearDown(engine.stop);
-      await pumpEventQueue();
-      a.goOffline();
-      await engine.send('a', _message(id));
-      h.clock.advance(sendWindow);
-      await pumpEventQueue();
-      expect(a.sent, isEmpty);
-      expect(await outbox(), hasLength(1));
+  test('offline the message stays queued and goes once when the network returns', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.goOffline();
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, isEmpty);
+    expect(await outbox(), hasLength(1));
 
-      a.goOnline();
-      h.connectivity.online = true;
-      await pumpEventQueue();
-      expect(a.sent, [(id, 's-1')]);
-      expect(await outbox(), isEmpty);
-    },
-  );
+    a.goOnline();
+    h.connectivity.online = true;
+    await pumpEventQueue();
+    expect(a.sent, [(id, 's-1')]);
+    expect(await outbox(), isEmpty);
+  });
 
   test('a lost answer: the row stays, the next poll finds the message in Inviati and does not send it again', () async {
     engine.start();
@@ -221,46 +208,36 @@ void main() {
     attachments: [ForwardedAttachment('m0', att)],
   );
 
-  test('offline, a forward whose attachment was opened here is queued from the cache; one never opened is OfflineFailure', () async {
-    final opened = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
-    final never = a.attach('m0', 'Altro.pdf', [4, 5]);
-    expect(
-      await GetIt.I<AttachmentRepository>().file('a', 'm0', opened),
-      isA<Ok<String>>(),
-    );
-    a.goOffline();
-    expect(await engine.send('a', forward(opened)), isA<Ok<DateTime>>());
-    expect((await outbox()).single.raw, contains('Contratto.pdf'));
-
-    await engine.cancelSend('a', id);
-    expect(
-      await engine.send('a', forward(never)),
-      isA<Err<DateTime>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<OfflineFailure>(),
-      ),
-    );
-    expect((await outbox()).single.failed, isTrue);
-  });
-
   test(
-    'the Annulla window starts once the forwarded attachments are downloaded',
+    'offline, a forward whose attachment was opened here is queued from the cache; one never opened is OfflineFailure',
     () async {
-      final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
-      a.holdAttachment = Completer();
-      final sending = engine.send('a', forward(att));
-      await pumpEventQueue();
-      h.clock.advance(const Duration(seconds: 7));
-      a.holdAttachment!.complete();
-      final deadline = h.clock.now().add(sendWindow);
-      expect(await sending, _okAt(deadline));
+      final opened = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+      final never = a.attach('m0', 'Altro.pdf', [4, 5]);
+      expect(await GetIt.I<AttachmentRepository>().file('a', 'm0', opened), isA<Ok<String>>());
+      a.goOffline();
+      expect(await engine.send('a', forward(opened)), isA<Ok<DateTime>>());
+      expect((await outbox()).single.raw, contains('Contratto.pdf'));
+
+      await engine.cancelSend('a', id);
       expect(
-        (await outbox()).single.sendAfter,
-        deadline.millisecondsSinceEpoch,
+        await engine.send('a', forward(never)),
+        isA<Err<DateTime>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
       );
+      expect((await outbox()).single.failed, isTrue);
     },
   );
+
+  test('the Annulla window starts once the forwarded attachments are downloaded', () async {
+    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+    a.holdAttachment = Completer();
+    final sending = engine.send('a', forward(att));
+    await pumpEventQueue();
+    h.clock.advance(const Duration(seconds: 7));
+    a.holdAttachment!.complete();
+    final deadline = h.clock.now().add(sendWindow);
+    expect(await sending, _okAt(deadline));
+    expect((await outbox()).single.sendAfter, deadline.millisecondsSinceEpoch);
+  });
 
   test('an obsolete preparation cannot fill or drop the row of a newer Invia of the same Message-ID', () async {
     final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
@@ -273,14 +250,7 @@ void main() {
     final deadline = h.clock.now().add(sendWindow);
     expect(await engine.send('a', second), _okAt(deadline));
     old.complete();
-    expect(
-      await first,
-      isA<Err<DateTime>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<CancelledFailure>(),
-      ),
-    );
+    expect(await first, isA<Err<DateTime>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
     final row = (await outbox()).single;
     expect(row.raw, contains('Nuovo'));
     expect(row.raw, isNot(contains('Contratto.pdf')));
@@ -290,33 +260,26 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
-  test('Annulla while the forwarded attachments download: true, the row is gone, send is Cancelled, nothing goes', () async {
-    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
-    a.holdAttachment = Completer();
-    final sending = engine.send('a', forward(att));
-    await pumpEventQueue();
-    // Born at the start of the preparation: not in Bozze, shown in Inviati's outbox as waiting.
-    expect(
-      (await outbox()).single.sendAfter,
-      greaterThan(h.clock.now().millisecondsSinceEpoch),
-    );
-    expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
-    expect(await engine.cancelSend('a', id), id);
-    expect(await outbox(), isEmpty);
-    a.holdAttachment!.complete();
-    expect(
-      await sending,
-      isA<Err<DateTime>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<CancelledFailure>(),
-      ),
-    );
-    h.clock.advance(sendWindow);
-    await pumpEventQueue();
-    expect(await outbox(), isEmpty);
-    expect(a.sendCalls, 0);
-  });
+  test(
+    'Annulla while the forwarded attachments download: true, the row is gone, send is Cancelled, nothing goes',
+    () async {
+      final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+      a.holdAttachment = Completer();
+      final sending = engine.send('a', forward(att));
+      await pumpEventQueue();
+      // Born at the start of the preparation: not in Bozze, shown in Inviati's outbox as waiting.
+      expect((await outbox()).single.sendAfter, greaterThan(h.clock.now().millisecondsSinceEpoch));
+      expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
+      expect(await engine.cancelSend('a', id), id);
+      expect(await outbox(), isEmpty);
+      a.holdAttachment!.complete();
+      expect(await sending, isA<Err<DateTime>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect(await outbox(), isEmpty);
+      expect(a.sendCalls, 0);
+    },
+  );
 
   test('a replay blocked on a Bozza upload does not send a message cancelled meanwhile', () async {
     const other = '<o@example.com>';
@@ -336,26 +299,20 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
-  test(
-    'a 400 refusal of the send marks the row failed and is not retried',
-    () async {
-      engine.start();
-      addTearDown(engine.stop);
-      await pumpEventQueue();
-      a.sendFailure = const RejectedFailure('x');
-      await engine.send('a', _message(id));
-      h.clock.advance(sendWindow);
-      await pumpEventQueue();
-      expect((await outbox()).single.failed, isTrue);
-      expect(
-        (await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed,
-        isTrue,
-      );
-      h.clock.advance(pollEvery);
-      await pumpEventQueue();
-      expect(a.sendCalls, 1);
-    },
-  );
+  test('a 400 refusal of the send marks the row failed and is not retried', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.sendFailure = const RejectedFailure('x');
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect((await outbox()).single.failed, isTrue);
+    expect((await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed, isTrue);
+    h.clock.advance(pollEvery);
+    await pumpEventQueue();
+    expect(a.sendCalls, 1);
+  });
 
   test('Annulla while the send is in flight waits for it: false, and the message is in Inviati', () async {
     a.holdSend = Completer();
@@ -383,14 +340,7 @@ void main() {
     expect(a.sendCalls, 1);
     // While the first send is held, the second row (already read as due) is cancelled and queued again.
     final db = GetIt.I<PostinoDatabase>();
-    expect(
-      await db.outboxDao.cancel(
-        'a',
-        other,
-        h.clock.now().millisecondsSinceEpoch,
-      ),
-      isTrue,
-    );
+    expect(await db.outboxDao.cancel('a', other, h.clock.now().millisecondsSinceEpoch), isTrue);
     await engine.send('a', _message(other, body: '<p>Nuovo</p>'));
     a.holdSend!.complete();
     a.holdSend = null;
@@ -432,10 +382,7 @@ void main() {
     await pumpEventQueue();
     expect(a.sendCalls, 2);
     final claimed = (await outbox()).where((r) => r.claimedUntil != null);
-    expect(
-      claimed.single.claimedUntil,
-      greaterThan(h.clock.now().millisecondsSinceEpoch),
-    );
+    expect(claimed.single.claimedUntil, greaterThan(h.clock.now().millisecondsSinceEpoch));
     a.holdSend!.complete();
     await pumpEventQueue();
   });
@@ -480,10 +427,7 @@ void main() {
     await pumpEventQueue();
     expect(a.sendCalls, 1);
     expect((await outbox()).single.failed, isTrue);
-    expect(
-      (await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed,
-      isTrue,
-    );
+    expect((await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed, isTrue);
     // Nothing left to send: the platform is let go.
     expect(h.background.releases, ['a']);
 
@@ -496,28 +440,18 @@ void main() {
   });
 
   test('a message over the Gmail limit is refused, kept as failed and replaced by the next Invia', () async {
-    final r = await engine.send(
-      'a',
-      _message(id, body: '<p>${'x' * (gmailSendLimitBytes + 1)}</p>'),
-    );
+    final r = await engine.send('a', _message(id, body: '<p>${'x' * (gmailSendLimitBytes + 1)}</p>'));
     expect(
       r,
       isA<Err<void>>().having(
         (e) => e.failure,
         'failure',
-        isA<SizeLimitFailure>().having(
-          (f) => f.limitBytes,
-          'limitBytes',
-          gmailSendLimitBytes,
-        ),
+        isA<SizeLimitFailure>().having((f) => f.limitBytes, 'limitBytes', gmailSendLimitBytes),
       ),
     );
     // Kept as failed (the composer may be gone): Inviati shows it, and a new Invia replaces it.
     expect((await outbox()).single.failed, isTrue);
-    expect(
-      (await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed,
-      isTrue,
-    );
+    expect((await GetIt.I<InboxRepository>().watchOutbox('a').first).single.failed, isTrue);
     final retry = await engine.send('a', _message(id));
     expect(retry, isA<Ok<DateTime>>());
     final rows = await outbox();
@@ -525,33 +459,34 @@ void main() {
     expect(rows.single.raw, isNotEmpty);
   });
 
-  test('during the pause after a RateLimitFailure the flush waits; the message goes with the first sync after it', () async {
-    engine.start();
-    addTearDown(engine.stop);
-    await pumpEventQueue();
-    final until = h.clock.now().add(const Duration(minutes: 5));
-    a.rateLimit(true, until);
-    a.deliver(msg('3'));
-    await pumpEventQueue();
-    a.rateLimit(false);
+  test(
+    'during the pause after a RateLimitFailure the flush waits; the message goes with the first sync after it',
+    () async {
+      engine.start();
+      addTearDown(engine.stop);
+      await pumpEventQueue();
+      final until = h.clock.now().add(const Duration(minutes: 5));
+      a.rateLimit(true, until);
+      a.deliver(msg('3'));
+      await pumpEventQueue();
+      a.rateLimit(false);
 
-    await engine.send('a', _message(id));
-    h.clock.advance(sendWindow);
-    await pumpEventQueue();
-    expect(a.sent, isEmpty);
-    expect(await outbox(), hasLength(1));
+      await engine.send('a', _message(id));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect(a.sent, isEmpty);
+      expect(await outbox(), hasLength(1));
 
-    h.clock.advance(const Duration(minutes: 5));
-    await pumpEventQueue();
-    expect(a.sent, [(id, 's-1')]);
-    expect(await outbox(), isEmpty);
-  });
+      h.clock.advance(const Duration(minutes: 5));
+      await pumpEventQueue();
+      expect(a.sent, [(id, 's-1')]);
+      expect(await outbox(), isEmpty);
+    },
+  );
 
   test('a queued message is not listed in Bozze (local row nor the Provider\'s), and is again after Annulla', () async {
     Future<List<String>> listed() async =>
-        (await GetIt.I<InboxRepository>().watchDrafts('a').first)
-            .map((m) => m.messageId)
-            .toList();
+        (await GetIt.I<InboxRepository>().watchDrafts('a').first).map((m) => m.messageId).toList();
     await engine.saveDraft('a', _message(id));
     await engine.flushDrafts('a');
     await engine.syncAll(); // the Provider lists it as DRAFT too
@@ -568,16 +503,11 @@ void main() {
   test('a remote-only Bozza with a queued Message-ID is not listed in Bozze, and is after Annulla', () async {
     const remote = '<r@example.com>';
     Future<List<String>> listed() async =>
-        (await GetIt.I<InboxRepository>().watchDrafts('a').first)
-            .map((m) => m.messageId)
-            .toList();
+        (await GetIt.I<InboxRepository>().watchDrafts('a').first).map((m) => m.messageId).toList();
     a.deliverDraft(_message(remote));
     await engine.syncAll();
     expect(await listed(), [remote]);
-    expect(
-      await GetIt.I<PostinoDatabase>().draftsDao.byId('a', remote),
-      isNull,
-    );
+    expect(await GetIt.I<PostinoDatabase>().draftsDao.byId('a', remote), isNull);
 
     await engine.send('a', _message(remote));
     expect(await listed(), isEmpty);
@@ -590,9 +520,7 @@ void main() {
     await engine.send('a', _message(id));
     await engine.stop(); // no timer: the replay is the sync's own
     h.clock.advance(sendWindow);
-    a.sendFailure = RateLimitFailure(
-      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
-    );
+    a.sendFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     final before = a.syncCalls;
     await engine.syncAll();
     expect(a.sendCalls, 1);
@@ -617,9 +545,7 @@ void main() {
     final queued = [engine.flushDrafts('a'), engine.syncAll()];
     await pumpEventQueue();
 
-    a.sendFailure = RateLimitFailure(
-      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
-    );
+    a.sendFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     a.holdSend!.complete();
     await Future.wait(queued);
     await pumpEventQueue();
@@ -661,21 +587,18 @@ void main() {
     expect(await engine.openDraft('a', id), isA<Ok<OutgoingMessage>>());
   });
 
-  test(
-    'a Bozza upload that ends after Invia deletes the late remote Bozza',
-    () async {
-      await engine.saveDraft('a', _message(id));
-      a.holdDraft = Completer();
-      final flush = engine.flushDrafts('a');
-      await pumpEventQueue();
-      expect(a.draftHeld, id);
-      await engine.send('a', _message(id));
-      a.holdDraft!.complete();
-      await flush;
-      expect(a.drafts.containsKey(id), isFalse);
-      expect(a.draftCalls.map((c) => c.$1), [id]);
-    },
-  );
+  test('a Bozza upload that ends after Invia deletes the late remote Bozza', () async {
+    await engine.saveDraft('a', _message(id));
+    a.holdDraft = Completer();
+    final flush = engine.flushDrafts('a');
+    await pumpEventQueue();
+    expect(a.draftHeld, id);
+    await engine.send('a', _message(id));
+    a.holdDraft!.complete();
+    await flush;
+    expect(a.drafts.containsKey(id), isFalse);
+    expect(a.draftCalls.map((c) => c.$1), [id]);
+  });
 
   test('Annulla after the late remote Bozza was deleted: the local Bozza uploads as new and survives', () async {
     await engine.saveDraft('a', _message(id));
@@ -718,30 +641,31 @@ void main() {
     expect(a.drafts.containsKey(id), isFalse);
   });
 
-  test('a RateLimitFailure of the send pauses the Account: one call, the rest stays queued until the deadline', () async {
-    engine.start();
-    addTearDown(engine.stop);
-    await pumpEventQueue();
-    await engine.send('a', _message(id));
-    await engine.send('a', _message('<y@example.com>'));
-    a.sendFailure = RateLimitFailure(
-      retryAfter: h.clock.now().add(const Duration(minutes: 5)),
-    );
-    h.clock.advance(sendWindow);
-    await pumpEventQueue();
-    expect(a.sendCalls, 1);
-    expect(await outbox(), hasLength(2));
+  test(
+    'a RateLimitFailure of the send pauses the Account: one call, the rest stays queued until the deadline',
+    () async {
+      engine.start();
+      addTearDown(engine.stop);
+      await pumpEventQueue();
+      await engine.send('a', _message(id));
+      await engine.send('a', _message('<y@example.com>'));
+      a.sendFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect(a.sendCalls, 1);
+      expect(await outbox(), hasLength(2));
 
-    a.sendFailure = null;
-    h.clock.advance(const Duration(seconds: 60));
-    await pumpEventQueue();
-    expect(a.sendCalls, 1);
+      a.sendFailure = null;
+      h.clock.advance(const Duration(seconds: 60));
+      await pumpEventQueue();
+      expect(a.sendCalls, 1);
 
-    h.clock.advance(const Duration(minutes: 5));
-    await pumpEventQueue();
-    expect(a.sent.map((s) => s.$1), unorderedEquals([id, '<y@example.com>']));
-    expect(await outbox(), isEmpty);
-  });
+      h.clock.advance(const Duration(minutes: 5));
+      await pumpEventQueue();
+      expect(a.sent.map((s) => s.$1), unorderedEquals([id, '<y@example.com>']));
+      expect(await outbox(), isEmpty);
+    },
+  );
 
   test('a queued message does not upload its Bozza: the send goes at 10 s without a draft PUT', () async {
     engine.start();
@@ -794,24 +718,27 @@ void main() {
     expect(h.background.releases, ['a']);
   });
 
-  test('the platform is held before the forwarded attachments download; a failed or cancelled preparation releases it', () async {
-    final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
-    a.holdAttachment = Completer();
-    final sending = engine.send('a', forward(att));
-    await pumpEventQueue();
-    expect(h.background.holds, ['a']);
-    expect(h.background.releases, isEmpty);
-    expect(await engine.cancelSend('a', id), id);
-    expect(h.background.releases, ['a']);
-    a.holdAttachment!.complete();
-    expect(await sending, isA<Err<DateTime>>());
+  test(
+    'the platform is held before the forwarded attachments download; a failed or cancelled preparation releases it',
+    () async {
+      final att = a.attach('m0', 'Contratto.pdf', [1, 2, 3]);
+      a.holdAttachment = Completer();
+      final sending = engine.send('a', forward(att));
+      await pumpEventQueue();
+      expect(h.background.holds, ['a']);
+      expect(h.background.releases, isEmpty);
+      expect(await engine.cancelSend('a', id), id);
+      expect(h.background.releases, ['a']);
+      a.holdAttachment!.complete();
+      expect(await sending, isA<Err<DateTime>>());
 
-    a.goOffline();
-    final never = a.attach('m0', 'Altro.pdf', [4, 5]);
-    expect(await engine.send('a', forward(never)), isA<Err<DateTime>>());
-    expect(h.background.holds, ['a', 'a']);
-    expect(h.background.releases, ['a', 'a']);
-  });
+      a.goOffline();
+      final never = a.attach('m0', 'Altro.pdf', [4, 5]);
+      expect(await engine.send('a', forward(never)), isA<Err<DateTime>>());
+      expect(h.background.holds, ['a', 'a']);
+      expect(h.background.releases, ['a', 'a']);
+    },
+  );
 
   test('the sent copy does not replace the message a sync cached already: its INBOX label stays', () async {
     // A message to oneself, synced before the send completed (the Provider answers the send with the same id).
@@ -827,7 +754,7 @@ void main() {
         to: const ['a@example.com'],
         subject: 's',
         snippet: 'Ciao',
-        date: DateTime.utc(2026, 1, 1),
+        date: DateTime.utc(2026),
       ),
     );
     await engine.syncAll();
@@ -836,9 +763,7 @@ void main() {
     await pumpEventQueue();
     expect(a.sendCalls, 1);
     expect(await outbox(), isEmpty);
-    final inbox = await GetIt.I<InboxRepository>()
-        .watchMessages('a', inboxLabelId)
-        .first;
+    final inbox = await GetIt.I<InboxRepository>().watchMessages('a', inboxLabelId).first;
     expect(inbox.single.message.id, 's-1');
     expect((await inviati()).single.message.id, 's-1');
   });
@@ -846,11 +771,7 @@ void main() {
   test('send for an unknown Account is NotFound', () async {
     expect(
       await engine.send('zzz', _message(id)),
-      isA<Err<void>>().having(
-        (e) => e.failure,
-        'failure',
-        isA<NotFoundFailure>(),
-      ),
+      isA<Err<void>>().having((e) => e.failure, 'failure', isA<NotFoundFailure>()),
     );
   });
 
@@ -865,16 +786,11 @@ void main() {
     expect(await GetIt.I<InboxRepository>().watchDrafts('a').first, isEmpty);
     // Only the Sent copy is left: no unlabelled DRAFT row in the Conversazione.
     final db = GetIt.I<PostinoDatabase>();
-    final rows = await (db.select(
-      db.messages,
-    )..where((m) => m.accountId.equals('a') & m.messageId.equals(id))).get();
+    final rows = await (db.select(db.messages)..where((m) => m.accountId.equals('a') & m.messageId.equals(id))).get();
     expect(rows, hasLength(1));
-    final labels =
-        await (db.select(db.messageLabels)..where(
-              (l) =>
-                  l.accountId.equals('a') & l.messageId.equals(rows.single.id),
-            ))
-            .get();
+    final labels = await (db.select(
+      db.messageLabels,
+    )..where((l) => l.accountId.equals('a') & l.messageId.equals(rows.single.id))).get();
     expect(labels.map((l) => l.labelId), ['SENT']);
   });
 

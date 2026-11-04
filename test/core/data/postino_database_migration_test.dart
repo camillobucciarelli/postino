@@ -22,8 +22,7 @@ const _v3Accounts =
     'status TEXT NOT NULL)';
 
 /// Exists since v1; the v10 migration empties it.
-const _syncCursors =
-    'CREATE TABLE sync_cursors (account_id TEXT NOT NULL PRIMARY KEY, cursor TEXT NOT NULL)';
+const _syncCursors = 'CREATE TABLE sync_cursors (account_id TEXT NOT NULL PRIMARY KEY, cursor TEXT NOT NULL)';
 
 void main() {
   test('v3 drops the Gmail system labels cached as Etichette, keeping user ones', () async {
@@ -38,9 +37,7 @@ void main() {
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 2');
     for (final id in ['INBOX', 'STARRED', 'CATEGORY_PERSONAL', 'Label_12']) {
-      raw.execute(
-        "INSERT INTO labels VALUES ('a1', '$id', '$id', 'etichetta')",
-      );
+      raw.execute("INSERT INTO labels VALUES ('a1', '$id', '$id', 'etichetta')");
     }
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -57,54 +54,37 @@ void main() {
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 3');
     // sky, olive, and a color no version ever assigned (falls back to the position).
-    for (final (id, argb, position) in [
-      ('a1', 0xFF00779E, 0),
-      ('a2', 0xFF6B6F00, 1),
-      ('a3', 0xFF123456, 10),
-    ]) {
-      raw.execute(
-        "INSERT INTO accounts VALUES ('$id', '$id@example.com', 'gmail', $argb, $position, 'attivo')",
-      );
+    for (final (id, argb, position) in [('a1', 0xFF00779E, 0), ('a2', 0xFF6B6F00, 1), ('a3', 0xFF123456, 10)]) {
+      raw.execute("INSERT INTO accounts VALUES ('$id', '$id@example.com', 'gmail', $argb, $position, 'attivo')");
     }
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    final colors = {
-      for (final a in await db.select(db.accounts).get()) a.id: a.color,
-    };
+    final colors = {for (final a in await db.select(db.accounts).get()) a.id: a.color};
     expect(colors, {'a1': 0, 'a2': 5, 'a3': 2});
   });
 
-  test(
-    'v5 says which stored bodies are HTML and adds the offline queue',
-    () async {
-      final raw = sqlite3.openInMemory()
-        ..execute(_v3Accounts)
-        ..execute(_syncCursors)
-        ..execute(_v4Bodies)
-        ..execute(_v4Messages)
-        ..execute('PRAGMA user_version = 4');
-      for (final (id, body) in [
-        ('h', '<div dir="ltr">Ciao<br>Ada</div>'),
-        ('p', '<p>Ciao</p>'),
-        ('t', 'Ciao Ada,\r\nscrivi a <bruno@example.com>'),
-      ]) {
-        raw.execute("INSERT INTO bodies VALUES ('a1', '$id', '$body')");
-      }
-      final db = PostinoDatabase(NativeDatabase.opened(raw));
-      addTearDown(db.close);
+  test('v5 says which stored bodies are HTML and adds the offline queue', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_syncCursors)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute('PRAGMA user_version = 4');
+    for (final (id, body) in [
+      ('h', '<div dir="ltr">Ciao<br>Ada</div>'),
+      ('p', '<p>Ciao</p>'),
+      ('t', 'Ciao Ada,\r\nscrivi a <bruno@example.com>'),
+    ]) {
+      raw.execute("INSERT INTO bodies VALUES ('a1', '$id', '$body')");
+    }
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
 
-      final kinds = {
-        for (final b in await db.select(db.bodies).get()) b.messageId: b.kind,
-      };
-      expect(kinds, {
-        'h': BodyKind.html,
-        'p': BodyKind.html,
-        't': BodyKind.testo,
-      });
-      expect(await db.select(db.intents).get(), isEmpty);
-    },
-  );
+    final kinds = {for (final b in await db.select(db.bodies).get()) b.messageId: b.kind};
+    expect(kinds, {'h': BodyKind.html, 'p': BodyKind.html, 't': BodyKind.testo});
+    expect(await db.select(db.intents).get(), isEmpty);
+  });
 
   test('v6 adds the Mittenti fidati, keeping what was there', () async {
     final raw = sqlite3.openInMemory()
@@ -113,9 +93,7 @@ void main() {
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 5');
-    raw.execute(
-      "INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')",
-    );
+    raw.execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')");
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
@@ -145,39 +123,30 @@ void main() {
     addTearDown(db.close);
 
     final rows = {
-      for (final m in await db.select(db.messages).get())
-        m.id: (m.sender, m.senderName, m.recipients, m.cc),
+      for (final m in await db.select(db.messages).get()) m.id: (m.sender, m.senderName, m.recipients, m.cc),
     };
     expect(rows, {
-      'm1': (
-        'ada@example.com',
-        'Ada Okafor',
-        'me@example.com\nBruno <b@x.it>',
-        '',
-      ),
+      'm1': ('ada@example.com', 'Ada Okafor', 'me@example.com\nBruno <b@x.it>', ''),
       'm2': ('news@shop.example', null, 'me@example.com', ''),
       'm3': ('n@x.it', 'Nicolò', '', ''),
     });
   });
 
-  test(
-    'v9 adds the attachments to the bodies: unknown for those stored before',
-    () async {
-      final raw = sqlite3.openInMemory()
-        ..execute(_v3Accounts)
-        ..execute(_syncCursors)
-        ..execute(_v4Bodies)
-        ..execute(_v4Messages)
-        ..execute('PRAGMA user_version = 4');
-      raw.execute("INSERT INTO bodies VALUES ('a1', 'm1', 'Ciao')");
-      final db = PostinoDatabase(NativeDatabase.opened(raw));
-      addTearDown(db.close);
+  test('v9 adds the attachments to the bodies: unknown for those stored before', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_syncCursors)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute('PRAGMA user_version = 4');
+    raw.execute("INSERT INTO bodies VALUES ('a1', 'm1', 'Ciao')");
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
 
-      final body = await db.select(db.bodies).getSingle();
-      expect(body.body, 'Ciao');
-      expect(body.attachments, isNull);
-    },
-  );
+    final body = await db.select(db.bodies).getSingle();
+    expect(body.body, 'Ciao');
+    expect(body.attachments, isNull);
+  });
 
   test('v10 adds the Bozze and the Bcc of the messages', () async {
     final raw = sqlite3.openInMemory()
@@ -205,44 +174,32 @@ void main() {
       updatedAt: 1,
     );
     expect(await db.select(db.drafts).get(), hasLength(1));
-    expect(
-      (await db.customSelect('SELECT bcc FROM messages').get()).map(
-        (r) => r.read<String>('bcc'),
-      ),
-      [''],
-    );
+    expect((await db.customSelect('SELECT bcc FROM messages').get()).map((r) => r.read<String>('bcc')), ['']);
   });
 
-  test(
-    'v10 clears the sync cursors, so the next sync brings the Bcc of the Bozze',
-    () async {
-      final raw = sqlite3.openInMemory()
-        ..execute(_v3Accounts)
-        ..execute(_syncCursors)
-        ..execute(_v4Bodies)
-        ..execute(_v4Messages)
-        ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
-        ..execute('PRAGMA user_version = 9');
-      final db = PostinoDatabase(NativeDatabase.opened(raw));
-      addTearDown(db.close);
+  test('v10 clears the sync cursors, so the next sync brings the Bcc of the Bozze', () async {
+    final raw = sqlite3.openInMemory()
+      ..execute(_v3Accounts)
+      ..execute(_syncCursors)
+      ..execute(_v4Bodies)
+      ..execute(_v4Messages)
+      ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
+      ..execute('PRAGMA user_version = 9');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
 
-      expect(await db.select(db.syncCursors).get(), isEmpty);
-    },
-  );
+    expect(await db.select(db.syncCursors).get(), isEmpty);
+  });
 
   test('v13 adds the outbox, keeping what was there', () async {
     final raw = sqlite3.openInMemory();
     // A current database taken back to the v12 shape: the outbox dropped, one sync cursor in it.
-    final first = PostinoDatabase(
-      NativeDatabase.opened(raw, closeUnderlyingOnClose: false),
-    );
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
     await first.customSelect('SELECT 1').get();
     await first.close();
     raw
       ..execute('DROP TABLE outbox')
-      ..execute(
-        "INSERT INTO sync_cursors (account_id, cursor) VALUES ('a1', '7')",
-      )
+      ..execute("INSERT INTO sync_cursors (account_id, cursor) VALUES ('a1', '7')")
       ..execute('PRAGMA user_version = 12');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -263,101 +220,78 @@ void main() {
       ),
     );
     final row = (await db.outboxDao.due('a1', 1)).single;
-    expect(
-      (row.failed, row.claimedUntil, row.conversationId),
-      (false, null, 't'),
-    );
+    expect((row.failed, row.claimedUntil, row.conversationId), (false, null, 't'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
     expect(raw.select('PRAGMA user_version').first.values.first, 13);
   });
 
-  test('v12 adds Reply-To and References to the messages and the reply headers to the Bozze, keeping what was there', () async {
-    final raw = sqlite3.openInMemory()
-      ..execute(_v3Accounts)
-      ..execute(_syncCursors)
-      ..execute(_v4Bodies)
-      ..execute(_v4Messages)
-      ..execute(
-        "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
-        "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
-      )
-      // The v4 messages schema is the v6 one: from here v7, v10, v12 and v13 all run.
-      ..execute('PRAGMA user_version = 6');
-    final db = PostinoDatabase(NativeDatabase.opened(raw));
-    addTearDown(db.close);
-
-    final m = await db.select(db.messages).getSingle();
-    expect((m.id, m.replyTo, m.references), ('m1', null, null));
-    await db.draftsDao.save(
-      'a1',
-      const OutgoingMessage(
-        messageId: '<x>',
-        from: 'a1@example.com',
-        to: ['b@example.com'],
-        subject: 's',
-        body: '<p>Ciao</p>',
-        inReplyTo: '<m1>',
-        references: ['<m1>'],
-        conversationId: 't',
-      ),
-      updatedAt: 1,
-    );
-    final d = await db.select(db.drafts).getSingle();
-    expect(
-      (d.inReplyTo, d.references, d.conversationId),
-      ('<m1>', '<m1>', 't'),
-    );
-    expect(raw.select('PRAGMA user_version').first.values.first, 13);
-  });
-
   test(
-    'v12 keeps a populated v10 Bozza, the reply headers and attachments empty',
+    'v12 adds Reply-To and References to the messages and the reply headers to the Bozze, keeping what was there',
     () async {
-      final raw = sqlite3.openInMemory();
-      // A current database taken back to the v10 shape: the columns of #37 dropped, one Bozza in it.
-      final first = PostinoDatabase(
-        NativeDatabase.opened(raw, closeUnderlyingOnClose: false),
-      );
-      await first.customSelect('SELECT 1').get();
-      await first.close();
-      for (final c in [
-        'in_reply_to',
-        '"references"',
-        'conversation_id',
-        'attachments',
-      ]) {
-        raw.execute('ALTER TABLE drafts DROP COLUMN $c');
-      }
-      raw
-        ..execute('DROP TABLE outbox')
-        ..execute('ALTER TABLE messages DROP COLUMN reply_to')
-        ..execute('ALTER TABLE messages DROP COLUMN "references"')
+      final raw = sqlite3.openInMemory()
+        ..execute(_v3Accounts)
+        ..execute(_syncCursors)
+        ..execute(_v4Bodies)
+        ..execute(_v4Messages)
         ..execute(
-          "INSERT INTO drafts VALUES ('a1', '<x>', 'b@example.com', '', '', 's', '<p>Ciao</p>', 7, 1, 0, 0)",
+          "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
+          "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
         )
-        ..execute('PRAGMA user_version = 10');
+        // The v4 messages schema is the v6 one: from here v7, v10, v12 and v13 all run.
+        ..execute('PRAGMA user_version = 6');
       final db = PostinoDatabase(NativeDatabase.opened(raw));
       addTearDown(db.close);
 
+      final m = await db.select(db.messages).getSingle();
+      expect((m.id, m.replyTo, m.references), ('m1', null, null));
+      await db.draftsDao.save(
+        'a1',
+        const OutgoingMessage(
+          messageId: '<x>',
+          from: 'a1@example.com',
+          to: ['b@example.com'],
+          subject: 's',
+          body: '<p>Ciao</p>',
+          inReplyTo: '<m1>',
+          references: ['<m1>'],
+          conversationId: 't',
+        ),
+        updatedAt: 1,
+      );
       final d = await db.select(db.drafts).getSingle();
-      expect(
-        (d.messageId, d.body, d.updatedAt, d.pending),
-        ('<x>', '<p>Ciao</p>', 7, true),
-      );
-      expect(
-        (d.inReplyTo, d.references, d.conversationId, d.attachments),
-        (null, null, null, null),
-      );
+      expect((d.inReplyTo, d.references, d.conversationId), ('<m1>', '<m1>', 't'));
       expect(raw.select('PRAGMA user_version').first.values.first, 13);
     },
   );
 
+  test('v12 keeps a populated v10 Bozza, the reply headers and attachments empty', () async {
+    final raw = sqlite3.openInMemory();
+    // A current database taken back to the v10 shape: the columns of #37 dropped, one Bozza in it.
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    for (final c in ['in_reply_to', '"references"', 'conversation_id', 'attachments']) {
+      raw.execute('ALTER TABLE drafts DROP COLUMN $c');
+    }
+    raw
+      ..execute('DROP TABLE outbox')
+      ..execute('ALTER TABLE messages DROP COLUMN reply_to')
+      ..execute('ALTER TABLE messages DROP COLUMN "references"')
+      ..execute("INSERT INTO drafts VALUES ('a1', '<x>', 'b@example.com', '', '', 's', '<p>Ciao</p>', 7, 1, 0, 0)")
+      ..execute('PRAGMA user_version = 10');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    final d = await db.select(db.drafts).getSingle();
+    expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
+    expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
+    expect(raw.select('PRAGMA user_version').first.values.first, 13);
+  });
+
   test('a new database keeps the cursors it saves', () async {
     final db = PostinoDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    await db
-        .into(db.syncCursors)
-        .insert(SyncCursorsCompanion.insert(accountId: 'a1', cursor: '1'));
+    await db.into(db.syncCursors).insert(SyncCursorsCompanion.insert(accountId: 'a1', cursor: '1'));
     expect(await db.select(db.syncCursors).get(), hasLength(1));
   });
 }

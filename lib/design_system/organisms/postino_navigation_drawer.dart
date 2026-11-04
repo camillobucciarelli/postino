@@ -30,8 +30,7 @@ class PostinoSidebarScope extends InheritedWidget {
       context.dependOnInheritedWidgetOfExactType<PostinoSidebarScope>();
 
   @override
-  bool updateShouldNotify(PostinoSidebarScope old) =>
-      collapsed != old.collapsed || toggleLabel != old.toggleLabel;
+  bool updateShouldNotify(PostinoSidebarScope old) => collapsed != old.collapsed || toggleLabel != old.toggleLabel;
 }
 
 class PostinoDrawerSection {
@@ -49,8 +48,7 @@ class PostinoNavigationDrawer extends StatefulWidget {
   final List<PostinoDrawerSection> sections;
 
   @override
-  State<PostinoNavigationDrawer> createState() =>
-      _PostinoNavigationDrawerState();
+  State<PostinoNavigationDrawer> createState() => _PostinoNavigationDrawerState();
 }
 
 class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
@@ -62,9 +60,7 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
   void _measure(int? index) {
     if (!mounted) return;
     final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
-    final item = index == null
-        ? null
-        : _itemKeys[index]?.currentContext?.findRenderObject() as RenderBox?;
+    final item = index == null ? null : _itemKeys[index]?.currentContext?.findRenderObject() as RenderBox?;
     final rect = stack == null || item == null || !item.attached
         ? null
         : item.localToGlobal(Offset.zero, ancestor: stack) & item.size;
@@ -123,17 +119,12 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                     top: r.top,
                     width: r.width,
                     height: r.height,
-                    duration: PostinoMotion.of(
-                      context,
-                      _slide ? PostinoMotion.menuIndicator : Duration.zero,
-                    ),
+                    duration: PostinoMotion.of(context, _slide ? PostinoMotion.menuIndicator : Duration.zero),
                     curve: PostinoMotion.emphasized,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: c.drawerItemBgActive,
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(PostinoRadius.sm),
-                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
                       ),
                     ),
                   ),
@@ -141,19 +132,12 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                   children: [
                     for (final (i, s) in sections.indexed)
                       Container(
-                        margin: EdgeInsets.only(
-                          top: i == 0 ? 0 : PostinoSpacing.s2,
-                        ),
+                        margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
                         padding: const EdgeInsets.only(top: PostinoSpacing.s2),
                         decoration: i == 0
                             ? null
                             : BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(
-                                    color: c.borderSubtle,
-                                    width: PostinoBorder.borderWidthHairline,
-                                  ),
-                                ),
+                                border: Border(top: BorderSide(color: c.borderSubtle)),
                               ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,9 +155,7 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                                   header: true,
                                   child: Text(
                                     t.toUpperCase(),
-                                    style: PostinoText.overline.copyWith(
-                                      color: c.inkSubtle,
-                                    ),
+                                    style: PostinoText.overline.copyWith(color: c.inkSubtle),
                                   ),
                                 ),
                               ),

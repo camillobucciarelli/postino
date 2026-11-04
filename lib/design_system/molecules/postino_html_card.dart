@@ -14,13 +14,7 @@ import '../tokens/postino_tokens.dart';
 /// never scrolling sideways. An `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
 /// by its `alt`. A tap on a link calls [onTapUrl] with its real URL.
 class PostinoHtmlCard extends StatelessWidget {
-  const PostinoHtmlCard({
-    super.key,
-    required this.html,
-    required this.onTapUrl,
-    this.contentWidth,
-    this.quiet = false,
-  });
+  const PostinoHtmlCard({super.key, required this.html, required this.onTapUrl, this.contentWidth, this.quiet = false});
 
   final String html;
   final ValueChanged<String> onTapUrl;
@@ -53,11 +47,7 @@ class PostinoHtmlCard extends StatelessWidget {
                     child: Semantics(
                       label: e.attributes['alt'],
                       image: true,
-                      child: PostinoIcon(
-                        PostinoIcons.image,
-                        size: PostinoSize.iconLg,
-                        color: c.inkSubtle,
-                      ),
+                      child: PostinoIcon(PostinoIcons.image, size: PostinoSize.iconLg, color: c.inkSubtle),
                     ),
                   ),
                 )
@@ -79,14 +69,9 @@ class PostinoHtmlCard extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: PostinoColors.light.surfaceRaised,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(PostinoRadius.md),
-                ),
+                borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(PostinoSpacing.s4),
-                child: body,
-              ),
+              child: Padding(padding: const EdgeInsets.all(PostinoSpacing.s4), child: body),
             ),
           )
         : body;
@@ -98,12 +83,7 @@ class PostinoHtmlCard extends StatelessWidget {
 bool _hasSource(dom.Element e) {
   final a = e.attributes;
   if (a.containsKey('src')) return true;
-  final first = a['srcset']
-      ?.split(',')
-      .first
-      .trim()
-      .split(RegExp(r'\s+'))
-      .first;
+  final first = a['srcset']?.split(',').first.trim().split(RegExp(r'\s+')).first;
   if (first == null || first.isEmpty) return false;
   a['src'] = first;
   return true;
@@ -116,17 +96,14 @@ bool _hasSource(dom.Element e) {
 /// every later paint and hover throws again: the lag on opening a message.
 class _Factory extends WidgetFactory {
   @override
-  Widget? buildImage(BuildTree tree, ImageMetadata data) =>
-      switch (super.buildImage(tree, data)) {
-        final w? => _BottomBaseline(child: w),
-        null => null,
-      };
+  Widget? buildImage(BuildTree tree, ImageMetadata data) => switch (super.buildImage(tree, data)) {
+    final w? => _BottomBaseline(child: w),
+    null => null,
+  };
 
   @override
   Widget? buildHorizontalScrollView(BuildTree tree, Widget child) =>
-      _BottomBaseline(
-        child: super.buildHorizontalScrollView(tree, child) ?? child,
-      );
+      _BottomBaseline(child: super.buildHorizontalScrollView(tree, child) ?? child);
 }
 
 /// Its baseline at its bottom, where text already puts a box without one (`getDistanceToBaseline`
@@ -135,8 +112,7 @@ class _BottomBaseline extends SingleChildRenderObjectWidget {
   const _BottomBaseline({required super.child});
 
   @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderBottomBaseline();
+  RenderObject createRenderObject(BuildContext context) => _RenderBottomBaseline();
 }
 
 class _RenderBottomBaseline extends RenderProxyBox {
@@ -144,8 +120,5 @@ class _RenderBottomBaseline extends RenderProxyBox {
   double computeDistanceToActualBaseline(TextBaseline baseline) => size.height;
 
   @override
-  double computeDryBaseline(
-    BoxConstraints constraints,
-    TextBaseline baseline,
-  ) => getDryLayout(constraints).height;
+  double computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) => getDryLayout(constraints).height;
 }

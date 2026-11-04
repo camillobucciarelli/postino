@@ -8,12 +8,7 @@ import 'postino_icon.dart';
 
 /// A command with only an icon; [label] is its accessible name and tooltip.
 class PostinoIconButton extends StatelessWidget {
-  const PostinoIconButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
+  const PostinoIconButton({super.key, required this.icon, required this.label, required this.onPressed});
 
   final PostinoIconData icon;
   final String label;
@@ -30,10 +25,8 @@ class PostinoIconButton extends StatelessWidget {
       tooltip: label,
       color: context.pc.inkMuted,
       style: ButtonStyle(
-        backgroundBuilder: (context, states, child) => PostinoFocusRing(
-          borderRadius: BorderRadius.circular(PostinoRadius.full),
-          child: child!,
-        ),
+        backgroundBuilder: (context, states, child) =>
+            PostinoFocusRing(borderRadius: BorderRadius.circular(PostinoRadius.full), child: child!),
       ),
       icon: PostinoIcon(icon, size: PostinoSize.iconLg),
     ),

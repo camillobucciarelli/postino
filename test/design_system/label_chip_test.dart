@@ -17,10 +17,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    expect(
-      tester.getSize(find.byType(PostinoLabelChip)).width,
-      lessThanOrEqualTo(320),
-    );
+    expect(tester.getSize(find.byType(PostinoLabelChip)).width, lessThanOrEqualTo(320));
     expect(find.bySemanticsLabel(name), findsOneWidget);
   });
 }

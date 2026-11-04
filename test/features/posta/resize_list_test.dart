@@ -35,11 +35,7 @@ class _FakeSettings implements SettingsRepository {
   Future<void> setSidebarExpanded(bool? expanded) async {}
 }
 
-Future<_FakeSettings> _start(
-  WidgetTester tester,
-  double width, {
-  double? stored,
-}) async {
+Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {
   tester.view
     ..physicalSize = Size(width, 900)
     ..devicePixelRatio = 1;
@@ -68,8 +64,7 @@ final _handle = find.byType(PostinoResizeHandle);
 
 /// The width of the pane that holds the list.
 double _listWidth(WidgetTester tester) =>
-    tester.getTopLeft(_handle).dx -
-    tester.getTopLeft(find.byType(PostinoListDetailLayout)).dx;
+    tester.getTopLeft(_handle).dx - tester.getTopLeft(find.byType(PostinoListDetailLayout)).dx;
 
 Future<void> _drag(WidgetTester tester, double dx) async {
   await tester.drag(_handle, Offset(dx, 0));
@@ -82,20 +77,12 @@ Future<void> _key(WidgetTester tester, LogicalKeyboardKey key) async {
 }
 
 Future<void> _focusHandle(WidgetTester tester) async {
-  FocusManager.instance.highlightStrategy =
-      FocusHighlightStrategy.alwaysTraditional;
-  Focus.of(
-    tester.element(
-      find.descendant(of: _handle, matching: find.byType(PostinoFocusRing)),
-    ),
-  ).requestFocus();
+  FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+  Focus.of(tester.element(find.descendant(of: _handle, matching: find.byType(PostinoFocusRing)))).requestFocus();
   await tester.pump();
 }
 
-bool _handleFocused() =>
-    primaryFocus?.context
-        ?.findAncestorWidgetOfExactType<PostinoResizeHandle>() !=
-    null;
+bool _handleFocused() => primaryFocus?.context?.findAncestorWidgetOfExactType<PostinoResizeHandle>() != null;
 
 void main() {
   test('the shown width is the preferred one limited to the window, the minimum wins', () {
@@ -127,9 +114,7 @@ void main() {
     });
 
     for (final (w, max) in [(1200.0, 600.0), (1600.0, 800.0)]) {
-      testWidgets('stops at half of a ${w.toInt()} window: ${max.toInt()}', (
-        tester,
-      ) async {
+      testWidgets('stops at half of a ${w.toInt()} window: ${max.toInt()}', (tester) async {
         await _start(tester, w);
         await _drag(tester, 2000);
         expect(_listWidth(tester), max);
@@ -157,10 +142,7 @@ void main() {
       await mouse.addPointer(location: Offset.zero);
       await mouse.moveTo(tester.getCenter(_handle));
       await tester.pump();
-      expect(
-        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
-        SystemMouseCursors.resizeLeftRight,
-      );
+      expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.resizeLeftRight);
     });
   });
 
@@ -175,9 +157,7 @@ void main() {
     expect(s.writes, [380]);
   });
 
-  testWidgets('a narrow window limits the shown width, not the preference', (
-    tester,
-  ) async {
+  testWidgets('a narrow window limits the shown width, not the preference', (tester) async {
     final s = await _start(tester, 1600, stored: 700);
     expect(_listWidth(tester), 700);
     await _resize(tester, 1000);
@@ -188,9 +168,7 @@ void main() {
     expect(s.writes, isEmpty);
   });
 
-  testWidgets('a drag back to where it began frees the live width', (
-    tester,
-  ) async {
+  testWidgets('a drag back to where it began frees the live width', (tester) async {
     final s = await _start(tester, 1000, stored: 700);
     expect(_listWidth(tester), 500);
     final g = await tester.startGesture(tester.getCenter(_handle));
@@ -207,9 +185,7 @@ void main() {
     expect(s.saved, 700);
   });
 
-  testWidgets('a click on the divider keeps the width set from the keyboard', (
-    tester,
-  ) async {
+  testWidgets('a click on the divider keeps the width set from the keyboard', (tester) async {
     final s = await _start(tester, 1200);
     await _drag(tester, 100);
     await _focusHandle(tester);
@@ -229,17 +205,13 @@ void main() {
     final w = _listWidth(tester);
     expect(w, isNot(380));
     expect(s.saved, w);
-    Routefly.navigate(
-      routePaths.posta.$accountId.path.changes({'accountId': 'a1'}),
-    );
+    Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': 'a1'}));
     await tester.pumpAndSettle();
     expect(_listWidth(tester), w);
   });
 
   group('persistence', () {
-    testWidgets('starts at the saved width, limited to the window', (
-      tester,
-    ) async {
+    testWidgets('starts at the saved width, limited to the window', (tester) async {
       await _start(tester, 1200, stored: 450);
       expect(_listWidth(tester), 450);
     });
@@ -251,56 +223,45 @@ void main() {
   });
 
   group('keyboard', () {
-    testWidgets(
-      'Tab reaches the divider between the list and the Conversazione',
-      (tester) async {
-        await _start(tester, 1200);
-        await tester.tap(find.text('Da uno'));
-        await tester.pumpAndSettle();
-        Focus.of(tester.element(find.text('Da uno').first)).requestFocus();
-        var reached = false;
-        for (var i = 0; i < 40 && !reached; i++) {
-          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-          await tester.pump();
-          reached = _handleFocused();
-        }
-        expect(reached, isTrue);
-        // The next stop is inside the Conversazione, not back in the list.
+    testWidgets('Tab reaches the divider between the list and the Conversazione', (tester) async {
+      await _start(tester, 1200);
+      await tester.tap(find.text('Da uno'));
+      await tester.pumpAndSettle();
+      Focus.of(tester.element(find.text('Da uno').first)).requestFocus();
+      var reached = false;
+      for (var i = 0; i < 40 && !reached; i++) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
-        expect(_handleFocused(), isFalse);
-        expect(
-          tester.getTopLeft(find.byType(PostinoThreadView)).dx,
-          greaterThan(tester.getTopLeft(_handle).dx),
-        );
-      },
-    );
+        reached = _handleFocused();
+      }
+      expect(reached, isTrue);
+      // The next stop is inside the Conversazione, not back in the list.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_handleFocused(), isFalse);
+      expect(tester.getTopLeft(find.byType(PostinoThreadView)).dx, greaterThan(tester.getTopLeft(_handle).dx));
+    });
 
-    testWidgets(
-      'arrows move by 16, Home and End go to the limits and stay there',
-      (tester) async {
-        final s = await _start(tester, 1200);
-        await _focusHandle(tester);
-        await _key(tester, LogicalKeyboardKey.arrowRight);
-        expect(_listWidth(tester), 396);
-        await _key(tester, LogicalKeyboardKey.arrowLeft);
-        await _key(tester, LogicalKeyboardKey.arrowLeft);
-        expect(_listWidth(tester), 364);
-        await _key(tester, LogicalKeyboardKey.home);
-        expect(_listWidth(tester), 280);
-        await _key(tester, LogicalKeyboardKey.arrowLeft);
-        expect(_listWidth(tester), 280);
-        await _key(tester, LogicalKeyboardKey.end);
-        expect(_listWidth(tester), 600);
-        await _key(tester, LogicalKeyboardKey.arrowRight);
-        expect(_listWidth(tester), 600);
-        expect(s.saved, 600);
-      },
-    );
+    testWidgets('arrows move by 16, Home and End go to the limits and stay there', (tester) async {
+      final s = await _start(tester, 1200);
+      await _focusHandle(tester);
+      await _key(tester, LogicalKeyboardKey.arrowRight);
+      expect(_listWidth(tester), 396);
+      await _key(tester, LogicalKeyboardKey.arrowLeft);
+      await _key(tester, LogicalKeyboardKey.arrowLeft);
+      expect(_listWidth(tester), 364);
+      await _key(tester, LogicalKeyboardKey.home);
+      expect(_listWidth(tester), 280);
+      await _key(tester, LogicalKeyboardKey.arrowLeft);
+      expect(_listWidth(tester), 280);
+      await _key(tester, LogicalKeyboardKey.end);
+      expect(_listWidth(tester), 600);
+      await _key(tester, LogicalKeyboardKey.arrowRight);
+      expect(_listWidth(tester), 600);
+      expect(s.saved, 600);
+    });
 
-    testWidgets('the arrows leave the open Conversazione alone', (
-      tester,
-    ) async {
+    testWidgets('the arrows leave the open Conversazione alone', (tester) async {
       await _start(tester, 1200);
       await tester.tap(find.text('Da uno'));
       await tester.pumpAndSettle();
@@ -317,9 +278,7 @@ void main() {
       expect(Routefly.currentUri, open);
     });
 
-    testWidgets('from a limited width the step starts at the shown width', (
-      tester,
-    ) async {
+    testWidgets('from a limited width the step starts at the shown width', (tester) async {
       final s = await _start(tester, 900, stored: 600);
       expect(_listWidth(tester), 450);
       await _focusHandle(tester);
@@ -330,36 +289,21 @@ void main() {
   });
 
   group('semantics', () {
-    testWidgets('label, value, and increase and decrease by 16', (
-      tester,
-    ) async {
+    testWidgets('label, value, and increase and decrease by 16', (tester) async {
       final handle = tester.ensureSemantics();
       final s = await _start(tester, 1200);
-      SemanticsNode node() =>
-          find.semantics.byAction(SemanticsAction.increase).evaluate().single;
+      SemanticsNode node() => find.semantics.byAction(SemanticsAction.increase).evaluate().single;
       expect(node().label, 'Larghezza lista');
       expect(node().value, '380 pixel');
-      expect(
-        node().getSemanticsData().hasAction(SemanticsAction.increase),
-        isTrue,
-      );
-      expect(
-        node().getSemanticsData().hasAction(SemanticsAction.decrease),
-        isTrue,
-      );
-      tester.semantics.increase(
-        find.semantics.byAction(SemanticsAction.increase),
-      );
+      expect(node().getSemanticsData().hasAction(SemanticsAction.increase), isTrue);
+      expect(node().getSemanticsData().hasAction(SemanticsAction.decrease), isTrue);
+      tester.semantics.increase(find.semantics.byAction(SemanticsAction.increase));
       await tester.pumpAndSettle();
       expect(node().value, '396 pixel');
       expect(_listWidth(tester), 396);
-      tester.semantics.decrease(
-        find.semantics.byAction(SemanticsAction.increase),
-      );
+      tester.semantics.decrease(find.semantics.byAction(SemanticsAction.increase));
       await tester.pumpAndSettle();
-      tester.semantics.decrease(
-        find.semantics.byAction(SemanticsAction.increase),
-      );
+      tester.semantics.decrease(find.semantics.byAction(SemanticsAction.increase));
       await tester.pumpAndSettle();
       expect(node().value, '364 pixel');
       expect(s.saved, 364);

@@ -58,12 +58,10 @@ class PostinoListDetailLayout extends StatefulWidget {
   final String Function(double width) resizeValueLabel;
 
   @override
-  State<PostinoListDetailLayout> createState() =>
-      _PostinoListDetailLayoutState();
+  State<PostinoListDetailLayout> createState() => _PostinoListDetailLayoutState();
 }
 
-class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
-    with SingleTickerProviderStateMixin {
+class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
   static const _slide = 30.0;
   static const _fadeSplit = 0.3;
 
@@ -89,10 +87,8 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   /// GlobalKey carries the detail State (scroll, expansions) across 900.
   final _detailKeys = <Object?, GlobalKey>{};
 
-  Widget _keyed(Object? key, Widget detail) => KeyedSubtree(
-    key: _detailKeys.putIfAbsent(key, GlobalKey.new),
-    child: detail,
-  );
+  Widget _keyed(Object? key, Widget detail) =>
+      KeyedSubtree(key: _detailKeys.putIfAbsent(key, GlobalKey.new), child: detail);
 
   /// 0: the list; 1: the detail over it (below 900 only).
   late final _axis =
@@ -117,19 +113,16 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final large =
-        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
+    final large = MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
     // Narrowed with a detail open: it becomes the full page, so the focus goes to it.
-    if (_wasLarge == true && !large && widget.detail != null) _focusDetail();
+    if ((_wasLarge ?? false) && !large && widget.detail != null) _focusDetail();
     _wasLarge = large;
   }
 
   /// One pane only: the full-page detail takes the focus, not the list hidden under it.
   /// Two panes leave the focus where it is (on the list's selected row).
   void _focusDetail() => WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!mounted ||
-        widget.detail == null ||
-        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
+    if (!mounted || widget.detail == null || MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail) {
       return;
     }
     // The back button, named explicitly: the controls of the AppBar come first. A control scrolled
@@ -137,31 +130,23 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     // Without an AppBar (two panes never get here) the first on screen wins; a header scrolled
     // out above (negative top) is mounted but not on screen: skipped.
     final all = _detailFocus.traversalDescendants;
-    final bar = all
-        .where(
-          (n) => n.context?.findAncestorWidgetOfExactType<AppBar>() != null,
-        )
-        .toList();
-    final nodes =
-        (bar.isNotEmpty ? bar : all.where((n) => n.rect.top >= 0).toList())
-          ..sort((a, b) {
-            final byTop = a.rect.top.compareTo(b.rect.top);
-            return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);
-          });
+    final bar = all.where((n) => n.context?.findAncestorWidgetOfExactType<AppBar>() != null).toList();
+    final nodes = (bar.isNotEmpty ? bar : all.where((n) => n.rect.top >= 0).toList())
+      ..sort((a, b) {
+        final byTop = a.rect.top.compareTo(b.rect.top);
+        return byTop != 0 ? byTop : a.rect.left.compareTo(b.rect.left);
+      });
     nodes.firstOrNull?.requestFocus();
   });
 
   @override
   void didUpdateWidget(PostinoListDetailLayout old) {
     super.didUpdateWidget(old);
-    if (widget.detail != null &&
-        (old.detail == null || old.detailKey != widget.detailKey)) {
+    if (widget.detail != null && (old.detail == null || old.detailKey != widget.detailKey)) {
       _focusDetail();
     }
     // The outgoing detail may still be on screen; older ones are gone.
-    _detailKeys.removeWhere(
-      (k, _) => k != widget.detailKey && k != old.detailKey,
-    );
+    _detailKeys.removeWhere((k, _) => k != widget.detailKey && k != old.detailKey);
     final opened = old.detail == null && widget.detail != null;
     final closed = old.detail != null && widget.detail == null;
     if (!opened && !closed) return;
@@ -178,9 +163,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
   }
 
   bool _onKey(KeyEvent e) {
-    if (e is! KeyDownEvent ||
-        e.logicalKey != LogicalKeyboardKey.escape ||
-        widget.detail == null) {
+    if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.escape || widget.detail == null) {
       return false;
     }
     final focus = primaryFocus?.context;
@@ -191,8 +174,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     // A selection in the Conversazione takes the first Esc.
     if (focus != null) {
       const clear = PostinoClearSelectionIntent();
-      if (Actions.maybeFind<PostinoClearSelectionIntent>(focus)
-          case final action? when action.isEnabled(clear)) {
+      if (Actions.maybeFind<PostinoClearSelectionIntent>(focus) case final action? when action.isEnabled(clear)) {
         Actions.invoke(focus, clear);
         return true;
       }
@@ -214,10 +196,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     final list = KeyedSubtree(key: _listKey, child: widget.list);
     final window = MediaQuery.sizeOf(context).width;
     if (window >= PostinoSize.breakpointListDetail) {
-      final max = math.max(
-        PostinoSize.listWidthMin,
-        window * PostinoSize.listWidthMaxFraction,
-      );
+      final max = math.max(PostinoSize.listWidthMin, window * PostinoSize.listWidthMaxFraction);
       final shown = _dragging ?? shownListWidth(_preferred, window);
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -240,18 +219,14 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
               type: MaterialType.transparency,
               child: PostinoFadeThrough(
                 transitionKey: widget.detailKey ?? const _Empty(),
-                child: widget.detail != null
-                    ? _keyed(widget.detailKey, widget.detail!)
-                    : widget.empty,
+                child: widget.detail != null ? _keyed(widget.detailKey, widget.detail!) : widget.empty,
               ),
             ),
           ),
         ],
       );
     }
-    final (key, detail) = widget.detail != null
-        ? (widget.detailKey, widget.detail!)
-        : _closing ?? (null, null);
+    final (key, detail) = widget.detail != null ? (widget.detailKey, widget.detail!) : _closing ?? (null, null);
     return AnimatedBuilder(
       animation: _axis,
       builder: (context, _) {
@@ -281,10 +256,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
                 offset: Offset(_slide * (1 - move), 0),
                 child: Opacity(
                   opacity: detailIn,
-                  child: Focus(
-                    focusNode: _detailFocus,
-                    child: _keyed(key, detail),
-                  ),
+                  child: Focus(focusNode: _detailFocus, child: _keyed(key, detail)),
                 ),
               ),
           ],

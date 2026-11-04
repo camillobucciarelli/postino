@@ -1,5 +1,4 @@
-import 'package:drift/drift.dart'
-    show BooleanExpressionOperators, Value, Variable;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, Value, Variable;
 import 'package:injectable/injectable.dart';
 
 import '../domain/html_text.dart';
@@ -18,47 +17,30 @@ class OutboxStore implements OutboxRepository {
 
   // --- Bozze (#35) ---
   @override
-  Future<void> saveDraft(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  }) => _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
+  Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
+      _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
 
   @override
-  Future<void> adoptDraft(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  }) => _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
+  Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
+      _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
 
   @override
   Future<LocalDraft?> localDraft(String accountId, String messageId) async {
     final r = await _db.draftsDao.byId(accountId, messageId);
     if (r == null) return null;
-    return (
-      draft: _draft(r, await addressOf(_db, accountId)),
-      pending: r.pending,
-      updatedAt: r.updatedAt,
-    );
+    return (draft: _draft(r, await addressOf(_db, accountId)), pending: r.pending, updatedAt: r.updatedAt);
   }
 
   @override
-  Future<ConversationMessage?> remoteDraft(
-    String accountId,
-    String messageId,
-  ) async {
+  Future<ConversationMessage?> remoteDraft(String accountId, String messageId) async {
     final r = await _db.draftsDao.remote(accountId, messageId);
     if (r == null) return null;
     final (m, b) = r;
-    return (
-      message: messageOf(m, const [draftLabelId]),
-      body: b == null ? null : bodyOf(b),
-    );
+    return (message: messageOf(m, const [draftLabelId]), body: b == null ? null : bodyOf(b));
   }
 
   @override
-  Future<bool> hasSiblings(String accountId, String messageId) =>
-      _db.draftsDao.hasSiblings(accountId, messageId);
+  Future<bool> hasSiblings(String accountId, String messageId) => _db.draftsDao.hasSiblings(accountId, messageId);
 
   @override
   Future<List<PendingDraft>> pendingDrafts(String accountId) async {
@@ -82,12 +64,10 @@ class OutboxStore implements OutboxRepository {
       _db.draftsDao.forgetRemote(accountId, messageId);
 
   @override
-  Future<void> removeDraft(String accountId, String messageId) =>
-      _db.draftsDao.remove(accountId, messageId);
+  Future<void> removeDraft(String accountId, String messageId) => _db.draftsDao.remove(accountId, messageId);
 
   @override
-  Future<bool> rekeyDraft(String accountId, String from, String to) =>
-      _db.draftsDao.rekey(accountId, from, to);
+  Future<bool> rekeyDraft(String accountId, String from, String to) => _db.draftsDao.rekey(accountId, from, to);
 
   // --- Outbox (#36) ---
   @override
@@ -154,15 +134,11 @@ class OutboxStore implements OutboxRepository {
   }) => _db.outboxDao.claim(accountId, messageId, sendAfter, untilMs, nowMs);
 
   @override
-  Future<void> unclaimOutgoing(String accountId, String messageId) =>
-      _db.outboxDao.unclaim(accountId, messageId);
+  Future<void> unclaimOutgoing(String accountId, String messageId) => _db.outboxDao.unclaim(accountId, messageId);
 
   @override
-  Future<void> outgoingFailed(
-    String accountId,
-    String messageId, {
-    int? version,
-  }) => _db.outboxDao.markFailed(accountId, messageId, version: version);
+  Future<void> outgoingFailed(String accountId, String messageId, {int? version}) =>
+      _db.outboxDao.markFailed(accountId, messageId, version: version);
 
   /// Its Conversazione is the one it replies to (#37), else the message itself, until the sync says otherwise.
   // ponytail: a full snapshot sync may drop it until the Provider lists it (a brief blink); fine for now.
@@ -190,12 +166,8 @@ class OutboxStore implements OutboxRepository {
         )
         .map((row) => row.read<String>('id'))
         .get();
-    await (_db.delete(_db.messageLabels)
-          ..where((l) => l.accountId.equals(accountId) & l.messageId.isIn(ids)))
-        .go();
-    await (_db.delete(
-      _db.messages,
-    )..where((m) => m.accountId.equals(accountId) & m.id.isIn(ids))).go();
+    await (_db.delete(_db.messageLabels)..where((l) => l.accountId.equals(accountId) & l.messageId.isIn(ids))).go();
+    await (_db.delete(_db.messages)..where((m) => m.accountId.equals(accountId) & m.id.isIn(ids))).go();
     // A sync may have cached the sent message already (a foreground sync beside the worker's send): that copy is
     // the Provider's, labels included, and the local one must not replace it.
     if (await _db.messagesDao.exists(accountId, providerId)) return;

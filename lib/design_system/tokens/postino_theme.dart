@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'postino_tokens.dart';
 
 abstract final class PostinoTheme {
-  static ThemeData light({
-    PostinoDensity density = PostinoDensity.comfortable,
-  }) => _build(Brightness.light, PostinoColors.light, density);
-  static ThemeData dark({
-    PostinoDensity density = PostinoDensity.comfortable,
-  }) => _build(Brightness.dark, PostinoColors.dark, density);
+  static ThemeData light({PostinoDensity density = PostinoDensity.comfortable}) =>
+      _build(Brightness.light, PostinoColors.light, density);
+  static ThemeData dark({PostinoDensity density = PostinoDensity.comfortable}) =>
+      _build(Brightness.dark, PostinoColors.dark, density);
 
   static ThemeData _build(Brightness b, PostinoColors c, PostinoDensity d) {
     final scheme = ColorScheme(
@@ -22,8 +20,7 @@ abstract final class PostinoTheme {
       secondary: c.brandHover,
       onSecondary: c.onBrand,
       secondaryContainer: c.surfaceSelected,
-      onSecondaryContainer:
-          c.ink, // indicatore di NavigationDrawer/NavigationBar
+      onSecondaryContainer: c.ink, // indicatore di NavigationDrawer/NavigationBar
       tertiary: c.star,
       onTertiary: c.onWarning,
       error: c.danger,
@@ -49,10 +46,7 @@ abstract final class PostinoTheme {
       shadow: const Color(0xFF000000),
       surfaceTint: Colors.transparent,
     );
-    final text = PostinoText.textTheme.apply(
-      bodyColor: c.ink,
-      displayColor: c.ink,
-    );
+    final text = PostinoText.textTheme.apply(bodyColor: c.ink, displayColor: c.ink);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -83,18 +77,12 @@ abstract final class PostinoTheme {
       ),
       drawerTheme: const DrawerThemeData(
         width: PostinoSize.drawerWidth,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.horizontal(
-            right: Radius.circular(PostinoRadius.lg),
-          ),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: Radius.circular(PostinoRadius.lg))),
       ),
       navigationDrawerTheme: NavigationDrawerThemeData(
         backgroundColor: c.drawerBg,
         indicatorColor: c.drawerItemBgActive,
-        indicatorShape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm)),
-        ),
+        indicatorShape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm))),
         tileHeight: PostinoSize.touchTargetAndroid,
         surfaceTintColor: Colors.transparent,
       ),
@@ -103,9 +91,7 @@ abstract final class PostinoTheme {
         foregroundColor: c.fabFg,
         elevation: 3,
         extendedTextStyle: PostinoText.label,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg))),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -113,9 +99,7 @@ abstract final class PostinoTheme {
           foregroundColor: c.onBrand,
           minimumSize: const Size(64, PostinoSize.controlMd),
           textStyle: PostinoText.label,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm)),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm))),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -124,43 +108,30 @@ abstract final class PostinoTheme {
           side: BorderSide(color: c.borderStrong),
           minimumSize: const Size(64, PostinoSize.controlMd),
           textStyle: PostinoText.label,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm)),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm))),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: c.brand,
-          textStyle: PostinoText.label,
-        ),
+        style: TextButton.styleFrom(foregroundColor: c.brand, textStyle: PostinoText.label),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.inputBg,
         hintStyle: TextStyle(color: c.inkSubtle),
         border: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
           borderSide: BorderSide(color: c.inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
           borderSide: BorderSide(color: c.inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
           borderSide: BorderSide(color: c.inputBorderFocus, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.sm),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.sm)),
           borderSide: BorderSide(color: c.inputBorderError),
         ),
       ),
@@ -168,12 +139,8 @@ abstract final class PostinoTheme {
         backgroundColor: WidgetStatePropertyAll(c.inputBg),
         elevation: const WidgetStatePropertyAll(1),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-        hintStyle: WidgetStatePropertyAll(
-          PostinoText.preview.copyWith(color: c.inkSubtle),
-        ),
-        constraints: const BoxConstraints(
-          minHeight: PostinoSize.touchTargetAndroid,
-        ),
+        hintStyle: WidgetStatePropertyAll(PostinoText.preview.copyWith(color: c.inkSubtle)),
+        constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: c.chipBg,
@@ -188,9 +155,7 @@ abstract final class PostinoTheme {
         actionTextColor: c.snackbarAction,
         behavior: SnackBarBehavior.floating,
         elevation: 6,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md))),
       ),
       bannerTheme: MaterialBannerThemeData(
         backgroundColor: c.warningSubtle,
@@ -201,9 +166,7 @@ abstract final class PostinoTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 8,
         titleTextStyle: PostinoText.sheetTitle.copyWith(color: c.ink),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg))),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.surfaceRaised,
@@ -212,9 +175,7 @@ abstract final class PostinoTheme {
         showDragHandle: true,
         dragHandleColor: c.borderStrong,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(PostinoRadius.xl),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(PostinoRadius.xl)),
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -222,9 +183,7 @@ abstract final class PostinoTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 6,
         textStyle: PostinoText.label.copyWith(color: c.ink),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md))),
       ),
       menuTheme: MenuThemeData(
         style: MenuStyle(
@@ -241,31 +200,22 @@ abstract final class PostinoTheme {
       ),
       switchTheme: SwitchThemeData(
         trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? c.switchTrackOn
-              : c.switchTrackOff,
+          (s) => s.contains(WidgetState.selected) ? c.switchTrackOn : c.switchTrackOff,
         ),
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? c.switchThumbOn
-              : c.switchThumbOff,
+          (s) => s.contains(WidgetState.selected) ? c.switchThumbOn : c.switchThumbOff,
         ),
         trackOutlineColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? Colors.transparent
-              : c.borderStrong,
+          (s) => s.contains(WidgetState.selected) ? Colors.transparent : c.borderStrong,
         ),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (s) =>
-              s.contains(WidgetState.selected) ? c.brand : Colors.transparent,
+          (s) => s.contains(WidgetState.selected) ? c.brand : Colors.transparent,
         ),
         checkColor: WidgetStatePropertyAll(c.onBrand),
         side: BorderSide(color: c.borderStrong, width: 1.5),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.xs)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.xs))),
       ),
       listTileTheme: ListTileThemeData(
         tileColor: c.listItemBg,
@@ -276,9 +226,7 @@ abstract final class PostinoTheme {
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: c.surfaceInverse,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(PostinoRadius.xs),
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
         ),
         textStyle: PostinoText.labelSm.copyWith(color: c.inkInverse),
       ),

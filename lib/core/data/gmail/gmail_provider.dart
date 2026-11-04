@@ -29,15 +29,7 @@ class GmailProvider implements MailProvider {
     this._sleep = Future<void>.delayed,
     this._idle = imapIdle,
     Duration stall = const Duration(seconds: 30),
-  }) : _gmail = GmailHttp(
-         _accountId,
-         keychain,
-         httpClient,
-         _clock,
-         client: client,
-         sleep: _sleep,
-         stall: stall,
-       );
+  }) : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
   final String _accountId;
   final Clock _clock;
@@ -61,157 +53,116 @@ class GmailProvider implements MailProvider {
   });
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) =>
-      gmailGuard(() async {
-        // The cursor comes first: what changes while listing is replayed by the next incremental sync.
-        final cursor = (await _gmail.get('profile'))['historyId'] as String;
-        final labels = [
-          for (final l
-              in (await _gmail.get('labels'))['labels'] as List? ?? const [])
-            // System labels (INBOX, STARRED, UNREAD...) are inbox, Stella and read state, not Etichette.
-            if (l['type'] == 'user')
-              Label(
-                id: l['id'] as String,
-                name: l['name'] as String,
-                kind: LabelKind.etichetta,
-              ),
-        ];
-        final after =
-            _clock.now().subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
-        final ids = await _list({'q': 'after:$after'});
-        final inbox = (await _list({
-          'q': 'after:$after',
-          'labelIds': inboxLabelId,
-        })).toSet();
-        // Page by page: each one is handed over (and stored) before the next is fetched.
-        // ponytail: a retry refetches pages already stored; skip stored ids if big mailboxes keep failing late.
-        final fetched = <String, (Message, MessageBody?)?>{};
-        for (var i = 0; i < ids.length; i += _page) {
-          final page = await _fetchAll(
-            ids.skip(i).take(_page),
-            full: inbox.contains,
-          );
-          fetched.addAll(page);
-          await onPage?.call([
-            for (final (m, _) in page.values.nonNulls) m,
-          ], _inboxBodies(page));
-        }
-        return Ok(
-          SyncBatch(
-            cursor: cursor,
-            labels: labels,
-            messages: [for (final (m, _) in fetched.values.nonNulls) m],
-            bodies: _inboxBodies(fetched),
-          ),
-        );
-      });
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => gmailGuard(() async {
+    // The cursor comes first: what changes while listing is replayed by the next incremental sync.
+    final cursor = (await _gmail.get('profile'))['historyId'] as String;
+    final labels = [
+      for (final l in (await _gmail.get('labels'))['labels'] as List? ?? const [])
+        // System labels (INBOX, STARRED, UNREAD...) are inbox, Stella and read state, not Etichette.
+        if (l['type'] == 'user') Label(id: l['id'] as String, name: l['name'] as String, kind: LabelKind.etichetta),
+    ];
+    final after = _clock.now().subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
+    final ids = await _list({'q': 'after:$after'});
+    final inbox = (await _list({'q': 'after:$after', 'labelIds': inboxLabelId})).toSet();
+    // Page by page: each one is handed over (and stored) before the next is fetched.
+    // ponytail: a retry refetches pages already stored; skip stored ids if big mailboxes keep failing late.
+    final fetched = <String, (Message, MessageBody?)?>{};
+    for (var i = 0; i < ids.length; i += _page) {
+      final page = await _fetchAll(ids.skip(i).take(_page), full: inbox.contains);
+      fetched.addAll(page);
+      await onPage?.call([for (final (m, _) in page.values.nonNulls) m], _inboxBodies(page));
+    }
+    return Ok(
+      SyncBatch(
+        cursor: cursor,
+        labels: labels,
+        messages: [for (final (m, _) in fetched.values.nonNulls) m],
+        bodies: _inboxBodies(fetched),
+      ),
+    );
+  });
 
   @override
-  Future<Result<SyncBatch>> incrementalSync(String cursor) =>
-      gmailGuard(() async {
-        final changed = <String>{}, deleted = <String>{};
-        var latest = cursor;
-        String? page;
-        do {
-          final r = await _gmail.get(
-            'history',
-            query: {'startHistoryId': cursor, 'pageToken': ?page},
-          );
-          // In order, so each message ends in its last state.
-          for (final h in r['history'] as List? ?? const []) {
-            for (final kind in [
-              'messagesAdded',
-              'labelsAdded',
-              'labelsRemoved',
-            ]) {
-              for (final e in h[kind] as List? ?? const []) {
-                final id = e['message']['id'] as String;
-                changed.add(id);
-                deleted.remove(id);
-              }
-            }
-            for (final e in h['messagesDeleted'] as List? ?? const []) {
-              final id = e['message']['id'] as String;
-              deleted.add(id);
-              changed.remove(id);
-            }
+  Future<Result<SyncBatch>> incrementalSync(String cursor) => gmailGuard(() async {
+    final changed = <String>{};
+    final deleted = <String>{};
+    var latest = cursor;
+    String? page;
+    do {
+      final r = await _gmail.get('history', query: {'startHistoryId': cursor, 'pageToken': ?page});
+      // In order, so each message ends in its last state.
+      for (final h in r['history'] as List? ?? const []) {
+        for (final kind in ['messagesAdded', 'labelsAdded', 'labelsRemoved']) {
+          for (final e in h[kind] as List? ?? const []) {
+            final id = e['message']['id'] as String;
+            changed.add(id);
+            deleted.remove(id);
           }
-          latest = r['historyId'] as String? ?? latest;
-          page = r['nextPageToken'] as String?;
-        } while (page != null);
-        // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
-        // ponytail: labels are refreshed by the initial sync only; a label created elsewhere shows up after the next one.
-        final fetched = await _fetchAll(changed, full: (_) => true);
-        return Ok(
-          SyncBatch(
-            cursor: latest,
-            messages: [for (final (m, _) in fetched.values.nonNulls) m],
-            // Gone by the time it was fetched: removed as well.
-            removedMessageIds: [
-              ...deleted,
-              for (final MapEntry(:key, :value) in fetched.entries)
-                if (value == null) key,
-            ],
-            bodies: _inboxBodies(fetched),
-          ),
-        );
-      });
+        }
+        for (final e in h['messagesDeleted'] as List? ?? const []) {
+          final id = e['message']['id'] as String;
+          deleted.add(id);
+          changed.remove(id);
+        }
+      }
+      latest = r['historyId'] as String? ?? latest;
+      page = r['nextPageToken'] as String?;
+    } while (page != null);
+    // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
+    // ponytail: labels are refreshed by the initial sync only; a label created elsewhere shows up after the next one.
+    final fetched = await _fetchAll(changed, full: (_) => true);
+    return Ok(
+      SyncBatch(
+        cursor: latest,
+        messages: [for (final (m, _) in fetched.values.nonNulls) m],
+        // Gone by the time it was fetched: removed as well.
+        removedMessageIds: [
+          ...deleted,
+          for (final MapEntry(:key, :value) in fetched.entries)
+            if (value == null) key,
+        ],
+        bodies: _inboxBodies(fetched),
+      ),
+    );
+  });
 
   /// Gmail Account ids are `gmail:<address>` (AccountsService).
   String get _address => _accountId.substring(_accountId.indexOf(':') + 1);
 
   @override
-  Stream<ChangeSignal> get changes => _idle(
-    host: 'imap.gmail.com',
-    user: _address,
-    accessToken: () async => (await _gmail.validTokens()).access,
-  );
+  Stream<ChangeSignal> get changes =>
+      _idle(host: 'imap.gmail.com', user: _address, accessToken: () async => (await _gmail.validTokens()).access);
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) =>
-      gmailGuard(() async {
-        final j = await _gmail.get(
-          'messages/$messageId',
-          query: {'format': 'full'},
-        );
-        return Ok(
-          await _body(
-                messageId,
-                j['payload'] as Map<String, dynamic>? ?? const {},
-              ) ??
-              const MessageBody('', BodyKind.testo),
-        );
-      });
+  Future<Result<MessageBody>> fetchBody(String messageId) => gmailGuard(() async {
+    final j = await _gmail.get('messages/$messageId', query: {'format': 'full'});
+    return Ok(
+      await _body(messageId, j['payload'] as Map<String, dynamic>? ?? const {}) ??
+          const MessageBody('', BodyKind.testo),
+    );
+  });
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) =>
-      gmailGuard(() async {
-        final j = await _gmail.get(
-          'threads/$conversationId',
-          query: {'format': 'metadata', 'metadataHeaders': _headers},
-        );
-        return Ok([
-          for (final m in j['messages'] as List? ?? const [])
-            parseGmailMessage(m as Map<String, dynamic>),
-        ]);
-      });
+  Future<Result<List<Message>>> fetchConversation(String conversationId) => gmailGuard(() async {
+    final j = await _gmail.get('threads/$conversationId', query: {'format': 'metadata', 'metadataHeaders': _headers});
+    return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
+  });
 
   /// One batchModify call per 1000 ids, Gmail's cap.
   @override
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) =>
-      gmailGuard(() async {
-        for (var i = 0; i < messageIds.length; i += 1000) {
-          await _gmail.send(
-            'POST',
-            'messages/batchModify',
-            body: {
-              'ids': messageIds.skip(i).take(1000).toList(),
-              read ? 'removeLabelIds' : 'addLabelIds': ['UNREAD'],
-            },
-          );
-        }
-        return const Ok(null);
-      });
+  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => gmailGuard(() async {
+    for (var i = 0; i < messageIds.length; i += 1000) {
+      await _gmail.send(
+        'POST',
+        'messages/batchModify',
+        body: {
+          'ids': messageIds.skip(i).take(1000).toList(),
+          read ? 'removeLabelIds' : 'addLabelIds': ['UNREAD'],
+        },
+      );
+    }
+    return const Ok(null);
+  });
 
   /// [attachmentId] is the part id ([gmailAttachments]): the message comes first, then the part's data,
   /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.
@@ -222,14 +173,10 @@ class GmailProvider implements MailProvider {
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) => gmailGuard(() async {
-    final j = await _gmail.get(
-      'messages/$messageId',
-      query: {'format': 'full'},
-      cancel: cancel,
-    );
-    final part = gmailAttachmentParts(
-      j['payload'] as Map<String, dynamic>? ?? const {},
-    ).where((p) => p['partId'] == attachmentId).firstOrNull;
+    final j = await _gmail.get('messages/$messageId', query: {'format': 'full'}, cancel: cancel);
+    final part = gmailAttachmentParts(j['payload'] as Map<String, dynamic>? ?? const {})
+        .where((p) => p['partId'] == attachmentId)
+        .firstOrNull;
     if (part == null) throw const GmailFailed(NotFoundFailure());
     final body = part['body'] as Map;
     // An empty file has neither.
@@ -253,18 +200,11 @@ class GmailProvider implements MailProvider {
   /// Inviati is searched first: a message already there (a send whose answer was lost) is not sent twice.
   /// The Bozza holding the Message-ID is then deleted, best effort: Gmail does not drop it on its own.
   @override
-  Future<Result<String>> send(
-    String messageId,
-    String raw, {
-    String? threadId,
-  }) => gmailGuard(() async {
+  Future<Result<String>> send(String messageId, String raw, {String? threadId}) => gmailGuard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
     String? id;
     if (bare.isNotEmpty) {
-      final sent = await _list({
-        'q': 'rfc822msgid:$bare',
-        'labelIds': sentLabelId,
-      });
+      final sent = await _list({'q': 'rfc822msgid:$bare', 'labelIds': sentLabelId});
       id = sent.firstOrNull;
     }
     // Already in Inviati (a lost answer): not sent again, but its Bozza may still be there.
@@ -279,8 +219,7 @@ class GmailProvider implements MailProvider {
               },
             ))['id']
             as String;
-    if (await deleteDraft(messageId) case Err(:final failure)
-        when failure is! NotFoundFailure) {
+    if (await deleteDraft(messageId) case Err(:final failure) when failure is! NotFoundFailure) {
       debugPrint('[gmail] draft of sent $messageId not deleted, $failure');
     }
     return Ok(id);
@@ -292,20 +231,11 @@ class GmailProvider implements MailProvider {
   final _draftIds = <String, String>{};
 
   @override
-  Future<Result<void>> saveDraft(
-    OutgoingMessage draft, {
-    required bool isNew,
-  }) => gmailGuard(() async {
-    final raw = switch (await renderMimeFetching(
-      draft,
-      _clock.now(),
-      fetchAttachment,
-    )) {
+  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) => gmailGuard(() async {
+    final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
       Ok(:final value) => value,
       // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-      Err(failure: NotFoundFailure()) => throw const GmailFailed(
-        UnexpectedFailure('forwarded attachment gone'),
-      ),
+      Err(failure: NotFoundFailure()) => throw const GmailFailed(UnexpectedFailure('forwarded attachment gone')),
       Err(:final failure) => throw GmailFailed(failure),
     };
     final message = {
@@ -326,11 +256,7 @@ class GmailProvider implements MailProvider {
       await create();
       return const Ok(null);
     }
-    await _gmail.send(
-      'PUT',
-      'drafts/$id',
-      body: {'id': id, 'message': message},
-    );
+    await _gmail.send('PUT', 'drafts/$id', body: {'id': id, 'message': message});
     return const Ok(null);
   });
 
@@ -348,10 +274,7 @@ class GmailProvider implements MailProvider {
     if (_draftIds[messageId] case final id?) return id;
     // An empty `rfc822msgid:` would match any draft.
     if (messageId.isEmpty) throw const GmailFailed(NotFoundFailure());
-    final r = await _gmail.get(
-      'drafts',
-      query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'},
-    );
+    final r = await _gmail.get('drafts', query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'});
     final id = (r['drafts'] as List?)?.firstOrNull?['id'] as String?;
     if (id == null) throw const GmailFailed(NotFoundFailure());
     return _draftIds[messageId] = id;
@@ -362,10 +285,7 @@ class GmailProvider implements MailProvider {
     final ids = <String>[];
     String? page;
     do {
-      final r = await _gmail.get(
-        'messages',
-        query: {...query, 'maxResults': '500', 'pageToken': ?page},
-      );
+      final r = await _gmail.get('messages', query: {...query, 'maxResults': '500', 'pageToken': ?page});
       for (final m in r['messages'] as List? ?? const []) {
         ids.add(m['id'] as String);
       }
@@ -385,25 +305,18 @@ class GmailProvider implements MailProvider {
     for (var i = 0; i < all.length; i += _chunk) {
       if (i > 0) await _sleep(_pace);
       await Future.wait([
-        for (final id in all.skip(i).take(_chunk))
-          _fetch(id, full: full(id)).then((m) => out[id] = m),
+        for (final id in all.skip(i).take(_chunk)) _fetch(id, full: full(id)).then((m) => out[id] = m),
       ]);
     }
     return out;
   }
 
-  Future<(Message, MessageBody?)?> _fetch(
-    String id, {
-    required bool full,
-  }) async {
+  Future<(Message, MessageBody?)?> _fetch(String id, {required bool full}) async {
     final Map<String, dynamic> j;
     try {
       j = await _gmail.get(
         'messages/$id',
-        query: {
-          'format': full ? 'full' : 'metadata',
-          if (!full) 'metadataHeaders': _headers,
-        },
+        query: {'format': full ? 'full' : 'metadata', if (!full) 'metadataHeaders': _headers},
       );
     } on GmailFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
@@ -412,50 +325,30 @@ class GmailProvider implements MailProvider {
     final message = parseGmailMessage(j);
     if (!full) return (message, null);
     try {
-      return (
-        message,
-        await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}),
-      );
+      return (message, await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}));
     } on GmailFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }
   }
 
-  static const _headers = [
-    'From',
-    'To',
-    'Cc',
-    'Bcc',
-    'Reply-To',
-    'References',
-    'Subject',
-    'Message-ID',
-  ];
+  static const _headers = ['From', 'To', 'Cc', 'Bcc', 'Reply-To', 'References', 'Subject', 'Message-ID'];
 
-  static Map<String, MessageBody> _inboxBodies(
-    Map<String, (Message, MessageBody?)?> fetched,
-  ) => {
+  static Map<String, MessageBody> _inboxBodies(Map<String, (Message, MessageBody?)?> fetched) => {
     for (final (m, body) in fetched.values.nonNulls)
       if (body != null && m.labelIds.contains(inboxLabelId)) m.id: body,
   };
 
   /// The HTML part if there is one, else the plain text one, with the attachments;
   /// null for a message with neither.
-  Future<MessageBody?> _body(
-    String messageId,
-    Map<String, dynamic> payload,
-  ) async {
+  Future<MessageBody?> _body(String messageId, Map<String, dynamic> payload) async {
     final part = gmailTextPart(payload);
     if (part == null) return gmailBody(payload, null, null);
     final body = part['body'] as Map;
     // A big part comes as an attachmentId instead of inline data.
     final data =
         body['data'] as String? ??
-        (await _gmail.get(
-              'messages/$messageId/attachments/${body['attachmentId']}',
-            ))['data']
-            as String;
+        (await _gmail.get('messages/$messageId/attachments/${body['attachmentId']}'))['data'] as String;
     return gmailBody(payload, part, data);
   }
 }

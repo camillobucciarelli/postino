@@ -5,12 +5,7 @@ import 'package:equatable/equatable.dart';
 
 /// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
 class Attachment extends Equatable {
-  const Attachment({
-    required this.id,
-    required this.name,
-    required this.size,
-    this.mimeType,
-  });
+  const Attachment({required this.id, required this.name, required this.size, this.mimeType});
   final String id;
 
   /// Empty when the message gives none.
@@ -234,11 +229,7 @@ class MessageBody extends Equatable {
 
 /// Always inside a single Account.
 class Conversation extends Equatable {
-  const Conversation({
-    required this.id,
-    required this.accountId,
-    required this.messageIds,
-  });
+  const Conversation({required this.id, required this.accountId, required this.messageIds});
   final String id;
   final String accountId;
   final List<String> messageIds;
@@ -309,16 +300,12 @@ class ForwardedAttachment extends Equatable {
   List<Object?> get props => [sourceMessageId, attachment];
 }
 
-const _alphanumerics =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const _alphanumerics = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 /// A fresh RFC 5322 Message-ID: `<24 random alphanumerics@domain of [address]>` (`postino.local` without one).
 String newMessageId(String address) {
   final random = Random.secure();
-  final local = [
-    for (var i = 0; i < 24; i++)
-      _alphanumerics[random.nextInt(_alphanumerics.length)],
-  ].join();
+  final local = [for (var i = 0; i < 24; i++) _alphanumerics[random.nextInt(_alphanumerics.length)]].join();
   final at = address.lastIndexOf('@');
   final domain = at < 0 ? 'postino.local' : address.substring(at + 1);
   return '<$local@$domain>';

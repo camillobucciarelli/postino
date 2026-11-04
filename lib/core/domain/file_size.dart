@@ -9,7 +9,6 @@ String fileSize(int bytes, String locale) {
     value /= 1024;
     unit++;
   }
-  final f = NumberFormat.decimalPattern(locale)
-    ..maximumFractionDigits = unit >= 2 ? 1 : 0;
+  final f = NumberFormat.decimalPattern(locale)..maximumFractionDigits = unit >= 2 ? 1 : 0;
   return '${f.format(value)} ${units[unit]}';
 }

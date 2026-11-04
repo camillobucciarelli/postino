@@ -16,8 +16,7 @@ import '../../../support/fake_platform.dart';
 const _account = 'gmail:ada@gmail.com';
 final _now = DateTime.utc(2026, 10, 28, 12);
 
-http.Response _json(Object body, [int status = 200]) =>
-    http.Response(jsonEncode(body), status);
+http.Response _json(Object body, [int status = 200]) => http.Response(jsonEncode(body), status);
 
 ({GmailHttp gmail, List<http.Request> requests, List<Duration> sleeps}) _gmail(
   Future<http.Response> Function(http.Request) handler, {
@@ -53,9 +52,7 @@ void main() {
   test('a 429 is retried after its Retry-After, capped at 32 s', () async {
     var calls = 0;
     final t = _gmail((r) async {
-      return ++calls == 1
-          ? http.Response('{}', 429, headers: {'retry-after': '120'})
-          : _json({'ok': true});
+      return ++calls == 1 ? http.Response('{}', 429, headers: {'retry-after': '120'}) : _json({'ok': true});
     });
     expect(await t.gmail.get('profile'), {'ok': true});
     expect(t.sleeps, [const Duration(seconds: 32)]);
@@ -102,8 +99,7 @@ void main() {
     final body = utf8.encode(jsonEncode({'data': 'abcd'}));
     final t = _gmail(
       (r) async => throw StateError('unused'),
-      streaming: (r) async =>
-          http.StreamedResponse(Stream.value(body), 200), // no contentLength
+      streaming: (r) async => http.StreamedResponse(Stream.value(body), 200), // no contentLength
     );
     final progress = <double>[];
     await t.gmail.get('messages/x', expected: 1000, onProgress: progress.add);
@@ -124,9 +120,7 @@ void main() {
     );
     final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
     expect((r as Err).failure, isA<OfflineFailure>());
-    await (sent as http.AbortableRequest).abortTrigger!.timeout(
-      const Duration(seconds: 1),
-    );
+    await (sent as http.AbortableRequest).abortTrigger!.timeout(const Duration(seconds: 1));
   });
 
   test('a permanent 429 is retried 5 times, then a RateLimitFailure', () async {
@@ -141,10 +135,7 @@ void main() {
     var calls = 0;
     final t = _gmail((r) async {
       return ++calls == 1
-          ? http.Response(
-              '{"error":{"errors":[{"reason":"rateLimitExceeded"}]}}',
-              403,
-            )
+          ? http.Response('{"error":{"errors":[{"reason":"rateLimitExceeded"}]}}', 403)
           : _json({'ok': true});
     });
     expect(await t.gmail.get('profile'), {'ok': true});

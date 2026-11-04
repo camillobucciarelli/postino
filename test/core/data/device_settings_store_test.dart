@@ -24,14 +24,11 @@ void main() {
     expect(await db.select(db.deviceSettings).get(), isEmpty);
   });
 
-  test(
-    'the list width is null until chosen, then kept as it was chosen',
-    () async {
-      expect(await store.listWidth(), isNull);
-      await store.setListWidth(412);
-      expect(await store.listWidth(), 412);
-      await store.setListWidth(380.5);
-      expect(await store.listWidth(), 380.5);
-    },
-  );
+  test('the list width is null until chosen, then kept as it was chosen', () async {
+    expect(await store.listWidth(), isNull);
+    await store.setListWidth(412);
+    expect(await store.listWidth(), 412);
+    await store.setListWidth(380.5);
+    expect(await store.listWidth(), 380.5);
+  });
 }

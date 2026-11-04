@@ -24,16 +24,16 @@ class PostinoFormatLabels {
     required this.cancel,
   });
 
-  final String bold,
-      italic,
-      underline,
-      strikethrough,
-      link,
-      bulletList,
-      numberedList,
-      linkUrl,
-      insert,
-      cancel;
+  final String bold;
+  final String italic;
+  final String underline;
+  final String strikethrough;
+  final String link;
+  final String bulletList;
+  final String numberedList;
+  final String linkUrl;
+  final String insert;
+  final String cancel;
 }
 
 class _LinkIntent extends Intent {
@@ -83,26 +83,18 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
 
   bool _active(Attribute a) => _style.attributes[a.key]?.value == a.value;
 
-  void _toggle(Attribute a) => widget.controller.formatSelection(
-    _active(a) ? Attribute.clone(a, null) : a,
-  );
+  void _toggle(Attribute a) => widget.controller.formatSelection(_active(a) ? Attribute.clone(a, null) : a);
 
   Future<void> _link() async {
     final c = widget.controller;
     final selection = c.selection;
-    final url = await showDialog<String>(
-      context: context,
-      builder: (context) => _LinkDialog(widget.labels),
-    );
+    final url = await showDialog<String>(context: context, builder: (context) => _LinkDialog(widget.labels));
     if (url == null || url.isEmpty) return;
     // ponytail: with nothing selected the URL itself becomes the link text.
     if (selection.isCollapsed) {
       c.replaceText(selection.start, 0, url, null);
       c.updateSelection(
-        TextSelection(
-          baseOffset: selection.start,
-          extentOffset: selection.start + url.length,
-        ),
+        TextSelection(baseOffset: selection.start, extentOffset: selection.start + url.length),
         ChangeSource.local,
       );
     } else {
@@ -174,24 +166,19 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
                       // quill's bullets and numbers are plain widgets whose semantics rect ignores the
                       // editor's offset, so VoiceOver would point at the wrong place: out of the tree.
                       // ignore: experimental_member_use
-                      customLeadingBlockBuilder: (node, config) =>
-                          ExcludeSemantics(
-                            child: config.attribute == Attribute.ol
-                                ? QuillNumberPoint(
-                                    index: '${config.index}',
-                                    indentLevelCounts: config.indentLevelCounts,
-                                    count: config.count,
-                                    style: config.style!,
-                                    width: config.width!,
-                                    attrs: config.attrs,
-                                    padding: config.padding!,
-                                  )
-                                : QuillBulletPoint(
-                                    style: config.style!,
-                                    width: config.width!,
-                                    padding: config.padding!,
-                                  ),
-                          ),
+                      customLeadingBlockBuilder: (node, config) => ExcludeSemantics(
+                        child: config.attribute == Attribute.ol
+                            ? QuillNumberPoint(
+                                index: '${config.index}',
+                                indentLevelCounts: config.indentLevelCounts,
+                                count: config.count,
+                                style: config.style!,
+                                width: config.width!,
+                                attrs: config.attrs,
+                                padding: config.padding!,
+                              )
+                            : QuillBulletPoint(style: config.style!, width: config.width!, padding: config.padding!),
+                      ),
                       customStyles: DefaultStyles(
                         paragraph: DefaultTextBlockStyle(
                           body,
@@ -223,31 +210,21 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
                           VerticalSpacing.zero,
                           null,
                         ),
-                        link: TextStyle(
-                          color: c.brand,
-                          decoration: TextDecoration.underline,
-                        ),
+                        link: TextStyle(color: c.brand, decoration: TextDecoration.underline),
                       ),
                       // Tab moves the focus on, as in any mail composer: quill's indent is left out
                       // before it sees the key, so the app's Tab handling takes it.
                       // ignore: experimental_member_use
                       onKeyPressed: (event, _) =>
-                          event.logicalKey == LogicalKeyboardKey.tab
-                          ? KeyEventResult.ignored
-                          : null,
+                          event.logicalKey == LogicalKeyboardKey.tab ? KeyEventResult.ignored : null,
                       customShortcuts: {
-                        key(LogicalKeyboardKey.keyX, shift: true):
-                            const _StrikeIntent(),
+                        key(LogicalKeyboardKey.keyX, shift: true): const _StrikeIntent(),
                         key(LogicalKeyboardKey.keyK): const _LinkIntent(),
                         // Formats outside the list of #35 stay out.
-                        key(LogicalKeyboardKey.keyB, shift: true):
-                            const DoNothingIntent(),
-                        key(LogicalKeyboardKey.backquote):
-                            const DoNothingIntent(),
-                        key(LogicalKeyboardKey.tilde, shift: true):
-                            const DoNothingIntent(),
-                        key(LogicalKeyboardKey.keyC, shift: true):
-                            const DoNothingIntent(),
+                        key(LogicalKeyboardKey.keyB, shift: true): const DoNothingIntent(),
+                        key(LogicalKeyboardKey.backquote): const DoNothingIntent(),
+                        key(LogicalKeyboardKey.tilde, shift: true): const DoNothingIntent(),
+                        key(LogicalKeyboardKey.keyC, shift: true): const DoNothingIntent(),
                         key(LogicalKeyboardKey.keyG): const DoNothingIntent(),
                         for (final d in [
                           LogicalKeyboardKey.digit0,
@@ -261,12 +238,8 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
                           key(d): const DoNothingIntent(),
                       },
                       customActions: {
-                        _StrikeIntent: CallbackAction<_StrikeIntent>(
-                          onInvoke: (_) => _toggle(Attribute.strikeThrough),
-                        ),
-                        _LinkIntent: CallbackAction<_LinkIntent>(
-                          onInvoke: (_) => _link(),
-                        ),
+                        _StrikeIntent: CallbackAction<_StrikeIntent>(onInvoke: (_) => _toggle(Attribute.strikeThrough)),
+                        _LinkIntent: CallbackAction<_LinkIntent>(onInvoke: (_) => _link()),
                       },
                     ),
                   ),
@@ -311,11 +284,7 @@ class _LinkDialogState extends State<_LinkDialog> {
         onSubmitted: (_) => insert(),
       ),
       actions: [
-        PostinoButton(
-          label: l.cancel,
-          variant: PostinoButtonVariant.ghost,
-          onPressed: () => Navigator.pop(context),
-        ),
+        PostinoButton(label: l.cancel, variant: PostinoButtonVariant.ghost, onPressed: () => Navigator.pop(context)),
         PostinoButton(label: l.insert, onPressed: insert),
       ],
     );

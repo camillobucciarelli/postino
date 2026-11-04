@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import 'package:postino/features/posta/presentation/conversation_view.dart' show ConversationView;
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
@@ -14,8 +15,8 @@ import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/quoted_text.dart';
-import '../domain/safe_html.dart';
 import '../domain/reply_kind.dart';
+import '../domain/safe_html.dart';
 import 'attachment_actions.dart';
 import 'attachment_chips.dart';
 import 'message_time.dart';
@@ -69,50 +70,38 @@ class _ConversationBodyState extends State<ConversationBody> {
   final _measured = <(String, bool), SafeHtml>{};
 
   bool _allowRemote(Message message) =>
-      widget.trusted.contains(normalizeAddress(message.from)) ||
-      _trust.shownOnce(widget.account.id, message.id);
+      widget.trusted.contains(normalizeAddress(message.from)) || _trust.shownOnce(widget.account.id, message.id);
 
   /// The cleaned HTML of a message, null for plain text.
   SafeHtml? _html(Message message, MessageBody body) {
     if (body.kind == BodyKind.testo) return null;
     final allow = _allowRemote(message);
-    return _safe[(message.id, allow)] ??= prepareHtml(
-      body.content,
-      allowRemote: allow,
-    );
+    return _safe[(message.id, allow)] ??= prepareHtml(body.content, allowRemote: allow);
   }
 
   /// Body, signature and quote of a message (ThreadView), after the cleaning.
   BodyParts _split(Message message, MessageBody body) {
     final safe = _html(message, body);
-    return _parts[(message.id, safe != null && _allowRemote(message))] ??=
-        safe == null ? splitText(body.content) : splitHtml(safe.html);
+    return _parts[(message.id, safe != null && _allowRemote(message))] ??= safe == null
+        ? splitText(body.content)
+        : splitHtml(safe.html);
   }
 
   /// One part of a body: HTML on its cartoncino, sized to its own width, or text.
-  Widget _part(
-    String content,
-    BodyKind kind,
-    Message message, {
-    bool quiet = false,
-  }) {
+  Widget _part(String content, BodyKind kind, Message message, {bool quiet = false}) {
     if (kind == BodyKind.testo) {
       return PostinoMessageBody(text: content, quiet: quiet);
     }
     // Already clean: this only measures the part's own fixed width.
     final allow = _allowRemote(message);
-    final part = _measured[(content, allow)] ??= prepareHtml(
-      content,
-      allowRemote: allow,
-    );
+    final part = _measured[(content, allow)] ??= prepareHtml(content, allowRemote: allow);
     return PostinoHtmlCard(
       html: part.html,
       contentWidth: part.width,
       quiet: quiet,
       onTapUrl: (url) {
         // Web and mail only: a `file:` link in a message must never open (or hand out) a local file.
-        if (Uri.tryParse(url) case final uri?
-            when ['http', 'https', 'mailto'].contains(uri.scheme)) {
+        if (Uri.tryParse(url) case final uri? when ['http', 'https', 'mailto'].contains(uri.scheme)) {
           unawaited(GetIt.I<LinkOpener>().open(uri));
         }
       },
@@ -120,11 +109,7 @@ class _ConversationBodyState extends State<ConversationBody> {
   }
 
   /// Under the header, above the body (not for a Mittente fidato: nothing is blocked then).
-  List<Widget> _notices(
-    Message message,
-    MessageBody? body,
-    Translations$conversazione$it t,
-  ) {
+  List<Widget> _notices(Message message, MessageBody? body, Translations$conversazione$it t) {
     if (body == null || !(_html(message, body)?.blocked ?? false)) {
       return const [];
     }
@@ -136,8 +121,7 @@ class _ConversationBodyState extends State<ConversationBody> {
         message: t.imagesBlockedBody,
         spaced: false,
         actionLabel: t.showImages,
-        onAction: () =>
-            setState(() => _trust.showOnce(widget.account.id, message.id)),
+        onAction: () => setState(() => _trust.showOnce(widget.account.id, message.id)),
         secondaryActionLabel: t.alwaysFromSender,
         onSecondaryAction: () => unawaited(_trust.trust(message.from)),
       ),
@@ -150,16 +134,11 @@ class _ConversationBodyState extends State<ConversationBody> {
     final messages = widget.messages;
     final a = widget.account;
     final now = GetIt.I<Clock>().now();
-    final accountRef = (
-      color: PostinoAccountColor.values[a.color],
-      initial: a.initial,
-    );
+    final accountRef = (color: PostinoAccountColor.values[a.color], initial: a.initial);
     final locale = Localizations.localeOf(context).languageCode;
     String name(String entry) {
       final m = parseMailbox(entry);
-      return m.address.toLowerCase() == a.address.toLowerCase()
-          ? t.me
-          : m.name ?? m.address;
+      return m.address.toLowerCase() == a.address.toLowerCase() ? t.me : m.name ?? m.address;
     }
 
     // Oldest first: a signature folds when an earlier message already had it.
@@ -169,22 +148,16 @@ class _ConversationBodyState extends State<ConversationBody> {
     };
     final flags = repeatedSignatures(parts.values.map((p) => p.signatureKey));
     final shown = {
-      for (final (i, MapEntry(:key, :value)) in parts.entries.indexed)
-        key: foldBody(value, repeated: flags[i]),
+      for (final (i, MapEntry(:key, :value)) in parts.entries.indexed) key: foldBody(value, repeated: flags[i]),
     };
     return PostinoThreadView(
       subject: messages.first.message.subject,
       account: accountRef,
       accountName: a.name,
-      importantLabel:
-          messages.any((m) => m.message.labelIds.contains('IMPORTANT'))
-          ? t.important
-          : null,
+      importantLabel: messages.any((m) => m.message.labelIds.contains('IMPORTANT')) ? t.important : null,
       labels: [
         for (final l in widget.labels)
-          if (l.kind == LabelKind.etichetta &&
-              messages.any((m) => m.message.labelIds.contains(l.id)))
-            l.name,
+          if (l.kind == LabelKind.etichetta && messages.any((m) => m.message.labelIds.contains(l.id))) l.name,
       ],
       messages: [
         for (final (:message, :body) in messages.reversed)
@@ -192,38 +165,17 @@ class _ConversationBodyState extends State<ConversationBody> {
             key: ValueKey('message-${message.id}'),
             sender: message.fromName ?? message.from,
             address: message.fromName == null ? null : message.from,
-            time: messageTime(
-              message.date,
-              now,
-              locale,
-              context.t.list.yesterday,
-            ),
+            time: messageTime(message.date, now, locale, context.t.list.yesterday),
             preview: message.snippet,
             recipients: message.cc.isEmpty
                 ? t.to(recipients: message.to.map(name).join(', '))
-                : t.toCc(
-                    recipients: message.to.map(name).join(', '),
-                    cc: message.cc.map(name).join(', '),
-                  ),
+                : t.toCc(recipients: message.to.map(name).join(', '), cc: message.cc.map(name).join(', ')),
             details: [
-              PostinoMessageDetail(
-                t.from,
-                formatMailbox((name: message.fromName, address: message.from)),
-              ),
+              PostinoMessageDetail(t.from, formatMailbox((name: message.fromName, address: message.from))),
               PostinoMessageDetail(t.toLabel, message.to.join(', ')),
-              if (message.cc.isNotEmpty)
-                PostinoMessageDetail(t.cc, message.cc.join(', ')),
-              PostinoMessageDetail(
-                t.date,
-                DateFormat.yMMMMEEEEd(locale)
-                    .add_Hm()
-                    .format(message.date.toLocal()),
-              ),
-              PostinoMessageDetail(
-                t.receivedOn,
-                a.address,
-                account: accountRef,
-              ),
+              if (message.cc.isNotEmpty) PostinoMessageDetail(t.cc, message.cc.join(', ')),
+              PostinoMessageDetail(t.date, DateFormat.yMMMMEEEEd(locale).add_Hm().format(message.date.toLocal())),
+              PostinoMessageDetail(t.receivedOn, a.address, account: accountRef),
             ],
             notices: _notices(message, body, t),
             actions: PostinoMenu(
@@ -245,18 +197,9 @@ class _ConversationBodyState extends State<ConversationBody> {
             unread: !message.isRead,
             expanded: widget.expanded[message.id]!,
             // A body without its attachments known (stored before v9) is downloaded again too.
-            onToggle: () => widget.onToggle(
-              message.id,
-              body != null && body.attachments != null,
-            ),
+            onToggle: () => widget.onToggle(message.id, body != null && body.attachments != null),
             quoteLabel: t.showQuoted,
-            attachments: attachmentChips(
-              widget.attachments,
-              message,
-              body,
-              t,
-              locale,
-            ),
+            attachments: attachmentChips(widget.attachments, message, body, t, locale),
             signature: switch ((body, shown[message.id]?.signature)) {
               (final b?, final s?) => _part(s, b.kind, message, quiet: true),
               _ => null,

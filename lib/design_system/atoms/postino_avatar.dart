@@ -6,12 +6,7 @@ import '../tokens/postino_tokens.dart';
 /// The sender: initials on a muted `label-*` tint derived from [name]; [badge] (an AccountMark) bottom right.
 /// Always decorative: the sender is written next to it.
 class PostinoAvatar extends StatelessWidget {
-  const PostinoAvatar({
-    super.key,
-    required this.name,
-    this.size = PostinoSize.avatarMd,
-    this.badge,
-  });
+  const PostinoAvatar({super.key, required this.name, this.size = PostinoSize.avatarMd, this.badge});
 
   final String name;
   final double size;
@@ -49,10 +44,7 @@ class PostinoAvatar extends StatelessWidget {
                 bottom: -3,
                 child: Container(
                   padding: const EdgeInsets.all(PostinoBorder.accountBadgeRing),
-                  decoration: BoxDecoration(
-                    color: c.avatarBadgeRing,
-                    borderRadius: BorderRadius.circular(size * .15),
-                  ),
+                  decoration: BoxDecoration(color: c.avatarBadgeRing, borderRadius: BorderRadius.circular(size * .15)),
                   child: b,
                 ),
               ),
@@ -85,10 +77,5 @@ int _hash(String s) {
   return n;
 }
 
-String _initials(String name) => name
-    .split(RegExp(r'\s+'))
-    .where((w) => w.isNotEmpty)
-    .take(2)
-    .map((w) => w.characters.first)
-    .join()
-    .toUpperCase();
+String _initials(String name) =>
+    name.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2).map((w) => w.characters.first).join().toUpperCase();

@@ -5,16 +5,7 @@ import 'postino_account_swatch.dart';
 import 'postino_colors_lerp.dart';
 import 'postino_palette.dart';
 
-enum PostinoAccountColor {
-  sky,
-  blue,
-  violet,
-  magenta,
-  rose,
-  olive,
-  slate,
-  graphite,
-}
+enum PostinoAccountColor { sky, blue, violet, magenta, rose, olive, slate, graphite }
 
 /// Livello 2 e 3 — token semantici e di componente, light e dark.
 @immutable
@@ -701,46 +692,14 @@ class PostinoColors extends ThemeExtension<PostinoColors> {
   );
 
   PostinoAccountSwatch account(PostinoAccountColor c) => switch (c) {
-    PostinoAccountColor.sky => PostinoAccountSwatch(
-      accountSky,
-      accountSkySubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.blue => PostinoAccountSwatch(
-      accountBlue,
-      accountBlueSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.violet => PostinoAccountSwatch(
-      accountViolet,
-      accountVioletSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.magenta => PostinoAccountSwatch(
-      accountMagenta,
-      accountMagentaSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.rose => PostinoAccountSwatch(
-      accountRose,
-      accountRoseSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.olive => PostinoAccountSwatch(
-      accountOlive,
-      accountOliveSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.slate => PostinoAccountSwatch(
-      accountSlate,
-      accountSlateSubtle,
-      onAccount,
-    ),
-    PostinoAccountColor.graphite => PostinoAccountSwatch(
-      accountGraphite,
-      accountGraphiteSubtle,
-      onAccount,
-    ),
+    PostinoAccountColor.sky => PostinoAccountSwatch(accountSky, accountSkySubtle, onAccount),
+    PostinoAccountColor.blue => PostinoAccountSwatch(accountBlue, accountBlueSubtle, onAccount),
+    PostinoAccountColor.violet => PostinoAccountSwatch(accountViolet, accountVioletSubtle, onAccount),
+    PostinoAccountColor.magenta => PostinoAccountSwatch(accountMagenta, accountMagentaSubtle, onAccount),
+    PostinoAccountColor.rose => PostinoAccountSwatch(accountRose, accountRoseSubtle, onAccount),
+    PostinoAccountColor.olive => PostinoAccountSwatch(accountOlive, accountOliveSubtle, onAccount),
+    PostinoAccountColor.slate => PostinoAccountSwatch(accountSlate, accountSlateSubtle, onAccount),
+    PostinoAccountColor.graphite => PostinoAccountSwatch(accountGraphite, accountGraphiteSubtle, onAccount),
   };
 
   @override

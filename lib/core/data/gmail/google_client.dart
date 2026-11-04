@@ -11,8 +11,5 @@ class GoogleClient {
   /// Only "Desktop app" clients (Windows/Linux loopback) have one; Google does not treat it as secret.
   final String secret;
 
-  Map<String, String> get fields => {
-    'client_id': id,
-    if (secret.isNotEmpty) 'client_secret': secret,
-  };
+  Map<String, String> get fields => {'client_id': id, if (secret.isNotEmpty) 'client_secret': secret};
 }

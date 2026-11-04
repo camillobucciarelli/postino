@@ -34,23 +34,13 @@ class PostinoFormatButton extends StatelessWidget {
           tooltip: label,
           isSelected: active,
           style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll(
-              active ? c.chipBgSelected : Colors.transparent,
-            ),
-            foregroundColor: WidgetStatePropertyAll(
-              active ? c.brand : c.inkMuted,
-            ),
+            backgroundColor: WidgetStatePropertyAll(active ? c.chipBgSelected : Colors.transparent),
+            foregroundColor: WidgetStatePropertyAll(active ? c.brand : c.inkMuted),
             shape: const WidgetStatePropertyAll(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(PostinoRadius.sm),
-                ),
-              ),
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.sm))),
             ),
-            backgroundBuilder: (context, states, child) => PostinoFocusRing(
-              borderRadius: BorderRadius.circular(PostinoRadius.sm),
-              child: child!,
-            ),
+            backgroundBuilder: (context, states, child) =>
+                PostinoFocusRing(borderRadius: BorderRadius.circular(PostinoRadius.sm), child: child!),
           ),
           icon: PostinoIcon(icon),
         ),

@@ -16,23 +16,11 @@ class PostinoActionBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(
-          top: BorderSide(
-            color: c.borderSubtle,
-            width: PostinoBorder.borderWidthHairline,
-          ),
-        ),
+        border: Border(top: BorderSide(color: c.borderSubtle)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: PostinoSpacing.s4,
-          vertical: PostinoSpacing.s3,
-        ),
-        child: Wrap(
-          spacing: PostinoSpacing.s2,
-          runSpacing: PostinoSpacing.s2,
-          children: children,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: PostinoSpacing.s3),
+        child: Wrap(spacing: PostinoSpacing.s2, runSpacing: PostinoSpacing.s2, children: children),
       ),
     );
   }

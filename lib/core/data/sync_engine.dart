@@ -24,13 +24,7 @@ const pollEvery = Duration(seconds: 60);
 /// The one queue per Account: the replayer and the sender only ever run inside [_serial].
 @lazySingleton
 class SyncEngine implements MailSync {
-  SyncEngine(
-    this._store,
-    this._outboxStore,
-    this._clock,
-    this._connectivity,
-    this._background,
-  );
+  SyncEngine(this._store, this._outboxStore, this._clock, this._connectivity, this._background);
   final MailStore _store;
   final OutboxRepository _outboxStore;
   final Clock _clock;
@@ -81,8 +75,7 @@ class SyncEngine implements MailSync {
 
   Future<void> stop() async {
     await Future.wait([
-      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values])
-        s.cancel(),
+      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values]) s.cancel(),
       _outbox.stop(),
     ]);
     _subs.clear();
@@ -103,10 +96,7 @@ class SyncEngine implements MailSync {
   }
 
   @override
-  Future<Result<void>> openConversation(
-    String accountId,
-    String conversationId,
-  ) async {
+  Future<Result<void>> openConversation(String accountId, String conversationId) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
     final provider = providerFor(account);
@@ -148,16 +138,10 @@ class SyncEngine implements MailSync {
 
   @override
   Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
-    await _outboxStore.saveDraft(
-      accountId,
-      draft,
-      updatedAt: _clock.now().millisecondsSinceEpoch,
-    );
+    await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch);
     // Swapped with no await in between: two saves in a row must not both keep a timer.
     final old = _draftTimers.remove(accountId);
-    _draftTimers[accountId] = _clock
-        .every(draftDebounce)
-        .listen((_) => unawaited(flushDrafts(accountId)));
+    _draftTimers[accountId] = _clock.every(draftDebounce).listen((_) => unawaited(flushDrafts(accountId)));
     await old?.cancel();
   }
 
@@ -176,12 +160,10 @@ class SyncEngine implements MailSync {
   }
 
   @override
-  Future<Result<DateTime>> send(String accountId, OutgoingMessage message) =>
-      _outbox.send(accountId, message);
+  Future<Result<DateTime>> send(String accountId, OutgoingMessage message) => _outbox.send(accountId, message);
 
   @override
-  Future<String?> cancelSend(String accountId, String messageId) =>
-      _outbox.cancelSend(accountId, messageId);
+  Future<String?> cancelSend(String accountId, String messageId) => _outbox.cancelSend(accountId, messageId);
 
   /// Sends the Account's due outbox entries at once. While the Provider's pause holds they stay queued
   /// and go with the first replay after it (the next poll or sync); so do those of a Da ricollegare Account.
@@ -190,17 +172,11 @@ class SyncEngine implements MailSync {
     if (_paused(accountId)) return;
     final account = await _account(accountId);
     if (account == null || account.status != AccountStatus.attivo) return;
-    await _serial(
-      accountId,
-      () => _replay(accountId, providerFor(account), outboxOnly: true),
-    );
+    await _serial(accountId, () => _replay(accountId, providerFor(account), outboxOnly: true));
   }
 
   @override
-  Future<Result<OutgoingMessage>> openDraft(
-    String accountId,
-    String messageId,
-  ) async {
+  Future<Result<OutgoingMessage>> openDraft(String accountId, String messageId) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
     return _drafts.open(account, messageId, providerFor(account));
@@ -216,16 +192,10 @@ class SyncEngine implements MailSync {
   }) async {
     final account = await _account(accountId);
     if (account == null) return const Err(NotFoundFailure());
-    return providerFor(account).fetchAttachment(
-      messageId,
-      attachmentId,
-      onProgress: onProgress,
-      cancel: cancel,
-    );
+    return providerFor(account).fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
   }
 
-  Future<Account?> _account(String id) async =>
-      (await _store.accounts()).where((a) => a.id == id).firstOrNull;
+  Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
   /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
   Future<T> _serial<T>(String accountId, Future<T> Function() op) {
@@ -238,12 +208,7 @@ class SyncEngine implements MailSync {
   /// With [outboxOnly] only the outbox goes (the 10 s timer and the WorkManager isolate): Bozze uploads
   /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
   /// Called only from inside the Account's serial queue.
-  Future<void> _replay(
-    String accountId,
-    MailProvider provider, {
-    bool flush = false,
-    bool outboxOnly = false,
-  }) async {
+  Future<void> _replay(String accountId, MailProvider provider, {bool flush = false, bool outboxOnly = false}) async {
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
@@ -308,16 +273,11 @@ class SyncEngine implements MailSync {
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
       debugPrint('[sync] $accountId: initial sync start');
-      return provider.initialSync(
-        onPage: (messages, bodies) =>
-            _store.applyPage(accountId, messages, bodies),
-      );
+      return provider.initialSync(onPage: (messages, bodies) => _store.applyPage(accountId, messages, bodies));
     }
 
     if (!full) debugPrint('[sync] $accountId: incremental sync start');
-    var result = full
-        ? await initial()
-        : await provider.incrementalSync(cursor);
+    var result = full ? await initial() : await provider.incrementalSync(cursor);
     if (result case Err(failure: NotFoundFailure())) {
       // Expired cursor: start over.
       full = true;

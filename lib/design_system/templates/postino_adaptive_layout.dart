@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/design_system.dart' show PostinoListDetailLayout;
+import 'package:postino/design_system/templates/postino_list_detail_layout.dart' show PostinoListDetailLayout;
 
+import '../organisms/postino_navigation_drawer.dart' show PostinoSidebarScope;
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
-import '../organisms/postino_navigation_drawer.dart' show PostinoSidebarScope;
 import 'postino_single_pane_layout.dart';
 
 /// Picks the layout from the window width (Material 3 size classes):
@@ -29,8 +31,7 @@ class PostinoAdaptiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final docked =
-        MediaQuery.sizeOf(context).width >= PostinoSize.breakpointExpanded;
+    final docked = MediaQuery.sizeOf(context).width >= PostinoSize.breakpointExpanded;
     return PostinoSinglePaneLayout(
       appBar: appBar,
       body: body,
@@ -80,8 +81,7 @@ class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
   late bool? _manual = widget.expanded;
   double? _width;
 
-  static bool _extended(double width) =>
-      width >= PostinoSize.breakpointSidebarCollapse;
+  static bool _extended(double width) => width >= PostinoSize.breakpointSidebarCollapse;
 
   void _choose(bool? expanded) {
     setState(() => _manual = expanded);
@@ -93,9 +93,7 @@ class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
     super.didChangeDependencies();
     final width = MediaQuery.sizeOf(context).width;
     // Crossing the threshold either way gives the decision back to the width.
-    if (_manual != null &&
-        _width != null &&
-        _extended(_width!) != _extended(width)) {
+    if (_manual != null && _width != null && _extended(_width!) != _extended(width)) {
       _manual = null;
       widget.onExpandedChanged?.call(null);
     }
@@ -126,12 +124,7 @@ class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
           if (docked)
             DecoratedBox(
               decoration: BoxDecoration(
-                border: Border(
-                  right: BorderSide(
-                    color: c.borderSubtle,
-                    width: PostinoBorder.borderWidthHairline,
-                  ),
-                ),
+                border: Border(right: BorderSide(color: c.borderSubtle)),
               ),
               child: PostinoSidebarScope(
                 collapsed: !expanded,
@@ -139,9 +132,7 @@ class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
                 toggle: toggle,
                 child: DrawerTheme(
                   data: DrawerThemeData(
-                    width: expanded
-                        ? PostinoSize.sidebarWidth
-                        : PostinoSize.sidebarCollapsedWidth,
+                    width: expanded ? PostinoSize.sidebarWidth : PostinoSize.sidebarCollapsedWidth,
                     elevation: 0,
                     shape: const RoundedRectangleBorder(),
                   ),

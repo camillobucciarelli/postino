@@ -7,13 +7,9 @@ import 'package:postino/core/data/gmail/gmail_message_parser.dart';
 import 'package:postino/core/domain/message.dart';
 
 Map<String, dynamic> _message(String name) =>
-    jsonDecode(
-          File('test/fixtures/gmail/$name.json').readAsStringSync(),
-        )['body']
-        as Map<String, dynamic>;
+    jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync())['body'] as Map<String, dynamic>;
 
-Map<String, dynamic> _payload(String name) =>
-    _message(name)['payload'] as Map<String, dynamic>;
+Map<String, dynamic> _payload(String name) => _message(name)['payload'] as Map<String, dynamic>;
 
 void main() {
   test('headers, labels and snippet become a Message', () {
@@ -21,17 +17,11 @@ void main() {
     expect((m.id, m.conversationId), ('18f3a2b4c5d6e7f1', '18f3a2b4c5d6e7f1'));
     expect((m.from, m.fromName), ('bruno@example.com', 'Bruno Verdi'));
     expect(m.to, ['ada@gmail.com', 'carla@example.org']);
-    expect(m.cc, [
-      '"Rossi, Carla" <carla.rossi@example.org>',
-      'Nicolò Neri <nicolo@example.com>',
-    ]);
+    expect(m.cc, ['"Rossi, Carla" <carla.rossi@example.org>', 'Nicolò Neri <nicolo@example.com>']);
     expect(m.subject, 'Cena di venerdì');
     expect((m.isRead, m.isStarred), (false, false));
     expect(m.snippet, endsWith('Porto io il vino & il dolce.'));
-    expect(
-      m.date,
-      DateTime.fromMillisecondsSinceEpoch(1793002502000, isUtc: true),
-    );
+    expect(m.date, DateTime.fromMillisecondsSinceEpoch(1793002502000, isUtc: true));
   });
 
   test('the body part: HTML first, else plain text, never an attachment', () {
@@ -43,13 +33,7 @@ void main() {
     expect(gmailBodyPart(f6, 'text/html'), isNull);
     expect(gmailBodyPart(f6, 'text/plain')?['partId'], '0');
     // A big body comes by attachmentId.
-    expect(
-      gmailBodyPart(
-        _payload('message_f5_attachment_body'),
-        'text/plain',
-      )?['body']['attachmentId'],
-      isNotNull,
-    );
+    expect(gmailBodyPart(_payload('message_f5_attachment_body'), 'text/plain')?['body']['attachmentId'], isNotNull);
   });
 
   test('attachments: named, unnamed, empty; a cid: image is body', () {
@@ -76,10 +60,7 @@ void main() {
     final body = gmailBody(f1, html, 'PGI-Y2lhbzwvYj4');
     expect((body?.kind, body?.content), (BodyKind.html, '<b>ciao</b>'));
     final plain = gmailTextPart(_payload('message_f6_html_attachment'));
-    expect(
-      gmailBody(_payload('message_f6_html_attachment'), plain, 'Y2lhbw')?.kind,
-      BodyKind.testo,
-    );
+    expect(gmailBody(_payload('message_f6_html_attachment'), plain, 'Y2lhbw')?.kind, BodyKind.testo);
     // Attachments and no text part: an empty body; nothing at all: none.
     final f7 = _payload('message_f7_attachments');
     expect(gmailBody(f7, null, null)?.attachments, hasLength(3));

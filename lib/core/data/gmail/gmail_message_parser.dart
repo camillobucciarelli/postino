@@ -1,19 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../../domain/message.dart';
 import '../../domain/mailbox.dart';
+import '../../domain/message.dart';
 
 /// A Gmail message resource (`full` or `metadata`) as a [Message].
 Message parseGmailMessage(Map<String, dynamic> j) {
   final payload = j['payload'] as Map<String, dynamic>? ?? const {};
   final headers = {
-    for (final h in payload['headers'] as List? ?? const [])
-      (h['name'] as String).toLowerCase(): h['value'] as String,
+    for (final h in payload['headers'] as List? ?? const []) (h['name'] as String).toLowerCase(): h['value'] as String,
   };
-  final labels = [
-    for (final l in j['labelIds'] as List? ?? const []) l as String,
-  ];
+  final labels = [for (final l in j['labelIds'] as List? ?? const []) l as String];
   final from = parseMailbox(headers['from'] ?? '');
   return Message(
     id: j['id'] as String,
@@ -26,21 +23,15 @@ Message parseGmailMessage(Map<String, dynamic> j) {
     fromName: from.name,
     to: [for (final m in parseMailboxes(headers['to'] ?? '')) formatMailbox(m)],
     cc: [for (final m in parseMailboxes(headers['cc'] ?? '')) formatMailbox(m)],
-    bcc: [
-      for (final m in parseMailboxes(headers['bcc'] ?? '')) formatMailbox(m),
-    ],
+    bcc: [for (final m in parseMailboxes(headers['bcc'] ?? '')) formatMailbox(m)],
     subject: decodeWords(headers['subject'] ?? ''),
     snippet: _unescape(j['snippet'] as String? ?? ''),
     replyTo: switch (parseMailboxes(headers['reply-to'] ?? '')) {
       [final m, ...] => formatMailbox(m),
       _ => null,
     },
-    references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))
-      ..removeWhere((r) => r.isEmpty),
-    date: DateTime.fromMillisecondsSinceEpoch(
-      int.parse(j['internalDate'] as String),
-      isUtc: true,
-    ),
+    references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))..removeWhere((r) => r.isEmpty),
+    date: DateTime.fromMillisecondsSinceEpoch(int.parse(j['internalDate'] as String), isUtc: true),
   );
 }
 
@@ -57,19 +48,14 @@ List<Attachment> gmailAttachments(Map<String, dynamic> payload) => [
 
 /// The parts the user sees as attachments, depth first; a part without a filename has an empty name. An image the HTML shows through `cid:`
 /// (a Content-ID, not marked `attachment`) is part of the body, not an attachment.
-Iterable<Map<String, dynamic>> gmailAttachmentParts(
-  Map<String, dynamic> part,
-) sync* {
+Iterable<Map<String, dynamic>> gmailAttachmentParts(Map<String, dynamic> part) sync* {
   final headers = _partHeaders(part);
   final body = part['body'] as Map?;
   // A filename (an empty file too), or `Content-Disposition: attachment` with content even without one
   // (its name is then empty).
   if (_isAttachment(part) &&
-      ((part['filename'] as String? ?? '').isNotEmpty ||
-          body?['attachmentId'] != null ||
-          body?['data'] != null) &&
-      (headers['content-id'] == null ||
-          (headers['content-disposition'] ?? '').startsWith('attachment'))) {
+      ((part['filename'] as String? ?? '').isNotEmpty || body?['attachmentId'] != null || body?['data'] != null) &&
+      (headers['content-id'] == null || (headers['content-disposition'] ?? '').startsWith('attachment'))) {
     yield part;
   }
   for (final p in part['parts'] as List? ?? const []) {
@@ -81,8 +67,7 @@ Iterable<Map<String, dynamic>> gmailAttachmentParts(
 Map<String, dynamic>? gmailBodyPart(Map<String, dynamic> part, String mime) {
   if (_isAttachment(part)) return null;
   final body = part['body'] as Map?;
-  if (part['mimeType'] == mime &&
-      (body?['data'] != null || body?['attachmentId'] != null)) {
+  if (part['mimeType'] == mime && (body?['data'] != null || body?['attachmentId'] != null)) {
     return part;
   }
   for (final p in part['parts'] as List? ?? const []) {
@@ -99,16 +84,10 @@ Map<String, dynamic>? gmailTextPart(Map<String, dynamic> payload) =>
 
 /// The [MessageBody] of a message [payload], given the base64url [data] of its text [part]
 /// (null when [part] is null: attachments only, or nothing at all, which is no body).
-MessageBody? gmailBody(
-  Map<String, dynamic> payload,
-  Map<String, dynamic>? part,
-  String? data,
-) {
+MessageBody? gmailBody(Map<String, dynamic> payload, Map<String, dynamic>? part, String? data) {
   final attachments = gmailAttachments(payload);
   if (part == null || data == null) {
-    return attachments.isEmpty
-        ? null
-        : MessageBody('', BodyKind.testo, attachments: attachments);
+    return attachments.isEmpty ? null : MessageBody('', BodyKind.testo, attachments: attachments);
   }
   // ponytail: assumes UTF-8, which Gmail uses for nearly every part; decode by the part's charset if mojibake shows up.
   return MessageBody(
@@ -119,8 +98,7 @@ MessageBody? gmailBody(
 }
 
 /// Gmail's base64url `data`, padding optional.
-Uint8List decodeGmailData(String data) =>
-    base64Url.decode(base64Url.normalize(data));
+Uint8List decodeGmailData(String data) => base64Url.decode(base64Url.normalize(data));
 
 /// A part's headers by lowercase name, values lowercased.
 Map<String, String> _partHeaders(Map<String, dynamic> part) => {

@@ -14,15 +14,9 @@ import '../../domain/result.dart';
 import 'google_client.dart';
 
 /// Opens [url] in the system browser and returns the callback URL.
-typedef Authenticate = Future<String> Function({
-  required String url,
-  required String callbackUrlScheme,
-});
+typedef Authenticate = Future<String> Function({required String url, required String callbackUrlScheme});
 
-Future<String> _systemBrowser({
-  required String url,
-  required String callbackUrlScheme,
-}) => FlutterWebAuth2.authenticate(
+Future<String> _systemBrowser({required String url, required String callbackUrlScheme}) => FlutterWebAuth2.authenticate(
   url: url,
   callbackUrlScheme: callbackUrlScheme,
   // Google refuses consent inside embedded webviews.
@@ -73,9 +67,7 @@ class GoogleWebConsent implements GoogleConsent {
             'redirect_uri': redirect,
             'response_type': 'code',
             'scope': _scopes,
-            'code_challenge': base64Url
-                .encode(sha256.convert(ascii.encode(verifier)).bytes)
-                .replaceAll('=', ''),
+            'code_challenge': base64Url.encode(sha256.convert(ascii.encode(verifier)).bytes).replaceAll('=', ''),
             'code_challenge_method': 'S256',
             'state': state,
             // Without these Google may skip the refresh_token for an already-authorized client.
@@ -106,36 +98,26 @@ class GoogleWebConsent implements GoogleConsent {
       }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
       // Granular consent: the user can untick the Gmail permission and still get tokens.
-      if (!((body['scope'] as String?) ?? '')
-          .split(' ')
-          .contains(_gmailScope)) {
+      if (!((body['scope'] as String?) ?? '').split(' ').contains(_gmailScope)) {
         return const Err(MissingPermissionFailure());
       }
       final refreshToken = body['refresh_token'] as String?;
       if (refreshToken == null) {
-        return const Err(
-          UnexpectedFailure('no refresh_token in code exchange'),
-        );
+        return const Err(UnexpectedFailure('no refresh_token in code exchange'));
       }
       // The id_token comes straight from Google's token endpoint over TLS: its payload needs no signature check.
       final idToken = (body['id_token'] as String).split('.')[1];
-      final claims = jsonDecode(
-        utf8.decode(base64Url.decode(base64Url.normalize(idToken))),
-      ) as Map<String, dynamic>;
+      final claims = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(idToken)))) as Map<String, dynamic>;
       return Ok(
         GoogleGrant(
           address: claims['email'] as String,
           accessToken: body['access_token'] as String,
           refreshToken: refreshToken,
-          expiresAt: _clock.now().add(
-            Duration(seconds: body['expires_in'] as int),
-          ),
+          expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
         ),
       );
     } on PlatformException catch (e) {
-      return e.code == 'CANCELED'
-          ? const Err(CancelledFailure())
-          : Err(UnexpectedFailure(e));
+      return e.code == 'CANCELED' ? const Err(CancelledFailure()) : Err(UnexpectedFailure(e));
     } on http.ClientException {
       return const Err(OfflineFailure());
     } catch (e, s) {
@@ -145,8 +127,6 @@ class GoogleWebConsent implements GoogleConsent {
 
   static String _random() {
     final r = Random.secure();
-    return base64Url
-        .encode([for (var i = 0; i < 32; i++) r.nextInt(256)])
-        .replaceAll('=', '');
+    return base64Url.encode([for (var i = 0; i < 32; i++) r.nextInt(256)]).replaceAll('=', '');
   }
 }

@@ -49,7 +49,6 @@ void _thread(FakeMailProvider p) => p
     msg(
       'm2',
       conversationId: 't',
-      from: 'ada@example.com',
       to: ['bruno@example.com', 'a1@example.com'],
       subject: 'Re: Cena',
       snippet: 'Sì!',
@@ -69,10 +68,7 @@ void _thread(FakeMailProvider p) => p
       date: _day(3),
     ),
   )
-  ..bodies['m3'] = const MessageBody(
-    '<p>Alle 20</p><p>Porto il vino</p>',
-    BodyKind.html,
-  )
+  ..bodies['m3'] = const MessageBody('<p>Alle 20</p><p>Porto il vino</p>', BodyKind.html)
   ..attach('m3', 'Contratto.pdf', List.filled(1024, 7))
   ..attach('m3', 'fattura\u202Efdp.exe', List.filled(10, 5));
 
@@ -93,22 +89,21 @@ Future<void> _start(WidgetTester tester) async {
 }
 
 /// flutter_quill reads the platform once: macOS, as the app in QA; semantics on, for the labels.
-void _onMac(String name, Future<void> Function(WidgetTester) body) =>
-    testWidgets(name, (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      final semantics = tester.ensureSemantics();
-      try {
-        await body(tester);
-        // The composer left open: Esc flushes its Bozza now, before the tree and the database go.
-        if (find.byType(PostinoComposerLayout).evaluate().isNotEmpty) {
-          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-          await _settle(tester);
-        }
-      } finally {
-        semantics.dispose();
-        debugDefaultTargetPlatformOverride = null;
-      }
-    });
+void _onMac(String name, Future<void> Function(WidgetTester) body) => testWidgets(name, (tester) async {
+  debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+  final semantics = tester.ensureSemantics();
+  try {
+    await body(tester);
+    // The composer left open: Esc flushes its Bozza now, before the tree and the database go.
+    if (find.byType(PostinoComposerLayout).evaluate().isNotEmpty) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await _settle(tester);
+    }
+  } finally {
+    semantics.dispose();
+    debugDefaultTargetPlatformOverride = null;
+  }
+});
 
 /// Frames plus the event queue: the database answers between frames.
 Future<void> _settle(WidgetTester tester) async {
@@ -130,40 +125,30 @@ String _openId() {
 }
 
 /// The Bozza as the database keeps it.
-Future<OutgoingMessage> _draft(String id) async =>
-    (await GetIt.I<OutboxStore>().localDraft('a1', id))!.draft;
+Future<OutgoingMessage> _draft(String id) async => (await GetIt.I<OutboxStore>().localDraft('a1', id))!.draft;
 
 /// m1 without its body and the Provider unreachable: the body cannot be downloaded.
 Future<void> _forgetBodyOfM1(WidgetTester tester) async {
   final db = GetIt.I<PostinoDatabase>();
-  await tester.runAsync(
-    () => (db.delete(db.bodies)..where((t) => t.messageId.equals('m1'))).go(),
-  );
+  await tester.runAsync(() => (db.delete(db.bodies)..where((t) => t.messageId.equals('m1'))).go());
   gmail.goOffline();
   await _settle(tester);
 }
 
 /// The Message-IDs of the Bozze waiting in the database.
 Future<List<String>> _pendingIds() async =>
-    (await GetIt.I<OutboxStore>().pendingDrafts('a1'))
-        .map((d) => d.draft.messageId)
-        .toList();
+    (await GetIt.I<OutboxStore>().pendingDrafts('a1')).map((d) => d.draft.messageId).toList();
 
 Finder _field(String label) => find.descendant(
-  of: find.byWidgetPredicate(
-    (w) => w is PostinoComposerField && w.label == label,
-  ),
+  of: find.byWidgetPredicate((w) => w is PostinoComposerField && w.label == label),
   matching: find.byType(TextField),
 );
 
-String _text(WidgetTester tester, String label) =>
-    tester.widget<TextField>(_field(label)).controller!.text;
+String _text(WidgetTester tester, String label) => tester.widget<TextField>(_field(label)).controller!.text;
 
 void main() {
   _onMac('Rispondi from the bar: a Bozza to the sender of the last message, '
-      'with Re:, In-Reply-To, the Conversazione and the Citazione', (
-    tester,
-  ) async {
+      'with Re:, In-Reply-To, the Conversazione and the Citazione', (tester) async {
     await _start(tester);
     for (final label in ['Rispondi', 'Rispondi a tutti', 'Inoltra']) {
       expect(find.bySemanticsLabel(label), findsWidgets, reason: label);
@@ -183,17 +168,9 @@ void main() {
     expect(_text(tester, 'A'), 'bruno@example.com');
     expect(_text(tester, 'Oggetto'), 'Re: Cena');
     // The Citazione is in the editor, quoted, line by line.
-    final doc = tester
-        .widget<QuillEditor>(find.byType(QuillEditor))
-        .controller
-        .document;
+    final doc = tester.widget<QuillEditor>(find.byType(QuillEditor)).controller.document;
     expect(doc.toPlainText(), contains('Porto il vino'));
-    expect(
-      doc.toDelta().toJson().where(
-        (op) => (op['attributes'] as Map?)?['blockquote'] == true,
-      ),
-      hasLength(2),
-    );
+    expect(doc.toDelta().toJson().where((op) => (op['attributes'] as Map?)?['blockquote'] == true), hasLength(2));
   });
 
   _onMac('Rispondi a tutti: everyone but the Account itself', (tester) async {
@@ -206,64 +183,44 @@ void main() {
     expect(_text(tester, 'Cc'), 'ada@example.com');
   });
 
-  _onMac(
-    'Inoltra: no recipients, Fwd:, the original attachments shown read-only',
-    (tester) async {
-      await _start(tester);
-      await _tap(tester, find.byKey(const ValueKey('forward')));
-      final d = await _draft(_openId());
-      expect(d.to, isEmpty);
-      expect(d.subject, 'Fwd: Cena');
-      expect(d.inReplyTo, isNull);
-      expect(d.conversationId, isNull);
-      expect(d.attachments.map((a) => a.attachment.name), [
-        'Contratto.pdf',
-        'fattura\u202Efdp.exe',
-      ]);
-      expect(d.attachments.first.sourceMessageId, 'm3');
-      expect(d.body, contains('Messaggio inoltrato'));
-      expect(find.text('Allegati'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('draft-attachment-att-Contratto.pdf')),
-        findsOneWidget,
-      );
-      expect(find.text('Contratto.pdf'), findsOneWidget);
-    },
-  );
+  _onMac('Inoltra: no recipients, Fwd:, the original attachments shown read-only', (tester) async {
+    await _start(tester);
+    await _tap(tester, find.byKey(const ValueKey('forward')));
+    final d = await _draft(_openId());
+    expect(d.to, isEmpty);
+    expect(d.subject, 'Fwd: Cena');
+    expect(d.inReplyTo, isNull);
+    expect(d.conversationId, isNull);
+    expect(d.attachments.map((a) => a.attachment.name), ['Contratto.pdf', 'fattura\u202Efdp.exe']);
+    expect(d.attachments.first.sourceMessageId, 'm3');
+    expect(d.body, contains('Messaggio inoltrato'));
+    expect(find.text('Allegati'), findsOneWidget);
+    expect(find.byKey(const ValueKey('draft-attachment-att-Contratto.pdf')), findsOneWidget);
+    expect(find.text('Contratto.pdf'), findsOneWidget);
+  });
 
-  _onMac('Inoltra: the chip of an attachment name drops bidi controls', (
-    tester,
-  ) async {
+  _onMac('Inoltra: the chip of an attachment name drops bidi controls', (tester) async {
     await _start(tester);
     await _tap(tester, find.byKey(const ValueKey('forward')));
     expect(find.textContaining('\u202E'), findsNothing);
     expect(find.text('fatturafdp.exe'), findsOneWidget);
   });
 
-  _onMac(
-    'the menu of an older message replies to that one, its body fetched first',
-    (tester) async {
-      await _start(tester);
-      await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
-      await _tap(tester, find.byKey(const ValueKey('message-reply-m1')));
-      final d = await _draft(_openId());
-      expect(d.inReplyTo, '<m1@example.com>');
-      expect(d.to, ['Bruno <bruno@example.com>']);
-      expect(d.body, contains('Corpo di m1'));
-    },
-  );
+  _onMac('the menu of an older message replies to that one, its body fetched first', (tester) async {
+    await _start(tester);
+    await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+    await _tap(tester, find.byKey(const ValueKey('message-reply-m1')));
+    final d = await _draft(_openId());
+    expect(d.inReplyTo, '<m1@example.com>');
+    expect(d.to, ['Bruno <bruno@example.com>']);
+    expect(d.body, contains('Corpo di m1'));
+  });
 
-  _onMac('r, a and f act on the last message of the open Conversazione', (
-    tester,
-  ) async {
+  _onMac('r, a and f act on the last message of the open Conversazione', (tester) async {
     await _start(tester);
     for (final (key, subject, to) in [
       (LogicalKeyboardKey.keyR, 'Re: Cena', ['bruno@example.com']),
-      (
-        LogicalKeyboardKey.keyA,
-        'Re: Cena',
-        ['bruno@example.com', 'carla@example.com'],
-      ),
+      (LogicalKeyboardKey.keyA, 'Re: Cena', ['bruno@example.com', 'carla@example.com']),
       (LogicalKeyboardKey.keyF, 'Fwd: Cena', <String>[]),
     ]) {
       // A focus outside a text field: the first Tab stop.
@@ -281,9 +238,7 @@ void main() {
     }
   });
 
-  _onMac('r typed in the composer editor is a letter, not a reply', (
-    tester,
-  ) async {
+  _onMac('r typed in the composer editor is a letter, not a reply', (tester) async {
     await _start(tester);
     await _tap(tester, find.byKey(const ValueKey('reply')));
     final id = _openId();
@@ -314,9 +269,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  _onMac('Rispondi when the body cannot be downloaded quotes the snippet', (
-    tester,
-  ) async {
+  _onMac('Rispondi when the body cannot be downloaded quotes the snippet', (tester) async {
     await _start(tester);
     await _forgetBodyOfM1(tester);
     await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
@@ -326,21 +279,15 @@ void main() {
     expect(d.body, contains('Venerdì?'));
   });
 
-  _onMac(
-    'Inoltra when the body cannot be downloaded makes no Bozza and says so',
-    (tester) async {
-      await _start(tester);
-      await _forgetBodyOfM1(tester);
-      await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
-      await _tap(tester, find.byKey(const ValueKey('message-forward-m1')));
-      expect(await _pendingIds(), isEmpty);
-      expect(find.byType(PostinoComposerLayout), findsNothing);
-      expect(
-        find.text('Impossibile inoltrare: messaggio non scaricato'),
-        findsOneWidget,
-      );
-    },
-  );
+  _onMac('Inoltra when the body cannot be downloaded makes no Bozza and says so', (tester) async {
+    await _start(tester);
+    await _forgetBodyOfM1(tester);
+    await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+    await _tap(tester, find.byKey(const ValueKey('message-forward-m1')));
+    expect(await _pendingIds(), isEmpty);
+    expect(find.byType(PostinoComposerLayout), findsNothing);
+    expect(find.text('Impossibile inoltrare: messaggio non scaricato'), findsOneWidget);
+  });
 
   _onMac('r twice before the first save ends makes one Bozza', (tester) async {
     await _start(tester);
@@ -360,10 +307,7 @@ void main() {
       final focused = primaryFocus?.context;
       if (focused != null &&
           find
-              .ancestor(
-                of: find.byElementPredicate((e) => e == focused),
-                matching: find.byKey(const ValueKey('reply')),
-              )
+              .ancestor(of: find.byElementPredicate((e) => e == focused), matching: find.byKey(const ValueKey('reply')))
               .evaluate()
               .isNotEmpty) {
         break;
@@ -385,10 +329,7 @@ void main() {
     h.clock.advance(const Duration(seconds: 5));
     await _settle(tester);
     expect(gmail.draftCalls, [(fwd, true)]);
-    expect(gmail.drafts[fwd]!.attachments.map((a) => a.attachment.name), [
-      'Contratto.pdf',
-      'fattura\u202Efdp.exe',
-    ]);
+    expect(gmail.drafts[fwd]!.attachments.map((a) => a.attachment.name), ['Contratto.pdf', 'fattura\u202Efdp.exe']);
     expect((await _draft(fwd)).attachments, hasLength(2));
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

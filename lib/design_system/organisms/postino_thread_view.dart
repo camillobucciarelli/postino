@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/design_system.dart' show PostinoThreadMessage;
+import 'package:postino/design_system/organisms/postino_thread_message.dart' show PostinoThreadMessage;
 
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_icon.dart';
@@ -72,20 +74,13 @@ class _PostinoThreadViewState extends State<PostinoThreadView> {
       child: SelectionArea(
         key: _area,
         focusNode: _focus,
-        onSelectionChanged: (content) =>
-            _selected = content != null && content.plainText.isNotEmpty,
+        onSelectionChanged: (content) => _selected = content != null && content.plainText.isNotEmpty,
         child: _content(context, c, important, wrap, subject),
       ),
     );
   }
 
-  Widget _content(
-    BuildContext context,
-    PostinoColors c,
-    String? important,
-    bool wrap,
-    String subject,
-  ) {
+  Widget _content(BuildContext context, PostinoColors c, String? important, bool wrap, String subject) {
     final w = widget;
     // The list spans the pane (its scrollbar at the pane's edge); the margins center a column
     // of at most `reading-max-width`.
@@ -151,12 +146,8 @@ class _PostinoThreadViewState extends State<PostinoThreadView> {
                           child: Text(
                             w.accountName,
                             maxLines: wrap ? null : 1,
-                            overflow: wrap
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
-                            style: PostinoText.labelSm.copyWith(
-                              color: c.inkMuted,
-                            ),
+                            overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                            style: PostinoText.labelSm.copyWith(color: c.inkMuted),
                           ),
                         ),
                       ],

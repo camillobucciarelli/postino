@@ -1,8 +1,8 @@
 // Opening and reading a Conversazione (#33): beside the list from 900, a full page below,
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart' show Material;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -27,11 +27,7 @@ late Harness h;
 late FakeMailProvider gmail;
 
 /// Starts the app at [size] with Account a1 and whatever [mailbox] delivers to its Provider.
-Future<void> _start(
-  WidgetTester tester,
-  Size size,
-  void Function(FakeMailProvider p) mailbox,
-) async {
+Future<void> _start(WidgetTester tester, Size size, void Function(FakeMailProvider p) mailbox) async {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;
@@ -59,50 +55,21 @@ void _thread(FakeMailProvider p) => p
       isRead: true,
     ),
   )
+  ..deliver(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2), isRead: true))
   ..deliver(
-    msg(
-      'm2',
-      conversationId: 't',
-      from: 'ada@example.com',
-      subject: 'Re: Cena',
-      snippet: 'Sì!',
-      date: _day(2),
-      isRead: true,
-    ),
+    msg('m3', conversationId: 't', from: 'bruno@example.com', subject: 'Re: Cena', snippet: 'Alle 20', date: _day(3)),
   )
-  ..deliver(
-    msg(
-      'm3',
-      conversationId: 't',
-      from: 'bruno@example.com',
-      subject: 'Re: Cena',
-      snippet: 'Alle 20',
-      date: _day(3),
-    ),
-  )
-  ..deliver(
-    msg(
-      'o1',
-      conversationId: 'o',
-      subject: 'Altro',
-      date: _day(4),
-      isRead: true,
-    ),
-  );
+  ..deliver(msg('o1', conversationId: 'o', subject: 'Altro', date: _day(4), isRead: true));
 
 Finder _row(String latest) => find.byKey(ValueKey('row-a1-$latest'));
 Finder _message(String id) => find.byKey(ValueKey('message-$id'));
 
-PostinoMessageTile _tile(WidgetTester tester, String latest) =>
-    tester.widget<PostinoMessageTile>(_row(latest));
+PostinoMessageTile _tile(WidgetTester tester, String latest) => tester.widget<PostinoMessageTile>(_row(latest));
 
-bool _expanded(WidgetTester tester, String id) =>
-    tester.widget<PostinoThreadMessage>(_message(id)).expanded;
+bool _expanded(WidgetTester tester, String id) => tester.widget<PostinoThreadMessage>(_message(id)).expanded;
 
 /// What reached the Provider's setRead, comparable.
-List<(String, bool)> get _readCalls => [
-  for (final (ids, read) in gmail.readCalls) (ids.join(','), read),
-];
+List<(String, bool)> get _readCalls => [for (final (ids, read) in gmail.readCalls) (ids.join(','), read)];
 
 Future<void> _open(WidgetTester tester, String latest) async {
   await tester.tap(_row(latest));
@@ -115,10 +82,7 @@ void _expectAllTextInMaterial(WidgetTester tester) {
   expect(texts, isNotEmpty);
   for (final e in texts) {
     expect(
-      find.ancestor(
-        of: find.byWidget(e.widget),
-        matching: find.byType(Material),
-      ),
+      find.ancestor(of: find.byWidget(e.widget), matching: find.byType(Material)),
       findsWidgets,
       reason: 'Text "${(e.widget as Text).data}" has no Material ancestor',
     );
@@ -127,45 +91,29 @@ void _expectAllTextInMaterial(WidgetTester tester) {
 
 void main() {
   for (final size in [_desktop, _phone]) {
-    testWidgets(
-      'at ${size.width.toInt()}×${size.height.toInt()} all text of the Conversazione is under a Material',
-      (tester) async {
-        await _start(tester, size, _thread);
-        _expectAllTextInMaterial(tester);
-        await _open(tester, 'm3');
-        expect(find.byType(ConversationView), findsOneWidget);
-        _expectAllTextInMaterial(tester);
-      },
-    );
+    testWidgets('at ${size.width.toInt()}×${size.height.toInt()} all text of the Conversazione is under a Material', (
+      tester,
+    ) async {
+      await _start(tester, size, _thread);
+      _expectAllTextInMaterial(tester);
+      await _open(tester, 'm3');
+      expect(find.byType(ConversationView), findsOneWidget);
+      _expectAllTextInMaterial(tester);
+    });
   }
 
-  testWidgets(
-    'the list has one row per Conversazione, with its count and unread state',
-    (tester) async {
-      await _start(tester, _phone, _thread);
+  testWidgets('the list has one row per Conversazione, with its count and unread state', (tester) async {
+    await _start(tester, _phone, _thread);
 
-      expect(_row('m1'), findsNothing);
-      expect(_row('m2'), findsNothing);
-      final t = _tile(tester, 'm3');
-      expect((t.count, t.unread, t.subject), (3, true, 'Re: Cena'));
-      expect(
-        find.descendant(
-          of: _row('m3'),
-          matching: find.byKey(const ValueKey('count')),
-        ),
-        findsOneWidget,
-      );
-      final o = _tile(tester, 'o1');
-      expect((o.count, o.unread), (1, false));
-      expect(
-        find.descendant(
-          of: _row('o1'),
-          matching: find.byKey(const ValueKey('count')),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    expect(_row('m1'), findsNothing);
+    expect(_row('m2'), findsNothing);
+    final t = _tile(tester, 'm3');
+    expect((t.count, t.unread, t.subject), (3, true, 'Re: Cena'));
+    expect(find.descendant(of: _row('m3'), matching: find.byKey(const ValueKey('count'))), findsOneWidget);
+    final o = _tile(tester, 'o1');
+    expect((o.count, o.unread), (1, false));
+    expect(find.descendant(of: _row('o1'), matching: find.byKey(const ValueKey('count'))), findsNothing);
+  });
 
   testWidgets(
     'at 1600×900 a tap opens the Conversazione beside the list, which stays mounted and highlights the row; Esc closes it',
@@ -202,35 +150,22 @@ void main() {
       // Twelve unread messages: all expanded when they show up, long enough to scroll.
       await _start(tester, _desktop, (p) {
         for (var i = 0; i < 12; i++) {
-          p.deliver(
-            msg('l$i', conversationId: 'l', date: DateTime.utc(2026, 10, 5, i)),
-          );
+          p.deliver(msg('l$i', conversationId: 'l', date: DateTime.utc(2026, 10, 5, i)));
         }
       });
       // Offstage under the full page on the phone, still mounted.
-      State list() =>
-          tester.state(find.byType(MessageList, skipOffstage: false));
+      State list() => tester.state(find.byType(MessageList, skipOffstage: false));
       final l = list();
       await _open(tester, 'l11');
       State conversation() => tester.state(find.byType(ConversationView));
       final c = conversation();
       ScrollPosition scroll() => tester
           .state<ScrollableState>(
-            find
-                .descendant(
-                  of: find.byType(ConversationView),
-                  matching: find.byType(Scrollable),
-                )
-                .first,
+            find.descendant(of: find.byType(ConversationView), matching: find.byType(Scrollable)).first,
           )
           .position;
       // The user collapses the latest one (a tap on its header) and scrolls down.
-      await tester.tap(
-        find.descendant(
-          of: _message('l11'),
-          matching: find.byType(PostinoAvatar),
-        ),
-      );
+      await tester.tap(find.descendant(of: _message('l11'), matching: find.byType(PostinoAvatar)));
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'l11'), isFalse);
       expect(scroll().maxScrollExtent, greaterThan(100));
@@ -250,79 +185,69 @@ void main() {
     },
   );
 
-  testWidgets(
-    'at 1600×900 there is no Indietro; Esc closes the Conversazione',
-    (tester) async {
-      await _start(tester, _desktop, _thread);
-      await _open(tester, 'm3');
-      expect(icon(PostinoIcons.arrowLeft), findsNothing);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.byType(ConversationView), findsNothing);
-      expect(find.text('Seleziona una Conversazione'), findsOneWidget);
-    },
-  );
+  testWidgets('at 1600×900 there is no Indietro; Esc closes the Conversazione', (tester) async {
+    await _start(tester, _desktop, _thread);
+    await _open(tester, 'm3');
+    expect(icon(PostinoIcons.arrowLeft), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsNothing);
+    expect(find.text('Seleziona una Conversazione'), findsOneWidget);
+  });
 
-  testWidgets(
-    'at 390×844 a tap opens a full page; Indietro comes back to the list with its scroll unchanged',
-    (tester) async {
-      await _start(tester, _phone, (p) {
-        for (var i = 0; i < 30; i++) {
-          p.deliver(
-            msg(
-              'n$i',
-              subject: 'Messaggio $i',
-              date: _day(1).add(Duration(hours: i)),
-            ),
-          );
-        }
-      });
-      final list = tester.state(find.byType(MessageList));
-      ScrollPosition position() => tester
-          .state<ScrollableState>(
-            find.descendant(
-              of: find.byType(MessageList, skipOffstage: false),
-              matching: find.byType(Scrollable, skipOffstage: false),
-            ),
-          )
-          .position;
-      await tester.drag(find.byType(MessageList), const Offset(0, -900));
-      await tester.pumpAndSettle();
-      final scrolled = position().pixels;
-      expect(scrolled, greaterThan(0));
-
-      final row = find.byType(PostinoMessageTile).first;
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      final page = find.byType(ConversationView);
-      expect(tester.getSize(page), _phone);
-      // Covered, not gone.
-      expect(find.byType(MessageList), findsNothing);
-      expect(find.byType(MessageList, skipOffstage: false), findsOneWidget);
-      expect(icon(PostinoIcons.arrowLeft), findsOneWidget);
-
-      await tester.tap(icon(PostinoIcons.arrowLeft));
-      await tester.pumpAndSettle();
-      expect(find.byType(ConversationView), findsNothing);
-      expect(tester.state(find.byType(MessageList)), same(list));
-      expect(position().pixels, scrolled);
-    },
-  );
-
-  testWidgets('at 390×844 the page slides in with a fade (shared axis X)', (
+  testWidgets('at 390×844 a tap opens a full page; Indietro comes back to the list with its scroll unchanged', (
     tester,
   ) async {
+    await _start(tester, _phone, (p) {
+      for (var i = 0; i < 30; i++) {
+        p.deliver(
+          msg(
+            'n$i',
+            subject: 'Messaggio $i',
+            date: _day(1).add(Duration(hours: i)),
+          ),
+        );
+      }
+    });
+    final list = tester.state(find.byType(MessageList));
+    ScrollPosition position() => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(MessageList, skipOffstage: false),
+            matching: find.byType(Scrollable, skipOffstage: false),
+          ),
+        )
+        .position;
+    await tester.drag(find.byType(MessageList), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    final scrolled = position().pixels;
+    expect(scrolled, greaterThan(0));
+
+    final row = find.byType(PostinoMessageTile).first;
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    final page = find.byType(ConversationView);
+    expect(tester.getSize(page), _phone);
+    // Covered, not gone.
+    expect(find.byType(MessageList), findsNothing);
+    expect(find.byType(MessageList, skipOffstage: false), findsOneWidget);
+    expect(icon(PostinoIcons.arrowLeft), findsOneWidget);
+
+    await tester.tap(icon(PostinoIcons.arrowLeft));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsNothing);
+    expect(tester.state(find.byType(MessageList)), same(list));
+    expect(position().pixels, scrolled);
+  });
+
+  testWidgets('at 390×844 the page slides in with a fade (shared axis X)', (tester) async {
     await _start(tester, _phone, _thread);
     await tester.tap(_row('m3'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     final page = find.byType(ConversationView);
     expect(page, findsOneWidget);
-    final opacity = tester
-        .widget<Opacity>(
-          find.ancestor(of: page, matching: find.byType(Opacity)).first,
-        )
-        .opacity;
+    final opacity = tester.widget<Opacity>(find.ancestor(of: page, matching: find.byType(Opacity)).first).opacity;
     expect(opacity, inExclusiveRange(0, 1));
     expect(tester.getTopLeft(page).dx, greaterThan(0));
     await tester.pumpAndSettle();
@@ -330,8 +255,7 @@ void main() {
   });
 
   testWidgets('with reduced motion the page opens at once', (tester) async {
-    tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await _start(tester, _phone, _thread);
     await tester.tap(_row('m3'));
@@ -341,143 +265,101 @@ void main() {
     expect(find.byType(MessageList), findsNothing);
   });
 
-  testWidgets(
-    'switching from one Conversazione to another never shows the wrong content',
-    (tester) async {
-      await _start(tester, _desktop, _thread);
-      await _open(tester, 'm3');
-      expect(find.text('Corpo di m3'), findsOneWidget);
+  testWidgets('switching from one Conversazione to another never shows the wrong content', (tester) async {
+    await _start(tester, _desktop, _thread);
+    await _open(tester, 'm3');
+    expect(find.text('Corpo di m3'), findsOneWidget);
 
-      await tester.tap(_row('o1'));
-      for (var i = 0; i < 30; i++) {
-        await tester.pump(const Duration(milliseconds: 16));
-        for (final e in find.byType(ConversationView).evaluate()) {
-          final view = e.widget as ConversationView;
-          final other = view.conversationId == 't'
-              ? 'Corpo di o1'
-              : 'Corpo di m3';
-          final inView = find.descendant(
-            of: find.byWidget(view),
-            matching: find.text(other),
-          );
-          expect(
-            inView,
-            findsNothing,
-            reason: 'frame $i, ${view.conversationId}',
-          );
-        }
+    await tester.tap(_row('o1'));
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      for (final e in find.byType(ConversationView).evaluate()) {
+        final view = e.widget as ConversationView;
+        final other = view.conversationId == 't' ? 'Corpo di o1' : 'Corpo di m3';
+        final inView = find.descendant(of: find.byWidget(view), matching: find.text(other));
+        expect(inView, findsNothing, reason: 'frame $i, ${view.conversationId}');
       }
-      await tester.pumpAndSettle();
-      final view = tester.widget<ConversationView>(
-        find.byType(ConversationView),
+    }
+    await tester.pumpAndSettle();
+    final view = tester.widget<ConversationView>(find.byType(ConversationView));
+    expect(view.conversationId, 'o');
+    expect(find.text('Corpo di o1'), findsOneWidget);
+    expect(find.text('Corpo di m3'), findsNothing);
+    expect(_tile(tester, 'o1').selected, isTrue);
+    expect(_tile(tester, 'm3').selected, isFalse);
+  });
+
+  testWidgets('messages newest first; only the latest and the unread expanded; a tap expands a collapsed one', (
+    tester,
+  ) async {
+    await _start(tester, _phone, (p) {
+      _thread(p);
+      // An older unread one in the middle stays expanded too.
+      p.deliver(withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), false));
+    });
+    await _open(tester, 'm3');
+
+    final ys = [
+      for (final id in ['m1', 'm2', 'm3']) tester.getTopLeft(_message(id)).dy,
+    ];
+    expect(ys, orderedEquals([...ys]..sort((a, b) => b.compareTo(a))), reason: 'newest first');
+    expect(_expanded(tester, 'm1'), isFalse);
+    expect(_expanded(tester, 'm2'), isTrue, reason: 'unread');
+    expect(_expanded(tester, 'm3'), isTrue, reason: 'latest');
+    expect(find.text('Corpo di m3'), findsOneWidget);
+    // Collapsed: sender and preview, no body.
+    expect(find.descendant(of: _message('m1'), matching: find.text('Venerdì?')), findsOneWidget);
+    expect(find.text('Corpo di m1'), findsNothing);
+
+    await tester.tap(find.text('Venerdì?'));
+    await tester.pumpAndSettle();
+    expect(_expanded(tester, 'm1'), isTrue);
+    expect(find.text('Corpo di m1'), findsOneWidget);
+    // Opening marked them read, yet they stay expanded.
+    expect(_expanded(tester, 'm2'), isTrue);
+  });
+
+  testWidgets('a reply in Inviati missing from the database is fetched from the Provider and shown', (tester) async {
+    await _start(tester, _phone, (p) {
+      _thread(p);
+      p.deliverOutsideWindow(
+        msg(
+          's0',
+          conversationId: 't',
+          from: 'a1@example.com',
+          subject: 'Cena',
+          snippet: 'Organizziamo?',
+          date: DateTime.utc(2026, 6),
+          isRead: true,
+          labelIds: const ['SENT'],
+        ),
       );
-      expect(view.conversationId, 'o');
-      expect(find.text('Corpo di o1'), findsOneWidget);
-      expect(find.text('Corpo di m3'), findsNothing);
-      expect(_tile(tester, 'o1').selected, isTrue);
-      expect(_tile(tester, 'm3').selected, isFalse);
-    },
-  );
+    });
+    expect(_tile(tester, 'm3').count, 3);
+    await _open(tester, 'm3');
 
-  testWidgets(
-    'messages newest first; only the latest and the unread expanded; a tap expands a collapsed one',
-    (tester) async {
-      await _start(tester, _phone, (p) {
-        _thread(p);
-        // An older unread one in the middle stays expanded too.
-        p.deliver(
-          withRead(
-            msg(
-              'm2',
-              conversationId: 't',
-              from: 'ada@example.com',
-              subject: 'Re: Cena',
-              snippet: 'Sì!',
-              date: _day(2),
-            ),
-            false,
-          ),
-        );
-      });
-      await _open(tester, 'm3');
-
-      final ys = [
-        for (final id in ['m1', 'm2', 'm3']) tester.getTopLeft(_message(id)).dy,
-      ];
-      expect(
-        ys,
-        orderedEquals([...ys]..sort((a, b) => b.compareTo(a))),
-        reason: 'newest first',
-      );
-      expect(_expanded(tester, 'm1'), isFalse);
-      expect(_expanded(tester, 'm2'), isTrue, reason: 'unread');
-      expect(_expanded(tester, 'm3'), isTrue, reason: 'latest');
-      expect(find.text('Corpo di m3'), findsOneWidget);
-      // Collapsed: sender and preview, no body.
-      expect(
-        find.descendant(of: _message('m1'), matching: find.text('Venerdì?')),
-        findsOneWidget,
-      );
-      expect(find.text('Corpo di m1'), findsNothing);
-
-      await tester.tap(find.text('Venerdì?'));
-      await tester.pumpAndSettle();
-      expect(_expanded(tester, 'm1'), isTrue);
-      expect(find.text('Corpo di m1'), findsOneWidget);
-      // Opening marked them read, yet they stay expanded.
-      expect(_expanded(tester, 'm2'), isTrue);
-    },
-  );
-
-  testWidgets(
-    'a reply in Inviati missing from the database is fetched from the Provider and shown',
-    (tester) async {
-      await _start(tester, _phone, (p) {
-        _thread(p);
-        p.deliverOutsideWindow(
-          msg(
-            's0',
-            conversationId: 't',
-            from: 'a1@example.com',
-            subject: 'Cena',
-            snippet: 'Organizziamo?',
-            date: DateTime.utc(2026, 6, 1),
-            isRead: true,
-            labelIds: const ['SENT'],
-          ),
-        );
-      });
-      expect(_tile(tester, 'm3').count, 3);
-      await _open(tester, 'm3');
-
-      expect(_message('s0'), findsOneWidget);
-      expect(
-        tester.getTopLeft(_message('s0')).dy,
-        greaterThan(tester.getTopLeft(_message('m1')).dy),
-        reason: 'the oldest, at the bottom',
-      );
-      // It stays in the database: the list counts it now.
-      await tester.tap(icon(PostinoIcons.arrowLeft));
-      await tester.pumpAndSettle();
-      expect(_tile(tester, 'm3').count, 4);
-    },
-  );
+    expect(_message('s0'), findsOneWidget);
+    expect(
+      tester.getTopLeft(_message('s0')).dy,
+      greaterThan(tester.getTopLeft(_message('m1')).dy),
+      reason: 'the oldest, at the bottom',
+    );
+    // It stays in the database: the list counts it now.
+    await tester.tap(icon(PostinoIcons.arrowLeft));
+    await tester.pumpAndSettle();
+    expect(_tile(tester, 'm3').count, 4);
+  });
 
   testWidgets(
     'a deep link to a Conversazione not in the database shows its latest message, read, expanded with its body',
     (tester) async {
       await _start(tester, _phone, (p) {
         for (final (id, d) in [('x1', 1), ('x2', 2)]) {
-          p.deliverOutsideWindow(
-            msg(id, conversationId: 'x', date: _day(d), isRead: true),
-          );
+          p.deliverOutsideWindow(msg(id, conversationId: 'x', date: _day(d), isRead: true));
         }
       });
       Routefly.navigate(
-        routePaths.posta.$accountId.conversazione.$conversationId.changes({
-          'accountId': 'a1',
-          'conversationId': 'x',
-        }),
+        routePaths.posta.$accountId.conversazione.$conversationId.changes({'accountId': 'a1', 'conversationId': 'x'}),
       );
       await tester.pumpAndSettle();
 
@@ -512,72 +394,52 @@ void main() {
       expect(_expanded(tester, 'm3'), isTrue, reason: 'was unread');
 
       // The avatar collapses; the text is for selecting.
-      await tester.tap(
-        find
-            .descendant(
-              of: _message('m3'),
-              matching: find.byType(PostinoAvatar),
-            )
-            .first,
-      );
+      await tester.tap(find.descendant(of: _message('m3'), matching: find.byType(PostinoAvatar)).first);
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'm3'), isFalse);
-      gmail.deliver(
-        msg('m3', conversationId: 't', date: _day(3), isStarred: true),
-      );
+      gmail.deliver(msg('m3', conversationId: 't', date: _day(3), isStarred: true));
       await tester.pumpAndSettle();
       expect(_expanded(tester, 'm3'), isFalse);
     },
   );
 
-  testWidgets(
-    'opened offline, the messages missing from the database are fetched when the network returns',
-    (tester) async {
-      await _start(tester, _phone, (p) {
-        _thread(p);
-        p.deliverOutsideWindow(
-          msg(
-            's0',
-            conversationId: 't',
-            subject: 'Cena',
-            date: DateTime.utc(2026, 6, 1),
-            isRead: true,
-            labelIds: const ['SENT'],
-          ),
-        );
-      });
-      gmail.goOffline();
-      h.connectivity.online = false;
-      await _open(tester, 'm3');
-      expect(_message('s0'), findsNothing);
+  testWidgets('opened offline, the messages missing from the database are fetched when the network returns', (
+    tester,
+  ) async {
+    await _start(tester, _phone, (p) {
+      _thread(p);
+      p.deliverOutsideWindow(
+        msg(
+          's0',
+          conversationId: 't',
+          subject: 'Cena',
+          date: DateTime.utc(2026, 6),
+          isRead: true,
+          labelIds: const ['SENT'],
+        ),
+      );
+    });
+    gmail.goOffline();
+    h.connectivity.online = false;
+    await _open(tester, 'm3');
+    expect(_message('s0'), findsNothing);
 
-      gmail.goOnline();
-      h.connectivity.online = true;
-      await tester.pumpAndSettle();
-      expect(_message('s0'), findsOneWidget);
-    },
-  );
+    gmail.goOnline();
+    h.connectivity.online = true;
+    await tester.pumpAndSettle();
+    expect(_message('s0'), findsOneWidget);
+  });
 
   group('a body missing from the database', () {
     /// Conversazione t: an inbox message (body synced) and a later one only in an Etichetta (no body).
     void mailbox(FakeMailProvider p) => p
       ..bodyKind = BodyKind.html
       ..deliver(msg('i1', conversationId: 't', date: _day(1), isRead: true))
-      ..deliver(
-        msg(
-          'e2',
-          conversationId: 't',
-          date: _day(2),
-          labelIds: const ['Label_12'],
-        ),
-      );
+      ..deliver(msg('e2', conversationId: 't', date: _day(2), labelIds: const ['Label_12']));
 
-    Future<List<BodyRow>> bodies() =>
-        getIt<PostinoDatabase>().select(getIt<PostinoDatabase>().bodies).get();
+    Future<List<BodyRow>> bodies() => getIt<PostinoDatabase>().select(getIt<PostinoDatabase>().bodies).get();
 
-    testWidgets('is downloaded from the Provider and saved with its kind', (
-      tester,
-    ) async {
+    testWidgets('is downloaded from the Provider and saved with its kind', (tester) async {
       await _start(tester, _phone, mailbox);
       expect((await bodies()).map((b) => b.messageId), ['i1']);
 
@@ -587,9 +449,7 @@ void main() {
       expect((e2.body, e2.kind), ('Corpo di e2', BodyKind.html));
     });
 
-    testWidgets('offline says so with Riprova, which works once back online', (
-      tester,
-    ) async {
+    testWidgets('offline says so with Riprova, which works once back online', (tester) async {
       await _start(tester, _phone, mailbox);
       gmail.goOffline();
       await _open(tester, 'e2');
@@ -603,9 +463,7 @@ void main() {
       expect(find.text('Corpo non disponibile offline'), findsNothing);
     });
 
-    testWidgets('offline, it retries by itself when the network returns', (
-      tester,
-    ) async {
+    testWidgets('offline, it retries by itself when the network returns', (tester) async {
       await _start(tester, _phone, mailbox);
       gmail.goOffline();
       h.connectivity.online = false;
@@ -620,8 +478,7 @@ void main() {
   });
 
   group('opening a Conversazione marks it read', () {
-    Future<List<IntentRow>> queue() =>
-        getIt<PostinoDatabase>().select(getIt<PostinoDatabase>().intents).get();
+    Future<List<IntentRow>> queue() => getIt<PostinoDatabase>().select(getIt<PostinoDatabase>().intents).get();
 
     testWidgets('here at once and on the Provider', (tester) async {
       await _start(tester, _desktop, _thread);
@@ -632,9 +489,7 @@ void main() {
       expect(await queue(), isEmpty);
     });
 
-    testWidgets('offline: here at once, queued, sent when back online', (
-      tester,
-    ) async {
+    testWidgets('offline: here at once, queued, sent when back online', (tester) async {
       await _start(tester, _desktop, _thread);
       gmail.goOffline();
       h.connectivity.online = false;
@@ -642,10 +497,7 @@ void main() {
 
       expect(_tile(tester, 'm3').unread, isFalse);
       expect(_readCalls, isEmpty);
-      expect(
-        [for (final i in await queue()) (i.messageId, i.isRead)],
-        [('m3', true)],
-      );
+      expect([for (final i in await queue()) (i.messageId, i.isRead)], [('m3', true)]);
 
       gmail.goOnline();
       h.connectivity.online = true;
@@ -657,42 +509,36 @@ void main() {
   });
 
   group('an unread message shown in the open Conversazione is marked read', () {
-    void other(FakeMailProvider p) => p.deliver(
-      msg('u1', conversationId: 'u', subject: 'Nuova', date: _day(6)),
-    );
+    void other(FakeMailProvider p) => p.deliver(msg('u1', conversationId: 'u', subject: 'Nuova', date: _day(6)));
 
     for (final size in [_desktop, _phone]) {
-      testWidgets(
-        'at ${size.width.toInt()}: moving from one Conversazione to another',
-        (tester) async {
-          await _start(tester, size, (p) {
-            _thread(p);
-            other(p);
-          });
-          if (size == _phone) {
-            await _open(tester, 'm3');
-            Routefly.navigate(
-              routePaths.posta.$accountId.conversazione.$conversationId.changes(
-                {'accountId': 'a1', 'conversationId': 'u'},
-              ),
-            );
-            await tester.pumpAndSettle();
-          } else {
-            await _open(tester, 'm3');
-            await _open(tester, 'u1');
-          }
-          expect(_readCalls, containsAll([('m3', true), ('u1', true)]));
-          if (size == _desktop) expect(_tile(tester, 'u1').unread, isFalse);
-        },
-      );
+      testWidgets('at ${size.width.toInt()}: moving from one Conversazione to another', (tester) async {
+        await _start(tester, size, (p) {
+          _thread(p);
+          other(p);
+        });
+        if (size == _phone) {
+          await _open(tester, 'm3');
+          Routefly.navigate(
+            routePaths.posta.$accountId.conversazione.$conversationId.changes({
+              'accountId': 'a1',
+              'conversationId': 'u',
+            }),
+          );
+          await tester.pumpAndSettle();
+        } else {
+          await _open(tester, 'm3');
+          await _open(tester, 'u1');
+        }
+        expect(_readCalls, containsAll([('m3', true), ('u1', true)]));
+        if (size == _desktop) expect(_tile(tester, 'u1').unread, isFalse);
+      });
     }
 
     testWidgets('a new message arriving while it is open', (tester) async {
       await _start(tester, _desktop, _thread);
       await _open(tester, 'm3');
-      gmail.deliver(
-        msg('m4', conversationId: 't', date: _day(7), from: 'ada@example.com'),
-      );
+      gmail.deliver(msg('m4', conversationId: 't', date: _day(7)));
       await tester.pumpAndSettle();
 
       expect(_expanded(tester, 'm4'), isTrue);

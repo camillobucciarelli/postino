@@ -72,9 +72,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
     final progress = w.progress;
     final error = w.error;
     final warning = w.warning;
-    final meta = progress != null
-        ? w.progressLabel ?? ''
-        : error ?? warning ?? w.size;
+    final meta = progress != null ? w.progressLabel ?? '' : error ?? warning ?? w.size;
     final metaColor = error != null
         ? c.danger
         : warning != null
@@ -99,19 +97,10 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                     w.name,
                     // Enlarged text wraps instead of being cut.
                     maxLines: wrap ? null : 1,
-                    overflow: wrap
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    style: PostinoText.preview.copyWith(
-                      color: c.ink,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                    style: PostinoText.preview.copyWith(color: c.ink, fontWeight: FontWeight.w500),
                   ),
-                  _Meta(
-                    text: meta,
-                    color: metaColor,
-                    icon: metaColor != c.inkSubtle,
-                  ),
+                  _Meta(text: meta, color: metaColor, icon: metaColor != c.inkSubtle),
                 ],
               ),
             ),
@@ -120,21 +109,14 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
       ),
     );
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minWidth: 220,
-        maxWidth: 320,
-        minHeight: 56,
-      ),
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 320, minHeight: 56),
       child: Material(
         color: c.surfaceRaised,
         // The progress bar follows the rounded corners.
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(
-            color: error != null ? c.danger : c.borderSubtle,
-            width: PostinoBorder.borderWidthHairline,
-          ),
+          side: BorderSide(color: error != null ? c.danger : c.borderSubtle),
         ),
         child: Stack(
           children: [
@@ -154,11 +136,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                             key: const ValueKey('attachment-open'),
                             onTap: open,
                             borderRadius: radius,
-                            child: PostinoFocusRing(
-                              borderRadius: radius,
-                              inset: true,
-                              child: body,
-                            ),
+                            child: PostinoFocusRing(borderRadius: radius, inset: true, child: body),
                           ),
                   ),
                 ),
@@ -198,10 +176,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
                   child: FractionallySizedBox(
                     key: const ValueKey('attachment-progress'),
                     widthFactor: progress.clamp(0, 1),
-                    child: ColoredBox(
-                      color: c.brand,
-                      child: const SizedBox(height: 3),
-                    ),
+                    child: ColoredBox(color: c.brand, child: const SizedBox(height: 3)),
                   ),
                 ),
               ),
@@ -242,11 +217,7 @@ class _Meta extends StatelessWidget {
           if (icon) ...[
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
-              child: PostinoIcon(
-                PostinoIcons.alert,
-                size: PostinoSize.iconSm,
-                color: color,
-              ),
+              child: PostinoIcon(PostinoIcons.alert, size: PostinoSize.iconSm, color: color),
             ),
             const TextSpan(text: ' '),
           ],

@@ -13,8 +13,7 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: DraftWithAttachmentsFailure()) => 'draft-attachments',
   Err(failure: DraftReplyFailure()) => 'draft-reply',
   Err(failure: MissingPermissionFailure()) => 'missing-permission',
-  Err(failure: WrongAccountFailure(:final expected)) =>
-    'wrong-account $expected',
+  Err(failure: WrongAccountFailure(:final expected)) => 'wrong-account $expected',
   Err(failure: SizeLimitFailure(:final limitBytes)) => 'size $limitBytes',
   Err(failure: RejectedFailure(:final reason)) => 'rejected $reason',
 };

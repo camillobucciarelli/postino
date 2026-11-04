@@ -28,10 +28,7 @@ class PostinoAccountMark extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: swatch.color,
-        borderRadius: BorderRadius.circular(size * .3),
-      ),
+      decoration: BoxDecoration(color: swatch.color, borderRadius: BorderRadius.circular(size * .3)),
       child: SelectionContainer.disabled(
         child: Text(
           initial,

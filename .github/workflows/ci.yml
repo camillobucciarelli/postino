@@ -33,7 +33,13 @@ jobs:
         run: |
           git diff --exit-code -- . ':!lib/main.route.dart' ':!lib/main.g.dart'
           test -z "$(git status --porcelain -- . ':!lib/main.route.dart' ':!lib/main.g.dart')"
-      - run: flutter analyze
+      # Generated files stay as the generators emit them.
+      - name: Format
+        run: |
+          git ls-files -- 'lib/*.dart' 'test/*.dart' 'integration_test/*.dart' \
+            | grep -vE '\.(g|freezed|config|route)\.dart$' \
+            | xargs dart format --output=none --set-exit-if-changed
+      - run: flutter analyze --fatal-infos
       - run: flutter test
 
   android:

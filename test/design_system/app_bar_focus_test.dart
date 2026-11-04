@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,9 +6,7 @@ import 'package:postino/design_system/design_system.dart';
 /// The ring of an AppBar button is outside the button (`focus-offset`): the bar must not clip it.
 void main() {
   for (final (name, back) in [('back', true), ('menu', false)]) {
-    testWidgets('the focus ring of the AppBar $name button is not clipped', (
-      tester,
-    ) async {
+    testWidgets('the focus ring of the AppBar $name button is not clipped', (tester) async {
       final theme = PostinoTheme.light();
       await tester.pumpWidget(
         MaterialApp(
@@ -21,29 +17,22 @@ void main() {
               key: const ValueKey('shot'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PostinoAppBar(title: 'Titolo', onBack: back ? () {} : null),
-                ],
+                children: [PostinoAppBar(title: 'Titolo', onBack: back ? () {} : null)],
               ),
             ),
           ),
         ),
       );
-      FocusManager.instance.highlightStrategy =
-          FocusHighlightStrategy.alwaysTraditional;
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
       final ring = theme.extension<PostinoColors>()!.focusRing;
       final button = find.byType(PostinoFocusRing);
       expect(button, findsOneWidget);
       Focus.of(tester.element(button)).requestFocus();
       await tester.pump();
       final r = tester.getRect(button);
-      final boundary = tester.renderObject<RenderRepaintBoundary>(
-        find.byKey(const ValueKey('shot')),
-      );
-      final image = (await tester.runAsync(() => boundary.toImage()))!;
-      final bytes = (await tester.runAsync(
-        () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
-      ))!;
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('shot')));
+      final image = (await tester.runAsync(boundary.toImage))!;
+      final bytes = (await tester.runAsync(image.toByteData))!;
       int px(double x, double y) {
         final o = (y.floor() * image.width + x.floor()) * 4;
         return (bytes.getUint8(o + 3) << 24) |
@@ -61,11 +50,7 @@ void main() {
       ]) {
         final got = Color(px(x, y));
         // Anti-aliasing may soften the stroke a little; clipped, it would be the bar's background.
-        for (final (a, b) in [
-          (got.r, ring.r),
-          (got.g, ring.g),
-          (got.b, ring.b),
-        ]) {
+        for (final (a, b) in [(got.r, ring.r), (got.g, ring.g), (got.b, ring.b)]) {
           expect((a - b).abs(), lessThan(0.15), reason: '$edge edge: $got');
         }
       }

@@ -1,10 +1,7 @@
 import 'package:drift/drift.dart';
 
 /// Lists and the open Conversazione look messages up by Conversazione.
-@TableIndex(
-  name: 'messages_conversation',
-  columns: {#accountId, #conversationId},
-)
+@TableIndex(name: 'messages_conversation', columns: {#accountId, #conversationId})
 @DataClassName('MessageRow')
 class Messages extends Table {
   TextColumn get accountId => text()();

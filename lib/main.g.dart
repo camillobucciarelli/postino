@@ -36,18 +36,12 @@ const routePaths = (
     path: '/posta',
     $accountId: (
       path: '/posta/[accountId]',
-      bozza: (
-        path: '/posta/[accountId]/bozza',
-        $messageId: '/posta/[accountId]/bozza/[messageId]',
-      ),
+      bozza: (path: '/posta/[accountId]/bozza', $messageId: '/posta/[accountId]/bozza/[messageId]'),
       conversazione: (
         path: '/posta/[accountId]/conversazione',
         $conversationId: '/posta/[accountId]/conversazione/[conversationId]',
       ),
-      etichetta: (
-        path: '/posta/[accountId]/etichetta',
-        $labelId: '/posta/[accountId]/etichetta/[labelId]',
-      ),
+      etichetta: (path: '/posta/[accountId]/etichetta', $labelId: '/posta/[accountId]/etichetta/[labelId]'),
     ),
   ),
 );

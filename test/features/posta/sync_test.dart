@@ -17,8 +17,7 @@ const _a = ValueKey('row-$_id-a');
 const _b = ValueKey('row-$_id-b');
 const _offline = ValueKey('offline-banner');
 
-Finder _in(ValueKey<String> row, Finder f) =>
-    find.descendant(of: find.byKey(row), matching: f);
+Finder _in(ValueKey<String> row, Finder f) => find.descendant(of: find.byKey(row), matching: f);
 
 void main() {
   late Harness h;
@@ -33,28 +32,23 @@ void main() {
     expect(find.byKey(_a), findsOneWidget);
   }
 
-  testWidgets(
-    'a new message, a read and a Stella made elsewhere show up after the change signal',
-    (tester) async {
-      await start(tester);
-      expect(_in(_a, find.byKey(const ValueKey('unread'))), findsOneWidget);
-      expect(_in(_a, starIcon), findsNothing);
+  testWidgets('a new message, a read and a Stella made elsewhere show up after the change signal', (tester) async {
+    await start(tester);
+    expect(_in(_a, find.byKey(const ValueKey('unread'))), findsOneWidget);
+    expect(_in(_a, starIcon), findsNothing);
 
-      gmail
-        ..deliver(msg('b', subject: 'Arrivato altrove'))
-        ..deliver(msg('a', isRead: true, isStarred: true));
-      await tester.pumpAndSettle();
+    gmail
+      ..deliver(msg('b', subject: 'Arrivato altrove'))
+      ..deliver(msg('a', isRead: true, isStarred: true));
+    await tester.pumpAndSettle();
 
-      expect(_in(_b, find.text('Arrivato altrove')), findsOneWidget);
-      expect(_in(_a, find.byKey(const ValueKey('unread'))), findsNothing);
-      expect(_in(_a, starIcon), findsOneWidget);
-      expect(gmail.initialSyncs, 1, reason: 'incremental from then on');
-    },
-  );
+    expect(_in(_b, find.text('Arrivato altrove')), findsOneWidget);
+    expect(_in(_a, find.byKey(const ValueKey('unread'))), findsNothing);
+    expect(_in(_a, starIcon), findsOneWidget);
+    expect(gmail.initialSyncs, 1, reason: 'incremental from then on');
+  });
 
-  testWidgets('without the change signal, the 60 s poll still syncs', (
-    tester,
-  ) async {
+  testWidgets('without the change signal, the 60 s poll still syncs', (tester) async {
     await start(tester);
     gmail.dropSignal();
     await tester.pumpAndSettle();
@@ -70,35 +64,31 @@ void main() {
     expect(find.byKey(_b), findsOneWidget);
   });
 
-  testWidgets(
-    'offline shows the offline Banner; back online, the incremental sync fetches only the differences',
-    (tester) async {
-      await start(tester);
-      expect(find.byKey(_offline), findsNothing);
+  testWidgets('offline shows the offline Banner; back online, the incremental sync fetches only the differences', (
+    tester,
+  ) async {
+    await start(tester);
+    expect(find.byKey(_offline), findsNothing);
 
-      h.connectivity.online = false;
-      gmail
-        ..goOffline()
-        ..deliver(msg('b'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(_offline), findsOneWidget);
-      expect(
-        tester.widget<PostinoBanner>(find.byKey(_offline)).tone,
-        PostinoBannerTone.offline,
-      );
-      expect(find.text('Sei offline'), findsOneWidget);
-      expect(find.byKey(_a), findsOneWidget, reason: 'still readable');
-      expect(find.byKey(_b), findsNothing);
+    h.connectivity.online = false;
+    gmail
+      ..goOffline()
+      ..deliver(msg('b'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(_offline), findsOneWidget);
+    expect(tester.widget<PostinoBanner>(find.byKey(_offline)).tone, PostinoBannerTone.offline);
+    expect(find.text('Sei offline'), findsOneWidget);
+    expect(find.byKey(_a), findsOneWidget, reason: 'still readable');
+    expect(find.byKey(_b), findsNothing);
 
-      gmail.goOnline();
-      h.connectivity.online = true;
-      await tester.pumpAndSettle();
-      expect(find.byKey(_offline), findsNothing);
-      expect(find.byKey(_b), findsOneWidget);
-      expect(gmail.initialSyncs, 1);
-      expect(gmail.lastIncremental!.messages.map((m) => m.id), ['b']);
-    },
-  );
+    gmail.goOnline();
+    h.connectivity.online = true;
+    await tester.pumpAndSettle();
+    expect(find.byKey(_offline), findsNothing);
+    expect(find.byKey(_b), findsOneWidget);
+    expect(gmail.initialSyncs, 1);
+    expect(gmail.lastIncremental!.messages.map((m) => m.id), ['b']);
+  });
 
   testWidgets('pull-to-refresh starts a sync', (tester) async {
     await start(tester);
@@ -127,24 +117,21 @@ void main() {
     expect(find.byKey(_b), findsOneWidget);
   });
 
-  testWidgets(
-    'the UI stays responsive during a slow sync: it reads only the database',
-    (tester) async {
-      await start(tester);
-      final slow = gmail.hold = Completer<void>();
-      gmail.deliver(msg('b'));
-      await tester.pump();
+  testWidgets('the UI stays responsive during a slow sync: it reads only the database', (tester) async {
+    await start(tester);
+    final slow = gmail.hold = Completer<void>();
+    gmail.deliver(msg('b'));
+    await tester.pump();
 
-      // The sync is stuck on the Provider; the list still renders and scrolls.
-      await tester.drag(find.byKey(_a), const Offset(0, -50));
-      await tester.pump(const Duration(seconds: 1));
-      expect(find.byKey(_a), findsOneWidget);
-      expect(find.byKey(_b), findsNothing);
+    // The sync is stuck on the Provider; the list still renders and scrolls.
+    await tester.drag(find.byKey(_a), const Offset(0, -50));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byKey(_a), findsOneWidget);
+    expect(find.byKey(_b), findsNothing);
 
-      gmail.hold = null;
-      slow.complete();
-      await tester.pumpAndSettle();
-      expect(find.byKey(_b), findsOneWidget);
-    },
-  );
+    gmail.hold = null;
+    slow.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(_b), findsOneWidget);
+  });
 }

@@ -11,14 +11,18 @@ void main() {
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
     final calls = <String>[];
     var next = 0;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemBackgroundSender.channel, (call) async {
-          calls.add('${call.method} ${call.arguments ?? ''}'.trim());
-          return call.method == 'beginBackgroundTask' ? ++next : null;
-        });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemBackgroundSender.channel,
+      (call) async {
+        calls.add('${call.method} ${call.arguments ?? ''}'.trim());
+        return call.method == 'beginBackgroundTask' ? ++next : null;
+      },
+    );
     addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemBackgroundSender.channel, null),
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemBackgroundSender.channel,
+        null,
+      ),
     );
 
     final sender = SystemBackgroundSender();
@@ -28,11 +32,6 @@ void main() {
     expect(sender.taskId('a'), 2);
     await sender.release('a');
     expect(sender.taskId('a'), isNull);
-    expect(calls, [
-      'beginBackgroundTask',
-      'endBackgroundTask 1',
-      'beginBackgroundTask',
-      'endBackgroundTask 2',
-    ]);
+    expect(calls, ['beginBackgroundTask', 'endBackgroundTask 1', 'beginBackgroundTask', 'endBackgroundTask 2']);
   });
 }

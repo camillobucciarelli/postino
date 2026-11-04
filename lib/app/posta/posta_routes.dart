@@ -16,17 +16,13 @@ class PostaRoute {
   factory PostaRoute.parse(Uri uri, {required bool isLayout, String? last}) {
     final seg = isLayout ? const <String>[] : uri.pathSegments;
     // (account, conversation) or (account, Message-ID): `pathSegments` decodes the percent-encoding.
-    final open = seg.length > 3 && seg[2] == 'conversazione'
-        ? (seg[1], seg[3])
-        : null;
+    final open = seg.length > 3 && seg[2] == 'conversazione' ? (seg[1], seg[3]) : null;
     final draft = seg.length > 3 && seg[2] == 'bozza' ? (seg[1], seg[3]) : null;
     final detail = open ?? draft;
     // Opened from the Posta unificata or from a list of its Account; else (deep link) its inbox.
     final list = detail == null
         ? uri.path
-        : last != null &&
-              (last == routePaths.posta.path ||
-                  Uri.parse(last).pathSegments[1] == detail.$1)
+        : last != null && (last == routePaths.posta.path || Uri.parse(last).pathSegments[1] == detail.$1)
         ? last
         : routePaths.posta.$accountId.path.changes({'accountId': detail.$1});
     // /posta/<account>[/etichetta/<label>]: the docked drawer reads its selection from the list.
@@ -50,7 +46,8 @@ class PostaRoute {
   final (String, String)? draft;
 
   /// The Account and Etichetta of [list].
-  final String? accountId, labelId;
+  final String? accountId;
+  final String? labelId;
 
   /// What opens beside the list: the Conversazione or the Bozza.
   (String, String)? get detail => open ?? draft;
@@ -65,10 +62,9 @@ void openDraft(String accountId, String messageId) => Routefly.navigate(
 );
 
 /// Opens a Conversazione.
-void openConversation(String accountId, String conversationId) =>
-    Routefly.navigate(
-      routePaths.posta.$accountId.conversazione.$conversationId.changes({
-        'accountId': accountId,
-        'conversationId': conversationId,
-      }),
-    );
+void openConversation(String accountId, String conversationId) => Routefly.navigate(
+  routePaths.posta.$accountId.conversazione.$conversationId.changes({
+    'accountId': accountId,
+    'conversationId': conversationId,
+  }),
+);

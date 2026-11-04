@@ -23,18 +23,10 @@ typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt});
 /// Only the sync engine writes here; the UI reads through [InboxRepository].
 abstract interface class OutboxRepository {
   // --- Bozze (#35) ---
-  Future<void> saveDraft(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  });
+  Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// A Bozza as the Provider has it (another client's, or edited elsewhere), kept here as already synced.
-  Future<void> adoptDraft(
-    String accountId,
-    OutgoingMessage draft, {
-    required int updatedAt,
-  });
+  Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   Future<LocalDraft?> localDraft(String accountId, String messageId);
 
@@ -109,11 +101,7 @@ abstract interface class OutboxRepository {
 
   /// The Provider refused the message for good: it stays, shown as failed, and is not retried.
   /// With [version], only that preparation's row.
-  Future<void> outgoingFailed(
-    String accountId,
-    String messageId, {
-    int? version,
-  });
+  Future<void> outgoingFailed(String accountId, String messageId, {int? version});
 
   /// The Provider has the message as [providerId]: the outbox row and the local Bozza go, and the message is
   /// stored at once under Inviati, so the folder shows it before the next sync upserts the same id.

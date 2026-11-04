@@ -33,12 +33,8 @@ class GmailHttp {
   final Future<void> Function(Duration) _sleep;
   final Duration _stall;
 
-  static final _tokenEndpoint = Uri.parse(
-    'https://oauth2.googleapis.com/token',
-  );
-  static final _api = Uri.parse(
-    'https://gmail.googleapis.com/gmail/v1/users/me/',
-  );
+  static final _tokenEndpoint = Uri.parse('https://oauth2.googleapis.com/token');
+  static final _api = Uri.parse('https://gmail.googleapis.com/gmail/v1/users/me/');
 
   /// Retries per request on a quota hit: 1, 2, 4, 8, 16 s (plus jitter), or the server's Retry-After.
   static const _retries = 5;
@@ -53,10 +49,7 @@ class GmailHttp {
   /// Tokens with an access token still valid for at least a minute.
   Future<GmailTokens> validTokens() async {
     final tokens = await _tokens();
-    if (tokens != null &&
-        _clock.now().isBefore(
-          tokens.expiresAt.subtract(const Duration(minutes: 1)),
-        )) {
+    if (tokens != null && _clock.now().isBefore(tokens.expiresAt.subtract(const Duration(minutes: 1)))) {
       return tokens;
     }
     return _refresh(tokens);
@@ -71,21 +64,10 @@ class GmailHttp {
     int expected = 0,
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) => _request(
-    'GET',
-    path,
-    query: query,
-    expected: expected,
-    onProgress: onProgress,
-    cancel: cancel,
-  );
+  }) => _request('GET', path, query: query, expected: expected, onProgress: onProgress, cancel: cancel);
 
   /// A write: [method] on [path], [body] as JSON.
-  Future<Map<String, dynamic>> send(
-    String method,
-    String path, {
-    Object? body,
-  }) => _request(method, path, body: body);
+  Future<Map<String, dynamic>> send(String method, String path, {Object? body}) => _request(method, path, body: body);
 
   /// A call to the Gmail API: refreshes an expired token first and once more on a 401; retries a quota hit with backoff.
   Future<Map<String, dynamic>> _request(
@@ -98,19 +80,9 @@ class GmailHttp {
     Future<void>? cancel,
   }) async {
     var tokens = await validTokens();
-    final url = _api
-        .resolve(path)
-        .replace(queryParameters: query.isEmpty ? null : query);
+    final url = _api.resolve(path).replace(queryParameters: query.isEmpty ? null : query);
     final payload = body == null ? null : jsonEncode(body);
-    Future<http.Response> send() => _attempt(
-      method,
-      url,
-      tokens.access,
-      payload,
-      cancel,
-      expected,
-      onProgress,
-    );
+    Future<http.Response> send() => _attempt(method, url, tokens.access, payload, cancel, expected, onProgress);
 
     var r = await send();
     if (r.statusCode == 401) {
@@ -122,13 +94,7 @@ class GmailHttp {
       final after = int.tryParse(r.headers['retry-after'] ?? '');
       final wait = after != null
           ? Duration(seconds: min(after, _maxWait))
-          : Duration(
-              milliseconds:
-                  (min(1 << n, _maxWait) *
-                          1000 *
-                          (1 + _random.nextDouble() / 4))
-                      .round(),
-            );
+          : Duration(milliseconds: (min(1 << n, _maxWait) * 1000 * (1 + _random.nextDouble() / 4)).round());
       await _sleep(wait);
       r = await send();
     }
@@ -145,20 +111,15 @@ class GmailHttp {
     throw GmailFailed(switch (r.statusCode) {
       401 => const AuthFailure(),
       // Token without the Gmail scope: only a new consent fixes it.
-      403
-          when r.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT') ||
-              r.body.contains('insufficientPermissions') =>
+      403 when r.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || r.body.contains('insufficientPermissions') =>
         const AuthFailure(),
       // An expired history cursor, or a message that no longer exists.
       404 => const NotFoundFailure(),
       // A message over the 35 MB cap of messages.send.
       413 => const SizeLimitFailure(gmailSendLimitBytes),
-      400
-          when RegExp(
-            'too large|size limit',
-            caseSensitive: false,
-          ).hasMatch(r.body) =>
-        const SizeLimitFailure(gmailSendLimitBytes),
+      400 when RegExp('too large|size limit', caseSensitive: false).hasMatch(r.body) => const SizeLimitFailure(
+        gmailSendLimitBytes,
+      ),
       400 => RejectedFailure('Gmail $path: ${_errorMessage(r.body)}'),
       _ when _rateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
       _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
@@ -200,29 +161,19 @@ class GmailHttp {
     String? payload,
     Future<void> abortTrigger,
   ) {
-    final request = http.AbortableRequest(
-      method,
-      url,
-      abortTrigger: abortTrigger,
-    );
+    final request = http.AbortableRequest(method, url, abortTrigger: abortTrigger);
     request.headers['authorization'] = 'Bearer $access';
     if (payload != null) {
       request
         ..headers['content-type'] = 'application/json'
         ..body = payload;
     }
-    return _http
-        .send(request)
-        .timeout(sendTimeout(request.contentLength, _stall));
+    return _http.send(request).timeout(sendTimeout(request.contentLength, _stall));
   }
 
   /// Reads the answer, at most [_stall] between two chunks: a long download is fine, a stalled one is not.
   /// [onProgress] gets the share read, out of the response length or else [expected] bytes.
-  Future<http.Response> _readBody(
-    http.StreamedResponse r,
-    int expected,
-    void Function(double done)? onProgress,
-  ) async {
+  Future<http.Response> _readBody(http.StreamedResponse r, int expected, void Function(double done)? onProgress) async {
     final total = r.contentLength ?? expected;
     var read = 0;
     final bytes = await http.ByteStream(
@@ -232,12 +183,7 @@ class GmailHttp {
         return chunk;
       }),
     ).toBytes();
-    return http.Response.bytes(
-      bytes,
-      r.statusCode,
-      headers: r.headers,
-      request: r.request,
-    );
+    return http.Response.bytes(bytes, r.statusCode, headers: r.headers, request: r.request);
   }
 
   /// The `error.message` of a Google error body, else "HTTP 400".
@@ -259,8 +205,7 @@ class GmailHttp {
 
   /// Gmail answers a quota hit with 429, or with 403 and a rate-limit reason.
   static bool _rateLimited(http.Response r) =>
-      r.statusCode == 429 ||
-      (r.statusCode == 403 && r.body.contains('ateLimitExceeded'));
+      r.statusCode == 429 || (r.statusCode == 403 && r.body.contains('ateLimitExceeded'));
 
   Future<GmailTokens?> _tokens() => GmailTokens.read(_keychain, _accountId);
 
@@ -269,11 +214,7 @@ class GmailHttp {
     if (old == null) throw const GmailFailed(AuthFailure());
     final r = await _http.post(
       _tokenEndpoint,
-      body: {
-        'grant_type': 'refresh_token',
-        'refresh_token': old.refresh,
-        ..._client.fields,
-      },
+      body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
     );
     final body = jsonDecode(r.body) as Map<String, dynamic>;
     if (r.statusCode == 200) {
@@ -281,9 +222,7 @@ class GmailHttp {
         access: body['access_token'] as String,
         // Google may rotate it.
         refresh: body['refresh_token'] as String? ?? old.refresh,
-        expiresAt: _clock.now().add(
-          Duration(seconds: body['expires_in'] as int),
-        ),
+        expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
       );
       await fresh.write(_keychain, _accountId);
       return fresh;
@@ -297,7 +236,5 @@ class GmailHttp {
 
 /// Time for the answer to start: [stall] plus 1 s per 50 KB of [bodyBytes] (a 400 kbit/s floor, so 35 MB gets ~12 min).
 @visibleForTesting
-Duration sendTimeout(
-  int bodyBytes, [
-  Duration stall = const Duration(seconds: 30),
-]) => stall + Duration(milliseconds: bodyBytes ~/ 50);
+Duration sendTimeout(int bodyBytes, [Duration stall = const Duration(seconds: 30)]) =>
+    stall + Duration(milliseconds: bodyBytes ~/ 50);

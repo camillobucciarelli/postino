@@ -10,12 +10,7 @@ enum PostinoSyncState { reconnect, offline }
 
 /// The sync state of a mailbox: icon and word, or only the icon ([compact], drawer) with [label] as its name.
 class PostinoSyncStatus extends StatelessWidget {
-  const PostinoSyncStatus({
-    super.key,
-    required this.state,
-    required this.label,
-    this.compact = false,
-  });
+  const PostinoSyncStatus({super.key, required this.state, required this.label, this.compact = false});
 
   final PostinoSyncState state;
   final String label;
@@ -25,9 +20,7 @@ class PostinoSyncStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.pc;
     final icon = PostinoIcon(
-      state == PostinoSyncState.reconnect
-          ? PostinoIcons.key
-          : PostinoIcons.cloudOff,
+      state == PostinoSyncState.reconnect ? PostinoIcons.key : PostinoIcons.cloudOff,
       size: PostinoSize.iconSm,
       color: c.warning,
       label: compact ? label : null,

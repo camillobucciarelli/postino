@@ -44,17 +44,12 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
     final wrap = scaler.scale(1) > 1;
     final titleStyle = PostinoText.appBarTitle.copyWith(color: c.ink);
     // The title's DefaultTextStyle is the AppBar's, so the subtitle inherits what `meta` leaves out.
-    final subtitleStyle = PostinoText.appBarTitle.merge(
-      PostinoText.meta.copyWith(color: c.inkSubtle),
-    );
+    final subtitleStyle = PostinoText.appBarTitle.merge(PostinoText.meta.copyWith(color: c.inkSubtle));
     return LayoutBuilder(
       builder: (context, box) {
         // The title's room in the NavigationToolbar: no leading square, spacing on both sides.
         final room =
-            box.maxWidth -
-            MediaQuery.paddingOf(context).horizontal -
-            (leading ? kToolbarHeight : 0) -
-            2 * spacing;
+            box.maxWidth - MediaQuery.paddingOf(context).horizontal - (leading ? kToolbarHeight : 0) - 2 * spacing;
         double height(String text, TextStyle style, double width) {
           final p = TextPainter(
             text: TextSpan(text: text, style: style),
@@ -68,19 +63,12 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
         }
 
         final content =
-            height(
-              title,
-              titleStyle,
-              room - (a == null ? 0 : _markSize + PostinoSpacing.s2),
-            ) +
+            height(title, titleStyle, room - (a == null ? 0 : _markSize + PostinoSpacing.s2)) +
             (subtitle == null ? 0 : height(subtitle!, subtitleStyle, room));
         return AppBar(
           automaticallyImplyLeading: false,
           toolbarHeight: wrap
-              ? (content + 2 * PostinoSpacing.s2).clamp(
-                  PostinoSize.appBarHeight,
-                  double.infinity,
-                )
+              ? (content + 2 * PostinoSpacing.s2).clamp(PostinoSize.appBarHeight, double.infinity)
               : PostinoSize.appBarHeight,
           leading: back != null
               ? PostinoIconButton(
@@ -104,19 +92,12 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 spacing: PostinoSpacing.s2,
                 children: [
-                  if (a != null)
-                    PostinoAccountMark(
-                      color: a.color,
-                      initial: a.initial,
-                      size: _markSize,
-                    ),
+                  if (a != null) PostinoAccountMark(color: a.color, initial: a.initial, size: _markSize),
                   Flexible(
                     child: Text(
                       title,
                       maxLines: wrap ? null : 1,
-                      overflow: wrap
-                          ? TextOverflow.visible
-                          : TextOverflow.ellipsis,
+                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
                       style: titleStyle,
                     ),
                   ),

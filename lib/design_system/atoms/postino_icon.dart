@@ -27,15 +27,9 @@ class PostinoIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final paint = CustomPaint(
       size: Size.square(size),
-      painter: _IconPainter(
-        icon,
-        color ?? IconTheme.of(context).color ?? const Color(0xFF000000),
-        filled,
-      ),
+      painter: _IconPainter(icon, color ?? IconTheme.of(context).color ?? const Color(0xFF000000), filled),
     );
-    return label == null
-        ? ExcludeSemantics(child: paint)
-        : Semantics(label: label, image: true, child: paint);
+    return label == null ? ExcludeSemantics(child: paint) : Semantics(label: label, image: true, child: paint);
   }
 }
 
@@ -56,18 +50,14 @@ class _IconPainter extends CustomPainter {
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    for (final p in _cache.putIfAbsent(
-      icon,
-      () => icon.paths.map(parseSvgPath).toList(),
-    )) {
+    for (final p in _cache.putIfAbsent(icon, () => icon.paths.map(parseSvgPath).toList())) {
       if (filled) canvas.drawPath(p, Paint()..color = color);
       canvas.drawPath(p, stroke);
     }
   }
 
   @override
-  bool shouldRepaint(_IconPainter old) =>
-      old.icon != icon || old.color != color || old.filled != filled;
+  bool shouldRepaint(_IconPainter old) => old.icon != icon || old.color != color || old.filled != filled;
 }
 
 final _token = RegExp(r'[MmLlHhVvAaZz]|-?(?:\d+\.?\d*|\.\d+)');
@@ -77,13 +67,18 @@ final _token = RegExp(r'[MmLlHhVvAaZz]|-?(?:\d+\.?\d*|\.\d+)');
 Path parseSvgPath(String d) {
   final t = _token.allMatches(d).map((m) => m.group(0)!).toList();
   final path = Path();
-  var i = 0, cmd = 'M';
-  var x = 0.0, y = 0.0, startX = 0.0, startY = 0.0;
+  var i = 0;
+  var cmd = 'M';
+  var x = 0.0;
+  var y = 0.0;
+  var startX = 0.0;
+  var startY = 0.0;
   double n() => double.parse(t[i++]);
   while (i < t.length) {
     if (RegExp('[A-Za-z]').hasMatch(t[i])) cmd = t[i++];
     final rel = cmd == cmd.toLowerCase();
-    final ox = rel ? x : 0.0, oy = rel ? y : 0.0;
+    final ox = rel ? x : 0.0;
+    final oy = rel ? y : 0.0;
     switch (cmd.toUpperCase()) {
       case 'M':
         x = ox + n();
@@ -102,7 +97,10 @@ Path parseSvgPath(String d) {
         y = oy + n();
         path.lineTo(x, y);
       case 'A':
-        final rx = n(), ry = n(), rotation = n(), large = n() != 0;
+        final rx = n();
+        final ry = n();
+        final rotation = n();
+        final large = n() != 0;
         final sweep = n() != 0;
         x = ox + n();
         y = oy + n();

@@ -33,73 +33,49 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'an AuthFailure makes the Account Da ricollegare; its synced mail stays visible',
-    (tester) async {
-      await start(tester);
+  testWidgets('an AuthFailure makes the Account Da ricollegare; its synced mail stays visible', (tester) async {
+    await start(tester);
 
-      gmail.breakAuth();
-      await sync(tester);
+    gmail.breakAuth();
+    await sync(tester);
 
-      expect(find.byKey(_old), findsOneWidget);
-      expect(
-        tester.widget<PostinoBanner>(find.byKey(_banner)).tone,
-        PostinoBannerTone.warning,
-      );
-      expect(
-        find.descendant(
-          of: find.byKey(_banner),
-          matching: find.textContaining('ada@gmail.com'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: find.byKey(_banner), matching: find.text('Accedi')),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(find.byKey(_old), findsOneWidget);
+    expect(tester.widget<PostinoBanner>(find.byKey(_banner)).tone, PostinoBannerTone.warning);
+    expect(find.descendant(of: find.byKey(_banner), matching: find.textContaining('ada@gmail.com')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(_banner), matching: find.text('Accedi')), findsOneWidget);
+  });
 
-  testWidgets(
-    'reconnecting brings the Account back to attivo and the sync resumes',
-    (tester) async {
-      await start(tester);
-      gmail.breakAuth();
-      await sync(tester);
+  testWidgets('reconnecting brings the Account back to attivo and the sync resumes', (tester) async {
+    await start(tester);
+    gmail.breakAuth();
+    await sync(tester);
 
-      // The Provider would accept a new consent; until then the Account does not sync.
-      gmail
-        ..restoreAuth()
-        ..deliver(msg('new'));
-      await sync(tester);
-      expect(find.byKey(_new), findsNothing);
+    // The Provider would accept a new consent; until then the Account does not sync.
+    gmail
+      ..restoreAuth()
+      ..deliver(msg('new'));
+    await sync(tester);
+    expect(find.byKey(_new), findsNothing);
 
-      await tester.tap(find.text('Accedi'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Accedi'));
+    await tester.pumpAndSettle();
 
-      expect(h.consent.lastLoginHint, 'ada@gmail.com');
-      expect(find.byKey(_banner), findsNothing);
-      expect(find.byKey(_old), findsOneWidget);
-      expect(find.byKey(_new), findsOneWidget);
-    },
-  );
+    expect(h.consent.lastLoginHint, 'ada@gmail.com');
+    expect(find.byKey(_banner), findsNothing);
+    expect(find.byKey(_old), findsOneWidget);
+    expect(find.byKey(_new), findsOneWidget);
+  });
 
-  testWidgets(
-    'reconnecting with another Google account says which one to pick',
-    (tester) async {
-      await start(tester);
-      gmail.breakAuth();
-      await sync(tester);
+  testWidgets('reconnecting with another Google account says which one to pick', (tester) async {
+    await start(tester);
+    gmail.breakAuth();
+    await sync(tester);
 
-      h.consent.address = 'bob@gmail.com';
-      await tester.tap(find.text('Accedi'));
-      await tester.pumpAndSettle();
+    h.consent.address = 'bob@gmail.com';
+    await tester.tap(find.text('Accedi'));
+    await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('per ricollegare ada@gmail.com'),
-        findsOneWidget,
-      );
-      expect(find.byKey(_banner), findsOneWidget);
-    },
-  );
+    expect(find.textContaining('per ricollegare ada@gmail.com'), findsOneWidget);
+    expect(find.byKey(_banner), findsOneWidget);
+  });
 }

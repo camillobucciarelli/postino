@@ -30,16 +30,11 @@ class ReplyDraftUseCase {
     ReplyKind kind, {
     String? messageId,
   }) async {
-    var (:message, :body) = messageId == null
-        ? messages.last
-        : messages.firstWhere((m) => m.message.id == messageId);
-    if ((body == null ||
-            kind == ReplyKind.forward && body.attachments == null) &&
+    var (:message, :body) = messageId == null ? messages.last : messages.firstWhere((m) => m.message.id == messageId);
+    if ((body == null || kind == ReplyKind.forward && body.attachments == null) &&
         await _sync.fetchBody(accountId, message.id) is Ok) {
       // The database stream answers with the rows as they are now.
-      final fresh = await _inbox
-          .watchConversation(accountId, conversationId)
-          .first;
+      final fresh = await _inbox.watchConversation(accountId, conversationId).first;
       body = fresh.where((m) => m.message.id == message.id).firstOrNull?.body;
     }
     return ReplySource(kind, message, body);

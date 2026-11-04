@@ -30,9 +30,7 @@ class FakeClock implements Clock {
   Stream<void> every(Duration period) {
     late final StreamController<void> c;
     final elapsed = [Duration.zero];
-    c = StreamController<void>(
-      onCancel: () => _tickers.removeWhere((t) => t.$2 == c),
-    );
+    c = StreamController<void>(onCancel: () => _tickers.removeWhere((t) => t.$2 == c));
     _tickers.add((period, c, elapsed));
     return c.stream;
   }

@@ -16,12 +16,8 @@ class PostinoSkeleton extends StatefulWidget {
   State<PostinoSkeleton> createState() => _PostinoSkeletonState();
 }
 
-class _PostinoSkeletonState extends State<PostinoSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final _shimmer = AnimationController(
-    vsync: this,
-    duration: PostinoMotion.skeleton,
-  );
+class _PostinoSkeletonState extends State<PostinoSkeleton> with SingleTickerProviderStateMixin {
+  late final _shimmer = AnimationController(vsync: this, duration: PostinoMotion.skeleton);
 
   @override
   void didChangeDependencies() {
@@ -52,9 +48,7 @@ class _PostinoSkeletonState extends State<PostinoSkeleton>
           height: size ?? PostinoSpacing.s3,
           decoration: BoxDecoration(
             shape: circle ? BoxShape.circle : BoxShape.rectangle,
-            borderRadius: circle
-                ? null
-                : const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
+            borderRadius: circle ? null : const BorderRadius.all(Radius.circular(PostinoRadius.xs)),
             gradient: LinearGradient(
               begin: Alignment(t - 1, 0),
               end: Alignment(t + 1, 0),
@@ -72,17 +66,9 @@ class _PostinoSkeletonState extends State<PostinoSkeleton>
             for (var i = 0; i < widget.rows; i++)
               Container(
                 constraints: BoxConstraints(minHeight: d.rowHeight),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: PostinoSpacing.s4,
-                  vertical: PostinoSpacing.s3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: PostinoSpacing.s3),
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: c.borderSubtle,
-                      width: PostinoBorder.borderWidthHairline,
-                    ),
-                  ),
+                  border: Border(bottom: BorderSide(color: c.borderSubtle)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,10 +87,7 @@ class _PostinoSkeletonState extends State<PostinoSkeleton>
                               .65 + (i * 17) % 25 / 100,
                               .80 + (i * 7) % 15 / 100,
                             ])
-                              FractionallySizedBox(
-                                widthFactor: f,
-                                child: bar(),
-                              ),
+                              FractionallySizedBox(widthFactor: f, child: bar()),
                           ],
                         ),
                       ),

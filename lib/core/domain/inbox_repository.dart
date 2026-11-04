@@ -30,11 +30,7 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
 class OutgoingEntry extends Equatable {
-  const OutgoingEntry({
-    required this.message,
-    required this.sendAfter,
-    this.failed = false,
-  });
+  const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false});
   final OutgoingMessage message;
   final int sendAfter;
   final bool failed;
@@ -66,8 +62,5 @@ abstract interface class InboxRepository {
   Stream<List<Label>> watchLabels(String accountId);
 
   /// Every stored message of a Conversazione, oldest first.
-  Stream<List<ConversationMessage>> watchConversation(
-    String accountId,
-    String conversationId,
-  );
+  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId);
 }

@@ -32,10 +32,7 @@ void main() {
   test('invisible and bidi characters go, C1 controls become _ (#75)', () {
     // U+202E right-to-left override: «fattura\u202Efdp.exe» is displayed as «fatturaexe.pdf».
     expect(safeFileName('fattura\u202Efdp.exe'), 'fatturafdp.exe');
-    expect(
-      safeFileName('a\u200Eb\u200Fc\u2066d\u2069e\uFEFFf\u200Bg.pdf'),
-      'abcdefg.pdf',
-    );
+    expect(safeFileName('a\u200Eb\u200Fc\u2066d\u2069e\uFEFFf\u200Bg.pdf'), 'abcdefg.pdf');
     expect(safeFileName('a\u007Fb.pdf'), 'a_b.pdf');
   });
 }

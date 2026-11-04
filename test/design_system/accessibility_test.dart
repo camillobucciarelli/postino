@@ -9,16 +9,13 @@ import 'package:postino/design_system/design_system.dart';
 
 void _noop() {}
 const _sky = (color: PostinoAccountColor.sky, initial: 'L');
-const _long =
-    'Revisione del preventivo per la ristrutturazione della cucina e del bagno al piano terra';
+const _long = 'Revisione del preventivo per la ristrutturazione della cucina e del bagno al piano terra';
 
 Widget _app(Widget child, {double scale = 1, ThemeData? theme}) => MaterialApp(
   theme: theme ?? PostinoTheme.light(),
   home: Builder(
     builder: (context) => MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: TextScaler.linear(scale), disableAnimations: true),
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale), disableAnimations: true),
       child: child,
     ),
   ),
@@ -61,9 +58,7 @@ const _formats = PostinoFormatLabels(
 /// The whole composer, with a long address and subject.
 Widget _composer() => PostinoComposerLayout(
   sender: PostinoSenderPicker(
-    options: const [
-      (id: 'a1', mark: _sky, address: 'lucia.bianchi.della.valle@example.com'),
-    ],
+    options: const [(id: 'a1', mark: _sky, address: 'lucia.bianchi.della.valle@example.com')],
     selectedId: 'a1',
     onSelected: (_) {},
     label: 'Da',
@@ -76,7 +71,7 @@ Widget _composer() => PostinoComposerLayout(
     PostinoComposerField(
       label: 'Oggetto',
       controller: TextEditingController(text: _long),
-      trailing: PostinoButton(
+      trailing: const PostinoButton(
         label: 'Cc',
         variant: PostinoButtonVariant.ghost,
         size: PostinoButtonSize.sm,
@@ -92,19 +87,19 @@ Widget _composer() => PostinoComposerLayout(
   ),
 );
 
-final _drawer = PostinoNavigationDrawer(
+const _drawer = PostinoNavigationDrawer(
   sections: [
     PostinoDrawerSection(
       items: [
         PostinoDrawerItem(
-          key: const ValueKey('active'),
+          key: ValueKey('active'),
           label: 'Posta in arrivo',
           icon: PostinoIcons.inbox,
           active: true,
           onTap: _noop,
         ),
         PostinoDrawerItem(
-          key: const ValueKey('other'),
+          key: ValueKey('other'),
           label: 'Tutte le etichette del lavoro e dei progetti personali',
           account: _sky,
           onTap: _noop,
@@ -121,13 +116,7 @@ Future<void> _tabTo(WidgetTester tester, Finder target) async {
     await tester.pump();
     final focused = FocusManager.instance.primaryFocus?.context;
     if (focused != null &&
-        find
-            .ancestor(
-              of: find.byElementPredicate((e) => e == focused),
-              matching: target,
-            )
-            .evaluate()
-            .isNotEmpty) {
+        find.ancestor(of: find.byElementPredicate((e) => e == focused), matching: target).evaluate().isNotEmpty) {
       return;
     }
   }
@@ -138,9 +127,7 @@ CustomPainter? _ring(WidgetTester tester, Finder target) => tester
     .widget<CustomPaint>(
       find
           .descendant(
-            of: find
-                .descendant(of: target, matching: find.byType(PostinoFocusRing))
-                .first,
+            of: find.descendant(of: target, matching: find.byType(PostinoFocusRing)).first,
             matching: find.byType(CustomPaint),
           )
           .first,
@@ -150,16 +137,9 @@ CustomPainter? _ring(WidgetTester tester, Finder target) => tester
 void main() {
   group('focus ring', () {
     final cases = <String, (Widget, Finder)>{
-      'primary button': (
-        PostinoButton(label: 'Accedi', onPressed: _noop),
-        find.byType(FilledButton),
-      ),
+      'primary button': (const PostinoButton(label: 'Accedi', onPressed: _noop), find.byType(FilledButton)),
       'ghost button': (
-        PostinoButton(
-          label: 'Riprova',
-          onPressed: _noop,
-          variant: PostinoButtonVariant.ghost,
-        ),
+        const PostinoButton(label: 'Riprova', onPressed: _noop, variant: PostinoButtonVariant.ghost),
         find.byType(TextButton),
       ),
       'snackbar action': (
@@ -172,15 +152,11 @@ void main() {
         find.byType(TextButton),
       ),
       'icon button': (
-        PostinoIconButton(
-          icon: PostinoIcons.menu,
-          label: 'Menu',
-          onPressed: _noop,
-        ),
+        const PostinoIconButton(icon: PostinoIcons.menu, label: 'Menu', onPressed: _noop),
         find.byType(IconButton),
       ),
       'message tile': (
-        PostinoMessageTile(
+        const PostinoMessageTile(
           sender: 'Bruno',
           subject: 'Preventivo',
           preview: 'Ciao',
@@ -194,40 +170,21 @@ void main() {
         find.byType(InkWell),
       ),
       'thread message header': (_message(), find.byType(InkWell).first),
-      'recipients toggle': (
-        _message(),
-        find.byKey(const ValueKey('recipients-toggle')),
-      ),
+      'recipients toggle': (_message(), find.byKey(const ValueKey('recipients-toggle'))),
       'quote toggle': (_message(), find.byKey(const ValueKey('quote-toggle'))),
       'attachment chip': (
-        const PostinoAttachmentChip(
-          name: 'Contratto.pdf',
-          size: '88 KB',
-          onOpen: _noop,
-        ),
+        const PostinoAttachmentChip(name: 'Contratto.pdf', size: '88 KB', onOpen: _noop),
         find.byKey(const ValueKey('attachment-open')),
       ),
       'drawer item': (_drawer, find.byKey(const ValueKey('other'))),
       'active drawer item': (_drawer, find.byKey(const ValueKey('active'))),
       'sender picker': (_composer(), find.byType(PostinoSenderPicker)),
       'format button': (_composer(), find.byType(PostinoFormatButton).first),
-      'fab': (
-        PostinoFab(
-          label: 'Scrivi',
-          icon: PostinoIcons.pencil,
-          onPressed: _noop,
-        ),
-        find.byType(PostinoFab),
-      ),
+      'fab': (const PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop), find.byType(PostinoFab)),
     };
     for (final MapEntry(key: name, value: (widget, target)) in cases.entries) {
-      for (final (theme, data) in [
-        ('light', PostinoTheme.light()),
-        ('dark', PostinoTheme.dark()),
-      ]) {
-        testWidgets('$name shows it with keyboard focus ($theme)', (
-          tester,
-        ) async {
+      for (final (theme, data) in [('light', PostinoTheme.light()), ('dark', PostinoTheme.dark())]) {
+        testWidgets('$name shows it with keyboard focus ($theme)', (tester) async {
           await tester.pumpWidget(
             _app(
               Scaffold(body: Center(child: widget)),
@@ -251,9 +208,7 @@ void main() {
     }
   });
 
-  testWidgets('a composer field marks its focus on the hairline', (
-    tester,
-  ) async {
+  testWidgets('a composer field marks its focus on the hairline', (tester) async {
     await tester.pumpWidget(_app(Scaffold(body: _composer())));
     final c = PostinoTheme.light().extension<PostinoColors>()!;
     BorderSide bottom() =>
@@ -303,37 +258,19 @@ void main() {
         labels: const ['Fatture e ricevute del condominio', 'Casa'],
         messages: [_message(expanded: false), _message()],
       ),
-      'action bar': PostinoActionBar(
+      'action bar': const PostinoActionBar(
         children: [
           PostinoButton(label: 'Rispondi', onPressed: _noop),
-          PostinoButton(
-            label: 'Rispondi a tutti',
-            variant: PostinoButtonVariant.ghost,
-            onPressed: _noop,
-          ),
-          PostinoButton(
-            label: 'Inoltra',
-            variant: PostinoButtonVariant.ghost,
-            onPressed: _noop,
-          ),
+          PostinoButton(label: 'Rispondi a tutti', variant: PostinoButtonVariant.ghost, onPressed: _noop),
+          PostinoButton(label: 'Inoltra', variant: PostinoButtonVariant.ghost, onPressed: _noop),
         ],
       ),
       'drawer': _drawer,
-      'label chip': const Wrap(
-        children: [
-          PostinoLabelChip(
-            name: 'Fatture e ricevute del condominio di via Roma',
-          ),
-        ],
-      ),
+      'label chip': const Wrap(children: [PostinoLabelChip(name: 'Fatture e ricevute del condominio di via Roma')]),
       'composer': _composer(),
-      'fab': Align(
+      'fab': const Align(
         alignment: Alignment.bottomRight,
-        child: PostinoFab(
-          label: 'Scrivi un nuovo messaggio',
-          icon: PostinoIcons.pencil,
-          onPressed: _noop,
-        ),
+        child: PostinoFab(label: 'Scrivi un nuovo messaggio', icon: PostinoIcons.pencil, onPressed: _noop),
       ),
     };
     for (final MapEntry(key: name, value: body) in screens.entries) {
@@ -363,16 +300,12 @@ void main() {
                 // Avatar and AccountMark initials are decorative, at a fixed size.
                 (p) =>
                     p.textScaler != TextScaler.noScaling &&
-                    (p.didExceedMaxLines ||
-                        p.overflow == TextOverflow.ellipsis),
+                    (p.didExceedMaxLines || p.overflow == TextOverflow.ellipsis),
               )
               .map((p) => p.text.toPlainText());
           expect(cut, isEmpty);
           // The bar grew around its wrapped title.
-          expect(
-            tester.getSize(find.byType(AppBar)).height,
-            greaterThan(PostinoSize.appBarHeight),
-          );
+          expect(tester.getSize(find.byType(AppBar)).height, greaterThan(PostinoSize.appBarHeight));
         });
       }
     }
@@ -381,23 +314,15 @@ void main() {
       await tester.pumpWidget(
         _app(
           const PostinoSinglePaneLayout(
-            appBar: PostinoAppBar(
-              title: 'Posta unificata',
-              subtitle: '2 account',
-            ),
+            appBar: PostinoAppBar(title: 'Posta unificata', subtitle: '2 account'),
             body: SizedBox(),
           ),
         ),
       );
-      expect(
-        tester.getSize(find.byType(AppBar)).height,
-        PostinoSize.appBarHeight,
-      );
+      expect(tester.getSize(find.byType(AppBar)).height, PostinoSize.appBarHeight);
     });
 
-    testWidgets('a very long title does not overflow nor cover the body', (
-      tester,
-    ) async {
+    testWidgets('a very long title does not overflow nor cover the body', (tester) async {
       tester.view
         ..physicalSize = const Size(390, 2400)
         ..devicePixelRatio = 1;

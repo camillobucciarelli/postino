@@ -45,14 +45,7 @@ class _PostaLayoutState extends State<PostaLayout> {
     final own = Routefly.of(context).route.uri.path;
     final uri = Routefly.currentUri;
     // Built from the URI, not from Routefly.query, so the outgoing view keeps its own params while it fades out.
-    final PostaRoute(
-      :list,
-      :open,
-      :draft,
-      :detail,
-      :accountId,
-      :labelId,
-    ) = PostaRoute.parse(
+    final PostaRoute(:list, :open, :draft, :detail, :accountId, :labelId) = PostaRoute.parse(
       uri,
       isLayout: Routefly.currentOriginalPath == own,
       last: _list,
@@ -82,8 +75,7 @@ class _PostaLayoutState extends State<PostaLayout> {
     return OnboardingGate(
       child: FutureBuilder<(bool?, double?)>(
         future: _saved,
-        builder: (context, saved) =>
-            saved.connectionState != ConnectionState.done
+        builder: (context, saved) => saved.connectionState != ConnectionState.done
             ? const SizedBox.shrink()
             : PostaShortcuts(
                 cursor: _cursor,
@@ -92,8 +84,7 @@ class _PostaLayoutState extends State<PostaLayout> {
                   closeLabel: context.t.sidebar.close,
                   openLabel: context.t.sidebar.open,
                   expanded: saved.data!.$1,
-                  onExpandedChanged:
-                      GetIt.I<SettingsRepository>().setSidebarExpanded,
+                  onExpandedChanged: GetIt.I<SettingsRepository>().setSidebarExpanded,
                   child: PostinoFadeThrough(
                     transitionKey: list,
                     child: PostinoListDetailLayout(
@@ -103,39 +94,16 @@ class _PostaLayoutState extends State<PostaLayout> {
                         GetIt.I<SettingsRepository>().setListWidth(w);
                       },
                       resizeLabel: context.t.listWidth.label,
-                      resizeValueLabel: (w) =>
-                          context.t.listWidth.value(px: w.round()),
+                      resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
                       list: switch ((accountId, labelId)) {
-                        (final a?, draftLabelId) => postaDraftsView(
-                          a,
-                          selected: detail,
-                          cursor: _cursor,
-                        ),
-                        (final a?, sentLabelId) => postaSentView(
-                          a,
-                          selected: open,
-                          cursor: _cursor,
-                        ),
-                        (final a?, final l?) => postaLabelView(
-                          a,
-                          l,
-                          selected: open,
-                          cursor: _cursor,
-                        ),
-                        (final a?, null) => postaAccountView(
-                          a,
-                          selected: open,
-                          cursor: _cursor,
-                        ),
+                        (final a?, draftLabelId) => postaDraftsView(a, selected: detail, cursor: _cursor),
+                        (final a?, sentLabelId) => postaSentView(a, selected: open, cursor: _cursor),
+                        (final a?, final l?) => postaLabelView(a, l, selected: open, cursor: _cursor),
+                        (final a?, null) => postaAccountView(a, selected: open, cursor: _cursor),
                         _ => postaUnifiedView(selected: open, cursor: _cursor),
                       },
                       detail: draft != null
-                          ? postaComposerView(
-                              draft.$1,
-                              draft.$2,
-                              onClose: back,
-                              onQueued: queued,
-                            )
+                          ? postaComposerView(draft.$1, draft.$2, onClose: back, onQueued: queued)
                           : open == null
                           ? null
                           : postaConversationView(

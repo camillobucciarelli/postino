@@ -48,8 +48,7 @@ class FakeHarness implements ContractHarness {
   @override
   void deliverDraft(OutgoingMessage d) => fake.deliverDraft(d);
   @override
-  void attach(String messageId, String name, List<int> bytes) =>
-      fake.attach(messageId, name, bytes);
+  void attach(String messageId, String name, List<int> bytes) => fake.attach(messageId, name, bytes);
 }
 
 T _ok<T>(Result<T> r) => switch (r) {
@@ -73,10 +72,7 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.incrementalSync('0'),
         await h.provider.setRead(['a'], read: true),
       ]) {
-        expect(
-          r,
-          isA<Err>().having((e) => e.failure, 'failure', isA<AuthFailure>()),
-        );
+        expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
     });
 
@@ -88,10 +84,7 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.fetchConversation('t-a'),
         await h.provider.setRead(['a'], read: true),
       ]) {
-        expect(
-          r,
-          isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
-        );
+        expect(r, isA<Err>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
     });
   });
@@ -134,36 +127,24 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       expect(batch.cursor, isNotEmpty);
     });
 
-    test(
-      'initial sync brings Etichette, Conversazioni and only the inbox bodies',
-      () async {
-        h.deliver(msg('a', isRead: true, isStarred: true));
-        h.deliver(msg('s', labelIds: const ['SENT']));
-        final batch = _ok(await h.provider.initialSync());
-        expect(batch.labels.map((l) => (l.id, l.name)), [
-          ('Label_12', 'Viaggi'),
-        ]);
-        final a = batch.messages.singleWhere((m) => m.id == 'a');
-        expect(a.conversationId, 't-a');
-        expect(a.labelIds, contains(inboxLabelId));
-        expect((a.isRead, a.isStarred), (true, true));
-        expect(a.messageId, '<a@example.com>');
-        expect(a.from, 'ada@example.com');
-        expect(a.subject, 'Oggetto');
-        expect(a.date, DateTime.utc(2026, 1, 1));
-        expect(batch.bodies.keys, ['a']);
-      },
-    );
+    test('initial sync brings Etichette, Conversazioni and only the inbox bodies', () async {
+      h.deliver(msg('a', isRead: true, isStarred: true));
+      h.deliver(msg('s', labelIds: const ['SENT']));
+      final batch = _ok(await h.provider.initialSync());
+      expect(batch.labels.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')]);
+      final a = batch.messages.singleWhere((m) => m.id == 'a');
+      expect(a.conversationId, 't-a');
+      expect(a.labelIds, contains(inboxLabelId));
+      expect((a.isRead, a.isStarred), (true, true));
+      expect(a.messageId, '<a@example.com>');
+      expect(a.from, 'ada@example.com');
+      expect(a.subject, 'Oggetto');
+      expect(a.date, DateTime.utc(2026));
+      expect(batch.bodies.keys, ['a']);
+    });
 
     test('the sender name and the Cc come back with the message', () async {
-      h.deliver(
-        msg(
-          'a',
-          from: 'ada@example.com',
-          fromName: 'Ada Okafor',
-          cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org'],
-        ),
-      );
+      h.deliver(msg('a', fromName: 'Ada Okafor', cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org']));
       final a = _ok(await h.provider.initialSync()).messages.single;
       expect((a.from, a.fromName), ('ada@example.com', 'Ada Okafor'));
       expect(a.cc, ['Marco Lenti <marco@example.com>', 'carla@example.org']);
@@ -189,17 +170,14 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       expect((a.id, a.isRead, a.isStarred), ('a', true, true));
     });
 
-    test(
-      'a message removed remotely shows up as removed and moves the cursor',
-      () async {
-        h.deliver(msg('a'));
-        final first = _ok(await h.provider.initialSync());
-        h.removeRemotely('a');
-        final next = _ok(await h.provider.incrementalSync(first.cursor));
-        expect(next.removedMessageIds, ['a']);
-        expect(next.cursor, isNot(first.cursor));
-      },
-    );
+    test('a message removed remotely shows up as removed and moves the cursor', () async {
+      h.deliver(msg('a'));
+      final first = _ok(await h.provider.initialSync());
+      h.removeRemotely('a');
+      final next = _ok(await h.provider.incrementalSync(first.cursor));
+      expect(next.removedMessageIds, ['a']);
+      expect(next.cursor, isNot(first.cursor));
+    });
 
     test('the delta reduces each message to its final state', () async {
       h.deliver(msg('a'));
@@ -218,20 +196,14 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       final first = _ok(await h.provider.initialSync());
       h.deliver(msg('b'));
       h.expireCursors();
-      expect(
-        await h.provider.incrementalSync(first.cursor),
-        _err<NotFoundFailure>(),
-      );
+      expect(await h.provider.incrementalSync(first.cursor), _err<NotFoundFailure>());
     });
 
-    test(
-      'fetches a body on request and NotFound for an unknown message',
-      () async {
-        h.deliver(msg('a'));
-        expect(_ok(await h.provider.fetchBody('a')).content, isNotEmpty);
-        expect(await h.provider.fetchBody('zzz'), _err<NotFoundFailure>());
-      },
-    );
+    test('fetches a body on request and NotFound for an unknown message', () async {
+      h.deliver(msg('a'));
+      expect(_ok(await h.provider.fetchBody('a')).content, isNotEmpty);
+      expect(await h.provider.fetchBody('zzz'), _err<NotFoundFailure>());
+    });
 
     test('fetches every message of a Conversazione, Inviati too', () async {
       h.deliver(msg('a', conversationId: 't'));
@@ -253,14 +225,13 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
   });
 }
 
-OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) =>
-    OutgoingMessage(
-      messageId: messageId,
-      from: 'me@example.com',
-      to: const ['b@example.com'],
-      subject: 's',
-      body: body,
-    );
+OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) => OutgoingMessage(
+  messageId: messageId,
+  from: 'me@example.com',
+  to: const ['b@example.com'],
+  subject: 's',
+  body: body,
+);
 
 /// The Bozze part of the contract (#35): create, update by Message-ID, delete, and Bozze written elsewhere.
 void mailProviderDraftContract(String name, ContractHarness Function() create) {
@@ -271,75 +242,46 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
     test('a saved Bozza can be updated by its Message-ID', () async {
       final d = _draft('<x@example.com>');
       _ok(await h.provider.saveDraft(d, isNew: true));
-      _ok(
-        await h.provider.saveDraft(
-          _draft('<x@example.com>', body: '<p>Seconda</p>'),
-          isNew: false,
-        ),
-      );
+      _ok(await h.provider.saveDraft(_draft('<x@example.com>', body: '<p>Seconda</p>'), isNew: false));
       final m = _ok(await h.provider.initialSync()).messages.single;
       expect(m.messageId, '<x@example.com>');
-      expect(
-        _ok(await h.provider.fetchBody(m.id)).content.trim(),
-        '<p>Seconda</p>',
-      );
+      expect(_ok(await h.provider.fetchBody(m.id)).content.trim(), '<p>Seconda</p>');
     });
 
     test('updating a Bozza never saved is NotFound', () async {
-      expect(
-        await h.provider.saveDraft(_draft('<nope@example.com>'), isNew: false),
-        _err<NotFoundFailure>(),
-      );
+      expect(await h.provider.saveDraft(_draft('<nope@example.com>'), isNew: false), _err<NotFoundFailure>());
     });
 
-    test(
-      'deleting a Bozza twice is NotFound the second time; so is updating it',
-      () async {
-        final d = _draft('<x@example.com>');
-        _ok(await h.provider.saveDraft(d, isNew: true));
-        _ok(await h.provider.deleteDraft(d.messageId));
-        expect(
-          await h.provider.deleteDraft(d.messageId),
-          _err<NotFoundFailure>(),
-        );
-        expect(
-          await h.provider.saveDraft(d, isNew: false),
-          _err<NotFoundFailure>(),
-        );
-      },
-    );
+    test('deleting a Bozza twice is NotFound the second time; so is updating it', () async {
+      final d = _draft('<x@example.com>');
+      _ok(await h.provider.saveDraft(d, isNew: true));
+      _ok(await h.provider.deleteDraft(d.messageId));
+      expect(await h.provider.deleteDraft(d.messageId), _err<NotFoundFailure>());
+      expect(await h.provider.saveDraft(d, isNew: false), _err<NotFoundFailure>());
+    });
 
-    test(
-      'a Bozza written elsewhere syncs as a DRAFT message with its body',
-      () async {
-        h.deliverDraft(
-          OutgoingMessage(
-            messageId: '<y@example.com>',
-            from: 'me@example.com',
-            to: const ['b@example.com'],
-            bcc: const ['dee@example.com'],
-            subject: 's',
-            body: '<p>Da altrove</p>',
-          ),
-        );
-        final m = _ok(await h.provider.initialSync()).messages.single;
-        expect(m.labelIds, ['DRAFT']);
-        expect(m.messageId, '<y@example.com>');
-        expect(m.bcc, ['dee@example.com']);
-        expect(
-          _ok(await h.provider.fetchBody(m.id)).content,
-          '<p>Da altrove</p>',
-        );
-      },
-    );
+    test('a Bozza written elsewhere syncs as a DRAFT message with its body', () async {
+      h.deliverDraft(
+        const OutgoingMessage(
+          messageId: '<y@example.com>',
+          from: 'me@example.com',
+          to: ['b@example.com'],
+          bcc: ['dee@example.com'],
+          subject: 's',
+          body: '<p>Da altrove</p>',
+        ),
+      );
+      final m = _ok(await h.provider.initialSync()).messages.single;
+      expect(m.labelIds, ['DRAFT']);
+      expect(m.messageId, '<y@example.com>');
+      expect(m.bcc, ['dee@example.com']);
+      expect(_ok(await h.provider.fetchBody(m.id)).content, '<p>Da altrove</p>');
+    });
   });
 }
 
 /// Attachments (#34): listed with the body, downloaded one at a time.
-void mailProviderAttachmentContract(
-  String name,
-  ContractHarness Function() create,
-) {
+void mailProviderAttachmentContract(String name, ContractHarness Function() create) {
   group('MailProvider attachment contract: $name', () {
     late ContractHarness h;
     setUp(() => h = create());
@@ -349,25 +291,13 @@ void mailProviderAttachmentContract(
       h.attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'));
       h.attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
       final body = _ok(await h.provider.fetchBody('a'));
-      expect(body.attachments!.map((a) => (a.name, a.size)), [
-        ('Preventivo.pdf', 19),
-        ('foto.jpg', 4),
-      ]);
+      expect(body.attachments!.map((a) => (a.name, a.size)), [('Preventivo.pdf', 19), ('foto.jpg', 4)]);
 
       final progress = <double>[];
-      final pdf = _ok(
-        await h.provider.fetchAttachment(
-          'a',
-          body.attachments!.first.id,
-          onProgress: progress.add,
-        ),
-      );
+      final pdf = _ok(await h.provider.fetchAttachment('a', body.attachments!.first.id, onProgress: progress.add));
       expect(utf8.decode(pdf), '%PDF-1.4 preventivo');
       expect(progress.last, 1);
-      expect(
-        _ok(await h.provider.fetchAttachment('a', body.attachments!.last.id)),
-        [0xFF, 0xD8, 0xFF, 0xE0],
-      );
+      expect(_ok(await h.provider.fetchAttachment('a', body.attachments!.last.id)), [0xFF, 0xD8, 0xFF, 0xE0]);
     });
 
     test('an unknown attachment is NotFound', () async {
@@ -392,7 +322,7 @@ void mailProviderSendContract(String name, ContractHarness Function() create) {
     late ContractHarness h;
     setUp(() => h = create());
     final d = _draft('<x@example.com>');
-    final raw = renderMime(d, DateTime.utc(2026, 1, 1));
+    final raw = renderMime(d, DateTime.utc(2026));
 
     test('the sent message arrives with label SENT at the next sync', () async {
       final id = _ok(await h.provider.send(d.messageId, raw));
@@ -403,27 +333,18 @@ void mailProviderSendContract(String name, ContractHarness Function() create) {
       expect(m.subject, 's');
     });
 
-    test(
-      'sending the same Message-ID twice leaves one message in SENT',
-      () async {
-        final first = _ok(await h.provider.send(d.messageId, raw));
-        expect(_ok(await h.provider.send(d.messageId, raw)), first);
-        final sent = _ok(await h.provider.initialSync()).messages
-            .where((m) => m.labelIds.contains(sentLabelId));
-        expect(sent.map((m) => m.messageId), [d.messageId]);
-      },
-    );
+    test('sending the same Message-ID twice leaves one message in SENT', () async {
+      final first = _ok(await h.provider.send(d.messageId, raw));
+      expect(_ok(await h.provider.send(d.messageId, raw)), first);
+      final sent = _ok(await h.provider.initialSync()).messages.where((m) => m.labelIds.contains(sentLabelId));
+      expect(sent.map((m) => m.messageId), [d.messageId]);
+    });
 
     test('the Bozza holding the Message-ID is gone after the send', () async {
       _ok(await h.provider.saveDraft(d, isNew: true));
       _ok(await h.provider.send(d.messageId, raw));
-      expect(
-        await h.provider.deleteDraft(d.messageId),
-        _err<NotFoundFailure>(),
-      );
-      final labels = _ok(await h.provider.initialSync()).messages
-          .map((m) => m.labelIds)
-          .expand((l) => l);
+      expect(await h.provider.deleteDraft(d.messageId), _err<NotFoundFailure>());
+      final labels = _ok(await h.provider.initialSync()).messages.map((m) => m.labelIds).expand((l) => l);
       expect(labels, [sentLabelId]);
     });
 

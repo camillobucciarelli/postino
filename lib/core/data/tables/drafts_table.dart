@@ -31,8 +31,7 @@ class Drafts extends Table {
   TextColumn get inReplyTo => text().nullable()();
   TextColumn get references => text().nullable()();
   TextColumn get conversationId => text().nullable()();
-  TextColumn get attachments =>
-      text().map(const ForwardedAttachmentsConverter()).nullable()();
+  TextColumn get attachments => text().map(const ForwardedAttachmentsConverter()).nullable()();
 
   /// Milliseconds since epoch, UTC.
   IntColumn get updatedAt => integer()();
@@ -45,8 +44,7 @@ class Drafts extends Table {
 }
 
 /// [ForwardedAttachment]s as JSON: the [AttachmentsConverter] shape plus `sourceMessageId`.
-class ForwardedAttachmentsConverter
-    extends TypeConverter<List<ForwardedAttachment>, String> {
+class ForwardedAttachmentsConverter extends TypeConverter<List<ForwardedAttachment>, String> {
   const ForwardedAttachmentsConverter();
 
   static const _inner = AttachmentsConverter();
@@ -54,10 +52,7 @@ class ForwardedAttachmentsConverter
   @override
   List<ForwardedAttachment> fromSql(String fromDb) => [
     for (final a in jsonDecode(fromDb) as List)
-      ForwardedAttachment(
-        a['sourceMessageId'] as String,
-        _inner.fromSql(jsonEncode([a])).single,
-      ),
+      ForwardedAttachment(a['sourceMessageId'] as String, _inner.fromSql(jsonEncode([a])).single),
   ];
 
   @override

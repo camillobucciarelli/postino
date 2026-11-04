@@ -11,11 +11,7 @@ final _prefixes = RegExp(r'^\s*(re|r|fwd|fw|i)\s*:', caseSensitive: false);
 /// [subject] without its leading `Re:`, `R:`, `Fwd:`, `Fw:` and `I:` prefixes (any case, repeated), trimmed.
 String _bare(String subject) {
   var s = subject;
-  for (
-    var m = _prefixes.firstMatch(s);
-    m != null;
-    m = _prefixes.firstMatch(s)
-  ) {
+  for (var m = _prefixes.firstMatch(s); m != null; m = _prefixes.firstMatch(s)) {
     s = s.substring(m.end);
   }
   return s.trim();
@@ -50,10 +46,7 @@ List<String> replyRecipients(Message m, {required String self}) {
 /// original Cc, both without the Account's own address ([self]) and without duplicates by address
 /// (first occurrence wins, a mailbox in both stays in `to`). When [self] empties `to` (a reply to one's
 /// own message), `to` is the original To.
-({List<String> to, List<String> cc}) replyAllRecipients(
-  Message m, {
-  required String self,
-}) {
+({List<String> to, List<String> cc}) replyAllRecipients(Message m, {required String self}) {
   final seen = {self.toLowerCase()};
   var to = _unique([?m.replyTo, _from(m), ...m.to], seen);
   if (to.isEmpty) to = _unique(m.to, seen..clear());
@@ -70,21 +63,13 @@ String _who(Message m) {
 
 /// The original message quoted under a reply, Gmail-style: an attribution line, then the original HTML
 /// in a `<blockquote>`. [bodyHtml] is HTML already (a plain-text body goes through [plainToHtml] first).
-String quoteHtml(
-  Message original, {
-  required String dateLabel,
-  required String bodyHtml,
-}) =>
+String quoteHtml(Message original, {required String dateLabel, required String bodyHtml}) =>
     '<div class="postino-quote"><p>Il giorno ${_esc(dateLabel)} ${_who(original)} '
     'ha scritto:</p><blockquote>$bodyHtml</blockquote></div>';
 
 /// The original message under a forward, Gmail-style: the `---------- Messaggio inoltrato ----------`
 /// block with Da, Data, Oggetto, A (and Cc when there is one), then the original HTML, not quoted.
-String forwardHeaderHtml(
-  Message original, {
-  required String dateLabel,
-  required String bodyHtml,
-}) {
+String forwardHeaderHtml(Message original, {required String dateLabel, required String bodyHtml}) {
   final lines = [
     'Da: ${_who(original)}',
     'Data: ${_esc(dateLabel)}',
@@ -120,9 +105,7 @@ OutgoingMessage buildReply({
     to: to,
     cc: cc,
     subject: replySubject(original.subject),
-    body:
-        _blank +
-        quoteHtml(original, dateLabel: dateLabel, bodyHtml: originalHtml),
+    body: _blank + quoteHtml(original, dateLabel: dateLabel, bodyHtml: originalHtml),
     inReplyTo: id.isEmpty ? null : id,
     references: {...original.references, if (id.isNotEmpty) id}.toList(),
     conversationId: original.conversationId,
@@ -143,10 +126,6 @@ OutgoingMessage buildForward({
   from: self,
   to: const [],
   subject: forwardSubject(original.subject),
-  body:
-      _blank +
-      forwardHeaderHtml(original, dateLabel: dateLabel, bodyHtml: originalHtml),
-  attachments: [
-    for (final a in attachments) ForwardedAttachment(original.id, a),
-  ],
+  body: _blank + forwardHeaderHtml(original, dateLabel: dateLabel, bodyHtml: originalHtml),
+  attachments: [for (final a in attachments) ForwardedAttachment(original.id, a)],
 );

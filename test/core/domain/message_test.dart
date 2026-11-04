@@ -43,7 +43,7 @@ void main() {
 
   group('value equality (#94)', () {
     test('Attachment', () {
-      expectValueEquality(() => _attachment(), [
+      expectValueEquality(_attachment, [
         _attachment(id: 'p2'),
         _attachment(name: 'b.pdf'),
         _attachment(size: 4),
@@ -61,7 +61,7 @@ void main() {
     });
 
     test('Message', () {
-      expectValueEquality(() => _message(), [
+      expectValueEquality(_message, [
         _message(id: '2'),
         _message(messageId: '<2@x.it>'),
         _message(conversationId: 'c2'),
@@ -86,28 +86,19 @@ void main() {
         String content = 'x',
         BodyKind kind = BodyKind.html,
         List<Attachment>? attachments = const [],
-      }) => MessageBody(
-        content,
-        kind,
-        attachments: attachments == null
-            ? null
-            : [_attachment(), ...attachments],
-      );
-      expectValueEquality(() => body(), [
+      }) => MessageBody(content, kind, attachments: attachments == null ? null : [_attachment(), ...attachments]);
+      expectValueEquality(body, [
         body(content: 'y'),
         body(kind: BodyKind.testo),
         body(attachments: [_attachment(id: 'p2')]),
-        MessageBody('x', BodyKind.html, attachments: null),
+        const MessageBody('x', BodyKind.html, attachments: null),
       ]);
     });
 
     test('Conversation', () {
-      Conversation c({
-        String id = 'c1',
-        String accountId = 'a1',
-        List<String> ids = const ['1', '2'],
-      }) => Conversation(id: id, accountId: accountId, messageIds: [...ids]);
-      expectValueEquality(() => c(), [
+      Conversation c({String id = 'c1', String accountId = 'a1', List<String> ids = const ['1', '2']}) =>
+          Conversation(id: id, accountId: accountId, messageIds: [...ids]);
+      expectValueEquality(c, [
         c(id: 'c2'),
         c(accountId: 'a2'),
         c(ids: ['1', '3']),
@@ -115,7 +106,7 @@ void main() {
     });
 
     test('OutgoingMessage', () {
-      expectValueEquality(() => _outgoing(), [
+      expectValueEquality(_outgoing, [
         _outgoing(messageId: '<3@x.it>'),
         _outgoing(from: 'z@x.it'),
         _outgoing(to: ['c@x.it']),
@@ -126,9 +117,7 @@ void main() {
         _outgoing(inReplyTo: '<0@x.it>'),
         _outgoing(references: ['<0@x.it>']),
         _outgoing(conversationId: 'c9'),
-        _outgoing(
-          attachments: [ForwardedAttachment('1', _attachment(id: 'p2'))],
-        ),
+        _outgoing(attachments: [ForwardedAttachment('1', _attachment(id: 'p2'))]),
       ]);
     });
 
@@ -203,9 +192,5 @@ OutgoingMessage _outgoing({
   attachments: attachments ?? [ForwardedAttachment('1', _attachment())],
 );
 
-Attachment _attachment({
-  String id = 'p1',
-  String name = 'a.pdf',
-  int size = 3,
-  String? mimeType,
-}) => Attachment(id: id, name: name, size: size, mimeType: mimeType);
+Attachment _attachment({String id = 'p1', String name = 'a.pdf', int size = 3, String? mimeType}) =>
+    Attachment(id: id, name: name, size: size, mimeType: mimeType);

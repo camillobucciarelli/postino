@@ -60,8 +60,7 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
     super.dispose();
   }
 
-  double _clamp(double v) =>
-      v.clamp(widget.min, widget.max < widget.min ? widget.min : widget.max);
+  double _clamp(double v) => v.clamp(widget.min, widget.max < widget.min ? widget.min : widget.max);
 
   void _step(double delta) => widget.onChangeEnd(_clamp(widget.value + delta));
 
@@ -76,8 +75,7 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
       widget.onChangeEnd(widget.min);
     } else if (key == LogicalKeyboardKey.end) {
       widget.onChangeEnd(_clamp(widget.max));
-    } else if (key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.arrowDown) {
+    } else if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown) {
       // Not ours, but not the list's either: they stop here.
       return KeyEventResult.handled;
     } else {
@@ -122,12 +120,8 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
         container: true,
         label: widget.label,
         value: widget.valueLabel(widget.value),
-        increasedValue: widget.valueLabel(
-          _clamp(widget.value + PostinoSize.listWidthStep),
-        ),
-        decreasedValue: widget.valueLabel(
-          _clamp(widget.value - PostinoSize.listWidthStep),
-        ),
+        increasedValue: widget.valueLabel(_clamp(widget.value + PostinoSize.listWidthStep)),
+        decreasedValue: widget.valueLabel(_clamp(widget.value - PostinoSize.listWidthStep)),
         onIncrease: () => _step(PostinoSize.listWidthStep),
         onDecrease: () => _step(-PostinoSize.listWidthStep),
         child: MouseRegion(
@@ -150,13 +144,9 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                      width: active
-                          ? PostinoBorder.borderWidthFocus
-                          : PostinoBorder.borderWidthHairline,
+                      width: active ? PostinoBorder.borderWidthFocus : PostinoBorder.borderWidthHairline,
                       height: double.infinity,
-                      child: ColoredBox(
-                        color: active ? c.borderStrong : c.borderSubtle,
-                      ),
+                      child: ColoredBox(color: active ? c.borderStrong : c.borderSubtle),
                     ),
                     SizedBox(
                       width: PostinoSize.resizeGripWidth,
@@ -164,9 +154,7 @@ class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: c.borderStrong,
-                          borderRadius: BorderRadius.circular(
-                            PostinoRadius.full,
-                          ),
+                          borderRadius: BorderRadius.circular(PostinoRadius.full),
                         ),
                       ),
                     ),

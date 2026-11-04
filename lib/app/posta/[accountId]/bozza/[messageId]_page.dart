@@ -14,14 +14,10 @@ class DraftPage extends StatelessWidget {
   Widget build(BuildContext context) => postaComposerView(
     Routefly.query['accountId'],
     Routefly.query['messageId'],
-    onClose: () => Routefly.navigate(
-      routePaths.posta.$accountId.path.changes({
-        'accountId': Routefly.query['accountId'],
-      }),
-    ),
+    onClose: () =>
+        Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': Routefly.query['accountId']})),
     // Never drawn: PostaLayout draws the composer itself, with Annulla invio; here the composer just closes.
-    onQueued: (accountId, _, _) => Routefly.navigate(
-      routePaths.posta.$accountId.path.changes({'accountId': accountId}),
-    ),
+    onQueued: (accountId, _, _) =>
+        Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': accountId})),
   );
 }

@@ -17,7 +17,7 @@ GoogleGrant _grant({
 
 void main() {
   test('GoogleGrant compares by value (#94)', () {
-    expectValueEquality(() => _grant(), [
+    expectValueEquality(_grant, [
       _grant(address: 'b@x.it'),
       _grant(accessToken: 'other'),
       _grant(refreshToken: 'other'),

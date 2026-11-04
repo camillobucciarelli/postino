@@ -14,41 +14,33 @@ void main() {
   });
   tearDown(() => dir.deleteSync(recursive: true));
 
-  Future<void> insertAccount(PostinoDatabase db) => db.customStatement(
-    "INSERT INTO accounts VALUES ('a1', 'a@example.com', 'gmail', 1, 0, 'attivo')",
-  );
+  Future<void> insertAccount(PostinoDatabase db) =>
+      db.customStatement("INSERT INTO accounts VALUES ('a1', 'a@example.com', 'gmail', 1, 0, 'attivo')");
   Future<int> accounts(PostinoDatabase db) async =>
-      (await db.customSelect('SELECT count(*) AS n FROM accounts').getSingle())
-          .read<int>('n');
+      (await db.customSelect('SELECT count(*) AS n FROM accounts').getSingle()).read<int>('n');
 
-  test(
-    'the file is encrypted and reopens with the key kept in the keychain',
-    () async {
-      final keychain = FakeSecureStore();
-      final db = await PostinoDatabase.open(path, keychain);
-      await insertAccount(db);
-      await db.close();
+  test('the file is encrypted and reopens with the key kept in the keychain', () async {
+    final keychain = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, keychain);
+    await insertAccount(db);
+    await db.close();
 
-      expect(
-        File(path).readAsBytesSync().sublist(0, 15),
-        isNot('SQLite format 3'.codeUnits),
-        reason: 'a plain SQLite file starts with its magic header',
-      );
-      final again = await PostinoDatabase.open(path, keychain);
-      expect(await accounts(again), 1);
-      await again.close();
-    },
-  );
+    expect(
+      File(path).readAsBytesSync().sublist(0, 15),
+      isNot('SQLite format 3'.codeUnits),
+      reason: 'a plain SQLite file starts with its magic header',
+    );
+    final again = await PostinoDatabase.open(path, keychain);
+    expect(await accounts(again), 1);
+    await again.close();
+  });
 
   test('without the keychain key the file cannot be read', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
     await insertAccount(db);
     await db.close();
 
-    expect(
-      () => PostinoDatabase.open(path, FakeSecureStore()),
-      throwsA(anything),
-    );
+    expect(() => PostinoDatabase.open(path, FakeSecureStore()), throwsA(anything));
   });
 
   test('deleted content is overwritten (secure_delete)', () async {

@@ -17,24 +17,12 @@ void main() {
       expect(forwardSubject('  '), 'Fwd:');
     });
 
-    test(
-      'every leading prefix of the five kinds goes, any case, also repeated',
-      () {
-        for (final s in [
-          'Re: x',
-          'RE:x',
-          'R: x',
-          'Fwd: x',
-          'FW: x',
-          'I: x',
-          'RE: R: Fwd:  x',
-          ' re:x',
-        ]) {
-          expect(replySubject(s), 'Re: x', reason: s);
-          expect(forwardSubject(s), 'Fwd: x', reason: s);
-        }
-      },
-    );
+    test('every leading prefix of the five kinds goes, any case, also repeated', () {
+      for (final s in ['Re: x', 'RE:x', 'R: x', 'Fwd: x', 'FW: x', 'I: x', 'RE: R: Fwd:  x', ' re:x']) {
+        expect(replySubject(s), 'Re: x', reason: s);
+        expect(forwardSubject(s), 'Fwd: x', reason: s);
+      }
+    });
 
     test('a prefix inside the subject stays', () {
       expect(replySubject('Report: x'), 'Re: Report: x');
@@ -44,53 +32,29 @@ void main() {
 
   group('recipients', () {
     test('a reply goes to the sender with its name, Reply-To wins', () {
-      final m = msg('m', from: 'ada@example.com', fromName: 'Ada');
+      final m = msg('m', fromName: 'Ada');
       expect(replyRecipients(m, self: _self), ['Ada <ada@example.com>']);
-      final r = msg(
-        'm',
-        from: 'ada@example.com',
-        fromName: 'Ada',
-        replyTo: 'list@example.com',
-      );
+      final r = msg('m', fromName: 'Ada', replyTo: 'list@example.com');
       expect(replyRecipients(r, self: _self), ['list@example.com']);
     });
 
     test('a reply to all keeps the sender and the To in to, the Cc in cc, without self', () {
-      final m = msg(
-        'm',
-        from: 'ada@example.com',
-        to: ['Me <ME@example.com>', 'bruno@example.com'],
-        cc: ['carla@example.com', _self],
-      );
+      final m = msg('m', to: ['Me <ME@example.com>', 'bruno@example.com'], cc: ['carla@example.com', _self]);
       final r = replyAllRecipients(m, self: _self);
       expect(r.to, ['ada@example.com', 'bruno@example.com']);
       expect(r.cc, ['carla@example.com']);
     });
 
     test('a reply to all keeps both the Reply-To and the sender in to, Reply-To first', () {
-      final m = msg(
-        'm',
-        from: 'ada@example.com',
-        replyTo: 'list@example.com',
-        to: ['bruno@example.com'],
-      );
-      expect(replyAllRecipients(m, self: _self).to, [
-        'list@example.com',
-        'ada@example.com',
-        'bruno@example.com',
-      ]);
+      final m = msg('m', replyTo: 'list@example.com', to: ['bruno@example.com']);
+      expect(replyAllRecipients(m, self: _self).to, ['list@example.com', 'ada@example.com', 'bruno@example.com']);
     });
 
     test('duplicates by address go, first occurrence wins, to before cc', () {
       final m = msg(
         'm',
-        from: 'ada@example.com',
         fromName: 'Ada',
-        to: [
-          'Ada Okafor <ada@example.com>',
-          'bruno@example.com',
-          'Bruno <BRUNO@example.com>',
-        ],
+        to: ['Ada Okafor <ada@example.com>', 'bruno@example.com', 'Bruno <BRUNO@example.com>'],
         cc: ['bruno@example.com', 'carla@example.com'],
       );
       final r = replyAllRecipients(m, self: _self);
@@ -99,12 +63,7 @@ void main() {
     });
 
     test('a reply to all of one\'s own message goes to its recipients', () {
-      final m = msg(
-        'm',
-        from: _self,
-        to: ['bruno@example.com'],
-        cc: ['carla@example.com'],
-      );
+      final m = msg('m', from: _self, to: ['bruno@example.com'], cc: ['carla@example.com']);
       final r = replyAllRecipients(m, self: _self);
       expect(r.to, ['bruno@example.com']);
       expect(r.cc, ['carla@example.com']);
@@ -116,13 +75,9 @@ void main() {
 
   group('quote', () {
     test('attribution line with name and address escaped, the HTML in a blockquote', () {
-      final m = msg('m', from: 'ada@example.com', fromName: 'Ada & C. <x>');
+      final m = msg('m', fromName: 'Ada & C. <x>');
       expect(
-        quoteHtml(
-          m,
-          dateLabel: '1 gen 2026 alle ore 10:00',
-          bodyHtml: '<p>Ciao <b>tu</b></p>',
-        ),
+        quoteHtml(m, dateLabel: '1 gen 2026 alle ore 10:00', bodyHtml: '<p>Ciao <b>tu</b></p>'),
         '<div class="postino-quote"><p>Il giorno 1 gen 2026 alle ore 10:00 '
         'Ada &amp; C. &lt;x&gt; &lt;ada@example.com&gt; ha scritto:</p>'
         '<blockquote><p>Ciao <b>tu</b></p></blockquote></div>',
@@ -130,52 +85,31 @@ void main() {
     });
 
     test('a nameless sender is just the address', () {
-      final m = msg('m', from: 'ada@example.com');
-      expect(
-        quoteHtml(m, dateLabel: 'd', bodyHtml: ''),
-        contains(' ada@example.com ha scritto:'),
-      );
+      final m = msg('m');
+      expect(quoteHtml(m, dateLabel: 'd', bodyHtml: ''), contains(' ada@example.com ha scritto:'));
     });
 
     test('a plain-text original is converted before being quoted', () {
       final m = msg('m');
-      final html = quoteHtml(
-        m,
-        dateLabel: 'd',
-        bodyHtml: plainToHtml('a < b\n\nc'),
-      );
-      expect(
-        html,
-        contains('<blockquote><p>a &lt; b</p><p>c</p></blockquote>'),
-      );
+      final html = quoteHtml(m, dateLabel: 'd', bodyHtml: plainToHtml('a < b\n\nc'));
+      expect(html, contains('<blockquote><p>a &lt; b</p><p>c</p></blockquote>'));
     });
   });
 
   test('the forward header lists Da, Data, Oggetto, A and Cc, then the HTML unquoted', () {
-    final m = msg(
-      'm',
-      from: 'ada@example.com',
-      fromName: 'Ada',
-      to: ['Me <me@example.com>'],
-      cc: ['carla@example.com'],
-      subject: 'Oggetto <1>',
-    );
+    final m = msg('m', fromName: 'Ada', to: ['Me <me@example.com>'], cc: ['carla@example.com'], subject: 'Oggetto <1>');
     expect(
       forwardHeaderHtml(m, dateLabel: 'd', bodyHtml: '<p>x</p>'),
       '<div class="postino-forward"><p>---------- Messaggio inoltrato ----------'
       '<br>Da: Ada &lt;ada@example.com&gt;<br>Data: d<br>Oggetto: Oggetto &lt;1&gt;'
       '<br>A: Me &lt;me@example.com&gt;<br>Cc: carla@example.com</p><p>x</p></div>',
     );
-    expect(
-      forwardHeaderHtml(msg('m'), dateLabel: 'd', bodyHtml: ''),
-      isNot(contains('Cc:')),
-    );
+    expect(forwardHeaderHtml(msg('m'), dateLabel: 'd', bodyHtml: ''), isNot(contains('Cc:')));
   });
 
   group('buildReply', () {
     final original = msg(
       'm',
-      from: 'ada@example.com',
       to: [_self, 'bruno@example.com'],
       cc: ['carla@example.com'],
       subject: 'Re: Caffè',
@@ -199,11 +133,11 @@ void main() {
         OutgoingMessage(
           messageId: '<new@example.com>',
           from: _self,
-          to: ['ada@example.com'],
+          to: const ['ada@example.com'],
           subject: 'Re: Caffè',
           body: r.body,
           inReplyTo: '<m@example.com>',
-          references: ['<a@example.com>', '<m@example.com>'],
+          references: const ['<a@example.com>', '<m@example.com>'],
           conversationId: 't-1',
         ),
       );
@@ -250,18 +184,9 @@ void main() {
   });
 
   test('buildForward: no recipients, Fwd: subject, header block, attachments taken over, not threaded', () {
-    const pdf = Attachment(
-      id: '1',
-      name: 'a.pdf',
-      size: 3,
-      mimeType: 'application/pdf',
-    );
+    const pdf = Attachment(id: '1', name: 'a.pdf', size: 3, mimeType: 'application/pdf');
     final f = buildForward(
-      original: msg(
-        'm',
-        subject: 'Fwd: Caffè',
-        references: ['<a@example.com>'],
-      ),
+      original: msg('m', subject: 'Fwd: Caffè', references: ['<a@example.com>']),
       originalHtml: '<p>x</p>',
       self: _self,
       messageId: '<new@example.com>',

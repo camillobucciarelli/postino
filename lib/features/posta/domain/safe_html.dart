@@ -28,51 +28,24 @@ const _dropped = {
 const _resourceAttributes = {'src', 'srcset', 'background', 'poster'};
 
 /// Attributes that navigate: checked for `javascript:`.
-const _urlAttributes = {
-  'href',
-  'src',
-  'action',
-  'formaction',
-  'background',
-  'poster',
-  'xlink:href',
-};
+const _urlAttributes = {'href', 'src', 'action', 'formaction', 'background', 'poster', 'xlink:href'};
 
 final _remote = RegExp(r'^\s*(https?:)?//', caseSensitive: false);
 
 /// Some candidate of a `src` or `srcset` is remote.
 final _anyRemote = RegExp(r'(^|,)\s*(https?:)?//', caseSensitive: false);
 final _pixels = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*$');
-final _cssUrl = RegExp(
-  r'''url\(\s*(['"]?)([^'")]*)\1\s*\)''',
-  caseSensitive: false,
-);
-final _cssImport = RegExp(
-  r'''@import\s+(url\()?\s*['"]?\s*(https?:)?//[^;]*;?''',
-  caseSensitive: false,
-);
-final _cssWidth = RegExp(
-  r'(?:^|[;\s{])(?:min-)?width\s*:\s*(\d+(?:\.\d+)?)px',
-  caseSensitive: false,
-);
+final _cssUrl = RegExp(r'''url\(\s*(['"]?)([^'")]*)\1\s*\)''', caseSensitive: false);
+final _cssImport = RegExp(r'''@import\s+(url\()?\s*['"]?\s*(https?:)?//[^;]*;?''', caseSensitive: false);
+final _cssWidth = RegExp(r'(?:^|[;\s{])(?:min-)?width\s*:\s*(\d+(?:\.\d+)?)px', caseSensitive: false);
 
 final _cellWidth = RegExp(r'^\s*(min-|max-)?width\s*:', caseSensitive: false);
-final _tablePercent = RegExp(
-  r'^\s*width\s*:\s*\d+(\.\d+)?%\s*(!important)?\s*$',
-  caseSensitive: false,
-);
+final _tablePercent = RegExp(r'^\s*width\s*:\s*\d+(\.\d+)?%\s*(!important)?\s*$', caseSensitive: false);
 
 /// A table with a row of 2+ cells of its own (nested tables don't count).
 bool _multiColumn(Element table) => table
     .querySelectorAll('tr')
-    .any(
-      (r) =>
-          _tableOf(r) == table &&
-          r.children
-                  .where((c) => c.localName == 'td' || c.localName == 'th')
-                  .length >
-              1,
-    );
+    .any((r) => _tableOf(r) == table && r.children.where((c) => c.localName == 'td' || c.localName == 'th').length > 1);
 
 Element? _tableOf(Element e) {
   for (var p = e.parent; p != null; p = p.parent) {
@@ -92,8 +65,7 @@ final _percent = RegExp(r'^\s*\d+(\.\d+)?%\s*$');
 final _cssWidthDecl = RegExp(r'(^|;)\s*width\s*:', caseSensitive: false);
 
 /// [style] without the declarations matching [drop].
-String _without(String style, RegExp drop) =>
-    style.split(';').where((d) => !drop.hasMatch(d)).join(';');
+String _without(String style, RegExp drop) => style.split(';').where((d) => !drop.hasMatch(d)).join(';');
 
 /// The declarations that make a table a card: they move to a wrapping `<div>`.
 final _box = RegExp(
@@ -114,20 +86,14 @@ void _boxTables(Document doc) {
   for (final t in doc.querySelectorAll('table')) {
     final style = t.attributes['style'] ?? '';
     final width =
-        RegExp(
-          r'(?:^|;)\s*width\s*:\s*([^;]*)',
-          caseSensitive: false,
-        ).firstMatch(style)?[1] ??
-        t.attributes['width'];
+        RegExp(r'(?:^|;)\s*width\s*:\s*([^;]*)', caseSensitive: false).firstMatch(style)?[1] ?? t.attributes['width'];
     if (!_hasBox.hasMatch(style) ||
-        (width != null &&
-            !RegExp(r'^\s*100(\.0+)?%\s*(!important)?\s*$').hasMatch(width))) {
+        (width != null && !RegExp(r'^\s*100(\.0+)?%\s*(!important)?\s*$').hasMatch(width))) {
       continue;
     }
     final decls = style.split(';');
     t.attributes['style'] = decls.where((d) => !_box.hasMatch(d)).join(';');
-    final div = Element.tag('div')
-      ..attributes['style'] = decls.where(_box.hasMatch).join(';');
+    final div = Element.tag('div')..attributes['style'] = decls.where(_box.hasMatch).join(';');
     // A quote/signature marker goes with the card, or splitHtml would take the bare table.
     final marker = [...quoteSelectors, ...signatureSelectors].join(',');
     if (t.parent!.querySelectorAll(marker).contains(t)) {
@@ -146,12 +112,8 @@ void _boxTables(Document doc) {
 bool _hidden(String style) {
   String? value;
   var important = false;
-  for (final d
-      in style.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').split(';')) {
-    final m = RegExp(
-      r'^\s*display\s*:\s*(.*?)\s*(!\s*important)?\s*$',
-      caseSensitive: false,
-    ).firstMatch(d);
+  for (final d in style.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').split(';')) {
+    final m = RegExp(r'^\s*display\s*:\s*(.*?)\s*(!\s*important)?\s*$', caseSensitive: false).firstMatch(d);
     if (m == null) continue;
     final imp = m[2] != null;
     if (important && !imp) continue;
@@ -178,22 +140,17 @@ void _patchFwfh(Document doc) {
     if (bg != null) e.attributes['style'] = 'background-color:$bg;$style';
     // fwfh ignores cell `height`, and `height:` in CSS is rigid: `min-height` is not.
     final h = e.attributes['height'];
-    if ((e.localName == 'td' || e.localName == 'th') &&
-        h != null &&
-        _pixels.hasMatch(h)) {
+    if ((e.localName == 'td' || e.localName == 'th') && h != null && _pixels.hasMatch(h)) {
       final px = _pixels.firstMatch(h)![1];
       // First, so an explicit inline min-height still wins.
-      e.attributes['style'] =
-          'min-height:${px}px;${e.attributes['style'] ?? ''}';
+      e.attributes['style'] = 'min-height:${px}px;${e.attributes['style'] ?? ''}';
     }
   }
 }
 
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
-bool _script(String url) => RegExp(
-  r'^(javascript|vbscript):',
-  caseSensitive: false,
-).hasMatch(url.replaceAll(RegExp(r'[\x00-\x20]'), ''));
+bool _script(String url) =>
+    RegExp('^(javascript|vbscript):', caseSensitive: false).hasMatch(url.replaceAll(RegExp(r'[\x00-\x20]'), ''));
 
 /// Cleans [html] and, unless [allowRemote], blocks every remote (http, https, `//`) resource:
 /// `src`/`srcset`/`background`, CSS `url(...)` and `@import` in `style` attributes and `<style>`
@@ -239,8 +196,7 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
     for (final key in e.attributes.keys.toList()) {
       final name = key.toString().toLowerCase();
       final value = e.attributes[key]!;
-      if (name.startsWith('on') ||
-          (_urlAttributes.contains(name) && _script(value))) {
+      if (name.startsWith('on') || (_urlAttributes.contains(name) && _script(value))) {
         e.attributes.remove(key);
       } else if (name == 'style') {
         for (final m in _cssWidth.allMatches(value)) {
@@ -254,17 +210,14 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
         // the table shrinks to its content.
         final cell = tag == 'td' || tag == 'th';
         final strip = cell || (tag == 'table' && _multiColumn(e));
-        e.attributes[key] = css(
-          strip ? _without(value, cell ? _cellWidth : _tablePercent) : value,
-        );
+        e.attributes[key] = css(strip ? _without(value, cell ? _cellWidth : _tablePercent) : value);
       } else if (name == 'width') {
         // fwfh ignores the attribute on a table: a one-column one gets it as style.
         if (tag == 'table' &&
             _percent.hasMatch(value) &&
             !_multiColumn(e) &&
             !_cssWidthDecl.hasMatch(e.attributes['style'] ?? '')) {
-          e.attributes['style'] =
-              'width:${value.trim()};${e.attributes['style'] ?? ''}';
+          e.attributes['style'] = 'width:${value.trim()};${e.attributes['style'] ?? ''}';
         }
         if (_pixels.firstMatch(value) case final m?) {
           width = _max(width, double.parse(m[1]!));
@@ -288,9 +241,7 @@ double _max(double? a, double b) => a == null || b > a ? b : a;
 /// [value] if it may load: `data:` always, remote only when [allowRemote]; anything else (`cid:`,
 /// `file:`, relative) never. A `srcset` loads if every candidate may.
 String? _keep(String value, bool srcset, bool allowRemote) {
-  bool ok(String url) =>
-      url.trimLeft().toLowerCase().startsWith('data:') ||
-      (allowRemote && _remote.hasMatch(url));
+  bool ok(String url) => url.trimLeft().toLowerCase().startsWith('data:') || (allowRemote && _remote.hasMatch(url));
   if (!srcset) return ok(value) ? value : null;
   // ponytail: a data: URL holding a comma splits wrongly here; such srcsets just stay blocked.
   return value.split(',').every(ok) ? value : null;

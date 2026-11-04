@@ -13,13 +13,7 @@ import 'package:postino/features/posta/domain/reply_source.dart';
 
 import '../../support/fake_mail_provider.dart' show msg;
 
-const _account = Account(
-  id: 'a1',
-  address: 'a1@example.com',
-  provider: ProviderKind.gmail,
-  color: 0,
-  position: 0,
-);
+const _account = Account(id: 'a1', address: 'a1@example.com', provider: ProviderKind.gmail, color: 0, position: 0);
 
 /// fetchBody answers [fetched] (or fails without it); saveDraft records the Bozza.
 class _Sync extends Fake implements MailSync {
@@ -34,16 +28,12 @@ class _Sync extends Fake implements MailSync {
     fetches.add(messageId);
     final b = fetched;
     if (b == null) return const Err(OfflineFailure());
-    inbox.rows = [
-      for (final r in inbox.rows)
-        r.message.id == messageId ? (message: r.message, body: b) : r,
-    ];
+    inbox.rows = [for (final r in inbox.rows) r.message.id == messageId ? (message: r.message, body: b) : r];
     return const Ok(null);
   }
 
   @override
-  Future<void> saveDraft(String accountId, OutgoingMessage draft) async =>
-      drafts.add(draft);
+  Future<void> saveDraft(String accountId, OutgoingMessage draft) async => drafts.add(draft);
 }
 
 class _Inbox extends Fake implements InboxRepository {
@@ -51,10 +41,7 @@ class _Inbox extends Fake implements InboxRepository {
   List<ConversationMessage> rows;
 
   @override
-  Stream<List<ConversationMessage>> watchConversation(
-    String accountId,
-    String conversationId,
-  ) => Stream.value(rows);
+  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId) => Stream.value(rows);
 }
 
 const _pdf = Attachment(id: 'p', name: 'a.pdf', size: 10);
@@ -74,7 +61,6 @@ List<ConversationMessage> _thread({MessageBody? lastBody}) => [
     message: msg(
       'm2',
       conversationId: 't',
-      from: 'ada@example.com',
       to: ['a1@example.com', 'carla@example.com'],
       subject: 'Re: Cena',
       snippet: 'Alle 20',
@@ -97,31 +83,25 @@ void main() {
   Future<ReplySource> source(ReplyKind kind, {String? messageId}) =>
       useCase.source('a1', 't', inbox.rows, kind, messageId: messageId);
 
-  test(
-    'Rispondi answers the last message by default, quoting its body',
-    () async {
-      given(lastBody: const MessageBody('<p>Alle 20</p>', BodyKind.html));
-      final s = await source(ReplyKind.reply);
-      expect(s.message.id, 'm2');
-      expect(sync.fetches, isEmpty);
-      final id = await useCase.save(_account, s);
-      final d = sync.drafts.single;
-      expect(d.messageId, id);
-      expect(d.to, ['ada@example.com']);
-      expect(d.cc, isEmpty);
-      expect(d.subject, 'Re: Cena');
-      expect(d.inReplyTo, '<m2@example.com>');
-      expect(d.body, contains('<p>Alle 20</p>'));
-      expect(d.body, contains('ha scritto:'));
-    },
-  );
+  test('Rispondi answers the last message by default, quoting its body', () async {
+    given(lastBody: const MessageBody('<p>Alle 20</p>', BodyKind.html));
+    final s = await source(ReplyKind.reply);
+    expect(s.message.id, 'm2');
+    expect(sync.fetches, isEmpty);
+    final id = await useCase.save(_account, s);
+    final d = sync.drafts.single;
+    expect(d.messageId, id);
+    expect(d.to, ['ada@example.com']);
+    expect(d.cc, isEmpty);
+    expect(d.subject, 'Re: Cena');
+    expect(d.inReplyTo, '<m2@example.com>');
+    expect(d.body, contains('<p>Alle 20</p>'));
+    expect(d.body, contains('ha scritto:'));
+  });
 
   test('Rispondi a tutti answers everyone but the Account', () async {
     given(lastBody: const MessageBody('Alle 20', BodyKind.testo));
-    await useCase.save(
-      _account,
-      await source(ReplyKind.replyAll, messageId: 'm1'),
-    );
+    await useCase.save(_account, await source(ReplyKind.replyAll, messageId: 'm1'));
     final d = sync.drafts.single;
     expect(d.to, ['bruno@example.com', 'carla@example.com']);
     expect(d.cc, isEmpty);
@@ -144,37 +124,24 @@ void main() {
     expect(sync.drafts.single.body, contains('Alle 20'));
   });
 
-  test(
-    'Inoltra takes the attachments over, re-downloading a body without them',
-    () async {
-      given(
-        lastBody: const MessageBody(
-          'Alle 20',
-          BodyKind.testo,
-          attachments: null,
-        ),
-        fetched: const MessageBody(
-          'Alle 20',
-          BodyKind.testo,
-          attachments: [_pdf],
-        ),
-      );
-      final s = await source(ReplyKind.forward);
-      expect(sync.fetches, ['m2']);
-      expect(s.unavailable, isFalse);
-      await useCase.save(_account, s);
-      final d = sync.drafts.single;
-      expect(d.to, isEmpty);
-      expect(d.subject, 'Fwd: Cena');
-      expect(d.attachments.single.sourceMessageId, 'm2');
-      expect(d.attachments.single.attachment.id, 'p');
-    },
-  );
-
-  test('Inoltra is unavailable when the attachments cannot be known', () async {
+  test('Inoltra takes the attachments over, re-downloading a body without them', () async {
     given(
       lastBody: const MessageBody('Alle 20', BodyKind.testo, attachments: null),
+      fetched: const MessageBody('Alle 20', BodyKind.testo, attachments: [_pdf]),
     );
+    final s = await source(ReplyKind.forward);
+    expect(sync.fetches, ['m2']);
+    expect(s.unavailable, isFalse);
+    await useCase.save(_account, s);
+    final d = sync.drafts.single;
+    expect(d.to, isEmpty);
+    expect(d.subject, 'Fwd: Cena');
+    expect(d.attachments.single.sourceMessageId, 'm2');
+    expect(d.attachments.single.attachment.id, 'p');
+  });
+
+  test('Inoltra is unavailable when the attachments cannot be known', () async {
+    given(lastBody: const MessageBody('Alle 20', BodyKind.testo, attachments: null));
     final s = await source(ReplyKind.forward);
     expect(s.unavailable, isTrue);
     expect(sync.drafts, isEmpty);

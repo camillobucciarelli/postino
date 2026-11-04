@@ -32,8 +32,7 @@ class KeychainStore implements SecureStore {
   Future<String?> read(String key) => _storage.read(key: key);
 
   @override
-  Future<void> write(String key, String value) =>
-      _storage.write(key: key, value: value);
+  Future<void> write(String key, String value) => _storage.write(key: key, value: value);
 }
 
 @Singleton(as: Clock, env: [Environment.prod])
@@ -56,31 +55,22 @@ class SystemConnectivity implements Connectivity {
   final _plus = plus.Connectivity();
   bool _online = true;
 
-  bool _update(List<plus.ConnectivityResult> r) =>
-      _online = r.any((c) => c != plus.ConnectivityResult.none);
+  bool _update(List<plus.ConnectivityResult> r) => _online = r.any((c) => c != plus.ConnectivityResult.none);
 
   @override
   bool get isOnline => _online;
 
   @override
-  Stream<bool> get onChanged =>
-      _plus.onConnectivityChanged.map(_update).distinct();
+  Stream<bool> get onChanged => _plus.onConnectivityChanged.map(_update).distinct();
 }
 
 @Singleton(as: LinkOpener, env: [Environment.prod])
 class SystemLinkOpener implements LinkOpener {
-  SystemLinkOpener()
-    : _launch = _launchExternal,
-      _openFile = _openFilex,
-      _platform = null;
+  SystemLinkOpener() : _launch = _launchExternal, _openFile = _openFilex, _platform = null;
 
   /// [platform] stands for [defaultTargetPlatform].
   @visibleForTesting
-  SystemLinkOpener.test({
-    required this._launch,
-    required this._openFile,
-    required TargetPlatform this._platform,
-  });
+  SystemLinkOpener.test({required this._launch, required this._openFile, required TargetPlatform this._platform});
 
   final Future<void> Function(Uri url) _launch;
   final Future<void> Function(String path) _openFile;
@@ -95,21 +85,16 @@ class SystemLinkOpener implements LinkOpener {
       _ => false,
     };
     // Defence in depth (#75): the Conversazione never asks, but an executable is never launched from here.
-    if (url.isScheme('file') &&
-        url.pathSegments.isNotEmpty &&
-        isExecutableName(url.pathSegments.last)) {
+    if (url.isScheme('file') && url.pathSegments.isNotEmpty && isExecutableName(url.pathSegments.last)) {
       return;
     }
     // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
-      await (url.isScheme('file') && mobile && !kIsWeb
-          ? _openFile(url.toFilePath())
-          : _launch(url));
+      await (url.isScheme('file') && mobile && !kIsWeb ? _openFile(url.toFilePath()) : _launch(url));
     } catch (_) {}
   }
 
-  static Future<void> _launchExternal(Uri url) =>
-      launchUrl(url, mode: LaunchMode.externalApplication);
+  static Future<void> _launchExternal(Uri url) => launchUrl(url, mode: LaunchMode.externalApplication);
 
   static Future<void> _openFilex(String path) => OpenFilex.open(path);
 }
@@ -121,9 +106,7 @@ class SystemFileSaver implements FileSaver {
   bool get available =>
       !kIsWeb &&
       switch (defaultTargetPlatform) {
-        TargetPlatform.macOS ||
-        TargetPlatform.windows ||
-        TargetPlatform.linux => true,
+        TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.linux => true,
         _ => false,
       };
 
@@ -142,12 +125,8 @@ abstract class AttachmentModule {
   Future<AttachmentStorage> attachmentStorage() async {
     const fs = LocalFileSystem();
     return AttachmentStorage.open(
-      fs.directory(
-        '${(await getApplicationSupportDirectory()).path}/attachments',
-      ),
-      fs.directory(
-        '${(await getTemporaryDirectory()).path}/postino-attachments',
-      ),
+      fs.directory('${(await getApplicationSupportDirectory()).path}/attachments'),
+      fs.directory('${(await getTemporaryDirectory()).path}/postino-attachments'),
     );
   }
 }

@@ -23,20 +23,11 @@ class SyncBatch extends Equatable {
   final Map<String, MessageBody> bodies;
 
   @override
-  List<Object?> get props => [
-    cursor,
-    messages,
-    labels,
-    removedMessageIds,
-    bodies,
-  ];
+  List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies];
 }
 
 /// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.
-typedef SyncPage = Future<void> Function(
-  List<Message> messages,
-  Map<String, MessageBody> bodies,
-);
+typedef SyncPage = Future<void> Function(List<Message> messages, Map<String, MessageBody> bodies);
 
 /// What the change signal reports: it came [up], something [changed], or it went [down].
 /// While it is down the sync engine falls back to polling (ADR 0008).

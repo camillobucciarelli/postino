@@ -10,6 +10,5 @@ class ReplySource {
 
   /// Inoltra needs the attachments too: unknown when the body could not be downloaded
   /// (or was stored before database v9 and could not be downloaded again).
-  bool get unavailable =>
-      kind == ReplyKind.forward && body?.attachments == null;
+  bool get unavailable => kind == ReplyKind.forward && body?.attachments == null;
 }

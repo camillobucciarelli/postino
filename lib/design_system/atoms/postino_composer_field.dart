@@ -44,16 +44,11 @@ class _PostinoComposerFieldState extends State<PostinoComposerField> {
     return ListenableBuilder(
       listenable: _focus,
       builder: (context, _) => Container(
-        constraints: const BoxConstraints(
-          minHeight: PostinoSize.touchTargetAndroid,
-        ),
+        constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
         decoration: BoxDecoration(
           border: Border(
             bottom: _focus.hasFocus
-                ? BorderSide(
-                    color: c.inputBorderFocus,
-                    width: PostinoBorder.borderWidthFocus,
-                  )
+                ? BorderSide(color: c.inputBorderFocus, width: PostinoBorder.borderWidthFocus)
                 : BorderSide(color: c.composerFieldDivider),
           ),
         ),
@@ -69,10 +64,7 @@ class _PostinoComposerFieldState extends State<PostinoComposerField> {
                     Semantics(
                       label: widget.label,
                       child: ExcludeSemantics(
-                        child: Text(
-                          widget.label,
-                          style: PostinoText.label.copyWith(color: c.inkMuted),
-                        ),
+                        child: Text(widget.label, style: PostinoText.label.copyWith(color: c.inkMuted)),
                       ),
                     ),
                     Expanded(
@@ -86,9 +78,7 @@ class _PostinoComposerFieldState extends State<PostinoComposerField> {
                         // No box: the row's hairline is the only border.
                         decoration: const InputDecoration(
                           isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: PostinoSpacing.s3,
-                          ),
+                          contentPadding: EdgeInsets.symmetric(vertical: PostinoSpacing.s3),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,

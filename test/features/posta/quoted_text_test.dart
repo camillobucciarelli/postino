@@ -10,14 +10,11 @@ import 'package:postino/features/posta/domain/safe_html.dart';
 
 import '../../support/value_equality.dart';
 
-String _fixture(String name) =>
-    File('test/fixtures/quote/$name').readAsStringSync();
+String _fixture(String name) => File('test/fixtures/quote/$name').readAsStringSync();
 
-BodyParts _html(String name) =>
-    splitHtml(prepareHtml(_fixture(name), allowRemote: false).html);
+BodyParts _html(String name) => splitHtml(prepareHtml(_fixture(name), allowRemote: false).html);
 
-String _text(String? html) =>
-    htmlText(html ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+String _text(String? html) => htmlText(html ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
 
 void main() {
   group('quote', () {
@@ -31,20 +28,14 @@ void main() {
 
     test('Apple Mail: blockquote type=cite, its header inside', () {
       final p = _html('apple_mail.html');
-      expect(
-        _text(p.quote),
-        contains('Bruno Verdi <bruno@example.com> wrote:'),
-      );
+      expect(_text(p.quote), contains('Bruno Verdi <bruno@example.com> wrote:'));
       expect(_text(p.quote), contains('Ti va una cena venerdì?'));
       expect(_text(p.body), 'Va bene, ci vediamo alle 20.');
     });
 
     test('Thunderbird: moz-cite-prefix and blockquote type=cite together', () {
       final p = _html('thunderbird.html');
-      expect(
-        _text(p.quote),
-        startsWith('On 28/10/26 10:00, Bruno Verdi wrote:'),
-      );
+      expect(_text(p.quote), startsWith('On 28/10/26 10:00, Bruno Verdi wrote:'));
       expect(_text(p.quote), contains('Ti va una cena venerdì?'));
       expect(_text(p.body), 'Confermo, porto io il vino.');
     });
@@ -57,9 +48,7 @@ void main() {
     });
 
     test('Outlook: an address as text after the header stays escaped', () {
-      final p = splitHtml(
-        '<p>Ok</p><div id="divRplyFwdMsg">Da:</div>Ada &lt;ada@example.com&gt;',
-      );
+      final p = splitHtml('<p>Ok</p><div id="divRplyFwdMsg">Da:</div>Ada &lt;ada@example.com&gt;');
       expect(p.quote, contains('&lt;ada@example.com&gt;'));
       expect(_text(p.quote), contains('<ada@example.com>'));
     });
@@ -69,10 +58,7 @@ void main() {
           '<html><head><title>Oggetto segreto</title><style>p{color:red}</style></head>'
           '<body><p>Ok</p><div class="gmail_quote">Citato</div>'
           '<div class="gmail_signature">Firma</div></body></html>';
-      for (final p in [
-        splitHtml(raw),
-        splitHtml(prepareHtml(raw, allowRemote: false).html),
-      ]) {
+      for (final p in [splitHtml(raw), splitHtml(prepareHtml(raw, allowRemote: false).html)]) {
         for (final part in [p.body, p.quote, p.signature]) {
           expect(part, isNotNull);
           expect(part, isNot(contains('Oggetto segreto')));
@@ -83,19 +69,13 @@ void main() {
 
     test('Yahoo: yahoo_quoted', () {
       final p = _html('yahoo.html');
-      expect(
-        _text(p.quote),
-        contains('Bruno Verdi <bruno@example.com> ha scritto:'),
-      );
+      expect(_text(p.quote), contains('Bruno Verdi <bruno@example.com> ha scritto:'));
       expect(_text(p.body), 'Perfetto, a venerdì!');
     });
 
     test('plain text: the trailing > block and the header line before it', () {
       final p = splitText(_fixture('plain_reply.txt'));
-      expect(
-        p.quote,
-        startsWith('Il giorno mar 27 ott 2026 alle ore 09:12 Bruno Verdi\n'),
-      );
+      expect(p.quote, startsWith('Il giorno mar 27 ott 2026 alle ore 09:12 Bruno Verdi\n'));
       expect(p.quote, endsWith('> Bruno'));
       expect(p.quote, contains('> > Avevamo detto giovedì.'));
       expect(p.body, 'Va bene, alle 20 da Mario.');
@@ -107,11 +87,7 @@ void main() {
       expect(p.body, '> Ti va una cena?\n\nSì, alle 20.');
     });
 
-    for (final name in [
-      'gmail_forward.html',
-      'apple_forward.html',
-      'outlook_forward.html',
-    ]) {
+    for (final name in ['gmail_forward.html', 'apple_forward.html', 'outlook_forward.html']) {
       test('a forward is never a quote: $name', () {
         final p = _html(name);
         expect(p.quote, isNull);
@@ -141,10 +117,7 @@ void main() {
 
     test('a reply folds its quote behind «…», the rest shows', () {
       final shown = foldBody(_html('gmail_reply.html'), repeated: false);
-      expect(
-        _text(shown.body),
-        'Ciao Giulia, ti giro il PDF firmato dal cliente.',
-      );
+      expect(_text(shown.body), 'Ciao Giulia, ti giro il PDF firmato dal cliente.');
       expect(_text(shown.folded), startsWith('Il giorno mar 14 ott'));
     });
   });
@@ -152,10 +125,7 @@ void main() {
   group('signature', () {
     test('Gmail: gmail_signature, without its «-- » prefix in the body', () {
       final p = _html('gmail_reply.html');
-      expect(
-        _text(p.signature),
-        'Ada Okafor Okafor Legal · Via Dante 12, Milano',
-      );
+      expect(_text(p.signature), 'Ada Okafor Okafor Legal · Via Dante 12, Milano');
       expect(_text(p.body), isNot(contains('--')));
     });
 
@@ -186,9 +156,7 @@ void main() {
     });
 
     test('the same signature in HTML and text normalizes the same', () {
-      final html = splitHtml(
-        '<p>Ciao</p><div class="gmail_signature">Ada  Okafor<br>Okafor Legal</div>',
-      );
+      final html = splitHtml('<p>Ciao</p><div class="gmail_signature">Ada  Okafor<br>Okafor Legal</div>');
       final text = splitText('Ciao\n-- \nAda Okafor\nOkafor Legal');
       expect(html.signatureKey, text.signatureKey);
     });
@@ -197,15 +165,12 @@ void main() {
       final first = splitText('Ciao\n-- \nAda Okafor');
       final again = splitText('A presto\n-- \nAda  Okafor ');
       final other = splitText('Ok\n-- \nBruno');
-      expect(
-        repeatedSignatures([
-          first.signatureKey,
-          null,
-          other.signatureKey,
-          again.signatureKey,
-        ]),
-        [false, false, false, true],
-      );
+      expect(repeatedSignatures([first.signatureKey, null, other.signatureKey, again.signatureKey]), [
+        false,
+        false,
+        false,
+        true,
+      ]);
       final shown = foldBody(first, repeated: false);
       expect((shown.signature, shown.folded), ('-- \nAda Okafor', null));
       final folded = foldBody(again, repeated: true);
@@ -248,14 +213,8 @@ void main() {
       bool bodyVisible = true,
       String? signature = 's',
       String? quote = 'q',
-    }) => BodyParts(
-      original: original,
-      body: body,
-      bodyVisible: bodyVisible,
-      signature: signature,
-      quote: quote,
-    );
-    expectValueEquality(() => parts(), [
+    }) => BodyParts(original: original, body: body, bodyVisible: bodyVisible, signature: signature, quote: quote);
+    expectValueEquality(parts, [
       parts(original: 'x'),
       parts(body: 'x'),
       parts(bodyVisible: false),

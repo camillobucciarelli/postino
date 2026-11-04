@@ -6,15 +6,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:get_it/get_it.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/file_name.dart';
 import '../../../core/domain/file_size.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/result.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/draft_html.dart';
@@ -45,7 +46,7 @@ class ComposerView extends StatefulWidget {
   State<ComposerView> createState() => _ComposerViewState();
 }
 
-class _ComposerViewState extends State<ComposerView> {
+class _ComposerViewState extends State<ComposerView> with AccountsSignal {
   final _sync = GetIt.I<MailSync>();
   final _to = TextEditingController();
   final _cc = TextEditingController();
@@ -63,7 +64,7 @@ class _ComposerViewState extends State<ComposerView> {
   bool _failed = false;
   bool _withAttachments = false;
   bool _isReply = false;
-  List<Account> _accounts = const [];
+  List<Account> get _accounts => accounts.value.value ?? const [];
 
   /// The Account the Bozza leaves from: changeable until the first save.
   // ponytail: moving a Bozza between Accounts comes if needed.
@@ -76,11 +77,6 @@ class _ComposerViewState extends State<ComposerView> {
   @override
   void initState() {
     super.initState();
-    _subs.add(
-      GetIt.I<AccountsRepository>().watchAccounts().listen(
-        (a) => setState(() => _accounts = a),
-      ),
-    );
     unawaited(_open());
   }
 
@@ -204,7 +200,9 @@ class _ComposerViewState extends State<ComposerView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SignalBuilder(builder: _content);
+
+  Widget _content(BuildContext context) {
     final t = context.t.composizione;
     final controller = _controller;
     final narrow =

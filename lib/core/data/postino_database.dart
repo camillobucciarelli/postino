@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -11,6 +10,7 @@ import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
+import 'attachment_crypto.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/bodies_dao.dart';
 import 'daos/device_settings_dao.dart';
@@ -116,8 +116,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 
   static Future<String> _readOrCreateKey(SecureStore keychain) async {
     if (await keychain.read(_keyName) case final key?) return key;
-    final random = Random.secure();
-    final key = [for (var i = 0; i < 32; i++) random.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
+    final key = hex(randomBytes(32));
     await keychain.write(_keyName, key);
     return key;
   }

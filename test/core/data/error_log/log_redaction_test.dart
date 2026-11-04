@@ -18,7 +18,7 @@ void main() {
     r"{'password': 'pre fix\'SECRET'}": "{'password': '[redatto]'}",
     r'{"token": "a b\\\"SECRET c"}': '{"token": "[redatto]"}',
     '{"Authorization": "Bearer SECRET"}': '{"Authorization": "[redatto]"}',
-    r'{"body":"{\"refresh_token\":\"SEC,RET\"}"}': r'{"body":"{\"refresh_token\":\"[redatto]\"}"}',
+    r'{"body":"{\"refresh_token\":\"SEC,RET\"}"}': r'{"body":"{\"refresh_token\":\"[redatto]\""}',
     'password=SECRET&x=1': 'password=[redatto]&x=1',
     "client_secret='SEC RET' next": "client_secret='[redatto]' next",
     '{password: first SECRET, user: u}': '{password: [redatto], user: u}',
@@ -26,6 +26,20 @@ void main() {
     r'a1 LOGIN "u" "pa\"SECRET"': 'a1 LOGIN [redatto]',
     'msg "Bearer SECRET" end': 'msg "Bearer [redatto]" end',
     "msg 'x Bearer SECRET' end": "msg 'x Bearer [redatto]' end",
+    // JSON inside a JSON string, the password with a quote: the rest of the outer string goes, its quote stays.
+    r'{"body":"{\"password\":\"prefix\\\"SECRET\"}"}': r'{"body":"{\"password\":\"[redatto]\""}',
+    r'password=\SECRET': 'password=[redatto]',
+    // Cut short (a FormatException shows ~78 characters of its source).
+    '{"password":"prefixSECRET': '{"password":"[redatto]',
+    'password="hunter2SECRET': 'password="[redatto]',
+    // Unquoted inside a quoted string or parentheses: the closer stays, a quote or comma inside the value does not.
+    'msg "password=SECRET" end': 'msg "password=[redatto]" end',
+    '{"err":"password=SECRET","user":"u@x.it"}': '{"err":"password=[redatto]","user":"u@x.it"}',
+    'Exception(password=SECRET) at foo': 'Exception(password=[redatto]) at foo',
+    'password=ab"SECRET': 'password=[redatto]',
+    'password=a,SECRET': 'password=[redatto]',
+    'msg "a1 LOGIN u SECRET" end': 'msg "a1 LOGIN [redatto]" end',
+    'a1 LOGIN {4}\r\nuser {6}\r\nSECRET': 'a1 LOGIN [redatto]',
   };
   for (final MapEntry(key: input, value: expected) in table.entries) {
     test('no fragment survives: $input', () {

@@ -24,15 +24,18 @@ void main() {
   });
 
   test('an entry reads back decrypted, with time, context and stack; on disk it is not in clear', () async {
-    log().record(StateError('Oggetto «Fattura» rifiutato'), stack: StackTrace.fromString('#0 main'), context: 'sync');
+    log().record(StateError('Oggetto «Fattura» rifiutato'), stack: StackTrace.fromString('#0 main'), context: 'sync a');
 
     final text = await log().read();
     expect(text, contains('2026-11-04T09:00:00.000Z'));
-    expect(text, contains('[sync]'));
+    expect(text, contains('[sync a]'));
     expect(text, contains('Oggetto «Fattura» rifiutato'));
     expect(text, contains('#0 main'));
-    expect(disk(), isNot(contains('Fattura')));
-    expect(disk(), isNot(contains('sync')));
+    // Deterministic: «, spaces and # are never in base64, so any of these on disk means plain text.
+    expect(disk(), isNot(contains('«Fattura»')));
+    expect(disk(), isNot(contains('sync a')));
+    expect(disk(), isNot(contains('#0 main')));
+    expect(disk(), matches(RegExp(r'^[A-Za-z0-9+/=\n]+$')));
   });
 
   test('an UnexpectedFailure brings its own stack', () async {

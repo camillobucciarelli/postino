@@ -65,6 +65,15 @@ void main() {
     expect(await h.errorLog.read(), contains('[send a] RateLimitFailure'));
   });
 
+  test('a Bozza the Provider does not save ends up in the log', () async {
+    final engine = GetIt.I<SyncEngine>();
+    await engine.syncAll();
+    await engine.saveDraft('a', _message);
+    a.saveDraftFailure = const UnexpectedFailure('forwarded attachment gone');
+    await engine.flushDrafts('a');
+    expect(await h.errorLog.read(), contains('[draft replay a] UnexpectedFailure(forwarded attachment gone)'));
+  });
+
   test('offline is not an error: nothing in the log', () async {
     a.goOffline();
     await GetIt.I<SyncEngine>().syncAll();

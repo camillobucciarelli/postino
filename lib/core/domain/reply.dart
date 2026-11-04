@@ -62,7 +62,7 @@ String _who(Message m) {
 }
 
 /// The original message quoted under a reply, Gmail-style: an attribution line, then the original HTML
-/// in a `<blockquote>`. [bodyHtml] is HTML already (a plain-text body goes through [plainToHtml] first).
+/// in a `<blockquote>`. [bodyHtml] is HTML already (a plain-text body goes through `plainToHtml` first).
 String quoteHtml(Message original, {required String dateLabel, required String bodyHtml}) =>
     '<div class="postino-quote"><p>Il giorno ${_esc(dateLabel)} ${_who(original)} '
     'ha scritto:</p><blockquote>$bodyHtml</blockquote></div>';

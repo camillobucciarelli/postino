@@ -378,7 +378,7 @@ const _f2 = '18f3a2b4c5d6e7f2';
 const _f3 = '18f3a2b4c5d6e7f3';
 const _f4 = '18f3a2b4c5d6e7f4';
 
-/// Gmail answering each request with the recorded response [route] names.
+/// Gmail answering each request with the recorded response `route` names.
 class _Recorded {
   _Recorded(String Function(http.Request r, String path) route) {
     provider = GmailProvider(

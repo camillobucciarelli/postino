@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:postino/design_system/design_system.dart' show PostinoMessageBody, PostinoHtmlCard, PostinoMenu;
 
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_focus_ring.dart';
@@ -53,7 +52,7 @@ class PostinoThreadMessage extends StatefulWidget {
   final bool expanded;
   final VoidCallback onToggle;
 
-  /// Shown only when expanded: a [PostinoMessageBody].
+  /// Shown only when expanded: a `PostinoMessageBody`.
   final Widget body;
 
   /// “a me”, under the sender when expanded; with [details] it opens them.
@@ -64,7 +63,7 @@ class PostinoThreadMessage extends StatefulWidget {
   final List<Widget> notices;
   final bool unread;
 
-  /// Under the body, in `body-quote` `ink-muted` ([PostinoMessageBody.quiet], [PostinoHtmlCard.quiet]).
+  /// Under the body, in `body-quote` `ink-muted` (`PostinoMessageBody.quiet`, `PostinoHtmlCard.quiet`).
   final Widget? signature;
 
   /// The quoted text (and a signature seen before), hidden until «…» is tapped.
@@ -74,7 +73,7 @@ class PostinoThreadMessage extends StatefulWidget {
   /// At the bottom, wrapping.
   final List<PostinoAttachmentChip> attachments;
 
-  /// After the time, in the header: a [PostinoMenu] of the message's actions, say. Out of the selection.
+  /// After the time, in the header: a `PostinoMenu` of the message's actions, say. Out of the selection.
   final Widget? actions;
 
   @override

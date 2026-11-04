@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:postino/design_system/design_system.dart' show PostinoListDetailLayout;
 import 'package:postino/design_system/templates/postino_list_detail_layout.dart' show PostinoListDetailLayout;
 
 import '../organisms/postino_navigation_drawer.dart' show PostinoSidebarScope;

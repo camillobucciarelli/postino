@@ -1,8 +1,8 @@
 import 'inbox_repository.dart';
 import 'message.dart';
 
-/// An outbox row as the sender reads it (#36): [version] tags its preparation, [sendAfter] (ms since epoch, UTC)
-/// is when Annulla invio ends, [attempted] once a send was tried, [failed] when the Provider refused it for good.
+/// An outbox row as the sender reads it (#36): `version` tags its preparation, `sendAfter` (ms since epoch, UTC)
+/// is when Annulla invio ends, `attempted` once a send was tried, `failed` when the Provider refused it for good.
 typedef OutboxItem = ({
   String messageId,
   int version,
@@ -13,10 +13,10 @@ typedef OutboxItem = ({
   bool failed,
 });
 
-/// The local copy of a Bozza: [pending] while it has edits not on the Provider yet.
+/// The local copy of a Bozza: `pending` while it has edits not on the Provider yet.
 typedef LocalDraft = ({OutgoingMessage draft, bool pending, int updatedAt});
 
-/// A Bozza whose content is not on the Provider yet; [isNew] when it never was.
+/// A Bozza whose content is not on the Provider yet; `isNew` when it never was.
 typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt});
 
 /// The offline queue of what leaves the device (ADR 0008): the Bozze (#35) and the outbox (#36).

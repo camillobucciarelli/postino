@@ -174,7 +174,7 @@ class Message extends Equatable {
   final String from;
   final String? fromName;
 
-  /// `Name <address>` or a bare address each ([formatMailbox]).
+  /// `Name <address>` or a bare address each (`formatMailbox`).
   final List<String> to;
   final List<String> cc;
 
@@ -184,7 +184,7 @@ class Message extends Equatable {
   final String snippet;
   final DateTime date;
 
-  /// The `Reply-To` mailbox ([formatMailbox]), if the header is there: a reply goes to it instead of [from] (#37).
+  /// The `Reply-To` mailbox (`formatMailbox`), if the header is there: a reply goes to it instead of [from] (#37).
   final String? replyTo;
 
   /// The Message-IDs of the `References` header, oldest first (#37).

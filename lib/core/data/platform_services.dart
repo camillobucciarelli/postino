@@ -68,7 +68,7 @@ class SystemConnectivity implements Connectivity {
 class SystemLinkOpener implements LinkOpener {
   SystemLinkOpener() : _launch = _launchExternal, _openFile = _openFilex, _platform = null;
 
-  /// [platform] stands for [defaultTargetPlatform].
+  /// `platform` stands for [defaultTargetPlatform].
   @visibleForTesting
   SystemLinkOpener.test({required this._launch, required this._openFile, required TargetPlatform this._platform});
 

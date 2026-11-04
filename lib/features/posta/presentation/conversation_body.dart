@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
-import 'package:postino/features/posta/presentation/conversation_view.dart' show ConversationView;
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
@@ -24,7 +23,7 @@ import 'message_time.dart';
 /// The thread of an open Conversazione, newest first: each message with its details, its menu (Rispondi,
 /// Rispondi a tutti, Inoltra: [onAct]), its body split into body, signature and quote, and its attachments.
 /// HTML bodies render cleaned, their remote resources blocked unless shown for the message or its sender is
-/// in [trusted] (ADR 0007). State, fetching and shortcuts are the [ConversationView]'s: none here (ADR 0014).
+/// in [trusted] (ADR 0007). State, fetching and shortcuts are the `ConversationView`'s: none here (ADR 0014).
 class ConversationBody extends StatefulWidget {
   const ConversationBody({
     super.key,

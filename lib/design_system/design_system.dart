@@ -23,6 +23,7 @@ export 'molecules/postino_menu.dart';
 export 'molecules/postino_message_body.dart';
 export 'molecules/postino_message_tile.dart';
 export 'molecules/postino_snackbar.dart';
+export 'molecules/postino_switch_row.dart';
 export 'molecules/postino_sync_status.dart';
 export 'organisms/postino_action_bar.dart';
 export 'organisms/postino_app_bar.dart';

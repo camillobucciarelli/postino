@@ -33,6 +33,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
 
   @override
   Future<void> setSidebarExpanded({required bool? expanded}) async {}
+
+  @override
+  Future<bool?> launchAtLogin() async => null;
+
+  @override
+  Future<void> setLaunchAtLogin({required bool enabled}) async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {

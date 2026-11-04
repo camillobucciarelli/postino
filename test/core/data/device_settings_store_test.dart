@@ -31,4 +31,12 @@ void main() {
     await store.setListWidth(380.5);
     expect(await store.listWidth(), 380.5);
   });
+
+  test('the avvio al login is null until the default or the user chose it (#38)', () async {
+    expect(await store.launchAtLogin(), isNull);
+    await store.setLaunchAtLogin(enabled: true);
+    expect(await store.launchAtLogin(), isTrue);
+    await store.setLaunchAtLogin(enabled: false);
+    expect(await store.launchAtLogin(), isFalse);
+  });
 }

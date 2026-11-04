@@ -18,6 +18,18 @@ bool _flutterDependent(String uri) =>
     uri.split('/').first.contains('flutter') && !uri.startsWith('package:flutter_quill_delta_from_html/') ||
     uri.startsWith('package:routefly/');
 
+/// I/O packages: their adapters live in core/data, the domain sees only its ports (e.g. ModelManager, #108).
+bool _infrastructure(String uri) =>
+    uri == 'dart:io' ||
+    [
+      'http',
+      'file',
+      'drift',
+      'enough_mail',
+      'connectivity_plus',
+      'path_provider',
+    ].any((p) => uri.startsWith('package:$p/'));
+
 /// Resolves a directive to a lib-relative path (`features/x/...`), or returns the raw URI for external ones.
 String _target(String file, String uri) {
   if (uri.startsWith('package:postino/')) {
@@ -64,6 +76,7 @@ List<String> violations(String file, String source) {
     }
     if (file.split('/').contains('domain') &&
         (_flutterDependent(t) ||
+            _infrastructure(t) ||
             (!t.contains(':') && !segments.contains('domain')) ||
             segments.contains('data') ||
             segments.contains('presentation'))) {
@@ -130,6 +143,19 @@ void main() {
     ]) {
       test('domain may not import $uri', () {
         expect(violations('core/domain/x.dart', "import '$uri';"), isNotEmpty);
+      });
+    }
+    for (final uri in [
+      'dart:io',
+      'package:http/http.dart',
+      'package:file/file.dart',
+      'package:drift/drift.dart',
+      'package:enough_mail/enough_mail.dart',
+      'package:connectivity_plus/connectivity_plus.dart',
+      'package:path_provider/path_provider.dart',
+    ]) {
+      test('domain may not import the I/O package $uri', () {
+        expect(violations('core/domain/model_manager.dart', "import '$uri';"), isNotEmpty);
       });
     }
     for (final uri in ['package:meta/meta.dart', 'package:equatable/equatable.dart']) {

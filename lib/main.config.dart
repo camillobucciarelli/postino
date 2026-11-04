@@ -34,6 +34,7 @@ import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
 import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
+import 'package:postino/core/domain/model_manager.dart' as _i689;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
@@ -54,6 +55,7 @@ extension GetItInjectableX on _i174.GetIt {
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
+    final modelModule = _$ModelModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
@@ -99,6 +101,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i398.LinkOpener>(
       () => _i524.SystemLinkOpener(),
       registerFor: {_prod},
+    );
+    await gh.singletonAsync<_i689.ModelManager>(
+      () => modelModule.modelManager(
+        gh<_i519.Client>(),
+        gh<_i398.Connectivity>(),
+      ),
+      registerFor: {_prod},
+      preResolve: true,
     );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
       () => databaseModule.database(gh<_i398.SecureStore>()),
@@ -172,6 +182,8 @@ class _$AttachmentModule extends _i524.AttachmentModule {}
 class _$HttpModule extends _i524.HttpModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
+
+class _$ModelModule extends _i524.ModelModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

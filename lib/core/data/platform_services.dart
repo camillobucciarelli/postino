@@ -14,8 +14,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../domain/message.dart';
+import '../domain/model_manager.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
+import 'file_model_manager.dart';
 import 'postino_database.dart';
 import 'sync/outbox_sender.dart' show sendWindow;
 
@@ -62,6 +64,17 @@ class SystemConnectivity() implements Connectivity {
 
   @override
   Stream<bool> get onChanged => _plus.onConnectivityChanged.map(_update).distinct();
+
+  // ponytail: Wi-Fi as connectivity_plus sees it, so a phone's hotspot counts as Wi-Fi; Android's
+  // isActiveNetworkMetered if a metered Wi-Fi ever surprises a user.
+  @override
+  Future<bool> onWifi() async {
+    try {
+      return (await _plus.checkConnectivity()).contains(plus.ConnectivityResult.wifi);
+    } on Exception {
+      return false;
+    }
+  }
 }
 
 @Singleton(as: LinkOpener, env: [Environment.prod])
@@ -129,6 +142,20 @@ abstract class AttachmentModule() {
       fs.directory('${(await getTemporaryDirectory()).path}/postino-attachments'),
     );
   }
+}
+
+@module
+abstract class ModelModule() {
+  /// The on-device models (#108) in the app's support folder, out of the OS's cache purges.
+  // ponytail: on iOS that folder goes into the iCloud backup; exclude it (NSURLIsExcludedFromBackupKey) once a
+  // model is actually downloaded by users.
+  @preResolve
+  @Singleton(env: [Environment.prod])
+  Future<ModelManager> modelManager(http.Client client, Connectivity network) async => FileModelManager(
+    client,
+    network,
+    const LocalFileSystem().directory('${(await getApplicationSupportDirectory()).path}/models'),
+  );
 }
 
 @module

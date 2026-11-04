@@ -208,14 +208,15 @@ class SyncEngine implements MailSync {
       sendAfter: OutboxDao.preparing,
     );
     // The platform keeps the preparation and the send going if the user leaves now (a slow attachment download
-    // would otherwise leave the row preparing); a refusal never fails the Invia. Held once per Account.
-    if (_held.add(accountId)) {
-      unawaited(
-        _background.hold(accountId).catchError((Object e) {
-          debugPrint('[sync] $accountId: background hold failed, $e');
-        }),
-      );
-    }
+    // would otherwise leave the row preparing); a refusal never fails the Invia. Held at every Invia: the platform
+    // renews its protection (iOS replaces a task its expiration handler may have ended, Android appends work);
+    // _held only tells _releaseIfEmpty that a release is due.
+    _held.add(accountId);
+    unawaited(
+      _background.hold(accountId).catchError((Object e) {
+        debugPrint('[sync] $accountId: background hold failed, $e');
+      }),
+    );
     // A forward's attachments are read now, from the cache (offline too) or the Provider, so the queued text is complete.
     // ponytail: an attachment never opened here needs the network at Invia (OfflineFailure); persist copies of the
     // attachments when the forward is composed to queue those offline too.

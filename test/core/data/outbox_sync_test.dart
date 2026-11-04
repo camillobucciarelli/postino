@@ -750,7 +750,7 @@ void main() {
     expect(a.drafts, isEmpty);
   });
 
-  test('Invia holds the platform once; the send releases it once', () async {
+  test('Invia holds the platform; the send releases it once', () async {
     await engine.send('a', _message(id));
     await pumpEventQueue();
     expect(h.background.holds, ['a']);
@@ -764,6 +764,19 @@ void main() {
 
     // A later replay with an empty outbox does not release again.
     await engine.syncAll();
+    expect(h.background.releases, ['a']);
+  });
+
+  test('every Invia renews the hold while an older row is queued; one release after both are sent', () async {
+    await engine.send('a', _message(id));
+    await engine.send('a', _message('<y@example.com>'));
+    await pumpEventQueue();
+    expect(h.background.holds, ['a', 'a']);
+    expect(h.background.releases, isEmpty);
+
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(a.sent, hasLength(2));
     expect(h.background.releases, ['a']);
   });
 

@@ -26,32 +26,18 @@ const sendClaim = Duration(minutes: 10);
 /// what is due. No queue of its own (ADR 0008): the window's ticker calls back `flushOutbox`, the engine's method,
 /// so every send runs inside the Account's serial queue; [sendDue] is called only from there.
 class OutboxSender(
-  this._outbox,
-  this._clock,
-  this._background, {
-  required Future<Account?> Function(String accountId) account,
-  required Future<void> Function(String accountId) flushOutbox,
-  required void Function(String accountId, DateTime until) pause,
-}) {
-  /// [account] looks the Account up; [flushOutbox] is the engine's, queued in the Account's serial slot;
-  /// [pause] tells the engine the Provider rate-limited the Account.
-  this
-    : // Private fields behind public named parameters.
-      // ignore: prefer_initializing_formals
-      _account = account,
-      // ignore: prefer_initializing_formals
-      _flushOutbox = flushOutbox,
-      // ignore: prefer_initializing_formals
-      _pause = pause;
-
-  final OutboxRepository _outbox;
-  final Clock _clock;
-  final BackgroundSender _background;
-  final Future<Account?> Function(String accountId) _account;
-  final Future<void> Function(String accountId) _flushOutbox;
+  final OutboxRepository _outbox,
+  final Clock _clock,
+  final BackgroundSender _background, {
+  required final Future<Account?> Function(String accountId) _account,
+  required final Future<void> Function(String accountId) _flushOutbox,
 
   /// The Provider rate-limited the Account: no sync nor send before the deadline.
-  final void Function(String accountId, DateTime until) _pause;
+  required final void Function(String accountId, DateTime until) _pause,
+}) {
+  /// [_account] looks the Account up; [_flushOutbox] is the engine's, queued in the Account's serial slot;
+  /// [_pause] tells the engine the Provider rate-limited the Account.
+  this;
 
   /// Accounts the platform is holding for (#36); released once their outbox is empty.
   /// A hold made by a previous run of the app is not here: the platform drops it on its own.

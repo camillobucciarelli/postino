@@ -12,12 +12,12 @@ import 'mail_store.dart';
 import 'sync_engine.dart';
 
 @LazySingleton(as: AccountsRepository)
-class AccountsService(this._store, this._consent, this._keychain, this._sync) implements AccountsRepository {
-  final MailStore _store;
-  final GoogleConsent _consent;
-  final SecureStore _keychain;
-  final SyncEngine _sync;
-
+class AccountsService(
+  final MailStore _store,
+  final GoogleConsent _consent,
+  final SecureStore _keychain,
+  final SyncEngine _sync,
+) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
 

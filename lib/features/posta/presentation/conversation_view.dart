@@ -29,20 +29,14 @@ import 'posta_shortcuts.dart';
 /// Citazione ([ReplyDraftUseCase]) and opens it ([onOpenDraft]). Routing is the caller's ([onBack], [onOpenDraft]).
 class const ConversationView({
   super.key,
-  required this.accountId,
-  required this.conversationId,
-  required this.onBack,
-  required this.onOpenDraft,
-  this.cursor,
-}) extends StatefulWidget {
-  final String accountId;
-  final String conversationId;
-  final VoidCallback onBack;
+  required final String accountId,
+  required final String conversationId,
+  required final VoidCallback onBack,
 
   /// Opens the composer of the Bozza just saved, by Message-ID.
-  final void Function(String messageId) onOpenDraft;
-  final ListCursor? cursor;
-
+  required final void Function(String messageId) onOpenDraft,
+  final ListCursor? cursor,
+}) extends StatefulWidget {
   @override
   State<ConversationView> createState() => _ConversationViewState();
 }

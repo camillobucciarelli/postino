@@ -5,12 +5,12 @@ import 'package:flutter/foundation.dart';
 
 /// One icon: the SVG `d` strings of its strokes on a 24×24 grid.
 @immutable
-class const PostinoIconData(this.paths) {
+class const PostinoIconData(
+  /// Stringhe `d` SVG, una per tratto.
+  final List<String> paths,
+) {
   /// Crea un'icona dai tracciati dei suoi tratti.
   this;
-
-  /// Stringhe `d` SVG, una per tratto.
-  final List<String> paths;
 }
 
 /// Only the icons the screens use so far; copy more from the Icon card when needed.

@@ -11,11 +11,12 @@ import 'posta_shortcuts.dart';
 /// The «Scrivi» button over a list, and the `c` shortcut through [cursor]: a new Bozza from [accountId]
 /// (the open Account), else the first Account by position. [onWrite] gets the Account and the fresh
 /// Message-ID: routing is the caller's. Hidden, and the key idle, without an Account.
-class const WriteFab({super.key, this.accountId, this.cursor, required this.onWrite}) extends StatefulWidget {
-  final String? accountId;
-  final ListCursor? cursor;
-  final void Function(String accountId, String messageId) onWrite;
-
+class const WriteFab({
+  super.key,
+  final String? accountId,
+  final ListCursor? cursor,
+  required final void Function(String accountId, String messageId) onWrite,
+}) extends StatefulWidget {
   @override
   State<WriteFab> createState() => _WriteFabState();
 }

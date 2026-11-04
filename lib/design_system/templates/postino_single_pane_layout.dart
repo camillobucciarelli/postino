@@ -5,29 +5,24 @@ import '../tokens/postino_tokens.dart';
 /// One pane on the phone: [appBar], the [drawer] behind it, [banners] on top of the [body], [fab] over it.
 class const PostinoSinglePaneLayout({
   super.key,
-  required this.appBar,
-  required this.body,
-  this.drawer,
-  this.banners = const [],
-  this.fab,
+
+  /// Barra superiore, che sta nel corpo e prende l'altezza del suo contenuto.
+  required final Widget appBar,
+
+  /// Contenuto principale, sotto i banner.
+  required final Widget body,
+
+  /// Drawer di navigazione facoltativo.
+  final Widget? drawer,
+
+  /// Banner mostrati sopra il contenuto, con il margine laterale.
+  final List<Widget> banners = const [],
+
+  /// Pulsante di azione flottante facoltativo.
+  final Widget? fab,
 }) extends StatelessWidget {
   /// Crea il layout a un solo pannello, per il telefono.
   this;
-
-  /// Barra superiore, che sta nel corpo e prende l'altezza del suo contenuto.
-  final Widget appBar;
-
-  /// Contenuto principale, sotto i banner.
-  final Widget body;
-
-  /// Drawer di navigazione facoltativo.
-  final Widget? drawer;
-
-  /// Banner mostrati sopra il contenuto, con il margine laterale.
-  final List<Widget> banners;
-
-  /// Pulsante di azione flottante facoltativo.
-  final Widget? fab;
 
   @override
   Widget build(BuildContext context) => Scaffold(

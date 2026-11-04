@@ -10,12 +10,14 @@ class const PostinoClearSelectionIntent() extends Intent {
 /// Makes the informational text below selectable and copiable. Inside a [SelectionArea] already
 /// (the Conversazione) it adds nothing, so there is a single area and the selection can cross parts.
 // ponytail: one area per standalone view (empty state, banner), no selection across views.
-class const PostinoSelectable({super.key, required this.child}) extends StatefulWidget {
-  /// Crea il contenitore selezionabile.
-  this;
+class const PostinoSelectable({
+  super.key,
 
   /// Testo informativo da rendere selezionabile.
-  final Widget child;
+  required final Widget child,
+}) extends StatefulWidget {
+  /// Crea il contenitore selezionabile.
+  this;
 
   @override
   State<PostinoSelectable> createState() => _PostinoSelectableState();

@@ -11,9 +11,7 @@ import 'row_mappers.dart';
 
 /// The offline queue on the local database: Bozze (#35) and outbox (#36) rows.
 @lazySingleton
-class OutboxStore(this._db) implements OutboxRepository {
-  final PostinoDatabase _db;
-
+class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
   // --- Bozze (#35) ---
   @override
   Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>

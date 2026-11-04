@@ -1317,10 +1317,8 @@ void main() {
 }
 
 /// Answers with [answer], or (null) hangs until the request is aborted, as a stalled download would.
-class _Hanging(this.answer, this.started) extends http.BaseClient {
-  final http.Response? Function(String path) answer;
-  final Completer<void> started;
-
+class _Hanging(final http.Response? Function(String path) answer, final Completer<void> started)
+    extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (answer(request.url.path) case final r?) {

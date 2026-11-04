@@ -10,20 +10,14 @@ import 'safe_html.dart' show dropHeadContent;
 /// A message body split for the Conversazione (ThreadView): what it says, its signature and the text it
 /// quotes. Every part is in the body's own format (cleaned HTML or plain text); [original] is the whole.
 class const BodyParts({
-  required this.original,
-  required this.body,
-  required this.bodyVisible,
-  this.signature,
-  this.quote,
-}) extends Equatable {
-  final String original;
-  final String body;
+  required final String original,
+  required final String body,
 
   /// [body] shows some text or an image: folding the rest never leaves the message empty.
-  final bool bodyVisible;
-  final String? signature;
-  final String? quote;
-
+  required final bool bodyVisible,
+  final String? signature,
+  final String? quote,
+}) extends Equatable {
   /// The signature normalized: the same one in two messages compares equal.
   String? get signatureKey {
     final s = signature;

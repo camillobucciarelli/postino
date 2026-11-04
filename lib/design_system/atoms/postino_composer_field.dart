@@ -7,37 +7,30 @@ import '../tokens/postino_tokens.dart';
 /// field, a `composer-field-divider` hairline below that turns `input-border-focus` with focus.
 class const PostinoComposerField({
   super.key,
-  required this.label,
-  required this.controller,
-  this.focusNode,
-  this.autofocus = false,
-  this.onChanged,
-  this.keyboardType,
-  this.trailing,
+
+  /// Etichetta a sinistra, anche nome accessibile del campo.
+  required final String label,
+
+  /// Controller del testo.
+  required final TextEditingController controller,
+
+  /// Nodo del focus; se nullo il campo ne crea uno suo.
+  final FocusNode? focusNode,
+
+  /// Se il campo prende il focus all'apertura.
+  final bool autofocus = false,
+
+  /// Chiamata a ogni modifica del testo.
+  final ValueChanged<String>? onChanged,
+
+  /// Tipo di tastiera richiesto.
+  final TextInputType? keyboardType,
+
+  /// Widget a destra del campo (es. un'azione).
+  final Widget? trailing,
 }) extends StatefulWidget {
   /// Crea una riga di intestazione del compositore.
   this;
-
-  /// Etichetta a sinistra, anche nome accessibile del campo.
-  final String label;
-
-  /// Controller del testo.
-  final TextEditingController controller;
-
-  /// Nodo del focus; se nullo il campo ne crea uno suo.
-  final FocusNode? focusNode;
-
-  /// Se il campo prende il focus all'apertura.
-  final bool autofocus;
-
-  /// Chiamata a ogni modifica del testo.
-  final ValueChanged<String>? onChanged;
-
-  /// Tipo di tastiera richiesto.
-  final TextInputType? keyboardType;
-
-  /// Widget a destra del campo (es. un'azione).
-  final Widget? trailing;
 
   @override
   State<PostinoComposerField> createState() => _PostinoComposerFieldState();

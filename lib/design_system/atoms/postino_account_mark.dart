@@ -9,25 +9,21 @@ import '../tokens/postino_tokens.dart';
 /// Decorative unless [label] is given (“Account Lavoro”).
 class const PostinoAccountMark({
   super.key,
-  required this.color,
-  required this.initial,
-  this.size = PostinoSize.accountMark,
-  this.label,
+
+  /// Colore dell'Account.
+  required final PostinoAccountColor color,
+
+  /// Iniziale mostrata nel quadrato.
+  required final String initial,
+
+  /// Lato del quadrato.
+  final double size = PostinoSize.accountMark,
+
+  /// Nome accessibile; se nullo il segno è decorativo.
+  final String? label,
 }) extends StatelessWidget {
   /// Crea il segno di un Account.
   this;
-
-  /// Colore dell'Account.
-  final PostinoAccountColor color;
-
-  /// Iniziale mostrata nel quadrato.
-  final String initial;
-
-  /// Lato del quadrato.
-  final double size;
-
-  /// Nome accessibile; se nullo il segno è decorativo.
-  final String? label;
 
   @override
   Widget build(BuildContext context) {

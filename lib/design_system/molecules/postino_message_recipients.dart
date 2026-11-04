@@ -9,19 +9,20 @@ import '../tokens/postino_tokens.dart';
 
 /// Of `PostinoThreadMessage` only (not in the barrel), like [PostinoMessageDetailsPanel].
 /// “a me, cc Marco”: opens the details when there are some.
-class const PostinoMessageRecipients({super.key, required this.label, required this.open, required this.onTap})
-    extends StatelessWidget {
-  /// Crea la riga dei destinatari.
-  this;
+class const PostinoMessageRecipients({
+  super.key,
 
   /// The recipients, already formatted.
-  final String label;
+  required final String label,
 
   /// Whether the details are shown.
-  final bool open;
+  required final bool open,
 
   /// Opens or closes the details; null when there are none: plain text, not a button.
-  final VoidCallback? onTap;
+  required final VoidCallback? onTap,
+}) extends StatelessWidget {
+  /// Crea la riga dei destinatari.
+  this;
 
   // The compact row is a button (it opens the details): out of any selection.
   @override

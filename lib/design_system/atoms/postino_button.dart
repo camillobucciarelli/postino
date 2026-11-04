@@ -27,29 +27,24 @@ enum PostinoButtonSize() {
 /// A command; [label] is a verb with only the first letter capitalised.
 class const PostinoButton({
   super.key,
-  required this.label,
-  required this.onPressed,
-  this.variant = PostinoButtonVariant.primary,
-  this.size = PostinoButtonSize.md,
-  this.underline = false,
+
+  /// Verbo mostrato nel pulsante.
+  required final String label,
+
+  /// Chiamata al tocco; se nulla il pulsante è disabilitato.
+  required final VoidCallback? onPressed,
+
+  /// Aspetto del pulsante.
+  final PostinoButtonVariant variant = PostinoButtonVariant.primary,
+
+  /// Altezza del pulsante.
+  final PostinoButtonSize size = PostinoButtonSize.md,
+
+  /// A ghost on a tinted surface (Banner) reads as a link.
+  final bool underline = false,
 }) extends StatelessWidget {
   /// Crea un pulsante.
   this;
-
-  /// Verbo mostrato nel pulsante.
-  final String label;
-
-  /// Chiamata al tocco; se nulla il pulsante è disabilitato.
-  final VoidCallback? onPressed;
-
-  /// Aspetto del pulsante.
-  final PostinoButtonVariant variant;
-
-  /// Altezza del pulsante.
-  final PostinoButtonSize size;
-
-  /// A ghost on a tinted surface (Banner) reads as a link.
-  final bool underline;
 
   @override
   Widget build(BuildContext context) {

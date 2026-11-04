@@ -11,9 +11,7 @@ import 'postino_database.dart';
 import 'row_mappers.dart';
 
 @lazySingleton
-class MailStore(this._db) implements InboxRepository {
-  final PostinoDatabase _db;
-
+class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> addAccount(Account a) => _db.accountsDao.upsert(a);
 
   Future<List<Account>> accounts() async => [for (final r in await _db.accountsDao.byPosition()) accountOf(r)];

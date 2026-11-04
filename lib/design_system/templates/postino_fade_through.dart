@@ -7,15 +7,17 @@ import '../tokens/postino_tokens.dart';
 /// then [child] fades in and scales 0.96→1 (210ms). Only one of them is in the tree at a time.
 /// The previous child is the widget given before, so it must carry its own params.
 /// With reduced motion ([MediaQuery.disableAnimationsOf]) the swap is instant.
-class const PostinoFadeThrough({super.key, required this.transitionKey, required this.child}) extends StatefulWidget {
-  /// Crea il passaggio tra schermate: cambiando la chiave, anima il passaggio al nuovo figlio.
-  this;
+class const PostinoFadeThrough({
+  super.key,
 
   /// Chiave che identifica la schermata: quando cambia avviene il passaggio.
-  final Object transitionKey;
+  required final Object transitionKey,
 
   /// La schermata attuale.
-  final Widget child;
+  required final Widget child,
+}) extends StatefulWidget {
+  /// Crea il passaggio tra schermate: cambiando la chiave, anima il passaggio al nuovo figlio.
+  this;
 
   @override
   State<PostinoFadeThrough> createState() => _PostinoFadeThroughState();

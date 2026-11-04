@@ -27,45 +27,36 @@ double shownListWidth(double preferred, double window) => preferred.clamp(
 /// With reduced motion every change is instant.
 class const PostinoListDetailLayout({
   super.key,
-  required this.list,
-  required this.empty,
-  required this.onClose,
-  this.detail,
-  this.detailKey,
-  this.listWidth,
-  this.onListWidthChanged,
-  required this.resizeLabel,
-  required this.resizeValueLabel,
+
+  /// La lista, sempre presente sotto il dettaglio su schermi stretti.
+  required final Widget list,
+
+  /// Pannello mostrato quando nessun dettaglio è aperto, sulle finestre larghe.
+  required final Widget empty,
+
+  /// Chiamato quando l'utente chiude il dettaglio, con il tasto Esc.
+  required final VoidCallback onClose,
+
+  /// Il dettaglio aperto, o null se nessun elemento è aperto.
+  final Widget? detail,
+
+  /// Changes when another item opens; the outgoing [detail] must carry its own params.
+  final Object? detailKey,
+
+  /// The preferred list width saved by an earlier run; null: the default.
+  final double? listWidth,
+
+  /// The user chose a new preferred width (end of a drag, key, double click): save it.
+  final ValueChanged<double>? onListWidthChanged,
+
+  /// Accessible name and value of the divider ("Larghezza lista", "380 pixel").
+  required final String resizeLabel,
+
+  /// Costruisce il testo letto per la larghezza attuale della lista.
+  required final String Function(double width) resizeValueLabel,
 }) extends StatefulWidget {
   /// Crea il layout lista e dettaglio.
   this;
-
-  /// La lista, sempre presente sotto il dettaglio su schermi stretti.
-  final Widget list;
-
-  /// Il dettaglio aperto, o null se nessun elemento è aperto.
-  final Widget? detail;
-
-  /// Changes when another item opens; the outgoing [detail] must carry its own params.
-  final Object? detailKey;
-
-  /// Pannello mostrato quando nessun dettaglio è aperto, sulle finestre larghe.
-  final Widget empty;
-
-  /// Chiamato quando l'utente chiude il dettaglio, con il tasto Esc.
-  final VoidCallback onClose;
-
-  /// The preferred list width saved by an earlier run; null: the default.
-  final double? listWidth;
-
-  /// The user chose a new preferred width (end of a drag, key, double click): save it.
-  final ValueChanged<double>? onListWidthChanged;
-
-  /// Accessible name and value of the divider ("Larghezza lista", "380 pixel").
-  final String resizeLabel;
-
-  /// Costruisce il testo letto per la larghezza attuale della lista.
-  final String Function(double width) resizeValueLabel;
 
   @override
   State<PostinoListDetailLayout> createState() => _PostinoListDetailLayoutState();

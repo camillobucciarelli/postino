@@ -14,22 +14,19 @@ export '../molecules/postino_drawer_item.dart' show PostinoDrawerItem;
 /// and the button that opens or closes it (named [toggleLabel], what it will do).
 class const PostinoSidebarScope({
   super.key,
-  required this.collapsed,
-  required this.toggleLabel,
-  required this.toggle,
+
+  /// Vero quando la barra mostra solo le icone.
+  required final bool collapsed,
+
+  /// Nome accessibile del pulsante che apre o chiude la barra.
+  required final String toggleLabel,
+
+  /// Apre o chiude la barra laterale.
+  required final VoidCallback toggle,
   required super.child,
 }) extends InheritedWidget {
   /// Espone a drawer e pulsanti lo stato della barra laterale, da un antenato nell'albero dei widget.
   this;
-
-  /// Vero quando la barra mostra solo le icone.
-  final bool collapsed;
-
-  /// Nome accessibile del pulsante che apre o chiude la barra.
-  final String toggleLabel;
-
-  /// Apre o chiude la barra laterale.
-  final VoidCallback toggle;
 
   /// Null for a modal drawer: always extended, no button.
   static PostinoSidebarScope? maybeOf(BuildContext context) =>
@@ -40,26 +37,28 @@ class const PostinoSidebarScope({
 }
 
 /// Una sezione del drawer, con un titolo facoltativo e le sue voci.
-class const PostinoDrawerSection({this.title, required this.items}) {
-  /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
-  this;
-
+class const PostinoDrawerSection({
   /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta.
-  final String? title;
+  final String? title,
 
   /// Voci della sezione, in ordine.
-  final List<PostinoDrawerItem> items;
+  required final List<PostinoDrawerItem> items,
+}) {
+  /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
+  this;
 }
 
 /// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar,
 /// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
 /// The highlight of the active item is one box under the list that slides to the new item.
-class const PostinoNavigationDrawer({super.key, required this.sections}) extends StatefulWidget {
-  /// Crea il drawer con le sezioni indicate.
-  this;
+class const PostinoNavigationDrawer({
+  super.key,
 
   /// Le sezioni da mostrare, dall'alto in basso.
-  final List<PostinoDrawerSection> sections;
+  required final List<PostinoDrawerSection> sections,
+}) extends StatefulWidget {
+  /// Crea il drawer con le sezioni indicate.
+  this;
 
   @override
   State<PostinoNavigationDrawer> createState() => _PostinoNavigationDrawerState();

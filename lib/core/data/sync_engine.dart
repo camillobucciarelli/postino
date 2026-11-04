@@ -23,14 +23,13 @@ const pollEvery = Duration(seconds: 60);
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
 /// The one queue per Account: the replayer and the sender only ever run inside [_serial].
 @lazySingleton
-class SyncEngine(this._store, this._outboxStore, this._clock, this._connectivity, this._background)
-    implements MailSync {
-  final MailStore _store;
-  final OutboxRepository _outboxStore;
-  final Clock _clock;
-  final Connectivity _connectivity;
-  final BackgroundSender _background;
-
+class SyncEngine(
+  final MailStore _store,
+  final OutboxRepository _outboxStore,
+  final Clock _clock,
+  final Connectivity _connectivity,
+  final BackgroundSender _background,
+) implements MailSync {
   late final _intents = IntentReplayer(_store, _outboxStore, _clock);
   late final _drafts = DraftOpener(_store, _outboxStore);
 

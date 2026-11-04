@@ -13,22 +13,14 @@ import '../../../i18n/strings.g.dart';
 /// Routing is the caller's: features don't know the routes.
 class const PostaDrawer({
   super.key,
-  this.accountId,
-  this.labelId,
-  required this.onOpenUnified,
-  required this.onOpenAccount,
-  required this.onOpenLabel,
-  required this.onOpenDrafts,
-  required this.onOpenSent,
+  final String? accountId,
+  final String? labelId,
+  required final VoidCallback onOpenUnified,
+  required final void Function(String accountId) onOpenAccount,
+  required final void Function(String labelId) onOpenLabel,
+  required final void Function(String accountId) onOpenDrafts,
+  required final void Function(String accountId) onOpenSent,
 }) extends StatefulWidget {
-  final String? accountId;
-  final String? labelId;
-  final VoidCallback onOpenUnified;
-  final void Function(String accountId) onOpenAccount;
-  final void Function(String labelId) onOpenLabel;
-  final void Function(String accountId) onOpenDrafts;
-  final void Function(String accountId) onOpenSent;
-
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
 }

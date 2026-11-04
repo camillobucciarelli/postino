@@ -14,45 +14,36 @@ import 'postino_focus_ring.dart';
 /// [onChangeEnd]); the arrows stop here and move nothing else. VoiceOver: increase and decrease by the same step.
 class const PostinoResizeHandle({
   super.key,
-  required this.value,
-  required this.min,
-  required this.max,
-  required this.label,
-  required this.valueLabel,
-  required this.onChanged,
-  required this.onChangeEnd,
-  required this.onReset,
-  this.onDragEnd,
+
+  /// Larghezza attuale in pixel.
+  required final double value,
+
+  /// Larghezza minima.
+  required final double min,
+
+  /// Larghezza massima.
+  required final double max,
+
+  /// The accessible name, e.g. "Larghezza lista".
+  required final String label,
+
+  /// The accessible value at a width, e.g. "380 pixel".
+  required final String Function(double value) valueLabel,
+
+  /// Larghezza durante il trascinamento.
+  required final ValueChanged<double> onChanged,
+
+  /// Larghezza finale, a trascinamento o tastiera concluso.
+  required final ValueChanged<double> onChangeEnd,
+
+  /// Chiamata al doppio clic: torna alla larghezza di default.
+  required final VoidCallback onReset,
+
+  /// Every drag that started ends here, after [onChangeEnd] if the width changed: the parent drops its live override.
+  final VoidCallback? onDragEnd,
 }) extends StatefulWidget {
   /// Crea il divisore trascinabile.
   this;
-
-  /// Larghezza attuale in pixel.
-  final double value;
-
-  /// Larghezza minima.
-  final double min;
-
-  /// Larghezza massima.
-  final double max;
-
-  /// The accessible name, e.g. "Larghezza lista".
-  final String label;
-
-  /// The accessible value at a width, e.g. "380 pixel".
-  final String Function(double value) valueLabel;
-
-  /// Larghezza durante il trascinamento.
-  final ValueChanged<double> onChanged;
-
-  /// Larghezza finale, a trascinamento o tastiera concluso.
-  final ValueChanged<double> onChangeEnd;
-
-  /// Chiamata al doppio clic: torna alla larghezza di default.
-  final VoidCallback onReset;
-
-  /// Every drag that started ends here, after [onChangeEnd] if the width changed: the parent drops its live override.
-  final VoidCallback? onDragEnd;
 
   @override
   State<PostinoResizeHandle> createState() => _PostinoResizeHandleState();

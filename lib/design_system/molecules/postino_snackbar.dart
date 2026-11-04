@@ -11,29 +11,24 @@ import '../tokens/postino_tokens.dart';
 /// The action sits in the content (not in SnackBar.action), so the component owns its styling and focus.
 class const PostinoSnackbar({
   super.key,
-  required this.message,
-  required this.actionLabel,
-  required this.onAction,
-  required this.until,
-  this.now = DateTime.now,
+
+  /// Cosa è appena successo («Messaggio archiviato»).
+  required final String message,
+
+  /// Nome dell'azione (Annulla).
+  required final String actionLabel,
+
+  /// Chiamata all'azione.
+  required final VoidCallback onAction,
+
+  /// When the action stops being available; the countdown shows the whole seconds left to it.
+  required final DateTime until,
+
+  /// The clock the countdown reads (the app's, so a test can move it).
+  final DateTime Function() now = DateTime.now,
 }) extends StatefulWidget {
   /// Crea lo snackbar con il conto alla rovescia fino a `until`.
   this;
-
-  /// Cosa è appena successo («Messaggio archiviato»).
-  final String message;
-
-  /// Nome dell'azione (Annulla).
-  final String actionLabel;
-
-  /// Chiamata all'azione.
-  final VoidCallback onAction;
-
-  /// When the action stops being available; the countdown shows the whole seconds left to it.
-  final DateTime until;
-
-  /// The clock the countdown reads (the app's, so a test can move it).
-  final DateTime Function() now;
 
   /// Shows it through the nearest ScaffoldMessenger, replacing the one on screen (a second Annulla never
   /// waits behind the first); returns the controller so the caller can dismiss it.

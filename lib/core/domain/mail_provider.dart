@@ -5,29 +5,23 @@ import 'result.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
 class const SyncBatch({
-  required this.cursor,
-  this.messages = const [],
-  this.labels = const [],
-  this.removedMessageIds = const [],
-  this.bodies = const {},
+  /// Opaque to the core: Gmail historyId, Graph delta token, IMAP modseq...
+  required final String cursor,
+
+  /// Messaggi nuovi o modificati.
+  final List<Message> messages = const [],
+
+  /// Etichette nuove o modificate.
+  final List<Label> labels = const [],
+
+  /// Id (lato Provider) dei messaggi eliminati.
+  final List<String> removedMessageIds = const [],
+
+  /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
+  final Map<String, MessageBody> bodies = const {},
 }) extends Equatable {
   /// Crea un batch; senza argomenti le liste sono vuote.
   this;
-
-  /// Opaque to the core: Gmail historyId, Graph delta token, IMAP modseq...
-  final String cursor;
-
-  /// Messaggi nuovi o modificati.
-  final List<Message> messages;
-
-  /// Etichette nuove o modificate.
-  final List<Label> labels;
-
-  /// Id (lato Provider) dei messaggi eliminati.
-  final List<String> removedMessageIds;
-
-  /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
-  final Map<String, MessageBody> bodies;
 
   @override
   List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies];

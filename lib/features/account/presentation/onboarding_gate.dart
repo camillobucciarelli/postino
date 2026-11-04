@@ -9,9 +9,7 @@ import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 
 /// Shows the onboarding while there is no Account, [child] afterwards.
-class const OnboardingGate({super.key, required this.child}) extends StatefulWidget {
-  final Widget child;
-
+class const OnboardingGate({super.key, required final Widget child}) extends StatefulWidget {
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }

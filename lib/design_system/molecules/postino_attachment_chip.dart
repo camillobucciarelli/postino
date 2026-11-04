@@ -20,69 +20,54 @@ import 'postino_menu.dart';
 /// Name and size are selectable text; screen readers hear «name, size» as a button, [openLabel] as its hint.
 class const PostinoAttachmentChip({
   super.key,
-  required this.name,
-  required this.size,
-  this.onOpen,
-  this.openLabel = '',
-  this.progress,
-  this.progressLabel,
-  this.cancelLabel = '',
-  this.onCancel,
-  this.error,
-  this.warning,
-  this.retryLabel = '',
-  this.onRetry,
-  this.moreLabel = '',
-  this.saveLabel = '',
-  this.onSave,
+
+  /// Nome del file; troncato con ellissi a scala normale, a capo con testo ingrandito.
+  required final String name,
+
+  /// Already formatted («1,2 MB»).
+  required final String size,
+
+  /// Null: a plain label, not a button (a file only shown, like the forwarded ones of a Bozza).
+  final VoidCallback? onOpen,
+
+  /// Suggerimento accessibile per aprire l'allegato (usato solo con `onOpen`).
+  final String openLabel = '',
+
+  /// Avanzamento del download da 0 a 1; null se non è in corso.
+  final double? progress,
+
+  /// Testo che sostituisce la dimensione durante il download («42%»).
+  final String? progressLabel,
+
+  /// Nome del pulsante Annulla.
+  final String cancelLabel = '',
+
+  /// Chiamata dal pulsante Annulla durante il download.
+  final VoidCallback? onCancel,
+
+  /// Motivo dell'errore, a parole; il chip diventa `danger` con Riprova.
+  final String? error,
+
+  /// Avviso (es. eseguibile) al posto della dimensione, in `warning`.
+  final String? warning,
+
+  /// Nome del pulsante Riprova.
+  final String retryLabel = '',
+
+  /// Chiamata da Riprova; se null ripete `onOpen`.
+  final VoidCallback? onRetry,
+
+  /// The menu button's name («Altre azioni»); no menu without [onSave].
+  final String moreLabel = '',
+
+  /// Etichetta della voce «Salva…» del menu.
+  final String saveLabel = '',
+
+  /// Salva il file; senza di essa il menu non compare.
+  final VoidCallback? onSave,
 }) extends StatefulWidget {
   /// Crea il chip dell'allegato; senza `onOpen` è una semplice etichetta.
   this;
-
-  /// Nome del file; troncato con ellissi a scala normale, a capo con testo ingrandito.
-  final String name;
-
-  /// Already formatted («1,2 MB»).
-  final String size;
-
-  /// Null: a plain label, not a button (a file only shown, like the forwarded ones of a Bozza).
-  final VoidCallback? onOpen;
-
-  /// Suggerimento accessibile per aprire l'allegato (usato solo con `onOpen`).
-  final String openLabel;
-
-  /// Avanzamento del download da 0 a 1; null se non è in corso.
-  final double? progress;
-
-  /// Testo che sostituisce la dimensione durante il download («42%»).
-  final String? progressLabel;
-
-  /// Nome del pulsante Annulla.
-  final String cancelLabel;
-
-  /// Chiamata dal pulsante Annulla durante il download.
-  final VoidCallback? onCancel;
-
-  /// Motivo dell'errore, a parole; il chip diventa `danger` con Riprova.
-  final String? error;
-
-  /// Avviso (es. eseguibile) al posto della dimensione, in `warning`.
-  final String? warning;
-
-  /// Nome del pulsante Riprova.
-  final String retryLabel;
-
-  /// Chiamata da Riprova; se null ripete `onOpen`.
-  final VoidCallback? onRetry;
-
-  /// The menu button's name («Altre azioni»); no menu without [onSave].
-  final String moreLabel;
-
-  /// Etichetta della voce «Salva…» del menu.
-  final String saveLabel;
-
-  /// Salva il file; senza di essa il menu non compare.
-  final VoidCallback? onSave;
 
   @override
   State<PostinoAttachmentChip> createState() => _PostinoAttachmentChipState();
@@ -226,11 +211,8 @@ class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
 
 /// The size, the progress, a warning or the reason it failed: `meta` in [color] (`ink-subtle`, `warning`
 /// or `danger`), with the alert [icon] in front when asked.
-class const _Meta({required this.text, required this.color, required this.icon}) extends StatelessWidget {
-  final String text;
-  final Color color;
-  final bool icon;
-
+class const _Meta({required final String text, required final Color color, required final bool icon})
+    extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text.rich(

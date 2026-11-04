@@ -17,13 +17,9 @@ import 'attachment_crypto.dart';
 
 /// Where attachments live: [cache] holds them encrypted, [temp] their decrypted copies for other apps.
 /// [cap] bounds the cache in bytes (500 MB; smaller only in tests).
-class AttachmentStorage._(this.cache, this.temp, this.cap) {
+class AttachmentStorage._(final Directory cache, final Directory temp, final int cap) {
   /// A staging file this old is left from a crash, never a write in progress.
   static const stalePart = Duration(hours: 1);
-
-  final Directory cache;
-  final Directory temp;
-  final int cap;
 
   /// Clears what [stalePart] has left: decrypted copies in [temp] and half-written cache files older than
   /// that. A younger one may be a copy another app has just opened, or the write of another isolate (#36).
@@ -49,12 +45,12 @@ class AttachmentStorage._(this.cache, this.temp, this.cap) {
 /// keychain, evicted least recently used beyond [AttachmentStorage.cap].
 /// Last use is the file's modification time, so the cache needs no table of its own.
 @LazySingleton(as: AttachmentRepository)
-class AttachmentCache(this._sync, this._keychain, this._clock, this._storage) implements AttachmentRepository {
-  final MailSync _sync;
-  final SecureStore _keychain;
-  final Clock _clock;
-  final AttachmentStorage _storage;
-
+class AttachmentCache(
+  final MailSync _sync,
+  final SecureStore _keychain,
+  final Clock _clock,
+  final AttachmentStorage _storage,
+) implements AttachmentRepository {
   static const _keyName = 'attachments_key';
 
   /// What encryption adds to a file.

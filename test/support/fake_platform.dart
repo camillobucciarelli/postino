@@ -18,8 +18,7 @@ class FakeSecureStore() implements SecureStore {
 }
 
 /// Time moves only with [advance], which also fires the [every] tickers that came due.
-class FakeClock(this.current) implements Clock {
-  DateTime current;
+class FakeClock(var DateTime current) implements Clock {
   final _tickers = <(Duration, StreamController<void>, List<Duration>)>[];
 
   @override

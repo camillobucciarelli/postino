@@ -18,12 +18,12 @@ enum PostaAction() {
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
 /// [command]: with the platform's command key, Cmd on macOS and Ctrl elsewhere; without it, the key bare.
-class const PostaShortcut(this.key, this.action, {this.listOnly = false, this.command = false}) {
-  final LogicalKeyboardKey key;
-  final PostaAction action;
-  final bool listOnly;
-  final bool command;
-}
+class const PostaShortcut(
+  final LogicalKeyboardKey key,
+  final PostaAction action, {
+  final bool listOnly = false,
+  final bool command = false,
+}) {}
 
 /// The one table key + modifiers -> action of the Posta views (ADR 0014); a test checks that no pair appears twice.
 /// Enter and Esc are not here: they are the focused row's activation and the layout's way back.
@@ -57,17 +57,13 @@ class ListCursor() {
   VoidCallback? forward;
 }
 
-class const PostaIntent(this.shortcut) extends Intent {
-  final PostaShortcut shortcut;
-}
+class const PostaIntent(final PostaShortcut shortcut) extends Intent {}
 
 /// Binds [postaShortcuts] to [cursor] for everything below it; put it above the sidebar shell,
 /// whose [ToggleSidebarIntent] the sidebar shortcut reaches from the focus. Ignored while the focus is in a
 /// text field, so the letters are typed (ADR 0014).
-class const PostaShortcuts({super.key, required this.cursor, required this.child}) extends StatelessWidget {
-  final ListCursor cursor;
-  final Widget child;
-
+class const PostaShortcuts({super.key, required final ListCursor cursor, required final Widget child})
+    extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mac = defaultTargetPlatform == TargetPlatform.macOS;
@@ -81,9 +77,7 @@ class const PostaShortcuts({super.key, required this.cursor, required this.child
   }
 }
 
-class _PostaAction(this.cursor) extends Action<PostaIntent> {
-  final ListCursor cursor;
-
+class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
   @override
   bool isEnabled(PostaIntent intent) {
     final focus = primaryFocus?.context;

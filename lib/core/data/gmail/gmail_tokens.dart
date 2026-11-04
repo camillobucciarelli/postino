@@ -4,12 +4,12 @@ import '../../domain/google_consent.dart';
 import '../../domain/platform_services.dart';
 
 /// OAuth tokens of a Gmail Account: they live only in the keychain, never in the database.
-class const GmailTokens({required this.access, required this.refresh, required this.expiresAt}) {
+class const GmailTokens({
+  required final String access,
+  required final String refresh,
+  required final DateTime expiresAt,
+}) {
   GmailTokens.of(GoogleGrant g) : this(access: g.accessToken, refresh: g.refreshToken, expiresAt: g.expiresAt);
-
-  final String access;
-  final String refresh;
-  final DateTime expiresAt;
 
   static String _key(String accountId) => 'oauth:$accountId';
 

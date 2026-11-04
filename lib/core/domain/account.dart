@@ -26,33 +26,26 @@ enum AccountStatus() {
 
 /// Una casella di posta collegata a Postino.
 class const Account({
-  required this.id,
-  required this.address,
-  required this.provider,
-  required this.color,
-  required this.position,
-  this.status = AccountStatus.attivo,
+  /// Id locale stabile dell'Account.
+  required final String id,
+
+  /// Indirizzo email dell'Account.
+  required final String address,
+
+  /// Il Provider che ospita l'Account.
+  required final ProviderKind provider,
+
+  /// Position in the palette of [accountColorCount] Account colors; the theme gives the actual color.
+  required final int color,
+
+  /// Ordine di visualizzazione tra gli Account.
+  required final int position,
+
+  /// Se l'Account funziona o va ricollegato.
+  final AccountStatus status = AccountStatus.attivo,
 }) extends Equatable {
   /// Crea un Account; `status` parte da `attivo`.
   this;
-
-  /// Id locale stabile dell'Account.
-  final String id;
-
-  /// Indirizzo email dell'Account.
-  final String address;
-
-  /// Il Provider che ospita l'Account.
-  final ProviderKind provider;
-
-  /// Position in the palette of [accountColorCount] Account colors; the theme gives the actual color.
-  final int color;
-
-  /// Ordine di visualizzazione tra gli Account.
-  final int position;
-
-  /// Se l'Account funziona o va ricollegato.
-  final AccountStatus status;
 
   // ponytail: no name nor chosen initial in the domain yet, both come from the address.
   /// Nome mostrato: per ora coincide con l'indirizzo.

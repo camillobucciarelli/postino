@@ -21,21 +21,17 @@ const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
 class GmailProvider(
-  this._accountId,
+  final String _accountId,
   SecureStore keychain,
   http.Client httpClient,
-  this._clock, {
+  final Clock _clock, {
   GoogleClient client = const GoogleClient.fromEnvironment(),
-  this._sleep = Future<void>.delayed,
-  this._idle = imapIdle,
+  final Future<void> Function(Duration) _sleep = Future<void>.delayed,
+  final ImapIdle _idle = imapIdle,
   Duration stall = const Duration(seconds: 30),
 }) implements MailProvider {
   this : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
-  final String _accountId;
-  final Clock _clock;
-  final Future<void> Function(Duration) _sleep;
-  final ImapIdle _idle;
   final GmailHttp _gmail;
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.

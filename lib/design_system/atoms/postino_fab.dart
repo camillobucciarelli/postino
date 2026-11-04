@@ -8,19 +8,20 @@ import 'postino_icon.dart';
 
 /// The extended «Scrivi» button: `fab-bg`, `fab-fg`, `radius-lg`, `fab-height`.
 // ponytail: a FilledButton, not FloatingActionButton (no ButtonStyle, so no place for the focus ring).
-class const PostinoFab({super.key, required this.label, required this.icon, required this.onPressed})
-    extends StatelessWidget {
-  /// Crea il pulsante «Scrivi».
-  this;
+class const PostinoFab({
+  super.key,
 
   /// Testo del pulsante, anche tooltip.
-  final String label;
+  required final String label,
 
   /// Icona a sinistra del testo.
-  final PostinoIconData icon;
+  required final PostinoIconData icon,
 
   /// Chiamata al tocco.
-  final VoidCallback onPressed;
+  required final VoidCallback onPressed,
+}) extends StatelessWidget {
+  /// Crea il pulsante «Scrivi».
+  this;
 
   @override
   Widget build(BuildContext context) {

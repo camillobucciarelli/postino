@@ -393,15 +393,16 @@ void main() {
 
 /// The real engine, but every message is over the Provider's limit.
 /// With [hold], [send] waits for it first (the engine preparing the MIME); [saves] counts the Bozza saves.
-class _TooBig(this.real, {this.hold, this.delegate = false, this.oversize = false}) implements MailSync {
-  final MailSync real;
+class _TooBig(
+  final MailSync real, {
+  final Completer<void>? hold,
 
   /// After [hold], the real engine sends instead of refusing.
-  final bool delegate;
+  final bool delegate = false,
 
   /// With [delegate], the real engine gets a message over the limit: its preparation fails.
-  final bool oversize;
-  final Completer<void>? hold;
+  final bool oversize = false,
+}) implements MailSync {
   int saves = 0;
 
   @override

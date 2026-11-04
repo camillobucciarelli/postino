@@ -4,9 +4,7 @@ import '../domain/settings_repository.dart';
 import 'postino_database.dart';
 
 @LazySingleton(as: SettingsRepository)
-class DeviceSettingsStore(this._db) implements SettingsRepository {
-  final PostinoDatabase _db;
-
+class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsRepository {
   static const _sidebar = 'sidebar_expanded';
   static const _listWidth = 'list_width';
 

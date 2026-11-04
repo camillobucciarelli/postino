@@ -4,11 +4,18 @@ import '../../main.dart' show routePaths;
 
 /// What a `/posta` URI shows: the list, and the Conversazione or the Bozza open beside it.
 class const PostaRoute._({
-  required this.list,
-  required this.open,
-  required this.draft,
-  required this.accountId,
-  required this.labelId,
+  /// The path of the list shown.
+  required final String list,
+
+  /// (account, conversation) of the open Conversazione.
+  required final (String, String)? open,
+
+  /// (account, Message-ID) of the Bozza open in the composer.
+  required final (String, String)? draft,
+
+  /// The Account and Etichetta of [list].
+  required final String? accountId,
+  required final String? labelId,
 }) {
   /// Reads [uri]; [isLayout]: the URI is the layout's own, with no child route. [last] is the last list shown.
   factory PostaRoute.parse(Uri uri, {required bool isLayout, String? last}) {
@@ -33,19 +40,6 @@ class const PostaRoute._({
       labelId: ls.length > 3 ? ls[3] : null,
     );
   }
-
-  /// The path of the list shown.
-  final String list;
-
-  /// (account, conversation) of the open Conversazione.
-  final (String, String)? open;
-
-  /// (account, Message-ID) of the Bozza open in the composer.
-  final (String, String)? draft;
-
-  /// The Account and Etichetta of [list].
-  final String? accountId;
-  final String? labelId;
 
   /// What opens beside the list: the Conversazione or the Bozza.
   (String, String)? get detail => open ?? draft;

@@ -15,22 +15,14 @@ import 'google_client.dart';
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
 /// quota hits retried with backoff. Failures are thrown as [GmailFailed], which [gmailGuard] turns into an [Err].
 class GmailHttp(
-  this._accountId,
-  this._keychain,
-  this._http,
-  this._clock, {
-  required this._client,
-  required this._sleep,
-  required this._stall,
+  final String _accountId,
+  final SecureStore _keychain,
+  final http.Client _http,
+  final Clock _clock, {
+  required final GoogleClient _client,
+  required final Future<void> Function(Duration) _sleep,
+  required final Duration _stall,
 }) {
-  final String _accountId;
-  final SecureStore _keychain;
-  final http.Client _http;
-  final Clock _clock;
-  final GoogleClient _client;
-  final Future<void> Function(Duration) _sleep;
-  final Duration _stall;
-
   static final _tokenEndpoint = Uri.parse('https://oauth2.googleapis.com/token');
   static final _api = Uri.parse('https://gmail.googleapis.com/gmail/v1/users/me/');
 

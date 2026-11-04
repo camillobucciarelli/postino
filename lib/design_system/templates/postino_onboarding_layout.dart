@@ -6,25 +6,21 @@ import '../tokens/postino_tokens.dart';
 /// One onboarding step per screen; the welcome uses [title] in `display`, the main action full width at the bottom.
 class const PostinoOnboardingLayout({
   super.key,
-  required this.title,
-  required this.message,
-  required this.primaryAction,
-  this.error,
+
+  /// Titolo del passaggio.
+  required final String title,
+
+  /// Testo di spiegazione sotto il titolo.
+  required final String message,
+
+  /// Azione principale, a larghezza piena in fondo alla schermata.
+  required final Widget primaryAction,
+
+  /// Shown above the action, e.g. a `danger` Banner.
+  final Widget? error,
 }) extends StatelessWidget {
   /// Crea il layout di un passaggio dell'onboarding.
   this;
-
-  /// Titolo del passaggio.
-  final String title;
-
-  /// Testo di spiegazione sotto il titolo.
-  final String message;
-
-  /// Azione principale, a larghezza piena in fondo alla schermata.
-  final Widget primaryAction;
-
-  /// Shown above the action, e.g. a `danger` Banner.
-  final Widget? error;
 
   @override
   Widget build(BuildContext context) {

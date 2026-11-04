@@ -28,11 +28,8 @@ class _UnifiedAppBarState() extends State<UnifiedAppBar> with AccountsSignal {
 
 /// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's
 /// ([labelName] for a folder with no Etichetta, the Bozze).
-class const AccountAppBar({super.key, required this.accountId, this.labelId, this.labelName}) extends StatefulWidget {
-  final String accountId;
-  final String? labelId;
-  final String? labelName;
-
+class const AccountAppBar({super.key, required final String accountId, final String? labelId, final String? labelName})
+    extends StatefulWidget {
   @override
   State<AccountAppBar> createState() => _AccountAppBarState();
 }

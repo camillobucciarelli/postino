@@ -109,8 +109,7 @@ void main() {
   });
 }
 
-class const _Probe({super.key, required this.onInit}) extends StatefulWidget {
-  final VoidCallback onInit;
+class const _Probe({super.key, required final VoidCallback onInit}) extends StatefulWidget {
   @override
   State<_Probe> createState() => _ProbeState();
 }

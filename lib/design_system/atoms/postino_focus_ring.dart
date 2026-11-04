@@ -10,21 +10,18 @@ import '../tokens/postino_tokens.dart';
 /// get it inside their edges, where nothing clips it.
 class const PostinoFocusRing({
   super.key,
-  required this.child,
-  this.borderRadius = BorderRadius.zero,
-  this.inset = false,
+
+  /// Forma visibile attorno a cui disegnare l'anello.
+  required final Widget child,
+
+  /// The shape of [child]; the ring follows it at its distance.
+  final BorderRadius borderRadius = BorderRadius.zero,
+
+  /// Se l'anello sta dentro i bordi (righe a tutta larghezza) invece che fuori.
+  final bool inset = false,
 }) extends StatefulWidget {
   /// Crea l'anello di focus attorno a `child`.
   this;
-
-  /// Forma visibile attorno a cui disegnare l'anello.
-  final Widget child;
-
-  /// The shape of [child]; the ring follows it at its distance.
-  final BorderRadius borderRadius;
-
-  /// Se l'anello sta dentro i bordi (righe a tutta larghezza) invece che fuori.
-  final bool inset;
 
   @override
   State<PostinoFocusRing> createState() => _PostinoFocusRingState();
@@ -58,11 +55,8 @@ class _PostinoFocusRingState() extends State<PostinoFocusRing> {
   }
 }
 
-class const _RingPainter(this.color, this.radius, {required this.inset}) extends CustomPainter {
-  final Color color;
-  final BorderRadius radius;
-  final bool inset;
-
+class const _RingPainter(final Color color, final BorderRadius radius, {required final bool inset})
+    extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const w = PostinoBorder.borderWidthFocus;

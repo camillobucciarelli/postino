@@ -27,18 +27,13 @@ import '../domain/draft_html.dart';
 /// Routing is the caller's ([onClose], [onQueued]).
 class const ComposerView({
   super.key,
-  required this.accountId,
-  required this.messageId,
-  required this.onClose,
-  required this.onQueued,
-}) extends StatefulWidget {
-  final String accountId;
-  final String messageId;
-  final VoidCallback onClose;
+  required final String accountId,
+  required final String messageId,
+  required final VoidCallback onClose,
 
   /// [until]: the end of the Annulla invio window, as the engine computed it.
-  final void Function(String accountId, String messageId, DateTime until) onQueued;
-
+  required final void Function(String accountId, String messageId, DateTime until) onQueued,
+}) extends StatefulWidget {
   @override
   State<ComposerView> createState() => _ComposerViewState();
 }

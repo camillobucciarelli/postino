@@ -5,29 +5,23 @@ import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
 class const InboxEntry({
-  required this.message,
-  required this.account,
-  required this.count,
-  required this.unread,
-  this.status,
+  /// L'ultimo messaggio della Conversazione.
+  required final Message message,
+
+  /// L'Account a cui appartiene.
+  required final Account account,
+
+  /// Numero di messaggi della Conversazione.
+  required final int count,
+
+  /// Se almeno un messaggio è da leggere.
+  required final bool unread,
+
+  /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
+  final String? status,
 }) extends Equatable {
   /// Crea una riga di elenco.
   this;
-
-  /// L'ultimo messaggio della Conversazione.
-  final Message message;
-
-  /// L'Account a cui appartiene.
-  final Account account;
-
-  /// Numero di messaggi della Conversazione.
-  final int count;
-
-  /// Se almeno un messaggio è da leggere.
-  final bool unread;
-
-  /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
-  final String? status;
 
   @override
   List<Object?> get props => [message, account, count, unread, status];
@@ -38,18 +32,18 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
-class const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false}) extends Equatable {
-  /// Crea una voce della Coda d'uscita; `failed` parte falso.
-  this;
-
+class const OutgoingEntry({
   /// Il messaggio in attesa di partire.
-  final OutgoingMessage message;
+  required final OutgoingMessage message,
 
   /// Quando finisce Annulla invio (ms da epoch, UTC).
-  final int sendAfter;
+  required final int sendAfter,
 
   /// Il Provider l'ha rifiutato per sempre: attende l'utente.
-  final bool failed;
+  final bool failed = false,
+}) extends Equatable {
+  /// Crea una voce della Coda d'uscita; `failed` parte falso.
+  this;
 
   @override
   List<Object?> get props => [message, sendAfter, failed];

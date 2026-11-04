@@ -3,21 +3,21 @@
 sealed class const Result<T>();
 
 /// Esito riuscito.
-final class const Ok<T>(this.value) extends Result<T> {
+final class const Ok<T>(
+  /// Il valore prodotto.
+  final T value,
+) extends Result<T> {
   /// Crea un esito riuscito con [value].
   this;
-
-  /// Il valore prodotto.
-  final T value;
 }
 
 /// Esito fallito.
-final class const Err<T>(this.failure) extends Result<T> {
+final class const Err<T>(
+  /// Il motivo del fallimento.
+  final Failure failure,
+) extends Result<T> {
   /// Crea un esito fallito con [failure].
   this;
-
-  /// Il motivo del fallimento.
-  final Failure failure;
 }
 
 /// Every known way an operation can fail. Sealed so `switch` stays exhaustive.
@@ -26,15 +26,15 @@ sealed class const Failure();
 
 // ponytail: single catch-all variant; add specific failures (network, auth, ...) with the first feature that needs them.
 /// Errore imprevisto, non classificato altrimenti.
-final class const UnexpectedFailure(this.error, [this.stackTrace]) extends Failure {
-  /// Crea il fallimento con l'[error] originale e, se c'è, il suo stack trace.
-  this;
-
+final class const UnexpectedFailure(
   /// L'errore catturato.
-  final Object error;
+  final Object error, [
 
   /// Lo stack trace dell'errore, se disponibile.
-  final StackTrace? stackTrace;
+  final StackTrace? stackTrace,
+]) extends Failure {
+  /// Crea il fallimento con l'[error] originale e, se c'è, il suo stack trace.
+  this;
 
   @override
   String toString() => 'UnexpectedFailure($error)';
@@ -77,42 +77,42 @@ final class const DraftWithAttachmentsFailure() extends Failure {
 }
 
 /// The message is bigger than the Provider accepts ([limitBytes], the whole RFC 5322 text).
-final class const SizeLimitFailure(this.limitBytes) extends Failure {
+final class const SizeLimitFailure(
+  /// Dimensione massima accettata, in byte.
+  final int limitBytes,
+) extends Failure {
   /// Crea il fallimento con il limite [limitBytes].
   this;
-
-  /// Dimensione massima accettata, in byte.
-  final int limitBytes;
 }
 
 /// The Provider refused the request for good (HTTP 400, e.g. an invalid header): retrying cannot help.
-final class const RejectedFailure(this.reason) extends Failure {
+final class const RejectedFailure(
+  /// Il motivo del rifiuto.
+  final String reason,
+) extends Failure {
   /// Crea il fallimento con il [reason] dato dal Provider.
   this;
-
-  /// Il motivo del rifiuto.
-  final String reason;
 }
 
 /// The Provider asks to slow down.
-final class const RateLimitFailure({this.retryAfter}) extends Failure {
+final class const RateLimitFailure({
+  /// When the Provider says the block ends, if it does.
+  final DateTime? retryAfter,
+}) extends Failure {
   /// Crea il fallimento; [retryAfter] è opzionale.
   this;
-
-  /// When the Provider says the block ends, if it does.
-  final DateTime? retryAfter;
 
   @override
   String toString() => 'RateLimitFailure(retryAfter: $retryAfter)';
 }
 
 /// The app is missing a build-time setting (for example the OAuth client ID).
-final class const ConfigurationFailure(this.setting) extends Failure {
+final class const ConfigurationFailure(
+  /// Nome dell'impostazione mancante.
+  final String setting,
+) extends Failure {
   /// Crea il fallimento per l'impostazione [setting] mancante.
   this;
-
-  /// Nome dell'impostazione mancante.
-  final String setting;
 }
 
 /// The user backed out (for example closed the consent page).
@@ -122,10 +122,10 @@ final class const CancelledFailure() extends Failure {
 }
 
 /// Reconnecting an Account, the user picked another Google identity than [expected].
-final class const WrongAccountFailure(this.expected) extends Failure {
+final class const WrongAccountFailure(
+  /// L'indirizzo dell'Account che si stava ricollegando.
+  final String expected,
+) extends Failure {
   /// Crea il fallimento con l'indirizzo [expected] atteso.
   this;
-
-  /// L'indirizzo dell'Account che si stava ricollegando.
-  final String expected;
 }

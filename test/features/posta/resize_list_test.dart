@@ -16,8 +16,7 @@ import 'package:routefly/routefly.dart';
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
-class _FakeSettings([this.saved]) implements SettingsRepository {
-  double? saved;
+class _FakeSettings([var double? saved]) implements SettingsRepository {
   final writes = <double>[];
 
   @override

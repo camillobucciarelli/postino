@@ -22,73 +22,57 @@ export '../molecules/postino_message_detail.dart' show PostinoMessageDetail;
 /// in `duration-thread-expand` with `easing-emphasized-decelerate`.
 class const PostinoThreadMessage({
   super.key,
-  required this.sender,
-  required this.time,
-  required this.preview,
-  required this.expanded,
-  required this.onToggle,
-  required this.body,
-  this.recipients,
-  this.details = const [],
-  this.notices = const [],
-  this.unread = false,
-  this.address,
-  this.signature,
-  this.quote,
-  this.quoteLabel = '',
-  this.attachments = const [],
-  this.actions,
+
+  /// Nome del mittente, mostrato nell'intestazione.
+  required final String sender,
+
+  /// Already formatted, like the list's.
+  required final String time,
+
+  /// Anteprima di una riga, mostrata quando il messaggio è compresso.
+  required final String preview,
+
+  /// Vero se il messaggio è espanso e mostra corpo e allegati.
+  required final bool expanded,
+
+  /// Chiamato al tocco sull'intestazione, per espandere o comprimere il messaggio.
+  required final VoidCallback onToggle,
+
+  /// Shown only when expanded: a `PostinoMessageBody`.
+  required final Widget body,
+
+  /// “a me”, under the sender when expanded; with [details] it opens them.
+  final String? recipients,
+
+  /// Dettagli del messaggio (mittente, destinatari, data) mostrati aprendo i destinatari.
+  final List<PostinoMessageDetail> details = const [],
+
+  /// Under the header, above the body: a Banner for blocked images…
+  final List<Widget> notices = const [],
+
+  /// Vero se il messaggio non è ancora letto.
+  final bool unread = false,
+
+  /// Beside the sender when expanded, in `ink-muted`; null when [sender] is already the address.
+  final String? address,
+
+  /// Under the body, in `body-quote` `ink-muted` (`PostinoMessageBody.quiet`, `PostinoHtmlCard.quiet`).
+  final Widget? signature,
+
+  /// The quoted text (and a signature seen before), hidden until «…» is tapped.
+  final Widget? quote,
+
+  /// Etichetta letta dagli screen reader per il pulsante che mostra il testo citato.
+  final String quoteLabel = '',
+
+  /// At the bottom, wrapping.
+  final List<PostinoAttachmentChip> attachments = const [],
+
+  /// After the time, in the header: a `PostinoMenu` of the message's actions, say. Out of the selection.
+  final Widget? actions,
 }) extends StatefulWidget {
   /// Crea un messaggio di una conversazione: compresso come riga, oppure espanso con i dettagli.
   this;
-
-  /// Nome del mittente, mostrato nell'intestazione.
-  final String sender;
-
-  /// Beside the sender when expanded, in `ink-muted`; null when [sender] is already the address.
-  final String? address;
-
-  /// Already formatted, like the list's.
-  final String time;
-
-  /// Anteprima di una riga, mostrata quando il messaggio è compresso.
-  final String preview;
-
-  /// Vero se il messaggio è espanso e mostra corpo e allegati.
-  final bool expanded;
-
-  /// Chiamato al tocco sull'intestazione, per espandere o comprimere il messaggio.
-  final VoidCallback onToggle;
-
-  /// Shown only when expanded: a `PostinoMessageBody`.
-  final Widget body;
-
-  /// “a me”, under the sender when expanded; with [details] it opens them.
-  final String? recipients;
-
-  /// Dettagli del messaggio (mittente, destinatari, data) mostrati aprendo i destinatari.
-  final List<PostinoMessageDetail> details;
-
-  /// Under the header, above the body: a Banner for blocked images…
-  final List<Widget> notices;
-
-  /// Vero se il messaggio non è ancora letto.
-  final bool unread;
-
-  /// Under the body, in `body-quote` `ink-muted` (`PostinoMessageBody.quiet`, `PostinoHtmlCard.quiet`).
-  final Widget? signature;
-
-  /// The quoted text (and a signature seen before), hidden until «…» is tapped.
-  final Widget? quote;
-
-  /// Etichetta letta dagli screen reader per il pulsante che mostra il testo citato.
-  final String quoteLabel;
-
-  /// At the bottom, wrapping.
-  final List<PostinoAttachmentChip> attachments;
-
-  /// After the time, in the header: a `PostinoMenu` of the message's actions, say. Out of the selection.
-  final Widget? actions;
 
   @override
   State<PostinoThreadMessage> createState() => _PostinoThreadMessageState();
@@ -267,10 +251,7 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
 /// Text in an expanded header: a tap on it does not collapse the message (the SelectionArea takes
 /// it: a click places the caret, a double click picks a word, a drag selects); the avatar and the
 /// empty space around it still collapse.
-class const _TextHit({required this.enabled, required this.child}) extends StatelessWidget {
-  final bool enabled;
-  final Widget child;
-
+class const _TextHit({required final bool enabled, required final Widget child}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       enabled ? GestureDetector(onTap: () {}, excludeFromSemantics: true, child: child) : child;

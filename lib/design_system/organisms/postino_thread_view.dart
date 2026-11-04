@@ -16,33 +16,27 @@ import '../tokens/postino_tokens.dart';
 /// at most `reading-max-width` wide.
 class const PostinoThreadView({
   super.key,
-  required this.subject,
-  required this.account,
-  required this.accountName,
-  required this.messages,
-  this.labels = const [],
-  this.importantLabel,
+
+  /// Oggetto della conversazione, mostrato come titolo.
+  required final String subject,
+
+  /// Account che ha ricevuto la conversazione, indicato con il suo contrassegno.
+  required final PostinoAccountRef account,
+
+  /// Nome dell'account mostrato accanto al contrassegno.
+  required final String accountName,
+
+  /// I messaggi della conversazione, dal più recente al più vecchio.
+  required final List<Widget> messages,
+
+  /// Names of the etichette of the Conversazione, as [PostinoLabelChip]s after the Account.
+  final List<String> labels = const [],
+
+  /// «Importante»: the Conversazione is important; the mark after the subject says it to screen readers.
+  final String? importantLabel,
 }) extends StatefulWidget {
   /// Crea la vista di una conversazione con oggetto, account e messaggi.
   this;
-
-  /// Oggetto della conversazione, mostrato come titolo.
-  final String subject;
-
-  /// Account che ha ricevuto la conversazione, indicato con il suo contrassegno.
-  final PostinoAccountRef account;
-
-  /// Nome dell'account mostrato accanto al contrassegno.
-  final String accountName;
-
-  /// I messaggi della conversazione, dal più recente al più vecchio.
-  final List<Widget> messages;
-
-  /// Names of the etichette of the Conversazione, as [PostinoLabelChip]s after the Account.
-  final List<String> labels;
-
-  /// «Importante»: the Conversazione is important; the mark after the subject says it to screen readers.
-  final String? importantLabel;
 
   @override
   State<PostinoThreadView> createState() => _PostinoThreadViewState();
@@ -173,10 +167,8 @@ class _PostinoThreadViewState() extends State<PostinoThreadView> {
 }
 
 /// Esc over a selection clears it; with none it is off, so the layout closes the Conversazione.
-class _ClearSelection(this.selected, this.clear) extends Action<PostinoClearSelectionIntent> {
-  final bool Function() selected;
-  final VoidCallback clear;
-
+class _ClearSelection(final bool Function() selected, final VoidCallback clear)
+    extends Action<PostinoClearSelectionIntent> {
   @override
   bool isEnabled(PostinoClearSelectionIntent intent) => selected();
 

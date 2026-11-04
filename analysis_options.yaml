@@ -45,6 +45,7 @@ linter:
     - use_late_for_private_fields_and_variables
     - unnecessary_underscores
     - no_wildcard_variable_uses
+    - avoid_dynamic_calls
     - comment_references
     - close_sinks
     - discarded_futures

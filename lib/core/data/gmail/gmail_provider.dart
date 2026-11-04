@@ -9,6 +9,7 @@ import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
+import '../json_objects.dart';
 import '../mime.dart';
 import 'gmail_failure.dart';
 import 'gmail_http.dart';
@@ -57,7 +58,7 @@ class GmailProvider implements MailProvider {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
     final cursor = (await _gmail.get('profile'))['historyId'] as String;
     final labels = [
-      for (final l in (await _gmail.get('labels'))['labels'] as List? ?? const [])
+      for (final l in jsonObjects((await _gmail.get('labels'))['labels']))
         // System labels (INBOX, STARRED, UNREAD...) are inbox, Stella and read state, not Etichette.
         if (l['type'] == 'user') Label(id: l['id'] as String, name: l['name'] as String, kind: LabelKind.etichetta),
     ];
@@ -91,16 +92,16 @@ class GmailProvider implements MailProvider {
     do {
       final r = await _gmail.get('history', query: {'startHistoryId': cursor, 'pageToken': ?page});
       // In order, so each message ends in its last state.
-      for (final h in r['history'] as List? ?? const []) {
+      for (final h in jsonObjects(r['history'])) {
         for (final kind in ['messagesAdded', 'labelsAdded', 'labelsRemoved']) {
-          for (final e in h[kind] as List? ?? const []) {
-            final id = e['message']['id'] as String;
+          for (final e in jsonObjects(h[kind])) {
+            final id = (e['message'] as Map<String, dynamic>)['id'] as String;
             changed.add(id);
             deleted.remove(id);
           }
         }
-        for (final e in h['messagesDeleted'] as List? ?? const []) {
-          final id = e['message']['id'] as String;
+        for (final e in jsonObjects(h['messagesDeleted'])) {
+          final id = (e['message'] as Map<String, dynamic>)['id'] as String;
           deleted.add(id);
           changed.remove(id);
         }
@@ -275,7 +276,7 @@ class GmailProvider implements MailProvider {
     // An empty `rfc822msgid:` would match any draft.
     if (messageId.isEmpty) throw const GmailFailed(NotFoundFailure());
     final r = await _gmail.get('drafts', query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'});
-    final id = (r['drafts'] as List?)?.firstOrNull?['id'] as String?;
+    final id = jsonObjects(r['drafts']).firstOrNull?['id'] as String?;
     if (id == null) throw const GmailFailed(NotFoundFailure());
     return _draftIds[messageId] = id;
   }
@@ -286,7 +287,7 @@ class GmailProvider implements MailProvider {
     String? page;
     do {
       final r = await _gmail.get('messages', query: {...query, 'maxResults': '500', 'pageToken': ?page});
-      for (final m in r['messages'] as List? ?? const []) {
+      for (final m in jsonObjects(r['messages'])) {
         ids.add(m['id'] as String);
       }
       page = r['nextPageToken'] as String?;

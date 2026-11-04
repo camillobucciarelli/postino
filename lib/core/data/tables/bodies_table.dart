@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:postino/core/data/tables/messages_table.dart' show Messages;
 
 import '../../domain/message.dart';
+import '../json_objects.dart';
 
 /// Downloaded message bodies, apart from [Messages] so the lists stay light.
 @DataClassName('BodyRow')
@@ -28,7 +29,7 @@ class AttachmentsConverter extends TypeConverter<List<Attachment>, String> {
 
   @override
   List<Attachment> fromSql(String fromDb) => [
-    for (final a in jsonDecode(fromDb) as List)
+    for (final a in jsonObjects(jsonDecode(fromDb)))
       Attachment(
         id: a['id'] as String,
         name: a['name'] as String,

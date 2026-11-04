@@ -303,10 +303,10 @@ void main() {
     });
     await _open(tester, 'm3');
 
-    final ys = [
+    final ys = <double>[
       for (final id in ['m1', 'm2', 'm3']) tester.getTopLeft(_message(id)).dy,
     ];
-    expect(ys, orderedEquals([...ys]..sort((a, b) => b.compareTo(a))), reason: 'newest first');
+    expect(ys, orderedEquals(<double>[...ys]..sort((a, b) => b.compareTo(a))), reason: 'newest first');
     expect(_expanded(tester, 'm1'), isFalse);
     expect(_expanded(tester, 'm2'), isTrue, reason: 'unread');
     expect(_expanded(tester, 'm3'), isTrue, reason: 'latest');

@@ -17,7 +17,7 @@ const _client = GoogleClient('123-abc.apps.googleusercontent.com');
 final _now = DateTime.utc(2026, 10, 28, 12);
 
 http.Response _fixture(String name) {
-  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync());
+  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync()) as Map<String, dynamic>;
   return http.Response(jsonEncode(j['body']), j['status'] as int);
 }
 

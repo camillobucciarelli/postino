@@ -27,7 +27,7 @@ const _testClient = GoogleClient('test-client.apps.googleusercontent.com');
 const _api = '/gmail/v1/users/me/';
 
 http.Response _fixture(String name) {
-  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync());
+  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync()) as Map<String, dynamic>;
   final status = j['status'] as int;
   // A 204 (batchModify) has no body.
   return j['body'] == null ? http.Response('', status) : _json(j['body'], status);
@@ -104,7 +104,7 @@ class GmailHarness implements ContractHarness {
     if (draftId != null && !_drafts.containsKey(draftId)) {
       return _fixture('not_found');
     }
-    return _json(_putDraft(draftId, _parseRaw(body['message']['raw'] as String)));
+    return _json(_putDraft(draftId, _parseRaw((body['message'] as Map<String, dynamic>)['raw'] as String)));
   }
 
   /// The base64url `raw` of a draft or a send, back to an [OutgoingMessage].
@@ -791,8 +791,13 @@ void main() {
       String routeEmpty(http.Request r, String path) =>
           r.method == 'GET' && path == 'drafts' ? 'drafts_empty' : route(r, path);
 
-      String raw(http.Request r) =>
-          utf8.decode(base64Url.decode(base64Url.normalize((jsonDecode(r.body) as Map)['message']['raw'] as String)));
+      String raw(http.Request r) => utf8.decode(
+        base64Url.decode(
+          base64Url.normalize(
+            ((jsonDecode(r.body) as Map<String, dynamic>)['message'] as Map<String, dynamic>)['raw'] as String,
+          ),
+        ),
+      );
 
       test('a new Bozza is searched by Message-ID, then one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
         final g = _Recorded(routeEmpty);

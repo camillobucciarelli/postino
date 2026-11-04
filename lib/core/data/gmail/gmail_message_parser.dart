@@ -3,12 +3,13 @@ import 'dart:typed_data';
 
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
+import '../json_objects.dart';
 
 /// A Gmail message resource (`full` or `metadata`) as a [Message].
 Message parseGmailMessage(Map<String, dynamic> j) {
   final payload = j['payload'] as Map<String, dynamic>? ?? const {};
   final headers = {
-    for (final h in payload['headers'] as List? ?? const []) (h['name'] as String).toLowerCase(): h['value'] as String,
+    for (final h in jsonObjects(payload['headers'])) (h['name'] as String).toLowerCase(): h['value'] as String,
   };
   final labels = [for (final l in j['labelIds'] as List? ?? const []) l as String];
   final from = parseMailbox(headers['from'] ?? '');
@@ -102,7 +103,7 @@ Uint8List decodeGmailData(String data) => base64Url.decode(base64Url.normalize(d
 
 /// A part's headers by lowercase name, values lowercased.
 Map<String, String> _partHeaders(Map<String, dynamic> part) => {
-  for (final h in part['headers'] as List? ?? const [])
+  for (final h in jsonObjects(part['headers']))
     (h['name'] as String).toLowerCase(): (h['value'] as String).toLowerCase(),
 };
 

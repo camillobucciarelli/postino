@@ -39,7 +39,7 @@ class PostinoAttachmentChip extends StatefulWidget {
     this.onSave,
   });
 
-  /// Nome del file, mostrato per intero (a capo con testo ingrandito).
+  /// Nome del file; troncato con ellissi a scala normale, a capo con testo ingrandito.
   final String name;
 
   /// Already formatted («1,2 MB»).
@@ -48,7 +48,7 @@ class PostinoAttachmentChip extends StatefulWidget {
   /// Null: a plain label, not a button (a file only shown, like the forwarded ones of a Bozza).
   final VoidCallback? onOpen;
 
-  /// Nome del chip per lo screen reader (suggerimento «apri»).
+  /// Suggerimento accessibile per aprire l'allegato (usato solo con `onOpen`).
   final String openLabel;
 
   /// Avanzamento del download da 0 a 1; null se non è in corso.

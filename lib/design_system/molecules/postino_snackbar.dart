@@ -26,7 +26,7 @@ class PostinoSnackbar extends StatefulWidget {
   /// Nome dell'azione (Annulla).
   final String actionLabel;
 
-  /// Chiamata all'azione; lo snackbar poi si chiude.
+  /// Chiamata all'azione.
   final VoidCallback onAction;
 
   /// When the action stops being available; the countdown shows the whole seconds left to it.

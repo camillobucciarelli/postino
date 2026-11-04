@@ -67,7 +67,7 @@ abstract interface class MailProvider {
   /// "Something changed" signal (IMAP IDLE on the inbox); data comes from [incrementalSync].
   Stream<ChangeSignal> get changes;
 
-  /// Scarica il corpo (e gli allegati) del messaggio `messageId`.
+  /// Scarica il corpo e i metadati degli allegati del messaggio `messageId`.
   Future<Result<MessageBody>> fetchBody(String messageId);
 
   /// Every message of the Conversazione, also those outside the sync window (Inviati, older than 90 days);

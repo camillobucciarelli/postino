@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/intent_replayer.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
@@ -100,29 +101,26 @@ void main() {
     },
   );
 
-  test(
-    'during the pause after a RateLimitFailure the flush waits; the Bozza goes with the first sync after it',
-    () async {
-      engine.start();
-      addTearDown(engine.stop);
-      await pumpEventQueue();
-      final until = h.clock.now().add(const Duration(minutes: 5));
-      a.rateLimit(true, until);
-      a.deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
-      await pumpEventQueue();
-      a.rateLimit(false);
+  test('during the pause after a RateLimitFailure the flush waits; the Bozza goes with the first sync after it', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    final until = h.clock.now().add(const Duration(minutes: 5));
+    a.rateLimit(true, until);
+    a.deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
+    await pumpEventQueue();
+    a.rateLimit(false);
 
-      await engine.saveDraft('a', _draft(id));
-      await engine.flushDrafts('a');
-      expect(a.draftCalls, isEmpty);
-      expect((await row())!.pending, isTrue);
+    await engine.saveDraft('a', _draft(id));
+    await engine.flushDrafts('a');
+    expect(a.draftCalls, isEmpty);
+    expect((await row())!.pending, isTrue);
 
-      h.clock.advance(const Duration(minutes: 5));
-      await pumpEventQueue();
-      expect(a.draftCalls, [(id, true)]);
-      expect((await row())!.pending, isFalse);
-    },
-  );
+    h.clock.advance(const Duration(minutes: 5));
+    await pumpEventQueue();
+    expect(a.draftCalls, [(id, true)]);
+    expect((await row())!.pending, isFalse);
+  });
 
   test(
     'a local edit of a Bozza sent or deleted elsewhere is dropped in silence',

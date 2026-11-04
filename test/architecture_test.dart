@@ -98,6 +98,12 @@ List<String> violations(String file, String source) {
     if (isUi && t.endsWith('core/domain/mail_provider.dart')) {
       bad('the UI must not import the Provider interface');
     }
+    // ADR 0002: the choice of adapter lives in one factory, not in switches across core/data.
+    if (file.startsWith('core/data/') &&
+        file != 'core/data/sync/provider_factory.dart' &&
+        t.endsWith('core/data/gmail/gmail_provider.dart')) {
+      bad('only the provider factory may import a concrete Provider');
+    }
   }
   return out;
 }
@@ -283,6 +289,29 @@ void main() {
         isEmpty,
       );
     });
+    test('the provider factory may import a concrete Provider', () {
+      expect(
+        violations(
+          'core/data/sync/provider_factory.dart',
+          "import '../gmail/gmail_provider.dart';",
+        ),
+        isEmpty,
+      );
+    });
+    for (final (file, uri) in [
+      ('core/data/sync_engine.dart', 'gmail/gmail_provider.dart'),
+      (
+        'core/data/sync/outbox_sender.dart',
+        'package:postino/core/data/gmail/gmail_provider.dart',
+      ),
+    ]) {
+      test('$file may not import a concrete Provider ($uri)', () {
+        expect(
+          violations(file, "import '$uri';"),
+          contains(contains('only the provider factory')),
+        );
+      });
+    }
     for (final uri in [
       'package:postino/core/domain/account.dart',
       '../../features/posta/presentation/x.dart',

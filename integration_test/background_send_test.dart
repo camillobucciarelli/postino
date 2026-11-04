@@ -18,12 +18,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:postino/core/data/background_send.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/platform_services.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/main.dart' show sendOutboxDispatcher;
 import 'package:workmanager/workmanager.dart';
 
@@ -68,12 +70,20 @@ void main() {
   testWidgets(
     'Android: the WorkManager task sends a due row of the real database',
     (tester) async {
-      final (store, provider) = await _realStore('it_outbox_task.db');
+      final (store, outbox, provider) = await _realStore('it_outbox_task.db');
       final clock = FakeClock(DateTime.now().toUtc());
-      GetIt.I.registerSingleton<SyncEngine>(
-        SyncEngine(store, clock, FakeConnectivity(), FakeBackgroundSender()),
-      );
-      await store.enqueueOutgoing(
+      GetIt.I
+        ..registerSingleton<OutboxRepository>(outbox)
+        ..registerSingleton<SyncEngine>(
+          SyncEngine(
+            store,
+            outbox,
+            clock,
+            FakeConnectivity(),
+            FakeBackgroundSender(),
+          ),
+        );
+      await outbox.enqueueOutgoing(
         'a',
         _message,
         version: 1,
@@ -82,7 +92,7 @@ void main() {
       );
       expect(await runOutboxTask('a'), isTrue);
       expect(provider.sent, hasLength(1));
-      expect(await store.hasOutgoing('a'), isFalse);
+      expect(await outbox.hasOutgoing('a'), isFalse);
     },
     skip: defaultTargetPlatform != TargetPlatform.android,
   );
@@ -90,13 +100,14 @@ void main() {
   testWidgets('a message queued in the real database goes at the next start', (
     tester,
   ) async {
-    final (store, provider) = await _realStore('it_outbox.db');
+    final (store, outbox, provider) = await _realStore('it_outbox.db');
     const message = _message;
 
     // Invia, then the app dies before the window ends: the row stays.
     final clock = FakeClock(DateTime.now().toUtc());
     final first = SyncEngine(
       store,
+      outbox,
       clock,
       FakeConnectivity(),
       FakeBackgroundSender(),
@@ -109,6 +120,7 @@ void main() {
     clock.advance(const Duration(minutes: 1));
     final restarted = SyncEngine(
       store,
+      outbox,
       clock,
       FakeConnectivity(),
       FakeBackgroundSender(),
@@ -117,7 +129,7 @@ void main() {
     addTearDown(restarted.stop);
     await tester.pumpAndSettle();
     expect(provider.sent, hasLength(1));
-    expect(await store.hasOutgoing('a'), isFalse);
+    expect(await outbox.hasOutgoing('a'), isFalse);
   }, skip: !mobile);
 }
 
@@ -130,7 +142,9 @@ const _message = OutgoingMessage(
 );
 
 /// A fresh SQLCipher database file with Account `a`, whose fake Provider is registered by its id.
-Future<(MailStore, FakeMailProvider)> _realStore(String name) async {
+Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(
+  String name,
+) async {
   final path = '${(await getTemporaryDirectory()).path}/$name';
   for (final f in [File(path), File('$path-journal')]) {
     if (f.existsSync()) f.deleteSync();
@@ -150,5 +164,5 @@ Future<(MailStore, FakeMailProvider)> _realStore(String name) async {
   final provider = FakeMailProvider();
   await GetIt.I.reset();
   GetIt.I.registerSingleton<MailProvider>(provider, instanceName: 'a');
-  return (store, provider);
+  return (store, OutboxStore(db), provider);
 }

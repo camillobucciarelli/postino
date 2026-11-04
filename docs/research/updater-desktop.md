@@ -2,6 +2,8 @@
 
 Ticket: #118 (spec #28, commento «Passo 2» del 2026-11-04). Data ricerca: 2026-11-04. Contesto: Flutter 3.47.8 (`.fvmrc`), target macOS 12.0, app macOS **in sandbox** (`macos/Runner/Release.entitlements`), artefatti e appcast su Cloudflare R2, solo macOS per ora (Windows rimandato). Sblocca #122.
 
+**Decisione dell'autore (annotata su #118): Sparkle nativo.**
+
 Legenda: **[F]** fatto osservato in fonte primaria, **[I]** inferenza, **[R]** raccomandazione.
 
 ## Domanda
@@ -61,6 +63,7 @@ Per gli aggiornamenti macOS conviene adottare il plugin `auto_updater` (leanflut
 
 - [F] Setup di base: un oggetto `SPUStandardUpdaterController` (in `MainMenu.xib` o creato in codice), una voce «Check for Updates…» con azione `checkForUpdates:`, e in `Info.plist` `SUFeedURL` (URL dell'appcast) e `SUPublicEDKey` (chiave pubblica EdDSA in base64). `CFBundleVersion` deve crescere a ogni versione. Il controllo automatico non richiede altre chiamate API. https://sparkle-project.org/documentation/
 - [F] `generate_keys` salva la chiave privata EdDSA nel portachiavi di login e stampa quella pubblica; `-x`/`-f` la esportano e la importano (servono per la CI sul runner self-hosted). `generate_appcast` crea appcast, firme e delta da una cartella di archivi; `sign_update` restituisce `sparkle:edSignature` e `length` per l'`<enclosure>`. Con `SURequireSignedFeed` si firmano anche l'appcast e le note di rilascio. https://sparkle-project.org/documentation/ e https://sparkle-project.org/documentation/publishing/
+- [F] `SURequireSignedFeed` (da Sparkle 2.9) fa validare la firma di appcast e note di rilascio, e richiede come prerequisito `SUVerifyUpdateBeforeExtraction = YES` (da 2.7.3), che verifica l'aggiornamento prima di estrarlo. https://sparkle-project.org/documentation/customization/#security-settings
 - [F] La Library Validation fa parte dell'hardened runtime ed è necessaria per la notarizzazione. Con una firma ad-hoc Sparkle può non caricarsi; la firma Developer ID evita il problema. In Debug serve un certificato «Apple Development» oppure la Library Validation disattivata. https://sparkle-project.org/documentation/
 - [F] Sparkle distribuisce i servizi XPC e gli helper già firmati ad-hoc con hardened runtime. Esportando da Xcode la firma è automatica. Firmando a mano si rifirma ogni componente con `-o runtime`, senza `--deep`. https://sparkle-project.org/documentation/sandboxing/
 - [I] La notarizzazione vale allo stesso modo per entrambe le opzioni: dipende dal framework Sparkle incluso e dalla pipeline di #119, non dal plugin.
@@ -76,7 +79,7 @@ Per gli aggiornamenti macOS conviene adottare il plugin `auto_updater` (leanflut
 Sul modello di `macos/Runner/LaunchAtLogin.swift`, registrato in `MainFlutterWindow.swift`:
 
 1. **Dipendenza**: pacchetto SwiftPM `https://github.com/sparkle-project/Sparkle`, «Up to Next Major» da 2.10.1, collegato al target Runner (modifica a `project.pbxproj`).
-2. **`Info.plist`**: `SUFeedURL` (URL R2 dell'appcast), `SUPublicEDKey`, `SUEnableInstallerLauncherService = YES`, e facoltativo `SUEnableAutomaticChecks`.
+2. **`Info.plist`**: `SUFeedURL` (URL R2 dell'appcast), `SUPublicEDKey`, `SUEnableInstallerLauncherService = YES`, `SUVerifyUpdateBeforeExtraction = YES`, `SURequireSignedFeed = YES`, e facoltativo `SUEnableAutomaticChecks`.
 3. **Entitlements** (`Release.entitlements` e `DebugProfile.entitlements`): le due eccezioni mach-lookup `-spks`/`-spki`.
 4. **`macos/Runner/Updater.swift`** (circa 40 righe): un `SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)` tenuto per tutta l'esecuzione, e un canale `it.postino/updater` con `checkForUpdates` (e `canCheckForUpdates` se si vuole disabilitare la voce durante un controllo).
 5. **Menu «Cerca aggiornamenti…»**: nel menu dell'app in `MainMenu.xib`, collegato direttamente a `checkForUpdates:`, senza passare da Dart. Nel menu della tray (`lib/core/data/desktop/native_system_tray.dart`, `tray_manager`) serve invece la chiamata al canale.
@@ -97,7 +100,7 @@ Sul modello di `macos/Runner/LaunchAtLogin.swift`, registrato in `MainFlutterWin
 1. **Integrare Sparkle 2 in modo nativo** (SwiftPM, `SPUStandardUpdaterController`, canale `it.postino/updater`), non `auto_updater`. Motivi in ordine di peso: Sparkle bloccato alla 2.9.6 da CocoaPods, plugin senza manutenzione da due anni, nessun vantaggio sulla sandbox, Windows già legato a una WinSparkle obsoleta.
 2. Fissare Sparkle «Up to Next Major» dalla 2.10.1 e aggiornarlo come le altre dipendenze.
 3. «Cerca aggiornamenti…» nel menu dell'app via `MainMenu.xib`, e nel menu della tray tramite il canale.
-4. Attivare `SURequireSignedFeed` (appcast firmato oltre agli archivi), dato che l'hosting R2 è esterno al repo.
+4. Attivare `SUVerifyUpdateBeforeExtraction = YES` e `SURequireSignedFeed = YES` (il secondo richiede il primo; appcast e note firmati oltre agli archivi), dato che l'hosting R2 è esterno al repo.
 5. Per Windows, quando arriverà il runner: WinSparkle 0.9.x nativo con EdDSA, dietro lo stesso canale.
 
 ## Punti aperti

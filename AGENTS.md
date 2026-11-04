@@ -22,7 +22,7 @@ Un file, una responsabilità; SOLID; clean architecture (ADR 0006) con le regole
 
 ### Merge delle PR
 
-Una PR si unisce solo se tutti i check *richiesti* (`check`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). I build hosted `android`, `linux` e `windows` girano solo a mano (`workflow_dispatch`) per risparmiare minuti Actions: vederli saltati è normale. La regola è imposta anche da un ruleset su `main`.
+Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). `check`, `android` e `apple` girano sul runner self-hosted `postino-mac`. I build hosted `linux` e `windows` girano solo a mano (`workflow_dispatch`) per risparmiare minuti Actions: vederli saltati è normale. La regola è imposta anche da un ruleset su `main`.
 
 ### Review prima del push
 

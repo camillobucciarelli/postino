@@ -9,30 +9,33 @@ on:
 permissions:
   contents: read
 
+# Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          # Single source of truth for the pinned Flutter version: .fvmrc.
-          # Do not add `flutter-version:` alongside it, the action rejects both.
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       - run: flutter pub get
       - name: Codegen
         run: |
           dart run routefly
           dart run slang
           dart run build_runner build
-      # routefly numbers routes in directory-listing order, which differs on
-      # Linux; lib/main.route.dart and lib/main.g.dart are checked on macOS (apple job) instead.
       - name: Generated code is committed
         run: |
-          git diff --exit-code -- . ':!lib/main.route.dart' ':!lib/main.g.dart'
-          test -z "$(git status --porcelain -- . ':!lib/main.route.dart' ':!lib/main.g.dart')"
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
       # Generated files stay as the generators emit them.
       - name: Format
         run: |
@@ -40,28 +43,19 @@ jobs:
             | grep -vE '\.(g|freezed|config|route)\.dart$' \
             | xargs dart format --output=none --set-exit-if-changed
       - run: flutter analyze --fatal-infos
-      # Host tests build cnativeapi's native assets (tray_manager/window_manager, #38) for Linux: GTK 3, X11, Xi headers.
-      - name: Native asset build dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev
       - run: flutter test
 
-  # Build hosted: solo manuali (workflow_dispatch) per risparmiare minuti Actions.
   android:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       - run: flutter pub get
       - name: Codegen
         run: |
@@ -70,6 +64,7 @@ jobs:
           dart run build_runner build
       - run: flutter build apk --debug
 
+  # Build hosted: solo manuali (workflow_dispatch) per risparmiare minuti Actions.
   linux:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

@@ -13,12 +13,15 @@ import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/link_table.dart';
 import '../domain/quoted_text.dart';
 import '../domain/reply_kind.dart';
 import '../domain/safe_html.dart';
 import 'attachment_actions.dart';
 import 'attachment_chips.dart';
+import 'link_guard.dart';
 import 'message_time.dart';
+import 'original_view.dart';
 
 /// The thread of an open Conversazione, newest first: each message with its details, its menu (Rispondi,
 /// Rispondi a tutti, Inoltra: [onAct]), its body split into body, signature and quote, and its attachments.
@@ -54,6 +57,8 @@ class _ConversationBodyState() extends State<ConversationBody> {
   final _safe = <(String, bool), SafeHtml>{};
   final _parts = <(String, bool), BodyParts>{};
   final _measured = <(String, bool), SafeHtml>{};
+  final _links = <(String, bool), LinkTable>{};
+  final _nonce = newLinkNonce();
 
   bool _allowRemote(Message message) =>
       widget.trusted.contains(normalizeAddress(message.from)) || _trust.shownOnce(widget.account.id, message.id);
@@ -81,16 +86,15 @@ class _ConversationBodyState() extends State<ConversationBody> {
     // Already clean: this only measures the part's own fixed width.
     final allow = _allowRemote(message);
     final part = _measured[(content, allow)] ??= prepareHtml(content, allowRemote: allow);
+    // Every link is a token: a tap names the link itself, never a URL to compare.
+    final table = _links[(content, allow)] ??= tokenizeLinks(part.html, nonce: _nonce);
     return PostinoHtmlCard(
-      html: part.html,
+      html: table.html,
       contentWidth: part.width,
       quiet: quiet,
-      onTapUrl: (url) {
-        // Web and mail only: a `file:` link in a message must never open (or hand out) a local file.
-        if (Uri.tryParse(url) case final uri? when ['http', 'https', 'mailto'].contains(uri.scheme)) {
-          unawaited(GetIt.I<LinkOpener>().open(uri));
-        }
-      },
+      // A trusted sender's images are not blocked: a src-less one there is a `cid:` one, labelled by its alt.
+      blockedImageLabel: allow ? null : context.t.conversazione.blockedImage,
+      onTapUrl: (url) => unawaited(openTokenLink(context, table, url)),
     );
   }
 
@@ -136,8 +140,10 @@ class _ConversationBodyState() extends State<ConversationBody> {
     final shown = {
       for (final (i, MapEntry(:key, :value)) in parts.entries.indexed) key: foldBody(value, repeated: flags[i]),
     };
+    final subject = messages.first.message.subject;
     return PostinoThreadView(
-      subject: messages.first.message.subject,
+      subject: subject,
+      announcement: t.announcement(subject: subject, n: messages.length),
       account: accountRef,
       accountName: a.name,
       importantLabel: messages.any((m) => m.message.labelIds.contains('IMPORTANT')) ? t.important : null,
@@ -178,9 +184,26 @@ class _ConversationBodyState() extends State<ConversationBody> {
                     label: label,
                     onPressed: () => widget.onAct(kind, message.id),
                   ),
+                if (originalAvailable && body != null && body.kind == BodyKind.html)
+                  PostinoMenuItem(
+                    key: ValueKey('message-original-${message.id}'),
+                    label: t.viewOriginal,
+                    onPressed: () => unawaited(
+                      Navigator.of(context).push(
+                        PageRouteBuilder<void>(
+                          pageBuilder: (_, _, _) => OriginalView(
+                            html: body.content,
+                            allowRemote: _allowRemote(message),
+                            subject: message.subject,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             unread: !message.isRead,
+            unreadLabel: context.t.list.unread,
             expanded: widget.expanded[message.id]!,
             // A body without its attachments known (stored before v9) is downloaded again too.
             onToggle: () => widget.onToggle(message.id, hasBody: body != null && body.attachments != null),

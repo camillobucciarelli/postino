@@ -2770,6 +2770,322 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   }
 }
 
+class $LabelIntentsTable extends LabelIntents
+    with TableInfo<$LabelIntentsTable, LabelIntentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LabelIntentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelIdMeta = const VerificationMeta(
+    'labelId',
+  );
+  @override
+  late final GeneratedColumn<String> labelId = GeneratedColumn<String>(
+    'label_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedMeta = const VerificationMeta('added');
+  @override
+  late final GeneratedColumn<bool> added = GeneratedColumn<bool>(
+    'added',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("added" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, messageId, labelId, added];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'label_intents';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LabelIntentRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('label_id')) {
+      context.handle(
+        _labelIdMeta,
+        labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelIdMeta);
+    }
+    if (data.containsKey('added')) {
+      context.handle(
+        _addedMeta,
+        added.isAcceptableOrUnknown(data['added']!, _addedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_addedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId, labelId};
+  @override
+  LabelIntentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LabelIntentRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      )!,
+      labelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label_id'],
+      )!,
+      added: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}added'],
+      )!,
+    );
+  }
+
+  @override
+  $LabelIntentsTable createAlias(String alias) {
+    return $LabelIntentsTable(attachedDatabase, alias);
+  }
+}
+
+class LabelIntentRow extends DataClass implements Insertable<LabelIntentRow> {
+  final String accountId;
+  final String messageId;
+  final String labelId;
+  final bool added;
+  const LabelIntentRow({
+    required this.accountId,
+    required this.messageId,
+    required this.labelId,
+    required this.added,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['message_id'] = Variable<String>(messageId);
+    map['label_id'] = Variable<String>(labelId);
+    map['added'] = Variable<bool>(added);
+    return map;
+  }
+
+  LabelIntentsCompanion toCompanion(bool nullToAbsent) {
+    return LabelIntentsCompanion(
+      accountId: Value(accountId),
+      messageId: Value(messageId),
+      labelId: Value(labelId),
+      added: Value(added),
+    );
+  }
+
+  factory LabelIntentRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LabelIntentRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      labelId: serializer.fromJson<String>(json['labelId']),
+      added: serializer.fromJson<bool>(json['added']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'messageId': serializer.toJson<String>(messageId),
+      'labelId': serializer.toJson<String>(labelId),
+      'added': serializer.toJson<bool>(added),
+    };
+  }
+
+  LabelIntentRow copyWith({
+    String? accountId,
+    String? messageId,
+    String? labelId,
+    bool? added,
+  }) => LabelIntentRow(
+    accountId: accountId ?? this.accountId,
+    messageId: messageId ?? this.messageId,
+    labelId: labelId ?? this.labelId,
+    added: added ?? this.added,
+  );
+  LabelIntentRow copyWithCompanion(LabelIntentsCompanion data) {
+    return LabelIntentRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      labelId: data.labelId.present ? data.labelId.value : this.labelId,
+      added: data.added.present ? data.added.value : this.added,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabelIntentRow(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('labelId: $labelId, ')
+          ..write('added: $added')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, messageId, labelId, added);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LabelIntentRow &&
+          other.accountId == this.accountId &&
+          other.messageId == this.messageId &&
+          other.labelId == this.labelId &&
+          other.added == this.added);
+}
+
+class LabelIntentsCompanion extends UpdateCompanion<LabelIntentRow> {
+  final Value<String> accountId;
+  final Value<String> messageId;
+  final Value<String> labelId;
+  final Value<bool> added;
+  final Value<int> rowid;
+  const LabelIntentsCompanion({
+    this.accountId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.labelId = const Value.absent(),
+    this.added = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabelIntentsCompanion.insert({
+    required String accountId,
+    required String messageId,
+    required String labelId,
+    required bool added,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       messageId = Value(messageId),
+       labelId = Value(labelId),
+       added = Value(added);
+  static Insertable<LabelIntentRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? messageId,
+    Expression<String>? labelId,
+    Expression<bool>? added,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (messageId != null) 'message_id': messageId,
+      if (labelId != null) 'label_id': labelId,
+      if (added != null) 'added': added,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabelIntentsCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? messageId,
+    Value<String>? labelId,
+    Value<bool>? added,
+    Value<int>? rowid,
+  }) {
+    return LabelIntentsCompanion(
+      accountId: accountId ?? this.accountId,
+      messageId: messageId ?? this.messageId,
+      labelId: labelId ?? this.labelId,
+      added: added ?? this.added,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (labelId.present) {
+      map['label_id'] = Variable<String>(labelId.value);
+    }
+    if (added.present) {
+      map['added'] = Variable<bool>(added.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabelIntentsCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('labelId: $labelId, ')
+          ..write('added: $added, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TrustedSendersTable extends TrustedSenders
     with TableInfo<$TrustedSendersTable, TrustedSenderRow> {
   @override
@@ -4881,6 +5197,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $BodiesTable bodies = $BodiesTable(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final $IntentsTable intents = $IntentsTable(this);
+  late final $LabelIntentsTable labelIntents = $LabelIntentsTable(this);
   late final $TrustedSendersTable trustedSenders = $TrustedSendersTable(this);
   late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
@@ -4914,6 +5231,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     bodies,
     syncCursors,
     intents,
+    labelIntents,
     trustedSenders,
     deviceSettings,
     drafts,
@@ -6458,6 +6776,202 @@ typedef $$IntentsTableProcessedTableManager =
       IntentRow,
       PrefetchHooks Function()
     >;
+typedef $$LabelIntentsTableCreateCompanionBuilder =
+    LabelIntentsCompanion Function({
+      required String accountId,
+      required String messageId,
+      required String labelId,
+      required bool added,
+      Value<int> rowid,
+    });
+typedef $$LabelIntentsTableUpdateCompanionBuilder =
+    LabelIntentsCompanion Function({
+      Value<String> accountId,
+      Value<String> messageId,
+      Value<String> labelId,
+      Value<bool> added,
+      Value<int> rowid,
+    });
+
+class $$LabelIntentsTableFilterComposer
+    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
+  $$LabelIntentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get labelId => $composableBuilder(
+    column: $table.labelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get added => $composableBuilder(
+    column: $table.added,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LabelIntentsTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
+  $$LabelIntentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get labelId => $composableBuilder(
+    column: $table.labelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get added => $composableBuilder(
+    column: $table.added,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LabelIntentsTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
+  $$LabelIntentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get labelId =>
+      $composableBuilder(column: $table.labelId, builder: (column) => column);
+
+  GeneratedColumn<bool> get added =>
+      $composableBuilder(column: $table.added, builder: (column) => column);
+}
+
+class $$LabelIntentsTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $LabelIntentsTable,
+          LabelIntentRow,
+          $$LabelIntentsTableFilterComposer,
+          $$LabelIntentsTableOrderingComposer,
+          $$LabelIntentsTableAnnotationComposer,
+          $$LabelIntentsTableCreateCompanionBuilder,
+          $$LabelIntentsTableUpdateCompanionBuilder,
+          (
+            LabelIntentRow,
+            BaseReferences<
+              _$PostinoDatabase,
+              $LabelIntentsTable,
+              LabelIntentRow
+            >,
+          ),
+          LabelIntentRow,
+          PrefetchHooks Function()
+        > {
+  $$LabelIntentsTableTableManager(
+    _$PostinoDatabase db,
+    $LabelIntentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LabelIntentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LabelIntentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LabelIntentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> messageId = const Value.absent(),
+                Value<String> labelId = const Value.absent(),
+                Value<bool> added = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabelIntentsCompanion(
+                accountId: accountId,
+                messageId: messageId,
+                labelId: labelId,
+                added: added,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String messageId,
+                required String labelId,
+                required bool added,
+                Value<int> rowid = const Value.absent(),
+              }) => LabelIntentsCompanion.insert(
+                accountId: accountId,
+                messageId: messageId,
+                labelId: labelId,
+                added: added,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LabelIntentsTable, LabelIntentRow>(table),
+                  BaseReferences<
+                    _$PostinoDatabase,
+                    $LabelIntentsTable,
+                    LabelIntentRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LabelIntentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $LabelIntentsTable,
+      LabelIntentRow,
+      $$LabelIntentsTableFilterComposer,
+      $$LabelIntentsTableOrderingComposer,
+      $$LabelIntentsTableAnnotationComposer,
+      $$LabelIntentsTableCreateCompanionBuilder,
+      $$LabelIntentsTableUpdateCompanionBuilder,
+      (
+        LabelIntentRow,
+        BaseReferences<_$PostinoDatabase, $LabelIntentsTable, LabelIntentRow>,
+      ),
+      LabelIntentRow,
+      PrefetchHooks Function()
+    >;
 typedef $$TrustedSendersTableCreateCompanionBuilder =
     TrustedSendersCompanion Function({
       required String address,
@@ -7555,6 +8069,8 @@ class $PostinoDatabaseManager {
       $$SyncCursorsTableTableManager(_db, _db.syncCursors);
   $$IntentsTableTableManager get intents =>
       $$IntentsTableTableManager(_db, _db.intents);
+  $$LabelIntentsTableTableManager get labelIntents =>
+      $$LabelIntentsTableTableManager(_db, _db.labelIntents);
   $$TrustedSendersTableTableManager get trustedSenders =>
       $$TrustedSendersTableTableManager(_db, _db.trustedSenders);
   $$DeviceSettingsTableTableManager get deviceSettings =>

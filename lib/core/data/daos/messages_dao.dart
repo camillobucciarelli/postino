@@ -43,8 +43,6 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             for (final m in batch.messages) {
               b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [m.id]);
             }
-            // Labels come with the snapshot: those gone from the Provider go too.
-            labelsDao.deleteAllIn(b, accountId);
             b
               ..deleteWhere(
                 messageLabels,
@@ -66,7 +64,12 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
               ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(id));
             bodiesDao.deleteIn(b, accountId, id);
           }
-          labelsDao.upsertAllIn(b, accountId, batch.labels);
+          // The batch's list is the whole one: those gone from the Provider go too.
+          if (batch.labels case final labels?) {
+            labelsDao
+              ..deleteAllIn(b, accountId)
+              ..upsertAllIn(b, accountId, labels);
+          }
           for (final m in batch.messages) {
             b
               ..insert(
@@ -110,14 +113,34 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
       });
 
   /// What the user did here wins over what the Provider still says, until the intent is replayed.
-  Future<void> _keepIntents(String accountId) => customUpdate(
-    'UPDATE messages SET is_read = (SELECT i.is_read FROM intents i '
-    'WHERE i.account_id = messages.account_id AND i.message_id = messages.id) '
-    'WHERE account_id = ?1 AND id IN '
-    '(SELECT message_id FROM intents WHERE account_id = ?1 AND is_read IS NOT NULL)',
-    variables: [Variable(accountId)],
-    updates: {messages},
-  );
+  Future<void> _keepIntents(String accountId) async {
+    final account = [Variable(accountId)];
+    await customUpdate(
+      'UPDATE messages SET is_read = (SELECT i.is_read FROM intents i '
+      'WHERE i.account_id = messages.account_id AND i.message_id = messages.id) '
+      'WHERE account_id = ?1 AND id IN '
+      '(SELECT message_id FROM intents WHERE account_id = ?1 AND is_read IS NOT NULL)',
+      variables: account,
+      updates: {messages},
+    );
+    await customUpdate(
+      'DELETE FROM message_labels WHERE account_id = ?1 AND EXISTS (SELECT 1 FROM label_intents i '
+      'WHERE i.account_id = message_labels.account_id AND i.message_id = message_labels.message_id '
+      'AND i.label_id = message_labels.label_id AND NOT i.added)',
+      variables: account,
+      updates: {messageLabels},
+      updateKind: UpdateKind.delete,
+    );
+    // Only on messages still here: one removed by this batch gets no orphan label.
+    await customInsert(
+      'INSERT OR IGNORE INTO message_labels (account_id, message_id, label_id) '
+      'SELECT i.account_id, i.message_id, i.label_id FROM label_intents i '
+      'JOIN messages m ON m.account_id = i.account_id AND m.id = i.message_id '
+      'WHERE i.account_id = ?1 AND i.added',
+      variables: account,
+      updates: {messageLabels},
+    );
+  }
 
   /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox), each with its Account;
   /// of every Account, or only of [accountId]. Grouping is the caller's.

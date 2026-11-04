@@ -97,6 +97,14 @@ _Avoid_: Gesto, comando
 Una condizione sui messaggi in arrivo e le Azioni che il Provider applica automaticamente quando si verifica. Appartiene a un solo Account.
 _Avoid_: Filtro, automazione
 
+**Etichettatura automatica**:
+L'assegnazione, decisa sul dispositivo, di un'Etichetta automatica a un messaggio appena arrivato in base al suo contenuto e agli esempi dell'Account; al massimo un'Etichetta per messaggio, e non avviene se il messaggio ha già un'Etichetta dell'utente. Differisce dalla Regola: la Regola ha una condizione esplicita ed è applicata dal Provider.
+_Avoid_: Classificazione, smistamento automatico, filtro intelligente, categoria
+
+**Etichetta automatica**:
+Un'Etichetta per cui l'utente ha attivato l'Etichettatura automatica, con una descrizione facoltativa che ne spiega il significato.
+_Avoid_: Categoria
+
 ### Sicurezza
 
 **Messaggio firmato**:
@@ -140,6 +148,7 @@ _Avoid_: Telemetria, analytics
 - Un **Account** appartiene a un solo **Provider**
 - Un **Provider** può ospitare molti **Account**
 - Le **Etichette** appartengono a un **Account** e non sono mai condivise tra **Account**
+- Un'**Etichetta automatica** appartiene a un **Account**, come ogni **Etichetta**; l'**Etichettatura automatica** impara solo dagli esempi di quell'**Account**
 - Una **Conversazione** appartiene a un solo **Account**
 - Una **Bozza** appartiene a un solo **Account**
 - La **Posta unificata** mostra la posta in arrivo di tutti gli **Account**

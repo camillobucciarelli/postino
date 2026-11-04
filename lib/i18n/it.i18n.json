@@ -71,6 +71,11 @@
     "toCc": "a $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Mostra testo citato",
+    "blockedImage": "Immagine bloccata",
+    "announcement": {
+      "one": "$subject, $n messaggio",
+      "other": "$subject, $n messaggi"
+    },
     "important": "Importante",
     "attachmentOpen": "Apri",
     "attachmentDownloading": "Scaricamento… $percent%",
@@ -86,7 +91,15 @@
     "replyAll": "Rispondi a tutti",
     "forward": "Inoltra",
     "forwardUnavailable": "Impossibile inoltrare: messaggio non scaricato",
-    "messageActions": "Azioni del messaggio"
+    "messageActions": "Azioni del messaggio",
+    "viewOriginal": "Vedi originale",
+    "originalTitle": "Messaggio originale",
+    "linkWarningTitle": "Questo link porta a un altro sito",
+    "linkWarningBody": "Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su $domain.",
+    "linkUnverifiedBody": "Non si può verificare dove porta questo link. Se lo apri, vai su $domain.",
+    "linkWarningPunycode": "Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.",
+    "linkOpen": "Apri il link",
+    "linkCancel": "Non aprire"
   },
   "composizione": {
     "title": "Nuovo messaggio",

@@ -9,13 +9,15 @@ import '../mail_store.dart';
 /// Pause in the edits after which a Bozza goes to the Provider (#35).
 const draftDebounce = Duration(seconds: 5);
 
-/// Replays the offline queue of an Account (ADR 0008): the read intents, then the Bozze not on the Provider yet.
+/// Replays the offline queue of an Account (ADR 0008): the read and Etichette intents, then the Bozze
+/// not on the Provider yet.
 /// What fails stays queued and the next poll retries it. Called only from inside the Account's serial queue
 /// of the sync engine: it never runs beside a sync or a send of the same Account.
 class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, final Clock _clock) {
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     await _replayReads(accountId, provider);
+    await _replayLabels(accountId, provider);
     await _replayDrafts(accountId, provider, flush: flush);
   }
 
@@ -31,6 +33,26 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           await _store.readDone(accountId, ids, isRead: read);
         case Err(:final failure):
           debugPrint('[sync] $accountId: replay failed, $failure');
+          return;
+      }
+    }
+  }
+
+  /// One call per message and Etichetta: a message gone fails alone, and its intent is dropped.
+  /// A passing failure (offline, quota, auth) stops at once: each call would wait out the transport's backoff,
+  /// holding the Account's queue for minutes; the rest stays queued for the next replay.
+  Future<void> _replayLabels(String accountId, MailProvider provider) async {
+    for (final i in await _store.pendingLabelIntents(accountId)) {
+      switch (await provider.setLabel(i.messageId, i.labelId, add: i.added)) {
+        case Ok() || Err(failure: NotFoundFailure()):
+          await _store.labelDone(accountId, i.messageId, i.labelId, added: i.added);
+        // ponytail: a refusal (an Etichetta deleted elsewhere) would be retried forever, and the message may never
+        // come back in the history: the intent is dropped and the change undone here.
+        case Err(failure: RejectedFailure()):
+          await _store.labelRejected(accountId, i.messageId, i.labelId, added: i.added);
+        case Err(:final failure):
+          debugPrint('[sync] $accountId: label replay failed, $failure');
+          return;
       }
     }
   }

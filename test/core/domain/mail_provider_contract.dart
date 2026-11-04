@@ -71,6 +71,8 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.initialSync(),
         await h.provider.incrementalSync('0'),
         await h.provider.setRead(['a'], read: true),
+        await h.provider.createLabel('Fatture'),
+        await h.provider.setLabel('a', 'Label_12', add: true),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
@@ -83,6 +85,8 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.fetchBody('a'),
         await h.provider.fetchConversation('t-a'),
         await h.provider.setRead(['a'], read: true),
+        await h.provider.createLabel('Fatture'),
+        await h.provider.setLabel('a', 'Label_12', add: true),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
@@ -133,7 +137,7 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
         ..deliver(msg('a', isRead: true, isStarred: true))
         ..deliver(msg('s', labelIds: const ['SENT']));
       final batch = _ok(await h.provider.initialSync());
-      expect(batch.labels.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')]);
+      expect(batch.labels!.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')]);
       final a = batch.messages.singleWhere((m) => m.id == 'a');
       expect(a.conversationId, 't-a');
       expect(a.labelIds, contains(inboxLabelId));
@@ -362,10 +366,55 @@ void mailProviderSendContract(String name, ContractHarness Function() create) {
   });
 }
 
+/// Etichette (#105): created on the Provider, added to and removed from a message; every call idempotent.
+void mailProviderLabelContract(String name, ContractHarness Function() create) {
+  group('MailProvider label contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
+
+    Future<List<String>> labelsOf(String cursor, String id) async =>
+        _ok(await h.provider.incrementalSync(cursor)).messages.singleWhere((m) => m.id == id).labelIds;
+
+    test('a created Etichetta comes with the next incremental sync; creating it again returns the same one', () async {
+      final first = _ok(await h.provider.initialSync());
+      final created = _ok(await h.provider.createLabel('Fatture'));
+      expect((created.name, created.kind), ('Fatture', LabelKind.etichetta));
+      expect(_ok(await h.provider.createLabel('Fatture')), created);
+      final next = _ok(await h.provider.incrementalSync(first.cursor));
+      expect(
+        next.labels!.map((l) => (l.id, l.name)),
+        unorderedEquals([('Label_12', 'Viaggi'), (created.id, 'Fatture')]),
+      );
+    });
+
+    test('creating an Etichetta that already exists returns it', () async {
+      expect(_ok(await h.provider.createLabel('Viaggi')).id, 'Label_12');
+    });
+
+    test('an Etichetta added twice is on the message once; removed twice, it is gone', () async {
+      h.deliver(msg('a'));
+      final first = _ok(await h.provider.initialSync());
+      _ok(await h.provider.setLabel('a', 'Label_12', add: true));
+      _ok(await h.provider.setLabel('a', 'Label_12', add: true));
+      final added = await labelsOf(first.cursor, 'a');
+      expect(added.where((l) => l == 'Label_12'), hasLength(1));
+      expect(added, contains(inboxLabelId));
+      _ok(await h.provider.setLabel('a', 'Label_12', add: false));
+      _ok(await h.provider.setLabel('a', 'Label_12', add: false));
+      expect(await labelsOf(first.cursor, 'a'), isNot(contains('Label_12')));
+    });
+
+    test('an Etichetta on a message gone from the Provider is NotFound', () async {
+      expect(await h.provider.setLabel('zzz', 'Label_12', add: true), _err<NotFoundFailure>());
+    });
+  });
+}
+
 void mailProviderContract(String name, ContractHarness Function() create) {
   mailProviderAuthContract(name, create);
   mailProviderSyncContract(name, create);
   mailProviderAttachmentContract(name, create);
   mailProviderDraftContract(name, create);
   mailProviderSendContract(name, create);
+  mailProviderLabelContract(name, create);
 }

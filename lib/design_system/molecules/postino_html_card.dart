@@ -12,7 +12,7 @@ import '../tokens/postino_tokens.dart';
 /// «cartoncino», so the colors its sender chose read as meant; in light theme straight on the page.
 /// Wider than the column ([contentWidth]: the fixed width it asks for, in px) it scales down to fit,
 /// never scrolling sideways. An `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
-/// by its `alt`. A tap on a link calls [onTapUrl] with its real URL.
+/// [blockedImageLabel] and its `alt`. A tap on a link calls [onTapUrl] with its real URL.
 class const PostinoHtmlCard({
   super.key,
 
@@ -27,6 +27,9 @@ class const PostinoHtmlCard({
 
   /// A signature or a quote: `body-quote` in `ink-muted` where the sender set no style.
   final bool quiet = false,
+
+  /// «Immagine bloccata»: what screen readers say for a placeholder, before its `alt`.
+  final String? blockedImageLabel,
 }) extends StatelessWidget {
   /// Crea la scheda per `html`; `onTapUrl` riceve i link toccati.
   this;
@@ -53,7 +56,7 @@ class const PostinoHtmlCard({
               ? InlineCustomWidget(
                   child: _BottomBaseline(
                     child: Semantics(
-                      label: e.attributes['alt'],
+                      label: [blockedImageLabel, e.attributes['alt']].nonNulls.where((l) => l.isNotEmpty).join(': '),
                       image: true,
                       child: PostinoIcon(PostinoIcons.image, size: PostinoSize.iconLg, color: c.inkSubtle),
                     ),

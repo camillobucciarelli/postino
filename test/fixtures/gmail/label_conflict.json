@@ -1,0 +1,17 @@
+{
+  "status": 409,
+  "body": {
+    "error": {
+      "code": 409,
+      "message": "Label name exists or conflicts",
+      "errors": [
+        {
+          "message": "Label name exists or conflicts",
+          "domain": "global",
+          "reason": "duplicate"
+        }
+      ],
+      "status": "ABORTED"
+    }
+  }
+}

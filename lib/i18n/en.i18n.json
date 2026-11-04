@@ -86,7 +86,15 @@
     "replyAll": "Reply all",
     "forward": "Forward",
     "forwardUnavailable": "Cannot forward: message not downloaded",
-    "messageActions": "Message actions"
+    "messageActions": "Message actions",
+    "viewOriginal": "View original",
+    "originalTitle": "Original message",
+    "linkWarningTitle": "This link goes to a different site",
+    "linkWarningBody": "The link's text shows an address other than the real one. If you open it, you go to $domain.",
+    "linkUnverifiedBody": "Where this link goes cannot be verified. If you open it, you go to $domain.",
+    "linkWarningPunycode": "The site's name uses special characters (punycode): it may imitate another one.",
+    "linkOpen": "Open the link",
+    "linkCancel": "Don't open"
   },
   "composizione": {
     "title": "New message",

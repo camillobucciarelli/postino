@@ -197,6 +197,14 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String get forward => 'Forward';
 	@override String get forwardUnavailable => 'Cannot forward: message not downloaded';
 	@override String get messageActions => 'Message actions';
+	@override String get viewOriginal => 'View original';
+	@override String get originalTitle => 'Original message';
+	@override String get linkWarningTitle => 'This link goes to a different site';
+	@override String linkWarningBody({required Object domain}) => 'The link\'s text shows an address other than the real one. If you open it, you go to ${domain}.';
+	@override String linkUnverifiedBody({required Object domain}) => 'Where this link goes cannot be verified. If you open it, you go to ${domain}.';
+	@override String get linkWarningPunycode => 'The site\'s name uses special characters (punycode): it may imitate another one.';
+	@override String get linkOpen => 'Open the link';
+	@override String get linkCancel => 'Don\'t open';
 }
 
 // Path: composizione
@@ -366,6 +374,14 @@ extension on TranslationsEn {
 			'conversazione.forward' => 'Forward',
 			'conversazione.forwardUnavailable' => 'Cannot forward: message not downloaded',
 			'conversazione.messageActions' => 'Message actions',
+			'conversazione.viewOriginal' => 'View original',
+			'conversazione.originalTitle' => 'Original message',
+			'conversazione.linkWarningTitle' => 'This link goes to a different site',
+			'conversazione.linkWarningBody' => ({required Object domain}) => 'The link\'s text shows an address other than the real one. If you open it, you go to ${domain}.',
+			'conversazione.linkUnverifiedBody' => ({required Object domain}) => 'Where this link goes cannot be verified. If you open it, you go to ${domain}.',
+			'conversazione.linkWarningPunycode' => 'The site\'s name uses special characters (punycode): it may imitate another one.',
+			'conversazione.linkOpen' => 'Open the link',
+			'conversazione.linkCancel' => 'Don\'t open',
 			'composizione.title' => 'New message',
 			'composizione.write' => 'Compose',
 			'composizione.from' => 'From',

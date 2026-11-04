@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:postino/design_system/organisms/postino_thread_message.dart' show PostinoThreadMessage;
 
 import '../atoms/postino_account_mark.dart';
@@ -13,7 +15,7 @@ import '../tokens/postino_tokens.dart';
 
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
-/// at most `reading-max-width` wide.
+/// at most `reading-max-width` wide. Screen readers hear [announcement] once, when it opens.
 class const PostinoThreadView({
   super.key,
 
@@ -34,6 +36,9 @@ class const PostinoThreadView({
 
   /// «Importante»: the Conversazione is important; the mark after the subject says it to screen readers.
   final String? importantLabel,
+
+  /// Oggetto e numero di messaggi, annunciati agli screen reader all'apertura.
+  final String? announcement,
 }) extends StatefulWidget {
   /// Crea la vista di una conversazione con oggetto, account e messaggi.
   this;
@@ -48,6 +53,17 @@ class _PostinoThreadViewState() extends State<PostinoThreadView> {
 
   /// Out of the Tab order, so Tab and the first focus (the back button) stay as before; a click still focuses it.
   final _focus = FocusNode(debugLabel: 'Conversazione', skipTraversal: true);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.announcement case final a?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(SemanticsService.sendAnnouncement(View.of(context), a, Directionality.of(context)));
+      });
+    }
+  }
 
   @override
   void dispose() {

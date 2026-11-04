@@ -71,6 +71,11 @@
     "toCc": "a $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Mostra testo citato",
+    "blockedImage": "Immagine bloccata",
+    "opened": {
+      "one": "$subject, $n messaggio",
+      "other": "$subject, $n messaggi"
+    },
     "important": "Importante",
     "attachmentOpen": "Apri",
     "attachmentDownloading": "Scaricamento… $percent%",

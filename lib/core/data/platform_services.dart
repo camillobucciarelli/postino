@@ -68,7 +68,7 @@ class SystemConnectivity implements Connectivity {
 class SystemLinkOpener implements LinkOpener {
   SystemLinkOpener() : _launch = _launchExternal, _openFile = _openFilex, _platform = null;
 
-  /// [platform] stands for [defaultTargetPlatform].
+  /// `platform` stands for [defaultTargetPlatform].
   @visibleForTesting
   SystemLinkOpener.test({required this._launch, required this._openFile, required TargetPlatform this._platform});
 
@@ -91,7 +91,7 @@ class SystemLinkOpener implements LinkOpener {
     // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
       await (url.isScheme('file') && mobile && !kIsWeb ? _openFile(url.toFilePath()) : _launch(url));
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   static Future<void> _launchExternal(Uri url) => launchUrl(url, mode: LaunchMode.externalApplication);

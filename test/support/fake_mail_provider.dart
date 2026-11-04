@@ -204,7 +204,7 @@ class FakeMailProvider implements MailProvider {
 
   void goOffline() => _offline = true;
   void goOnline() => _offline = false;
-  void rateLimit([bool on = true, DateTime? retryAfter]) {
+  void rateLimit({bool on = true, DateTime? retryAfter}) {
     _rateLimited = on;
     _retryAfter = retryAfter;
   }
@@ -337,8 +337,8 @@ class FakeMailProvider implements MailProvider {
         : _guard(() {
             readCalls.add((messageIds, read));
             for (final id in messageIds) {
-              if (_old[id] case final m?) _old[id] = withRead(m, read);
-              if (_messages[id] case final m?) deliver(withRead(m, read));
+              if (_old[id] case final m?) _old[id] = withRead(m, read: read);
+              if (_messages[id] case final m?) deliver(withRead(m, read: read));
             }
           });
   }
@@ -438,7 +438,7 @@ class FakeMailProvider implements MailProvider {
 }
 
 /// [m] read (or unread) elsewhere.
-Message withRead(Message m, bool read) => Message(
+Message withRead(Message m, {required bool read}) => Message(
   id: m.id,
   messageId: m.messageId,
   conversationId: m.conversationId,

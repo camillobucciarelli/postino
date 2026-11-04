@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
@@ -15,7 +17,7 @@ Future<void> _start(WidgetTester tester) async {
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   // Routefly keeps the last navigation in statics: start each test from the Posta unificata.
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 
@@ -115,8 +117,9 @@ void main() {
   testWidgets('a message starred on the Provider shows the star everywhere', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
-    a1.deliver(msg('s', subject: 'Con stella', isStarred: true));
-    a1.deliver(msg('n', subject: 'Senza stella'));
+    a1
+      ..deliver(msg('s', subject: 'Con stella', isStarred: true))
+      ..deliver(msg('n', subject: 'Senza stella'));
 
     Finder star(String id) => find.descendant(of: find.byKey(ValueKey('row-a1-$id')), matching: starIcon);
 

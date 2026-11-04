@@ -92,8 +92,7 @@ void main() {
 
     // The next start sends what is due.
     clock.advance(const Duration(minutes: 1));
-    final restarted = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender());
-    restarted.start();
+    final restarted = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender())..start();
     addTearDown(restarted.stop);
     await tester.pumpAndSettle();
     expect(provider.sent, hasLength(1));

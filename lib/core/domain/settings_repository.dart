@@ -4,7 +4,7 @@ abstract interface class SettingsRepository {
   Future<bool?> sidebarExpanded();
 
   /// Ricorda la scelta della sidebar; null cancella la scelta manuale.
-  Future<void> setSidebarExpanded(bool? expanded);
+  Future<void> setSidebarExpanded({required bool? expanded});
 
   /// The width in pixels the user chose for the list; null: none, the default applies. Not limited to the window.
   Future<double?> listWidth();

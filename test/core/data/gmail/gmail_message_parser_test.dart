@@ -7,7 +7,8 @@ import 'package:postino/core/data/gmail/gmail_message_parser.dart';
 import 'package:postino/core/domain/message.dart';
 
 Map<String, dynamic> _message(String name) =>
-    jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync())['body'] as Map<String, dynamic>;
+    (jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync()) as Map<String, dynamic>)['body']
+        as Map<String, dynamic>;
 
 Map<String, dynamic> _payload(String name) => _message(name)['payload'] as Map<String, dynamic>;
 
@@ -33,7 +34,8 @@ void main() {
     expect(gmailBodyPart(f6, 'text/html'), isNull);
     expect(gmailBodyPart(f6, 'text/plain')?['partId'], '0');
     // A big body comes by attachmentId.
-    expect(gmailBodyPart(_payload('message_f5_attachment_body'), 'text/plain')?['body']['attachmentId'], isNotNull);
+    final big = gmailBodyPart(_payload('message_f5_attachment_body'), 'text/plain');
+    expect((big?['body'] as Map<String, dynamic>)['attachmentId'], isNotNull);
   });
 
   test('attachments: named, unnamed, empty; a cid: image is body', () {

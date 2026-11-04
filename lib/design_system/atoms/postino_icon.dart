@@ -35,14 +35,14 @@ class PostinoIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final paint = CustomPaint(
       size: Size.square(size),
-      painter: _IconPainter(icon, color ?? IconTheme.of(context).color ?? const Color(0xFF000000), filled),
+      painter: _IconPainter(icon, color ?? IconTheme.of(context).color ?? const Color(0xFF000000), filled: filled),
     );
     return label == null ? ExcludeSemantics(child: paint) : Semantics(label: label, image: true, child: paint);
   }
 }
 
 class _IconPainter extends CustomPainter {
-  _IconPainter(this.icon, this.color, this.filled);
+  _IconPainter(this.icon, this.color, {required this.filled});
   final PostinoIconData icon;
   final Color color;
   final bool filled;

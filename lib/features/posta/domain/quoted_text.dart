@@ -37,9 +37,9 @@ const _escape = HtmlEscape(HtmlEscapeMode.element);
 
 bool _looksLikeHtml(String s) => s.trimLeft().startsWith('<');
 
-/// What a message shows: [body], then [signature] (in `body-quote`, `ink-muted`), then [folded] behind «…»:
-/// the quote, and the signature too when [repeated] (already seen earlier in the Conversazione).
-/// When folding would leave nothing visible, nothing is folded: [body] is the whole message.
+/// What a message shows: `body`, then `signature` (in `body-quote`, `ink-muted`), then `folded` behind «…»:
+/// the quote, and the signature too when `repeated` (already seen earlier in the Conversazione).
+/// When folding would leave nothing visible, nothing is folded: `body` is the whole message.
 typedef FoldedBody = ({String body, String? signature, String? folded});
 
 FoldedBody foldBody(BodyParts p, {required bool repeated}) {
@@ -86,7 +86,7 @@ const signatureSelectors = [
   '#Signature', // Outlook
 ];
 
-/// Splits a cleaned HTML body ([prepareHtml]): the last quote of the main clients and the signature.
+/// Splits a cleaned HTML body (`prepareHtml`): the last quote of the main clients and the signature.
 /// A forward is never a quote.
 BodyParts splitHtml(String html) {
   final doc = parse(html);

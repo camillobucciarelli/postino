@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-/// One address of a `From`, `To` or `Cc` header: the display [name], if any, and the [address].
+/// One address of a `From`, `To` or `Cc` header: the display `name`, if any, and the `address`.
 typedef Mailbox = ({String? name, String address});
 
 /// `Ada Okafor <ada@example.com>`, or the bare address without a name: how To and Cc entries are kept.

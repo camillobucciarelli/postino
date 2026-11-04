@@ -96,7 +96,7 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase> with _$DraftsDaoMixin 
           .watch();
 
   /// What the Bozze folder shows: the local rows (as messages: id and Conversazione are the Message-ID, the body
-  /// stands as snippet) and the Provider's DRAFT messages without a local row, newest first; [local] tells them apart.
+  /// stands as snippet) and the Provider's DRAFT messages without a local row, newest first; `local` tells them apart.
   Stream<List<(MessageRow, bool local)>> watchAll(String accountId) => customSelect(
     'SELECT d.account_id, d.message_id AS id, d.message_id, d.message_id AS conversation_id, '
     'a.address AS sender, NULL AS sender_name, d.recipients, d.cc, d.bcc, d.subject, d.body AS snippet, '

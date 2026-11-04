@@ -92,8 +92,8 @@ void main() {
       ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
-      ..execute('PRAGMA user_version = 5');
-    raw.execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')");
+      ..execute('PRAGMA user_version = 5')
+      ..execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')");
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
@@ -138,8 +138,8 @@ void main() {
       ..execute(_syncCursors)
       ..execute(_v4Bodies)
       ..execute(_v4Messages)
-      ..execute('PRAGMA user_version = 4');
-    raw.execute("INSERT INTO bodies VALUES ('a1', 'm1', 'Ciao')");
+      ..execute('PRAGMA user_version = 4')
+      ..execute("INSERT INTO bodies VALUES ('a1', 'm1', 'Ciao')");
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 

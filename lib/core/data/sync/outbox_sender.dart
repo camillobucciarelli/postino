@@ -23,7 +23,7 @@ const sendWindow = Duration(seconds: 10);
 const sendClaim = Duration(minutes: 10);
 
 /// The outbox of the sync engine (#36): Invia queues the message and starts its Annulla window, [sendDue] sends
-/// what is due. No queue of its own (ADR 0008): the window's ticker calls back [flushOutbox], the engine's method,
+/// what is due. No queue of its own (ADR 0008): the window's ticker calls back `flushOutbox`, the engine's method,
 /// so every send runs inside the Account's serial queue; [sendDue] is called only from there.
 class OutboxSender {
   /// [account] looks the Account up; [flushOutbox] is the engine's, queued in the Account's serial slot;
@@ -202,7 +202,7 @@ class OutboxSender {
     _held.remove(accountId);
     try {
       await _background.release(accountId);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[sync] $accountId: background release failed, $e');
     }
   }

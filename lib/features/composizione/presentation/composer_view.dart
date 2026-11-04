@@ -183,7 +183,7 @@ class _ComposerViewState extends State<ComposerView> with AccountsSignal {
     // Leaving the composition, whichever way (Chiudi, Esc, indietro, another view): the Bozza syncs now.
     unawaited(_sync.flushDrafts(_from));
     for (final s in _subs) {
-      s.cancel();
+      unawaited(s.cancel());
     }
     _controller?.dispose();
     _editorFocus.dispose();

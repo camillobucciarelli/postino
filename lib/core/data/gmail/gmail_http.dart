@@ -189,9 +189,10 @@ class GmailHttp {
   /// The `error.message` of a Google error body, else "HTTP 400".
   static String _errorMessage(String body) {
     try {
-      final m = (jsonDecode(body) as Map)['error']['message'];
+      final error = (jsonDecode(body) as Map<String, dynamic>)['error'] as Map<String, dynamic>;
+      final m = error['message'];
       if (m is String && m.isNotEmpty) return m;
-    } catch (_) {}
+    } on Object catch (_) {}
     return 'HTTP 400';
   }
 

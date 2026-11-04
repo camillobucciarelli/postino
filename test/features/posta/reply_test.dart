@@ -82,7 +82,7 @@ Future<void> _start(WidgetTester tester) async {
   _thread(gmail);
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('row-a1-m3')));
   await _settle(tester);

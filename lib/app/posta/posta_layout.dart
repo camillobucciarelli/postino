@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
@@ -84,14 +86,14 @@ class _PostaLayoutState extends State<PostaLayout> {
                   closeLabel: context.t.sidebar.close,
                   openLabel: context.t.sidebar.open,
                   expanded: saved.data!.$1,
-                  onExpandedChanged: GetIt.I<SettingsRepository>().setSidebarExpanded,
+                  onExpandedChanged: (expanded) => GetIt.I<SettingsRepository>().setSidebarExpanded(expanded: expanded),
                   child: PostinoFadeThrough(
                     transitionKey: list,
                     child: PostinoListDetailLayout(
                       listWidth: _width,
                       onListWidthChanged: (w) {
                         _width = w;
-                        GetIt.I<SettingsRepository>().setListWidth(w);
+                        unawaited(GetIt.I<SettingsRepository>().setListWidth(w));
                       },
                       resizeLabel: context.t.listWidth.label,
                       resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),

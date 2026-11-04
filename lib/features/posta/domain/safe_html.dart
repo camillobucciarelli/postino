@@ -4,7 +4,7 @@ import 'package:html/parser.dart' show parse;
 import 'quoted_text.dart' show quoteSelectors, signatureSelectors;
 
 /// An HTML body ready to render (ADR 0007): cleaned, remote resources blocked unless [prepareHtml]
-/// was told otherwise. [blocked]: something remote was taken out. [width]: the widest fixed width
+/// was told otherwise. `blocked`: something remote was taken out. `width`: the widest fixed width
 /// the HTML asks for, in px, if any (a 600px newsletter), so the view can scale it down.
 typedef SafeHtml = ({String html, bool blocked, double? width});
 

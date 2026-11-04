@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Cleaning and remote blocking of HTML bodies (#47, ADR 0007).
 
 import 'package:flutter_test/flutter_test.dart';

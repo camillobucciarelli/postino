@@ -203,7 +203,7 @@ class Message extends Equatable {
   /// Nome del mittente dall'header `From`, se c'è.
   final String? fromName;
 
-  /// `Name <address>` or a bare address each ([formatMailbox]).
+  /// `Name <address>` or a bare address each (`formatMailbox`).
   final List<String> to;
 
   /// Destinatari in copia, nello stesso formato di [to].
@@ -221,7 +221,7 @@ class Message extends Equatable {
   /// Data d'invio.
   final DateTime date;
 
-  /// The `Reply-To` mailbox ([formatMailbox]), if the header is there: a reply goes to it instead of [from] (#37).
+  /// The `Reply-To` mailbox (`formatMailbox`), if the header is there: a reply goes to it instead of [from] (#37).
   final String? replyTo;
 
   /// The Message-IDs of the `References` header, oldest first (#37).

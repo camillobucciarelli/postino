@@ -19,7 +19,8 @@ class DeviceSettingsStore implements SettingsRepository {
   };
 
   @override
-  Future<void> setSidebarExpanded(bool? expanded) => _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
+  Future<void> setSidebarExpanded({required bool? expanded}) =>
+      _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
 
   @override
   Future<double?> listWidth() async {

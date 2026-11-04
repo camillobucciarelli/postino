@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../domain/message.dart';
+import '../json_objects.dart';
 import 'bodies_table.dart';
 
 /// The Bozze (#35): each row is both the local save and the intent «make sure Bozza X has this content»
@@ -51,7 +52,7 @@ class ForwardedAttachmentsConverter extends TypeConverter<List<ForwardedAttachme
 
   @override
   List<ForwardedAttachment> fromSql(String fromDb) => [
-    for (final a in jsonDecode(fromDb) as List)
+    for (final a in jsonObjects(jsonDecode(fromDb)))
       ForwardedAttachment(a['sourceMessageId'] as String, _inner.fromSql(jsonEncode([a])).single),
   ];
 

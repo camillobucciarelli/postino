@@ -66,7 +66,7 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
       final open = widget.accountId;
       final etichette = labels.value.value ?? const <Label>[];
       final folders = unread.value.value ?? const <(String, String)>{};
-      String? unreadLabel(bool any) => any ? t.list.unread : null;
+      String? unreadLabel({required bool any}) => any ? t.list.unread : null;
       return PostinoNavigationDrawer(
         sections: [
           PostinoDrawerSection(
@@ -76,7 +76,7 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
                 label: t.postaUnificata,
                 icon: PostinoIcons.inboxAll,
                 active: open == null,
-                unreadLabel: unreadLabel(folders.any((f) => f.$2 == inboxLabelId)),
+                unreadLabel: unreadLabel(any: folders.any((f) => f.$2 == inboxLabelId)),
                 onTap: widget.onOpenUnified,
               ),
             ],
@@ -90,7 +90,7 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
                   label: a.name,
                   account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
                   active: a.id == open && widget.labelId == null,
-                  unreadLabel: unreadLabel(folders.contains((a.id, inboxLabelId))),
+                  unreadLabel: unreadLabel(any: folders.contains((a.id, inboxLabelId))),
                   reconnectLabel: a.status == AccountStatus.daRicollegare ? t.daRicollegare.status : null,
                   onTap: () => widget.onOpenAccount(a.id),
                 ),
@@ -121,7 +121,7 @@ class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
                     label: l.name,
                     icon: PostinoIcons.tag,
                     active: l.id == widget.labelId,
-                    unreadLabel: unreadLabel(folders.contains((open!, l.id))),
+                    unreadLabel: unreadLabel(any: folders.contains((open!, l.id))),
                     onTap: () => widget.onOpenLabel(l.id),
                   ),
               ],

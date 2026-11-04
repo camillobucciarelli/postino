@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // The pure reply builder (#37): subjects, recipients, the quoted original, the threading headers.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/html_text.dart';

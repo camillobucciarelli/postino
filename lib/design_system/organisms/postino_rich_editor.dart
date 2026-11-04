@@ -111,9 +111,9 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
 
   Style get _style => widget.controller.getSelectionStyle();
 
-  bool _active(Attribute a) => _style.attributes[a.key]?.value == a.value;
+  bool _active(Attribute<dynamic> a) => _style.attributes[a.key]?.value == a.value;
 
-  void _toggle(Attribute a) => widget.controller.formatSelection(_active(a) ? Attribute.clone(a, null) : a);
+  void _toggle(Attribute<dynamic> a) => widget.controller.formatSelection(_active(a) ? Attribute.clone(a, null) : a);
 
   Future<void> _link() async {
     final c = widget.controller;
@@ -122,11 +122,12 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
     if (url == null || url.isEmpty) return;
     // ponytail: with nothing selected the URL itself becomes the link text.
     if (selection.isCollapsed) {
-      c.replaceText(selection.start, 0, url, null);
-      c.updateSelection(
-        TextSelection(baseOffset: selection.start, extentOffset: selection.start + url.length),
-        ChangeSource.local,
-      );
+      c
+        ..replaceText(selection.start, 0, url, null)
+        ..updateSelection(
+          TextSelection(baseOffset: selection.start, extentOffset: selection.start + url.length),
+          ChangeSource.local,
+        );
     } else {
       c.updateSelection(selection, ChangeSource.local);
     }
@@ -141,7 +142,7 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
     final mac = defaultTargetPlatform == TargetPlatform.macOS;
     SingleActivator key(LogicalKeyboardKey k, {bool shift = false}) =>
         SingleActivator(k, meta: mac, control: !mac, shift: shift);
-    final buttons = <(PostinoIconData, String, Attribute)>[
+    final buttons = <(PostinoIconData, String, Attribute<dynamic>)>[
       (PostinoIcons.bold, l.bold, Attribute.bold),
       (PostinoIcons.italic, l.italic, Attribute.italic),
       (PostinoIcons.underline, l.underline, Attribute.underline),

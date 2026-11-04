@@ -27,10 +27,10 @@ const _testClient = GoogleClient('test-client.apps.googleusercontent.com');
 const _api = '/gmail/v1/users/me/';
 
 http.Response _fixture(String name) {
-  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync());
+  final j = jsonDecode(File('test/fixtures/gmail/$name.json').readAsStringSync()) as Map<String, dynamic>;
   final status = j['status'] as int;
   // A 204 (batchModify) has no body.
-  return j['body'] == null ? http.Response('', status) : _json(j['body'], status);
+  return j['body'] == null ? http.Response('', status) : _json(j['body'] as Object, status);
 }
 
 http.Response _json(Object body, [int status = 200]) =>
@@ -39,7 +39,9 @@ http.Response _json(Object body, [int status = 200]) =>
 FakeSecureStore _keychain({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)}) {
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
-  GmailTokens(access: access, refresh: '1//refresh', expiresAt: _now.add(validFor)).write(keychain, _account);
+  unawaited(
+    GmailTokens(access: access, refresh: '1//refresh', expiresAt: _now.add(validFor)).write(keychain, _account),
+  );
   return keychain;
 }
 
@@ -102,7 +104,7 @@ class GmailHarness implements ContractHarness {
     if (draftId != null && !_drafts.containsKey(draftId)) {
       return _fixture('not_found');
     }
-    return _json(_putDraft(draftId, _parseRaw(body['message']['raw'] as String)));
+    return _json(_putDraft(draftId, _parseRaw((body['message'] as Map<String, dynamic>)['raw'] as String)));
   }
 
   /// The base64url `raw` of a draft or a send, back to an [OutgoingMessage].
@@ -221,8 +223,8 @@ class GmailHarness implements ContractHarness {
         ],
         'resultSizeEstimate': _drafts.length,
       }),
-      ['drafts'] => _draftRaw(null, jsonDecode(r.body)),
-      ['drafts', final id] when r.method == 'PUT' => _draftRaw(id, jsonDecode(r.body)),
+      ['drafts'] => _draftRaw(null, jsonDecode(r.body) as Map<String, dynamic>),
+      ['drafts', final id] when r.method == 'PUT' => _draftRaw(id, jsonDecode(r.body) as Map<String, dynamic>),
       ['drafts', final id] when r.method == 'DELETE' => _deleteDraft(id),
       ['messages', 'batchModify'] => _modify(jsonDecode(r.body) as Map<String, dynamic>),
       ['threads', final id] => switch ([
@@ -280,7 +282,7 @@ class GmailHarness implements ContractHarness {
     final read = (body['removeLabelIds'] as List?)?.contains('UNREAD') ?? false;
     for (final id in body['ids'] as List) {
       if (_mailbox[id] case final m?) {
-        _mailbox[id as String] = withRead(m, read);
+        _mailbox[id as String] = withRead(m, read: read);
         _history.add((++_historyId, 'labelsRemoved', id));
       }
     }
@@ -360,7 +362,7 @@ class GmailHarness implements ContractHarness {
   }
 }
 
-Matcher _err<F>() => isA<Err>().having((e) => e.failure, 'failure', isA<F>());
+Matcher _err<F>() => isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<F>());
 
 Map<String, (String, BodyKind)> _contents(Map<String, MessageBody> bodies) => {
   for (final MapEntry(:key, :value) in bodies.entries) key: (value.content, value.kind),
@@ -376,7 +378,7 @@ const _f2 = '18f3a2b4c5d6e7f2';
 const _f3 = '18f3a2b4c5d6e7f3';
 const _f4 = '18f3a2b4c5d6e7f4';
 
-/// Gmail answering each request with the recorded response [route] names.
+/// Gmail answering each request with the recorded response `route` names.
 class _Recorded {
   _Recorded(String Function(http.Request r, String path) route) {
     provider = GmailProvider(
@@ -408,7 +410,7 @@ void main() {
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
-    expect(await h.provider.refreshAuth(), isA<Ok>());
+    expect(await h.provider.refreshAuth(), isA<Ok<Object?>>());
 
     final r = h.requests.single;
     expect(r.url, Uri.parse('https://oauth2.googleapis.com/token'));
@@ -425,14 +427,14 @@ void main() {
 
   test('an expired access token is refreshed before calling Gmail', () async {
     final h = GmailHarness(validFor: Duration.zero);
-    expect(await h.provider.initialSync(), isA<Ok>());
+    expect(await h.provider.initialSync(), isA<Ok<Object?>>());
     expect([for (final r in h.requests.take(2)) r.url.path], ['/token', '/gmail/v1/users/me/profile']);
     expect(h.requests[1].headers['authorization'], 'Bearer ya29.refreshed');
   });
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
-    expect(await h.provider.initialSync(), isA<Ok>());
+    expect(await h.provider.initialSync(), isA<Ok<Object?>>());
     expect(
       [for (final r in h.requests.take(3)) r.headers['authorization'] ?? r.url.path],
       ['Bearer ya29.stale', '/token', 'Bearer ya29.refreshed'],
@@ -789,8 +791,13 @@ void main() {
       String routeEmpty(http.Request r, String path) =>
           r.method == 'GET' && path == 'drafts' ? 'drafts_empty' : route(r, path);
 
-      String raw(http.Request r) =>
-          utf8.decode(base64Url.decode(base64Url.normalize((jsonDecode(r.body) as Map)['message']['raw'] as String)));
+      String raw(http.Request r) => utf8.decode(
+        base64Url.decode(
+          base64Url.normalize(
+            ((jsonDecode(r.body) as Map<String, dynamic>)['message'] as Map<String, dynamic>)['raw'] as String,
+          ),
+        ),
+      );
 
       test('a new Bozza is searched by Message-ID, then one POST of the raw MIME: Message-ID as given, headers, text and HTML parts', () async {
         final g = _Recorded(routeEmpty);
@@ -1104,7 +1111,7 @@ void main() {
         final g = _Recorded((r, path) => path == 'messages/send' ? 'request_too_large' : route(r, path));
         expect(
           await g.provider.send(messageId, raw),
-          isA<Err>().having(
+          isA<Err<Object?>>().having(
             (e) => e.failure,
             'failure',
             isA<SizeLimitFailure>().having((f) => f.limitBytes, 'limitBytes', gmailSendLimitBytes),

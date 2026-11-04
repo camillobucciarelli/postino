@@ -17,7 +17,7 @@ Future<bool> runOutboxTask(String accountId) async {
     if (await GetIt.I<OutboxRepository>().hasOutgoing(accountId)) {
       await GetIt.I<BackgroundSender>().hold(accountId);
     }
-  } catch (e) {
+  } on Object catch (e) {
     debugPrint('[background] $accountId: send failed, $e');
   }
   return true;

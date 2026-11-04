@@ -34,12 +34,12 @@ class AttachmentStorage {
     await cache.create(recursive: true);
     final before = DateTime.now().subtract(stalePart);
     await for (final e in temp.list()) {
-      if ((await e.stat()).modified.isBefore(before)) {
+      if (e.statSync().modified.isBefore(before)) {
         await e.delete(recursive: true);
       }
     }
     await for (final e in cache.list()) {
-      if (e.basename.endsWith('.part') && (await e.stat()).modified.isBefore(before)) {
+      if (e.basename.endsWith('.part') && e.statSync().modified.isBefore(before)) {
         await e.delete();
       }
     }
@@ -96,7 +96,7 @@ class AttachmentCache implements AttachmentRepository {
     final keys = await (_keys ??= _loadKeys());
     final cached = _cached(accountId, messageId, attachment.id);
     Uint8List? plain;
-    if (await cached.exists()) {
+    if (cached.existsSync()) {
       plain = await _crypt(decryptAttachment, await cached.readAsBytes(), keys);
       if (plain == null) {
         // Damaged (or from another key): downloaded again.
@@ -140,7 +140,7 @@ class AttachmentCache implements AttachmentRepository {
           await part.rename(cached.path);
           stored = true;
         } finally {
-          if (await part.exists()) await part.delete();
+          if (part.existsSync()) await part.delete();
         }
         await cached.setLastModified(_clock.now());
         await _serially(_evict);
@@ -157,7 +157,7 @@ class AttachmentCache implements AttachmentRepository {
       try {
         if (stored) {
           await _serially(() async {
-            if (await cached.exists()) await cached.delete();
+            if (cached.existsSync()) await cached.delete();
           });
         }
         await dir.delete(recursive: true);
@@ -166,7 +166,7 @@ class AttachmentCache implements AttachmentRepository {
       }
       return const Err(CancelledFailure());
     } catch (_) {
-      if (await dir.exists()) await dir.delete(recursive: true);
+      if (dir.existsSync()) await dir.delete(recursive: true);
       rethrow;
     }
   }
@@ -175,7 +175,7 @@ class AttachmentCache implements AttachmentRepository {
   Future<Result<Uint8List>> bytes(String accountId, String messageId, String attachmentId) async {
     try {
       final cached = _cached(accountId, messageId, attachmentId);
-      if (await cached.exists()) {
+      if (cached.existsSync()) {
         final keys = await (_keys ??= _loadKeys());
         final plain = await _crypt(decryptAttachment, await cached.readAsBytes(), keys);
         if (plain != null) return Ok(plain);
@@ -204,13 +204,13 @@ class AttachmentCache implements AttachmentRepository {
   Future<void> _evict() async {
     final files = [
       for (final e in await _storage.cache.list().toList())
-        if (e is File && !e.basename.endsWith('.part')) (e, await e.stat()),
+        if (e is File && !e.basename.endsWith('.part')) (e, e.statSync()),
     ]..sort((a, b) => a.$2.modified.compareTo(b.$2.modified));
     var total = files.fold(0, (sum, f) => sum + f.$2.size);
     for (final (f, stat) in files) {
       if (total <= _storage.cap) break;
       // Gone already (a read found it damaged): nothing to free.
-      if (await f.exists()) await f.delete();
+      if (f.existsSync()) await f.delete();
       total -= stat.size;
     }
   }

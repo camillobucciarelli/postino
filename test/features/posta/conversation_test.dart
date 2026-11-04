@@ -1,6 +1,8 @@
 // Opening and reading a Conversazione (#33): beside the list from 900, a full page below,
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart' show Material;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -38,7 +40,7 @@ Future<void> _start(WidgetTester tester, Size size, void Function(FakeMailProvid
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   // Routefly keeps the last navigation in statics.
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 
@@ -295,14 +297,16 @@ void main() {
     await _start(tester, _phone, (p) {
       _thread(p);
       // An older unread one in the middle stays expanded too.
-      p.deliver(withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), false));
+      p.deliver(
+        withRead(msg('m2', conversationId: 't', subject: 'Re: Cena', snippet: 'Sì!', date: _day(2)), read: false),
+      );
     });
     await _open(tester, 'm3');
 
-    final ys = [
+    final ys = <double>[
       for (final id in ['m1', 'm2', 'm3']) tester.getTopLeft(_message(id)).dy,
     ];
-    expect(ys, orderedEquals([...ys]..sort((a, b) => b.compareTo(a))), reason: 'newest first');
+    expect(ys, orderedEquals(<double>[...ys]..sort((a, b) => b.compareTo(a))), reason: 'newest first');
     expect(_expanded(tester, 'm1'), isFalse);
     expect(_expanded(tester, 'm2'), isTrue, reason: 'unread');
     expect(_expanded(tester, 'm3'), isTrue, reason: 'latest');
@@ -358,8 +362,10 @@ void main() {
           p.deliverOutsideWindow(msg(id, conversationId: 'x', date: _day(d), isRead: true));
         }
       });
-      Routefly.navigate(
-        routePaths.posta.$accountId.conversazione.$conversationId.changes({'accountId': 'a1', 'conversationId': 'x'}),
+      unawaited(
+        Routefly.navigate(
+          routePaths.posta.$accountId.conversazione.$conversationId.changes({'accountId': 'a1', 'conversationId': 'x'}),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -519,11 +525,13 @@ void main() {
         });
         if (size == _phone) {
           await _open(tester, 'm3');
-          Routefly.navigate(
-            routePaths.posta.$accountId.conversazione.$conversationId.changes({
-              'accountId': 'a1',
-              'conversationId': 'u',
-            }),
+          unawaited(
+            Routefly.navigate(
+              routePaths.posta.$accountId.conversazione.$conversationId.changes({
+                'accountId': 'a1',
+                'conversationId': 'u',
+              }),
+            ),
           );
           await tester.pumpAndSettle();
         } else {

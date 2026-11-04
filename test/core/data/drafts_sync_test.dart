@@ -94,10 +94,11 @@ void main() {
       addTearDown(engine.stop);
       await pumpEventQueue();
       final until = h.clock.now().add(const Duration(minutes: 5));
-      a.rateLimit(true, until);
-      a.deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
+      a
+        ..rateLimit(retryAfter: until)
+        ..deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
       await pumpEventQueue();
-      a.rateLimit(false);
+      a.rateLimit(on: false);
 
       await engine.saveDraft('a', _draft(id));
       await engine.flushDrafts('a');
@@ -188,7 +189,7 @@ void main() {
     expect(opened, isA<Ok<OutgoingMessage>>().having((r) => r.value.body, 'body', '<p>Da altrove</p>'));
     final r = (await row('<y@example.com>'))!;
     expect((r.pending, r.synced, r.remoteKnown), (false, true, true));
-    expect(await engine.openDraft('a', '<nope>'), isA<Err>());
+    expect(await engine.openDraft('a', '<nope>'), isA<Err<Object?>>());
   });
 
   test('a Bozza written or deleted by another client shows up on the poll, with the change signal up', () async {
@@ -223,8 +224,9 @@ void main() {
   });
 
   test('openDraft of a Bozza of another client with attachments is refused: saving would drop them', () async {
-    a.deliverDraft(_draft('<y@example.com>'));
-    a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+    a
+      ..deliverDraft(_draft('<y@example.com>'))
+      ..attach('d-1', 'contratto.pdf', [1, 2, 3]);
     await engine.syncAll();
     expect(
       await engine.openDraft('a', '<y@example.com>'),
@@ -234,8 +236,9 @@ void main() {
   });
 
   test('a Bozza with attachments is refused again once its body is in the cache', () async {
-    a.deliverDraft(_draft('<y@example.com>'));
-    a.attach('d-1', 'contratto.pdf', [1, 2, 3]);
+    a
+      ..deliverDraft(_draft('<y@example.com>'))
+      ..attach('d-1', 'contratto.pdf', [1, 2, 3]);
     await engine.syncAll();
     for (var i = 0; i < 2; i++) {
       expect(
@@ -247,16 +250,17 @@ void main() {
   });
 
   test('openDraft of a reply written elsewhere is refused; a Bozza alone in its Conversazione opens', () async {
-    a.deliver(msg('m-1', conversationId: 't-1'));
-    a.deliverDraft(_draft('<r@example.com>'), conversationId: 't-1');
-    a.deliverDraft(_draft('<y@example.com>'));
+    a
+      ..deliver(msg('m-1', conversationId: 't-1'))
+      ..deliverDraft(_draft('<r@example.com>'), conversationId: 't-1')
+      ..deliverDraft(_draft('<y@example.com>'));
     await engine.syncAll();
     expect(
       await engine.openDraft('a', '<r@example.com>'),
       isA<Err<OutgoingMessage>>().having((r) => r.failure, 'failure', isA<DraftReplyFailure>()),
     );
     expect(await row('<r@example.com>'), isNull);
-    expect(await engine.openDraft('a', '<y@example.com>'), isA<Ok>());
+    expect(await engine.openDraft('a', '<y@example.com>'), isA<Ok<Object?>>());
   });
 
   test('openDraft wraps a plain text Bozza in a paragraph', () async {
@@ -348,8 +352,9 @@ void main() {
     await engine.saveDraft('a', fwd);
     h.clock.advance(draftDebounce);
     await pumpEventQueue();
-    a.deliverDraft(fwd, date: h.clock.now().add(const Duration(seconds: 30)));
-    a.attach('d-1', 'c.pdf', [1, 2, 3]);
+    a
+      ..deliverDraft(fwd, date: h.clock.now().add(const Duration(seconds: 30)))
+      ..attach('d-1', 'c.pdf', [1, 2, 3]);
     await engine.syncAll();
     final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
     expect(opened.value.attachments, hasLength(1));

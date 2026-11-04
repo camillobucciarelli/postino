@@ -115,7 +115,7 @@ class PostinoDatabase extends _$PostinoDatabase {
       if (from < 3) {
         // Only user labels are Etichette: drop the Gmail system ones cached as such by v1-v2 syncs.
         await customStatement(
-          "DELETE FROM labels WHERE id IN ('INBOX','SENT','DRAFT','SPAM','TRASH',"
+          "DELETE FROM labels WHERE id IN ('INBOX','SENT','DRAFT','SPAM','TRASH', "
           "'STARRED','UNREAD','IMPORTANT','CHAT') OR id LIKE 'CATEGORY\\_%' ESCAPE '\\'",
         );
       }

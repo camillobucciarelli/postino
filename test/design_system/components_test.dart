@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Atoms and molecules: one golden each (light and dark × text 100% and 200%) and the accessibility guidelines.
 // ponytail: the design system fonts are not bundled yet, so goldens render with the test font.
 // ponytail: goldens are recorded and compared only on macOS (developers and the self-hosted Apple runner):

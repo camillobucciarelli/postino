@@ -36,7 +36,7 @@ void sendOutboxDispatcher() {
     try {
       DartPluginRegistrant.ensureInitialized();
       await configureDependencies(environment: Environment.prod);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[background] $accountId: setup failed, $e');
       return true;
     }

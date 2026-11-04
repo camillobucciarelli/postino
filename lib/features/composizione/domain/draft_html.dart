@@ -76,7 +76,7 @@ List<Map<String, dynamic>> _quoted(List<Map<String, dynamic>> ops) => [
       if (part.isNotEmpty)
         {
           'insert': part,
-          if (op['attributes'] case final Map a when a.keys.any(_inline.contains))
+          if (op['attributes'] case final Map<String, dynamic> a when a.keys.any(_inline.contains))
             'attributes': {
               for (final MapEntry(:key, :value) in a.entries)
                 if (_inline.contains(key)) key: value,
@@ -104,7 +104,7 @@ List<Map<String, dynamic>> _clean(List<Map<String, dynamic>> ops) => [
     if (op['insert'] is String)
       {
         'insert': op['insert'],
-        if (op['attributes'] case final Map a)
+        if (op['attributes'] case final Map<String, dynamic> a)
           if (<String, dynamic>{
                 for (final MapEntry(:key, :value) in a.entries)
                   if (_inline.contains(key) || key == 'blockquote' || key == 'list' && _lists.contains(value))

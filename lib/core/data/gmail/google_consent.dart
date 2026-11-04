@@ -28,11 +28,11 @@ Future<String> _systemBrowser({required String url, required String callbackUrlS
 class GoogleWebConsent implements GoogleConsent {
   GoogleWebConsent(
     this._http,
-    this._clock, [
+    this._clock, {
     @ignoreParam this._client = const GoogleClient.fromEnvironment(),
     @ignoreParam this._authenticate = _systemBrowser,
     @ignoreParam bool? loopback,
-  ]) : _loopback = loopback ?? (Platform.isWindows || Platform.isLinux);
+  }) : _loopback = loopback ?? (Platform.isWindows || Platform.isLinux);
 
   final http.Client _http;
   final Clock _clock;
@@ -120,7 +120,7 @@ class GoogleWebConsent implements GoogleConsent {
       return e.code == 'CANCELED' ? const Err(CancelledFailure()) : Err(UnexpectedFailure(e));
     } on http.ClientException {
       return const Err(OfflineFailure());
-    } catch (e, s) {
+    } on Object catch (e, s) {
       return Err(UnexpectedFailure(e, s));
     }
   }

@@ -1,5 +1,7 @@
 // The complete message header and the folded quote and signature in a Conversazione (#47, ThreadView).
 
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -27,7 +29,7 @@ Future<void> _start(WidgetTester tester, void Function(FakeMailProvider p) mailb
   mailbox(await h.addAccount('a1'));
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
-  Routefly.navigate(routePaths.posta.path);
+  unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
 }
 

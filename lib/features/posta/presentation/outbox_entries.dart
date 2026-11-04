@@ -60,7 +60,7 @@ Stream<List<InboxEntry>> sentEntries(
     final (accounts, online) = context;
     final (outbox, sent) = lists;
     final now = GetIt.I<Clock>().now().millisecondsSinceEpoch;
-    String state(bool refused, int sendAfter) => refused
+    String state({required bool refused, required int sendAfter}) => refused
         ? failed
         : sendAfter > now || online
         ? waiting
@@ -81,14 +81,14 @@ Stream<List<InboxEntry>> sentEntries(
               cc: m.cc,
               bcc: m.bcc,
               subject: m.subject,
-              snippet: '${state(refused, sendAfter)} · ${listSnippet(m.body)}',
+              snippet: '${state(refused: refused, sendAfter: sendAfter)} · ${listSnippet(m.body)}',
               // The end of the window: the time it is listed under until the Provider dates it.
               date: DateTime.fromMillisecondsSinceEpoch(sendAfter, isUtc: true),
             ),
             account: a,
             count: 1,
             unread: false,
-            status: state(refused, sendAfter),
+            status: state(refused: refused, sendAfter: sendAfter),
           ),
       ...sent,
     ];
@@ -105,6 +105,7 @@ Stream<bool> _connectivity() async* {
 /// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.
 // ponytail: two streams only; a package combineLatest if a third view needs it.
 Stream<R> _latest<A, B, R>(Stream<A> a, Stream<B> b, R Function(A, B) f) {
+  // ignore: close_sinks, the listener's cancel ends the stream (onCancel cancels both sources).
   late final StreamController<R> c;
   final subs = <StreamSubscription<void>>[];
   (A,)? la;

@@ -147,7 +147,7 @@ class _ConversationViewState extends State<ConversationView> with AccountsSignal
     );
   }
 
-  void _toggle(String id, bool hasBody) {
+  void _toggle(String id, {required bool hasBody}) {
     final open = !_expanded[id]!;
     setState(() => _expanded[id] = open);
     if (open && !hasBody) _fetchBody(id);

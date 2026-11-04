@@ -5,8 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/result.dart';
 
 /// A failed Gmail call, unwound to [gmailGuard].
-final class GmailFailed implements Exception {
-  const GmailFailed(this.failure);
+final class const GmailFailed(this.failure) implements Exception {
   final Failure failure;
 }
 

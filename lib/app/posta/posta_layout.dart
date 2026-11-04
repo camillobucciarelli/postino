@@ -17,14 +17,12 @@ import 'posta_views.dart';
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
 /// so the outgoing view can fade out with its own params. The child route pages just delegate here.
 /// A Conversazione, or the composer of a Bozza, opens beside (from 900) or over its list, which stays mounted: the list it was opened from.
-class PostaLayout extends StatefulWidget {
-  const PostaLayout({super.key});
-
+class const PostaLayout({super.key}) extends StatefulWidget {
   @override
   State<PostaLayout> createState() => _PostaLayoutState();
 }
 
-class _PostaLayoutState extends State<PostaLayout> {
+class _PostaLayoutState() extends State<PostaLayout> {
   /// The last list shown: a Conversazione stays beside it. Null before any (a deep link).
   String? _list;
 

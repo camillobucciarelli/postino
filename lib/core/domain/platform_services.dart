@@ -1,5 +1,6 @@
 /// Thin platform services (keychain, clock, connectivity, links); real ones in core/data, fakes in tests.
-abstract interface class SecureStore {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class SecureStore() {
   /// Legge il valore di `key`, null se manca.
   Future<String?> read(String key);
 
@@ -8,7 +9,8 @@ abstract interface class SecureStore {
 }
 
 /// L'orologio, sostituibile nei test.
-abstract interface class Clock {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class Clock() {
   /// L'ora corrente.
   DateTime now();
 
@@ -17,7 +19,8 @@ abstract interface class Clock {
 }
 
 /// Lo stato della rete.
-abstract interface class Connectivity {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class Connectivity() {
   /// Se il dispositivo è online ora.
   bool get isOnline;
 
@@ -26,13 +29,15 @@ abstract interface class Connectivity {
 }
 
 /// Opens a link outside Postino: the system browser, or the mail client for `mailto:`.
-abstract interface class LinkOpener {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class LinkOpener() {
   /// Apre `url` fuori da Postino.
   Future<void> open(Uri url);
 }
 
 /// The Save As dialog: copies a file where the user picks.
-abstract interface class FileSaver {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class FileSaver() {
   /// False where the platform has no such dialog (Android, iOS).
   bool get available;
 
@@ -41,7 +46,8 @@ abstract interface class FileSaver {
 }
 
 /// Keeps the outbox going after the user leaves the app (#36): iOS background task, Android WorkManager one-shot, nothing on desktop.
-abstract interface class BackgroundSender {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class BackgroundSender() {
   /// Called when an outgoing message is queued: asks the platform for time or work to send it.
   Future<void> hold(String accountId);
 

@@ -11,8 +11,7 @@ import 'postino_database.dart';
 import 'row_mappers.dart';
 
 @lazySingleton
-class MailStore implements InboxRepository {
-  MailStore(this._db);
+class MailStore(this._db) implements InboxRepository {
   final PostinoDatabase _db;
 
   Future<void> addAccount(Account a) => _db.accountsDao.upsert(a);
@@ -134,7 +133,7 @@ class MailStore implements InboxRepository {
 }
 
 @module
-abstract class MailStoreModule {
+abstract class MailStoreModule() {
   /// The UI sees the store only through [InboxRepository].
   @lazySingleton
   InboxRepository inboxRepository(MailStore store) => store;

@@ -5,9 +5,9 @@ import '../tokens/postino_tokens.dart';
 
 /// The shape of the message list while the first page loads: Comfortable rows, avatar and three bars.
 /// Still with reduced motion.
-class PostinoSkeleton extends StatefulWidget {
+class const PostinoSkeleton({super.key, required this.label, this.rows = 4}) extends StatefulWidget {
   /// Crea lo scheletro della lista.
-  const PostinoSkeleton({super.key, required this.label, this.rows = 4});
+  this;
 
   /// Accessible name, e.g. “Caricamento dei messaggi”.
   final String label;
@@ -19,7 +19,7 @@ class PostinoSkeleton extends StatefulWidget {
   State<PostinoSkeleton> createState() => _PostinoSkeletonState();
 }
 
-class _PostinoSkeletonState extends State<PostinoSkeleton> with SingleTickerProviderStateMixin {
+class _PostinoSkeletonState() extends State<PostinoSkeleton> with SingleTickerProviderStateMixin {
   late final _shimmer = AnimationController(vsync: this, duration: PostinoMotion.skeleton);
 
   @override

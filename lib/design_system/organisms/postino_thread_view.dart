@@ -14,17 +14,17 @@ import '../tokens/postino_tokens.dart';
 /// A Conversazione: [subject] in `title` (with the Importante mark when [importantLabel] is given),
 /// the Account that received it, then its [messages] (newest first, [PostinoThreadMessage]);
 /// at most `reading-max-width` wide.
-class PostinoThreadView extends StatefulWidget {
+class const PostinoThreadView({
+  super.key,
+  required this.subject,
+  required this.account,
+  required this.accountName,
+  required this.messages,
+  this.labels = const [],
+  this.importantLabel,
+}) extends StatefulWidget {
   /// Crea la vista di una conversazione con oggetto, account e messaggi.
-  const PostinoThreadView({
-    super.key,
-    required this.subject,
-    required this.account,
-    required this.accountName,
-    required this.messages,
-    this.labels = const [],
-    this.importantLabel,
-  });
+  this;
 
   /// Oggetto della conversazione, mostrato come titolo.
   final String subject;
@@ -48,7 +48,7 @@ class PostinoThreadView extends StatefulWidget {
   State<PostinoThreadView> createState() => _PostinoThreadViewState();
 }
 
-class _PostinoThreadViewState extends State<PostinoThreadView> {
+class _PostinoThreadViewState() extends State<PostinoThreadView> {
   final _area = GlobalKey<SelectionAreaState>();
   bool _selected = false;
 
@@ -173,9 +173,7 @@ class _PostinoThreadViewState extends State<PostinoThreadView> {
 }
 
 /// Esc over a selection clears it; with none it is off, so the layout closes the Conversazione.
-class _ClearSelection extends Action<PostinoClearSelectionIntent> {
-  _ClearSelection(this.selected, this.clear);
-
+class _ClearSelection(this.selected, this.clear) extends Action<PostinoClearSelectionIntent> {
   final bool Function() selected;
   final VoidCallback clear;
 

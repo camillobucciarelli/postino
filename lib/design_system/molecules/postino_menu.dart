@@ -7,9 +7,9 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// One entry of a [PostinoMenu]: [label] (a verb), an optional leading [icon], [onPressed].
-class PostinoMenuItem {
+class const PostinoMenuItem({required this.label, required this.onPressed, this.icon, this.key}) {
   /// Crea una voce di menu.
-  const PostinoMenuItem({required this.label, required this.onPressed, this.icon, this.key});
+  this;
 
   /// Verbo che dice cosa fa la voce.
   final String label;
@@ -27,15 +27,15 @@ class PostinoMenuItem {
 /// A menu (Menu molecule) behind an icon button: [label] is the button's name («Altre azioni»,
 /// «Azioni del messaggio»), [icon] its glyph. Opening it (click, Enter, Space) focuses the first item,
 /// so the keyboard lands inside; Esc closes it. The items are at least 220 wide and 48 high.
-class PostinoMenu extends StatefulWidget {
+class const PostinoMenu({
+  super.key,
+  required this.label,
+  required this.items,
+  this.icon = PostinoIcons.moreVertical,
+  this.buttonKey,
+}) extends StatefulWidget {
   /// Crea il menu con il suo pulsante.
-  const PostinoMenu({
-    super.key,
-    required this.label,
-    required this.items,
-    this.icon = PostinoIcons.moreVertical,
-    this.buttonKey,
-  });
+  this;
 
   /// Nome del pulsante per lo screen reader.
   final String label;
@@ -53,7 +53,7 @@ class PostinoMenu extends StatefulWidget {
   State<PostinoMenu> createState() => _PostinoMenuState();
 }
 
-class _PostinoMenuState extends State<PostinoMenu> {
+class _PostinoMenuState() extends State<PostinoMenu> {
   /// The first item: focused when the menu opens.
   final _first = FocusNode(debugLabel: 'Menu');
 

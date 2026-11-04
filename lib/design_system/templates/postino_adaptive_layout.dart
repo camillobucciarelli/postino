@@ -12,16 +12,16 @@ import 'postino_single_pane_layout.dart';
 /// outside the pages, so it survives navigation.
 /// The list + detail split is [PostinoListDetailLayout]'s, around this.
 // ponytail: 600–839 stays one pane (the Conversazione a full page); LayoutTablet's two panes if tablets need them.
-class PostinoAdaptiveLayout extends StatelessWidget {
+class const PostinoAdaptiveLayout({
+  super.key,
+  required this.appBar,
+  required this.body,
+  required this.drawer,
+  this.banners = const [],
+  this.fab,
+}) extends StatelessWidget {
   /// Crea il layout adattivo in base alla larghezza della finestra.
-  const PostinoAdaptiveLayout({
-    super.key,
-    required this.appBar,
-    required this.body,
-    required this.drawer,
-    this.banners = const [],
-    this.fab,
-  });
+  this;
 
   /// Barra superiore della schermata.
   final Widget appBar;
@@ -52,9 +52,9 @@ class PostinoAdaptiveLayout extends StatelessWidget {
 }
 
 /// Opens or closes the docked sidebar (the shortcut of the Posta views sends it).
-class ToggleSidebarIntent extends Intent {
+class const ToggleSidebarIntent() extends Intent {
   /// Crea l'intent per aprire o chiudere la barra laterale.
-  const ToggleSidebarIntent();
+  this;
 }
 
 /// From `breakpoint-expanded` (840) docks [drawer] beside [child]; below it just [child], in the same
@@ -63,17 +63,17 @@ class ToggleSidebarIntent extends Intent {
 /// (`sidebar-collapsed-width`, 72) below it. A manual choice ([expanded] at the start, then the button or
 /// [ToggleSidebarIntent]) holds until the window crosses 1440 either way; each change goes to [onExpandedChanged]
 /// (null: no choice, the width decides).
-class PostinoSidebarShell extends StatefulWidget {
+class const PostinoSidebarShell({
+  super.key,
+  required this.drawer,
+  required this.child,
+  required this.closeLabel,
+  required this.openLabel,
+  this.expanded,
+  this.onExpandedChanged,
+}) extends StatefulWidget {
   /// Crea lo shell con la barra laterale, il contenuto e le etichette dei pulsanti.
-  const PostinoSidebarShell({
-    super.key,
-    required this.drawer,
-    required this.child,
-    required this.closeLabel,
-    required this.openLabel,
-    this.expanded,
-    this.onExpandedChanged,
-  });
+  this;
 
   /// Contenuto della barra laterale, mostrato solo quando la finestra è abbastanza larga.
   final Widget drawer;
@@ -97,7 +97,7 @@ class PostinoSidebarShell extends StatefulWidget {
   State<PostinoSidebarShell> createState() => _PostinoSidebarShellState();
 }
 
-class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
+class _PostinoSidebarShellState() extends State<PostinoSidebarShell> {
   late bool? _manual = widget.expanded;
   double? _width;
 

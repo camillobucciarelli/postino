@@ -25,20 +25,20 @@ double shownListWidth(double preferred, double window) => preferred.clamp(
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
 /// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
 /// With reduced motion every change is instant.
-class PostinoListDetailLayout extends StatefulWidget {
+class const PostinoListDetailLayout({
+  super.key,
+  required this.list,
+  required this.empty,
+  required this.onClose,
+  this.detail,
+  this.detailKey,
+  this.listWidth,
+  this.onListWidthChanged,
+  required this.resizeLabel,
+  required this.resizeValueLabel,
+}) extends StatefulWidget {
   /// Crea il layout lista e dettaglio.
-  const PostinoListDetailLayout({
-    super.key,
-    required this.list,
-    required this.empty,
-    required this.onClose,
-    this.detail,
-    this.detailKey,
-    this.listWidth,
-    this.onListWidthChanged,
-    required this.resizeLabel,
-    required this.resizeValueLabel,
-  });
+  this;
 
   /// La lista, sempre presente sotto il dettaglio su schermi stretti.
   final Widget list;
@@ -71,7 +71,7 @@ class PostinoListDetailLayout extends StatefulWidget {
   State<PostinoListDetailLayout> createState() => _PostinoListDetailLayoutState();
 }
 
-class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
+class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
   static const _slide = 30.0;
   static const _fadeSplit = 0.3;
 
@@ -277,6 +277,4 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout> with 
 }
 
 /// The [PostinoListDetailLayout.empty] pane's transition key.
-class _Empty {
-  const _Empty();
-}
+class const _Empty();

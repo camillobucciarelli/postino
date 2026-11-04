@@ -8,9 +8,7 @@ import '../../route_query.dart';
 
 /// Route of a Bozza being written: PostaLayout draws the composer, beside or over its list, from the URI
 /// (the Message-ID is percent-encoded in the path).
-class DraftPage extends StatelessWidget {
-  const DraftPage({super.key});
-
+class const DraftPage({super.key}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) => postaComposerView(
     Routefly.query.param('accountId'),

@@ -1,36 +1,34 @@
 /// Outcome of an operation that can fail: [Ok] with a value or [Err] with a [Failure].
-sealed class Result<T> {
-  const Result();
-}
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+sealed class const Result<T>();
 
 /// Esito riuscito.
-final class Ok<T> extends Result<T> {
+final class const Ok<T>(this.value) extends Result<T> {
   /// Crea un esito riuscito con [value].
-  const Ok(this.value);
+  this;
 
   /// Il valore prodotto.
   final T value;
 }
 
 /// Esito fallito.
-final class Err<T> extends Result<T> {
+final class const Err<T>(this.failure) extends Result<T> {
   /// Crea un esito fallito con [failure].
-  const Err(this.failure);
+  this;
 
   /// Il motivo del fallimento.
   final Failure failure;
 }
 
 /// Every known way an operation can fail. Sealed so `switch` stays exhaustive.
-sealed class Failure {
-  const Failure();
-}
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+sealed class const Failure();
 
 // ponytail: single catch-all variant; add specific failures (network, auth, ...) with the first feature that needs them.
 /// Errore imprevisto, non classificato altrimenti.
-final class UnexpectedFailure extends Failure {
+final class const UnexpectedFailure(this.error, [this.stackTrace]) extends Failure {
   /// Crea il fallimento con l'[error] originale e, se c'è, il suo stack trace.
-  const UnexpectedFailure(this.error, [this.stackTrace]);
+  this;
 
   /// L'errore catturato.
   final Object error;
@@ -43,63 +41,63 @@ final class UnexpectedFailure extends Failure {
 }
 
 /// The Provider no longer accepts the Account's credentials: the Account becomes Da ricollegare.
-final class AuthFailure extends Failure {
+final class const AuthFailure() extends Failure {
   /// Crea il fallimento.
-  const AuthFailure();
+  this;
 }
 
 /// The user did not grant the Gmail permission (Google's granular consent let them untick it).
-final class MissingPermissionFailure extends Failure {
+final class const MissingPermissionFailure() extends Failure {
   /// Crea il fallimento.
-  const MissingPermissionFailure();
+  this;
 }
 
 /// No network, or the Provider is unreachable.
-final class OfflineFailure extends Failure {
+final class const OfflineFailure() extends Failure {
   /// Crea il fallimento.
-  const OfflineFailure();
+  this;
 }
 
 /// The message, attachment or draft does not exist on the Provider.
-final class NotFoundFailure extends Failure {
+final class const NotFoundFailure() extends Failure {
   /// Crea il fallimento.
-  const NotFoundFailure();
+  this;
 }
 
 /// A Bozza of reply written elsewhere: saving it here would drop In-Reply-To, References and the thread.
-final class DraftReplyFailure extends Failure {
+final class const DraftReplyFailure() extends Failure {
   /// Crea il fallimento.
-  const DraftReplyFailure();
+  this;
 }
 
 /// A Bozza written elsewhere has attachments: Postino cannot keep them when it saves, so it does not open it.
-final class DraftWithAttachmentsFailure extends Failure {
+final class const DraftWithAttachmentsFailure() extends Failure {
   /// Crea il fallimento.
-  const DraftWithAttachmentsFailure();
+  this;
 }
 
 /// The message is bigger than the Provider accepts ([limitBytes], the whole RFC 5322 text).
-final class SizeLimitFailure extends Failure {
+final class const SizeLimitFailure(this.limitBytes) extends Failure {
   /// Crea il fallimento con il limite [limitBytes].
-  const SizeLimitFailure(this.limitBytes);
+  this;
 
   /// Dimensione massima accettata, in byte.
   final int limitBytes;
 }
 
 /// The Provider refused the request for good (HTTP 400, e.g. an invalid header): retrying cannot help.
-final class RejectedFailure extends Failure {
+final class const RejectedFailure(this.reason) extends Failure {
   /// Crea il fallimento con il [reason] dato dal Provider.
-  const RejectedFailure(this.reason);
+  this;
 
   /// Il motivo del rifiuto.
   final String reason;
 }
 
 /// The Provider asks to slow down.
-final class RateLimitFailure extends Failure {
+final class const RateLimitFailure({this.retryAfter}) extends Failure {
   /// Crea il fallimento; [retryAfter] è opzionale.
-  const RateLimitFailure({this.retryAfter});
+  this;
 
   /// When the Provider says the block ends, if it does.
   final DateTime? retryAfter;
@@ -109,24 +107,24 @@ final class RateLimitFailure extends Failure {
 }
 
 /// The app is missing a build-time setting (for example the OAuth client ID).
-final class ConfigurationFailure extends Failure {
+final class const ConfigurationFailure(this.setting) extends Failure {
   /// Crea il fallimento per l'impostazione [setting] mancante.
-  const ConfigurationFailure(this.setting);
+  this;
 
   /// Nome dell'impostazione mancante.
   final String setting;
 }
 
 /// The user backed out (for example closed the consent page).
-final class CancelledFailure extends Failure {
+final class const CancelledFailure() extends Failure {
   /// Crea il fallimento.
-  const CancelledFailure();
+  this;
 }
 
 /// Reconnecting an Account, the user picked another Google identity than [expected].
-final class WrongAccountFailure extends Failure {
+final class const WrongAccountFailure(this.expected) extends Failure {
   /// Crea il fallimento con l'indirizzo [expected] atteso.
-  const WrongAccountFailure(this.expected);
+  this;
 
   /// L'indirizzo dell'Account che si stava ricollegando.
   final String expected;

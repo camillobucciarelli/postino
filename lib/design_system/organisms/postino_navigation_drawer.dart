@@ -12,15 +12,15 @@ export '../molecules/postino_drawer_item.dart' show PostinoDrawerItem;
 
 /// What the drawer docked by `PostinoSidebarShell` knows: whether it shows icons only,
 /// and the button that opens or closes it (named [toggleLabel], what it will do).
-class PostinoSidebarScope extends InheritedWidget {
+class const PostinoSidebarScope({
+  super.key,
+  required this.collapsed,
+  required this.toggleLabel,
+  required this.toggle,
+  required super.child,
+}) extends InheritedWidget {
   /// Espone a drawer e pulsanti lo stato della barra laterale, da un antenato nell'albero dei widget.
-  const PostinoSidebarScope({
-    super.key,
-    required this.collapsed,
-    required this.toggleLabel,
-    required this.toggle,
-    required super.child,
-  });
+  this;
 
   /// Vero quando la barra mostra solo le icone.
   final bool collapsed;
@@ -40,9 +40,9 @@ class PostinoSidebarScope extends InheritedWidget {
 }
 
 /// Una sezione del drawer, con un titolo facoltativo e le sue voci.
-class PostinoDrawerSection {
+class const PostinoDrawerSection({this.title, required this.items}) {
   /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
-  const PostinoDrawerSection({this.title, required this.items});
+  this;
 
   /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta.
   final String? title;
@@ -54,9 +54,9 @@ class PostinoDrawerSection {
 /// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar,
 /// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
 /// The highlight of the active item is one box under the list that slides to the new item.
-class PostinoNavigationDrawer extends StatefulWidget {
+class const PostinoNavigationDrawer({super.key, required this.sections}) extends StatefulWidget {
   /// Crea il drawer con le sezioni indicate.
-  const PostinoNavigationDrawer({super.key, required this.sections});
+  this;
 
   /// Le sezioni da mostrare, dall'alto in basso.
   final List<PostinoDrawerSection> sections;
@@ -65,7 +65,7 @@ class PostinoNavigationDrawer extends StatefulWidget {
   State<PostinoNavigationDrawer> createState() => _PostinoNavigationDrawerState();
 }
 
-class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
+class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _stack = GlobalKey();
   final _itemKeys = <int, GlobalKey>{};
   Rect? _active;

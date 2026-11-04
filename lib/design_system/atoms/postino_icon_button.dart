@@ -7,9 +7,10 @@ import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
 /// A command with only an icon; [label] is its accessible name and tooltip.
-class PostinoIconButton extends StatelessWidget {
+class const PostinoIconButton({super.key, required this.icon, required this.label, required this.onPressed})
+    extends StatelessWidget {
   /// Crea un comando con la sola icona.
-  const PostinoIconButton({super.key, required this.icon, required this.label, required this.onPressed});
+  this;
 
   /// Icona del comando.
   final PostinoIconData icon;

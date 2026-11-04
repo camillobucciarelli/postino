@@ -2,8 +2,7 @@ import '../../../core/domain/message.dart';
 import 'reply_kind.dart';
 
 /// What a Bozza of [kind] starts from: [message] with its body as known once downloaded.
-class ReplySource {
-  const ReplySource(this.kind, this.message, this.body);
+class const ReplySource(this.kind, this.message, this.body) {
   final ReplyKind kind;
   final Message message;
   final MessageBody? body;

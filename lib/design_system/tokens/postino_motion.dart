@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 
 /// Motion: durate e curve. Rispetta MediaQuery.disableAnimations (vedi PostinoMotion.of).
-abstract final class PostinoMotion {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract final class PostinoMotion() {
   /// Hover, pressione, selezione. Flutter: Durations.short2.
   static const Duration state = Durations.short2;
 

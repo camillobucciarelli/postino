@@ -6,9 +6,7 @@ import 'posta_views.dart';
 import 'route_query.dart';
 
 /// Route of an Account's inbox: PostaLayout draws the view from the URI.
-class AccountPage extends StatelessWidget {
-  const AccountPage({super.key});
-
+class const AccountPage({super.key}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) => postaAccountView(Routefly.query.param('accountId'));
 }

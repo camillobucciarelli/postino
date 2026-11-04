@@ -7,9 +7,10 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// Fills a view with no content and says what comes next. Calm: no illustration, no jokes.
-class PostinoEmptyState extends StatelessWidget {
+class const PostinoEmptyState({super.key, required this.title, this.body, this.icon = PostinoIcons.check})
+    extends StatelessWidget {
   /// Crea lo stato vuoto; senza `body` mostra solo il titolo.
-  const PostinoEmptyState({super.key, required this.title, this.body, this.icon = PostinoIcons.check});
+  this;
 
   /// Cosa si vede: una frase breve e calma.
   final String title;

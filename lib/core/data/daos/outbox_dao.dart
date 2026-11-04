@@ -6,9 +6,7 @@ import '../tables/outbox_table.dart';
 part 'outbox_dao.g.dart';
 
 @DriftAccessor(tables: [Outbox])
-class OutboxDao extends DatabaseAccessor<PostinoDatabase> with _$OutboxDaoMixin {
-  OutboxDao(super.attachedDatabase);
-
+class OutboxDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$OutboxDaoMixin {
   /// sendAfter of a row whose MIME is still being prepared: never due, "waiting" in the UI.
   // ponytail: a crash during preparation leaves the row until the user's Annulla; sweep stale ones if it matters.
   static const preparing = 1 << 52;

@@ -24,21 +24,19 @@ import 'message_time.dart';
 /// Rispondi a tutti, Inoltra: [onAct]), its body split into body, signature and quote, and its attachments.
 /// HTML bodies render cleaned, their remote resources blocked unless shown for the message or its sender is
 /// in [trusted] (ADR 0007). State, fetching and shortcuts are the `ConversationView`'s: none here (ADR 0014).
-class ConversationBody extends StatefulWidget {
-  const ConversationBody({
-    super.key,
-    required this.account,
-    required this.messages,
-    required this.labels,
-    required this.trusted,
-    required this.expanded,
-    required this.failed,
-    required this.attachments,
-    required this.onToggle,
-    required this.onFetchBody,
-    required this.onAct,
-  });
-
+class const ConversationBody({
+  super.key,
+  required this.account,
+  required this.messages,
+  required this.labels,
+  required this.trusted,
+  required this.expanded,
+  required this.failed,
+  required this.attachments,
+  required this.onToggle,
+  required this.onFetchBody,
+  required this.onAct,
+}) extends StatefulWidget {
   final Account account;
 
   /// Oldest first, never empty.
@@ -60,7 +58,7 @@ class ConversationBody extends StatefulWidget {
   State<ConversationBody> createState() => _ConversationBodyState();
 }
 
-class _ConversationBodyState extends State<ConversationBody> {
+class _ConversationBodyState() extends State<ConversationBody> {
   final _trust = GetIt.I<TrustedSendersRepository>();
 
   /// A body is cleaned and split once per message and permission, not on every build.

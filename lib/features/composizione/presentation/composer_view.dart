@@ -25,15 +25,13 @@ import '../domain/draft_html.dart';
 /// saves it through [MailSync.saveDraft], leaving it (any way) syncs it at once. Invia (#36, Cmd/Ctrl+Enter too)
 /// queues it through [MailSync.send] and calls [onQueued]: the caller closes the composer and shows Annulla invio.
 /// Routing is the caller's ([onClose], [onQueued]).
-class ComposerView extends StatefulWidget {
-  const ComposerView({
-    super.key,
-    required this.accountId,
-    required this.messageId,
-    required this.onClose,
-    required this.onQueued,
-  });
-
+class const ComposerView({
+  super.key,
+  required this.accountId,
+  required this.messageId,
+  required this.onClose,
+  required this.onQueued,
+}) extends StatefulWidget {
   final String accountId;
   final String messageId;
   final VoidCallback onClose;
@@ -45,7 +43,7 @@ class ComposerView extends StatefulWidget {
   State<ComposerView> createState() => _ComposerViewState();
 }
 
-class _ComposerViewState extends State<ComposerView> with AccountsSignal {
+class _ComposerViewState() extends State<ComposerView> with AccountsSignal {
   final _sync = GetIt.I<MailSync>();
   final _to = TextEditingController();
   final _cc = TextEditingController();

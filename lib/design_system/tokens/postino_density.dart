@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 
 /// Densità della lista: Comfortable (default) e Compact.
 @immutable
-class PostinoDensity extends ThemeExtension<PostinoDensity> {
+class const PostinoDensity({
+  required this.rowHeight,
+  required this.padY,
+  required this.avatar,
+  required this.previewLines,
+  required this.gap,
+}) extends ThemeExtension<PostinoDensity> {
   /// Crea una densità con tutte le misure esplicite.
-  const PostinoDensity({
-    required this.rowHeight,
-    required this.padY,
-    required this.avatar,
-    required this.previewLines,
-    required this.gap,
-  });
+  this;
 
   /// Altezza della riga in lista.
   final double rowHeight;

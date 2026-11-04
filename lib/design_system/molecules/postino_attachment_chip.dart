@@ -18,26 +18,26 @@ import 'postino_menu.dart';
 /// takes the size's place in `warning`; [error] wins when both are set. Without [onOpen] the chip is not a
 /// button: no tap, no hint, screen readers hear «name, warning»; the menu stays.
 /// Name and size are selectable text; screen readers hear «name, size» as a button, [openLabel] as its hint.
-class PostinoAttachmentChip extends StatefulWidget {
+class const PostinoAttachmentChip({
+  super.key,
+  required this.name,
+  required this.size,
+  this.onOpen,
+  this.openLabel = '',
+  this.progress,
+  this.progressLabel,
+  this.cancelLabel = '',
+  this.onCancel,
+  this.error,
+  this.warning,
+  this.retryLabel = '',
+  this.onRetry,
+  this.moreLabel = '',
+  this.saveLabel = '',
+  this.onSave,
+}) extends StatefulWidget {
   /// Crea il chip dell'allegato; senza `onOpen` è una semplice etichetta.
-  const PostinoAttachmentChip({
-    super.key,
-    required this.name,
-    required this.size,
-    this.onOpen,
-    this.openLabel = '',
-    this.progress,
-    this.progressLabel,
-    this.cancelLabel = '',
-    this.onCancel,
-    this.error,
-    this.warning,
-    this.retryLabel = '',
-    this.onRetry,
-    this.moreLabel = '',
-    this.saveLabel = '',
-    this.onSave,
-  });
+  this;
 
   /// Nome del file; troncato con ellissi a scala normale, a capo con testo ingrandito.
   final String name;
@@ -88,7 +88,7 @@ class PostinoAttachmentChip extends StatefulWidget {
   State<PostinoAttachmentChip> createState() => _PostinoAttachmentChipState();
 }
 
-class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
+class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
@@ -226,9 +226,7 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
 
 /// The size, the progress, a warning or the reason it failed: `meta` in [color] (`ink-subtle`, `warning`
 /// or `danger`), with the alert [icon] in front when asked.
-class _Meta extends StatelessWidget {
-  const _Meta({required this.text, required this.color, required this.icon});
-
+class const _Meta({required this.text, required this.color, required this.icon}) extends StatelessWidget {
   final String text;
   final Color color;
   final bool icon;

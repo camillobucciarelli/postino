@@ -47,9 +47,9 @@ FakeSecureStore _keychain({String access = 'ya29.initial', Duration validFor = c
 
 /// Google as seen over HTTP: the token endpoint and a simulated Gmail API mailbox,
 /// shaped like the recorded responses.
-class GmailHarness implements ContractHarness {
-  GmailHarness({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)})
-    : keychain = _keychain(access: access, validFor: validFor);
+class GmailHarness({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)})
+    implements ContractHarness {
+  this : keychain = _keychain(access: access, validFor: validFor);
 
   final FakeSecureStore keychain;
   final requests = <http.Request>[];
@@ -379,8 +379,8 @@ const _f3 = '18f3a2b4c5d6e7f3';
 const _f4 = '18f3a2b4c5d6e7f4';
 
 /// Gmail answering each request with the recorded response `route` names.
-class _Recorded {
-  _Recorded(String Function(http.Request r, String path) route) {
+class _Recorded(String Function(http.Request r, String path) route) {
+  this {
     provider = GmailProvider(
       _account,
       _keychain(),
@@ -1317,8 +1317,7 @@ void main() {
 }
 
 /// Answers with [answer], or (null) hangs until the request is aborted, as a stalled download would.
-class _Hanging extends http.BaseClient {
-  _Hanging(this.answer, this.started);
+class _Hanging(this.answer, this.started) extends http.BaseClient {
   final http.Response? Function(String path) answer;
   final Completer<void> started;
 

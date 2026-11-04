@@ -4,15 +4,15 @@ import 'message.dart';
 import 'result.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
-class SyncBatch extends Equatable {
+class const SyncBatch({
+  required this.cursor,
+  this.messages = const [],
+  this.labels = const [],
+  this.removedMessageIds = const [],
+  this.bodies = const {},
+}) extends Equatable {
   /// Crea un batch; senza argomenti le liste sono vuote.
-  const SyncBatch({
-    required this.cursor,
-    this.messages = const [],
-    this.labels = const [],
-    this.removedMessageIds = const [],
-    this.bodies = const {},
-  });
+  this;
 
   /// Opaque to the core: Gmail historyId, Graph delta token, IMAP modseq...
   final String cursor;
@@ -39,7 +39,7 @@ typedef SyncPage = Future<void> Function(List<Message> messages, Map<String, Mes
 /// What the change signal reports: it came [up], something [changed], or it went [down].
 /// While it is down the sync engine falls back to polling (ADR 0008).
 /// Stato del segnale di cambiamento.
-enum ChangeSignal {
+enum ChangeSignal() {
   /// Il segnale è attivo.
   up,
 
@@ -52,7 +52,8 @@ enum ChangeSignal {
 
 /// The single adapter interface (ADR 0002), one instance per Account.
 // ponytail: Search and conditional Action join the interface at steps 3 and 6.
-abstract interface class MailProvider {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class MailProvider() {
   /// Refreshes credentials; a definitive refusal is [AuthFailure].
   Future<Result<void>> refreshAuth();
 

@@ -20,27 +20,27 @@ export '../molecules/postino_message_detail.dart' show PostinoMessageDetail;
 /// then the [notices] (Banner…), the [body], the [signature] and the [quote] folded behind «…»
 /// ([quoteLabel] for screen readers; a tap shows it, another hides it), and last the [attachments]. A tap on the header toggles,
 /// in `duration-thread-expand` with `easing-emphasized-decelerate`.
-class PostinoThreadMessage extends StatefulWidget {
+class const PostinoThreadMessage({
+  super.key,
+  required this.sender,
+  required this.time,
+  required this.preview,
+  required this.expanded,
+  required this.onToggle,
+  required this.body,
+  this.recipients,
+  this.details = const [],
+  this.notices = const [],
+  this.unread = false,
+  this.address,
+  this.signature,
+  this.quote,
+  this.quoteLabel = '',
+  this.attachments = const [],
+  this.actions,
+}) extends StatefulWidget {
   /// Crea un messaggio di una conversazione: compresso come riga, oppure espanso con i dettagli.
-  const PostinoThreadMessage({
-    super.key,
-    required this.sender,
-    required this.time,
-    required this.preview,
-    required this.expanded,
-    required this.onToggle,
-    required this.body,
-    this.recipients,
-    this.details = const [],
-    this.notices = const [],
-    this.unread = false,
-    this.address,
-    this.signature,
-    this.quote,
-    this.quoteLabel = '',
-    this.attachments = const [],
-    this.actions,
-  });
+  this;
 
   /// Nome del mittente, mostrato nell'intestazione.
   final String sender;
@@ -94,7 +94,7 @@ class PostinoThreadMessage extends StatefulWidget {
   State<PostinoThreadMessage> createState() => _PostinoThreadMessageState();
 }
 
-class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
+class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
   bool _details = false;
 
   /// The quote shown: per message, in memory.
@@ -267,9 +267,7 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
 /// Text in an expanded header: a tap on it does not collapse the message (the SelectionArea takes
 /// it: a click places the caret, a double click picks a word, a drag selects); the avatar and the
 /// empty space around it still collapse.
-class _TextHit extends StatelessWidget {
-  const _TextHit({required this.enabled, required this.child});
-
+class const _TextHit({required this.enabled, required this.child}) extends StatelessWidget {
   final bool enabled;
   final Widget child;
 

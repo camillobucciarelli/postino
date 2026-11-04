@@ -3,15 +3,13 @@ import 'package:routefly/routefly.dart';
 import '../../main.dart' show routePaths;
 
 /// What a `/posta` URI shows: the list, and the Conversazione or the Bozza open beside it.
-class PostaRoute {
-  const PostaRoute._({
-    required this.list,
-    required this.open,
-    required this.draft,
-    required this.accountId,
-    required this.labelId,
-  });
-
+class const PostaRoute._({
+  required this.list,
+  required this.open,
+  required this.draft,
+  required this.accountId,
+  required this.labelId,
+}) {
   /// Reads [uri]; [isLayout]: the URI is the layout's own, with no child route. [last] is the last list shown.
   factory PostaRoute.parse(Uri uri, {required bool isLayout, String? last}) {
     final seg = isLayout ? const <String>[] : uri.pathSegments;

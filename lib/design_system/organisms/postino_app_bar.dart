@@ -9,16 +9,16 @@ import '../tokens/postino_tokens.dart';
 /// The bar on top of a list: `menu` opening the drawer, title and a `meta` subtitle saying where you are.
 /// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead;
 /// [actions] sit at the end («Chiudi» of the composer).
-class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
+class const PostinoAppBar({
+  super.key,
+  required this.title,
+  this.subtitle,
+  this.account,
+  this.onBack,
+  this.actions = const [],
+}) extends StatelessWidget implements PreferredSizeWidget {
   /// Barra superiore di una lista o di un dettaglio.
-  const PostinoAppBar({
-    super.key,
-    required this.title,
-    this.subtitle,
-    this.account,
-    this.onBack,
-    this.actions = const [],
-  });
+  this;
 
   /// Titolo mostrato nella barra.
   final String title;

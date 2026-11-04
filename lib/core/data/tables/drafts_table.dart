@@ -12,7 +12,7 @@ import 'bodies_table.dart';
 /// [remoteKnown]: a sync listed it as a DRAFT message (a later disappearance means deleted or sent elsewhere).
 // ponytail: no value-at-enqueue, Conflitti come at step 3.
 @DataClassName('DraftRow')
-class Drafts extends Table {
+class Drafts() extends Table {
   TextColumn get accountId => text()();
 
   /// RFC 5322 Message-ID header, the stable identity on every client.
@@ -45,9 +45,7 @@ class Drafts extends Table {
 }
 
 /// [ForwardedAttachment]s as JSON: the [AttachmentsConverter] shape plus `sourceMessageId`.
-class ForwardedAttachmentsConverter extends TypeConverter<List<ForwardedAttachment>, String> {
-  const ForwardedAttachmentsConverter();
-
+class const ForwardedAttachmentsConverter() extends TypeConverter<List<ForwardedAttachment>, String> {
   static const _inner = AttachmentsConverter();
 
   @override

@@ -7,8 +7,7 @@ import '../../domain/result.dart';
 import '../mail_store.dart';
 
 /// The Bozza to resume (#35): the local copy, or the Provider's when it is newer and nothing here waits to go.
-class DraftOpener {
-  DraftOpener(this._store, this._outbox);
+class DraftOpener(this._store, this._outbox) {
   final MailStore _store;
   final OutboxRepository _outbox;
 

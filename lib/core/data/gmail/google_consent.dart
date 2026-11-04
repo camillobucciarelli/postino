@@ -25,14 +25,14 @@ Future<String> _systemBrowser({required String url, required String callbackUrlS
 
 /// Google consent in the system browser (authorization code + PKCE), then code exchange.
 @Singleton(as: GoogleConsent, env: [Environment.prod])
-class GoogleWebConsent implements GoogleConsent {
-  GoogleWebConsent(
-    this._http,
-    this._clock, {
-    @ignoreParam this._client = const GoogleClient.fromEnvironment(),
-    @ignoreParam this._authenticate = _systemBrowser,
-    @ignoreParam bool? loopback,
-  }) : _loopback = loopback ?? (Platform.isWindows || Platform.isLinux);
+class GoogleWebConsent(
+  this._http,
+  this._clock, {
+  @ignoreParam this._client = const GoogleClient.fromEnvironment(),
+  @ignoreParam this._authenticate = _systemBrowser,
+  @ignoreParam bool? loopback,
+}) implements GoogleConsent {
+  this : _loopback = loopback ?? (Platform.isWindows || Platform.isLinux);
 
   final http.Client _http;
   final Clock _clock;

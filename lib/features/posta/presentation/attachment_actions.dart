@@ -11,8 +11,7 @@ import '../../../core/domain/result.dart';
 /// The attachments of an open Conversazione (#34): a tap downloads one (unless cached) and opens it in the
 /// system's app, its menu saves it; an executable is only saved (#75). Holds the downloads running and the
 /// last failures; [onChanged] rebuilds the view, never after [dispose].
-class AttachmentActions {
-  AttachmentActions(this.accountId, this.onChanged);
+class AttachmentActions(this.accountId, this.onChanged) {
   final String accountId;
   final VoidCallback onChanged;
   bool _disposed = false;

@@ -13,9 +13,7 @@ import '../tables/sync_cursors_table.dart';
 part 'messages_dao.g.dart';
 
 @DriftAccessor(tables: [Accounts, Messages, MessageLabels, Bodies, SyncCursors, Intents])
-class MessagesDao extends DatabaseAccessor<PostinoDatabase> with _$MessagesDaoMixin {
-  MessagesDao(super.attachedDatabase);
-
+class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$MessagesDaoMixin {
   /// Where the Account's next incremental sync starts; null before its first sync.
   Future<String?> cursor(String accountId) async =>
       (await (select(syncCursors)..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;

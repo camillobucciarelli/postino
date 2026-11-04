@@ -6,7 +6,8 @@ String normalizeAddress(String from) {
 
 /// Who may load remote resources (ADR 0007): the Mittenti fidati, kept in the database,
 /// and the messages shown once, kept in memory for this session.
-abstract interface class TrustedSendersRepository {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class TrustedSendersRepository() {
   /// Normalized addresses ([normalizeAddress]).
   Stream<Set<String>> watchTrusted();
 

@@ -4,9 +4,9 @@ import 'dart:typed_data' show Uint8List;
 import 'package:equatable/equatable.dart';
 
 /// A file attached to a message; [id] is the Provider's, stable for the message (Gmail: the MIME part id).
-class Attachment extends Equatable {
+class const Attachment({required this.id, required this.name, required this.size, this.mimeType}) extends Equatable {
   /// Crea un allegato.
-  const Attachment({required this.id, required this.name, required this.size, this.mimeType});
+  this;
 
   /// Id dell'allegato lato Provider.
   final String id;
@@ -42,7 +42,7 @@ class Attachment extends Equatable {
 }
 
 /// Tipo di Etichetta.
-enum LabelKind {
+enum LabelKind() {
   /// Etichetta: un messaggio può averne più d'una.
   etichetta,
 
@@ -131,9 +131,9 @@ const _executable = {
 };
 
 /// Per Account; on folder-based Providers a message has at most one.
-class Label extends Equatable {
+class const Label({required this.id, required this.name, required this.kind}) extends Equatable {
   /// Crea un'Etichetta.
-  const Label({required this.id, required this.name, required this.kind});
+  this;
 
   /// Id lato Provider.
   final String id;
@@ -158,26 +158,26 @@ const draftLabelId = 'DRAFT';
 const sentLabelId = 'SENT';
 
 /// Intestazioni di un messaggio ricevuto o sincronizzato; il corpo sta in [MessageBody].
-class Message extends Equatable {
+class const Message({
+  required this.id,
+  required this.messageId,
+  required this.conversationId,
+  required this.labelIds,
+  required this.isRead,
+  required this.isStarred,
+  required this.from,
+  required this.to,
+  required this.subject,
+  required this.snippet,
+  required this.date,
+  this.fromName,
+  this.cc = const [],
+  this.bcc = const [],
+  this.replyTo,
+  this.references = const [],
+}) extends Equatable {
   /// Crea un messaggio; cc, bcc e references partono vuoti.
-  const Message({
-    required this.id,
-    required this.messageId,
-    required this.conversationId,
-    required this.labelIds,
-    required this.isRead,
-    required this.isStarred,
-    required this.from,
-    required this.to,
-    required this.subject,
-    required this.snippet,
-    required this.date,
-    this.fromName,
-    this.cc = const [],
-    this.bcc = const [],
-    this.replyTo,
-    this.references = const [],
-  });
+  this;
 
   /// Provider-side id.
   final String id;
@@ -249,7 +249,7 @@ class Message extends Equatable {
 }
 
 /// Formato del corpo di un messaggio.
-enum BodyKind {
+enum BodyKind() {
   /// Corpo HTML.
   html,
 
@@ -259,9 +259,9 @@ enum BodyKind {
 
 /// A downloaded message body, with whether it is HTML or plain text, and its attachments
 /// (they come with the full message, as the body does).
-class MessageBody extends Equatable {
+class const MessageBody(this.content, this.kind, {this.attachments = const []}) extends Equatable {
   /// Crea un corpo; senza `attachments` la lista è vuota.
-  const MessageBody(this.content, this.kind, {this.attachments = const []});
+  this;
 
   /// Il contenuto, HTML o testo secondo [kind].
   final String content;
@@ -277,9 +277,9 @@ class MessageBody extends Equatable {
 }
 
 /// Always inside a single Account.
-class Conversation extends Equatable {
+class const Conversation({required this.id, required this.accountId, required this.messageIds}) extends Equatable {
   /// Crea una Conversazione.
-  const Conversation({required this.id, required this.accountId, required this.messageIds});
+  this;
 
   /// Id della Conversazione lato Provider.
   final String id;
@@ -295,21 +295,21 @@ class Conversation extends Equatable {
 }
 
 /// A message to send or to keep as a Bozza; [messageId] is generated on the device ([newMessageId]) and stays stable.
-class OutgoingMessage extends Equatable {
+class const OutgoingMessage({
+  required this.messageId,
+  required this.from,
+  required this.to,
+  required this.subject,
+  required this.body,
+  this.cc = const [],
+  this.bcc = const [],
+  this.inReplyTo,
+  this.references = const [],
+  this.conversationId,
+  this.attachments = const [],
+}) extends Equatable {
   /// Crea un messaggio in uscita; cc, bcc, references e allegati partono vuoti.
-  const OutgoingMessage({
-    required this.messageId,
-    required this.from,
-    required this.to,
-    required this.subject,
-    required this.body,
-    this.cc = const [],
-    this.bcc = const [],
-    this.inReplyTo,
-    this.references = const [],
-    this.conversationId,
-    this.attachments = const [],
-  });
+  this;
 
   /// Message-ID RFC 5322 generato sul dispositivo.
   final String messageId;
@@ -362,9 +362,9 @@ class OutgoingMessage extends Equatable {
 }
 
 /// An [Attachment] of the Provider message [sourceMessageId], re-attached to an [OutgoingMessage].
-class ForwardedAttachment extends Equatable {
+class const ForwardedAttachment(this.sourceMessageId, this.attachment) extends Equatable {
   /// Crea un allegato inoltrato.
-  const ForwardedAttachment(this.sourceMessageId, this.attachment);
+  this;
 
   /// Id Provider del messaggio da cui si prende l'allegato.
   final String sourceMessageId;

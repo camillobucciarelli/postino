@@ -12,20 +12,20 @@ import 'postino_focus_ring.dart';
 /// Mouse and trackpad: drag ([onChanged] live, [onChangeEnd] when the drag ends), double click ([onReset]).
 /// Keyboard, with the focus on it: left/right by `list-width-step`, Home [min], End [max] (all through
 /// [onChangeEnd]); the arrows stop here and move nothing else. VoiceOver: increase and decrease by the same step.
-class PostinoResizeHandle extends StatefulWidget {
+class const PostinoResizeHandle({
+  super.key,
+  required this.value,
+  required this.min,
+  required this.max,
+  required this.label,
+  required this.valueLabel,
+  required this.onChanged,
+  required this.onChangeEnd,
+  required this.onReset,
+  this.onDragEnd,
+}) extends StatefulWidget {
   /// Crea il divisore trascinabile.
-  const PostinoResizeHandle({
-    super.key,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.label,
-    required this.valueLabel,
-    required this.onChanged,
-    required this.onChangeEnd,
-    required this.onReset,
-    this.onDragEnd,
-  });
+  this;
 
   /// Larghezza attuale in pixel.
   final double value;
@@ -58,7 +58,7 @@ class PostinoResizeHandle extends StatefulWidget {
   State<PostinoResizeHandle> createState() => _PostinoResizeHandleState();
 }
 
-class _PostinoResizeHandleState extends State<PostinoResizeHandle> {
+class _PostinoResizeHandleState() extends State<PostinoResizeHandle> {
   final _focus = FocusNode(debugLabel: 'PostinoResizeHandle');
   bool _hover = false;
   bool _dragging = false;

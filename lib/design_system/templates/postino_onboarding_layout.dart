@@ -4,15 +4,15 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// One onboarding step per screen; the welcome uses [title] in `display`, the main action full width at the bottom.
-class PostinoOnboardingLayout extends StatelessWidget {
+class const PostinoOnboardingLayout({
+  super.key,
+  required this.title,
+  required this.message,
+  required this.primaryAction,
+  this.error,
+}) extends StatelessWidget {
   /// Crea il layout di un passaggio dell'onboarding.
-  const PostinoOnboardingLayout({
-    super.key,
-    required this.title,
-    required this.message,
-    required this.primaryAction,
-    this.error,
-  });
+  this;
 
   /// Titolo del passaggio.
   final String title;

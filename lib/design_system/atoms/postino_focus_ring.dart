@@ -8,9 +8,14 @@ import '../tokens/postino_tokens.dart';
 /// has focus from the keyboard. Put it inside that focusable, around its visible shape.
 /// Controls with a shape of their own get it `focus-offset` outside; full-width rows ([inset])
 /// get it inside their edges, where nothing clips it.
-class PostinoFocusRing extends StatefulWidget {
+class const PostinoFocusRing({
+  super.key,
+  required this.child,
+  this.borderRadius = BorderRadius.zero,
+  this.inset = false,
+}) extends StatefulWidget {
   /// Crea l'anello di focus attorno a `child`.
-  const PostinoFocusRing({super.key, required this.child, this.borderRadius = BorderRadius.zero, this.inset = false});
+  this;
 
   /// Forma visibile attorno a cui disegnare l'anello.
   final Widget child;
@@ -25,7 +30,7 @@ class PostinoFocusRing extends StatefulWidget {
   State<PostinoFocusRing> createState() => _PostinoFocusRingState();
 }
 
-class _PostinoFocusRingState extends State<PostinoFocusRing> {
+class _PostinoFocusRingState() extends State<PostinoFocusRing> {
   @override
   void initState() {
     super.initState();
@@ -53,9 +58,7 @@ class _PostinoFocusRingState extends State<PostinoFocusRing> {
   }
 }
 
-class _RingPainter extends CustomPainter {
-  const _RingPainter(this.color, this.radius, {required this.inset});
-
+class const _RingPainter(this.color, this.radius, {required this.inset}) extends CustomPainter {
   final Color color;
   final BorderRadius radius;
   final bool inset;

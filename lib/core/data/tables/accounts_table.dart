@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import '../../domain/account.dart';
 
 @DataClassName('AccountRow')
-class Accounts extends Table {
+class Accounts() extends Table {
   TextColumn get id => text()();
   TextColumn get address => text()();
   TextColumn get provider => textEnum<ProviderKind>()();

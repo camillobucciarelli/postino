@@ -9,7 +9,7 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// Gravità di un `PostinoBanner`: ne determina colori e icona.
-enum PostinoBannerTone {
+enum PostinoBannerTone() {
   /// Errore da correggere.
   danger,
 
@@ -26,21 +26,21 @@ enum PostinoBannerTone {
 /// A lasting problem at the top of the list, or a notice above a message: [title] says what happens,
 /// [message] why or what to do, up to two actions (two sit under the text, wrapping). With [account] its mark sits in the title.
 /// [spaced] adds the gap under it, for a list of banners; off inside a message, whose own layout spaces it.
-class PostinoBanner extends StatelessWidget {
+class const PostinoBanner({
+  super.key,
+  required this.tone,
+  required this.title,
+  this.icon,
+  this.message,
+  this.account,
+  this.actionLabel,
+  this.onAction,
+  this.secondaryActionLabel,
+  this.onSecondaryAction,
+  this.spaced = true,
+}) extends StatelessWidget {
   /// Crea il banner; `tone` sceglie colori e icona predefinita.
-  const PostinoBanner({
-    super.key,
-    required this.tone,
-    required this.title,
-    this.icon,
-    this.message,
-    this.account,
-    this.actionLabel,
-    this.onAction,
-    this.secondaryActionLabel,
-    this.onSecondaryAction,
-    this.spaced = true,
-  });
+  this;
 
   /// Gravità del problema: colore di sfondo e dell'icona.
   final PostinoBannerTone tone;

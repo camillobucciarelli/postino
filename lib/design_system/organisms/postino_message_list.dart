@@ -4,19 +4,19 @@ import '../atoms/postino_skeleton.dart';
 import '../molecules/postino_empty_state.dart';
 
 /// The list of messages: Skeleton on the first load, EmptyState when empty, pull-to-refresh always.
-class PostinoMessageList extends StatelessWidget {
+class const PostinoMessageList({
+  super.key,
+  required this.loading,
+  required this.itemCount,
+  required this.itemBuilder,
+  required this.onRefresh,
+  required this.loadingLabel,
+  required this.emptyTitle,
+  this.emptyBody,
+  this.controller,
+}) extends StatelessWidget {
   /// Lista dei messaggi con caricamento, stato vuoto e aggiornamento con trascinamento.
-  const PostinoMessageList({
-    super.key,
-    required this.loading,
-    required this.itemCount,
-    required this.itemBuilder,
-    required this.onRefresh,
-    required this.loadingLabel,
-    required this.emptyTitle,
-    this.emptyBody,
-    this.controller,
-  });
+  this;
 
   /// Se vero mostra lo scheletro di caricamento al posto delle righe.
   final bool loading;

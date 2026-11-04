@@ -11,23 +11,23 @@ import '../tokens/postino_tokens.dart';
 /// A Conversazione in the list (Comfortable): its latest message, and the thread [count] from 2.
 /// With [account] (Posta unificata) it carries the Account's bar and the badge on the avatar;
 /// inside one Account the AppBar already says where you are. [selected]: open in the detail pane.
-class PostinoMessageTile extends StatelessWidget {
+class const PostinoMessageTile({
+  super.key,
+  required this.sender,
+  required this.subject,
+  required this.preview,
+  required this.time,
+  required this.unread,
+  required this.starred,
+  required this.semanticLabel,
+  this.account,
+  this.count = 1,
+  this.selected = false,
+  this.onTap,
+  this.focusNode,
+}) extends StatelessWidget {
   /// Crea la riga di una Conversazione.
-  const PostinoMessageTile({
-    super.key,
-    required this.sender,
-    required this.subject,
-    required this.preview,
-    required this.time,
-    required this.unread,
-    required this.starred,
-    required this.semanticLabel,
-    this.account,
-    this.count = 1,
-    this.selected = false,
-    this.onTap,
-    this.focusNode,
-  });
+  this;
 
   /// Mittente dell'ultimo messaggio.
   final String sender;

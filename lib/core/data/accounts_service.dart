@@ -12,8 +12,7 @@ import 'mail_store.dart';
 import 'sync_engine.dart';
 
 @LazySingleton(as: AccountsRepository)
-class AccountsService implements AccountsRepository {
-  AccountsService(this._store, this._consent, this._keychain, this._sync);
+class AccountsService(this._store, this._consent, this._keychain, this._sync) implements AccountsRepository {
   final MailStore _store;
   final GoogleConsent _consent;
   final SecureStore _keychain;

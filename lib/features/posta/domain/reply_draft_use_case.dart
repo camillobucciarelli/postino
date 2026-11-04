@@ -16,8 +16,7 @@ import 'reply_source.dart';
 /// [save] makes the Bozza through the offline queue (ADR 0008). The caller decides in between whether it
 /// still wants it (a view gone meanwhile saves nothing) and says when Inoltra is [ReplySource.unavailable].
 @injectable
-class ReplyDraftUseCase {
-  ReplyDraftUseCase(this._sync, this._inbox);
+class ReplyDraftUseCase(this._sync, this._inbox) {
   final MailSync _sync;
   final InboxRepository _inbox;
 

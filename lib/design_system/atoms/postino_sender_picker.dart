@@ -12,16 +12,16 @@ typedef PostinoSenderOption = ({String id, PostinoAccountRef mark, String addres
 
 /// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap;
 /// not [enabled], it only shows the sender.
-class PostinoSenderPicker extends StatelessWidget {
+class const PostinoSenderPicker({
+  super.key,
+  required this.options,
+  required this.selectedId,
+  required this.onSelected,
+  required this.label,
+  this.enabled = true,
+}) extends StatelessWidget {
   /// Crea la riga «Da».
-  const PostinoSenderPicker({
-    super.key,
-    required this.options,
-    required this.selectedId,
-    required this.onSelected,
-    required this.label,
-    this.enabled = true,
-  });
+  this;
 
   /// Account da cui si può inviare.
   final List<PostinoSenderOption> options;

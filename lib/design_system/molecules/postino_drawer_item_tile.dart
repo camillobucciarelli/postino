@@ -10,9 +10,9 @@ import 'postino_drawer_item.dart';
 import 'postino_sync_status.dart';
 
 /// One row of `PostinoNavigationDrawer` (not in the barrel): [item] as a row, or, [collapsed], as a rail icon.
-class PostinoDrawerItemTile extends StatelessWidget {
+class const PostinoDrawerItemTile(this.item, {required this.collapsed, super.key}) extends StatelessWidget {
   /// Crea la riga per `item`; `collapsed` la riduce all'icona.
-  const PostinoDrawerItemTile(this.item, {required this.collapsed, super.key});
+  this;
 
   /// The destination it shows and opens.
   final PostinoDrawerItem item;
@@ -130,8 +130,7 @@ class PostinoDrawerItemTile extends StatelessWidget {
 
 /// The unread dot (8 px, `unread`): in the icon sidebar the item's semantics already say it,
 /// in the extended one it reads [label] itself.
-class _UnreadDot extends StatelessWidget {
-  const _UnreadDot({this.label});
+class const _UnreadDot({this.label}) extends StatelessWidget {
   final String? label;
 
   @override

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:postino/core/domain/platform_services.dart';
 
-class FakeSecureStore implements SecureStore {
+class FakeSecureStore() implements SecureStore {
   final values = <String, String>{};
 
   /// While set, every read throws it: a locked keychain, access denied.
@@ -18,8 +18,7 @@ class FakeSecureStore implements SecureStore {
 }
 
 /// Time moves only with [advance], which also fires the [every] tickers that came due.
-class FakeClock implements Clock {
-  FakeClock(this.current);
+class FakeClock(this.current) implements Clock {
   DateTime current;
   final _tickers = <(Duration, StreamController<void>, List<Duration>)>[];
 
@@ -48,7 +47,7 @@ class FakeClock implements Clock {
   }
 }
 
-class FakeConnectivity implements Connectivity {
+class FakeConnectivity() implements Connectivity {
   final _changes = StreamController<bool>.broadcast();
   bool _online = true;
 
@@ -65,14 +64,14 @@ class FakeConnectivity implements Connectivity {
 }
 
 /// Records every link Postino asked to open, instead of opening it.
-class FakeLinkOpener implements LinkOpener {
+class FakeLinkOpener() implements LinkOpener {
   final opened = <Uri>[];
   @override
   Future<void> open(Uri url) async => opened.add(url);
 }
 
 /// Records every Save As instead of showing the dialog.
-class FakeFileSaver implements FileSaver {
+class FakeFileSaver() implements FileSaver {
   final saved = <(String path, String name)>[];
   @override
   bool available = true;
@@ -93,7 +92,7 @@ class FakeFileSaver implements FileSaver {
 }
 
 /// Records every hold and release instead of asking the platform.
-class FakeBackgroundSender implements BackgroundSender {
+class FakeBackgroundSender() implements BackgroundSender {
   final holds = <String>[];
   final releases = <String>[];
   @override

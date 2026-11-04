@@ -7,15 +7,15 @@ import '../tokens/postino_tokens.dart';
 
 /// The sign of an Account: a rounded square in its color with its initial, so it reads without color too.
 /// Decorative unless [label] is given (“Account Lavoro”).
-class PostinoAccountMark extends StatelessWidget {
+class const PostinoAccountMark({
+  super.key,
+  required this.color,
+  required this.initial,
+  this.size = PostinoSize.accountMark,
+  this.label,
+}) extends StatelessWidget {
   /// Crea il segno di un Account.
-  const PostinoAccountMark({
-    super.key,
-    required this.color,
-    required this.initial,
-    this.size = PostinoSize.accountMark,
-    this.label,
-  });
+  this;
 
   /// Colore dell'Account.
   final PostinoAccountColor color;

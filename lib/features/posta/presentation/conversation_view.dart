@@ -27,16 +27,14 @@ import 'posta_shortcuts.dart';
 /// Rispondi, Rispondi a tutti and Inoltra (#37): the bar at the bottom acts on the last message, the menu
 /// of each message on that one, `r`/`a`/`f` through [cursor] on the last; each saves a Bozza with the
 /// Citazione ([ReplyDraftUseCase]) and opens it ([onOpenDraft]). Routing is the caller's ([onBack], [onOpenDraft]).
-class ConversationView extends StatefulWidget {
-  const ConversationView({
-    super.key,
-    required this.accountId,
-    required this.conversationId,
-    required this.onBack,
-    required this.onOpenDraft,
-    this.cursor,
-  });
-
+class const ConversationView({
+  super.key,
+  required this.accountId,
+  required this.conversationId,
+  required this.onBack,
+  required this.onOpenDraft,
+  this.cursor,
+}) extends StatefulWidget {
   final String accountId;
   final String conversationId;
   final VoidCallback onBack;
@@ -49,7 +47,7 @@ class ConversationView extends StatefulWidget {
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState extends State<ConversationView> with AccountsSignal {
+class _ConversationViewState() extends State<ConversationView> with AccountsSignal {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];

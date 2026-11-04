@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 // ponytail: no value-at-enqueue and no Conflitti yet: the replay applies blindly; add them with the
 // first Azione that can clash (Archivia, Stella).
 @DataClassName('IntentRow')
-class Intents extends Table {
+class Intents() extends Table {
   TextColumn get accountId => text()();
   TextColumn get messageId => text()();
   BoolColumn get isRead => boolean().nullable()();

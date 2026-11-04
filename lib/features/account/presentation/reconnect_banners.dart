@@ -10,14 +10,12 @@ import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 
 /// One `warning` Banner per Da ricollegare Account, offering to sign in again.
-class ReconnectBanners extends StatefulWidget {
-  const ReconnectBanners({super.key});
-
+class const ReconnectBanners({super.key}) extends StatefulWidget {
   @override
   State<ReconnectBanners> createState() => _ReconnectBannersState();
 }
 
-class _ReconnectBannersState extends State<ReconnectBanners> with AccountsSignal {
+class _ReconnectBannersState() extends State<ReconnectBanners> with AccountsSignal {
   Future<void> _reconnect(Account a) async {
     final r = await GetIt.I<AccountsRepository>().connectGmail(loginHint: a.address);
     if (!mounted) return;

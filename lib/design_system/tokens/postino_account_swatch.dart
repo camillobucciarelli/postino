@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 /// Le tre tinte di un colore account in un tema.
 @immutable
-class PostinoAccountSwatch {
+class const PostinoAccountSwatch(this.color, this.subtle, this.onColor) {
   /// Crea la terna di tinte.
-  const PostinoAccountSwatch(this.color, this.subtle, this.onColor);
+  this;
 
   /// Tinta piena dell'account (badge, avatar).
   final Color color;

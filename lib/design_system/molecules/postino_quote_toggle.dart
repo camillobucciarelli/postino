@@ -8,9 +8,10 @@ import '../tokens/postino_tokens.dart';
 
 /// Of `PostinoThreadMessage` only (not in the barrel).
 /// «…»: shows or hides the quoted text. A `surface-pressed` pill 32×20, in a 48 high target.
-class PostinoQuoteToggle extends StatelessWidget {
+class const PostinoQuoteToggle({super.key, required this.label, required this.open, required this.onTap})
+    extends StatelessWidget {
   /// Crea il pulsante «…» per mostrare o nascondere la citazione.
-  const PostinoQuoteToggle({super.key, required this.label, required this.open, required this.onTap});
+  this;
 
   /// Its name for screen readers («Mostra il testo citato»).
   final String label;

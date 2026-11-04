@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import '../tokens/postino_tokens.dart';
 
 /// One pane on the phone: [appBar], the [drawer] behind it, [banners] on top of the [body], [fab] over it.
-class PostinoSinglePaneLayout extends StatelessWidget {
+class const PostinoSinglePaneLayout({
+  super.key,
+  required this.appBar,
+  required this.body,
+  this.drawer,
+  this.banners = const [],
+  this.fab,
+}) extends StatelessWidget {
   /// Crea il layout a un solo pannello, per il telefono.
-  const PostinoSinglePaneLayout({
-    super.key,
-    required this.appBar,
-    required this.body,
-    this.drawer,
-    this.banners = const [],
-    this.fab,
-  });
+  this;
 
   /// Barra superiore, che sta nel corpo e prende l'altezza del suo contenuto.
   final Widget appBar;

@@ -4,15 +4,15 @@ import 'account.dart';
 import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
-class InboxEntry extends Equatable {
+class const InboxEntry({
+  required this.message,
+  required this.account,
+  required this.count,
+  required this.unread,
+  this.status,
+}) extends Equatable {
   /// Crea una riga di elenco.
-  const InboxEntry({
-    required this.message,
-    required this.account,
-    required this.count,
-    required this.unread,
-    this.status,
-  });
+  this;
 
   /// L'ultimo messaggio della Conversazione.
   final Message message;
@@ -38,9 +38,9 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
-class OutgoingEntry extends Equatable {
+class const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false}) extends Equatable {
   /// Crea una voce della Coda d'uscita; `failed` parte falso.
-  const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false});
+  this;
 
   /// Il messaggio in attesa di partire.
   final OutgoingMessage message;
@@ -56,7 +56,8 @@ class OutgoingEntry extends Equatable {
 }
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).
-abstract interface class InboxRepository {
+// ignore: public_member_api_docs, costruttore implicito di classe astratta
+abstract interface class InboxRepository() {
   /// Posta unificata: one row per Conversazione in the inbox of every Account, newest first; re-emits after each write.
   Stream<List<InboxEntry>> watchUnifiedInbox();
 

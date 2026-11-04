@@ -25,23 +25,24 @@ const sendClaim = Duration(minutes: 10);
 /// The outbox of the sync engine (#36): Invia queues the message and starts its Annulla window, [sendDue] sends
 /// what is due. No queue of its own (ADR 0008): the window's ticker calls back `flushOutbox`, the engine's method,
 /// so every send runs inside the Account's serial queue; [sendDue] is called only from there.
-class OutboxSender {
+class OutboxSender(
+  this._outbox,
+  this._clock,
+  this._background, {
+  required Future<Account?> Function(String accountId) account,
+  required Future<void> Function(String accountId) flushOutbox,
+  required void Function(String accountId, DateTime until) pause,
+}) {
   /// [account] looks the Account up; [flushOutbox] is the engine's, queued in the Account's serial slot;
   /// [pause] tells the engine the Provider rate-limited the Account.
-  OutboxSender(
-    this._outbox,
-    this._clock,
-    this._background, {
-    required Future<Account?> Function(String accountId) account,
-    required Future<void> Function(String accountId) flushOutbox,
-    required void Function(String accountId, DateTime until) pause,
-  }) : // Private fields behind public named parameters.
-       // ignore: prefer_initializing_formals
-       _account = account,
-       // ignore: prefer_initializing_formals
-       _flushOutbox = flushOutbox,
-       // ignore: prefer_initializing_formals
-       _pause = pause;
+  this
+    : // Private fields behind public named parameters.
+      // ignore: prefer_initializing_formals
+      _account = account,
+      // ignore: prefer_initializing_formals
+      _flushOutbox = flushOutbox,
+      // ignore: prefer_initializing_formals
+      _pause = pause;
 
   final OutboxRepository _outbox;
   final Clock _clock;

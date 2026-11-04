@@ -8,9 +8,9 @@ import 'postino_icon.dart';
 
 /// An etichetta of the message: tag icon and [name] on a `label-*` tint derived from the name
 /// (the domain gives a Label no color yet).
-class PostinoLabelChip extends StatelessWidget {
+class const PostinoLabelChip({super.key, required this.name}) extends StatelessWidget {
   /// Crea il chip di un'etichetta.
-  const PostinoLabelChip({super.key, required this.name});
+  this;
 
   /// Nome dell'etichetta, da cui deriva la tinta.
   final String name;

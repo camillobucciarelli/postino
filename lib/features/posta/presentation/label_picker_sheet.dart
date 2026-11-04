@@ -34,6 +34,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   final _pending = <String, bool>{};
   bool _fetching = true;
 
+  /// The older messages the late replay took an Etichetta off, by Etichetta: Annulla puts it back on them too.
+  final _removedLate = <String, List<Message>>{};
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +53,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
         if (r is! Ok<void> || pending.isEmpty) return;
         final all = [for (final m in await repo.watchConversation(accountId, conversationId).first) m.message];
         for (final MapEntry(:key, :value) in pending.entries) {
-          setLabelOn(accountId, all.where((m) => m.labelIds.contains(key) != value), key, add: value);
+          final targets = all.where((m) => m.labelIds.contains(key) != value).toList();
+          if (!value) _removedLate[key] = targets;
+          setLabelOn(accountId, targets, key, add: value);
         }
         pending.clear();
       }),
@@ -79,13 +84,13 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     final remove = _selected.contains(id);
     if (_fetching) _pending[id] = !remove;
     if (remove) {
-      // Annulla puts it back on the local messages: nothing left to take off the late ones.
+      // Annulla before the replay: nothing left to take off the late ones; after it: put it back on them too.
       removeConversationLabel(
         widget.snackbarContext,
         widget.accountId,
         _messages,
         label,
-        onUndo: () => _pending.remove(id),
+        onUndo: () => _pending.remove(id) == null ? _removedLate.remove(id) ?? const [] : const [],
       );
     } else {
       addConversationLabel(widget.accountId, _messages, id);
@@ -97,7 +102,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     final r = await GetIt.I<MailSync>().createLabel(widget.accountId, name);
     if (r case Ok(:final value)) {
       if (_fetching) _pending[value.id] = true;
-      addConversationLabel(widget.accountId, _messages, value.id);
+      // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
+      final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
+      addConversationLabel(widget.accountId, [for (final m in all) m.message], value.id);
     }
   }
 

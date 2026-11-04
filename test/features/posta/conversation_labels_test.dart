@@ -356,6 +356,31 @@ void main() {
     expect(_calls(from).where((c) => c.$1 == 'o0' && c.$2 == 'Label_13'), isEmpty);
   });
 
+  _onMac('Annulla after the fetch ended puts the Etichetta back on the older messages too', (tester) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Viaggi'));
+    await endFetch(tester);
+    expect(_calls(from), contains(('o0', 'Label_12', false)));
+    await _escape(tester);
+    await _tap(tester, _undo);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await _settle(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_12', true), ('o0', 'Label_12', true)]));
+  });
+
+  _onMac('«Crea» during a slow fetch, picker closed, still labels the older messages', (tester) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await tester.enterText(_field, 'Nuova');
+    await _settle(tester);
+    await _tap(tester, find.byKey(const ValueKey('label-create')));
+    await _escape(tester);
+    await endFetch(tester);
+    final created = gmail.labels.singleWhere((l) => l.name == 'Nuova');
+    expect(_calls(from), containsAll([('o1', created.id, true), ('o0', created.id, true)]));
+  });
+
   _onMac('offline, the picker still labels the local messages at once', (tester) async {
     await _start(tester);
     gmail.goOffline();

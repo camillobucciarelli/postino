@@ -11,13 +11,14 @@ import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
+import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
-import '../../../support/fake_mail_provider.dart' show withRead;
+import '../../../support/fake_mail_provider.dart' show withLabels, withRead;
 import '../../../support/fake_platform.dart';
 import '../../domain/mail_provider_contract.dart';
 
@@ -203,7 +204,16 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
     // ponytail: the 90-day `after:` window is not simulated; the recorded-response test checks the query.
     return switch (r.url.path.substring(_api.length).split('/')) {
       ['profile'] => _json({'emailAddress': 'ada@gmail.com', 'historyId': '$_historyId'}),
-      ['labels'] => _fixture('labels'),
+      ['labels'] when r.method == 'POST' => _createLabel(
+        (jsonDecode(r.body) as Map<String, dynamic>)['name'] as String,
+      ),
+      ['labels'] => _json({
+        'labels': [
+          ...jsonObjects((jsonDecode(_fixture('labels').body) as Map<String, dynamic>)['labels']),
+          ..._created,
+        ],
+      }),
+      ['messages', final id, 'modify'] => _modifyOne(id, jsonDecode(r.body) as Map<String, dynamic>),
       ['messages'] => _paged('messages', [
         for (final m in _mailbox.values)
           if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
@@ -287,6 +297,27 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
       }
     }
     return http.Response('', 204);
+  }
+
+  /// Etichette created through the API, as Gmail lists them.
+  final _created = <Map<String, Object>>[];
+
+  /// What Gmail does with `labels.create`: a new user label.
+  http.Response _createLabel(String name) {
+    final label = {'id': 'Label_${100 + _created.length}', 'name': name, 'type': 'user'};
+    _created.add(label);
+    return _json(label);
+  }
+
+  /// What Gmail does with `messages.modify`: the labels change, the history records it.
+  http.Response _modifyOne(String id, Map<String, dynamic> body) {
+    final m = _mailbox[id];
+    if (m == null) return _fixture('not_found');
+    final add = [for (final l in body['addLabelIds'] as List? ?? const []) l as String];
+    final remove = [for (final l in body['removeLabelIds'] as List? ?? const []) l as String];
+    _mailbox[id] = withLabels(m, {...m.labelIds.where((l) => !remove.contains(l)), ...add}.toList());
+    _history.add((++_historyId, add.isEmpty ? 'labelsRemoved' : 'labelsAdded', id));
+    return _json(_resource(_mailbox[id]!, full: false));
   }
 
   static List<String> _labels(Message m) => [...m.labelIds, if (!m.isRead) 'UNREAD', if (m.isStarred) 'STARRED'];
@@ -407,6 +438,7 @@ void main() {
   mailProviderAttachmentContract('GmailProvider', GmailHarness.new);
   mailProviderDraftContract('GmailProvider', GmailHarness.new);
   mailProviderSendContract('GmailProvider', GmailHarness.new);
+  mailProviderLabelContract('GmailProvider', GmailHarness.new);
 
   test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
     final h = GmailHarness();
@@ -479,7 +511,7 @@ void main() {
         final batch = _ok(await g.provider.initialSync());
 
         expect(batch.cursor, '4242');
-        expect(batch.labels.map((l) => (l.id, l.name)), [
+        expect(batch.labels!.map((l) => (l.id, l.name)), [
           ('Label_12', 'Viaggi'),
         ], reason: 'user labels only: INBOX and the other system ones are not Etichette');
         final after = _now.subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
@@ -548,6 +580,7 @@ void main() {
       final g = _Recorded(
         (r, path) => switch (path) {
           'history' => 'history',
+          'labels' => 'labels',
           'messages/$_f1' => 'message_f1_read',
           'messages/$_f4' => 'message_f4',
           _ => fail('unexpected $path'),
@@ -563,6 +596,7 @@ void main() {
       expect(byId[_f4]!.subject, 'Il tuo biglietto per Bologna');
       expect(batch.removedMessageIds, [_f3]);
       expect(batch.bodies.keys, unorderedEquals([_f1, _f4]));
+      expect(batch.labels!.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')], reason: 'the Etichette, every sync');
     });
 
     test('incremental sync with nothing new keeps the cursor moving', () async {
@@ -582,12 +616,59 @@ void main() {
       final g = _Recorded(
         (r, path) => switch (path) {
           'history' => 'history',
+          'labels' => 'labels',
           _ => 'not_found',
         },
       );
       final batch = _ok(await g.provider.incrementalSync('4242'));
       expect(batch.messages, isEmpty);
       expect(batch.removedMessageIds, unorderedEquals([_f1, _f3, _f4]));
+    });
+
+    group('Etichette (#105)', () {
+      test('creating one posts the name, shown in lists, and returns the new Etichetta', () async {
+        final g = _Recorded(
+          (r, path) => switch ((r.method, path)) {
+            ('GET', 'labels') => 'labels',
+            ('POST', 'labels') => 'label_create',
+            _ => fail('unexpected $path'),
+          },
+        );
+        expect(
+          _ok(await g.provider.createLabel('Fatture')),
+          const Label(id: 'Label_31', name: 'Fatture', kind: LabelKind.etichetta),
+        );
+        expect(jsonDecode(g.requests.last.body), {
+          'name': 'Fatture',
+          'labelListVisibility': 'labelShow',
+          'messageListVisibility': 'show',
+        });
+      });
+
+      test('a name already taken, in any case, returns that Etichetta without posting', () async {
+        final g = _Recorded((r, path) => r.method == 'GET' ? 'labels' : fail('unexpected ${r.method} $path'));
+        expect(_ok(await g.provider.createLabel('viaggi')).id, 'Label_12');
+      });
+
+      test('adding and removing one modify the message', () async {
+        final g = _Recorded((r, path) => path == 'messages/$_f1/modify' ? 'message_modify' : fail('unexpected $path'));
+        _ok(await g.provider.setLabel(_f1, 'Label_12', add: true));
+        _ok(await g.provider.setLabel(_f1, 'Label_12', add: false));
+        expect(g.requests.map((r) => r.method), ['POST', 'POST']);
+        expect(g.requests.map((r) => jsonDecode(r.body)), [
+          {
+            'addLabelIds': ['Label_12'],
+          },
+          {
+            'removeLabelIds': ['Label_12'],
+          },
+        ]);
+      });
+
+      test('on a message gone it is NotFound', () async {
+        final g = _Recorded((r, path) => 'not_found');
+        expect(await g.provider.setLabel(_f1, 'Label_12', add: true), _err<NotFoundFailure>());
+      });
     });
 
     group('a text part referenced by attachmentId', () {

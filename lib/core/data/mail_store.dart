@@ -85,6 +85,18 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> readDone(String accountId, List<String> messageIds, {required bool isRead}) =>
       _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
+  /// Puts the Etichetta on the message here at once (or takes it off) and queues the intent (ADR 0008).
+  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) =>
+      _db.intentsDao.queueLabel(accountId, messageId, labelId, add: add);
+
+  Future<List<LabelIntentRow>> pendingLabelIntents(String accountId) => _db.intentsDao.pendingLabels(accountId);
+
+  Future<void> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
+      _db.intentsDao.labelDone(accountId, messageId, labelId, added: added);
+
+  /// An Etichetta just created on the Provider, listed before the next sync brings it.
+  Future<void> saveLabel(String accountId, Label label) => _db.labelsDao.upsert(accountId, label);
+
   @override
   Stream<List<Message>> watchDrafts(String accountId) => _db.draftsDao
       .watchAll(accountId)

@@ -93,6 +93,12 @@ class FakeMailProvider() implements MailProvider {
   /// Every [setRead] that reached the Provider: (ids, read).
   final readCalls = <(List<String>, bool)>[];
 
+  /// While set, [setLabel] fails as offline even though the syncs work: a passing replay failure.
+  bool failSetLabel = false;
+
+  /// Every [setLabel] that reached the Provider: (message id, label id, add).
+  final labelCalls = <(String, String, bool)>[];
+
   /// Body kind of [fetchBody]; the sync bodies are plain text.
   BodyKind bodyKind = BodyKind.testo;
 
@@ -265,7 +271,7 @@ class FakeMailProvider() implements MailProvider {
       return SyncBatch(
         cursor: '$_version',
         messages: _messages.values.toList(),
-        labels: labels,
+        labels: [...labels],
         bodies: _inboxBodies(_messages.values),
       );
     });
@@ -292,6 +298,7 @@ class FakeMailProvider() implements MailProvider {
       return lastIncremental = SyncBatch(
         cursor: '$_version',
         messages: messages,
+        labels: [...labels],
         removedMessageIds: [
           for (final e in latest.values)
             if (e.$2 == null) e.$3,
@@ -435,7 +442,49 @@ class FakeMailProvider() implements MailProvider {
     removeDraftRemotely(messageId);
     return const Ok(null);
   }
+
+  int _labelSeq = 100;
+
+  /// Ids are `Label_<n>`; the name matches case-insensitively, as on Gmail.
+  @override
+  Future<Result<Label>> createLabel(String name) async => _guard(() {
+    if (labels.where((l) => l.name.toLowerCase() == name.toLowerCase()).firstOrNull case final l?) return l;
+    final created = Label(id: 'Label_${++_labelSeq}', name: name, kind: LabelKind.etichetta);
+    labels.add(created);
+    return created;
+  });
+
+  @override
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) async {
+    final f = _failure ?? (failSetLabel ? const OfflineFailure() : null);
+    if (f != null) return Err(f);
+    labelCalls.add((messageId, labelId, add));
+    final m = _messages[messageId];
+    if (m == null) return const Err(NotFoundFailure());
+    final others = m.labelIds.where((l) => l != labelId);
+    deliver(withLabels(m, [...others, if (add) labelId]));
+    return const Ok(null);
+  }
 }
+
+/// [m] with its Etichette changed elsewhere.
+Message withLabels(Message m, List<String> labelIds) => Message(
+  id: m.id,
+  messageId: m.messageId,
+  conversationId: m.conversationId,
+  labelIds: labelIds,
+  isRead: m.isRead,
+  isStarred: m.isStarred,
+  from: m.from,
+  fromName: m.fromName,
+  to: m.to,
+  cc: m.cc,
+  subject: m.subject,
+  snippet: m.snippet,
+  date: m.date,
+  replyTo: m.replyTo,
+  references: m.references,
+);
 
 /// [m] read (or unread) elsewhere.
 Message withRead(Message m, {required bool read}) => Message(

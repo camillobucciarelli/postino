@@ -452,4 +452,8 @@ class _TooBig(
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) => real.fetchAttachment(a, m, id, onProgress: onProgress, cancel: cancel);
+  @override
+  Future<Result<Label>> createLabel(String a, String name) => real.createLabel(a, name);
+  @override
+  Future<void> setLabel(String a, String m, String l, {required bool add}) => real.setLabel(a, m, l, add: add);
 }

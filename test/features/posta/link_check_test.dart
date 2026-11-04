@@ -102,12 +102,46 @@ void main() {
   });
 
   group('linkTexts', () {
-    const html = '<a href="https://a.example/x">uno</a><a href="https://a.example/x"><b>due</b></a><a>none</a>';
+    const html =
+        '<a href="https://www.paypal.com/x">uno</a><a href="https://www.paypal.com/x"><b>due</b></a><a>none</a>';
 
     test('lists the texts by href', () {
       expect(linkTexts(html), {
-        'https://a.example/x': ['uno', 'due'],
+        'https://www.paypal.com/x': ['uno', 'due'],
       });
+    });
+
+    test('a link with a plain nested tag keeps its text; one that could hide text is unverifiable', () {
+      final links = linkTexts(
+        '<a href="https://www.paypal.com/">paypal.<b>com</b></a>'
+        '<a href="https://evil.io/">paypal.com<span style="display:none">@evil.io</span></a>'
+        '<a href="https://evil.io/2">x<i hidden>y</i></a><a href="https://evil.io/3">x<i aria-hidden="true">y</i></a>',
+      );
+      expect(links['https://www.paypal.com/'], ['paypal.com']);
+      expect(links['https://evil.io/'], [unverifiableText]);
+      expect(links['https://evil.io/2'], [unverifiableText]);
+      expect(links['https://evil.io/3'], [unverifiableText]);
+      expect(linkWarning(Uri.parse('https://www.paypal.com/'), links['https://www.paypal.com/']!), isNull);
+      expect(linkWarning(Uri.parse('https://evil.io/'), links['https://evil.io/']!)?.unverified, isTrue);
+      expect(
+        linkTexts(
+          '<style>.h{display:none}</style><a href="https://e.io/">a<b class="h">@e.io</b></a>',
+        )['https://e.io/'],
+        [unverifiableText],
+      );
+    });
+
+    test('other ways to alter a label also fail closed', () {
+      String? text(String html) => linkTexts(html)['https://e.io/']?.single;
+      expect(
+        text('<style>span{display:none}</style><a href="https://e.io/">a<span>@e.io</span></a>'),
+        unverifiableText,
+      );
+      expect(text('<body style="x"><a href="https://e.io/">a<b>@e.io</b></a>'), unverifiableText);
+      expect(text('<a href="https://e.io/">a<details>@e.io</details></a>'), unverifiableText);
+      expect(text('<a href="https://e.io/"></a>'), unverifiableText);
+      expect(text('<style>b{}</style><a href="https://e.io/">e.io</a>'), 'e.io');
+      expect(text('<a href="https://e.io/">e.<b>io</b></a>'), 'e.io');
     });
 
     test('textsOf matches an exact or normalised URL', () {

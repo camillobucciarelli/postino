@@ -56,7 +56,7 @@ LinkWarning? deceptiveLink(Uri target, String text) {
 /// http(s) URL no link text could be found for (a rewritten href, a WebView redirect) warns as `unverified`.
 LinkWarning? linkWarning(Uri target, Iterable<String> texts) {
   if (target.scheme != 'http' && target.scheme != 'https') return null;
-  if (texts.isEmpty) {
+  if (texts.isEmpty || texts.contains(unverifiableText)) {
     final real = decodeHost(target.host.toLowerCase().replaceAll(RegExp(r'\.+$'), ''));
     return (domain: real, punycode: hasPunycode(target.host), unverified: true);
   }
@@ -79,11 +79,48 @@ Iterable<String> textsOf(Map<String, List<String>> links, String url) {
   ];
 }
 
-/// The visible texts of the links of [html], by `href`: what a tap on that URL claims to open.
+/// Stands for the text of a link whose visible label cannot be told from its markup.
+const unverifiableText = '\u0000unverifiable';
+
+/// Elements whose content is not shown as plain label text.
+const _unseen = {
+  'details',
+  'template',
+  'noscript',
+  'select',
+  'datalist',
+  'audio',
+  'video',
+  'object',
+  'iframe',
+  'canvas',
+  'dialog',
+  'script',
+};
+
+/// The visible texts of the links of [html], by `href`: what a tap on that URL claims to open. CSS cannot be judged
+/// here, so a link whose label could be altered fails closed ([unverifiableText], hence a Dialog): an empty label
+/// (a `::before` could fill it), a descendant that could hide text (`style`, `hidden`, `aria-hidden`, or one of
+/// [_unseen]), or any nested element once the document has a stylesheet or a `style` on `html`/`body`.
+/// Plain nested tags (`<b>`) in a document without styles keep their text.
 Map<String, List<String>> linkTexts(String html) {
+  final doc = parse(html);
+  final styled =
+      doc.querySelector('style, link[rel~=stylesheet]') != null ||
+      (doc.documentElement?.attributes.containsKey('style') ?? false) ||
+      (doc.body?.attributes.containsKey('style') ?? false);
   final out = <String, List<String>>{};
-  for (final a in parse(html).querySelectorAll('a[href]')) {
-    (out[a.attributes['href']!] ??= []).add(a.text);
+  for (final a in doc.querySelectorAll('a[href]')) {
+    final nested = a.querySelectorAll('*');
+    final hideable =
+        a.text.trim().isEmpty ||
+        (styled && nested.isNotEmpty) ||
+        nested.any(
+          (e) =>
+              _unseen.contains(e.localName) ||
+              e.attributes.keys.any((k) => const {'style', 'hidden', 'aria-hidden'}.contains(k)),
+        );
+    (out[a.attributes['href']!] ??= []).add(hideable ? unverifiableText : a.text);
   }
   return out;
 }

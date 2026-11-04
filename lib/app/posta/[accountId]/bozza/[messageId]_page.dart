@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
 import '../../../../main.dart' show routePaths;
-import '../../posta_layout.dart';
+import '../../posta_views.dart';
 
 /// Route of a Bozza being written: PostaLayout draws the composer, beside or over its list, from the URI
 /// (the Message-ID is percent-encoded in the path).

@@ -50,7 +50,8 @@ class IntentReplayer(final MailStore _store, final OutboxRepository _outbox, fin
           await _store.labelDone(accountId, i.messageId, i.labelId, added: i.added);
         // ponytail: a refusal (an Etichetta deleted elsewhere) would be retried forever, and the message may never
         // come back in the history: the intent is dropped and the change undone here.
-        case Err(failure: RejectedFailure()):
+        case Err(failure: final f && RejectedFailure()):
+          _log.failure('label replay $accountId', f);
           await _store.labelRejected(accountId, i.messageId, i.labelId, added: i.added);
         case Err(:final failure):
           debugPrint('[sync] $accountId: label replay failed, $failure');

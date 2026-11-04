@@ -42,4 +42,19 @@ void main() {
     const text = '[sync] gmail:mario.rossi@example.com: failed, Oggetto «Fattura di ottobre» da anna@example.org';
     expect(redactSecrets(text), text);
   });
+
+  test('an escaped quote or a space never lets part of a password through', () {
+    final out = redactSecrets(
+      r'a1 LOGIN "u" "pa\"ss-secret" {"password":"prefix\"SECRET_a"} {password: first SECRET_b, user: u}',
+    );
+    for (final secret in ['ss-secret', 'SECRET_a', 'SECRET_b']) {
+      expect(out, isNot(contains(secret)), reason: secret);
+    }
+    expect(out, contains('user: u'));
+  });
+
+  test('ordinary words keep the address and the status: only the IMAP command and the OAuth parameter go', () {
+    const text = 'Login to mario@example.com failed, HttpException: status code: 401';
+    expect(redactSecrets(text), text);
+  });
 }

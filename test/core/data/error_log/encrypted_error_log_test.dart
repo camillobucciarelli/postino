@@ -47,7 +47,17 @@ void main() {
 
   test('a damaged line is skipped, the others still read', () async {
     final l = log()..record('prima');
-    dir.childFile('postino.log').writeAsStringSync('rotto\n', mode: FileMode.append);
+    dir.childFile('postino.log').writeAsStringSync('\nrotto', mode: FileMode.append);
+    l.record('dopo');
+    final text = await l.read();
+    expect(text, contains('prima'));
+    expect(text, contains('dopo'));
+  });
+
+  test('a write cut by a crash loses only itself: the next entry still reads', () async {
+    final l = log()..record('prima');
+    // A write cut after its newline and half its line.
+    dir.childFile('postino.log').writeAsStringSync('\nQUJDREVGR0hJSktM', mode: FileMode.append);
     l.record('dopo');
     final text = await l.read();
     expect(text, contains('prima'));

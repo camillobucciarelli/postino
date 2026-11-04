@@ -13,7 +13,7 @@ const _maxEntry = 8 * 1024;
 
 /// The error log on disk (#116): one line per entry in [_dir], each sealed on its own with the attachment cache's
 /// format (AES-256-CTR + HMAC-SHA256, see attachment_crypto.dart) and written synchronously, so an entry written
-/// just before a crash is there and a line cut by one is skipped on reading.
+/// just before a crash is there; a line cut by one is skipped on reading, and the next entry still reads.
 /// Rotates past [_cap] bytes: the current file becomes the previous one, which is dropped; two files at most.
 // ponytail: two isolates (app and WorkManager) may rotate at once and lose a file; a lock if that ever matters.
 class EncryptedErrorLog(
@@ -35,7 +35,8 @@ class EncryptedErrorLog(
       // Redacted before the cut, so the cut cannot split a secret past the patterns.
       var entry = redactSecrets(trace == null ? head : '$head\n${'$trace'.trimRight()}');
       if (entry.length > _maxEntry) entry = '${entry.substring(0, _maxEntry)}\n[troncato]';
-      final line = '${base64.encode(encryptAttachment(utf8.encode(entry), _keys))}\n';
+      // The newline goes first: after a write cut by a crash, the next entry starts on a line of its own.
+      final line = '\n${base64.encode(encryptAttachment(utf8.encode(entry), _keys))}';
       _dir.createSync(recursive: true);
       if (_current.existsSync() && _current.lengthSync() + line.length > _cap) {
         _current.renameSync(_previous.path);
@@ -53,7 +54,7 @@ class EncryptedErrorLog(
       for (final line in file.readAsLinesSync()) {
         try {
           if (decryptAttachment(base64.decode(line), _keys) case final plain?) entries.add(utf8.decode(plain));
-          // A line cut by a crash, or not base64: skipped.
+          // A line cut by a crash, an empty one, or not base64: skipped.
         } on FormatException catch (_) {}
       }
     }

@@ -93,12 +93,14 @@ class OutboxSender(
       case Ok(:final value):
         raw = value;
       case Err(:final failure):
+        _log.failure('send $accountId', failure);
         await _outbox.outgoingFailed(accountId, message.messageId, version: version);
         await _releaseIfEmpty(accountId);
         return Err(failure);
     }
     // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
     if (raw.length > gmailSendLimitBytes) {
+      _log.failure('send $accountId', const SizeLimitFailure(gmailSendLimitBytes));
       await _outbox.outgoingFailed(accountId, message.messageId, version: version);
       await _releaseIfEmpty(accountId);
       return const Err(SizeLimitFailure(gmailSendLimitBytes));
@@ -171,7 +173,8 @@ class OutboxSender(
           debugPrint('[sync] $accountId: send refused ${row.messageId}, $f');
           _log.failure('send $accountId', f);
         // Rate limited: the Account waits for the deadline, as after a sync; the rest stays queued.
-        case Err(failure: RateLimitFailure(:final retryAfter?)):
+        case Err(failure: final f && RateLimitFailure(:final retryAfter?)):
+          _log.failure('send $accountId', f);
           _pause(accountId, retryAfter);
           await _outbox.unclaimOutgoing(accountId, row.messageId);
           debugPrint('[sync] $accountId: send paused until $retryAfter');

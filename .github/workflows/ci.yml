@@ -9,12 +9,16 @@ on:
 permissions:
   contents: read
 
+# Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
-    # Self-hosted Mac (same runner as apple): no paid GitHub-hosted minutes.
-    # Flutter comes from the runner's PATH, pinned by .fvmrc.
+    # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc
@@ -28,13 +32,10 @@ jobs:
           dart run routefly
           dart run slang
           dart run build_runner build
-      # routefly numbers routes in directory-listing order. This job now runs on
-      # macOS, where the order matches the committed files; the exclusions are a
-      # leftover from the Linux runner, harmless, and the apple job checks them anyway.
       - name: Generated code is committed
         run: |
-          git diff --exit-code -- . ':!lib/main.route.dart' ':!lib/main.g.dart'
-          test -z "$(git status --porcelain -- . ':!lib/main.route.dart' ':!lib/main.g.dart')"
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
       # Generated files stay as the generators emit them.
       - name: Format
         run: |
@@ -45,10 +46,9 @@ jobs:
       - run: flutter test
 
   android:
-    # Self-hosted Mac: Android SDK from the runner's ANDROID_HOME, JDK from
-    # `flutter config --jdk-dir` (no setup-java).
+    # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc
@@ -64,56 +64,16 @@ jobs:
           dart run build_runner build
       - run: flutter build apk --debug
 
-  linux:
-    # Disabilitato: niente minuti GitHub-hosted (runner a pagamento). Riattivare con un runner self-hosted Linux/Windows.
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-      - name: Linux build dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev
-      - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
-      - run: flutter build linux
-
-  windows:
-    # Disabilitato: niente minuti GitHub-hosted (runner a pagamento). Riattivare con un runner self-hosted Linux/Windows.
-    if: false
-    runs-on: windows-2022
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: .fvmrc
-          cache: true
-      - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
-      - run: flutter build windows
+  # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
+  # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
+  # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history
+  # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
 
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the
     # runner's PATH (~/fvm/versions/stable), no flutter-action.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc

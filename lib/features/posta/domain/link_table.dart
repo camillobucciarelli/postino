@@ -39,8 +39,13 @@ LinkTable tokenizeLinks(String html, {required String nonce}) {
   for (final a in doc.querySelectorAll('a[href], area[href]')) {
     // An in-page jump leaves the document nowhere: nothing to vouch for, so it stays as written.
     if (a.attributes['href']!.trimLeft().startsWith('#')) continue;
-    entries.add((href: a.attributes['href']!, label: linkLabel(a, styled: styled)));
+    entries.add((href: _cleanHref(a.attributes['href']!), label: linkLabel(a, styled: styled)));
     a.attributes['href'] = 'https://$_host/l/$nonce/${entries.length - 1}';
   }
   return LinkTable(doc.outerHtml, entries, nonce);
 }
+
+/// [href] as the HTML URL parser reads it: tabs and newlines removed, leading and trailing control characters and
+/// spaces stripped (`" https://a.example/ "` is `https://a.example/`).
+String _cleanHref(String href) =>
+    href.replaceAll(RegExp(r'[\t\n\r]'), '').replaceAll(RegExp(r'^[\x00-\x20]+|[\x00-\x20]+$'), '');

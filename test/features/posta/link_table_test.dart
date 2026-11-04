@@ -69,6 +69,11 @@ void main() {
       expect(t.lookup(_token(0))?.href, 'https://e.io/');
     });
 
+    test('the href is read as the HTML URL parser reads it: padding and inner tabs and newlines go', () {
+      final t = tokenizeLinks('<a href=" \thttps://e.io/pa\nth \n">e.io</a>', nonce: _nonce);
+      expect(t.lookup(_token(0))?.href, 'https://e.io/path');
+    });
+
     test('nonces differ per render', () {
       expect(newLinkNonce(), isNot(newLinkNonce()));
       expect(newLinkNonce(), hasLength(32));

@@ -79,6 +79,83 @@ void main() {
       expect(check('https://evil.io/', 'https://exa"mple.com')?.domain, 'evil.io');
     });
 
+    test('an address is read wherever it sits in the label: every decoration still warns', () {
+      const prefixes = [
+        '',
+        '\u{1F512}',
+        '\u{1F512} ',
+        '\u2192',
+        '>',
+        ':',
+        '::',
+        'a',
+        '1',
+        '\u00a0',
+        '*',
+        '(',
+        '[',
+        '\u2713',
+      ];
+      const forms = [
+        'https://paypal.com',
+        'http://www.paypal.com/login',
+        'www.paypal.com',
+        'paypal.com',
+        'HTTPS://PayPal.com/x?y=1',
+      ];
+      const suffixes = ['', '.', ' \u2713', '\u2192', '!', ')', '/', 'x', '1'];
+      for (final p in prefixes) {
+        for (final f in forms) {
+          for (final x in suffixes) {
+            final label = '$p$f$x';
+            expect(check('https://evil.io/', label), isNotNull, reason: label);
+          }
+        }
+      }
+    });
+
+    test('the same decorations around the right domain do not warn', () {
+      const prefixes = ['', '\u{1F512}', '\u2192', '>', ':', '\u00a0', '*', '(', '\u2713 '];
+      const forms = ['https://paypal.com', 'http://www.paypal.com/login.php', 'www.paypal.com', 'paypal.com'];
+      const suffixes = ['', '.', ' \u2713', '\u2192', '!', ')', '/'];
+      for (final p in prefixes) {
+        for (final f in forms) {
+          for (final x in suffixes) {
+            final label = '$p$f$x';
+            expect(check('https://paypal.com/x', label), isNull, reason: label);
+          }
+        }
+      }
+    });
+
+    test('not domains: file names, versions, abbreviations; a broken explicit address warns', () {
+      for (final label in [
+        'Scarica report.pdf',
+        'versione 3.14',
+        'v1.2.3',
+        'ad es. questo',
+        'e.g.',
+        'Leggi la nota.',
+      ]) {
+        expect(check('https://evil.io/', label), isNull, reason: label);
+      }
+      for (final label in ['www.', 'https://', 'https:///x', '\u{1F512}www.paypal!.com', 'https://\u{1F512}']) {
+        expect(check('https://evil.io/', label), isNotNull, reason: label);
+      }
+    });
+
+    test('what follows an address without a path is read too', () {
+      expect(check('https://paypal.com/', 'https://paypal.com\u2192evil.io')?.domain, 'paypal.com');
+      expect(check('https://paypal.com/', 'https://paypal.com/a.b.evil.io'), isNull);
+    });
+
+    test('invisible characters, ideographic dots and huge labels cannot hide a domain', () {
+      expect(check('https://pal.com/', 'pay\u200bpal.com')?.domain, 'pal.com');
+      expect(check('https://evil.io/', 'paypal\u3002com')?.domain, 'evil.io');
+      expect(check('https://evil.io/', 'paypal\uff0ecom')?.domain, 'evil.io');
+      expect(check('https://evil.io/', '${'a' * 50000}.${'b' * 50000}'), isNotNull);
+    });
+
     test('trailing punctuation is ignored, conservatively: the domain before it is the one shown', () {
       expect(check('https://paypal.com/x', 'paypal.com,'), isNull);
       expect(check('https://paypal.com/x', 'www.paypal.com.'), isNull);

@@ -21,7 +21,8 @@ const _body =
     '<p>Accedi a <a href="https://paypal.com.evil.io/login">paypal.com</a>, '
     'al <a href="https://www.shop.example/offerte">www.shop.example</a>, '
     'scrivi a <a href="mailto:aiuto@evil.example">aiuto@shop.example</a> '
-    'o apri <a href="https://xn--pypal-4ve.example/">paypal.example</a>.</p>';
+    'o apri <a href="https://xn--pypal-4ve.example/">paypal.example</a>. '
+    '<a href=" https://www.padded.example/pa\nth ">www.padded.example</a></p>';
 
 late Harness h;
 late FakeWebViewPlatform web;
@@ -98,6 +99,13 @@ void main() {
     expect(h.links.opened, [Uri.parse('https://www.shop.example/offerte'), Uri.parse('mailto:aiuto@evil.example')]);
   });
 
+  testWidgets('an href padded with spaces and newlines still opens', (tester) async {
+    await _start(tester);
+    await _tapLink(tester, 'www.padded.example');
+    expect(_dialog, findsNothing);
+    expect(h.links.opened, [Uri.parse('https://www.padded.example/path')]);
+  });
+
   testWidgets('a punycode domain is shown decoded and flagged', (tester) async {
     await _start(tester);
     await _tapLink(tester, 'paypal.example');
@@ -147,7 +155,7 @@ void main() {
             .allMatches(web.loaded.single)
             .map((m) => m[1]!)
             .toList();
-        expect(tokens, hasLength(4));
+        expect(tokens, hasLength(5));
 
         Future<NavigationDecision> navigate(String url, {bool main = true}) async =>
             web.onNavigationRequest!(NavigationRequest(url: url, isMainFrame: main));

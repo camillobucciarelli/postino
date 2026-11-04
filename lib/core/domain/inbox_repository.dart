@@ -50,8 +50,10 @@ class const OutgoingEntry({
 }
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class InboxRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Posta unificata: one row per Conversazione in the inbox of every Account, newest first; re-emits after each write.
   Stream<List<InboxEntry>> watchUnifiedInbox();
 

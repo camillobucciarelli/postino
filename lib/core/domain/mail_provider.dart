@@ -46,8 +46,10 @@ enum ChangeSignal() {
 
 /// The single adapter interface (ADR 0002), one instance per Account.
 // ponytail: Search and conditional Action join the interface at steps 3 and 6.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class MailProvider() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Refreshes credentials; a definitive refusal is [AuthFailure].
   Future<Result<void>> refreshAuth();
 

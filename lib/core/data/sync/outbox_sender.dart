@@ -35,8 +35,8 @@ class OutboxSender(
   /// The Provider rate-limited the Account: no sync nor send before the deadline.
   required final void Function(String accountId, DateTime until) _pause,
 }) {
-  /// [_account] looks the Account up; [_flushOutbox] is the engine's, queued in the Account's serial slot;
-  /// [_pause] tells the engine the Provider rate-limited the Account.
+  /// `account` looks the Account up; `flushOutbox` is the engine's, queued in the Account's serial slot;
+  /// `pause` tells the engine the Provider rate-limited the Account.
   this;
 
   /// Accounts the platform is holding for (#36); released once their outbox is empty.

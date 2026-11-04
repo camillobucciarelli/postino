@@ -28,8 +28,10 @@ class const GoogleGrant({
 }
 
 /// Thin seam over the Google OAuth consent (real one in core/data, fake in widget tests).
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class GoogleConsent() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// [loginHint] preselects the Google account, for the reconnection of a Da ricollegare Account.
   Future<Result<GoogleGrant>> run({String? loginHint});
 }

@@ -1,8 +1,10 @@
 // Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
 
 /// Scala di spaziatura (padding, gap, margini).
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract final class PostinoSpacing() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Distanza fra badge account e avatar; micro-aggiustamenti.
   static const double s0_5 = 2;
 
@@ -38,8 +40,10 @@ abstract final class PostinoSpacing() {
 }
 
 /// Raggi degli angoli.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract final class PostinoRadius() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Checkbox, tasti scorciatoia.
   static const double xs = 4;
 
@@ -60,8 +64,10 @@ abstract final class PostinoRadius() {
 }
 
 /// Dimensioni fisse di componenti e breakpoint.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract final class PostinoSize() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Area minima di tocco su iOS (HIG). Flutter: kMinInteractiveDimensionCupertino.
   static const double touchTargetIos = 44;
 
@@ -154,8 +160,10 @@ abstract final class PostinoSize() {
 }
 
 /// Spessori dei bordi.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract final class PostinoBorder() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Filetti border-subtle tra righe e pannelli.
   static const double borderWidthHairline = 1;
 

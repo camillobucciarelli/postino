@@ -1,6 +1,8 @@
 /// Outcome of an operation that can fail: [Ok] with a value or [Err] with a [Failure].
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
-sealed class const Result<T>();
+sealed class const Result<T>() {
+  /// Costruttore delle varianti.
+  this;
+}
 
 /// Esito riuscito.
 final class const Ok<T>(
@@ -21,8 +23,10 @@ final class const Err<T>(
 }
 
 /// Every known way an operation can fail. Sealed so `switch` stays exhaustive.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
-sealed class const Failure();
+sealed class const Failure() {
+  /// Costruttore delle varianti.
+  this;
+}
 
 // ponytail: single catch-all variant; add specific failures (network, auth, ...) with the first feature that needs them.
 /// Errore imprevisto, non classificato altrimenti.

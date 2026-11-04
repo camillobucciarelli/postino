@@ -14,8 +14,10 @@ class const PostinoIconData(
 }
 
 /// Only the icons the screens use so far; copy more from the Icon card when needed.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract final class PostinoIcons() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Posta in arrivo.
   static const inbox = PostinoIconData(['M3 13l2.5-8h13L21 13v6H3z', 'M3 13h5l1.5 2.5h5L16 13h5']);
 

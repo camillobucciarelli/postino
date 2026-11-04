@@ -17,7 +17,10 @@ import 'posta_views.dart';
 /// Layout of `/posta`: draws the view of the current URI itself (unified, Account, Etichetta, Conversazione),
 /// so the outgoing view can fade out with its own params. The child route pages just delegate here.
 /// A Conversazione, or the composer of a Bozza, opens beside (from 900) or over its list, which stays mounted: the list it was opened from.
-class const PostaLayout({super.key}) extends StatefulWidget {
+class PostaLayout extends StatefulWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
+  const PostaLayout({super.key});
+
   @override
   State<PostaLayout> createState() => _PostaLayoutState();
 }

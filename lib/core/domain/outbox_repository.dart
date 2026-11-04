@@ -21,8 +21,10 @@ typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt});
 
 /// The offline queue of what leaves the device (ADR 0008): the Bozze (#35) and the outbox (#36).
 /// Only the sync engine writes here; the UI reads through [InboxRepository].
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class OutboxRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   // --- Bozze (#35) ---
   /// Salva o aggiorna la copia locale della Bozza, in attesa di arrivare al Provider.
   Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});

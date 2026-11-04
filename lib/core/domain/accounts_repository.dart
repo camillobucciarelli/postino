@@ -2,8 +2,10 @@ import 'account.dart';
 import 'result.dart';
 
 /// Gli Account collegati: elenco e collegamento.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class AccountsRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Every Account, by position; re-emits after each change.
   Stream<List<Account>> watchAccounts();
 

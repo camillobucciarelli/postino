@@ -1,6 +1,8 @@
 /// The Impostazioni del dispositivo (ADR 0004): what this device remembers between runs.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class SettingsRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// The manual choice of the sidebar: true extended, false icons only, null none (the window width decides).
   Future<bool?> sidebarExpanded();
 

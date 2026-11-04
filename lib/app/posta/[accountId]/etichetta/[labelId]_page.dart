@@ -6,7 +6,10 @@ import '../../posta_views.dart';
 import '../../route_query.dart';
 
 /// Route of an Etichetta: PostaLayout draws the view from the URI.
-class const LabelPage({super.key}) extends StatelessWidget {
+class LabelPage extends StatelessWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
+  const LabelPage({super.key});
+
   @override
   Widget build(BuildContext context) =>
       postaLabelView(Routefly.query.param('accountId'), Routefly.query.param('labelId'));

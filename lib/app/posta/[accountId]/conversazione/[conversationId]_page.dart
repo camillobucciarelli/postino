@@ -7,7 +7,10 @@ import '../../posta_views.dart';
 import '../../route_query.dart';
 
 /// Route of a Conversazione: PostaLayout draws it, beside or over its list, from the URI.
-class const ConversationPage({super.key}) extends StatelessWidget {
+class ConversationPage extends StatelessWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
+  const ConversationPage({super.key});
+
   @override
   Widget build(BuildContext context) => postaConversationView(
     Routefly.query.param('accountId'),

@@ -250,9 +250,8 @@ class SyncEngine(
     final id = account.id;
     if (_paused(id)) return Future.value();
     return _queuedSync[id] ??= _serial(id, () {
-      unawaited(
-        _queuedSync.remove(id),
-      ); // only drops the map entry: the queued future is the one returned to the caller
+      // Only drops the map entry: the queued future is the one returned to the caller.
+      unawaited(_queuedSync.remove(id));
       return _syncOnce(id, providerFor(account));
     });
   }

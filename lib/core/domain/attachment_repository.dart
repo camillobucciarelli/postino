@@ -4,8 +4,10 @@ import 'message.dart';
 import 'result.dart';
 
 /// Attachments of a Conversazione: downloaded once into an encrypted cache, opened from there, offline too.
-// ignore: public_member_api_docs, costruttore implicito di classe astratta
 abstract interface class AttachmentRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// The path of a decrypted copy of [attachment] in the app's temporary folder, gone at the next launch;
   /// downloaded from the Provider first unless cached. [onProgress] and [cancel] as in the Provider's download.
   Future<Result<String>> file(

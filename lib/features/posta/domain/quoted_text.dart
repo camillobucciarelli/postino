@@ -186,10 +186,18 @@ String _previousText(Element e) {
 }
 
 /// Takes the first signature out of [root], with Gmail's «-- » prefix before it. One inside a quote
-/// left in place (a forward) is the original sender's, not the author's.
+/// left in place (a forward), or after Outlook's quote marker, is the original sender's, not the author's.
 List<Node>? _takeSignature(Element root) {
   final quotes = root.querySelectorAll(quoteSelectors.join(',')).toSet();
-  final sig = root.querySelectorAll(signatureSelectors.join(',')).where((e) => !_hasAncestorIn(e, quotes)).firstOrNull;
+  final outlook = root
+      .querySelectorAll('#divRplyFwdMsg, #appendonsend')
+      .where((e) => !_hasAncestorIn(e, quotes))
+      .firstOrNull;
+  if (outlook != null) quotes.addAll(_fromHere(outlook, root).whereType<Element>());
+  final sig = root
+      .querySelectorAll(signatureSelectors.join(','))
+      .where((e) => !quotes.contains(e) && !_hasAncestorIn(e, quotes))
+      .firstOrNull;
   if (sig == null) return null;
   final prefix = sig.parent?.querySelector('.gmail_signature_prefix');
   prefix?.remove();

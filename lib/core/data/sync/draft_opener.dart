@@ -7,11 +7,7 @@ import '../../domain/result.dart';
 import '../mail_store.dart';
 
 /// The Bozza to resume (#35): the local copy, or the Provider's when it is newer and nothing here waits to go.
-class DraftOpener {
-  DraftOpener(this._store, this._outbox);
-  final MailStore _store;
-  final OutboxRepository _outbox;
-
+class DraftOpener(final MailStore _store, final OutboxRepository _outbox) {
   Future<Result<OutgoingMessage>> open(Account account, String messageId, MailProvider provider) async {
     // ponytail: no guard on a queued Message-ID; the Bozze list hides it (watchAll) and Inviati reopens through cancelSend.
     final accountId = account.id;

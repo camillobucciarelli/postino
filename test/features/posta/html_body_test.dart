@@ -21,7 +21,7 @@ import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
 /// The fake image loader: records every image request and fails it, so nothing loads.
-class _ImageRequests implements HttpClient {
+class _ImageRequests() implements HttpClient {
   final urls = <String>[];
 
   @override

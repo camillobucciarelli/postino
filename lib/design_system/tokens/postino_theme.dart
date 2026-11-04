@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'postino_tokens.dart';
 
 /// Costruisce i `ThemeData` chiaro e scuro dai token.
-abstract final class PostinoTheme {
+abstract final class PostinoTheme() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Tema chiaro con la densità data.
   static ThemeData light({PostinoDensity density = PostinoDensity.comfortable}) =>
       _build(Brightness.light, PostinoColors.light, density);

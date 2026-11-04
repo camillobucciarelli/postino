@@ -8,9 +8,7 @@ part 'labels_dao.g.dart';
 
 /// The Account's labels. The `*In` methods add to a [Batch] of the caller's transaction (ADR 0008).
 @DriftAccessor(tables: [Labels])
-class LabelsDao extends DatabaseAccessor<PostinoDatabase> with _$LabelsDaoMixin {
-  LabelsDao(super.attachedDatabase);
-
+class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$LabelsDaoMixin {
   /// Drops every label of the Account: a full snapshot brings them all again.
   void deleteAllIn(Batch b, String accountId) => b.deleteWhere(labels, (t) => t.accountId.equals(accountId));
 

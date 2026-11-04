@@ -1,16 +1,16 @@
 import '../atoms/postino_account_mark.dart';
 
 /// One row of the details of a message (“Da”, “A”, “Data”, “Ricevuto su”); [account] puts its mark before [value].
-class PostinoMessageDetail {
-  /// Crea una riga di dettaglio.
-  const PostinoMessageDetail(this.label, this.value, {this.account});
-
+class const PostinoMessageDetail(
   /// Nome del dato («Da», «A», «Data»).
-  final String label;
+  final String label,
 
   /// Il dato stesso.
-  final String value;
+  final String value, {
 
   /// Account il cui segno precede il valore, se serve.
-  final PostinoAccountRef? account;
+  final PostinoAccountRef? account,
+}) {
+  /// Crea una riga di dettaglio.
+  this;
 }

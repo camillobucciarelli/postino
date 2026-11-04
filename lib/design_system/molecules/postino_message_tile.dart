@@ -11,59 +11,47 @@ import '../tokens/postino_tokens.dart';
 /// A Conversazione in the list (Comfortable): its latest message, and the thread [count] from 2.
 /// With [account] (Posta unificata) it carries the Account's bar and the badge on the avatar;
 /// inside one Account the AppBar already says where you are. [selected]: open in the detail pane.
-class PostinoMessageTile extends StatelessWidget {
-  /// Crea la riga di una Conversazione.
-  const PostinoMessageTile({
-    super.key,
-    required this.sender,
-    required this.subject,
-    required this.preview,
-    required this.time,
-    required this.unread,
-    required this.starred,
-    required this.semanticLabel,
-    this.account,
-    this.count = 1,
-    this.selected = false,
-    this.onTap,
-    this.focusNode,
-  });
+class const PostinoMessageTile({
+  super.key,
 
   /// Mittente dell'ultimo messaggio.
-  final String sender;
+  required final String sender,
 
   /// Oggetto della Conversazione.
-  final String subject;
+  required final String subject,
 
   /// Anteprima del testo.
-  final String preview;
+  required final String preview,
 
   /// Already formatted (“09:42”, “Ieri”, “lun”, “12 mar”).
-  final String time;
+  required final String time,
 
   /// Se ci sono messaggi non letti.
-  final bool unread;
+  required final bool unread,
 
   /// Se la Conversazione ha la Stella.
-  final bool starred;
+  required final bool starred,
 
   /// The whole row read out as one node: state, sender, subject, Stella, Account, time.
-  final String semanticLabel;
+  required final String semanticLabel,
 
   /// Account a cui appartiene, in Posta unificata.
-  final PostinoAccountRef? account;
+  final PostinoAccountRef? account,
 
   /// Numero di messaggi della Conversazione.
-  final int count;
+  final int count = 1,
 
   /// Se è aperta nel pannello di dettaglio.
-  final bool selected;
+  final bool selected = false,
 
   /// Chiamata al tocco; senza, la riga non è un pulsante.
-  final VoidCallback? onTap;
+  final VoidCallback? onTap,
 
   /// The row's focus, owned by the list so it can move it with the keyboard.
-  final FocusNode? focusNode;
+  final FocusNode? focusNode,
+}) extends StatelessWidget {
+  /// Crea la riga di una Conversazione.
+  this;
 
   @override
   Widget build(BuildContext context) {

@@ -13,21 +13,23 @@ import '../tokens/postino_tokens.dart';
 /// Wider than the column ([contentWidth]: the fixed width it asks for, in px) it scales down to fit,
 /// never scrolling sideways. An `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
 /// by its `alt`. A tap on a link calls [onTapUrl] with its real URL.
-class PostinoHtmlCard extends StatelessWidget {
-  /// Crea la scheda per `html`; `onTapUrl` riceve i link toccati.
-  const PostinoHtmlCard({super.key, required this.html, required this.onTapUrl, this.contentWidth, this.quiet = false});
+class const PostinoHtmlCard({
+  super.key,
 
   /// Corpo HTML già ripulito.
-  final String html;
+  required final String html,
 
   /// Chiamata con l'URL reale di un link toccato.
-  final ValueChanged<String> onTapUrl;
+  required final ValueChanged<String> onTapUrl,
 
   /// Larghezza fissa in px chiesta dal contenuto; se maggiore della colonna lo si riduce.
-  final double? contentWidth;
+  final double? contentWidth,
 
   /// A signature or a quote: `body-quote` in `ink-muted` where the sender set no style.
-  final bool quiet;
+  final bool quiet = false,
+}) extends StatelessWidget {
+  /// Crea la scheda per `html`; `onTapUrl` riceve i link toccati.
+  this;
 
   static final _paper = PostinoTheme.light();
 
@@ -100,7 +102,7 @@ bool _hasSource(dom.Element e) {
 /// none, and in debug that throws (box.dart:2184, proxy_box.dart:106): fwfh swallows it, but the
 /// throw leaves `_computingThisDryBaseline` set along the chain (box.dart:2134, no `finally`), so
 /// every later paint and hover throws again: the lag on opening a message.
-class _Factory extends WidgetFactory {
+class _Factory() extends WidgetFactory {
   @override
   Widget? buildImage(BuildTree tree, ImageMetadata data) => switch (super.buildImage(tree, data)) {
     final w? => _BottomBaseline(child: w),
@@ -114,14 +116,12 @@ class _Factory extends WidgetFactory {
 
 /// Its baseline at its bottom, where text already puts a box without one (`getDistanceToBaseline`
 /// falls back to the height): the same answer dry and laid out, as Flutter checks (box.dart:2127).
-class _BottomBaseline extends SingleChildRenderObjectWidget {
-  const _BottomBaseline({required super.child});
-
+class const _BottomBaseline({required super.child}) extends SingleChildRenderObjectWidget {
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderBottomBaseline();
 }
 
-class _RenderBottomBaseline extends RenderProxyBox {
+class _RenderBottomBaseline() extends RenderProxyBox {
   @override
   double computeDistanceToActualBaseline(TextBaseline baseline) => size.height;
 

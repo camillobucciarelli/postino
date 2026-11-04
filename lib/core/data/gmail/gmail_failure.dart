@@ -5,10 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/result.dart';
 
 /// A failed Gmail call, unwound to [gmailGuard].
-final class GmailFailed implements Exception {
-  const GmailFailed(this.failure);
-  final Failure failure;
-}
+final class const GmailFailed(final Failure failure) implements Exception {}
 
 /// Adapters never throw: no network is [OfflineFailure], anything else [UnexpectedFailure].
 Future<Result<T>> gmailGuard<T>(Future<Result<T>> Function() body) async {

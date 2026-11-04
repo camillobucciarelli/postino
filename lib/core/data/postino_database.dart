@@ -60,9 +60,7 @@ part 'postino_database.g.dart';
     OutboxDao,
   ],
 )
-class PostinoDatabase extends _$PostinoDatabase {
-  PostinoDatabase(super.e);
-
+class PostinoDatabase(super.e) extends _$PostinoDatabase {
   /// Host tests: same schema, plain SQLite, no key. Streams close synchronously: drift's close timer would outlive widget tests.
   factory PostinoDatabase.inMemory() =>
       PostinoDatabase(DatabaseConnection(NativeDatabase.memory(setup: _secureDelete), closeStreamsSynchronously: true));

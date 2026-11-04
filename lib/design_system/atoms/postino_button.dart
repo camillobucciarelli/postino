@@ -4,7 +4,7 @@ import '../tokens/postino_tokens.dart';
 import 'postino_focus_ring.dart';
 
 /// Aspetto di un `PostinoButton`.
-enum PostinoButtonVariant {
+enum PostinoButtonVariant() {
   /// Pieno: l'azione principale.
   primary,
 
@@ -13,7 +13,7 @@ enum PostinoButtonVariant {
 }
 
 /// Altezza di un `PostinoButton`.
-enum PostinoButtonSize {
+enum PostinoButtonSize() {
   /// Compatto.
   sm,
 
@@ -25,31 +25,26 @@ enum PostinoButtonSize {
 }
 
 /// A command; [label] is a verb with only the first letter capitalised.
-class PostinoButton extends StatelessWidget {
-  /// Crea un pulsante.
-  const PostinoButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.variant = PostinoButtonVariant.primary,
-    this.size = PostinoButtonSize.md,
-    this.underline = false,
-  });
+class const PostinoButton({
+  super.key,
 
   /// Verbo mostrato nel pulsante.
-  final String label;
+  required final String label,
 
   /// Chiamata al tocco; se nulla il pulsante è disabilitato.
-  final VoidCallback? onPressed;
+  required final VoidCallback? onPressed,
 
   /// Aspetto del pulsante.
-  final PostinoButtonVariant variant;
+  final PostinoButtonVariant variant = PostinoButtonVariant.primary,
 
   /// Altezza del pulsante.
-  final PostinoButtonSize size;
+  final PostinoButtonSize size = PostinoButtonSize.md,
 
   /// A ghost on a tinted surface (Banner) reads as a link.
-  final bool underline;
+  final bool underline = false,
+}) extends StatelessWidget {
+  /// Crea un pulsante.
+  this;
 
   @override
   Widget build(BuildContext context) {

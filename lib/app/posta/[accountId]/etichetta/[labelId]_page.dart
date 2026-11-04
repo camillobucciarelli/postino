@@ -7,6 +7,7 @@ import '../../route_query.dart';
 
 /// Route of an Etichetta: PostaLayout draws the view from the URI.
 class LabelPage extends StatelessWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
   const LabelPage({super.key});
 
   @override

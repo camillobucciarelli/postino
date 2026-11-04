@@ -25,53 +25,44 @@ double shownListWidth(double preferred, double window) => preferred.clamp(
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
 /// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
 /// With reduced motion every change is instant.
-class PostinoListDetailLayout extends StatefulWidget {
-  /// Crea il layout lista e dettaglio.
-  const PostinoListDetailLayout({
-    super.key,
-    required this.list,
-    required this.empty,
-    required this.onClose,
-    this.detail,
-    this.detailKey,
-    this.listWidth,
-    this.onListWidthChanged,
-    required this.resizeLabel,
-    required this.resizeValueLabel,
-  });
+class const PostinoListDetailLayout({
+  super.key,
 
   /// La lista, sempre presente sotto il dettaglio su schermi stretti.
-  final Widget list;
-
-  /// Il dettaglio aperto, o null se nessun elemento è aperto.
-  final Widget? detail;
-
-  /// Changes when another item opens; the outgoing [detail] must carry its own params.
-  final Object? detailKey;
+  required final Widget list,
 
   /// Pannello mostrato quando nessun dettaglio è aperto, sulle finestre larghe.
-  final Widget empty;
+  required final Widget empty,
 
   /// Chiamato quando l'utente chiude il dettaglio, con il tasto Esc.
-  final VoidCallback onClose;
+  required final VoidCallback onClose,
+
+  /// Il dettaglio aperto, o null se nessun elemento è aperto.
+  final Widget? detail,
+
+  /// Changes when another item opens; the outgoing [detail] must carry its own params.
+  final Object? detailKey,
 
   /// The preferred list width saved by an earlier run; null: the default.
-  final double? listWidth;
+  final double? listWidth,
 
   /// The user chose a new preferred width (end of a drag, key, double click): save it.
-  final ValueChanged<double>? onListWidthChanged;
+  final ValueChanged<double>? onListWidthChanged,
 
   /// Accessible name and value of the divider ("Larghezza lista", "380 pixel").
-  final String resizeLabel;
+  required final String resizeLabel,
 
   /// Costruisce il testo letto per la larghezza attuale della lista.
-  final String Function(double width) resizeValueLabel;
+  required final String Function(double width) resizeValueLabel,
+}) extends StatefulWidget {
+  /// Crea il layout lista e dettaglio.
+  this;
 
   @override
   State<PostinoListDetailLayout> createState() => _PostinoListDetailLayoutState();
 }
 
-class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
+class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
   static const _slide = 30.0;
   static const _fadeSplit = 0.3;
 
@@ -277,6 +268,4 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout> with 
 }
 
 /// The [PostinoListDetailLayout.empty] pane's transition key.
-class _Empty {
-  const _Empty();
-}
+class const _Empty();

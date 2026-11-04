@@ -16,9 +16,7 @@ const _inFolder =
     "AND l.message_id = m.id AND l.label_id = '$draftLabelId')";
 
 @DriftAccessor(tables: [Drafts, Accounts, Messages, MessageLabels, Bodies])
-class DraftsDao extends DatabaseAccessor<PostinoDatabase> with _$DraftsDaoMixin {
-  DraftsDao(super.attachedDatabase);
-
+class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$DraftsDaoMixin {
   /// Writes the content and marks the Bozza pending; the synced and remoteKnown marks stay.
   /// [updatedAt] is also the version the ack matches, so it is bumped past the previous save's when the clock has not moved.
   // ponytail: a version in the timestamp, no revision column; a clock set back keeps counting up from the last save.

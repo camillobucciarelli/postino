@@ -10,95 +10,75 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// The names of the formats and of the link dialog, in the user's language (the feature passes them).
-class PostinoFormatLabels {
-  /// Crea le etichette localizzate dei formati e della finestra dei link.
-  const PostinoFormatLabels({
-    required this.bold,
-    required this.italic,
-    required this.underline,
-    required this.strikethrough,
-    required this.link,
-    required this.bulletList,
-    required this.numberedList,
-    required this.linkUrl,
-    required this.insert,
-    required this.cancel,
-  });
-
+class const PostinoFormatLabels({
   /// Etichetta del formato grassetto.
-  final String bold;
+  required final String bold,
 
   /// Etichetta del formato corsivo.
-  final String italic;
+  required final String italic,
 
   /// Etichetta del formato sottolineato.
-  final String underline;
+  required final String underline,
 
   /// Etichetta del formato barrato.
-  final String strikethrough;
+  required final String strikethrough,
 
   /// Etichetta del pulsante per inserire un link.
-  final String link;
+  required final String link,
 
   /// Etichetta dell'elenco puntato.
-  final String bulletList;
+  required final String bulletList,
 
   /// Etichetta dell'elenco numerato.
-  final String numberedList;
+  required final String numberedList,
 
   /// Etichetta del campo URL nella finestra dei link.
-  final String linkUrl;
+  required final String linkUrl,
 
   /// Testo del pulsante che conferma il link.
-  final String insert;
+  required final String insert,
 
   /// Testo del pulsante che chiude la finestra dei link senza modifiche.
-  final String cancel;
+  required final String cancel,
+}) {
+  /// Crea le etichette localizzate dei formati e della finestra dei link.
+  this;
 }
 
-class _LinkIntent extends Intent {
-  const _LinkIntent();
-}
+class const _LinkIntent() extends Intent;
 
-class _StrikeIntent extends Intent {
-  const _StrikeIntent();
-}
+class const _StrikeIntent() extends Intent;
 
 /// The body of a message being written: a bar with the seven formats (#35) over a flutter_quill
 /// editor styled with the tokens. Cmd/Ctrl+B, I, U toggle as in quill; Cmd+Shift+X strikes through;
 /// Cmd+K opens the link dialog; quill's quote, code, header, checklist and image shortcuts are off.
 /// Tab from the field above lands in the editor, Tab again goes on to the bar's buttons (ADR 0014).
-class PostinoRichEditor extends StatefulWidget {
-  /// Crea l'editor di testo ricco per il corpo di un messaggio.
-  const PostinoRichEditor({
-    super.key,
-    required this.controller,
-    required this.label,
-    required this.placeholder,
-    this.focusNode,
-    required this.labels,
-  });
+class const PostinoRichEditor({
+  super.key,
 
   /// Il controller che contiene e modifica il testo formattato.
-  final QuillController controller;
+  required final QuillController controller,
 
   /// Nome accessibile del campo di testo, letto dagli screen reader.
-  final String label;
+  required final String label,
 
   /// Testo suggerito mostrato quando l'editor è vuoto.
-  final String placeholder;
+  required final String placeholder,
 
   /// Nodo di focus dell'editor; se assente ne viene creato uno interno.
-  final FocusNode? focusNode;
+  final FocusNode? focusNode,
 
   /// Etichette localizzate dei formati e della finestra dei link.
-  final PostinoFormatLabels labels;
+  required final PostinoFormatLabels labels,
+}) extends StatefulWidget {
+  /// Crea l'editor di testo ricco per il corpo di un messaggio.
+  this;
 
   @override
   State<PostinoRichEditor> createState() => _PostinoRichEditorState();
 }
 
-class _PostinoRichEditorState extends State<PostinoRichEditor> {
+class _PostinoRichEditorState() extends State<PostinoRichEditor> {
   late final _scroll = ScrollController();
   late final _focus = widget.focusNode ?? FocusNode(debugLabel: 'Editor');
 
@@ -284,15 +264,12 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
   }
 }
 
-class _LinkDialog extends StatefulWidget {
-  const _LinkDialog(this.labels);
-  final PostinoFormatLabels labels;
-
+class const _LinkDialog(final PostinoFormatLabels labels) extends StatefulWidget {
   @override
   State<_LinkDialog> createState() => _LinkDialogState();
 }
 
-class _LinkDialogState extends State<_LinkDialog> {
+class _LinkDialogState() extends State<_LinkDialog> {
   final _url = TextEditingController();
 
   @override

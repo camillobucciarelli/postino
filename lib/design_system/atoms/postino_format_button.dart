@@ -7,27 +7,23 @@ import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
 /// A format toggle of the editor's bar; [label] is its accessible name and tooltip.
-class PostinoFormatButton extends StatelessWidget {
-  /// Crea un toggle di formato.
-  const PostinoFormatButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onPressed,
-  });
+class const PostinoFormatButton({
+  super.key,
 
   /// Icona del formato.
-  final PostinoIconData icon;
+  required final PostinoIconData icon,
 
   /// Nome accessibile e tooltip.
-  final String label;
+  required final String label,
 
   /// Se il formato è attivo sulla selezione.
-  final bool active;
+  required final bool active,
 
   /// Chiamata al tocco.
-  final VoidCallback onPressed;
+  required final VoidCallback onPressed,
+}) extends StatelessWidget {
+  /// Crea un toggle di formato.
+  this;
 
   @override
   Widget build(BuildContext context) {

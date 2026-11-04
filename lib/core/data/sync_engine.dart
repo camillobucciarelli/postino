@@ -23,14 +23,13 @@ const pollEvery = Duration(seconds: 60);
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
 /// The one queue per Account: the replayer and the sender only ever run inside [_serial].
 @lazySingleton
-class SyncEngine implements MailSync {
-  SyncEngine(this._store, this._outboxStore, this._clock, this._connectivity, this._background);
-  final MailStore _store;
-  final OutboxRepository _outboxStore;
-  final Clock _clock;
-  final Connectivity _connectivity;
-  final BackgroundSender _background;
-
+class SyncEngine(
+  final MailStore _store,
+  final OutboxRepository _outboxStore,
+  final Clock _clock,
+  final Connectivity _connectivity,
+  final BackgroundSender _background,
+) implements MailSync {
   late final _intents = IntentReplayer(_store, _outboxStore, _clock);
   late final _drafts = DraftOpener(_store, _outboxStore);
 
@@ -251,9 +250,8 @@ class SyncEngine implements MailSync {
     final id = account.id;
     if (_paused(id)) return Future.value();
     return _queuedSync[id] ??= _serial(id, () {
-      unawaited(
-        _queuedSync.remove(id),
-      ); // only drops the map entry: the queued future is the one returned to the caller
+      // Only drops the map entry: the queued future is the one returned to the caller.
+      unawaited(_queuedSync.remove(id));
       return _syncOnce(id, providerFor(account));
     });
   }
@@ -308,7 +306,7 @@ class SyncEngine implements MailSync {
 }
 
 @module
-abstract class SyncModule {
+abstract class SyncModule() {
   /// The UI sees the engine only through [MailSync].
   @lazySingleton
   MailSync mailSync(SyncEngine engine) => engine;

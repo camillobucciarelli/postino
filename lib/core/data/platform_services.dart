@@ -22,7 +22,7 @@ import 'sync/outbox_sender.dart' show sendWindow;
 /// Keychain (iOS/macOS), Keystore (Android), Credential Manager (Windows), libsecret (Linux).
 // ponytail: first_unlock so the future background isolate can read the key with the device locked.
 @Singleton(as: SecureStore, env: [Environment.prod])
-class KeychainStore implements SecureStore {
+class KeychainStore() implements SecureStore {
   static const _storage = FlutterSecureStorage(
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
     mOptions: MacOsOptions(usesDataProtectionKeychain: false),
@@ -36,7 +36,7 @@ class KeychainStore implements SecureStore {
 }
 
 @Singleton(as: Clock, env: [Environment.prod])
-class SystemClock implements Clock {
+class SystemClock() implements Clock {
   @override
   DateTime now() => DateTime.now();
 
@@ -47,8 +47,8 @@ class SystemClock implements Clock {
 /// Network state from the OS (connectivity_plus).
 // ponytail: "has a network interface", not "reaches the Provider"; a captive portal reads as online, and the sync's OfflineFailure covers it.
 @Singleton(as: Connectivity, env: [Environment.prod])
-class SystemConnectivity implements Connectivity {
-  SystemConnectivity() {
+class SystemConnectivity() implements Connectivity {
+  this {
     unawaited(_plus.checkConnectivity().then(_update, onError: (_) {}));
   }
 
@@ -101,7 +101,7 @@ class SystemLinkOpener implements LinkOpener {
 
 /// The system Save As dialog (file_selector), on desktop only.
 @Singleton(as: FileSaver, env: [Environment.prod])
-class SystemFileSaver implements FileSaver {
+class SystemFileSaver() implements FileSaver {
   @override
   bool get available =>
       !kIsWeb &&
@@ -118,7 +118,7 @@ class SystemFileSaver implements FileSaver {
 }
 
 @module
-abstract class AttachmentModule {
+abstract class AttachmentModule() {
   /// The cache in the app's support folder (out of the OS's cache purges, so offline holds), the copies in its temporary one.
   @preResolve
   @Singleton(env: [Environment.prod])
@@ -132,7 +132,7 @@ abstract class AttachmentModule {
 }
 
 @module
-abstract class DatabaseModule {
+abstract class DatabaseModule() {
   @preResolve
   @Singleton(env: [Environment.prod])
   Future<PostinoDatabase> database(SecureStore keychain) async {
@@ -142,7 +142,7 @@ abstract class DatabaseModule {
 }
 
 @module
-abstract class HttpModule {
+abstract class HttpModule() {
   @Singleton(env: [Environment.prod])
   http.Client client() => http.Client();
 }
@@ -151,7 +151,7 @@ abstract class HttpModule {
 /// backgrounded) and ended when the outbox empties or at expiration. Android: a WorkManager one-shot after
 /// [sendWindow] whose isolate flushes the outbox (see background_send.dart). Desktop: the process lives.
 @LazySingleton(as: BackgroundSender, env: [Environment.prod])
-class SystemBackgroundSender implements BackgroundSender {
+class SystemBackgroundSender() implements BackgroundSender {
   static const channel = MethodChannel('it.postino/background');
 
   /// Name of the WorkManager task; [workName] is unique per Account.

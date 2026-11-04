@@ -4,30 +4,24 @@ import 'message.dart';
 import 'result.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
-class SyncBatch extends Equatable {
-  /// Crea un batch; senza argomenti le liste sono vuote.
-  const SyncBatch({
-    required this.cursor,
-    this.messages = const [],
-    this.labels = const [],
-    this.removedMessageIds = const [],
-    this.bodies = const {},
-  });
-
+class const SyncBatch({
   /// Opaque to the core: Gmail historyId, Graph delta token, IMAP modseq...
-  final String cursor;
+  required final String cursor,
 
   /// Messaggi nuovi o modificati.
-  final List<Message> messages;
+  final List<Message> messages = const [],
 
   /// Etichette nuove o modificate.
-  final List<Label> labels;
+  final List<Label> labels = const [],
 
   /// Id (lato Provider) dei messaggi eliminati.
-  final List<String> removedMessageIds;
+  final List<String> removedMessageIds = const [],
 
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
-  final Map<String, MessageBody> bodies;
+  final Map<String, MessageBody> bodies = const {},
+}) extends Equatable {
+  /// Crea un batch; senza argomenti le liste sono vuote.
+  this;
 
   @override
   List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies];
@@ -39,7 +33,7 @@ typedef SyncPage = Future<void> Function(List<Message> messages, Map<String, Mes
 /// What the change signal reports: it came [up], something [changed], or it went [down].
 /// While it is down the sync engine falls back to polling (ADR 0008).
 /// Stato del segnale di cambiamento.
-enum ChangeSignal {
+enum ChangeSignal() {
   /// Il segnale è attivo.
   up,
 
@@ -52,7 +46,10 @@ enum ChangeSignal {
 
 /// The single adapter interface (ADR 0002), one instance per Account.
 // ponytail: Search and conditional Action join the interface at steps 3 and 6.
-abstract interface class MailProvider {
+abstract interface class MailProvider() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Refreshes credentials; a definitive refusal is [AuthFailure].
   Future<Result<void>> refreshAuth();
 

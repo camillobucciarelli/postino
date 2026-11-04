@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Il servizio che ospita la posta di un Account.
-enum ProviderKind {
+enum ProviderKind() {
   /// Gmail (Google).
   gmail,
 
@@ -16,7 +16,7 @@ enum ProviderKind {
 }
 
 /// Stato di collegamento di un Account.
-enum AccountStatus {
+enum AccountStatus() {
   /// Le credenziali funzionano e la sincronizzazione va.
   attivo,
 
@@ -25,34 +25,27 @@ enum AccountStatus {
 }
 
 /// Una casella di posta collegata a Postino.
-class Account extends Equatable {
-  /// Crea un Account; `status` parte da `attivo`.
-  const Account({
-    required this.id,
-    required this.address,
-    required this.provider,
-    required this.color,
-    required this.position,
-    this.status = AccountStatus.attivo,
-  });
-
+class const Account({
   /// Id locale stabile dell'Account.
-  final String id;
+  required final String id,
 
   /// Indirizzo email dell'Account.
-  final String address;
+  required final String address,
 
   /// Il Provider che ospita l'Account.
-  final ProviderKind provider;
+  required final ProviderKind provider,
 
   /// Position in the palette of [accountColorCount] Account colors; the theme gives the actual color.
-  final int color;
+  required final int color,
 
   /// Ordine di visualizzazione tra gli Account.
-  final int position;
+  required final int position,
 
   /// Se l'Account funziona o va ricollegato.
-  final AccountStatus status;
+  final AccountStatus status = AccountStatus.attivo,
+}) extends Equatable {
+  /// Crea un Account; `status` parte da `attivo`.
+  this;
 
   // ponytail: no name nor chosen initial in the domain yet, both come from the address.
   /// Nome mostrato: per ora coincide con l'indirizzo.

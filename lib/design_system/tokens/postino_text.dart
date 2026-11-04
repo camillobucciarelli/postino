@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 
 /// Scala tipografica (come KeyVault): Caprasimo per i titoli, Figtree per il testo, monospace di sistema per header grezzi. Il colore viene dal tema.
-abstract final class PostinoText {
+abstract final class PostinoText() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Famiglia dei titoli (serif).
   static const serif = 'Caprasimo';
 

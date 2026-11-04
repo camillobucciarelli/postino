@@ -2,7 +2,10 @@ import 'account.dart';
 import 'result.dart';
 
 /// Gli Account collegati: elenco e collegamento.
-abstract interface class AccountsRepository {
+abstract interface class AccountsRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Every Account, by position; re-emits after each change.
   Stream<List<Account>> watchAccounts();
 

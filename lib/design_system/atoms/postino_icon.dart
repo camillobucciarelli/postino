@@ -5,31 +5,25 @@ import '../tokens/postino_tokens.dart';
 
 /// An icon of [PostinoIcons], colored like the surrounding [IconTheme] unless [color] is given.
 /// Decorative unless [label] is given.
-class PostinoIcon extends StatelessWidget {
-  /// Crea un'icona.
-  const PostinoIcon(
-    this.icon, {
-    super.key,
-    this.size = PostinoSize.iconMd,
-    this.color,
-    this.filled = false,
-    this.label,
-  });
-
+class const PostinoIcon(
   /// Icona da disegnare.
-  final PostinoIconData icon;
+  final PostinoIconData icon, {
+  super.key,
 
   /// Lato dell'icona.
-  final double size;
+  final double size = PostinoSize.iconMd,
 
   /// Colore; se nullo quello dell'`IconTheme`.
-  final Color? color;
+  final Color? color,
 
   /// Fills the shape too (the active Stella).
-  final bool filled;
+  final bool filled = false,
 
   /// Nome accessibile; se nullo l'icona è decorativa.
-  final String? label;
+  final String? label,
+}) extends StatelessWidget {
+  /// Crea un'icona.
+  this;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +35,7 @@ class PostinoIcon extends StatelessWidget {
   }
 }
 
-class _IconPainter extends CustomPainter {
-  _IconPainter(this.icon, this.color, {required this.filled});
-  final PostinoIconData icon;
-  final Color color;
-  final bool filled;
-
+class _IconPainter(final PostinoIconData icon, final Color color, {required final bool filled}) extends CustomPainter {
   static final _cache = <PostinoIconData, List<Path>>{};
 
   @override

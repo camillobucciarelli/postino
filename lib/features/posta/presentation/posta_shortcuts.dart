@@ -5,18 +5,25 @@ import 'package:flutter/widgets.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
-enum PostaAction { next, previous, toggleSidebar, write, reply, replyAll, forward }
+enum PostaAction() {
+  next,
+  previous,
+  toggleSidebar,
+  write,
+  reply,
+  replyAll,
+  forward,
+}
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
 /// [command]: with the platform's command key, Cmd on macOS and Ctrl elsewhere; without it, the key bare.
-class PostaShortcut {
-  const PostaShortcut(this.key, this.action, {this.listOnly = false, this.command = false});
-  final LogicalKeyboardKey key;
-  final PostaAction action;
-  final bool listOnly;
-  final bool command;
-}
+class const PostaShortcut(
+  final LogicalKeyboardKey key,
+  final PostaAction action, {
+  final bool listOnly = false,
+  final bool command = false,
+}) {}
 
 /// The one table key + modifiers -> action of the Posta views (ADR 0014); a test checks that no pair appears twice.
 /// Enter and Esc are not here: they are the focused row's activation and the layout's way back.
@@ -33,7 +40,7 @@ const postaShortcuts = <PostaShortcut>[
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
-class ListCursor {
+class ListCursor() {
   /// Moves the cursor by one row (+1 next, -1 previous).
   void Function(int delta)? move;
 
@@ -50,20 +57,13 @@ class ListCursor {
   VoidCallback? forward;
 }
 
-class PostaIntent extends Intent {
-  const PostaIntent(this.shortcut);
-  final PostaShortcut shortcut;
-}
+class const PostaIntent(final PostaShortcut shortcut) extends Intent {}
 
 /// Binds [postaShortcuts] to [cursor] for everything below it; put it above the sidebar shell,
 /// whose [ToggleSidebarIntent] the sidebar shortcut reaches from the focus. Ignored while the focus is in a
 /// text field, so the letters are typed (ADR 0014).
-class PostaShortcuts extends StatelessWidget {
-  const PostaShortcuts({super.key, required this.cursor, required this.child});
-
-  final ListCursor cursor;
-  final Widget child;
-
+class const PostaShortcuts({super.key, required final ListCursor cursor, required final Widget child})
+    extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mac = defaultTargetPlatform == TargetPlatform.macOS;
@@ -77,10 +77,7 @@ class PostaShortcuts extends StatelessWidget {
   }
 }
 
-class _PostaAction extends Action<PostaIntent> {
-  _PostaAction(this.cursor);
-  final ListCursor cursor;
-
+class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
   @override
   bool isEnabled(PostaIntent intent) {
     final focus = primaryFocus?.context;

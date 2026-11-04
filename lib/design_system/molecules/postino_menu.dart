@@ -7,53 +7,49 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// One entry of a [PostinoMenu]: [label] (a verb), an optional leading [icon], [onPressed].
-class PostinoMenuItem {
-  /// Crea una voce di menu.
-  const PostinoMenuItem({required this.label, required this.onPressed, this.icon, this.key});
-
+class const PostinoMenuItem({
   /// Verbo che dice cosa fa la voce.
-  final String label;
+  required final String label,
 
   /// Chiamata alla scelta della voce.
-  final VoidCallback onPressed;
+  required final VoidCallback onPressed,
 
   /// Icona a sinistra, se serve.
-  final PostinoIconData? icon;
+  final PostinoIconData? icon,
 
   /// For the tests, on the item's button.
-  final Key? key;
+  final Key? key,
+}) {
+  /// Crea una voce di menu.
+  this;
 }
 
 /// A menu (Menu molecule) behind an icon button: [label] is the button's name («Altre azioni»,
 /// «Azioni del messaggio»), [icon] its glyph. Opening it (click, Enter, Space) focuses the first item,
 /// so the keyboard lands inside; Esc closes it. The items are at least 220 wide and 48 high.
-class PostinoMenu extends StatefulWidget {
-  /// Crea il menu con il suo pulsante.
-  const PostinoMenu({
-    super.key,
-    required this.label,
-    required this.items,
-    this.icon = PostinoIcons.moreVertical,
-    this.buttonKey,
-  });
+class const PostinoMenu({
+  super.key,
 
   /// Nome del pulsante per lo screen reader.
-  final String label;
-
-  /// Icona del pulsante; di default i tre puntini verticali.
-  final PostinoIconData icon;
+  required final String label,
 
   /// Le voci, nell'ordine mostrato.
-  final List<PostinoMenuItem> items;
+  required final List<PostinoMenuItem> items,
+
+  /// Icona del pulsante; di default i tre puntini verticali.
+  final PostinoIconData icon = PostinoIcons.moreVertical,
 
   /// For the tests, on the trigger button.
-  final Key? buttonKey;
+  final Key? buttonKey,
+}) extends StatefulWidget {
+  /// Crea il menu con il suo pulsante.
+  this;
 
   @override
   State<PostinoMenu> createState() => _PostinoMenuState();
 }
 
-class _PostinoMenuState extends State<PostinoMenu> {
+class _PostinoMenuState() extends State<PostinoMenu> {
   /// The first item: focused when the menu opens.
   final _first = FocusNode(debugLabel: 'Menu');
 

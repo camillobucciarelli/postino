@@ -14,9 +14,7 @@ import 'fake_platform.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
 /// links, Save As, background sender and file system.
-class Harness {
-  Harness._();
-
+class Harness._() {
   final consent = FakeGoogleConsent();
   final keychain = FakeSecureStore();
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));

@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 
 /// Livello 1 — primitivi. Non usarli nei widget: passa da PostinoColors.
-abstract final class PostinoPrimitives {
+abstract final class PostinoPrimitives() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Primitivo neutro caldo, gradino 0.
   static const pNeutral0 = Color(0xFFFFFFFF);
 

@@ -12,31 +12,26 @@ typedef PostinoSenderOption = ({String id, PostinoAccountRef mark, String addres
 
 /// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap;
 /// not [enabled], it only shows the sender.
-class PostinoSenderPicker extends StatelessWidget {
-  /// Crea la riga «Da».
-  const PostinoSenderPicker({
-    super.key,
-    required this.options,
-    required this.selectedId,
-    required this.onSelected,
-    required this.label,
-    this.enabled = true,
-  });
+class const PostinoSenderPicker({
+  super.key,
 
   /// Account da cui si può inviare.
-  final List<PostinoSenderOption> options;
+  required final List<PostinoSenderOption> options,
 
   /// Id dell'opzione scelta.
-  final String selectedId;
+  required final String selectedId,
 
   /// Chiamata con l'id dell'opzione scelta dal menu.
-  final ValueChanged<String> onSelected;
+  required final ValueChanged<String> onSelected,
 
   /// Nome accessibile della riga (es. «Da»).
-  final String label;
+  required final String label,
 
   /// Se il menu si apre; altrimenti mostra solo il mittente.
-  final bool enabled;
+  final bool enabled = true,
+}) extends StatelessWidget {
+  /// Crea la riga «Da».
+  this;
 
   @override
   Widget build(BuildContext context) {

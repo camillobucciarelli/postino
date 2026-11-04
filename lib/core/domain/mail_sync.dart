@@ -2,7 +2,10 @@ import 'message.dart';
 import 'result.dart';
 
 /// What the UI may ask of the sync engine: it still reads only from the database (ADR 0003).
-abstract interface class MailSync {
+abstract interface class MailSync() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Syncs every attivo Account now (pull-to-refresh); completes when done.
   Future<void> syncAll();
 

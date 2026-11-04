@@ -1,5 +1,8 @@
 /// Thin platform services (keychain, clock, connectivity, links); real ones in core/data, fakes in tests.
-abstract interface class SecureStore {
+abstract interface class SecureStore() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Legge il valore di `key`, null se manca.
   Future<String?> read(String key);
 
@@ -8,7 +11,10 @@ abstract interface class SecureStore {
 }
 
 /// L'orologio, sostituibile nei test.
-abstract interface class Clock {
+abstract interface class Clock() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// L'ora corrente.
   DateTime now();
 
@@ -17,7 +23,10 @@ abstract interface class Clock {
 }
 
 /// Lo stato della rete.
-abstract interface class Connectivity {
+abstract interface class Connectivity() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Se il dispositivo è online ora.
   bool get isOnline;
 
@@ -26,13 +35,19 @@ abstract interface class Connectivity {
 }
 
 /// Opens a link outside Postino: the system browser, or the mail client for `mailto:`.
-abstract interface class LinkOpener {
+abstract interface class LinkOpener() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Apre `url` fuori da Postino.
   Future<void> open(Uri url);
 }
 
 /// The Save As dialog: copies a file where the user picks.
-abstract interface class FileSaver {
+abstract interface class FileSaver() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// False where the platform has no such dialog (Android, iOS).
   bool get available;
 
@@ -41,7 +56,10 @@ abstract interface class FileSaver {
 }
 
 /// Keeps the outbox going after the user leaves the app (#36): iOS background task, Android WorkManager one-shot, nothing on desktop.
-abstract interface class BackgroundSender {
+abstract interface class BackgroundSender() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Called when an outgoing message is queued: asks the platform for time or work to send it.
   Future<void> hold(String accountId);
 

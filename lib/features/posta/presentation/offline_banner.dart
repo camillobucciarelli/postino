@@ -7,14 +7,12 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// The `offline` Banner on top of the list while the device is offline; nothing otherwise.
-class OfflineBanner extends StatefulWidget {
-  const OfflineBanner({super.key});
-
+class const OfflineBanner({super.key}) extends StatefulWidget {
   @override
   State<OfflineBanner> createState() => _OfflineBannerState();
 }
 
-class _OfflineBannerState extends State<OfflineBanner> {
+class _OfflineBannerState() extends State<OfflineBanner> {
   final _connectivity = GetIt.I<Connectivity>();
   late final online = streamSignal(
     () => _connectivity.onChanged,

@@ -6,12 +6,13 @@ import '../tokens/postino_tokens.dart';
 import 'postino_message_detail.dart';
 
 /// The details of an expanded message, under its avatar's column: label in `ink-subtle`, value in `ink`.
-class PostinoMessageDetailsPanel extends StatelessWidget {
-  /// Crea il pannello con le righe `rows`.
-  const PostinoMessageDetailsPanel(this.rows, {super.key});
-
+class const PostinoMessageDetailsPanel(
   /// One table row each.
-  final List<PostinoMessageDetail> rows;
+  final List<PostinoMessageDetail> rows, {
+  super.key,
+}) extends StatelessWidget {
+  /// Crea il pannello con le righe `rows`.
+  this;
 
   @override
   Widget build(BuildContext context) {

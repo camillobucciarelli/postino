@@ -6,7 +6,7 @@ import 'postino_colors_lerp.dart';
 import 'postino_palette.dart';
 
 /// Colore scelto per distinguere un account (badge, avatar).
-enum PostinoAccountColor {
+enum PostinoAccountColor() {
   /// Account Azzurro.
   sky,
 
@@ -34,458 +34,345 @@ enum PostinoAccountColor {
 
 /// Livello 2 e 3 — token semantici e di componente, light e dark.
 @immutable
-class PostinoColors extends ThemeExtension<PostinoColors> {
-  /// Crea un set di colori; tutti i token sono obbligatori.
-  const PostinoColors({
-    required this.surfaceGround,
-    required this.surface,
-    required this.surfaceRaised,
-    required this.surfaceHover,
-    required this.surfacePressed,
-    required this.surfaceSelected,
-    required this.surfaceInverse,
-    required this.surfaceDisabled,
-    required this.scrim,
-    required this.overlayHover,
-    required this.overlayPressed,
-    required this.borderSubtle,
-    required this.borderStrong,
-    required this.ink,
-    required this.inkMuted,
-    required this.inkSubtle,
-    required this.inkDisabled,
-    required this.inkInverse,
-    required this.brand,
-    required this.brandHover,
-    required this.onBrand,
-    required this.brandSubtle,
-    required this.brandInverse,
-    required this.unread,
-    required this.star,
-    required this.starFill,
-    required this.onStar,
-    required this.focusRing,
-    required this.danger,
-    required this.onDanger,
-    required this.dangerSubtle,
-    required this.success,
-    required this.onSuccess,
-    required this.successSubtle,
-    required this.warning,
-    required this.onWarning,
-    required this.warningSubtle,
-    required this.accountSky,
-    required this.accountSkySubtle,
-    required this.accountBlue,
-    required this.accountBlueSubtle,
-    required this.accountViolet,
-    required this.accountVioletSubtle,
-    required this.accountMagenta,
-    required this.accountMagentaSubtle,
-    required this.accountRose,
-    required this.accountRoseSubtle,
-    required this.accountOlive,
-    required this.accountOliveSubtle,
-    required this.accountSlate,
-    required this.accountSlateSubtle,
-    required this.accountGraphite,
-    required this.accountGraphiteSubtle,
-    required this.onAccount,
-    required this.labelStoneBg,
-    required this.labelStoneFg,
-    required this.labelSandBg,
-    required this.labelSandFg,
-    required this.labelSageBg,
-    required this.labelSageFg,
-    required this.labelSeaBg,
-    required this.labelSeaFg,
-    required this.labelLilacBg,
-    required this.labelLilacFg,
-    required this.labelBlushBg,
-    required this.labelBlushFg,
-    required this.listItemBg,
-    required this.listItemBgSelected,
-    required this.listItemFgUnread,
-    required this.listItemFgRead,
-    required this.listItemMeta,
-    required this.listItemDivider,
-    required this.swipeArchiveBg,
-    required this.swipeDeleteBg,
-    required this.swipeSnoozeBg,
-    required this.swipeReadBg,
-    required this.swipeStarBg,
-    required this.swipeStarFg,
-    required this.swipeNeutralBg,
-    required this.swipeFg,
-    required this.swipeFgIdle,
-    required this.drawerBg,
-    required this.drawerItemBgActive,
-    required this.drawerItemFg,
-    required this.drawerItemIcon,
-    required this.drawerItemIconActive,
-    required this.avatarBadgeRing,
-    required this.composerBg,
-    required this.composerFieldDivider,
-    required this.chipBg,
-    required this.chipFg,
-    required this.chipBgSelected,
-    required this.inputBg,
-    required this.inputBorder,
-    required this.inputBorderFocus,
-    required this.inputBorderError,
-    required this.snackbarBg,
-    required this.snackbarFg,
-    required this.snackbarAction,
-    required this.fabBg,
-    required this.fabFg,
-    required this.switchTrackOn,
-    required this.switchTrackOff,
-    required this.switchThumbOn,
-    required this.switchThumbOff,
-    required this.tabIndicator,
-    required this.skeletonBase,
-    required this.skeletonHighlight,
-    required this.bulkBarBg,
-    required this.syncOk,
-    required this.syncRunning,
-    required this.syncError,
-  });
-
+class const PostinoColors({
   /// Fondo app: drawer, sidebar, finestra dietro i pannelli.
-  final Color surfaceGround;
+  required final Color surfaceGround,
 
   /// Fondo dei pannelli: lista messaggi, thread, impostazioni.
-  final Color surface;
+  required final Color surface,
 
   /// Superfici sopra i pannelli: composer, menu, card, bottom sheet, dialog, campo ricerca.
-  final Color surfaceRaised;
+  required final Color surfaceRaised,
 
   /// Hover di righe, voci di drawer e bottoni ghost (solo puntatore).
-  final Color surfaceHover;
+  required final Color surfaceHover,
 
   /// Stato premuto di righe e voci di drawer; fondo dei chip neutri.
-  final Color surfacePressed;
+  required final Color surfacePressed,
 
   /// Riga selezionata, voce di drawer attiva, chip filtro attivo.
-  final Color surfaceSelected;
+  required final Color surfaceSelected,
 
   /// Snackbar e tooltip: l’unica superficie invertita.
-  final Color surfaceInverse;
+  required final Color surfaceInverse,
 
   /// Fondo dei controlli disabilitati.
-  final Color surfaceDisabled;
+  required final Color surfaceDisabled,
 
   /// Dietro dialog, bottom sheet e drawer modale.
-  final Color scrim;
+  required final Color scrim,
 
   /// Velo di hover su superfici colorate (bottoni pieni, chip account). Mappa su ButtonStyle.overlayColor.
-  final Color overlayHover;
+  required final Color overlayHover,
 
   /// Velo di pressione / ink splash su superfici colorate.
-  final Color overlayPressed;
+  required final Color overlayPressed,
 
   /// Filetti decorativi tra righe, pannelli e header. Mai unico bordo di un controllo.
-  final Color borderSubtle;
+  required final Color borderSubtle,
 
   /// Bordo di input, bottoni secondari, checkbox: ≥3:1 su surface e surface-raised in entrambi i temi.
-  final Color borderStrong;
+  required final Color borderStrong,
 
   /// Testo primario (mittente non letto, oggetto, corpo) su ogni surface-*.
-  final Color ink;
+  required final Color ink,
 
   /// Testo secondario: anteprima, mittente letto, destinatari, metadati. ≥4.5:1 su ogni surface-* tranne surface-inverse.
-  final Color inkMuted;
+  required final Color inkMuted,
 
   /// Ora, contatori, placeholder, didascalie. ≥4.5:1 su surface-ground, surface, surface-raised, surface-hover, surface-selected.
-  final Color inkSubtle;
+  required final Color inkSubtle,
 
   /// Testo e icone dei controlli disabilitati (esente dal contrasto, sempre con fondo surface-disabled).
-  final Color inkDisabled;
+  required final Color inkDisabled,
 
   /// Testo su surface-inverse (snackbar).
-  final Color inkInverse;
+  required final Color inkInverse,
 
   /// Colore di brand: bottone primario, FAB “Scrivi”, link, voce attiva. Non è mai un colore account.
-  final Color brand;
+  required final Color brand,
 
   /// Hover/pressed dei riempimenti brand.
-  final Color brandHover;
+  required final Color brandHover,
 
   /// Testo e icone su brand e brand-hover.
-  final Color onBrand;
+  required final Color onBrand,
 
   /// Fondo tenue brand: banner informativi, onboarding.
-  final Color brandSubtle;
+  required final Color brandSubtle,
 
   /// Azione dentro la snackbar (“Annulla”) su surface-inverse.
-  final Color brandInverse;
+  required final Color brandInverse,
 
   /// Pallino “non letto” e badge dei non letti.
-  final Color unread;
+  required final Color unread,
 
   /// Stella piena dei messaggi speciali/importanti; solo icona, ≥3:1 su ogni surface. In dark coincide con star-fill.
-  final Color star;
+  required final Color star,
 
   /// Riempimento oro dell’azione Stella (swipe, smistamento). Distinto da warning/Posticipa: oro chiaro, non ambra. Testo sopra in on-star.
-  final Color starFill;
+  required final Color starFill,
 
   /// Testo e icone su star-fill (≥4.5:1 in entrambi i temi).
-  final Color onStar;
+  required final Color onStar,
 
   /// Anello di focus 2px su ogni elemento interattivo; ≥3:1 su ogni surface in entrambi i temi.
-  final Color focusRing;
+  required final Color focusRing,
 
   /// Elimina, invio fallito, sync in errore. Testo/icona su surface-*, sempre con una parola o un’icona.
-  final Color danger;
+  required final Color danger,
 
   /// Testo e icone su riempimenti danger.
-  final Color onDanger;
+  required final Color onDanger,
 
   /// Fondo dei banner danger; testo in ink, icona in danger.
-  final Color dangerSubtle;
+  required final Color dangerSubtle,
 
   /// Inviato, account collegato, sincronizzato. Testo/icona su surface-*, sempre con una parola o un’icona.
-  final Color success;
+  required final Color success,
 
   /// Testo e icone su riempimenti success.
-  final Color onSuccess;
+  required final Color onSuccess,
 
   /// Fondo dei banner success; testo in ink, icona in success.
-  final Color successSubtle;
+  required final Color successSubtle,
 
   /// Offline, quota, riautenticazione richiesta. Testo/icona su surface-*, sempre con una parola o un’icona.
-  final Color warning;
+  required final Color warning,
 
   /// Testo e icone su riempimenti warning.
-  final Color onWarning;
+  required final Color onWarning,
 
   /// Fondo dei banner warning; testo in ink, icona in warning.
-  final Color warningSubtle;
+  required final Color warningSubtle,
 
   /// Colore account “sky”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountSky;
+  required final Color accountSky,
 
   /// Fondo tenue dell’account “sky”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountSkySubtle;
+  required final Color accountSkySubtle,
 
   /// Colore account “blue”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountBlue;
+  required final Color accountBlue,
 
   /// Fondo tenue dell’account “blue”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountBlueSubtle;
+  required final Color accountBlueSubtle,
 
   /// Colore account “violet”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountViolet;
+  required final Color accountViolet,
 
   /// Fondo tenue dell’account “violet”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountVioletSubtle;
+  required final Color accountVioletSubtle,
 
   /// Colore account “magenta”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountMagenta;
+  required final Color accountMagenta,
 
   /// Fondo tenue dell’account “magenta”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountMagentaSubtle;
+  required final Color accountMagentaSubtle,
 
   /// Colore account “rose”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountRose;
+  required final Color accountRose,
 
   /// Fondo tenue dell’account “rose”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountRoseSubtle;
+  required final Color accountRoseSubtle,
 
   /// Colore account “olive”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountOlive;
+  required final Color accountOlive,
 
   /// Fondo tenue dell’account “olive”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountOliveSubtle;
+  required final Color accountOliveSubtle,
 
   /// Colore account “slate”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountSlate;
+  required final Color accountSlate,
 
   /// Fondo tenue dell’account “slate”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountSlateSubtle;
+  required final Color accountSlateSubtle,
 
   /// Colore account “graphite”: barra sulla riga, badge avatar, selettore “Da”, chip filtro. ≥3:1 su ogni surface; testo sopra in on-account.
-  final Color accountGraphite;
+  required final Color accountGraphite,
 
   /// Fondo tenue dell’account “graphite”: chip filtro selezionato, header del selettore “Da”. Testo in ink.
-  final Color accountGraphiteSubtle;
+  required final Color accountGraphiteSubtle,
 
   /// Iniziale/icona dentro un riempimento account-* (badge avatar, chip account).
-  final Color onAccount;
+  required final Color onAccount,
 
   /// Fondo del chip etichetta “stone”.
-  final Color labelStoneBg;
+  required final Color labelStoneBg,
 
   /// Testo e icona tag del chip etichetta “stone” sul suo fondo (≥4.5:1).
-  final Color labelStoneFg;
+  required final Color labelStoneFg,
 
   /// Fondo del chip etichetta “sand”.
-  final Color labelSandBg;
+  required final Color labelSandBg,
 
   /// Testo e icona tag del chip etichetta “sand” sul suo fondo (≥4.5:1).
-  final Color labelSandFg;
+  required final Color labelSandFg,
 
   /// Fondo del chip etichetta “sage”.
-  final Color labelSageBg;
+  required final Color labelSageBg,
 
   /// Testo e icona tag del chip etichetta “sage” sul suo fondo (≥4.5:1).
-  final Color labelSageFg;
+  required final Color labelSageFg,
 
   /// Fondo del chip etichetta “sea”.
-  final Color labelSeaBg;
+  required final Color labelSeaBg,
 
   /// Testo e icona tag del chip etichetta “sea” sul suo fondo (≥4.5:1).
-  final Color labelSeaFg;
+  required final Color labelSeaFg,
 
   /// Fondo del chip etichetta “lilac”.
-  final Color labelLilacBg;
+  required final Color labelLilacBg,
 
   /// Testo e icona tag del chip etichetta “lilac” sul suo fondo (≥4.5:1).
-  final Color labelLilacFg;
+  required final Color labelLilacFg,
 
   /// Fondo del chip etichetta “blush”.
-  final Color labelBlushBg;
+  required final Color labelBlushBg,
 
   /// Testo e icona tag del chip etichetta “blush” sul suo fondo (≥4.5:1).
-  final Color labelBlushFg;
+  required final Color labelBlushFg,
 
   /// MessageListItem: fondo a riposo.
-  final Color listItemBg;
+  required final Color listItemBg,
 
   /// MessageListItem: selezionato o in multi-selezione.
-  final Color listItemBgSelected;
+  required final Color listItemBgSelected,
 
   /// MessageListItem: mittente e oggetto non letti.
-  final Color listItemFgUnread;
+  required final Color listItemFgUnread,
 
   /// MessageListItem: mittente e oggetto letti, anteprima.
-  final Color listItemFgRead;
+  required final Color listItemFgRead,
 
   /// MessageListItem: ora e conteggio thread.
-  final Color listItemMeta;
+  required final Color listItemMeta,
 
   /// MessageListItem: filetto inferiore.
-  final Color listItemDivider;
+  required final Color listItemDivider,
 
   /// SwipeActions: Archivia.
-  final Color swipeArchiveBg;
+  required final Color swipeArchiveBg,
 
   /// SwipeActions: Elimina.
-  final Color swipeDeleteBg;
+  required final Color swipeDeleteBg,
 
   /// SwipeActions: Posticipa.
-  final Color swipeSnoozeBg;
+  required final Color swipeSnoozeBg,
 
   /// SwipeActions: Segna come letto/non letto.
-  final Color swipeReadBg;
+  required final Color swipeReadBg,
 
   /// SwipeActions e smistamento: Stella (timbro, bordo della scheda, bottone, bussola).
-  final Color swipeStarBg;
+  required final Color swipeStarBg,
 
   /// Icona e testo sopra swipe-star-bg (al posto di swipe-fg).
-  final Color swipeStarFg;
+  required final Color swipeStarFg,
 
   /// SwipeActions: azione sotto soglia (non ancora armata).
-  final Color swipeNeutralBg;
+  required final Color swipeNeutralBg,
 
   /// SwipeActions: icona e testo sopra ogni swipe-*-bg armato.
-  final Color swipeFg;
+  required final Color swipeFg,
 
   /// SwipeActions: icona su swipe-neutral-bg.
-  final Color swipeFgIdle;
+  required final Color swipeFgIdle,
 
   /// NavigationDrawer: fondo.
-  final Color drawerBg;
+  required final Color drawerBg,
 
   /// DrawerItem attivo (indicatore M3).
-  final Color drawerItemBgActive;
+  required final Color drawerItemBgActive,
 
   /// DrawerItem: etichetta.
-  final Color drawerItemFg;
+  required final Color drawerItemFg,
 
   /// DrawerItem: icona a riposo.
-  final Color drawerItemIcon;
+  required final Color drawerItemIcon,
 
   /// DrawerItem: icona attiva.
-  final Color drawerItemIconActive;
+  required final Color drawerItemIconActive,
 
   /// Avatar: anello che stacca il badge account dalla foto (deve uguagliare il fondo).
-  final Color avatarBadgeRing;
+  required final Color avatarBadgeRing,
 
   /// Composer: fondo.
-  final Color composerBg;
+  required final Color composerBg,
 
   /// Composer: filetti tra Da/A/Cc/Oggetto.
-  final Color composerFieldDivider;
+  required final Color composerFieldDivider,
 
   /// Chip contatto e chip neutri.
-  final Color chipBg;
+  required final Color chipBg,
 
   /// Testo dei chip neutri.
-  final Color chipFg;
+  required final Color chipFg,
 
   /// FilterChip selezionato.
-  final Color chipBgSelected;
+  required final Color chipBgSelected,
 
   /// TextField / SearchBar: fondo.
-  final Color inputBg;
+  required final Color inputBg,
 
   /// TextField: bordo a riposo.
-  final Color inputBorder;
+  required final Color inputBorder,
 
   /// TextField: bordo con focus (più focus-ring da tastiera).
-  final Color inputBorderFocus;
+  required final Color inputBorderFocus,
 
   /// TextField: bordo in errore, con messaggio.
-  final Color inputBorderError;
+  required final Color inputBorderError,
 
   /// Snackbar: fondo.
-  final Color snackbarBg;
+  required final Color snackbarBg,
 
   /// Snackbar: testo.
-  final Color snackbarFg;
+  required final Color snackbarFg,
 
   /// Snackbar: azione “Annulla”.
-  final Color snackbarAction;
+  required final Color snackbarAction,
 
   /// FAB “Scrivi”: fondo.
-  final Color fabBg;
+  required final Color fabBg,
 
   /// FAB “Scrivi”: icona ed etichetta.
-  final Color fabFg;
+  required final Color fabFg,
 
   /// Switch acceso: traccia.
-  final Color switchTrackOn;
+  required final Color switchTrackOn,
 
   /// Switch spento: traccia (con bordo border-strong).
-  final Color switchTrackOff;
+  required final Color switchTrackOff,
 
   /// Switch acceso: pallino.
-  final Color switchThumbOn;
+  required final Color switchThumbOn,
 
   /// Switch spento: pallino.
-  final Color switchThumbOff;
+  required final Color switchThumbOff,
 
   /// Tabs: indicatore sotto la scheda attiva.
-  final Color tabIndicator;
+  required final Color tabIndicator,
 
   /// Skeleton: blocchi segnaposto.
-  final Color skeletonBase;
+  required final Color skeletonBase,
 
   /// Skeleton: riflesso dell’animazione.
-  final Color skeletonHighlight;
+  required final Color skeletonHighlight,
 
   /// BulkActionBar: fondo (con elevation-2).
-  final Color bulkBarBg;
+  required final Color bulkBarBg,
 
   /// SyncStatus: sincronizzato.
-  final Color syncOk;
+  required final Color syncOk,
 
   /// SyncStatus: in corso (icona che ruota).
-  final Color syncRunning;
+  required final Color syncRunning,
 
   /// SyncStatus: errore.
-  final Color syncError;
+  required final Color syncError,
+}) extends ThemeExtension<PostinoColors> {
+  /// Crea un set di colori; tutti i token sono obbligatori.
+  this;
 
   /// Colori del tema chiaro.
   static const light = PostinoColors(

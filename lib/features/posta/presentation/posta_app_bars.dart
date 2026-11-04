@@ -8,14 +8,12 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// “Posta unificata”, with how many Accounts it merges.
-class UnifiedAppBar extends StatefulWidget {
-  const UnifiedAppBar({super.key});
-
+class const UnifiedAppBar({super.key}) extends StatefulWidget {
   @override
   State<UnifiedAppBar> createState() => _UnifiedAppBarState();
 }
 
-class _UnifiedAppBarState extends State<UnifiedAppBar> with AccountsSignal {
+class _UnifiedAppBarState() extends State<UnifiedAppBar> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => PostinoAppBar(
@@ -30,17 +28,13 @@ class _UnifiedAppBarState extends State<UnifiedAppBar> with AccountsSignal {
 
 /// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's
 /// ([labelName] for a folder with no Etichetta, the Bozze).
-class AccountAppBar extends StatefulWidget {
-  const AccountAppBar({super.key, required this.accountId, this.labelId, this.labelName});
-  final String accountId;
-  final String? labelId;
-  final String? labelName;
-
+class const AccountAppBar({super.key, required final String accountId, final String? labelId, final String? labelName})
+    extends StatefulWidget {
   @override
   State<AccountAppBar> createState() => _AccountAppBarState();
 }
 
-class _AccountAppBarState extends State<AccountAppBar> with AccountsSignal {
+class _AccountAppBarState() extends State<AccountAppBar> with AccountsSignal {
   late final labels = streamSignal(() => GetIt.I<InboxRepository>().watchLabels(widget.accountId));
 
   @override

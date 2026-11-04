@@ -2,7 +2,7 @@ import 'package:postino/core/domain/google_consent.dart';
 import 'package:postino/core/domain/result.dart';
 
 /// Consent that always succeeds for [address], with fresh tokens each run (unless [failure] is set).
-class FakeGoogleConsent implements GoogleConsent {
+class FakeGoogleConsent() implements GoogleConsent {
   String address = 'ada@gmail.com';
   Failure? failure;
   int runs = 0;

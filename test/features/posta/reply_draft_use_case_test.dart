@@ -16,10 +16,7 @@ import '../../support/fake_mail_provider.dart' show msg;
 const _account = Account(id: 'a1', address: 'a1@example.com', provider: ProviderKind.gmail, color: 0, position: 0);
 
 /// fetchBody answers [fetched] (or fails without it); saveDraft records the Bozza.
-class _Sync extends Fake implements MailSync {
-  _Sync(this.inbox, {this.fetched});
-  final _Inbox inbox;
-  final MessageBody? fetched;
+class _Sync(final _Inbox inbox, {final MessageBody? fetched}) extends Fake implements MailSync {
   final fetches = <String>[];
   final drafts = <OutgoingMessage>[];
 
@@ -36,10 +33,7 @@ class _Sync extends Fake implements MailSync {
   Future<void> saveDraft(String accountId, OutgoingMessage draft) async => drafts.add(draft);
 }
 
-class _Inbox extends Fake implements InboxRepository {
-  _Inbox(this.rows);
-  List<ConversationMessage> rows;
-
+class _Inbox(var List<ConversationMessage> rows) extends Fake implements InboxRepository {
   @override
   Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId) => Stream.value(rows);
 }

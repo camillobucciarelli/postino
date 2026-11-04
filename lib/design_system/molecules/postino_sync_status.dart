@@ -6,7 +6,7 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// Only the states the app has so far; add ok/syncing/error with their screens.
-enum PostinoSyncState {
+enum PostinoSyncState() {
   /// L'Account va ricollegato.
   reconnect,
 
@@ -15,18 +15,20 @@ enum PostinoSyncState {
 }
 
 /// The sync state of a mailbox: icon and word, or only the icon ([compact], drawer) with [label] as its name.
-class PostinoSyncStatus extends StatelessWidget {
-  /// Crea lo stato di sincronizzazione.
-  const PostinoSyncStatus({super.key, required this.state, required this.label, this.compact = false});
+class const PostinoSyncStatus({
+  super.key,
 
   /// Quale stato mostrare.
-  final PostinoSyncState state;
+  required final PostinoSyncState state,
 
   /// Parola mostrata, o nome per lo screen reader se `compact`.
-  final String label;
+  required final String label,
 
   /// Solo l'icona, per la sidebar.
-  final bool compact;
+  final bool compact = false,
+}) extends StatelessWidget {
+  /// Crea lo stato di sincronizzazione.
+  this;
 
   @override
   Widget build(BuildContext context) {

@@ -11,31 +11,21 @@ import '../../../i18n/strings.g.dart';
 
 /// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]).
 /// Routing is the caller's: features don't know the routes.
-class PostaDrawer extends StatefulWidget {
-  const PostaDrawer({
-    super.key,
-    this.accountId,
-    this.labelId,
-    required this.onOpenUnified,
-    required this.onOpenAccount,
-    required this.onOpenLabel,
-    required this.onOpenDrafts,
-    required this.onOpenSent,
-  });
-
-  final String? accountId;
-  final String? labelId;
-  final VoidCallback onOpenUnified;
-  final void Function(String accountId) onOpenAccount;
-  final void Function(String labelId) onOpenLabel;
-  final void Function(String accountId) onOpenDrafts;
-  final void Function(String accountId) onOpenSent;
-
+class const PostaDrawer({
+  super.key,
+  final String? accountId,
+  final String? labelId,
+  required final VoidCallback onOpenUnified,
+  required final void Function(String accountId) onOpenAccount,
+  required final void Function(String labelId) onOpenLabel,
+  required final void Function(String accountId) onOpenDrafts,
+  required final void Function(String accountId) onOpenSent,
+}) extends StatefulWidget {
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
 }
 
-class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
+class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
   // The docked drawer outlives navigation: the open Account is a signal, the Etichette follow it.
   late final openAccount = signal(widget.accountId);
   late final unread = streamSignal(() => GetIt.I<InboxRepository>().watchUnreadFolders());

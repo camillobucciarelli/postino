@@ -9,15 +9,12 @@ import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 
 /// Shows the onboarding while there is no Account, [child] afterwards.
-class OnboardingGate extends StatefulWidget {
-  const OnboardingGate({super.key, required this.child});
-  final Widget child;
-
+class const OnboardingGate({super.key, required final Widget child}) extends StatefulWidget {
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
 
-class _OnboardingGateState extends State<OnboardingGate> with AccountsSignal {
+class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => switch (accounts.value.value) {
@@ -28,14 +25,12 @@ class _OnboardingGateState extends State<OnboardingGate> with AccountsSignal {
   );
 }
 
-class _Onboarding extends StatefulWidget {
-  const _Onboarding();
-
+class const _Onboarding() extends StatefulWidget {
   @override
   State<_Onboarding> createState() => _OnboardingState();
 }
 
-class _OnboardingState extends State<_Onboarding> {
+class _OnboardingState() extends State<_Onboarding> {
   String? error;
 
   Future<void> _connect() async {

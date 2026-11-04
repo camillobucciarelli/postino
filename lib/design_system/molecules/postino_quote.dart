@@ -4,12 +4,13 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// The quoted text once shown: a `border-strong` rule on its left, `body-quote` in `ink-muted`.
-class PostinoQuote extends StatelessWidget {
-  /// Crea la citazione che racchiude `child`.
-  const PostinoQuote(this.child, {super.key});
-
+class const PostinoQuote(
   /// The quoted text.
-  final Widget child;
+  final Widget child, {
+  super.key,
+}) extends StatelessWidget {
+  /// Crea la citazione che racchiude `child`.
+  this;
 
   @override
   Widget build(BuildContext context) => Padding(

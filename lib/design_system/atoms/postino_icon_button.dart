@@ -7,18 +7,20 @@ import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
 /// A command with only an icon; [label] is its accessible name and tooltip.
-class PostinoIconButton extends StatelessWidget {
-  /// Crea un comando con la sola icona.
-  const PostinoIconButton({super.key, required this.icon, required this.label, required this.onPressed});
+class const PostinoIconButton({
+  super.key,
 
   /// Icona del comando.
-  final PostinoIconData icon;
+  required final PostinoIconData icon,
 
   /// Nome accessibile e tooltip.
-  final String label;
+  required final String label,
 
   /// Chiamata al tocco; se nulla il comando è disabilitato.
-  final VoidCallback? onPressed;
+  required final VoidCallback? onPressed,
+}) extends StatelessWidget {
+  /// Crea un comando con la sola icona.
+  this;
 
   @override
   Widget build(BuildContext context) => Center(

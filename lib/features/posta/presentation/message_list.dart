@@ -13,40 +13,31 @@ import 'posta_shortcuts.dart';
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
 /// Routing is the caller's: a tap calls [onOpen], and [selected] is the Conversazione open beside the list.
-class MessageList extends StatefulWidget {
-  const MessageList({
-    super.key,
-    required this.watch,
-    required this.onOpen,
-    this.showAccount = false,
-    this.selected,
-    this.cursor,
-    this.emptyTitle,
-    this.emptyBody,
-  });
+class const MessageList({
+  super.key,
 
   /// Which messages to show, e.g. `repo.watchUnifiedInbox`.
-  final Stream<List<InboxEntry>> Function(InboxRepository repo) watch;
+  required final Stream<List<InboxEntry>> Function(InboxRepository repo) watch,
+  required final void Function(String accountId, String conversationId) onOpen,
 
   /// Marks each row with its Account (bar and badge): only where Accounts mix.
-  final bool showAccount;
-  final void Function(String accountId, String conversationId) onOpen;
+  final bool showAccount = false,
 
   /// (accountId, conversationId).
-  final (String, String)? selected;
+  final (String, String)? selected,
 
   /// Plugs the list into the keyboard shortcuts ([PostaShortcuts]).
-  final ListCursor? cursor;
+  final ListCursor? cursor,
 
   /// What an empty list says (the Bozze have their own); default: the inbox's.
-  final String? emptyTitle;
-  final String? emptyBody;
-
+  final String? emptyTitle,
+  final String? emptyBody,
+}) extends StatefulWidget {
   @override
   State<MessageList> createState() => _MessageListState();
 }
 
-class _MessageListState extends State<MessageList> {
+class _MessageListState() extends State<MessageList> {
   late final entries = streamSignal(() => widget.watch(GetIt.I<InboxRepository>()));
   final _scroll = ScrollController();
 
@@ -249,16 +240,12 @@ class _MessageListState extends State<MessageList> {
 (String, String) _firstKey(List<InboxEntry> list) => (list.first.account.id, list.first.message.conversationId);
 
 /// Keeps the cursor row built when it scrolls out of sight, so Tab still finds it.
-class _KeepAlive extends StatefulWidget {
-  const _KeepAlive({required this.keep, required this.child});
-  final bool keep;
-  final Widget child;
-
+class const _KeepAlive({required final bool keep, required final Widget child}) extends StatefulWidget {
   @override
   State<_KeepAlive> createState() => _KeepAliveState();
 }
 
-class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
+class _KeepAliveState() extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => widget.keep;
 

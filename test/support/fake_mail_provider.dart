@@ -41,7 +41,7 @@ Message msg(
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
-class FakeMailProvider implements MailProvider {
+class FakeMailProvider() implements MailProvider {
   final _messages = <String, Message>{};
 
   /// Outside the sync window (older than 90 days): only [fetchConversation] and [fetchBody] see them.

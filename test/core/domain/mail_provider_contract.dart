@@ -10,7 +10,7 @@ import 'package:postino/core/domain/result.dart';
 import '../../support/fake_mail_provider.dart';
 
 /// What the suite needs from an adapter under test, beyond [MailProvider] itself.
-abstract class ContractHarness {
+abstract class ContractHarness() {
   MailProvider get provider;
 
   /// A message arrives in the mailbox "elsewhere".
@@ -31,7 +31,7 @@ abstract class ContractHarness {
   void attach(String messageId, String name, List<int> bytes);
 }
 
-class FakeHarness implements ContractHarness {
+class FakeHarness() implements ContractHarness {
   final fake = FakeMailProvider();
   @override
   MailProvider get provider => fake;

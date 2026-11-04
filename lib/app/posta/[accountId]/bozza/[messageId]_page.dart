@@ -9,6 +9,7 @@ import '../../route_query.dart';
 /// Route of a Bozza being written: PostaLayout draws the composer, beside or over its list, from the URI
 /// (the Message-ID is percent-encoded in the path).
 class DraftPage extends StatelessWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
   const DraftPage({super.key});
 
   @override

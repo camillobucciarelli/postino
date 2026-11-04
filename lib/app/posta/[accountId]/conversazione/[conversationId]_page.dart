@@ -8,6 +8,7 @@ import '../../route_query.dart';
 
 /// Route of a Conversazione: PostaLayout draws it, beside or over its list, from the URI.
 class ConversationPage extends StatelessWidget {
+  // ignore: use_primary_constructors, routefly legge il nome del widget dal testo della classe
   const ConversationPage({super.key});
 
   @override

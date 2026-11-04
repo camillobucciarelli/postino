@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 /// Invia so the same bytes go whenever it is replayed, and the fields Inviati and the UI show while it waits.
 /// It leaves once the Provider has it, or with Annulla within the window.
 @DataClassName('OutboxRow')
-class Outbox extends Table {
+class Outbox() extends Table {
   TextColumn get accountId => text()();
 
   /// RFC 5322 Message-ID header, the idempotency key on the Provider.

@@ -6,9 +6,7 @@ import '../tables/intents_table.dart';
 part 'intents_dao.g.dart';
 
 @DriftAccessor(tables: [Intents])
-class IntentsDao extends DatabaseAccessor<PostinoDatabase> with _$IntentsDaoMixin {
-  IntentsDao(super.attachedDatabase);
-
+class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$IntentsDaoMixin {
   /// The Account's intents still to replay.
   Future<List<IntentRow>> pending(String accountId) =>
       (select(intents)..where((t) => t.accountId.equals(accountId))).get();

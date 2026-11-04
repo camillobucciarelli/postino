@@ -62,14 +62,12 @@ Future<void> main() async {
 }
 
 @Main('lib/app')
-class PostinoApp extends StatefulWidget {
-  const PostinoApp({super.key});
-
+class const PostinoApp({super.key}) extends StatefulWidget {
   @override
   State<PostinoApp> createState() => _PostinoAppState();
 }
 
-class _PostinoAppState extends State<PostinoApp> {
+class _PostinoAppState() extends State<PostinoApp> {
   late final AppLifecycleListener _lifecycle;
 
   @override

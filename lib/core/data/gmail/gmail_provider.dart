@@ -20,22 +20,18 @@ import 'google_client.dart';
 const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
-class GmailProvider implements MailProvider {
-  GmailProvider(
-    this._accountId,
-    SecureStore keychain,
-    http.Client httpClient,
-    this._clock, {
-    GoogleClient client = const GoogleClient.fromEnvironment(),
-    this._sleep = Future<void>.delayed,
-    this._idle = imapIdle,
-    Duration stall = const Duration(seconds: 30),
-  }) : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
+class GmailProvider(
+  final String _accountId,
+  SecureStore keychain,
+  http.Client httpClient,
+  final Clock _clock, {
+  GoogleClient client = const GoogleClient.fromEnvironment(),
+  final Future<void> Function(Duration) _sleep = Future<void>.delayed,
+  final ImapIdle _idle = imapIdle,
+  Duration stall = const Duration(seconds: 30),
+}) implements MailProvider {
+  this : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
-  final String _accountId;
-  final Clock _clock;
-  final Future<void> Function(Duration) _sleep;
-  final ImapIdle _idle;
   final GmailHttp _gmail;
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.

@@ -8,9 +8,7 @@ part 'bodies_dao.g.dart';
 
 /// Downloaded message bodies. The `*In` methods add to a [Batch] of the caller's transaction (ADR 0008).
 @DriftAccessor(tables: [Bodies])
-class BodiesDao extends DatabaseAccessor<PostinoDatabase> with _$BodiesDaoMixin {
-  BodiesDao(super.attachedDatabase);
-
+class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$BodiesDaoMixin {
   /// Drops the bodies of the Account's messages absent from the `snapshot_ids` TEMP table.
   void deleteNotInSnapshotIn(Batch b, String accountId) => b.deleteWhere(
     bodies,

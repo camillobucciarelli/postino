@@ -3,26 +3,21 @@ import 'package:equatable/equatable.dart';
 import 'result.dart';
 
 /// What Google hands back after the user consents.
-class GoogleGrant extends Equatable {
-  /// Crea la concessione con i token ricevuti da Google.
-  const GoogleGrant({
-    required this.address,
-    required this.accessToken,
-    required this.refreshToken,
-    required this.expiresAt,
-  });
-
+class const GoogleGrant({
   /// Indirizzo dell'identità Google che ha dato il consenso.
-  final String address;
+  required final String address,
 
   /// Token di accesso alle API Gmail.
-  final String accessToken;
+  required final String accessToken,
 
   /// Token per ottenere nuovi token di accesso.
-  final String refreshToken;
+  required final String refreshToken,
 
   /// Scadenza del token di accesso.
-  final DateTime expiresAt;
+  required final DateTime expiresAt,
+}) extends Equatable {
+  /// Crea la concessione con i token ricevuti da Google.
+  this;
 
   /// Never stringified: the tokens must not end up in logs.
   @override
@@ -33,7 +28,10 @@ class GoogleGrant extends Equatable {
 }
 
 /// Thin seam over the Google OAuth consent (real one in core/data, fake in widget tests).
-abstract interface class GoogleConsent {
+abstract interface class GoogleConsent() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// [loginHint] preselects the Google account, for the reconnection of a Da ricollegare Account.
   Future<Result<GoogleGrant>> run({String? loginHint});
 }

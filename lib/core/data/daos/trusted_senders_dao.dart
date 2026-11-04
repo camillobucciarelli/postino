@@ -6,9 +6,9 @@ import '../tables/trusted_senders_table.dart';
 part 'trusted_senders_dao.g.dart';
 
 @DriftAccessor(tables: [TrustedSenders])
-class TrustedSendersDao extends DatabaseAccessor<PostinoDatabase> with _$TrustedSendersDaoMixin {
-  TrustedSendersDao(super.attachedDatabase);
-
+class TrustedSendersDao(super.attachedDatabase)
+    extends DatabaseAccessor<PostinoDatabase>
+    with _$TrustedSendersDaoMixin {
   /// [address] already normalized; adding it twice keeps one.
   Future<void> add(String address) =>
       into(trustedSenders).insert(TrustedSendersCompanion.insert(address: address), mode: InsertMode.insertOrIgnore);

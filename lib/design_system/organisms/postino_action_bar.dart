@@ -5,12 +5,14 @@ import '../tokens/postino_tokens.dart';
 
 /// The bar of actions under a detail, always in view (the buttons of the Conversazione: Rispondi…):
 /// the surface fill, a hairline on top, the [children] wrapping on a narrow window.
-class PostinoActionBar extends StatelessWidget {
-  /// Barra delle azioni in fondo a un dettaglio, sempre visibile.
-  const PostinoActionBar({super.key, required this.children});
+class const PostinoActionBar({
+  super.key,
 
   /// I pulsanti della barra; vanno a capo su una finestra stretta.
-  final List<Widget> children;
+  required final List<Widget> children,
+}) extends StatelessWidget {
+  /// Barra delle azioni in fondo a un dettaglio, sempre visibile.
+  this;
 
   @override
   Widget build(BuildContext context) {

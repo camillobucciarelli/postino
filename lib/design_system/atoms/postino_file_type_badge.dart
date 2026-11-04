@@ -7,12 +7,13 @@ import 'postino_icon.dart';
 
 /// The type of an attached file, for `PostinoAttachmentChip` only (not in the barrel).
 /// 40 square, `radius-sm`: the extension (up to 4 letters) or the image icon, colored by kind.
-class PostinoFileTypeBadge extends StatelessWidget {
-  /// Crea il badge del tipo del file `name`.
-  const PostinoFileTypeBadge(this.name, {super.key});
-
+class const PostinoFileTypeBadge(
   /// The file name; its extension picks the kind and the label.
-  final String name;
+  final String name, {
+  super.key,
+}) extends StatelessWidget {
+  /// Crea il badge del tipo del file `name`.
+  this;
 
   static final _kinds = {
     'pdf': _Kind.pdf,
@@ -60,4 +61,10 @@ class PostinoFileTypeBadge extends StatelessWidget {
   }
 }
 
-enum _Kind { pdf, doc, sheet, image, other }
+enum _Kind() {
+  pdf,
+  doc,
+  sheet,
+  image,
+  other,
+}

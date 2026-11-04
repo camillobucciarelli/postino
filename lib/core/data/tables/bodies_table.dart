@@ -8,7 +8,7 @@ import '../json_objects.dart';
 
 /// Downloaded message bodies, apart from [Messages] so the lists stay light.
 @DataClassName('BodyRow')
-class Bodies extends Table {
+class Bodies() extends Table {
   TextColumn get accountId => text()();
   TextColumn get messageId => text()();
   TextColumn get body => text()();
@@ -24,9 +24,7 @@ class Bodies extends Table {
 }
 
 /// [Attachment]s as JSON.
-class AttachmentsConverter extends TypeConverter<List<Attachment>, String> {
-  const AttachmentsConverter();
-
+class const AttachmentsConverter() extends TypeConverter<List<Attachment>, String> {
   @override
   List<Attachment> fromSql(String fromDb) => [
     for (final a in jsonObjects(jsonDecode(fromDb)))

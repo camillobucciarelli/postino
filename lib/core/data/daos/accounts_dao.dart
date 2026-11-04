@@ -7,9 +7,7 @@ import '../tables/accounts_table.dart';
 part 'accounts_dao.g.dart';
 
 @DriftAccessor(tables: [Accounts])
-class AccountsDao extends DatabaseAccessor<PostinoDatabase> with _$AccountsDaoMixin {
-  AccountsDao(super.attachedDatabase);
-
+class AccountsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$AccountsDaoMixin {
   Future<void> upsert(Account a) => into(accounts).insert(
     AccountsCompanion.insert(
       id: a.id,

@@ -6,9 +6,9 @@ import '../tables/device_settings_table.dart';
 part 'device_settings_dao.g.dart';
 
 @DriftAccessor(tables: [DeviceSettings])
-class DeviceSettingsDao extends DatabaseAccessor<PostinoDatabase> with _$DeviceSettingsDaoMixin {
-  DeviceSettingsDao(super.attachedDatabase);
-
+class DeviceSettingsDao(super.attachedDatabase)
+    extends DatabaseAccessor<PostinoDatabase>
+    with _$DeviceSettingsDaoMixin {
   Future<String?> read(String key) async =>
       (await (select(deviceSettings)..where((t) => t.key.equals(key))).getSingleOrNull())?.value;
 

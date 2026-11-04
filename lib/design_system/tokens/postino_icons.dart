@@ -5,16 +5,19 @@ import 'package:flutter/foundation.dart';
 
 /// One icon: the SVG `d` strings of its strokes on a 24×24 grid.
 @immutable
-class PostinoIconData {
-  /// Crea un'icona dai tracciati dei suoi tratti.
-  const PostinoIconData(this.paths);
-
+class const PostinoIconData(
   /// Stringhe `d` SVG, una per tratto.
-  final List<String> paths;
+  final List<String> paths,
+) {
+  /// Crea un'icona dai tracciati dei suoi tratti.
+  this;
 }
 
 /// Only the icons the screens use so far; copy more from the Icon card when needed.
-abstract final class PostinoIcons {
+abstract final class PostinoIcons() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
   /// Posta in arrivo.
   static const inbox = PostinoIconData(['M3 13l2.5-8h13L21 13v6H3z', 'M3 13h5l1.5 2.5h5L16 13h5']);
 

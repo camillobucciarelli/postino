@@ -4,30 +4,24 @@ import 'account.dart';
 import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
-class InboxEntry extends Equatable {
-  /// Crea una riga di elenco.
-  const InboxEntry({
-    required this.message,
-    required this.account,
-    required this.count,
-    required this.unread,
-    this.status,
-  });
-
+class const InboxEntry({
   /// L'ultimo messaggio della Conversazione.
-  final Message message;
+  required final Message message,
 
   /// L'Account a cui appartiene.
-  final Account account;
+  required final Account account,
 
   /// Numero di messaggi della Conversazione.
-  final int count;
+  required final int count,
 
   /// Se almeno un messaggio è da leggere.
-  final bool unread;
+  required final bool unread,
 
   /// Send state of an Inviati row (queued, offline, failed): spoken with the row, not only shown in its preview.
-  final String? status;
+  final String? status,
+}) extends Equatable {
+  /// Crea una riga di elenco.
+  this;
 
   @override
   List<Object?> get props => [message, account, count, unread, status];
@@ -38,25 +32,28 @@ typedef ConversationMessage = ({Message message, MessageBody? body});
 
 /// A message waiting in the outbox (#36): [sendAfter] (ms since epoch, UTC) is when Annulla invio ends and it goes.
 /// [failed]: the Provider refused it for good (too big, Bozza gone); it waits for the user, never retried.
-class OutgoingEntry extends Equatable {
-  /// Crea una voce della Coda d'uscita; `failed` parte falso.
-  const OutgoingEntry({required this.message, required this.sendAfter, this.failed = false});
-
+class const OutgoingEntry({
   /// Il messaggio in attesa di partire.
-  final OutgoingMessage message;
+  required final OutgoingMessage message,
 
   /// Quando finisce Annulla invio (ms da epoch, UTC).
-  final int sendAfter;
+  required final int sendAfter,
 
   /// Il Provider l'ha rifiutato per sempre: attende l'utente.
-  final bool failed;
+  final bool failed = false,
+}) extends Equatable {
+  /// Crea una voce della Coda d'uscita; `failed` parte falso.
+  this;
 
   @override
   List<Object?> get props => [message, sendAfter, failed];
 }
 
 /// What the UI reads: only from the local database, never from a Provider (ADR 0003).
-abstract interface class InboxRepository {
+abstract interface class InboxRepository() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
   /// Posta unificata: one row per Conversazione in the inbox of every Account, newest first; re-emits after each write.
   Stream<List<InboxEntry>> watchUnifiedInbox();
 

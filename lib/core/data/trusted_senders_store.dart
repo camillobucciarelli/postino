@@ -4,9 +4,7 @@ import '../domain/trusted_senders_repository.dart';
 import 'postino_database.dart';
 
 @LazySingleton(as: TrustedSendersRepository)
-class TrustedSendersStore implements TrustedSendersRepository {
-  TrustedSendersStore(this._db);
-  final PostinoDatabase _db;
+class TrustedSendersStore(final PostinoDatabase _db) implements TrustedSendersRepository {
   final _shown = <(String, String)>{};
 
   @override

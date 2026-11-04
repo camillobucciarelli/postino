@@ -13,12 +13,15 @@ import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/link_check.dart';
 import '../domain/quoted_text.dart';
 import '../domain/reply_kind.dart';
 import '../domain/safe_html.dart';
 import 'attachment_actions.dart';
 import 'attachment_chips.dart';
+import 'link_guard.dart';
 import 'message_time.dart';
+import 'original_view.dart';
 
 /// The thread of an open Conversazione, newest first: each message with its details, its menu (Rispondi,
 /// Rispondi a tutti, Inoltra: [onAct]), its body split into body, signature and quote, and its attachments.
@@ -54,6 +57,7 @@ class _ConversationBodyState() extends State<ConversationBody> {
   final _safe = <(String, bool), SafeHtml>{};
   final _parts = <(String, bool), BodyParts>{};
   final _measured = <(String, bool), SafeHtml>{};
+  final _links = <String, Map<String, List<String>>>{};
 
   bool _allowRemote(Message message) =>
       widget.trusted.contains(normalizeAddress(message.from)) || _trust.shownOnce(widget.account.id, message.id);
@@ -85,12 +89,8 @@ class _ConversationBodyState() extends State<ConversationBody> {
       html: part.html,
       contentWidth: part.width,
       quiet: quiet,
-      onTapUrl: (url) {
-        // Web and mail only: a `file:` link in a message must never open (or hand out) a local file.
-        if (Uri.tryParse(url) case final uri? when ['http', 'https', 'mailto'].contains(uri.scheme)) {
-          unawaited(GetIt.I<LinkOpener>().open(uri));
-        }
-      },
+      onTapUrl: (url) =>
+          unawaited(openGuardedLink(context, url, textsOf(_links[content] ??= linkTexts(part.html), url))),
     );
   }
 
@@ -177,6 +177,22 @@ class _ConversationBodyState() extends State<ConversationBody> {
                     key: ValueKey('message-${kind.name}-${message.id}'),
                     label: label,
                     onPressed: () => widget.onAct(kind, message.id),
+                  ),
+                if (originalAvailable && body != null && body.kind == BodyKind.html)
+                  PostinoMenuItem(
+                    key: ValueKey('message-original-${message.id}'),
+                    label: t.viewOriginal,
+                    onPressed: () => unawaited(
+                      Navigator.of(context).push(
+                        PageRouteBuilder<void>(
+                          pageBuilder: (_, _, _) => OriginalView(
+                            html: body.content,
+                            allowRemote: _allowRemote(message),
+                            subject: message.subject,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),

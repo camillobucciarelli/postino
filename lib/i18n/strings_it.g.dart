@@ -333,6 +333,27 @@ class Translations$conversazione$it {
 
 	/// it: 'Azioni del messaggio'
 	String get messageActions => 'Azioni del messaggio';
+
+	/// it: 'Vedi originale'
+	String get viewOriginal => 'Vedi originale';
+
+	/// it: 'Messaggio originale'
+	String get originalTitle => 'Messaggio originale';
+
+	/// it: 'Questo link porta a un altro sito'
+	String get linkWarningTitle => 'Questo link porta a un altro sito';
+
+	/// it: 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su $domain.'
+	String linkWarningBody({required Object domain}) => 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su ${domain}.';
+
+	/// it: 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.'
+	String get linkWarningPunycode => 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.';
+
+	/// it: 'Apri il link'
+	String get linkOpen => 'Apri il link';
+
+	/// it: 'Non aprire'
+	String get linkCancel => 'Non aprire';
 }
 
 // Path: composizione
@@ -557,6 +578,13 @@ extension on Translations {
 			'conversazione.forward' => 'Inoltra',
 			'conversazione.forwardUnavailable' => 'Impossibile inoltrare: messaggio non scaricato',
 			'conversazione.messageActions' => 'Azioni del messaggio',
+			'conversazione.viewOriginal' => 'Vedi originale',
+			'conversazione.originalTitle' => 'Messaggio originale',
+			'conversazione.linkWarningTitle' => 'Questo link porta a un altro sito',
+			'conversazione.linkWarningBody' => ({required Object domain}) => 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su ${domain}.',
+			'conversazione.linkWarningPunycode' => 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.',
+			'conversazione.linkOpen' => 'Apri il link',
+			'conversazione.linkCancel' => 'Non aprire',
 			'composizione.title' => 'Nuovo messaggio',
 			'composizione.write' => 'Scrivi',
 			'composizione.from' => 'Da',

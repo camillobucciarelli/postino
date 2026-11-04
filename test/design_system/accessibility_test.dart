@@ -76,7 +76,7 @@ Widget _composer() => PostinoComposerLayout(
     PostinoComposerField(
       label: 'Oggetto',
       controller: TextEditingController(text: _long),
-      trailing: PostinoButton(
+      trailing: const PostinoButton(
         label: 'Cc',
         variant: PostinoButtonVariant.ghost,
         size: PostinoButtonSize.sm,
@@ -92,19 +92,19 @@ Widget _composer() => PostinoComposerLayout(
   ),
 );
 
-final _drawer = PostinoNavigationDrawer(
+const _drawer = PostinoNavigationDrawer(
   sections: [
     PostinoDrawerSection(
       items: [
         PostinoDrawerItem(
-          key: const ValueKey('active'),
+          key: ValueKey('active'),
           label: 'Posta in arrivo',
           icon: PostinoIcons.inbox,
           active: true,
           onTap: _noop,
         ),
         PostinoDrawerItem(
-          key: const ValueKey('other'),
+          key: ValueKey('other'),
           label: 'Tutte le etichette del lavoro e dei progetti personali',
           account: _sky,
           onTap: _noop,
@@ -151,11 +151,11 @@ void main() {
   group('focus ring', () {
     final cases = <String, (Widget, Finder)>{
       'primary button': (
-        PostinoButton(label: 'Accedi', onPressed: _noop),
+        const PostinoButton(label: 'Accedi', onPressed: _noop),
         find.byType(FilledButton),
       ),
       'ghost button': (
-        PostinoButton(
+        const PostinoButton(
           label: 'Riprova',
           onPressed: _noop,
           variant: PostinoButtonVariant.ghost,
@@ -172,7 +172,7 @@ void main() {
         find.byType(TextButton),
       ),
       'icon button': (
-        PostinoIconButton(
+        const PostinoIconButton(
           icon: PostinoIcons.menu,
           label: 'Menu',
           onPressed: _noop,
@@ -180,7 +180,7 @@ void main() {
         find.byType(IconButton),
       ),
       'message tile': (
-        PostinoMessageTile(
+        const PostinoMessageTile(
           sender: 'Bruno',
           subject: 'Preventivo',
           preview: 'Ciao',
@@ -212,7 +212,7 @@ void main() {
       'sender picker': (_composer(), find.byType(PostinoSenderPicker)),
       'format button': (_composer(), find.byType(PostinoFormatButton).first),
       'fab': (
-        PostinoFab(
+        const PostinoFab(
           label: 'Scrivi',
           icon: PostinoIcons.pencil,
           onPressed: _noop,
@@ -303,7 +303,7 @@ void main() {
         labels: const ['Fatture e ricevute del condominio', 'Casa'],
         messages: [_message(expanded: false), _message()],
       ),
-      'action bar': PostinoActionBar(
+      'action bar': const PostinoActionBar(
         children: [
           PostinoButton(label: 'Rispondi', onPressed: _noop),
           PostinoButton(
@@ -327,7 +327,7 @@ void main() {
         ],
       ),
       'composer': _composer(),
-      'fab': Align(
+      'fab': const Align(
         alignment: Alignment.bottomRight,
         child: PostinoFab(
           label: 'Scrivi un nuovo messaggio',

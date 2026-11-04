@@ -74,7 +74,6 @@ List<ConversationMessage> _thread({MessageBody? lastBody}) => [
     message: msg(
       'm2',
       conversationId: 't',
-      from: 'ada@example.com',
       to: ['a1@example.com', 'carla@example.com'],
       subject: 'Re: Cena',
       snippet: 'Alle 20',

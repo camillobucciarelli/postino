@@ -33,7 +33,9 @@ Mailbox parseMailbox(String s) {
 List<Mailbox> parseMailboxes(String header) {
   final parts = <String>[];
   final current = StringBuffer();
-  var quoted = false, angle = false, escaped = false;
+  var quoted = false;
+  var angle = false;
+  var escaped = false;
   for (final ch in header.split('')) {
     if (escaped) {
       escaped = false;

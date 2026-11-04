@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import 'package:postino/features/posta/presentation/conversation_view.dart' show ConversationView;
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
@@ -14,8 +15,8 @@ import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/quoted_text.dart';
-import '../domain/safe_html.dart';
 import '../domain/reply_kind.dart';
+import '../domain/safe_html.dart';
 import 'attachment_actions.dart';
 import 'attachment_chips.dart';
 import 'message_time.dart';

@@ -1,8 +1,8 @@
 // Opening and reading a Conversazione (#33): beside the list from 900, a full page below,
 // the whole thread from the database and the fake Provider, bodies on demand, read state.
 
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart' show Material;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -63,7 +63,6 @@ void _thread(FakeMailProvider p) => p
     msg(
       'm2',
       conversationId: 't',
-      from: 'ada@example.com',
       subject: 'Re: Cena',
       snippet: 'Sì!',
       date: _day(2),
@@ -390,7 +389,6 @@ void main() {
             msg(
               'm2',
               conversationId: 't',
-              from: 'ada@example.com',
               subject: 'Re: Cena',
               snippet: 'Sì!',
               date: _day(2),
@@ -441,7 +439,7 @@ void main() {
             from: 'a1@example.com',
             subject: 'Cena',
             snippet: 'Organizziamo?',
-            date: DateTime.utc(2026, 6, 1),
+            date: DateTime.utc(2026, 6),
             isRead: true,
             labelIds: const ['SENT'],
           ),
@@ -540,7 +538,7 @@ void main() {
             's0',
             conversationId: 't',
             subject: 'Cena',
-            date: DateTime.utc(2026, 6, 1),
+            date: DateTime.utc(2026, 6),
             isRead: true,
             labelIds: const ['SENT'],
           ),
@@ -691,7 +689,7 @@ void main() {
       await _start(tester, _desktop, _thread);
       await _open(tester, 'm3');
       gmail.deliver(
-        msg('m4', conversationId: 't', date: _day(7), from: 'ada@example.com'),
+        msg('m4', conversationId: 't', date: _day(7)),
       );
       await tester.pumpAndSettle();
 

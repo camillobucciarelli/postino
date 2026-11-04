@@ -240,7 +240,7 @@ void main() {
                   of: toggle,
                   matching: find.byWidgetPredicate(
                     (w) =>
-                        w is Focus && w.focusNode?.hasPrimaryFocus == true ||
+                        w is Focus && (w.focusNode?.hasPrimaryFocus ?? false) ||
                         false,
                   ),
                 )

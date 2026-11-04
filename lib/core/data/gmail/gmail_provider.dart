@@ -109,7 +109,8 @@ class GmailProvider implements MailProvider {
   @override
   Future<Result<SyncBatch>> incrementalSync(String cursor) =>
       gmailGuard(() async {
-        final changed = <String>{}, deleted = <String>{};
+        final changed = <String>{};
+        final deleted = <String>{};
         var latest = cursor;
         String? page;
         do {

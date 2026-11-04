@@ -272,8 +272,10 @@ void main() {
   });
 
   test('PostinoColors.lerp maps every field from a (t=0) to b (t=1)', () {
-    final a = _palette(0), b = _palette(0x10000);
-    final from = _build(a), to = _build(b);
+    final a = _palette(0);
+    final b = _palette(0x10000);
+    final from = _build(a);
+    final to = _build(b);
     expect(_all(from.lerp(to, 0)), a);
     expect(_all(from.lerp(to, 1)), b);
     expect(_all(from.lerp(to, 0.5)), [

@@ -827,7 +827,7 @@ void main() {
         to: const ['a@example.com'],
         subject: 's',
         snippet: 'Ciao',
-        date: DateTime.utc(2026, 1, 1),
+        date: DateTime.utc(2026),
       ),
     );
     await engine.syncAll();

@@ -20,7 +20,7 @@ void main() {
       removedMessageIds: [removed],
       bodies: {'1': MessageBody(body, BodyKind.testo)},
     );
-    expectValueEquality(() => batch(), [
+    expectValueEquality(batch, [
       batch(cursor: '10'),
       batch(subject: 'Salve'),
       batch(labelName: 'Casa'),

@@ -5,7 +5,6 @@ import 'package:routefly/routefly.dart';
 import '../../core/domain/mail_sync.dart';
 import '../../core/domain/message.dart'
     show draftLabelId, inboxLabelId, sentLabelId;
-import '../../main.dart' show routePaths;
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
 import '../../features/composizione/presentation/composer_view.dart';
@@ -18,6 +17,7 @@ import '../../features/posta/presentation/posta_drawer.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
 import '../../features/posta/presentation/write_fab.dart';
 import '../../i18n/strings.g.dart';
+import '../../main.dart' show routePaths;
 import 'posta_routes.dart';
 
 /// The Posta unificata; [selected] is the Conversazione open beside it.

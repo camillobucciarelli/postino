@@ -84,7 +84,6 @@ class PostinoMessageTile extends StatelessWidget {
                 border: Border(
                   bottom: BorderSide(
                     color: c.listItemDivider,
-                    width: PostinoBorder.borderWidthHairline,
                   ),
                 ),
               ),
@@ -159,8 +158,6 @@ class PostinoMessageTile extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         border: Border.all(
                                           color: c.borderSubtle,
-                                          width:
-                                              PostinoBorder.borderWidthHairline,
                                         ),
                                         borderRadius: BorderRadius.circular(
                                           PostinoRadius.xs,

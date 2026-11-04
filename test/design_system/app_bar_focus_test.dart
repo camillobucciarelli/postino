@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -40,9 +39,9 @@ void main() {
       final boundary = tester.renderObject<RenderRepaintBoundary>(
         find.byKey(const ValueKey('shot')),
       );
-      final image = (await tester.runAsync(() => boundary.toImage()))!;
+      final image = (await tester.runAsync(boundary.toImage))!;
       final bytes = (await tester.runAsync(
-        () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
+        image.toByteData,
       ))!;
       int px(double x, double y) {
         final o = (y.floor() * image.width + x.floor()) * 4;

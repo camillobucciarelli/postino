@@ -160,8 +160,10 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     String? accountId,
     String labelId = inboxLabelId,
   }) {
-    final m = messages, a = accounts;
-    final t = alias(messages, 't'), l = alias(messageLabels, 'l');
+    final m = messages;
+    final a = accounts;
+    final t = alias(messages, 't');
+    final l = alias(messageLabels, 'l');
     final withLabel =
         select(t).join([
           innerJoin(
@@ -190,7 +192,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     String accountId,
     String conversationId,
   ) {
-    final m = messages, b = bodies;
+    final m = messages;
+    final b = bodies;
     final labelIds = CustomExpression<String>(
       '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
       'WHERE l.account_id = messages.account_id AND l.message_id = messages.id)',
@@ -254,7 +257,9 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
   /// any of its messages carries it, and is unread if any of its messages is, even another one.
   Stream<Set<(String, String)>> watchUnreadFolders() {
-    final m = messages, l = messageLabels, u = alias(messages, 'u');
+    final m = messages;
+    final l = messageLabels;
+    final u = alias(messages, 'u');
     final unreadInConversation = select(u)
       ..where(
         (u) =>

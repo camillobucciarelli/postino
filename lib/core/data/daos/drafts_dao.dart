@@ -146,7 +146,8 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
     String accountId,
     String messageId,
   ) async {
-    final m = alias(messages, 'm'), b = bodies;
+    final m = alias(messages, 'm');
+    final b = bodies;
     final r =
         await (select(m).join([
                 leftOuterJoin(
@@ -167,7 +168,8 @@ class DraftsDao extends DatabaseAccessor<PostinoDatabase>
 
   /// Whether another message of the Account shares the Conversazione of Provider message [id].
   Future<bool> hasSiblings(String accountId, String id) async {
-    final m = alias(messages, 'm'), o = alias(messages, 'o');
+    final m = alias(messages, 'm');
+    final o = alias(messages, 'o');
     final r =
         await (select(m).join([
                 innerJoin(

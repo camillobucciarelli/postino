@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/design_system.dart' show PostinoThreadMessage;
+import 'package:postino/design_system/organisms/postino_thread_message.dart' show PostinoThreadMessage;
 
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_icon.dart';

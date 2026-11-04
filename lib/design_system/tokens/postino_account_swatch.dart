@@ -5,5 +5,7 @@ import 'package:flutter/material.dart';
 @immutable
 class PostinoAccountSwatch {
   const PostinoAccountSwatch(this.color, this.subtle, this.onColor);
-  final Color color, subtle, onColor;
+  final Color color;
+  final Color subtle;
+  final Color onColor;
 }

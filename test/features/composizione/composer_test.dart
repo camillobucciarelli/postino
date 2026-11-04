@@ -261,7 +261,7 @@ void main() {
           to: altrove.to,
           subject: altrove.subject,
           snippet: 'Ciao',
-          date: DateTime.utc(2026, 1, 1),
+          date: DateTime.utc(2026),
         ),
       );
       await _settle(tester);
@@ -340,7 +340,7 @@ void main() {
         cc: altrove.cc,
         subject: altrove.subject,
         snippet: 'Ciao Ada',
-        date: DateTime.utc(2026, 1, 1),
+        date: DateTime.utc(2026),
       ),
     );
     await _settle(tester);

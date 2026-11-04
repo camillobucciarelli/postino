@@ -7,7 +7,8 @@ import 'package:pointycastle/export.dart';
 /// The two halves of the cache key (#34): AES-256 for the content, HMAC-SHA256 for the tag.
 typedef AttachmentKeys = ({Uint8List enc, Uint8List mac});
 
-const _ivLength = 16, _macLength = 32;
+const _ivLength = 16;
+const _macLength = 32;
 
 /// What encryption adds to a file: the IV in front, the tag at the end.
 const attachmentOverhead = _ivLength + _macLength;

@@ -13,7 +13,8 @@ import '../../support/harness.dart';
 
 void main() {
   late Harness h;
-  late FakeMailProvider a, b;
+  late FakeMailProvider a;
+  late FakeMailProvider b;
 
   Future<List<String>> inbox() async => [
     for (final e in await getIt<InboxRepository>().watchUnifiedInbox().first)

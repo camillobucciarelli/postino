@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/molecules/postino_message_details_panel.dart' show PostinoMessageDetailsPanel;
 
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';

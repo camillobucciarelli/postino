@@ -151,7 +151,6 @@ class _PostinoNavigationDrawerState extends State<PostinoNavigationDrawer> {
                                 border: Border(
                                   top: BorderSide(
                                     color: c.borderSubtle,
-                                    width: PostinoBorder.borderWidthHairline,
                                   ),
                                 ),
                               ),

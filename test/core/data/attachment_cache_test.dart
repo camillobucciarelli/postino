@@ -39,7 +39,7 @@ Directory get _cacheDir => h.fs.directory('/support/attachments');
 List<File> get _cached => _cacheDir.listSync().whereType<File>().toList();
 
 void main() {
-  tearDown(() => getIt.reset());
+  tearDown(getIt.reset);
 
   test(
     'the first use downloads, the next ones open from the cache offline',

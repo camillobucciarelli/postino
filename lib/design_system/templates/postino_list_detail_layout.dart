@@ -120,7 +120,7 @@ class _PostinoListDetailLayoutState extends State<PostinoListDetailLayout>
     final large =
         MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
     // Narrowed with a detail open: it becomes the full page, so the focus goes to it.
-    if (_wasLarge == true && !large && widget.detail != null) _focusDetail();
+    if ((_wasLarge ?? false) && !large && widget.detail != null) _focusDetail();
     _wasLarge = large;
   }
 

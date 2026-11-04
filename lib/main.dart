@@ -102,7 +102,7 @@ class _PostinoAppState extends State<PostinoApp> {
       locale: TranslationProvider.of(context).flutterLocale,
       supportedLocales: AppLocaleUtils.supportedLocales,
       // quill's: without them a tap on a link in the editor throws.
-      localizationsDelegates: [
+      localizationsDelegates: const [
         ...GlobalMaterialLocalizations.delegates,
         ...FlutterQuillLocalizations.localizationsDelegates,
       ],

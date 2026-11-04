@@ -133,7 +133,6 @@ class _PostinoAttachmentChipState extends State<PostinoAttachmentChip> {
           borderRadius: radius,
           side: BorderSide(
             color: error != null ? c.danger : c.borderSubtle,
-            width: PostinoBorder.borderWidthHairline,
           ),
         ),
         child: Stack(

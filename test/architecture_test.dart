@@ -11,7 +11,7 @@ final _directive = RegExp(
 );
 // ponytail: regex strip, so a string literal containing `//` or `; import ...` is mis-read; use package:analyzer if that ever matters.
 final _comment = RegExp(r'//.*|/\*[\s\S]*?\*/');
-final _uri = RegExp(r'''['"]([^'"]+)['"]''');
+final _uri = RegExp('''['"]([^'"]+)['"]''');
 
 /// Packages that pull in Flutter; `domain` must stay pure Dart.
 // ponytail: name-based denylist, extend when a new Flutter-only package without "flutter" in its name is added.

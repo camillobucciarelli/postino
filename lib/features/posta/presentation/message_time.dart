@@ -8,7 +8,8 @@ String messageTime(
   String locale,
   String yesterday,
 ) {
-  final d = date.toLocal(), n = now.toLocal();
+  final d = date.toLocal();
+  final n = now.toLocal();
   // Calendar days, in UTC so a DST change does not shorten one.
   final days = DateTime.utc(
     n.year,

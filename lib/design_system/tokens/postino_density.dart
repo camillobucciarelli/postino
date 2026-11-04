@@ -11,31 +11,34 @@ class PostinoDensity extends ThemeExtension<PostinoDensity> {
     required this.previewLines,
     required this.gap,
   });
-  final double rowHeight, padY, avatar, gap;
+  final double rowHeight;
+  final double padY;
+  final double avatar;
+  final double gap;
   final int previewLines;
 
   static const comfortable = PostinoDensity(
-    rowHeight: 88.0,
-    padY: 12.0,
-    avatar: 40.0,
+    rowHeight: 88,
+    padY: 12,
+    avatar: 40,
     previewLines: 1,
-    gap: 12.0,
+    gap: 12,
   );
   static const compact = PostinoDensity(
-    rowHeight: 60.0,
-    padY: 8.0,
-    avatar: 0.0,
+    rowHeight: 60,
+    padY: 8,
+    avatar: 0,
     previewLines: 0,
-    gap: 8.0,
+    gap: 8,
   );
 
   /// Compact col puntatore (desktop).
   static const compactPointer = PostinoDensity(
-    rowHeight: 40.0,
-    padY: 8.0,
-    avatar: 0.0,
+    rowHeight: 40,
+    padY: 8,
+    avatar: 0,
     previewLines: 0,
-    gap: 8.0,
+    gap: 8,
   );
 
   @override

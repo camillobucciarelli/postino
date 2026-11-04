@@ -77,7 +77,7 @@ List<bool> repeatedSignatures(Iterable<String?> keys) {
 /// «---------- Forwarded message ---------», «Messaggio inoltrato», Apple's «Begin forwarded message».
 final _forward = RegExp(
   r'-{3,}\s*(forwarded message|messaggio inoltrato)\s*-{3,}'
-  r'|begin forwarded message|inizio messaggio inoltrato',
+  '|begin forwarded message|inizio messaggio inoltrato',
   caseSensitive: false,
 );
 
@@ -234,7 +234,7 @@ bool _visible(Element root) =>
 /// line before it, and the signature after a `-- ` line. A forward is never a quote.
 BodyParts splitText(String text) {
   final lines = text.split(RegExp(r'\r?\n'));
-  var end = lines.length;
+  final end = lines.length;
   var quoteStart = end;
   if (!_forward.hasMatch(text)) {
     var i = end - 1;

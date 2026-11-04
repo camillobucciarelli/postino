@@ -255,7 +255,7 @@ void main() {
       signature: signature,
       quote: quote,
     );
-    expectValueEquality(() => parts(), [
+    expectValueEquality(parts, [
       parts(original: 'x'),
       parts(body: 'x'),
       parts(bodyVisible: false),

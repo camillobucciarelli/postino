@@ -71,7 +71,6 @@ class _PostinoMenuState extends State<PostinoMenu> {
             ),
             side: BorderSide(
               color: c.borderSubtle,
-              width: PostinoBorder.borderWidthHairline,
             ),
           ),
         ),

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../../domain/message.dart';
 import '../../domain/mailbox.dart';
+import '../../domain/message.dart';
 
 /// A Gmail message resource (`full` or `metadata`) as a [Message].
 Message parseGmailMessage(Map<String, dynamic> j) {

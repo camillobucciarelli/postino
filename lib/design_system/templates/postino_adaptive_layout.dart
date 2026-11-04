@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:postino/design_system/design_system.dart' show PostinoListDetailLayout;
+import 'package:postino/design_system/templates/postino_list_detail_layout.dart' show PostinoListDetailLayout;
 
+import '../organisms/postino_navigation_drawer.dart' show PostinoSidebarScope;
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
-import '../organisms/postino_navigation_drawer.dart' show PostinoSidebarScope;
 import 'postino_single_pane_layout.dart';
 
 /// Picks the layout from the window width (Material 3 size classes):
@@ -129,7 +131,6 @@ class _PostinoSidebarShellState extends State<PostinoSidebarShell> {
                 border: Border(
                   right: BorderSide(
                     color: c.borderSubtle,
-                    width: PostinoBorder.borderWidthHairline,
                   ),
                 ),
               ),

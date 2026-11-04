@@ -34,7 +34,6 @@ void main() {
           msg(
             '1',
             conversationId: 't',
-            from: 'ada@example.com',
             fromName: 'Ada Okafor',
             to: const ['Rossi, Carla <c@x.it>', 'me@example.com'],
             cc: const ['Marco Lenti <marco@example.com>'],

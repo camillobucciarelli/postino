@@ -80,7 +80,6 @@ class _PostinoSkeletonState extends State<PostinoSkeleton>
                   border: Border(
                     bottom: BorderSide(
                       color: c.borderSubtle,
-                      width: PostinoBorder.borderWidthHairline,
                     ),
                   ),
                 ),

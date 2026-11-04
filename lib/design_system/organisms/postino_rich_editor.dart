@@ -24,16 +24,16 @@ class PostinoFormatLabels {
     required this.cancel,
   });
 
-  final String bold,
-      italic,
-      underline,
-      strikethrough,
-      link,
-      bulletList,
-      numberedList,
-      linkUrl,
-      insert,
-      cancel;
+  final String bold;
+  final String italic;
+  final String underline;
+  final String strikethrough;
+  final String link;
+  final String bulletList;
+  final String numberedList;
+  final String linkUrl;
+  final String insert;
+  final String cancel;
 }
 
 class _LinkIntent extends Intent {

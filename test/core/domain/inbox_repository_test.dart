@@ -38,7 +38,7 @@ void main() {
       unread: unread,
       status: status,
     );
-    expectValueEquality(() => entry(), [
+    expectValueEquality(entry, [
       entry(message: msg('1', to: ['c@x.it'])),
       entry(
         account: const Account(
@@ -65,7 +65,7 @@ void main() {
       sendAfter: sendAfter,
       failed: failed,
     );
-    expectValueEquality(() => entry(), [
+    expectValueEquality(entry, [
       entry(message: _outgoing(to: ['c@x.it'])),
       entry(sendAfter: 2),
       entry(failed: true),

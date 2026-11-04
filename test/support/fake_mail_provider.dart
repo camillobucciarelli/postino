@@ -35,7 +35,7 @@ Message msg(
   cc: cc,
   subject: subject,
   snippet: snippet,
-  date: date ?? DateTime.utc(2026, 1, 1),
+  date: date ?? DateTime.utc(2026),
   replyTo: replyTo,
   references: references,
 );
@@ -206,7 +206,7 @@ class FakeMailProvider implements MailProvider {
         bcc: d.bcc,
         subject: d.subject,
         snippet: d.body,
-        date: date ?? DateTime.utc(2026, 1, 1),
+        date: date ?? DateTime.utc(2026),
       ),
       signal: false,
     );
@@ -434,7 +434,7 @@ class FakeMailProvider implements MailProvider {
         bcc: addresses('bcc'),
         subject: mime.decodeSubject() ?? '',
         snippet: mime.decodeTextPlainPart()?.trim() ?? '',
-        date: DateTime.utc(2026, 1, 1),
+        date: DateTime.utc(2026),
       ),
       signal: false,
     );

@@ -118,7 +118,7 @@ void main() {
       await _start(tester);
 
       Color? bar(String row) => accountBar(tester, find.byKey(ValueKey(row)));
-      final light = PostinoColors.light;
+      const light = PostinoColors.light;
       expect(bar('row-a1-x'), light.account(PostinoAccountColor.rose).color);
       expect(bar('row-a2-x'), light.account(PostinoAccountColor.olive).color);
       expect(
@@ -140,7 +140,7 @@ void main() {
 
     await _start(tester);
 
-    final rose = PostinoAccountColor.rose;
+    const rose = PostinoAccountColor.rose;
     expect(
       accountBar(tester, find.byKey(const ValueKey('row-a1-x'))),
       allOf(

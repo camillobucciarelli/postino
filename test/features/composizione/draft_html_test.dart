@@ -115,7 +115,6 @@ void main() {
     test('the Citazione of a reply: attribution as a paragraph, the quoted lines after', () {
       final m = msg(
         'o',
-        from: 'ada@example.com',
         fromName: 'Ada',
         subject: 'Cena',
       );

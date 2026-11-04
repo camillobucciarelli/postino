@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:postino/core/data/tables/messages_table.dart' show Messages;
 
 import '../../domain/message.dart';
 

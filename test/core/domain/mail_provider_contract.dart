@@ -150,7 +150,7 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
         expect(a.messageId, '<a@example.com>');
         expect(a.from, 'ada@example.com');
         expect(a.subject, 'Oggetto');
-        expect(a.date, DateTime.utc(2026, 1, 1));
+        expect(a.date, DateTime.utc(2026));
         expect(batch.bodies.keys, ['a']);
       },
     );
@@ -159,7 +159,6 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
       h.deliver(
         msg(
           'a',
-          from: 'ada@example.com',
           fromName: 'Ada Okafor',
           cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org'],
         ),
@@ -313,11 +312,11 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
       'a Bozza written elsewhere syncs as a DRAFT message with its body',
       () async {
         h.deliverDraft(
-          OutgoingMessage(
+          const OutgoingMessage(
             messageId: '<y@example.com>',
             from: 'me@example.com',
-            to: const ['b@example.com'],
-            bcc: const ['dee@example.com'],
+            to: ['b@example.com'],
+            bcc: ['dee@example.com'],
             subject: 's',
             body: '<p>Da altrove</p>',
           ),
@@ -392,7 +391,7 @@ void mailProviderSendContract(String name, ContractHarness Function() create) {
     late ContractHarness h;
     setUp(() => h = create());
     final d = _draft('<x@example.com>');
-    final raw = renderMime(d, DateTime.utc(2026, 1, 1));
+    final raw = renderMime(d, DateTime.utc(2026));
 
     test('the sent message arrives with label SENT at the next sync', () async {
       final id = _ok(await h.provider.send(d.messageId, raw));

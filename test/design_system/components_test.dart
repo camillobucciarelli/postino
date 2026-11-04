@@ -221,7 +221,7 @@ final _components = <String, Widget Function()>{
           PostinoMessageDetail('Data', 'lunedì 5 ottobre 2026, 09:42'),
           PostinoMessageDetail('Ricevuto su', 'me@example.com', account: _sky),
         ],
-        notices: [
+        notices: const [
           PostinoBanner(
             tone: PostinoBannerTone.info,
             icon: PostinoIcons.image,
@@ -317,7 +317,7 @@ final _components = <String, Widget Function()>{
         title: 'Collegamento non riuscito',
         message: 'Nessuna connessione: riprova quando sei online.',
       ),
-      PostinoBanner(
+      const PostinoBanner(
         tone: PostinoBannerTone.info,
         icon: PostinoIcons.image,
         title: 'Immagini remote bloccate',
@@ -412,7 +412,7 @@ final _components = <String, Widget Function()>{
       PostinoComposerField(
         label: 'Oggetto',
         controller: TextEditingController(),
-        trailing: PostinoButton(
+        trailing: const PostinoButton(
           label: 'Cc',
           variant: PostinoButtonVariant.ghost,
           size: PostinoButtonSize.sm,
@@ -427,7 +427,7 @@ final _components = <String, Widget Function()>{
     onSelected: (_) {},
     label: 'Da',
   ),
-  'format_button': () => Row(
+  'format_button': () => const Row(
     children: [
       PostinoFormatButton(
         icon: PostinoIcons.bold,
@@ -445,7 +445,7 @@ final _components = <String, Widget Function()>{
   ),
   'rich_editor': () => SizedBox(height: 260, child: _editor()),
   'fab': () =>
-      PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop),
+      const PostinoFab(label: 'Scrivi', icon: PostinoIcons.pencil, onPressed: _noop),
   'composer_layout': () => SizedBox(
     height: 520,
     child: PostinoComposerLayout(
@@ -664,7 +664,7 @@ void main() {
     testWidgets(
       'the countdown runs from the deadline, not from when it shows',
       (tester) async {
-        var now = DateTime.utc(2026, 1, 1);
+        var now = DateTime.utc(2026);
         await tester.pumpWidget(
           MaterialApp(
             theme: PostinoTheme.light(),
@@ -692,7 +692,7 @@ void main() {
     testWidgets(
       'show twice leaves only the second one, with its own deadline',
       (tester) async {
-        final now = DateTime.utc(2026, 1, 1);
+        final now = DateTime.utc(2026);
         await tester.pumpWidget(
           MaterialApp(
             theme: PostinoTheme.light(),

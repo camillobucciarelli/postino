@@ -44,11 +44,10 @@ void main() {
 
   group('recipients', () {
     test('a reply goes to the sender with its name, Reply-To wins', () {
-      final m = msg('m', from: 'ada@example.com', fromName: 'Ada');
+      final m = msg('m', fromName: 'Ada');
       expect(replyRecipients(m, self: _self), ['Ada <ada@example.com>']);
       final r = msg(
         'm',
-        from: 'ada@example.com',
         fromName: 'Ada',
         replyTo: 'list@example.com',
       );
@@ -58,7 +57,6 @@ void main() {
     test('a reply to all keeps the sender and the To in to, the Cc in cc, without self', () {
       final m = msg(
         'm',
-        from: 'ada@example.com',
         to: ['Me <ME@example.com>', 'bruno@example.com'],
         cc: ['carla@example.com', _self],
       );
@@ -70,7 +68,6 @@ void main() {
     test('a reply to all keeps both the Reply-To and the sender in to, Reply-To first', () {
       final m = msg(
         'm',
-        from: 'ada@example.com',
         replyTo: 'list@example.com',
         to: ['bruno@example.com'],
       );
@@ -84,7 +81,6 @@ void main() {
     test('duplicates by address go, first occurrence wins, to before cc', () {
       final m = msg(
         'm',
-        from: 'ada@example.com',
         fromName: 'Ada',
         to: [
           'Ada Okafor <ada@example.com>',
@@ -116,7 +112,7 @@ void main() {
 
   group('quote', () {
     test('attribution line with name and address escaped, the HTML in a blockquote', () {
-      final m = msg('m', from: 'ada@example.com', fromName: 'Ada & C. <x>');
+      final m = msg('m', fromName: 'Ada & C. <x>');
       expect(
         quoteHtml(
           m,
@@ -130,7 +126,7 @@ void main() {
     });
 
     test('a nameless sender is just the address', () {
-      final m = msg('m', from: 'ada@example.com');
+      final m = msg('m');
       expect(
         quoteHtml(m, dateLabel: 'd', bodyHtml: ''),
         contains(' ada@example.com ha scritto:'),
@@ -154,7 +150,6 @@ void main() {
   test('the forward header lists Da, Data, Oggetto, A and Cc, then the HTML unquoted', () {
     final m = msg(
       'm',
-      from: 'ada@example.com',
       fromName: 'Ada',
       to: ['Me <me@example.com>'],
       cc: ['carla@example.com'],
@@ -175,7 +170,6 @@ void main() {
   group('buildReply', () {
     final original = msg(
       'm',
-      from: 'ada@example.com',
       to: [_self, 'bruno@example.com'],
       cc: ['carla@example.com'],
       subject: 'Re: Caffè',

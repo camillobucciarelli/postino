@@ -191,7 +191,7 @@ void _patchFwfh(Document doc) {
 
 /// Strips whitespace and control characters, which browsers ignore in a scheme (`java\nscript:`).
 bool _script(String url) => RegExp(
-  r'^(javascript|vbscript):',
+  '^(javascript|vbscript):',
   caseSensitive: false,
 ).hasMatch(url.replaceAll(RegExp(r'[\x00-\x20]'), ''));
 

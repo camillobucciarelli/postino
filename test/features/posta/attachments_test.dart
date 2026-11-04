@@ -336,7 +336,7 @@ void main() {
             'm0',
             conversationId: 't',
             isRead: true,
-            date: DateTime.utc(2025, 12, 1),
+            date: DateTime.utc(2025, 12),
           ),
         );
       await tester.pumpAndSettle();
@@ -485,8 +485,6 @@ void main() {
         matchesSemantics(
           label: 'setup.exe',
           value: 'Eseguibile: non si apre da Postino. Salvalo solo se ti fidi del mittente',
-          isButton: false,
-          hasTapAction: false,
         ),
       );
       handle.dispose();

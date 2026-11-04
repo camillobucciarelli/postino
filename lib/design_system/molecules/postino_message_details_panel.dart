@@ -15,7 +15,7 @@ class PostinoMessageDetailsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
-    final style = PostinoText.caption;
+    const style = PostinoText.caption;
     return Padding(
       padding: const EdgeInsets.only(
         top: PostinoSpacing.s3,

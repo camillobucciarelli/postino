@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:postino/design_system/design_system.dart' show PostinoMessageBody, PostinoHtmlCard, PostinoMenu;
 
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_focus_ring.dart';
@@ -203,7 +204,6 @@ class _PostinoThreadMessageState extends State<PostinoThreadMessage> {
           border: Border(
             top: BorderSide(
               color: c.borderSubtle,
-              width: PostinoBorder.borderWidthHairline,
             ),
           ),
         ),

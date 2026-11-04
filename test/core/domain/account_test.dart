@@ -21,7 +21,7 @@ Account _account({
 
 void main() {
   test('Account compares by value (#94)', () {
-    expectValueEquality(() => _account(), [
+    expectValueEquality(_account, [
       _account(id: 'a2'),
       _account(address: 'b@x.it'),
       _account(provider: ProviderKind.imap),

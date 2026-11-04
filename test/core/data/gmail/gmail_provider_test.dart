@@ -181,7 +181,8 @@ class GmailHarness implements ContractHarness {
     d,
   );
   final _accepted = {'ya29.initial', 'ya29.refreshed'};
-  bool _authBroken = false, _offline = false;
+  bool _authBroken = false;
+  bool _offline = false;
 
   final _mailbox = <String, Message>{};
 
@@ -430,10 +431,10 @@ T _ok<T>(Result<T> r) => switch (r) {
   Err(:final failure) => fail('expected Ok, got $failure'),
 };
 
-const _f1 = '18f3a2b4c5d6e7f1',
-    _f2 = '18f3a2b4c5d6e7f2',
-    _f3 = '18f3a2b4c5d6e7f3',
-    _f4 = '18f3a2b4c5d6e7f4';
+const _f1 = '18f3a2b4c5d6e7f1';
+const _f2 = '18f3a2b4c5d6e7f2';
+const _f3 = '18f3a2b4c5d6e7f3';
+const _f4 = '18f3a2b4c5d6e7f4';
 
 /// Gmail answering each request with the recorded response [route] names.
 class _Recorded {
@@ -881,12 +882,12 @@ void main() {
 
     group('Bozze', () {
       const draftId = 'r-4410200000000000001';
-      final draft = OutgoingMessage(
+      const draft = OutgoingMessage(
         messageId: '<c1d2e3f4@postino.example.com>',
         from: 'Ada Lovelace <ada@gmail.com>',
-        to: const ['Bruno <bruno@example.com>'],
-        cc: const ['carla@example.com'],
-        bcc: const ['dario@example.com'],
+        to: ['Bruno <bruno@example.com>'],
+        cc: ['carla@example.com'],
+        bcc: ['dario@example.com'],
         subject: 'Caffè è più buono',
         body: '<p>Ciao <b>Bruno</b>, è tutto più semplice.</p>',
       );
@@ -1093,10 +1094,10 @@ void main() {
         'no draft found by the search is NotFound, nothing is written',
         () async {
           final g = _Recorded(route);
-          final d = OutgoingMessage(
+          const d = OutgoingMessage(
             messageId: '<nope@example.com>',
             from: 'ada@gmail.com',
-            to: const ['bruno@example.com'],
+            to: ['bruno@example.com'],
             subject: 's',
             body: '<p>x</p>',
           );
@@ -1149,10 +1150,10 @@ void main() {
         'a draft without a Message-ID is never searched: NotFound',
         () async {
           final g = _Recorded(route);
-          final d = OutgoingMessage(
+          const d = OutgoingMessage(
             messageId: '',
             from: 'ada@gmail.com',
-            to: const ['bruno@example.com'],
+            to: ['bruno@example.com'],
             subject: 's',
             body: '<p>x</p>',
           );
@@ -1180,10 +1181,10 @@ void main() {
     group('Invio', () {
       const messageId = '<c1d2e3f4@postino.example.com>';
       final raw = renderMime(
-        OutgoingMessage(
+        const OutgoingMessage(
           messageId: messageId,
           from: 'ada@gmail.com',
-          to: const ['bruno@example.com'],
+          to: ['bruno@example.com'],
           subject: 'Caffè',
           body: '<p>Ciao <b>Bruno</b></p>',
         ),

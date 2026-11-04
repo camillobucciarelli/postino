@@ -49,7 +49,6 @@ void _thread(FakeMailProvider p) => p
     msg(
       'm2',
       conversationId: 't',
-      from: 'ada@example.com',
       to: ['bruno@example.com', 'a1@example.com'],
       subject: 'Re: Cena',
       snippet: 'Sì!',

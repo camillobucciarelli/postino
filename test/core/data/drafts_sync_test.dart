@@ -249,7 +249,7 @@ void main() {
 
   test('openDraft of a plain-text Bozza keeps its line breaks and paragraphs, escaped', () async {
     a.deliverDraft(_draft('<y@example.com>'));
-    a.bodies['d-1'] = MessageBody(
+    a.bodies['d-1'] = const MessageBody(
       'Prima\nSeconda\n\nTerza <b> & co',
       BodyKind.testo,
     );

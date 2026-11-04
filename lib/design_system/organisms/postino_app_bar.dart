@@ -10,6 +10,7 @@ import '../tokens/postino_tokens.dart';
 /// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead;
 /// [actions] sit at the end («Chiudi» of the composer).
 class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
+  /// Barra superiore di una lista o di un dettaglio.
   const PostinoAppBar({
     super.key,
     required this.title,
@@ -19,10 +20,19 @@ class PostinoAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions = const [],
   });
 
+  /// Titolo mostrato nella barra.
   final String title;
+
+  /// Sottotitolo facoltativo che indica dove si trova l'utente.
   final String? subtitle;
+
+  /// Account a cui appartiene la schermata: se presente ne mostra il contrassegno accanto al titolo.
   final PostinoAccountRef? account;
+
+  /// Azione del pulsante indietro: se presente sostituisce il menu con la freccia.
   final VoidCallback? onBack;
+
+  /// Widget posti a fine barra, per esempio il pulsante «Chiudi» del compositore.
   final List<Widget> actions;
 
   /// The height at 100%; with enlarged text the bar grows.

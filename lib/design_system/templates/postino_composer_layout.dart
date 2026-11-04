@@ -8,10 +8,16 @@ import '../tokens/postino_tokens.dart';
 /// The composer: the sender row, the header fields (each with its own hairline) and the editor
 /// filling the rest, on `composer-bg` with `space-5` at the sides.
 class PostinoComposerLayout extends StatelessWidget {
+  /// Crea il layout del compositore con mittente, campi di intestazione ed editor.
   const PostinoComposerLayout({super.key, required this.sender, required this.fields, required this.editor});
 
+  /// La riga del mittente, in cima.
   final Widget sender;
+
+  /// I campi di intestazione, ciascuno con il proprio separatore.
   final List<Widget> fields;
+
+  /// L'editor, che occupa lo spazio rimasto.
   final Widget editor;
 
   /// The least height the editor keeps (toolbar and a few lines of text).

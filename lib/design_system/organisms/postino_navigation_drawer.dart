@@ -13,6 +13,7 @@ export '../molecules/postino_drawer_item.dart' show PostinoDrawerItem;
 /// What the drawer docked by `PostinoSidebarShell` knows: whether it shows icons only,
 /// and the button that opens or closes it (named [toggleLabel], what it will do).
 class PostinoSidebarScope extends InheritedWidget {
+  /// Espone a drawer e pulsanti lo stato della barra laterale, da un antenato nell'albero dei widget.
   const PostinoSidebarScope({
     super.key,
     required this.collapsed,
@@ -21,8 +22,13 @@ class PostinoSidebarScope extends InheritedWidget {
     required super.child,
   });
 
+  /// Vero quando la barra mostra solo le icone.
   final bool collapsed;
+
+  /// Nome accessibile del pulsante che apre o chiude la barra.
   final String toggleLabel;
+
+  /// Apre o chiude la barra laterale.
   final VoidCallback toggle;
 
   /// Null for a modal drawer: always extended, no button.
@@ -33,9 +39,15 @@ class PostinoSidebarScope extends InheritedWidget {
   bool updateShouldNotify(PostinoSidebarScope old) => collapsed != old.collapsed || toggleLabel != old.toggleLabel;
 }
 
+/// Una sezione del drawer, con un titolo facoltativo e le sue voci.
 class PostinoDrawerSection {
+  /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
   const PostinoDrawerSection({this.title, required this.items});
+
+  /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta.
   final String? title;
+
+  /// Voci della sezione, in ordine.
   final List<PostinoDrawerItem> items;
 }
 
@@ -43,8 +55,10 @@ class PostinoDrawerSection {
 /// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
 /// The highlight of the active item is one box under the list that slides to the new item.
 class PostinoNavigationDrawer extends StatefulWidget {
+  /// Crea il drawer con le sezioni indicate.
   const PostinoNavigationDrawer({super.key, required this.sections});
 
+  /// Le sezioni da mostrare, dall'alto in basso.
   final List<PostinoDrawerSection> sections;
 
   @override

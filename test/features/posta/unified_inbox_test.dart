@@ -18,26 +18,27 @@ void main() {
   testWidgets('shows the Provider inbox newest first, with every row detail', (tester) async {
     final h = await Harness.create();
     final gmail = await h.addAccount('a1', color: 4); // rose
-    gmail.deliver(
-      msg(
-        'old',
-        date: DateTime.utc(2026, 3, 1, 12),
-        from: 'old@example.com',
-        subject: 'Vecchio',
-        snippet: 'anteprima vecchia',
-        isRead: true,
-      ),
-    );
-    gmail.deliver(
-      msg(
-        'new',
-        date: DateTime.utc(2026, 3, 2, 12),
-        from: 'new@example.com',
-        subject: 'Nuovo',
-        snippet: 'anteprima nuova',
-        isStarred: true,
-      ),
-    );
+    gmail
+      ..deliver(
+        msg(
+          'old',
+          date: DateTime.utc(2026, 3, 1, 12),
+          from: 'old@example.com',
+          subject: 'Vecchio',
+          snippet: 'anteprima vecchia',
+          isRead: true,
+        ),
+      )
+      ..deliver(
+        msg(
+          'new',
+          date: DateTime.utc(2026, 3, 2, 12),
+          from: 'new@example.com',
+          subject: 'Nuovo',
+          snippet: 'anteprima nuova',
+          isStarred: true,
+        ),
+      );
 
     await _start(tester);
 

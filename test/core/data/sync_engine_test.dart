@@ -75,8 +75,9 @@ void main() {
   });
 
   test('a failed sync deletes nothing', () async {
-    a.removeRemotely('2');
-    a.goOffline();
+    a
+      ..removeRemotely('2')
+      ..goOffline();
     await GetIt.I<SyncEngine>().syncAll();
     expect(await inbox(), ['a:1', 'a:2', 'b:1']);
   });
@@ -147,8 +148,9 @@ void main() {
     final engine = GetIt.I<SyncEngine>()..start();
     addTearDown(engine.stop);
     await pumpEventQueue();
-    a.rateLimit();
-    a.deliver(msg('3')); // change signal -> sync -> RateLimitFailure
+    a
+      ..rateLimit()
+      ..deliver(msg('3')); // change signal -> sync -> RateLimitFailure
     await pumpEventQueue();
     expect(await inbox(), isNot(contains('a:3')));
 
@@ -163,13 +165,15 @@ void main() {
     addTearDown(engine.stop);
     await pumpEventQueue();
     final until = h.clock.now().add(const Duration(minutes: 5));
-    a.rateLimit(true, until);
-    a.deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
+    a
+      ..rateLimit(true, until)
+      ..deliver(msg('3')); // signal -> sync -> RateLimitFailure with retryAfter
     await pumpEventQueue();
     final syncs = a.initialSyncs;
 
-    a.rateLimit(false);
-    a.deliver(msg('4')); // signal while paused: skipped
+    a
+      ..rateLimit(false)
+      ..deliver(msg('4')); // signal while paused: skipped
     h.clock.advance(pollEvery); // poll while paused: skipped
     await pumpEventQueue();
     expect(await inbox(), isNot(contains('a:3')));

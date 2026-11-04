@@ -167,8 +167,7 @@ void main() {
       GetIt.I<Clock>(),
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
-    );
-    restarted.start();
+    )..start();
     addTearDown(restarted.stop);
     await pumpEventQueue();
     expect(a.sent, [(id, 's-1')]);
@@ -466,8 +465,9 @@ void main() {
       addTearDown(engine.stop);
       await pumpEventQueue();
       final until = h.clock.now().add(const Duration(minutes: 5));
-      a.rateLimit(true, until);
-      a.deliver(msg('3'));
+      a
+        ..rateLimit(true, until)
+        ..deliver(msg('3'));
       await pumpEventQueue();
       a.rateLimit(false);
 

@@ -115,8 +115,9 @@ void main() {
   testWidgets('a message starred on the Provider shows the star everywhere', (tester) async {
     final h = await Harness.create();
     final a1 = await h.addAccount('a1');
-    a1.deliver(msg('s', subject: 'Con stella', isStarred: true));
-    a1.deliver(msg('n', subject: 'Senza stella'));
+    a1
+      ..deliver(msg('s', subject: 'Con stella', isStarred: true))
+      ..deliver(msg('n', subject: 'Senza stella'));
 
     Finder star(String id) => find.descendant(of: find.byKey(ValueKey('row-a1-$id')), matching: starIcon);
 

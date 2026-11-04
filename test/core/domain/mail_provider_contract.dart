@@ -97,9 +97,10 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     setUp(() => h = create());
 
     test('initial sync returns the mailbox messages and a cursor', () async {
-      h.deliver(msg('a'));
-      h.deliver(msg('b'));
-      h.deliver(msg('c'));
+      h
+        ..deliver(msg('a'))
+        ..deliver(msg('b'))
+        ..deliver(msg('c'));
       final batch = _ok(await h.provider.initialSync());
       expect(batch.messages.map((m) => m.id), unorderedEquals(['a', 'b', 'c']));
       expect(batch.cursor, isNotEmpty);
@@ -128,8 +129,9 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     });
 
     test('initial sync brings Etichette, Conversazioni and only the inbox bodies', () async {
-      h.deliver(msg('a', isRead: true, isStarred: true));
-      h.deliver(msg('s', labelIds: const ['SENT']));
+      h
+        ..deliver(msg('a', isRead: true, isStarred: true))
+        ..deliver(msg('s', labelIds: const ['SENT']));
       final batch = _ok(await h.provider.initialSync());
       expect(batch.labels.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')]);
       final a = batch.messages.singleWhere((m) => m.id == 'a');
@@ -182,10 +184,11 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     test('the delta reduces each message to its final state', () async {
       h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h.removeRemotely('a');
-      h.deliver(msg('a'));
-      h.deliver(msg('b'));
-      h.removeRemotely('b');
+      h
+        ..removeRemotely('a')
+        ..deliver(msg('a'))
+        ..deliver(msg('b'))
+        ..removeRemotely('b');
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(next.messages.map((m) => m.id), ['a']);
       expect(next.removedMessageIds, ['b']);
@@ -194,8 +197,9 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     test('an expired cursor is NotFound', () async {
       h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h.deliver(msg('b'));
-      h.expireCursors();
+      h
+        ..deliver(msg('b'))
+        ..expireCursors();
       expect(await h.provider.incrementalSync(first.cursor), _err<NotFoundFailure>());
     });
 
@@ -206,9 +210,10 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     });
 
     test('fetches every message of a Conversazione, Inviati too', () async {
-      h.deliver(msg('a', conversationId: 't'));
-      h.deliver(msg('b', conversationId: 't', labelIds: const ['SENT']));
-      h.deliver(msg('c'));
+      h
+        ..deliver(msg('a', conversationId: 't'))
+        ..deliver(msg('b', conversationId: 't', labelIds: const ['SENT']))
+        ..deliver(msg('c'));
       final messages = _ok(await h.provider.fetchConversation('t'));
       expect(messages.map((m) => m.id), unorderedEquals(['a', 'b']));
       expect(messages.map((m) => m.conversationId).toSet(), {'t'});
@@ -287,9 +292,10 @@ void mailProviderAttachmentContract(String name, ContractHarness Function() crea
     setUp(() => h = create());
 
     test('the body lists the attachments, each downloads on its own', () async {
-      h.deliver(msg('a'));
-      h.attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'));
-      h.attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
+      h
+        ..deliver(msg('a'))
+        ..attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'))
+        ..attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
       final body = _ok(await h.provider.fetchBody('a'));
       expect(body.attachments!.map((a) => (a.name, a.size)), [('Preventivo.pdf', 19), ('foto.jpg', 4)]);
 
@@ -307,8 +313,9 @@ void mailProviderAttachmentContract(String name, ContractHarness Function() crea
     });
 
     test('offline, a download is OfflineFailure', () async {
-      h.deliver(msg('a'));
-      h.attach('a', 'a.txt', [1, 2, 3]);
+      h
+        ..deliver(msg('a'))
+        ..attach('a', 'a.txt', [1, 2, 3]);
       final id = _ok(await h.provider.fetchBody('a')).attachments!.single.id;
       h.goOffline();
       expect(await h.provider.fetchAttachment('a', id), _err<OfflineFailure>());

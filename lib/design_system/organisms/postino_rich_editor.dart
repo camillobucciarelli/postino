@@ -92,11 +92,12 @@ class _PostinoRichEditorState extends State<PostinoRichEditor> {
     if (url == null || url.isEmpty) return;
     // ponytail: with nothing selected the URL itself becomes the link text.
     if (selection.isCollapsed) {
-      c.replaceText(selection.start, 0, url, null);
-      c.updateSelection(
-        TextSelection(baseOffset: selection.start, extentOffset: selection.start + url.length),
-        ChangeSource.local,
-      );
+      c
+        ..replaceText(selection.start, 0, url, null)
+        ..updateSelection(
+          TextSelection(baseOffset: selection.start, extentOffset: selection.start + url.length),
+          ChangeSource.local,
+        );
     } else {
       c.updateSelection(selection, ChangeSource.local);
     }

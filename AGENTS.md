@@ -16,6 +16,10 @@ Single-context: `GLOSSARY.md` nella root e ADR in `docs/adr/`. See `docs/agents/
 
 Modalità `auto` (adapter Claude/Codex scelto dall'host, effort high). See `docs/agents/cross-model.json`.
 
+### Struttura del codice
+
+Un file, una responsabilità; SOLID; clean architecture (ADR 0006) con le regole di import verificate da `test/architecture_test.dart`. Le regole prevalgono su "meno file possibile". See `docs/agents/struttura-codice.md`.
+
 ### Merge delle PR
 
 Una PR si unisce solo se tutti i check CI sono verdi sull'ultimo commit (nessuno fallito, in attesa o saltato). La regola è imposta anche da un ruleset su `main`.

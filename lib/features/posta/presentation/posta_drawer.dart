@@ -3,9 +3,9 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/message.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
@@ -35,10 +35,7 @@ class PostaDrawer extends StatefulWidget {
   State<PostaDrawer> createState() => _PostaDrawerState();
 }
 
-class _PostaDrawerState extends State<PostaDrawer> {
-  late final accounts = streamSignal(
-    () => GetIt.I<AccountsRepository>().watchAccounts(),
-  );
+class _PostaDrawerState extends State<PostaDrawer> with AccountsSignal {
   // The docked drawer outlives navigation: the open Account is a signal, the Etichette follow it.
   late final openAccount = signal(widget.accountId);
   late final unread = streamSignal(
@@ -59,7 +56,6 @@ class _PostaDrawerState extends State<PostaDrawer> {
 
   @override
   void dispose() {
-    accounts.dispose();
     labels.dispose();
     unread.dispose();
     super.dispose();

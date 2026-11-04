@@ -6,7 +6,6 @@ import '../postino_database.dart';
 import '../tables/accounts_table.dart';
 import '../tables/bodies_table.dart';
 import '../tables/intents_table.dart';
-import '../tables/labels_table.dart';
 import '../tables/message_labels_table.dart';
 import '../tables/messages_table.dart';
 import '../tables/sync_cursors_table.dart';
@@ -14,15 +13,7 @@ import '../tables/sync_cursors_table.dart';
 part 'messages_dao.g.dart';
 
 @DriftAccessor(
-  tables: [
-    Accounts,
-    Labels,
-    Messages,
-    MessageLabels,
-    Bodies,
-    SyncCursors,
-    Intents,
-  ],
+  tables: [Accounts, Messages, MessageLabels, Bodies, SyncCursors, Intents],
 )
 class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     with _$MessagesDaoMixin {
@@ -57,6 +48,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
       );
       await customStatement('DELETE FROM snapshot_ids');
     }
+    final labelsDao = attachedDatabase.labelsDao;
+    final bodiesDao = attachedDatabase.bodiesDao;
     await this.batch((b) {
       if (fullSnapshot) {
         for (final m in batch.messages) {
@@ -64,9 +57,9 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
             m.id,
           ]);
         }
+        // Labels come with the snapshot: those gone from the Provider go too.
+        labelsDao.deleteAllIn(b, accountId);
         b
-          // Labels come with the snapshot: those gone from the Provider go too.
-          ..deleteWhere(labels, (t) => t.accountId.equals(accountId))
           ..deleteWhere(
             messageLabels,
             (t) =>
@@ -82,15 +75,8 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
                 const CustomExpression(
                   'id NOT IN (SELECT id FROM snapshot_ids)',
                 ),
-          )
-          ..deleteWhere(
-            bodies,
-            (t) =>
-                t.accountId.equals(accountId) &
-                const CustomExpression(
-                  'message_id NOT IN (SELECT id FROM snapshot_ids)',
-                ),
           );
+        bodiesDao.deleteNotInSnapshotIn(b, accountId);
       }
       // Removals before upserts: an id both removed and upserted in one batch survives.
       for (final id in batch.removedMessageIds) {
@@ -102,21 +88,10 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
           ..deleteWhere(
             messageLabels,
             (t) => t.accountId.equals(accountId) & t.messageId.equals(id),
-          )
-          ..deleteWhere(
-            bodies,
-            (t) => t.accountId.equals(accountId) & t.messageId.equals(id),
           );
+        bodiesDao.deleteIn(b, accountId, id);
       }
-      b.insertAll(labels, [
-        for (final l in batch.labels)
-          LabelsCompanion.insert(
-            accountId: accountId,
-            id: l.id,
-            name: l.name,
-            kind: l.kind,
-          ),
-      ], mode: InsertMode.insertOrReplace);
+      labelsDao.upsertAllIn(b, accountId, batch.labels);
       for (final m in batch.messages) {
         b
           ..insert(
@@ -154,16 +129,7 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
               ),
           ]);
       }
-      b.insertAll(bodies, [
-        for (final MapEntry(:key, :value) in batch.bodies.entries)
-          BodiesCompanion.insert(
-            accountId: accountId,
-            messageId: key,
-            body: value.content,
-            kind: Value(value.kind),
-            attachments: Value(value.attachments),
-          ),
-      ], mode: InsertMode.insertOrReplace);
+      bodiesDao.upsertAllIn(b, accountId, batch.bodies);
       if (saveCursor) {
         b.insert(
           syncCursors,
@@ -255,18 +221,6 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
     );
   }
 
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
-      into(bodies).insert(
-        BodiesCompanion.insert(
-          accountId: accountId,
-          messageId: messageId,
-          body: body.content,
-          kind: Value(body.kind),
-          attachments: Value(body.attachments),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
-
   /// Marks the Conversazione's unread messages read here and queues the same intent for the Provider.
   Future<void> markConversationRead(String accountId, String conversationId) =>
       transaction(() async {
@@ -324,15 +278,4 @@ class MessagesDao extends DatabaseAccessor<PostinoDatabase>
       },
     );
   }
-
-  /// The Account's own Etichette, by name.
-  Stream<List<LabelRow>> watchLabels(String accountId) =>
-      (select(labels)
-            ..where(
-              (t) =>
-                  t.accountId.equals(accountId) &
-                  t.kind.equalsValue(LabelKind.etichetta),
-            )
-            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
-          .watch();
 }

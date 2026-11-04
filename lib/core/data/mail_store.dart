@@ -104,7 +104,7 @@ class MailStore implements InboxRepository {
       );
 
   Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
-      _db.messagesDao.saveBody(accountId, messageId, body);
+      _db.bodiesDao.saveBody(accountId, messageId, body);
 
   Future<void> markConversationRead(String accountId, String conversationId) =>
       _db.messagesDao.markConversationRead(accountId, conversationId);
@@ -163,7 +163,7 @@ class MailStore implements InboxRepository {
       _db.messagesDao.watchUnreadFolders();
 
   @override
-  Stream<List<Label>> watchLabels(String accountId) => _db.messagesDao
+  Stream<List<Label>> watchLabels(String accountId) => _db.labelsDao
       .watchLabels(accountId)
       .map(
         (rows) => [

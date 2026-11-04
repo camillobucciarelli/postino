@@ -1,11 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
-import 'package:get_it/get_it.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/message.dart' show newMessageId;
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'posta_shortcuts.dart';
@@ -28,23 +26,18 @@ class WriteFab extends StatefulWidget {
   State<WriteFab> createState() => _WriteFabState();
 }
 
-class _WriteFabState extends State<WriteFab> {
-  late final StreamSubscription<List<Account>> _sub;
-  List<Account> _accounts = const [];
+class _WriteFabState extends State<WriteFab> with AccountsSignal {
+  List<Account> get _accounts => accounts.value.value ?? const [];
 
   @override
   void initState() {
     super.initState();
-    _sub = GetIt.I<AccountsRepository>().watchAccounts().listen(
-      (a) => setState(() => _accounts = a),
-    );
     widget.cursor?.write = _write;
   }
 
   @override
   void dispose() {
     if (widget.cursor?.write == _write) widget.cursor!.write = null;
-    _sub.cancel();
     super.dispose();
   }
 
@@ -56,11 +49,13 @@ class _WriteFabState extends State<WriteFab> {
   }
 
   @override
-  Widget build(BuildContext context) => _accounts.isEmpty
-      ? const SizedBox.shrink()
-      : PostinoFab(
-          label: context.t.composizione.write,
-          icon: PostinoIcons.pencil,
-          onPressed: _write,
-        );
+  Widget build(BuildContext context) => SignalBuilder(
+    builder: (context) => _accounts.isEmpty
+        ? const SizedBox.shrink()
+        : PostinoFab(
+            label: context.t.composizione.write,
+            icon: PostinoIcons.pencil,
+            onPressed: _write,
+          ),
+  );
 }

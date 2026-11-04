@@ -11,9 +11,11 @@ import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'daos/accounts_dao.dart';
+import 'daos/bodies_dao.dart';
 import 'daos/device_settings_dao.dart';
 import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
+import 'daos/labels_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/outbox_dao.dart';
 import 'daos/trusted_senders_dao.dart';
@@ -49,6 +51,8 @@ part 'postino_database.g.dart';
   daos: [
     AccountsDao,
     MessagesDao,
+    LabelsDao,
+    BodiesDao,
     IntentsDao,
     TrustedSendersDao,
     DeviceSettingsDao,

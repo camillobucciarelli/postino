@@ -39,7 +39,9 @@ http.Response _json(Object body, [int status = 200]) =>
 FakeSecureStore _keychain({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)}) {
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
-  GmailTokens(access: access, refresh: '1//refresh', expiresAt: _now.add(validFor)).write(keychain, _account);
+  unawaited(
+    GmailTokens(access: access, refresh: '1//refresh', expiresAt: _now.add(validFor)).write(keychain, _account),
+  );
   return keychain;
 }
 

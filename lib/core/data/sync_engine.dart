@@ -251,7 +251,7 @@ class SyncEngine implements MailSync {
     final id = account.id;
     if (_paused(id)) return Future.value();
     return _queuedSync[id] ??= _serial(id, () {
-      _queuedSync.remove(id);
+      unawaited(_queuedSync.remove(id)); // dequeues the entry, nothing to wait for
       return _syncOnce(id, providerFor(account));
     });
   }

@@ -28,6 +28,7 @@ class FakeClock implements Clock {
 
   @override
   Stream<void> every(Duration period) {
+    // ignore: close_sinks, the listener's cancel removes the ticker.
     late final StreamController<void> c;
     final elapsed = [Duration.zero];
     c = StreamController<void>(onCancel: () => _tickers.removeWhere((t) => t.$2 == c));

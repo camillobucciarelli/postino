@@ -24,11 +24,14 @@ http.Response _json(Object body, [int status = 200]) => http.Response(jsonEncode
   Duration stall = const Duration(seconds: 30),
 }) {
   final keychain = FakeSecureStore();
-  GmailTokens(
-    access: 'ya29.initial',
-    refresh: '1//refresh',
-    expiresAt: _now.add(const Duration(hours: 1)),
-  ).write(keychain, _account);
+  // FakeSecureStore writes synchronously.
+  unawaited(
+    GmailTokens(
+      access: 'ya29.initial',
+      refresh: '1//refresh',
+      expiresAt: _now.add(const Duration(hours: 1)),
+    ).write(keychain, _account),
+  );
   final requests = <http.Request>[];
   final sleeps = <Duration>[];
   final gmail = GmailHttp(

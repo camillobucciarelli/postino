@@ -26,6 +26,7 @@ Stream<ChangeSignal> imapIdle({
   ImapClient? client;
   Completer<void>? wake;
   Timer? timer;
+  // ignore: close_sinks, the listener's cancel ends the stream (onCancel stops the loop).
   late final StreamController<ChangeSignal> out;
 
   Future<void> sleep(Duration d) {

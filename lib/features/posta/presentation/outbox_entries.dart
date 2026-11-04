@@ -105,6 +105,7 @@ Stream<bool> _connectivity() async* {
 /// [f] of the latest values of [a] and [b], from when both have emitted, on every emission of either.
 // ponytail: two streams only; a package combineLatest if a third view needs it.
 Stream<R> _latest<A, B, R>(Stream<A> a, Stream<B> b, R Function(A, B) f) {
+  // ignore: close_sinks, the listener's cancel ends the stream (onCancel cancels both sources).
   late final StreamController<R> c;
   final subs = <StreamSubscription<void>>[];
   (A,)? la;

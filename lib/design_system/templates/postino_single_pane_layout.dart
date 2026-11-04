@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../tokens/postino_tokens.dart';
 
@@ -21,27 +20,12 @@ class const PostinoSinglePaneLayout({
 
   /// Pulsante di azione flottante facoltativo.
   final Widget? fab,
-
-  /// Esc from anywhere in the pane (a screen of its own, like the Impostazioni): usually what the back arrow does.
-  final VoidCallback? onEscape,
 }) extends StatelessWidget {
   /// Crea il layout a un solo pannello, per il telefono.
   this;
 
   @override
-  Widget build(BuildContext context) {
-    final escape = onEscape;
-    final pane = _pane(context);
-    return escape == null
-        ? pane
-        : CallbackShortcuts(
-            bindings: {const SingleActivator(LogicalKeyboardKey.escape): escape},
-            // Focus inside, so Esc works before anything was clicked.
-            child: FocusScope(autofocus: true, child: pane),
-          );
-  }
-
-  Widget _pane(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
     drawer: drawer,
     floatingActionButton: fab,
     // The bar sits in the body, not in `Scaffold.appBar`: it takes the height of its content

@@ -5,7 +5,9 @@ import 'dart:async';
 import 'package:drift/drift.dart' show BooleanExpressionOperators;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:postino/core/data/background_send.dart';
 import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/daos/outbox_dao.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
@@ -48,6 +50,28 @@ void main() {
     a = await h.addAccount('a');
     engine = GetIt.I<SyncEngine>();
     await engine.syncAll();
+  });
+
+  test('Android worker: a row still preparing re-holds the platform and sends nothing; a due row is sent with no extra hold', () async {
+    await GetIt.I<MailStore>().enqueueOutgoing(
+      'a',
+      _message(id),
+      version: 1,
+      raw: '',
+      sendAfter: OutboxDao.preparing,
+    );
+    expect(await runOutboxTask('a'), isTrue);
+    expect(h.background.holds, ['a']);
+    expect(a.sendCalls, 0);
+
+    h.background.holds.clear();
+    await engine.cancelSend('a', id);
+    expect(await engine.send('a', _message(id)), isA<Ok<DateTime>>());
+    h.background.holds.clear();
+    h.clock.advance(sendWindow);
+    await runOutboxTask('a');
+    expect(a.sendCalls, 1);
+    expect(h.background.holds, isEmpty);
   });
 
   test('Invia queues the message and nothing goes before 10 s; at 10 s one send, the Bozza goes, Inviati shows it, the Provider Bozza too', () async {

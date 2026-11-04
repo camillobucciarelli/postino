@@ -251,7 +251,9 @@ class SyncEngine implements MailSync {
     final id = account.id;
     if (_paused(id)) return Future.value();
     return _queuedSync[id] ??= _serial(id, () {
-      unawaited(_queuedSync.remove(id)); // only drops the map entry: the queued future is the one returned to the caller
+      unawaited(
+        _queuedSync.remove(id),
+      ); // only drops the map entry: the queued future is the one returned to the caller
       return _syncOnce(id, providerFor(account));
     });
   }

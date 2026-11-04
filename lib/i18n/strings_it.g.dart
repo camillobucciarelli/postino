@@ -346,6 +346,9 @@ class Translations$conversazione$it {
 	/// it: 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su $domain.'
 	String linkWarningBody({required Object domain}) => 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su ${domain}.';
 
+	/// it: 'Non si può verificare dove porta questo link. Se lo apri, vai su $domain.'
+	String linkUnverifiedBody({required Object domain}) => 'Non si può verificare dove porta questo link. Se lo apri, vai su ${domain}.';
+
 	/// it: 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.'
 	String get linkWarningPunycode => 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.';
 
@@ -582,6 +585,7 @@ extension on Translations {
 			'conversazione.originalTitle' => 'Messaggio originale',
 			'conversazione.linkWarningTitle' => 'Questo link porta a un altro sito',
 			'conversazione.linkWarningBody' => ({required Object domain}) => 'Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su ${domain}.',
+			'conversazione.linkUnverifiedBody' => ({required Object domain}) => 'Non si può verificare dove porta questo link. Se lo apri, vai su ${domain}.',
 			'conversazione.linkWarningPunycode' => 'Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.',
 			'conversazione.linkOpen' => 'Apri il link',
 			'conversazione.linkCancel' => 'Non aprire',

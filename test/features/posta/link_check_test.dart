@@ -1,3 +1,5 @@
+// HTML fixtures split across lines: the tags are the separators, no whitespace is wanted between fragments.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Deceptive links (#48, ADR 0007): which registrable domain a link's text shows against where it goes.
 
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +27,11 @@ void main() {
     LinkWarning? check(String url, String text) => deceptiveLink(Uri.parse(url), text);
 
     test('a text showing another registrable domain warns, with the real one', () {
-      expect(check('https://paypal.com.evil.io/login', 'paypal.com'), (domain: 'paypal.com.evil.io', punycode: false));
+      expect(check('https://paypal.com.evil.io/login', 'paypal.com'), (
+        domain: 'paypal.com.evil.io',
+        punycode: false,
+        unverified: false,
+      ));
       expect(check('https://evil.io/x', 'https://www.paypal.com/account')?.domain, 'evil.io');
       expect(check('http://evil.io', 'Vai su www.paypal.com ora')?.domain, 'evil.io');
       expect(check('https://203.0.113.9/x', 'paypal.com')?.domain, '203.0.113.9');
@@ -46,6 +52,25 @@ void main() {
       expect(check('https://evil.io', 'versione 3.14'), isNull);
     });
 
+    test('trailing punctuation does not hide a domain; every domain shown counts', () {
+      expect(check('https://evil.io', 'https://paypal.com.')?.domain, 'evil.io');
+      expect(check('https://evil.io', '(www.paypal.com),')?.domain, 'evil.io');
+      expect(check('https://paypal.com/x', 'www.paypal.com e www.evil.io')?.domain, 'paypal.com');
+    });
+
+    test('linkWarning fails closed: no text found means a warning, unverified', () {
+      expect(linkWarning(Uri.parse('https://evil.io/x'), <String>[]), (
+        domain: 'evil.io',
+        punycode: false,
+        unverified: true,
+      ));
+      expect(linkWarning(Uri.parse('https://xn--pypal-4ve.com/'), <String>[])?.punycode, isTrue);
+      expect(linkWarning(Uri.parse('https://paypal.com/x'), const ['paypal.com']), isNull);
+      expect(linkWarning(Uri.parse('https://paypal.com/x'), const ['ok', 'paypal.com']), isNull);
+      expect(linkWarning(Uri.parse('https://evil.io/x'), const ['Clicca', 'paypal.com'])?.unverified, isFalse);
+      expect(linkWarning(Uri.parse('mailto:a@evil.io'), <String>[]), isNull);
+    });
+
     test('mailto: never warns', () {
       expect(check('mailto:aiuto@evil.io', 'aiuto@paypal.com'), isNull);
       expect(check('mailto:aiuto@evil.io', 'paypal.com'), isNull);
@@ -53,7 +78,7 @@ void main() {
 
     test('punycode is decoded and flagged', () {
       final w = check('https://xn--pypal-4ve.com/', 'paypal.com');
-      expect(w, (domain: 'pаypal.com', punycode: true));
+      expect(w, (domain: 'pаypal.com', punycode: true, unverified: false));
       // The shown text is the decoded form of the real host: honest, no warning.
       expect(check('https://xn--pypal-4ve.com/', 'pаypal.com'), isNull);
     });
@@ -96,8 +121,24 @@ void main() {
       final blocked = originalDocument('<p>x</p>', allowRemote: false);
       expect(blocked, contains("img-src data:;"));
       expect(blocked, contains("default-src 'none'"));
-      expect(blocked, endsWith('<p>x</p>'));
+      expect(blocked, contains('<p>x</p>'));
       expect(originalDocument('<p>x</p>', allowRemote: true), contains('img-src data: https: http:;'));
+    });
+
+    test('takes out what a CSP does not stop: refresh, base, link, other http-equiv; DNS prefetch and Referer off', () {
+      final doc = originalDocument(
+        '<head><meta http-equiv="refresh" content="0;url=https://evil.io"><base href="https://evil.io/">'
+        '<link rel="prefetch" href="https://evil.io/x"><meta http-equiv="Content-Security-Policy" content="x">'
+        '<meta charset="utf-8"></head><body><p>x</p></body>',
+        allowRemote: true,
+      );
+      expect(doc, isNot(contains('refresh')));
+      expect(doc, isNot(contains('<base')));
+      expect(doc, isNot(contains('<link')));
+      expect(doc, isNot(contains('content="x"')));
+      expect(doc, contains('<meta charset="utf-8">'));
+      expect(doc, startsWith('<meta http-equiv="x-dns-prefetch-control" content="off">'));
+      expect(doc, contains('<p>x</p>'));
     });
   });
 }

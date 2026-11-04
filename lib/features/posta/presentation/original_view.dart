@@ -30,6 +30,9 @@ class const OriginalView({
 class _OriginalViewState() extends State<OriginalView> {
   final _controller = WebViewController();
 
+  /// The document's own load has been let through.
+  bool _loaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,11 +45,16 @@ class _OriginalViewState() extends State<OriginalView> {
     await _controller.setNavigationDelegate(
       NavigationDelegate(
         onNavigationRequest: (request) {
-          // The document itself loads (`about:blank`, `data:`); a link out goes to the guard instead.
-          if (!{'http', 'https', 'mailto'}.contains(Uri.tryParse(request.url)?.scheme)) {
+          final uri = Uri.tryParse(request.url);
+          // Deny by default. Only the document's own load goes through, once; a link out (http, https,
+          // mailto) goes to the guard, which asks when it cannot verify it; anything else stays out.
+          if (!_loaded && request.isMainFrame && const {'about', 'data'}.contains(uri?.scheme)) {
+            _loaded = true;
             return NavigationDecision.navigate;
           }
-          unawaited(openGuardedLink(context, request.url, textsOf(links, request.url)));
+          if (request.isMainFrame && const {'http', 'https', 'mailto'}.contains(uri?.scheme)) {
+            unawaited(openGuardedLink(context, request.url, textsOf(links, request.url)));
+          }
           return NavigationDecision.prevent;
         },
       ),
@@ -59,6 +67,9 @@ class _OriginalViewState() extends State<OriginalView> {
     title: context.t.conversazione.originalTitle,
     subtitle: widget.subject,
     onBack: () => Navigator.of(context).maybePop(),
-    child: WebViewWidget(controller: _controller),
+    child: Semantics(
+      label: context.t.conversazione.originalTitle,
+      child: WebViewWidget(controller: _controller),
+    ),
   );
 }

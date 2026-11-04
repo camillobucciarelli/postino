@@ -91,6 +91,7 @@
     "originalTitle": "Messaggio originale",
     "linkWarningTitle": "Questo link porta a un altro sito",
     "linkWarningBody": "Il testo del link mostra un indirizzo diverso da quello vero. Se lo apri, vai su $domain.",
+    "linkUnverifiedBody": "Non si può verificare dove porta questo link. Se lo apri, vai su $domain.",
     "linkWarningPunycode": "Il nome del sito usa caratteri speciali (punycode): potrebbe imitarne un altro.",
     "linkOpen": "Apri il link",
     "linkCancel": "Non aprire"

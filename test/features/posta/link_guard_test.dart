@@ -141,26 +141,41 @@ void main() {
         expect(find.byKey(const ValueKey('webview')), findsOneWidget);
         expect(web.javaScript, JavaScriptMode.disabled);
         expect(web.loaded.single, contains("img-src data:;"));
-        expect(web.loaded.single, endsWith(_body));
+        expect(web.loaded.single, contains('paypal.com.evil.io/login'));
 
-        // The document itself loads; a link out never navigates the WebView.
-        expect(
-          await web.onNavigationRequest!(const NavigationRequest(url: 'about:blank', isMainFrame: true)),
-          NavigationDecision.navigate,
-        );
-        final decision = await web.onNavigationRequest!(
-          const NavigationRequest(url: 'https://paypal.com.evil.io/login', isMainFrame: true),
-        );
-        expect(decision, NavigationDecision.prevent);
+        Future<NavigationDecision> navigate(String url, {bool main = true}) async =>
+            web.onNavigationRequest!(NavigationRequest(url: url, isMainFrame: main));
+
+        // Deny by default: the document's own load goes through once; nothing else navigates the WebView.
+        expect(await navigate('about:blank'), NavigationDecision.navigate);
+        expect(await navigate('about:blank'), NavigationDecision.prevent);
+        expect(await navigate('data:text/html,<img src=https://tracker.example/p.png>'), NavigationDecision.prevent);
+        expect(await navigate('file:///etc/passwd'), NavigationDecision.prevent);
+        expect(await navigate('javascript:alert(1)'), NavigationDecision.prevent);
+        expect(await navigate('::not a url::'), NavigationDecision.prevent);
+        expect(await navigate('https://www.shop.example/offerte', main: false), NavigationDecision.prevent);
+        await tester.pumpAndSettle();
+        expect(_dialog, findsNothing);
+        expect(h.links.opened, isEmpty);
+
+        // A link out never navigates the WebView and asks when its text says another domain...
+        expect(await navigate('https://paypal.com.evil.io/login'), NavigationDecision.prevent);
         await tester.pumpAndSettle();
         expect(_dialog, findsOneWidget);
         expect(h.links.opened, isEmpty);
         await tester.tap(find.text('Non aprire'));
         await tester.pumpAndSettle();
 
-        await web.onNavigationRequest!(
-          const NavigationRequest(url: 'https://www.shop.example/offerte', isMainFrame: true),
-        );
+        // ...and when it matches no link of the message (a redirect, a refresh): never opens unasked.
+        expect(await navigate('https://tracker.example/r?u=1'), NavigationDecision.prevent);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Non si può verificare'), findsOneWidget);
+        expect(find.textContaining('tracker.example'), findsOneWidget);
+        expect(h.links.opened, isEmpty);
+        await tester.tap(find.text('Non aprire'));
+        await tester.pumpAndSettle();
+
+        await navigate('https://www.shop.example/offerte');
         await tester.pumpAndSettle();
         expect(h.links.opened, [Uri.parse('https://www.shop.example/offerte')]);
 

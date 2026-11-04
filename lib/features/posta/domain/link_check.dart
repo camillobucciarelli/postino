@@ -1,6 +1,4 @@
-import 'package:html/dom.dart' show Element;
-import 'package:html/parser.dart' show parse;
-
+import 'link_texts.dart' show unverifiableText;
 import 'punycode.dart';
 
 /// Why a link needs a Dialog before it opens: the `domain` it really goes to (decoded), whether it is `punycode`, and whether its text could not be found (`unverified`).
@@ -33,23 +31,46 @@ final _edges = RegExp(
   r'^[\s.,;:!?()\[\]<>"\u2018\u2019\u201c\u201d\u2013\u2014-]+|[\s.,;:!?()\[\]<>"\u2018\u2019\u201c\u201d\u2013\u2014-]+$',
 );
 
-/// The hosts a link's visible [text] claims to go to: every token that is a URL (`https://…`, `www.…`), or the
-/// whole text when it is a bare domain; trailing punctuation is ignored.
+/// Where two addresses can run together in a label (`www.a.com,www.b.com`): split there, never read as one host.
+final _separators = RegExp('[,;|<>"\'()“”‘’]+');
+final _hostname = RegExp(r'^[\p{L}\p{N}.-]+$', unicode: true);
+
+/// Stands for a shown address that is not a plain hostname: it matches no real host, so the link warns.
+const _malformed = '\u0000malformed';
+
+/// The hosts a link's visible [text] claims to go to: every token that is an explicit URL (`https://…`, `www.…`);
+/// bare domains too when the whole text is one, or when there are several (`a.com;b.com`). Tokens are split at
+/// separators (comma, semicolon, pipe, quotes, parentheses), so two addresses never read as one hostname; an explicit
+/// URL whose host is not a plain hostname counts as [_malformed] (warns). Trailing punctuation is ignored: `paypal.com,`
+/// and `www.paypal.com.` show `paypal.com`.
 // ponytail: a bare domain inside a sentence ("Accedi su paypal.com") is not seen: "report.pdf" looks the same.
 List<String> displayedHosts(String text) {
-  final trimmed = text.trim();
   final hosts = <String>[];
-  for (final raw in trimmed.split(RegExp(r'\s+'))) {
+  final tokens = <String>[];
+  for (final raw in text.trim().split(RegExp(r'\s+'))) {
     // An IP literal in an explicit URL is a host as it is; a bare `1.2.3` is a version, not a host.
-    if (_literal.firstMatch(raw)?[1] case final ip?) {
-      hosts.add(ip.toLowerCase().replaceAll(RegExp(r'^\[|\]$'), ''));
+    var rest = raw;
+    if (_literal.firstMatch(raw) case final m? when m[1] != null) {
+      hosts.add(m[1]!.toLowerCase().replaceAll(RegExp(r'^\[|\]$'), ''));
+      rest = raw.substring(m.end);
+    }
+    tokens.addAll(rest.split(_separators).map((t) => t.replaceAll(_edges, '')).where((t) => t.isNotEmpty));
+  }
+  final bare = <String>[];
+  for (final token in tokens) {
+    final explicit = _scheme.hasMatch(token) || token.toLowerCase().startsWith('www.');
+    final host = _url.firstMatch(token)?[1]?.toLowerCase().split('@').last.replaceAll(RegExp(r'\.+$'), '');
+    if (host == null || !_domain.hasMatch(host)) {
+      if (explicit) hosts.add(_malformed);
       continue;
     }
-    final token = raw.replaceAll(_edges, '');
-    if (!_scheme.hasMatch(token) && !token.toLowerCase().startsWith('www.') && raw != trimmed) continue;
-    final host = _url.firstMatch(token)?[1]?.toLowerCase().split('@').last.replaceAll(RegExp(r'\.+$'), '');
-    if (host != null && _domain.hasMatch(host)) hosts.add(host);
+    if (!_hostname.hasMatch(host)) {
+      if (explicit) hosts.add(_malformed);
+    } else {
+      (explicit ? hosts : bare).add(host);
+    }
   }
+  if ((tokens.length == 1 && hosts.isEmpty) || hosts.isNotEmpty || bare.length >= 2) hosts.addAll(bare);
   return hosts;
 }
 
@@ -71,75 +92,4 @@ LinkWarning? linkWarning(Uri target, Iterable<String> texts) {
     return (domain: real, punycode: hasPunycode(target.host), unverified: true);
   }
   return texts.map((t) => deceptiveLink(target, t)).nonNulls.firstOrNull;
-}
-
-/// The texts of every link that goes to [url]: by exact `href` and by the URL itself once normalised
-/// (`https://a.example` and `https://a.example/` are one destination), so a deceptive label cannot hide among honest ones.
-Iterable<String> textsOf(Map<String, List<String>> links, String url) {
-  String? key(String s) {
-    final u = Uri.tryParse(s);
-    return u == null ? null : (u.hasAuthority && u.path.isEmpty ? u.replace(path: '/') : u).toString();
-  }
-
-  final wanted = key(url);
-  return [
-    for (final e in links.entries)
-      if (e.key == url || key(e.key) == wanted) ...e.value,
-  ];
-}
-
-/// Stands for the text of a link whose visible label cannot be told from its markup.
-const unverifiableText = '\u0000unverifiable';
-
-/// Attributes that change nothing about how text shows (layout ones included).
-const _neutral = {
-  'id',
-  'class',
-  'lang',
-  'align',
-  'width',
-  'height',
-  'valign',
-  'border',
-  'cellpadding',
-  'cellspacing',
-  'role',
-};
-
-/// Tags that restyle or reorder the text they hold.
-const _alters = {'font', 'bdi', 'bdo', 'marquee'};
-
-/// Format and control characters (bidi overrides, zero-width, soft hyphen) can reorder or pad a label.
-final _invisible = RegExp(r'\p{Cf}|(?![\t\n\r\f])\p{Cc}', unicode: true);
-
-/// The only elements a trusted label may hold, with no attribute: inline, they cannot break or hide the text.
-const _inline = {'b', 'strong', 'i', 'em', 'u', 'span', 'font', 'small', 'big'};
-
-/// The visible texts of the links of [html], by `href`: what a tap on that URL claims to open. CSS cannot be judged
-/// here, so a label is trusted only when nothing can alter it (allowlist, fail closed; else [unverifiableText], hence
-/// a Dialog): no `<style>` or stylesheet `<link>` in the document, no `style` or `dir` on the link or an ancestor, a
-/// non-empty label, and inside the link only text and attribute-less inline elements ([_inline]; no `br`, `img`...).
-/// Plain nested tags (`<b>`) keep their text, joined without a gap: they cannot break the line.
-Map<String, List<String>> linkTexts(String html) {
-  final doc = parse(html);
-  final styled = doc.querySelector('style, link[rel~=stylesheet]') != null;
-  final out = <String, List<String>>{};
-  for (final a in doc.querySelectorAll('a[href]')) {
-    // Anything above the link that can restyle, hide or reorder it: an attribute outside `_neutral`, or a presentational tag.
-    var altered = false;
-    for (Element? e = a.parent; e != null; e = e.parent) {
-      altered |= _alters.contains(e.localName) || e.attributes.keys.any((k) => !_neutral.contains(k));
-    }
-    altered |= a.attributes.keys.any(
-      (k) => !_neutral.contains(k) && !const {'href', 'target', 'rel', 'title'}.contains(k),
-    );
-    final hideable =
-        styled ||
-        altered ||
-        _invisible.hasMatch(a.text) ||
-        a.text.trim().isEmpty ||
-        a.querySelectorAll('*').any((e) => !_inline.contains(e.localName) || e.attributes.isNotEmpty);
-    (out[a.attributes['href']!] ??= []).add(hideable ? unverifiableText : a.text);
-  }
-  return out;
 }

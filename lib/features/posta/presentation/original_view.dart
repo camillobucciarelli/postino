@@ -6,7 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import '../domain/link_check.dart';
+import '../domain/link_texts.dart';
 import '../domain/original_document.dart';
 import 'link_guard.dart';
 

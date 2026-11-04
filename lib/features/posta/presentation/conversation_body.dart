@@ -13,7 +13,7 @@ import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import '../domain/link_check.dart';
+import '../domain/link_texts.dart';
 import '../domain/quoted_text.dart';
 import '../domain/reply_kind.dart';
 import '../domain/safe_html.dart';

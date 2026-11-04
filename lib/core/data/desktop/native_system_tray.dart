@@ -43,12 +43,15 @@ class NativeSystemTray() implements SystemTray {
       // click the menu. Linux: the panel opens the menu itself and reports no clicks.
       ..setContextMenuTrigger(
         defaultTargetPlatform == TargetPlatform.macOS ? ContextMenuTrigger.clicked : ContextMenuTrigger.rightClicked,
-      );
-    if (defaultTargetPlatform == TargetPlatform.windows) {
-      icon.addListener((event) {
-        if (event is TrayIconClickedEvent) _commands.add(TrayCommand.open);
+      )
+      // Listened to on every platform, the check inside: behind an `if` on the platform the AOT compiler drops the
+      // listener off Windows, and the Dart 3.13 snapshotter then aborts on cnativeapi's half-shaken
+      // `native_tray_icon_event_t` ("Class with illegal cid", release builds of macOS, Linux, iOS).
+      ..addListener((event) {
+        if (event is TrayIconClickedEvent && defaultTargetPlatform == TargetPlatform.windows) {
+          _commands.add(TrayCommand.open);
+        }
       });
-    }
     if (!icon.setVisible(true)) throw StateError('tray icon not shown');
     _nativeHandles.addAll([icon, menu, open, quit]);
   }

@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/result.dart';
 import '../../../core/domain/trusted_senders_repository.dart';
+import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/reply_draft_use_case.dart';
@@ -48,7 +49,8 @@ class ConversationView extends StatefulWidget {
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState extends State<ConversationView> {
+class _ConversationViewState extends State<ConversationView>
+    with AccountsSignal {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];
@@ -61,7 +63,8 @@ class _ConversationViewState extends State<ConversationView> {
   Set<String> _trusted = const {};
 
   List<ConversationMessage>? _messages;
-  Account? _account;
+  Account? get _account =>
+      accounts.value.value?.where((a) => a.id == widget.accountId).firstOrNull;
   List<Label> _labels = const [];
 
   /// Decided once per message, when it first shows up: reading it does not collapse it.
@@ -93,15 +96,6 @@ class _ConversationViewState extends State<ConversationView> {
         GetIt.I<InboxRepository>()
             .watchConversation(widget.accountId, widget.conversationId)
             .listen(_onMessages),
-      )
-      ..add(
-        GetIt.I<AccountsRepository>().watchAccounts().listen(
-          (all) => setState(
-            () => _account = all
-                .where((a) => a.id == widget.accountId)
-                .firstOrNull,
-          ),
-        ),
       )
       ..add(
         GetIt.I<InboxRepository>()
@@ -226,7 +220,9 @@ class _ConversationViewState extends State<ConversationView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SignalBuilder(builder: _content);
+
+  Widget _content(BuildContext context) {
     final t = context.t.conversazione;
     final messages = _messages;
     final a = _account;

@@ -34,7 +34,7 @@ abstract interface class Connectivity() {
   Stream<bool> get onChanged;
 
   /// Whether the device is on Wi-Fi now; false when it cannot tell (ADR 0015: a large download asks first).
-  Future<bool> onWifi();
+  Future<bool> isOnWifi();
 }
 
 /// Opens a link outside Postino: the system browser, or the mail client for `mailto:`.

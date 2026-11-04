@@ -66,7 +66,7 @@ class FakeConnectivity() implements Connectivity {
   bool wifi = true;
 
   @override
-  Future<bool> onWifi() async => wifi;
+  Future<bool> isOnWifi() async => wifi;
 }
 
 /// Records every link Postino asked to open, instead of opening it.

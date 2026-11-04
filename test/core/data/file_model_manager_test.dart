@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:file/file.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -26,6 +27,7 @@ void main() {
 
   late MemoryFileSystem fs;
   late FakeConnectivity network;
+
   late List<http.BaseRequest> requests;
 
   /// What the server answers: by default the model in two chunks.
@@ -145,4 +147,171 @@ void main() {
     await manager.activate(model);
     expect(requests, isEmpty);
   });
+
+  test('delete also removes the partial file a crash left behind', () async {
+    fs.file('/support/models/m.litertlm.part')
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(bytes.sublist(0, 10));
+    await manager.delete(model);
+    expect(fs.file('/support/models/m.litertlm.part').existsSync(), isFalse);
+    expect(await manager.sizeOnDisk(model), 0);
+  });
+
+  test('more bytes than the model stops the download', () async {
+    var cancelled = false;
+    final body = StreamController<List<int>>(onCancel: () => cancelled = true);
+    addTearDown(body.close);
+    serve = (_) async => http.StreamedResponse(body.stream, 200);
+    unawaited(manager.activate(model));
+    body
+      ..add(bytes)
+      ..add([0]);
+    await pumpEventQueue();
+    expect(cancelled, isTrue);
+    expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
+    expect(await manager.sizeOnDisk(model), 0);
+  });
+
+  test('a declared length other than the model size fails before reading', () async {
+    serve = (_) async => http.StreamedResponse(Stream.value(bytes), 200, contentLength: bytes.length + 1);
+    await manager.activate(model);
+    expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
+    expect(await manager.sizeOnDisk(model), 0);
+  });
+
+  for (final (name, stop) in [
+    ('cancel', (FileModelManager m) => m.cancel(model)),
+    ('delete', (FileModelManager m) => m.delete(model)),
+  ]) {
+    test('$name while the activation checks the network starts nothing', () async {
+      final slow = _SlowWifi();
+      final gated = FileModelManager(MockClient((r) async => http.Response('', 200)), slow, fs.directory('/m'));
+      final seen = <ModelState>[];
+      gated.watch(model).listen(seen.add);
+      final activating = gated.activate(model);
+      await stop(gated);
+      slow.answer.complete(true);
+      await activating;
+      expect(seen.last, isA<ModelAbsent>());
+      expect(seen.whereType<ModelDownloading>(), isEmpty);
+    });
+  }
+
+  test('an error response is drained before failing', () async {
+    var listened = false;
+    final body = StreamController<List<int>>(onListen: () => listened = true);
+    addTearDown(body.close);
+    serve = (_) async => http.StreamedResponse(body.stream, 503);
+    await manager.activate(model);
+    expect(listened, isTrue);
+    expect(states.last, isA<ModelFailed>());
+  });
+
+  test('cancel during the final rename drops the model', () async {
+    late FileModelManager renaming;
+    renaming = FileModelManager(
+      MockClient.streaming((_, _) async => http.StreamedResponse(Stream.value(bytes), 200)),
+      network,
+      _RenameHook(fs.directory('/support/models'), () => unawaited(renaming.cancel(model))),
+    );
+    final seen = <ModelState>[];
+    renaming.watch(model).listen(seen.add);
+    await renaming.activate(model);
+    expect(seen.last, isA<ModelAbsent>());
+    expect(fs.file('/support/models/m.litertlm').existsSync(), isFalse);
+    expect(await renaming.sizeOnDisk(model), 0);
+  });
+
+  test('a server that stops sending fails after the idle timeout', () async {
+    final stalled = FileModelManager(
+      MockClient.streaming((_, _) async => http.StreamedResponse(StreamController<List<int>>().stream, 200)),
+      network,
+      fs.directory('/support/models'),
+      idleTimeout: const Duration(milliseconds: 10),
+    );
+    final seen = <ModelState>[];
+    stalled.watch(model).listen(seen.add);
+    await stalled.activate(model);
+    expect(seen.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
+    expect(await stalled.sizeOnDisk(model), 0);
+  });
+
+  test('a second download during the first shares it', () async {
+    final body = StreamController<List<int>>();
+    serve = (_) async => http.StreamedResponse(body.stream, 200);
+    final first = manager.download(model);
+    await pumpEventQueue();
+    final second = manager.download(model);
+    body.add(bytes);
+    await body.close();
+    await Future.wait([first, second]);
+    expect(requests, hasLength(1));
+    expect(states.last, isA<ModelReady>());
+  });
+
+  test('delete during a download aborts it and frees the space', () async {
+    final body = StreamController<List<int>>();
+    serve = (r) async {
+      unawaited(
+        (r as http.Abortable).abortTrigger!.then((_) async {
+          body.addError(http.RequestAbortedException(r.url));
+          await body.close();
+        }),
+      );
+      return http.StreamedResponse(body.stream, 200);
+    };
+    final downloading = manager.download(model);
+    body.add(bytes.sublist(0, 10));
+    await pumpEventQueue();
+    await manager.delete(model);
+    await downloading;
+    expect(states.last, isA<ModelAbsent>());
+    expect(await manager.sizeOnDisk(model), 0);
+  });
+}
+
+/// Wi-Fi that answers only when the test says so.
+class _SlowWifi() extends FakeConnectivity {
+  final answer = Completer<bool>();
+
+  @override
+  Future<bool> isOnWifi() => answer.future;
+}
+
+/// The models folder, calling `onRename` when a file in it starts being renamed.
+class _RenameHook(final Directory _dir, final void Function() _onRename) implements Directory {
+  @override
+  Future<Directory> create({bool recursive = false}) => _dir.create(recursive: recursive);
+
+  @override
+  File childFile(String basename) => _HookedFile(_dir.childFile(basename), _onRename);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _HookedFile(final File _file, final void Function() _onRename) implements File {
+  @override
+  String get path => _file.path;
+
+  @override
+  bool existsSync() => _file.existsSync();
+
+  @override
+  FileStat statSync() => _file.statSync();
+
+  @override
+  Future<RandomAccessFile> open({FileMode mode = FileMode.read}) => _file.open(mode: mode);
+
+  @override
+  Future<FileSystemEntity> delete({bool recursive = false}) => _file.delete(recursive: recursive);
+
+  @override
+  Future<File> rename(String newPath) {
+    _onRename();
+    return _file.rename(newPath);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

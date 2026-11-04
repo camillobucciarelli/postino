@@ -14,9 +14,13 @@ import '../domain/result.dart';
 /// The models in [_dir] (#108), downloaded over HTTP: written to `<file>.part` while hashed in the same pass,
 /// renamed to their real name only once the SHA-256 matches, so a model under its name is always a whole one.
 // ponytail: no resume (HTTP Range); a failed or cancelled download starts again from zero.
-class FileModelManager(final http.Client _client, final Connectivity _network, final Directory _dir)
-    implements ModelManager {
-  /// Lega il gestore alla rete e alla cartella dei modelli.
+class FileModelManager(
+  final http.Client _client,
+  final Connectivity _network,
+  final Directory _dir, {
+  final Duration _idleTimeout = const Duration(seconds: 30),
+}) implements ModelManager {
+  /// Lega il gestore alla rete e alla cartella dei modelli; un server muto per [_idleTimeout] fa fallire il download.
   this;
 
   /// States set since launch, by model id; the others are read from the disk.
@@ -25,6 +29,9 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
 
   /// The downloads in progress, by model id: what aborts each and when it is over.
   final _running = <String, ({Completer<void> abort, Future<void> done})>{};
+
+  /// Bumped by [cancel], by model id: an activation that was checking the network meanwhile starts nothing.
+  final _generation = <String, int>{};
 
   @override
   Stream<ModelState> watch(ModelDescriptor model) {
@@ -45,7 +52,10 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
   @override
   Future<void> activate(ModelDescriptor model) async {
     if (_state(model) case ModelAbsent() || ModelFailed()) {
-      if (await _network.onWifi()) return download(model);
+      final generation = _generation[model.id];
+      final wifi = await _network.isOnWifi();
+      if (_generation[model.id] != generation) return;
+      if (wifi) return download(model);
       _emit(model, ModelAwaitingConfirmation(model.sizeBytes));
     }
   }
@@ -72,18 +82,26 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
     try {
       await _dir.create(recursive: true);
       final response = await _client.send(http.AbortableRequest('GET', model.url, abortTrigger: abort));
-      if (response.statusCode != 200) {
-        throw http.ClientException('HTTP ${response.statusCode}', model.url);
+      final error = switch ((response.statusCode, response.contentLength)) {
+        (final code, _) when code != 200 => 'HTTP $code',
+        (_, final n?) when n != model.sizeBytes => '$n bytes, ${model.sizeBytes} expected',
+        _ => null,
+      };
+      if (error != null) {
+        // Unread, the body would hold the connection.
+        await response.stream.listen(null).cancel();
+        throw http.ClientException(error, model.url);
       }
       Digest? digest;
       final hash = sha256.startChunkedConversion(ChunkedConversionSink.withCallback((d) => digest = d.single));
       final out = await part.open(mode: FileMode.write);
       var received = 0;
       try {
-        await for (final chunk in response.stream) {
+        await for (final chunk in response.stream.timeout(_idleTimeout)) {
+          received += chunk.length;
+          if (received > model.sizeBytes) throw http.ClientException('More than ${model.sizeBytes} bytes', model.url);
           await out.writeFrom(chunk);
           hash.add(chunk);
-          received += chunk.length;
           _emit(model, ModelDownloading(received, model.sizeBytes));
         }
       } finally {
@@ -98,6 +116,12 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
         return;
       }
       final file = await part.rename(_file(model).path);
+      // Annulla may land while renaming too.
+      if (aborted) {
+        await file.delete();
+        _emit(model, const ModelAbsent());
+        return;
+      }
       _emit(model, ModelReady(file.path));
     } on Exception catch (e, s) {
       try {
@@ -111,6 +135,7 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
 
   @override
   Future<void> cancel(ModelDescriptor model) async {
+    _generation[model.id] = (_generation[model.id] ?? 0) + 1;
     if (_running[model.id] case final job?) {
       if (!job.abort.isCompleted) job.abort.complete();
       await job.done;
@@ -134,8 +159,10 @@ class FileModelManager(final http.Client _client, final Connectivity _network, f
   @override
   Future<void> delete(ModelDescriptor model) async {
     await cancel(model);
-    final file = _file(model);
-    if (file.existsSync()) await file.delete();
+    // The .part too: a crash mid-download leaves it behind.
+    for (final f in [_file(model), _part(model)]) {
+      if (f.existsSync()) await f.delete();
+    }
     _emit(model, const ModelAbsent());
   }
 

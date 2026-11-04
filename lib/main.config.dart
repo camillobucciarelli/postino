@@ -21,6 +21,7 @@ import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
@@ -183,7 +184,7 @@ class _$HttpModule extends _i524.HttpModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 
-class _$ModelModule extends _i524.ModelModule {}
+class _$ModelModule extends _i260.ModelModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

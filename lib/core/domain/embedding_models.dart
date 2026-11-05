@@ -30,4 +30,6 @@ final embeddingGemmaGguf = ModelDescriptor(
 /// `Abi.current()`, e.g. `arm64`, `x64`): `.litertlm` on macOS, iOS and Android arm64, GGUF everywhere else,
 /// macOS Intel or under Rosetta and Android x86_64 included.
 ModelDescriptor embeddingModelFor(String os, String architecture) =>
-    architecture == 'arm64' && const {'macos', 'ios', 'android'}.contains(os) ? embeddingGemmaLiteRt : embeddingGemmaGguf;
+    architecture == 'arm64' && const {'macos', 'ios', 'android'}.contains(os)
+    ? embeddingGemmaLiteRt
+    : embeddingGemmaGguf;

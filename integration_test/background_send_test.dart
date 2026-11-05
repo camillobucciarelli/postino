@@ -150,12 +150,7 @@ NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotific
 AutoLabeler _labeler() {
   final db = PostinoDatabase.inMemory();
   addTearDown(db.close);
-  return AutoLabeler(
-    db,
-    AutoLabelsStore(db, FakeClock(DateTime.now().toUtc())),
-    FakeTextEmbedder(),
-    FakeErrorLog(),
-  );
+  return AutoLabeler(db, AutoLabelsStore(db, FakeClock(DateTime.now().toUtc())), FakeTextEmbedder(), FakeErrorLog());
 }
 
 /// A fresh SQLCipher database file with Account `a`, whose fake Provider is registered by its id.

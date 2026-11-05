@@ -45,6 +45,7 @@ jobs:
       - run: flutter analyze --fatal-infos
       - run: flutter test
       - run: tool/release/version_test.sh
+      - run: tool/release/verify_apk_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.

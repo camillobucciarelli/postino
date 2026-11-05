@@ -57,7 +57,7 @@ class ReportProblemUseCase(
     // Cut at a line start: no half entry, and never between the two halves of a surrogate pair.
     final cut = log.length - maxBodyChars;
     final newline = cut <= 0 ? 0 : log.indexOf('\n', cut);
-    final tail = cut <= 0 ? log : '…${log.substring(newline < 0 ? cut : newline + 1)}';
+    final tail = cut <= 0 ? log : '…${log.substring(newline < 0 ? cut : newline + 1).trimLeft()}';
     return '<p>${_escape.convert(intro)}</p><pre>${_escape.convert(tail)}</pre>';
   }
 }

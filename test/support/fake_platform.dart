@@ -61,6 +61,12 @@ class FakeConnectivity() implements Connectivity {
 
   @override
   Stream<bool> get onChanged => _changes.stream;
+
+  /// Whether the network is Wi-Fi, for the model downloads.
+  bool wifi = true;
+
+  @override
+  Future<bool> isOnWifi() async => wifi;
 }
 
 /// Records every link Postino asked to open, instead of opening it.

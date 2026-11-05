@@ -17,9 +17,12 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   /// Per Conversazione being fetched: the fetches running and the last action per Etichetta (true: on).
   final _fetches = <ConversationKey, ({int running, Map<String, bool> pending})>{};
 
-  /// The older messages a late replay took an Etichetta off, for the removal's Annulla.
-  // ponytail: kept until that Annulla; a few message rows per removal during a fetch, drop on the snackbar's end if it grows.
-  final _removedLate = <(ConversationKey, String), List<Message>>{};
+  /// The removals whose Annulla is still offered, by the token [remove] returns: what they took the Etichetta off,
+  /// the local messages and the older ones a late replay reached. [forget] drops one when its Annulla goes away.
+  final _removals = <Object, ({ConversationKey key, String labelId, List<Message> had})>{};
+
+  /// How many removals still offer Annulla (for the tests: none is kept once its snackbar closes).
+  int get openRemovals => _removals.length;
 
   /// Runs [fetch], which brings the whole Conversazione [key] here; the actions taken meanwhile reach what it brought.
   Future<Result<void>> fetch(ConversationKey key, Future<Result<void>> Function() fetch) async {
@@ -33,7 +36,11 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
         ];
         for (final MapEntry(key: labelId, value: add) in pending.entries) {
           final targets = _lacking(all, labelId, add: add);
-          if (!add) _removedLate[(key, labelId)] = [...?_removedLate[(key, labelId)], ...targets];
+          if (!add) {
+            for (final r in _removals.values) {
+              if (r.key == key && r.labelId == labelId) r.had.addAll(targets);
+            }
+          }
           _apply(key.accountId, targets, labelId, add: add);
         }
       }
@@ -48,19 +55,35 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
     }
   }
 
-  /// Puts [labelId] on the [messages] of [key] that lack it (with [add] false, takes it off those that have it).
-  void set(ConversationKey key, Iterable<Message> messages, String labelId, {required bool add}) {
-    _fetches[key]?.pending[labelId] = add;
-    _removedLate.remove((key, labelId));
-    _apply(key.accountId, _lacking(messages, labelId, add: add), labelId, add: add);
+  /// Puts [labelId] on the [messages] of [key] that lack it.
+  void add(ConversationKey key, Iterable<Message> messages, String labelId) => _set(key, messages, labelId, add: true);
+
+  /// Takes [labelId] off the [messages] of [key] that have it; returns the token of its Annulla ([undoRemoval]),
+  /// to [forget] when that Annulla is no longer offered.
+  Object remove(ConversationKey key, Iterable<Message> messages, String labelId) {
+    final token = Object();
+    _removals[token] = (key: key, labelId: labelId, had: _set(key, messages, labelId, add: false));
+    return token;
   }
 
-  /// Annulla of a removal of [labelId] from [had]: back on them and on the older messages a replay took it off;
-  /// before the replay the removal is dropped, so it never reaches them.
-  void undoRemoval(ConversationKey key, Iterable<Message> had, String labelId) {
-    final pending = _fetches[key]?.pending;
-    if (pending?[labelId] == false) pending!.remove(labelId);
-    _apply(key.accountId, [...had, ...?_removedLate.remove((key, labelId))], labelId, add: true);
+  /// Annulla of the removal [token]: the Etichetta back on what it took it off, the older messages a replay
+  /// reached too; before the replay the removal is dropped, so it never reaches them.
+  void undoRemoval(Object token) {
+    final r = _removals.remove(token);
+    if (r == null) return;
+    final pending = _fetches[r.key]?.pending;
+    if (pending?[r.labelId] == false) pending!.remove(r.labelId);
+    _apply(r.key.accountId, r.had, r.labelId, add: true);
+  }
+
+  /// The Annulla of the removal [token] is gone (expired, replaced, dismissed): the removal stands, nothing kept.
+  void forget(Object token) => _removals.remove(token);
+
+  List<Message> _set(ConversationKey key, Iterable<Message> messages, String labelId, {required bool add}) {
+    _fetches[key]?.pending[labelId] = add;
+    final targets = _lacking(messages, labelId, add: add);
+    _apply(key.accountId, targets, labelId, add: add);
+    return targets;
   }
 
   static List<Message> _lacking(Iterable<Message> messages, String labelId, {required bool add}) =>

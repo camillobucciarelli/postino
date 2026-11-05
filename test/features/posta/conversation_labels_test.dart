@@ -13,6 +13,7 @@ import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/model_download.dart';
 import 'package:postino/core/domain/model_download_state.dart';
 import 'package:postino/design_system/design_system.dart';
+import 'package:postino/features/posta/domain/conversation_label_intents.dart';
 import 'package:postino/features/posta/presentation/posta_shortcuts.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -427,6 +428,21 @@ void main() {
     await _settle(tester);
     expect(_calls(from), containsAll([('o1', 'Label_12', true), ('o0', 'Label_12', true)]));
     expect(find.byTooltip('Togli Etichetta Viaggi'), findsOneWidget);
+  });
+
+  _onMac('a × whose Annulla expires before the slow opening ends keeps nothing, and still reaches the older messages', (
+    tester,
+  ) async {
+    await openSlowConversation(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, find.byTooltip('Togli Etichetta Viaggi'));
+    expect(getIt<ConversationLabelIntents>().openRemovals, 1);
+    await tester.pump(PostinoMotion.undoWindow + const Duration(seconds: 1));
+    await _settle(tester);
+    expect(_snackbar, findsNothing);
+    await endFetch(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_12', false), ('o0', 'Label_12', false)]));
+    expect(getIt<ConversationLabelIntents>().openRemovals, 0);
   });
 
   _onMac('offline, the picker still labels the local messages at once', (tester) async {

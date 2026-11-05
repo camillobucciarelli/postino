@@ -33,17 +33,18 @@ Future<void> openLabelPicker(
 /// too), then shows «Etichetta «X» tolta» under [context]'s messenger, whose Annulla puts it back.
 void removeConversationLabel(BuildContext context, ConversationKey key, List<Message> messages, Label label) {
   final intents = GetIt.I<ConversationLabelIntents>();
-  final had = messages.where((m) => m.labelIds.contains(label.id)).toList();
-  intents.set(key, had, label.id, add: false);
-  if (!context.mounted) return;
+  final token = intents.remove(key, messages, label.id);
+  if (!context.mounted) return intents.forget(token);
   final t = context.t.selettoreEtichette;
   final clock = GetIt.I<Clock>();
-  PostinoSnackbar.show(
-    context,
-    message: t.removed(name: label.name),
-    actionLabel: t.undo,
-    until: clock.now().add(PostinoMotion.undoWindow),
-    now: clock.now,
-    onAction: () => intents.undoRemoval(key, had, label.id),
+  unawaited(
+    PostinoSnackbar.show(
+      context,
+      message: t.removed(name: label.name),
+      actionLabel: t.undo,
+      until: clock.now().add(PostinoMotion.undoWindow),
+      now: clock.now,
+      onAction: () => intents.undoRemoval(token),
+    ).closed.then((_) => intents.forget(token)),
   );
 }

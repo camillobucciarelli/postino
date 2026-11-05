@@ -68,7 +68,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (_selected.contains(id)) {
       removeConversationLabel(widget.snackbarContext, _key, _messages, label);
     } else {
-      _intents.set(_key, _messages, id, add: true);
+      _intents.add(_key, _messages, id);
     }
   }
 
@@ -78,7 +78,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (r case Ok(:final value)) {
       // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
       final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
-      _intents.set(_key, [for (final m in all) m.message], value.id, add: true);
+      _intents.add(_key, [for (final m in all) m.message], value.id);
     }
   }
 

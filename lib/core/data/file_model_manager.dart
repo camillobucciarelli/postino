@@ -25,7 +25,9 @@ class FileModelManager(
 
   /// States set since launch, by model id; the others are read from the disk.
   final _states = <String, ModelState>{};
-  final _changes = StreamController<(String, ModelState)>.broadcast(sync: true);
+
+  /// Delivered asynchronously, in order: a listener that reacts with [cancel] or the like never re-enters an [_emit].
+  final _changes = StreamController<(String, ModelState)>.broadcast();
 
   /// The downloads in progress, by model id: what aborts each and when it is over.
   final _running = <String, ({Completer<void> abort, Future<void> done})>{};
@@ -41,8 +43,9 @@ class FileModelManager(
     out = StreamController<ModelState>(
       sync: true,
       onListen: () {
-        out.add(_state(model));
+        // Subscribed first: a change caused by the listener of the current state is queued after it, not lost.
         changes = _changes.stream.where((c) => c.$1 == model.id).listen((c) => out.add(c.$2));
+        out.add(_state(model));
       },
       onCancel: () => changes?.cancel(),
     );
@@ -82,8 +85,6 @@ class FileModelManager(
     final part = _part(model);
     // Aborts the request on any failure of ours too, e.g. headers that never arrive.
     final failed = Completer<void>();
-    // Past a microtask, so download() has registered the job: a listener of this first state can cancel it.
-    await null;
     _emit(model, ModelDownloading(0, model.sizeBytes));
     try {
       await _dir.create(recursive: true);

@@ -55,6 +55,7 @@ void main() {
   test('on Wi-Fi the first activation downloads at once', () async {
     await manager.activate(model);
     expect(requests.single.url, model.url);
+    await pumpEventQueue();
     expect(states.last, isA<ModelReady>().having((s) => s.path, 'path', '/support/models/m.litertlm'));
     expect(fs.file('/support/models/m.litertlm').readAsBytesSync(), bytes);
     expect(fs.file('/support/models/m.litertlm.part').existsSync(), isFalse);
@@ -64,16 +65,19 @@ void main() {
     network.wifi = false;
     await manager.activate(model);
     expect(requests, isEmpty);
+    await pumpEventQueue();
     expect(states.last, isA<ModelAwaitingConfirmation>().having((s) => s.sizeBytes, 'sizeBytes', bytes.length));
 
     await manager.download(model);
     expect(requests, hasLength(1));
+    await pumpEventQueue();
     expect(states.last, isA<ModelReady>());
   });
 
   test('a hash that does not match discards the file and reports it', () async {
     serve = (_) async => http.StreamedResponse(Stream.value(utf8.encode('tampered')), 200);
     await manager.activate(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<IntegrityFailure>()));
     expect(fs.directory('/support/models').listSync(), isEmpty);
     expect(await manager.sizeOnDisk(model), 0);
@@ -88,10 +92,12 @@ void main() {
   test('after an error a new attempt downloads it', () async {
     serve = (_) async => http.StreamedResponse(const Stream.empty(), 503);
     await manager.activate(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
 
     serve = (_) async => http.StreamedResponse(Stream.value(bytes), 200);
     await manager.download(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelReady>());
     expect(requests, hasLength(2));
   });
@@ -148,7 +154,26 @@ void main() {
     network.wifi = false;
     await manager.activate(model);
     await manager.cancel(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelAbsent>());
+    expect(requests, isEmpty);
+  });
+
+  test('a listener cancelling on the confirmation sees it dropped, in order', () async {
+    network.wifi = false;
+    final seen = <ModelState>[];
+    Future<void>? cancelling;
+    manager.watch(model).listen((s) {
+      seen.add(s);
+      if (s is ModelAwaitingConfirmation) cancelling = manager.cancel(model);
+    });
+    await manager.activate(model);
+    await pumpEventQueue();
+    await cancelling;
+    await pumpEventQueue();
+    expect(seen, [isA<ModelAbsent>(), isA<ModelAwaitingConfirmation>(), isA<ModelAbsent>()]);
+    expect(states.last, isA<ModelAbsent>());
+    expect(await manager.watch(model).first, isA<ModelAbsent>());
     expect(requests, isEmpty);
   });
 
@@ -199,6 +224,7 @@ void main() {
   test('a declared length other than the model size fails before reading', () async {
     serve = (_) async => http.StreamedResponse(Stream.value(bytes), 200, contentLength: bytes.length + 1);
     await manager.activate(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
     expect(await manager.sizeOnDisk(model), 0);
   });
@@ -228,6 +254,7 @@ void main() {
     serve = (_) async => http.StreamedResponse(body.stream, 503);
     await manager.activate(model);
     expect(listened, isTrue);
+    await pumpEventQueue();
     expect(states.last, isA<ModelFailed>());
   });
 
@@ -241,6 +268,7 @@ void main() {
     final seen = <ModelState>[];
     renaming.watch(model).listen(seen.add);
     await renaming.activate(model);
+    await pumpEventQueue();
     expect(seen.last, isA<ModelAbsent>());
     expect(fs.file('/support/models/m.litertlm').existsSync(), isFalse);
     expect(await renaming.sizeOnDisk(model), 0);
@@ -256,6 +284,7 @@ void main() {
     final seen = <ModelState>[];
     stalled.watch(model).listen(seen.add);
     await stalled.activate(model);
+    await pumpEventQueue();
     expect(seen.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
     expect(await stalled.sizeOnDisk(model), 0);
   });
@@ -274,6 +303,7 @@ void main() {
     final seen = <ModelState>[];
     mute.watch(model).listen(seen.add);
     await mute.activate(model);
+    await pumpEventQueue();
     expect(seen.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
     expect(aborted, isTrue);
   });
@@ -293,6 +323,7 @@ void main() {
   test('a partial file that cannot be opened leaves no response unread', () async {
     fs.directory('/support/models/m.litertlm.part').createSync(recursive: true);
     await manager.activate(model);
+    await pumpEventQueue();
     expect(states.last, isA<ModelFailed>().having((s) => s.failure, 'failure', isA<UnexpectedFailure>()));
     // Opened before the request: no response is left holding the connection.
     expect(requests, isEmpty);
@@ -308,6 +339,7 @@ void main() {
     await body.close();
     await Future.wait([first, second]);
     expect(requests, hasLength(1));
+    await pumpEventQueue();
     expect(states.last, isA<ModelReady>());
   });
 

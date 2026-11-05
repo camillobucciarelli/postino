@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -7,9 +6,11 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3 show Database;
 
 // The generated part maps enum columns to these types.
 import '../domain/account.dart';
+import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
+import 'attachment_crypto.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/bodies_dao.dart';
 import 'daos/device_settings_dao.dart';
@@ -72,13 +73,10 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       PostinoDatabase(DatabaseConnection(NativeDatabase.memory(setup: _secureDelete), closeStreamsSynchronously: true));
 
   /// On device: SQLCipher file, key generated at first launch and kept in the [keychain].
-  static Future<PostinoDatabase> open(String path, SecureStore keychain) async {
-    var key = await keychain.read(_keyName);
-    if (key == null) {
-      final random = Random.secure();
-      key = [for (var i = 0; i < 32; i++) random.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
-      await keychain.write(_keyName, key);
-    }
+  /// A file that does not open (damaged, wrong key) is a crash for [log] before it propagates (#116): Postino cannot
+  /// start, and the next start proposes the Segnalazione di un problema.
+  static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
+    final key = await keyFrom(keychain);
     final db = PostinoDatabase(
       NativeDatabase(
         File(path),
@@ -99,10 +97,32 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     try {
       await db.customSelect('SELECT 1').get(); // open now, not on first query
       return db;
-    } catch (_) {
+    } catch (e, s) {
+      log?.record(e, stack: s, context: 'database', crash: true);
       await db.close();
       rethrow;
     }
+  }
+
+  /// The database key (hex) from the [keychain], generated and saved at the first launch; the error log's keys
+  /// derive from it too (#116). Read once per [keychain]: each read may be a system prompt (#76).
+  /// A failed read is not remembered: the next call asks again.
+  static Future<String> keyFrom(SecureStore keychain) async {
+    try {
+      return await (_keys[keychain] ??= _readOrCreateKey(keychain));
+    } on Object catch (_) {
+      _keys[keychain] = null;
+      rethrow;
+    }
+  }
+
+  static final _keys = Expando<Future<String>>();
+
+  static Future<String> _readOrCreateKey(SecureStore keychain) async {
+    if (await keychain.read(_keyName) case final key?) return key;
+    final key = hex(randomBytes(32));
+    await keychain.write(_keyName, key);
+    return key;
   }
 
   @override

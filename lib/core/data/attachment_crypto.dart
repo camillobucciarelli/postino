@@ -17,11 +17,12 @@ const attachmentOverhead = _ivLength + _macLength;
 String newAttachmentKeyHex() => hex(randomBytes(64));
 
 AttachmentKeys attachmentKeysFromHex(String hex) {
-  final bytes = Uint8List.fromList([
-    for (var i = 0; i < hex.length; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
-  ]);
+  final bytes = bytesFromHex(hex);
   return (enc: bytes.sublist(0, 32), mac: bytes.sublist(32));
 }
+
+Uint8List bytesFromHex(String hex) =>
+    Uint8List.fromList([for (var i = 0; i < hex.length; i += 2) int.parse(hex.substring(i, i + 2), radix: 16)]);
 
 /// AES-256-CTR under a random IV, then HMAC-SHA256 over IV and ciphertext.
 Uint8List encryptAttachment(Uint8List plain, AttachmentKeys keys) {

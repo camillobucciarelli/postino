@@ -20,6 +20,7 @@ import '../../features/posta/presentation/posta_shortcuts.dart';
 import '../../features/posta/presentation/write_fab.dart';
 import '../../i18n/strings.g.dart';
 import '../../main.dart' show routePaths;
+import '../report_problem.dart';
 import 'posta_routes.dart';
 
 /// The Posta unificata; [selected] is the Conversazione open beside it.
@@ -168,6 +169,7 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
   onOpenSent: (id) =>
       _openFromPosta(routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': id, 'labelId': sentLabelId})),
   onOpenSettings: () => unawaited(Routefly.push<void>(routePaths.impostazioni.path)),
+  onReportProblem: reportProblem,
 );
 
 void _openFromPosta(String path) => Routefly.navigate(path);

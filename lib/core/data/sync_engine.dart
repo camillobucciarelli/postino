@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/error_log.dart';
 import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
 import '../domain/message.dart';
@@ -31,8 +32,9 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
   final NewMailNotifier _newMail,
+  final ErrorLog _log,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock, pause: _pauseAccount);
+  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
   late final _drafts = DraftOpener(_store, _outboxStore);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
@@ -40,6 +42,7 @@ class SyncEngine(
     _outboxStore,
     _clock,
     _background,
+    _log,
     account: _account,
     flushOutbox: flushOutbox,
     pause: _pauseAccount,
@@ -360,6 +363,7 @@ class SyncEngine(
         );
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
+        _log.failure('sync $accountId', failure);
         if (failure case RateLimitFailure(:final retryAfter?)) {
           _pauseAccount(accountId, retryAfter);
           debugPrint('[sync] $accountId: paused until $retryAfter');

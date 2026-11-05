@@ -20,6 +20,7 @@ import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
 import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
+import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
 import 'package:postino/core/data/mail_store.dart' as _i385;
@@ -27,6 +28,7 @@ import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
+import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
@@ -37,6 +39,7 @@ import 'package:postino/core/domain/accounts_repository.dart' as _i382;
 import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/auto_labels_repository.dart' as _i205;
+import 'package:postino/core/domain/error_log.dart' as _i346;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
@@ -49,6 +52,7 @@ import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
     as _i114;
@@ -60,6 +64,8 @@ import 'package:postino/features/posta/domain/conversation_label_intents.dart'
     as _i812;
 import 'package:postino/features/posta/domain/reply_draft_use_case.dart'
     as _i510;
+import 'package:postino/features/segnalazione/domain/report_problem_use_case.dart'
+    as _i802;
 
 const String _prod = 'prod';
 
@@ -74,6 +80,8 @@ extension GetItInjectableX on _i174.GetIt {
     final httpModule = _$HttpModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final modelModule = _$ModelModule();
+    final errorLogModule = _$ErrorLogModule();
+    final reportSharerModule = _$ReportSharerModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
@@ -137,22 +145,23 @@ extension GetItInjectableX on _i174.GetIt {
       registerFor: {_prod},
       preResolve: true,
     );
-    await gh.singletonAsync<_i1028.PostinoDatabase>(
-      () => databaseModule.database(gh<_i398.SecureStore>()),
+    await gh.singletonAsync<_i346.ErrorLog>(
+      () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
       registerFor: {_prod},
       preResolve: true,
     );
-    gh.lazySingleton<_i205.AutoLabelsRepository>(
-      () => _i452.AutoLabelsStore(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.Clock>(),
-      ),
+    await gh.singletonAsync<_i325.ReportSharer>(
+      () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
+      registerFor: {_prod},
+      preResolve: true,
     );
-    gh.factory<_i320.AutoLabelSwitchUseCase>(
-      () => _i320.AutoLabelSwitchUseCase(
-        gh<_i205.AutoLabelsRepository>(),
-        gh<_i96.ModelDownload>(),
+    await gh.singletonAsync<_i1028.PostinoDatabase>(
+      () => databaseModule.database(
+        gh<_i398.SecureStore>(),
+        gh<_i346.ErrorLog>(),
       ),
+      registerFor: {_prod},
+      preResolve: true,
     );
     gh.lazySingleton<_i385.MailStore>(
       () => _i385.MailStore(gh<_i1028.PostinoDatabase>()),
@@ -171,6 +180,18 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i205.AutoLabelsRepository>(
+      () => _i452.AutoLabelsStore(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+      ),
+    );
+    gh.factory<_i320.AutoLabelSwitchUseCase>(
+      () => _i320.AutoLabelSwitchUseCase(
+        gh<_i205.AutoLabelsRepository>(),
+        gh<_i96.ModelDownload>(),
+      ),
     );
     gh.lazySingleton<_i26.NewMailNotifier>(
       () => _i26.NewMailNotifier(
@@ -201,20 +222,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Connectivity>(),
         gh<_i398.BackgroundSender>(),
         gh<_i26.NewMailNotifier>(),
-      ),
-    );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-      ),
-    );
-    gh.factory<_i114.SettingsSyncAccountUseCase>(
-      () => _i114.SettingsSyncAccountUseCase(
-        gh<_i382.AccountsRepository>(),
-        gh<_i307.SettingsRepository>(),
+        gh<_i346.ErrorLog>(),
       ),
     );
     gh.lazySingleton<_i705.MailSync>(
@@ -232,12 +240,34 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i845.InboxRepository>(),
       ),
     );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+      ),
+    );
     gh.lazySingleton<_i278.AttachmentRepository>(
       () => _i696.AttachmentCache(
         gh<_i705.MailSync>(),
         gh<_i398.SecureStore>(),
         gh<_i398.Clock>(),
         gh<_i696.AttachmentStorage>(),
+      ),
+    );
+    gh.factory<_i802.ReportProblemUseCase>(
+      () => _i802.ReportProblemUseCase(
+        gh<_i346.ErrorLog>(),
+        gh<_i382.AccountsRepository>(),
+        gh<_i705.MailSync>(),
+        gh<_i325.ReportSharer>(),
+      ),
+    );
+    gh.factory<_i114.SettingsSyncAccountUseCase>(
+      () => _i114.SettingsSyncAccountUseCase(
+        gh<_i382.AccountsRepository>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     return this;
@@ -251,6 +281,10 @@ class _$HttpModule extends _i524.HttpModule {}
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 
 class _$ModelModule extends _i260.ModelModule {}
+
+class _$ErrorLogModule extends _i907.ErrorLogModule {}
+
+class _$ReportSharerModule extends _i439.ReportSharerModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

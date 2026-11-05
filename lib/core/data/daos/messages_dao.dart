@@ -127,6 +127,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
       updateKind: UpdateKind.delete,
     );
     final attributes = attachedDatabase.attributesDao;
+    final voci = await (select(intents)..where((t) => t.accountId.equals(accountId))).get();
+    // Before any overlay: the batch's value of a queued attribute is the Provider's.
+    for (final v in voci) {
+      if (!synced.contains(v.messageId)) continue;
+      if (await attributes.read(accountId, v.messageId, v.attribute) case final provider?) {
+        await (update(intents)..where(
+              (t) => t.accountId.equals(accountId) & t.messageId.equals(v.messageId) & t.attribute.equals(v.attribute),
+            ))
+            .write(IntentsCompanion(synced: Value(provider)));
+      }
+    }
     for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
       Expression<bool> key($ConflictsTable t) =>
           t.accountId.equals(accountId) & t.messageId.equals(c.messageId) & t.attribute.equals(c.attribute);
@@ -145,7 +156,7 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
       await attributes.write(accountId, c.messageId, c.attribute, c.local);
     }
     // After the Conflitti: an Azione queued over one shows here.
-    for (final v in await (select(intents)..where((t) => t.accountId.equals(accountId))).get()) {
+    for (final v in voci) {
       await attributes.write(accountId, v.messageId, v.attribute, v.wanted);
     }
   }

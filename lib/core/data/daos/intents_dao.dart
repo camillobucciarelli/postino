@@ -95,7 +95,7 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
             await attributes.write(accountId, messageId, attribute, previous);
           } else {
             await (delete(intents)..where(key)).go();
-            if (await _localBefore(accountId, messageId, attribute, voce.expected) case final value?) {
+            if (await _localBefore(accountId, messageId, attribute, voce) case final value?) {
               await attributes.write(accountId, messageId, attribute, value);
             }
           }
@@ -119,10 +119,12 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
     intents,
   )..where((t) => _key(accountId, messageId, attribute)(t) & t.wanted.equals(wanted) & t.heldUntil.isNull())).go();
 
-  /// What the message showed here before its voce: the local version of the Conflitto it was queued over, or [expected].
-  Future<String?> _localBefore(String accountId, String messageId, String attribute, String? expected) async =>
+  /// What the message would show here without [voce]: the local version of the Conflitto it was queued over, or the
+  /// Provider's latest value (the one synced meanwhile, else the expected one).
+  Future<String?> _localBefore(String accountId, String messageId, String attribute, IntentRow voce) async =>
       (await (select(conflicts)..where(_conflictKey(accountId, messageId, attribute))).getSingleOrNull())?.local ??
-      expected;
+      voce.synced ??
+      voce.expected;
 
   /// The Provider has [provider], changed elsewhere: the voce becomes a Conflitto and the message keeps [wanted]
   /// here. One changed meanwhile stays queued instead.
@@ -140,15 +142,15 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
         );
       });
 
-  /// The Provider refused the voce: it leaves the queue and the message gets back [expected] here.
+  /// The Provider refused the voce: it leaves the queue and the message gets back the value it had without it.
   /// One changed meanwhile stays, with its local change.
-  Future<void> rejected(String accountId, String messageId, String attribute, String wanted, String? expected) =>
-      transaction(() async {
-        if (await _drop(accountId, messageId, attribute, wanted) == 0) return;
-        if (await _localBefore(accountId, messageId, attribute, expected) case final value?) {
-          await attachedDatabase.attributesDao.write(accountId, messageId, attribute, value);
-        }
-      });
+  Future<void> rejected(String accountId, String messageId, String attribute, String wanted) => transaction(() async {
+    final voce = await this.voce(accountId, messageId, attribute);
+    if (voce == null || await _drop(accountId, messageId, attribute, wanted) == 0) return;
+    if (await _localBefore(accountId, messageId, attribute, voce) case final value?) {
+      await attachedDatabase.attributesDao.write(accountId, messageId, attribute, value);
+    }
+  });
 
   /// True when the message has an Etichetta dell'utente: one of the Account's labels (system ones are not there).
   Future<bool> hasUserLabel(String accountId, String messageId) async =>

@@ -142,16 +142,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   );
 
   /// The Provider refused the voce: it leaves the queue and the change is undone here.
-  Future<void> actionRejected(String accountId, QueuedAction q) => _db.intentsDao.rejected(
-    accountId,
-    q.messageId,
-    q.action.attribute,
-    encodeValue(q.action.wanted),
-    switch (q.expected) {
-      final e? => encodeValue(e),
-      null => null,
-    },
-  );
+  Future<void> actionRejected(String accountId, QueuedAction q) =>
+      _db.intentsDao.rejected(accountId, q.messageId, q.action.attribute, encodeValue(q.action.wanted));
 
   @override
   Stream<List<Conflict>> watchConflicts({String? accountId}) => _db.conflictsDao

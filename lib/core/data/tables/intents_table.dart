@@ -24,6 +24,11 @@ class Intents() extends Table {
   /// What [wanted] was before the held Azione merged into this voce: its Annulla puts it back.
   TextColumn get previous => text().nullable()();
 
+  /// The Provider's value the last sync brought while the voce waited (null: none since the enqueue). Taking the
+  /// voce back (Annulla, a refusal) shows it instead of the stale [expected]; the replay still expects [expected],
+  /// so a change elsewhere is a Conflitto (ADR 0008).
+  TextColumn get synced => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {accountId, messageId, attribute};
 }

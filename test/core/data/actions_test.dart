@@ -251,6 +251,31 @@ void main() {
       expect((voce.wanted, voce.expected, voce.heldUntil), ('archive', 'inbox', null));
     });
 
+    test('changed elsewhere during the window: Annulla shows the Provider value the sync brought', () async {
+      await engine.act('a', ['1'], const Archive(), hold: window);
+      a.changeElsewhere('1', placementAttribute, Placement.trash);
+      await engine.syncAll();
+      expect(placement(await here('1')), Placement.archive, reason: 'held, the local Azione shows');
+
+      expect(await engine.cancelAction('a', ['1'], const Archive()), isTrue);
+      expect(placement(await here('1')), Placement.trash);
+      expect(await queued(), isEmpty);
+    });
+
+    test('changed elsewhere during the window: once it ends, a Conflitto with the Provider value', () async {
+      final running = engine..start();
+      addTearDown(running.stop);
+      await engine.act('a', ['1'], const Archive(), hold: window);
+      a.changeElsewhere('1', placementAttribute, Placement.trash);
+      await engine.syncAll();
+
+      h.clock.advance(window);
+      await pumpEventQueue();
+      expect(await conflicts(), [
+        const Conflict(accountId: 'a', messageId: '1', local: Archive(), provider: Placement.trash),
+      ]);
+    });
+
     test('the Annulla of an earlier Azione does not take back a later one', () async {
       await engine.act('a', ['1'], const Archive(), hold: window);
       await engine.act('a', ['1'], const Delete(), hold: window);

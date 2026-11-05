@@ -2580,6 +2580,15 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<String> synced = GeneratedColumn<String>(
+    'synced',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -2589,6 +2598,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     expected,
     heldUntil,
     previous,
+    synced,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2652,6 +2662,12 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         previous.isAcceptableOrUnknown(data['previous']!, _previousMeta),
       );
     }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
+      );
+    }
     return context;
   }
 
@@ -2689,6 +2705,10 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         DriftSqlType.string,
         data['${effectivePrefix}previous'],
       ),
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced'],
+      ),
     );
   }
 
@@ -2716,6 +2736,11 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
 
   /// What [wanted] was before the held Azione merged into this voce: its Annulla puts it back.
   final String? previous;
+
+  /// The Provider's value the last sync brought while the voce waited (null: none since the enqueue). Taking the
+  /// voce back (Annulla, a refusal) shows it instead of the stale [expected]; the replay still expects [expected],
+  /// so a change elsewhere is a Conflitto (ADR 0008).
+  final String? synced;
   const IntentRow({
     required this.accountId,
     required this.messageId,
@@ -2724,6 +2749,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     this.expected,
     this.heldUntil,
     this.previous,
+    this.synced,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2740,6 +2766,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     }
     if (!nullToAbsent || previous != null) {
       map['previous'] = Variable<String>(previous);
+    }
+    if (!nullToAbsent || synced != null) {
+      map['synced'] = Variable<String>(synced);
     }
     return map;
   }
@@ -2759,6 +2788,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       previous: previous == null && nullToAbsent
           ? const Value.absent()
           : Value(previous),
+      synced: synced == null && nullToAbsent
+          ? const Value.absent()
+          : Value(synced),
     );
   }
 
@@ -2775,6 +2807,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       expected: serializer.fromJson<String?>(json['expected']),
       heldUntil: serializer.fromJson<int?>(json['heldUntil']),
       previous: serializer.fromJson<String?>(json['previous']),
+      synced: serializer.fromJson<String?>(json['synced']),
     );
   }
   @override
@@ -2788,6 +2821,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       'expected': serializer.toJson<String?>(expected),
       'heldUntil': serializer.toJson<int?>(heldUntil),
       'previous': serializer.toJson<String?>(previous),
+      'synced': serializer.toJson<String?>(synced),
     };
   }
 
@@ -2799,6 +2833,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     Value<String?> expected = const Value.absent(),
     Value<int?> heldUntil = const Value.absent(),
     Value<String?> previous = const Value.absent(),
+    Value<String?> synced = const Value.absent(),
   }) => IntentRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -2807,6 +2842,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     expected: expected.present ? expected.value : this.expected,
     heldUntil: heldUntil.present ? heldUntil.value : this.heldUntil,
     previous: previous.present ? previous.value : this.previous,
+    synced: synced.present ? synced.value : this.synced,
   );
   IntentRow copyWithCompanion(IntentsCompanion data) {
     return IntentRow(
@@ -2817,6 +2853,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       expected: data.expected.present ? data.expected.value : this.expected,
       heldUntil: data.heldUntil.present ? data.heldUntil.value : this.heldUntil,
       previous: data.previous.present ? data.previous.value : this.previous,
+      synced: data.synced.present ? data.synced.value : this.synced,
     );
   }
 
@@ -2829,7 +2866,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           ..write('wanted: $wanted, ')
           ..write('expected: $expected, ')
           ..write('heldUntil: $heldUntil, ')
-          ..write('previous: $previous')
+          ..write('previous: $previous, ')
+          ..write('synced: $synced')
           ..write(')'))
         .toString();
   }
@@ -2843,6 +2881,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     expected,
     heldUntil,
     previous,
+    synced,
   );
   @override
   bool operator ==(Object other) =>
@@ -2854,7 +2893,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           other.wanted == this.wanted &&
           other.expected == this.expected &&
           other.heldUntil == this.heldUntil &&
-          other.previous == this.previous);
+          other.previous == this.previous &&
+          other.synced == this.synced);
 }
 
 class IntentsCompanion extends UpdateCompanion<IntentRow> {
@@ -2865,6 +2905,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   final Value<String?> expected;
   final Value<int?> heldUntil;
   final Value<String?> previous;
+  final Value<String?> synced;
   final Value<int> rowid;
   const IntentsCompanion({
     this.accountId = const Value.absent(),
@@ -2874,6 +2915,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.expected = const Value.absent(),
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
+    this.synced = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IntentsCompanion.insert({
@@ -2884,6 +2926,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.expected = const Value.absent(),
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
+    this.synced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -2897,6 +2940,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Expression<String>? expected,
     Expression<int>? heldUntil,
     Expression<String>? previous,
+    Expression<String>? synced,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2907,6 +2951,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       if (expected != null) 'expected': expected,
       if (heldUntil != null) 'held_until': heldUntil,
       if (previous != null) 'previous': previous,
+      if (synced != null) 'synced': synced,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2919,6 +2964,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Value<String?>? expected,
     Value<int?>? heldUntil,
     Value<String?>? previous,
+    Value<String?>? synced,
     Value<int>? rowid,
   }) {
     return IntentsCompanion(
@@ -2929,6 +2975,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       expected: expected ?? this.expected,
       heldUntil: heldUntil ?? this.heldUntil,
       previous: previous ?? this.previous,
+      synced: synced ?? this.synced,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2957,6 +3004,9 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     if (previous.present) {
       map['previous'] = Variable<String>(previous.value);
     }
+    if (synced.present) {
+      map['synced'] = Variable<String>(synced.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2973,6 +3023,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
           ..write('expected: $expected, ')
           ..write('heldUntil: $heldUntil, ')
           ..write('previous: $previous, ')
+          ..write('synced: $synced, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7642,6 +7693,7 @@ typedef $$IntentsTableCreateCompanionBuilder = IntentsCompanion Function({
   Value<String?> expected,
   Value<int?> heldUntil,
   Value<String?> previous,
+  Value<String?> synced,
   Value<int> rowid,
 });
 typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
@@ -7652,6 +7704,7 @@ typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
   Value<String?> expected,
   Value<int?> heldUntil,
   Value<String?> previous,
+  Value<String?> synced,
   Value<int> rowid,
 });
 
@@ -7696,6 +7749,11 @@ class $$IntentsTableFilterComposer
 
   ColumnFilters<String> get previous => $composableBuilder(
     column: $table.previous,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get synced => $composableBuilder(
+    column: $table.synced,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7743,6 +7801,11 @@ class $$IntentsTableOrderingComposer
     column: $table.previous,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$IntentsTableAnnotationComposer
@@ -7774,6 +7837,9 @@ class $$IntentsTableAnnotationComposer
 
   GeneratedColumn<String> get previous =>
       $composableBuilder(column: $table.previous, builder: (column) => column);
+
+  GeneratedColumn<String> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
 }
 
 class $$IntentsTableTableManager
@@ -7814,6 +7880,7 @@ class $$IntentsTableTableManager
                 Value<String?> expected = const Value.absent(),
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
+                Value<String?> synced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion(
                 accountId: accountId,
@@ -7823,6 +7890,7 @@ class $$IntentsTableTableManager
                 expected: expected,
                 heldUntil: heldUntil,
                 previous: previous,
+                synced: synced,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7834,6 +7902,7 @@ class $$IntentsTableTableManager
                 Value<String?> expected = const Value.absent(),
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
+                Value<String?> synced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion.insert(
                 accountId: accountId,
@@ -7843,6 +7912,7 @@ class $$IntentsTableTableManager
                 expected: expected,
                 heldUntil: heldUntil,
                 previous: previous,
+                synced: synced,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

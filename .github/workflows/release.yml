@@ -1,7 +1,8 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: `macos` (DMG) and `android` (sideloaded APK); TestFlight (#120) plugs in as a sibling.
+# `needs: version`: `macos` (DMG) and `android` (sideloaded APK); TestFlight (#120) plugs in as a sibling. `guide`
+# publishes the invitees' guide (#123) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -35,6 +36,37 @@ jobs:
         run: |
           tag=$(git ls-remote --tags origin "refs/tags/v$VERSION")
           test -z "$tag" || { echo "::error::v$VERSION is already released: bump the version in pubspec.yaml"; exit 1; }
+
+  # The invitees' guide (#123), hand-written HTML twin of docs/guida-invitati.md, at a stable URL. R2's custom domain
+  # serves no directory index, so the stable link is guida/index.html. A tag moves it only when it is the highest
+  # version, like the "latest" downloads; a manual run (from main) always publishes it, to fix the guide alone.
+  guide:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: tool/release/guide_check.sh
+      - name: Upload the guide to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            # Its own assignment, so a failing is_latest.sh fails the step instead of skipping the upload.
+            latest=$(tool/release/is_latest.sh "$VERSION")
+            if [ "$latest" != yes ]; then
+              echo "v$VERSION is not the highest version: guide left as it is"
+              exit 0
+            fi
+          fi
+          tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
+          echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
 
   macos:
     needs: version

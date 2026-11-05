@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/core/domain/settings_sync_account_use_case.dart';
@@ -34,5 +36,12 @@ void main() {
     expect(r, isA<Ok<void>>());
     expect(h.consent.lastDrive, isNull);
     expect(await getIt<SettingsRepository>().settingsSyncAccount(), isNull);
+  });
+
+  test('only the Accounts whose Provider can keep the file are offered: today the Gmail ones', () async {
+    await getIt<MailStore>().addAccount(
+      const Account(id: 'i1', address: 'i1@icloud.com', provider: ProviderKind.icloud, color: 0, position: 9),
+    );
+    expect([for (final a in await getIt<SettingsSyncAccountUseCase>().watchHosts().first) a.id], ['a1']);
   });
 }

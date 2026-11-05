@@ -13,31 +13,31 @@ import '../../../i18n/strings.g.dart';
 import 'sync_account_chooser.dart';
 
 /// The «Sincronizza su…» group (ADR 0016): the entry with the current choice, what it does, and the progress or
-/// the error of the incremental consent to Drive. [accounts] are every connected Account; only Gmail ones are offered.
-class const SyncAccountSection({super.key, required final List<Account> accounts}) extends StatefulWidget {
+/// the error of the incremental consent to Drive. It offers the Accounts that can keep the file, and shows nothing
+/// without one.
+class const SyncAccountSection({super.key}) extends StatefulWidget {
   @override
   State<SyncAccountSection> createState() => _SyncAccountSectionState();
 }
 
 class _SyncAccountSectionState() extends State<SyncAccountSection> {
   late final _current = streamSignal(() => GetIt.I<SettingsRepository>().watchSettingsSyncAccount());
+  late final _hosts = streamSignal(() => GetIt.I<SettingsSyncAccountUseCase>().watchHosts());
   var _busy = false;
   Failure? _failure;
 
   @override
   void dispose() {
     _current.dispose();
+    _hosts.dispose();
     super.dispose();
   }
 
-  List<Account> get _gmail => [
-    for (final a in widget.accounts)
-      if (a.provider == ProviderKind.gmail) a,
-  ];
+  List<Account> get _hostList => _hosts.value.value ?? const [];
 
   Future<void> _open() async {
     if (_busy) return;
-    final choice = await showSyncAccountChooser(context, _gmail, _current.value.value);
+    final choice = await showSyncAccountChooser(context, _hostList, _current.value.value);
     if (choice == null || !mounted) return;
     setState(() {
       _busy = true;
@@ -70,8 +70,8 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
     builder: (context) {
       final t = context.t.impostazioni;
       final id = _current.value.value;
-      final address = _gmail.where((a) => a.id == id).firstOrNull?.address;
-      if (_gmail.isEmpty) return const SizedBox.shrink();
+      final address = _hostList.where((a) => a.id == id).firstOrNull?.address;
+      if (_hostList.isEmpty) return const SizedBox.shrink();
       return PostinoSettingsSection(
         title: t.syncSection,
         children: [

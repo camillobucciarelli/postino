@@ -43,7 +43,7 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
                 ),
               ],
             ),
-          SyncAccountSection(accounts: accounts.value.value ?? const <Account>[]),
+          const SyncAccountSection(),
           for (final a in accounts.value.value ?? const <Account>[])
             PostinoSettingsSection(
               title: a.name,

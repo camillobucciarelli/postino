@@ -27,7 +27,8 @@ class IntentReplayer(
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
   Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     await _replayReads(accountId, provider);
-    await _replayLabels(accountId, provider);
+    // Rate limited: the Bozze wait for the deadline too.
+    if (await _replayLabels(accountId, provider)) return;
     await _replayDrafts(accountId, provider, flush: flush);
   }
 
@@ -50,8 +51,9 @@ class IntentReplayer(
 
   /// One call per message and Etichetta: a message gone fails alone, and its intent is dropped.
   /// A passing failure (offline, quota, auth) stops at once: each call would wait out the transport's backoff,
-  /// holding the Account's queue for minutes; the rest stays queued for the next replay.
-  Future<void> _replayLabels(String accountId, MailProvider provider) async {
+  /// holding the Account's queue for minutes; the rest stays queued for the next replay. True when it paused the
+  /// Account.
+  Future<bool> _replayLabels(String accountId, MailProvider provider) async {
     for (final i in await _store.pendingLabelIntents(accountId)) {
       switch (await provider.setLabel(i.messageId, i.labelId, add: i.added)) {
         case Ok() || Err(failure: NotFoundFailure()):
@@ -63,10 +65,14 @@ class IntentReplayer(
         case Err(:final failure):
           debugPrint('[sync] $accountId: label replay failed, $failure');
           // Rate limited: the Account waits for the deadline, as after a sync or a send.
-          if (failure case RateLimitFailure(:final retryAfter?)) _pause(accountId, retryAfter);
-          return;
+          if (failure case RateLimitFailure(:final retryAfter?)) {
+            _pause(accountId, retryAfter);
+            return true;
+          }
+          return false;
       }
     }
+    return false;
   }
 
   Future<void> _replayDrafts(String accountId, MailProvider provider, {required bool flush}) async {

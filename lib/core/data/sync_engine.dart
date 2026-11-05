@@ -216,9 +216,7 @@ class SyncEngine(
     String labelId, {
     required bool add,
   }) async {
-    for (final id in messageIds) {
-      await _store.queueLabel(accountId, id, labelId, add: add);
-    }
+    await _store.queueLabels(accountId, messageIds, labelId, add: add);
     // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
     if (await _activeAccount(accountId) case final account?) {
       await _serial(accountId, () => _replay(accountId, providerFor(account)));
@@ -266,6 +264,8 @@ class SyncEngine(
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
+    // The replay may have just paused it (a rate-limited Etichetta): no send before the deadline.
+    if (_paused(accountId)) return;
     await _outbox.sendDue(accountId, provider);
   }
 

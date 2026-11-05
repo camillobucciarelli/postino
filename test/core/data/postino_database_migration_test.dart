@@ -224,7 +224,7 @@ void main() {
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    await db.intentsDao.queueLabel('a1', 'm1', 'Label_12', add: true);
+    await db.intentsDao.queueLabels('a1', ['m1'], 'Label_12', add: true);
     final row = (await db.intentsDao.pendingLabels('a1')).single;
     expect((row.messageId, row.labelId, row.added), ('m1', 'Label_12', true));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');

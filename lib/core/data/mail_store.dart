@@ -89,9 +89,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> readDone(String accountId, List<String> messageIds, {required bool isRead}) =>
       _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
-  /// Puts the Etichetta on the message here at once (or takes it off) and queues the intent (ADR 0008).
-  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) =>
-      _db.intentsDao.queueLabel(accountId, messageId, labelId, add: add);
+  /// Puts the Etichetta on the messages here at once (or takes it off) and queues the intents (ADR 0008),
+  /// in one transaction.
+  Future<void> queueLabels(String accountId, Iterable<String> messageIds, String labelId, {required bool add}) =>
+      _db.intentsDao.queueLabels(accountId, messageIds, labelId, add: add);
 
   Future<List<LabelIntentRow>> pendingLabelIntents(String accountId) => _db.intentsDao.pendingLabels(accountId);
 

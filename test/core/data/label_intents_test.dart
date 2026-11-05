@@ -225,10 +225,64 @@ void main() {
     expect(a.labelCalls, isEmpty);
   });
 
+  test(
+    'a Conversazione\'s Etichetta is one batch: its messages show it all or none; on then off at once ends off',
+    () async {
+      final ids = [for (var i = 0; i < 50; i++) 'c$i'];
+      for (final id in ids) {
+        a.deliver(msg(id, conversationId: 't-big'));
+      }
+      await engine.syncAll();
+      a.goOffline();
+      Future<List<Message>> conversation() async => [
+        for (final m in await getIt<InboxRepository>().watchConversation('a', 't-big').first) m.message,
+      ];
+
+      final adding = engine.setConversationLabel('a', ids, _viaggi, add: true);
+      // As the picker does: the removal goes to the messages that show the Etichetta now.
+      late List<Message> shown;
+      do {
+        shown = await conversation();
+      } while (!shown.any((m) => m.labelIds.contains(_viaggi)));
+      expect(shown.where((m) => !m.labelIds.contains(_viaggi)), isEmpty);
+      final removing = engine.setConversationLabel(
+        'a',
+        [
+          for (final m in shown)
+            if (m.labelIds.contains(_viaggi)) m.id,
+        ],
+        _viaggi,
+        add: false,
+      );
+      await Future.wait([adding, removing]);
+
+      expect((await conversation()).where((m) => m.labelIds.contains(_viaggi)), isEmpty);
+      final intents = (await queued()).where((i) => i.labelId == _viaggi);
+      expect(intents, hasLength(50));
+      expect(intents.every((i) => !i.added), isTrue);
+    },
+  );
+
+  test('two batches called one after the other apply in that order', () async {
+    final ids = [for (var i = 0; i < 50; i++) 'c$i'];
+    for (final id in ids) {
+      a.deliver(msg(id, conversationId: 't-big'));
+    }
+    await engine.syncAll();
+    a.goOffline();
+    await Future.wait([
+      engine.setConversationLabel('a', ids, _viaggi, add: true),
+      engine.setConversationLabel('a', ids, _viaggi, add: false),
+    ]);
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-big').first;
+    expect(c.where((m) => m.message.labelIds.contains(_viaggi)), isEmpty);
+    expect((await queued()).where((i) => i.labelId == _viaggi).every((i) => !i.added), isTrue);
+  });
+
   test('an intent replaced while the replay ran stays: only the replayed value leaves', () async {
     final store = getIt<MailStore>();
-    await store.queueLabel('a', '1', _viaggi, add: true);
-    await store.queueLabel('a', '1', _viaggi, add: false);
+    await store.queueLabels('a', ['1'], _viaggi, add: true);
+    await store.queueLabels('a', ['1'], _viaggi, add: false);
     await store.labelDone('a', '1', _viaggi, added: true);
     expect((await queued()).map((i) => i.added), [false]);
   });

@@ -16,6 +16,7 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: WrongAccountFailure(:final expected)) => 'wrong-account $expected',
   Err(failure: SizeLimitFailure(:final limitBytes)) => 'size $limitBytes',
   Err(failure: RejectedFailure(:final reason)) => 'rejected $reason',
+  Err(failure: IntegrityFailure()) => 'integrity',
 };
 
 void main() {
@@ -35,5 +36,6 @@ void main() {
     expect(describe(const Err(CancelledFailure())), 'cancelled');
     expect(describe(const Err(SizeLimitFailure(7))), 'size 7');
     expect(describe(const Err(RejectedFailure('x'))), 'rejected x');
+    expect(describe(const Err(IntegrityFailure())), 'integrity');
   });
 }

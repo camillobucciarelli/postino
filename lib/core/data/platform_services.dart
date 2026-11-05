@@ -63,6 +63,17 @@ class SystemConnectivity() implements Connectivity {
 
   @override
   Stream<bool> get onChanged => _plus.onConnectivityChanged.map(_update).distinct();
+
+  // ponytail: Wi-Fi as connectivity_plus sees it, so a phone's hotspot counts as Wi-Fi; Android's
+  // isActiveNetworkMetered if a metered Wi-Fi ever surprises a user.
+  @override
+  Future<bool> isOnWifi() async {
+    try {
+      return (await _plus.checkConnectivity()).contains(plus.ConnectivityResult.wifi);
+    } on Exception {
+      return false;
+    }
+  }
 }
 
 @Singleton(as: LinkOpener, env: [Environment.prod])

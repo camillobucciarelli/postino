@@ -132,6 +132,12 @@ final class const ConfigurationFailure(
   String toString() => 'ConfigurationFailure($setting)';
 }
 
+/// A downloaded file does not match its expected hash: it was discarded.
+final class const IntegrityFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
 /// The user backed out (for example closed the consent page).
 final class const CancelledFailure() extends Failure {
   /// Crea il fallimento.

@@ -23,6 +23,7 @@ import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
 import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
@@ -38,6 +39,7 @@ import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
 import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
+import 'package:postino/core/domain/model_manager.dart' as _i689;
 import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
@@ -60,6 +62,7 @@ extension GetItInjectableX on _i174.GetIt {
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
+    final modelModule = _$ModelModule();
     final errorLogModule = _$ErrorLogModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
@@ -111,6 +114,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i398.LinkOpener>(
       () => _i524.SystemLinkOpener(),
       registerFor: {_prod},
+    );
+    await gh.singletonAsync<_i689.ModelManager>(
+      () => modelModule.modelManager(
+        gh<_i519.Client>(),
+        gh<_i398.Connectivity>(),
+      ),
+      registerFor: {_prod},
+      preResolve: true,
     );
     await gh.singletonAsync<_i346.ErrorLog>(
       () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
@@ -201,6 +212,8 @@ class _$AttachmentModule extends _i524.AttachmentModule {}
 class _$HttpModule extends _i524.HttpModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
+
+class _$ModelModule extends _i260.ModelModule {}
 
 class _$ErrorLogModule extends _i907.ErrorLogModule {}
 

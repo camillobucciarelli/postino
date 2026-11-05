@@ -89,8 +89,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
         ],
       );
 
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
-      _db.bodiesDao.saveBody(accountId, messageId, body);
+  /// Nothing, as in [applySync], for an Account removed meanwhile.
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) => _db.transaction(() async {
+    if (await _db.accountsDao.exists(accountId)) await _db.bodiesDao.saveBody(accountId, messageId, body);
+  });
 
   Future<void> markConversationRead(String accountId, String conversationId) =>
       _db.messagesDao.markConversationRead(accountId, conversationId);
@@ -115,7 +117,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.intentsDao.labelRejected(accountId, messageId, labelId, added: added);
 
   /// An Etichetta just created on the Provider, listed before the next sync brings it.
-  Future<void> saveLabel(String accountId, Label label) => _db.labelsDao.upsert(accountId, label);
+  /// Nothing, as in [applySync], for an Account removed meanwhile.
+  Future<void> saveLabel(String accountId, Label label) => _db.transaction(() async {
+    if (await _db.accountsDao.exists(accountId)) await _db.labelsDao.upsert(accountId, label);
+  });
 
   @override
   Stream<List<Message>> watchDrafts(String accountId) => _db.draftsDao

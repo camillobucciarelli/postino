@@ -28,10 +28,10 @@ Account? decodeAccountSettings(String accountId, String? json) {
   final provider = ProviderKind.values.where((p) => p.name == name).firstOrNull;
   return switch ((root['address'], root['color'], root['position'])) {
     (final String raw, final int color, final int position)
-        when provider != null && raw.trim().isNotEmpty && accountId == '${provider.name}:${_normalized(raw)}' =>
+        when provider != null && raw.trim().isNotEmpty && accountId == accountIdOf(provider, raw) =>
       Account(
         id: accountId,
-        address: _normalized(raw),
+        address: normalizedAddress(raw),
         provider: provider,
         color: color % accountColorCount,
         position: position,
@@ -40,8 +40,6 @@ Account? decodeAccountSettings(String accountId, String? json) {
     _ => null,
   };
 }
-
-String _normalized(String address) => address.trim().toLowerCase();
 
 /// Whether [a] and [b] say the same in the voce: address, Provider, color and position (not the status).
 bool sameAccountSettings(Account a, Account b) =>

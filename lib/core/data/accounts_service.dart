@@ -37,13 +37,12 @@ class AccountsService(
       case Ok(:final value):
         grant = value;
     }
-    if (loginHint != null && loginHint.trim().toLowerCase() != grant.address.trim().toLowerCase()) {
+    if (loginHint != null && normalizedAddress(loginHint) != normalizedAddress(grant.address)) {
       return Err(WrongAccountFailure(loginHint));
     }
-    // ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.
     // Gmail addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
-    final address = grant.address.trim().toLowerCase();
-    final id = 'gmail:$address';
+    final address = normalizedAddress(grant.address);
+    final id = accountIdOf(ProviderKind.gmail, address);
     await GmailTokens.of(grant).write(_keychain, id);
     final account = await _save(id, address);
     unawaited(_sync.syncAll());
@@ -87,7 +86,7 @@ class AccountsService(
       case Err(:final failure):
         return Err(failure);
       case Ok(:final value):
-        if (value.address.trim().toLowerCase() != account.address) return Err(WrongAccountFailure(account.address));
+        if (normalizedAddress(value.address) != account.address) return Err(WrongAccountFailure(account.address));
         await GmailTokens.of(value).write(_keychain, account.id);
         return const Ok(null);
     }

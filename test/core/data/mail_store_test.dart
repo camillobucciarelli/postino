@@ -29,6 +29,8 @@ void main() {
 
     await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')]));
     await store.applyPage('a', [msg('2')], const {});
+    await store.saveBody('a', '1', const MessageBody('Ciao', BodyKind.testo));
+    await store.saveLabel('a', const Label(id: 'L1', name: 'L1', kind: LabelKind.etichetta));
 
     for (final t in db.allTables) {
       if (!t.columnsByName.containsKey('account_id')) continue;

@@ -11,6 +11,9 @@ const minAutoLabelMargin = 0.02;
 /// From this many examples an Etichetta's prototype is their centroid; with fewer, its name and description.
 const minAutoLabelExamples = 3;
 
+/// The examples of an Etichetta are its newest mail, this many at most.
+const maxAutoLabelExamples = 50;
+
 /// The cosine of [a] and [b]: 0 when either is the zero vector.
 double cosine(List<double> a, List<double> b) {
   var dot = 0.0;

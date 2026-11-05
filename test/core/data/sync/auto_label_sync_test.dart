@@ -14,41 +14,45 @@ const _viaggi = 'Label_12';
 void main() {
   late Harness h;
   late FakeMailProvider a;
+  late SyncEngine engine;
   final after = DateTime.utc(2026, 10, 28, 13);
 
-  /// The engine runs after the sync, not awaited by it: waits until [done], or a while.
-  Future<void> settle(bool Function() done) async {
-    for (var i = 0; i < 50 && !done(); i++) {
-      await pumpEventQueue();
-    }
+  /// A sync, then the Etichettatura automatica it started and its replay, which the sync does not wait for.
+  Future<void> sync() async {
+    await engine.syncAll();
+    await engine.autoLabeling['a'];
   }
 
   setUp(() async {
     h = await Harness.create();
+    engine = getIt<SyncEngine>();
     h.embedder.vectorOf = (text) => text.contains('Viaggi') || text.contains('Volo') ? [1, 0] : [0, 1];
     await getIt<AutoLabelsRepository>().setAutomatic('a', _viaggi, automatic: true);
     a = (await h.addAccount('a'))..deliver(msg('1', subject: 'Volo per Lisbona', date: after));
   });
 
   test('the initial sync classifies nothing; a new mail of an incremental one reaches the Provider labelled', () async {
-    await getIt<SyncEngine>().syncAll();
-    await settle(() => h.embedder.texts.isNotEmpty);
+    await sync();
     expect(h.embedder.texts, isEmpty);
     expect(a.labelCalls, isEmpty);
 
     a.deliver(msg('2', subject: 'Volo per Oporto', date: after));
-    await getIt<SyncEngine>().syncAll();
-    await settle(() => a.labelCalls.isNotEmpty);
+    await sync();
+    expect(a.labelCalls, [('2', _viaggi, true)]);
+  });
+
+  test('a new mail already read and out of the inbox is labelled too', () async {
+    await sync();
+    a.deliver(msg('2', subject: 'Volo per Oporto', date: after, isRead: true, labelIds: const []));
+    await sync();
     expect(a.labelCalls, [('2', _viaggi, true)]);
   });
 
   test('the model not ready: no Etichetta', () async {
     h.embedder.vectorOf = (_) => null;
-    await getIt<SyncEngine>().syncAll();
+    await sync();
     a.deliver(msg('2', subject: 'Volo per Oporto', date: after));
-    await getIt<SyncEngine>().syncAll();
-    await settle(() => h.embedder.texts.isNotEmpty);
-    await settle(() => false);
+    await sync();
     expect(h.embedder.texts, isNotEmpty);
     expect(a.labelCalls, isEmpty);
   });

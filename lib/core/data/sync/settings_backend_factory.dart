@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 
 import '../../domain/settings_backend.dart';
+import '../gmail/drive_http.dart';
 import '../gmail/drive_settings_backend.dart';
 
 /// Where the Account [accountId] keeps the Impostazioni di Postino, created on first use; tests register fakes
@@ -10,7 +11,7 @@ SettingsBackend settingsBackendFor(String accountId) {
   if (!g.isRegistered<SettingsBackend>(instanceName: accountId)) {
     // ponytail: Drive is the only backend; the export/import file and other Providers branch here.
     g.registerLazySingleton<SettingsBackend>(
-      () => DriveSettingsBackend(accountId, g(), g(), g()),
+      () => DriveSettingsBackend(DriveHttp(accountId, g(), g(), g())),
       instanceName: accountId,
     );
   }

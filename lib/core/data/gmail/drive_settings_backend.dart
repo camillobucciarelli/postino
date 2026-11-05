@@ -1,62 +1,46 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../../domain/settings_backend.dart';
-import 'google_auth.dart';
-import 'google_client.dart';
+import '../../domain/settings_document.dart';
+import '../../domain/settings_entry.dart';
+import '../../domain/settings_merge.dart';
+import 'drive_http.dart';
 import 'google_failure.dart';
 
 /// The file of the Impostazioni di Postino in the hidden appDataFolder of an Account's Drive (ADR 0016),
-/// over Drive v3 REST with the Account's tokens. Never an [AuthFailure]: a missing `drive.appdata` scope is a
-/// [DriveScopeFailure], so the Account's mail is never marked Da ricollegare because of Drive.
-class DriveSettingsBackend(
-  String accountId,
-  SecureStore keychain,
-  final http.Client _http,
-  Clock clock, {
-  GoogleClient client = const GoogleClient.fromEnvironment(),
-}) implements SettingsBackend {
-  this : _auth = GoogleAuth(accountId, keychain, _http, clock, client: client);
-
-  final GoogleAuth _auth;
-
+/// over [DriveHttp]: finding it, reading it, creating it and updating it.
+class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
   /// Il nome del file nella appDataFolder.
   static const fileName = 'postino-settings.json';
   static const _api = 'https://www.googleapis.com/drive/v3/files';
   static const _upload = 'https://www.googleapis.com/upload/drive/v3/files';
   static const _boundary = 'postino-settings-boundary';
-  static const _timeout = Duration(seconds: 30);
 
   /// Found by the last read, so a write right after it does not search again.
   String? _fileId;
 
   @override
   Future<Result<String?>> read() => googleGuard(() async {
-    final id = await _find();
-    if (id == null) return const Ok(null);
-    return Ok((await _send('GET', Uri.parse('$_api/$id').replace(queryParameters: {'alt': 'media'}))).body);
+    final ids = await _find();
+    if (ids.isEmpty) return const Ok(null);
+    final contents = [for (final id in ids) (await _drive.send('GET', _media(id))).body];
+    if (contents.length == 1) return Ok(contents.single);
+    return Ok(await _mergeDuplicates(ids, contents));
   });
 
   @override
   Future<Result<void>> write(String json) => googleGuard(() async {
-    if ((_fileId ?? await _find()) case final id?) {
-      await _send(
-        'PATCH',
-        Uri.parse('$_upload/$id').replace(queryParameters: {'uploadType': 'media'}),
-        body: json,
-        type: 'application/json',
-      );
+    if (_fileId ?? (await _find()).firstOrNull case final id?) {
+      await _patch(id, json);
       return const Ok(null);
     }
     final metadata = jsonEncode({
       'name': fileName,
       'parents': ['appDataFolder'],
     });
-    final r = await _send(
+    final r = await _drive.send(
       'POST',
       Uri.parse(_upload).replace(queryParameters: {'uploadType': 'multipart'}),
       body: [
@@ -78,47 +62,50 @@ class DriveSettingsBackend(
 
   // ponytail: no If-Match on the upload; two devices writing at once may drop the other's voci from the file,
   // and the next cycle of that device writes them back (its merge always includes every local voce).
-  Future<String?> _find() async {
-    final r = await _send(
+  /// The ids of the file, oldest first: more than one when two devices created it at once.
+  Future<List<String>> _find() async {
+    final r = await _drive.send(
       'GET',
       Uri.parse(_api).replace(
         queryParameters: {
           'spaces': 'appDataFolder',
           'q': "name = '$fileName' and trashed = false",
+          'orderBy': 'createdTime',
           'fields': 'files(id)',
         },
       ),
     );
     final files = (jsonDecode(r.body) as Map<String, dynamic>)['files'] as List<dynamic>;
-    return _fileId = files.isEmpty ? null : (files.first as Map<String, dynamic>)['id'] as String;
+    final ids = [for (final f in files) (f as Map<String, dynamic>)['id'] as String];
+    _fileId = ids.firstOrNull;
+    return ids;
   }
 
-  /// A Drive call with a valid token, refreshed once more on a 401; anything but a 200 throws a [GoogleFailed].
-  Future<http.Response> _send(String method, Uri url, {String? body, String? type}) async {
-    var tokens = await _auth.validTokens();
-    Future<http.Response> attempt() {
-      final request = http.Request(method, url)..headers['authorization'] = 'Bearer ${tokens.access}';
-      if (body != null) {
-        request
-          ..headers['content-type'] = type!
-          ..body = body;
+  /// Duplicates merged last-write-wins into the oldest, the others deleted, so every device reads one file.
+  /// A copy that cannot be read or comes from a newer Postino is never touched: the oldest is read as it is.
+  Future<String> _mergeDuplicates(List<String> ids, List<String> contents) async {
+    var merged = <String, SettingsEntry>{};
+    for (final c in contents) {
+      if (decodeSettings(c) case Ok(:final value) when value.writable) {
+        merged = mergeSettings(merged, value.entries);
+      } else {
+        return contents.first;
       }
-      return _http.send(request).then(http.Response.fromStream).timeout(_timeout);
     }
-
-    var r = await attempt();
-    if (r.statusCode == 401) {
-      tokens = await _auth.refresh(tokens);
-      r = await attempt();
+    final json = encodeSettings(merged.values);
+    await _patch(ids.first, json);
+    for (final id in ids.skip(1)) {
+      await _drive.send('DELETE', Uri.parse('$_api/$id'));
     }
-    if (r.statusCode == 200) return r;
-    throw GoogleFailed(switch (r.statusCode) {
-      429 => const RateLimitFailure(),
-      403 when r.body.contains('ateLimitExceeded') => const RateLimitFailure(),
-      // The token lacks drive.appdata: only the incremental consent fixes it.
-      403 => const DriveScopeFailure(),
-      404 => const NotFoundFailure(),
-      _ => UnexpectedFailure('Drive: HTTP ${r.statusCode}'),
-    });
+    return json;
   }
+
+  Uri _media(String id) => Uri.parse('$_api/$id').replace(queryParameters: {'alt': 'media'});
+
+  Future<void> _patch(String id, String json) => _drive.send(
+    'PATCH',
+    Uri.parse('$_upload/$id').replace(queryParameters: {'uploadType': 'media'}),
+    body: json,
+    type: 'application/json',
+  );
 }

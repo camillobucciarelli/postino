@@ -5,45 +5,54 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postino/core/data/gmail/drive_http.dart';
 import 'package:postino/core/data/gmail/drive_settings_backend.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_document.dart';
+import 'package:postino/core/domain/settings_entry.dart';
 
 import '../../../support/fake_platform.dart';
 
 const _account = 'gmail:ada@gmail.com';
 final _now = DateTime.utc(2026, 11, 5, 12);
 
-/// A Drive with one appDataFolder: what the backend sends, and what it would answer.
+/// A Drive with one appDataFolder: its files by id, oldest first, and what the backend sends.
 class _Drive() {
-  String? content;
+  final files = <String, String>{};
   final requests = <http.Request>[];
-
-  /// While set, every call answers it.
-  http.Response? failure;
+  var _seq = 0;
 
   late final client = MockClient((r) async {
     requests.add(r);
-    if (failure case final f?) return f;
-    if (r.method == 'GET' && r.url.path == '/drive/v3/files') {
+    final path = r.url.path;
+    if (r.method == 'GET' && path == '/drive/v3/files') {
       return http.Response(
         jsonEncode({
           'files': [
-            if (content != null) {'id': 'f1'},
+            for (final id in files.keys) {'id': id},
           ],
         }),
         200,
       );
     }
-    if (r.method == 'GET' && r.url.path == '/drive/v3/files/f1') return http.Response(content!, 200);
-    if (r.method == 'POST' && r.url.path == '/upload/drive/v3/files') {
-      content = r.body.split('\r\n')[7];
-      return http.Response(jsonEncode({'id': 'f1'}), 200);
+    if (r.method == 'POST' && path == '/upload/drive/v3/files') {
+      final id = 'f${++_seq}';
+      files[id] = r.body.split('\r\n')[7];
+      return http.Response(jsonEncode({'id': id}), 200);
     }
-    if (r.method == 'PATCH' && r.url.path == '/upload/drive/v3/files/f1') {
-      content = r.body;
-      return http.Response('{}', 200);
+    final id = path.split('/').last;
+    if (!files.containsKey(id)) return http.Response('?', 404);
+    switch (r.method) {
+      case 'GET':
+        return http.Response(files[id]!, 200);
+      case 'PATCH':
+        files[id] = r.body;
+        return http.Response(jsonEncode({'id': id}), 200);
+      case 'DELETE':
+        files.remove(id);
+        return http.Response('', 204);
     }
     return http.Response('?', 500);
   });
@@ -57,16 +66,22 @@ class _Drive() {
         expiresAt: _now.add(const Duration(hours: 1)),
       ).write(keychain, _account),
     );
-    return DriveSettingsBackend(_account, keychain, client, FakeClock(_now), client: const GoogleClient('test'));
+    return DriveSettingsBackend(
+      DriveHttp(_account, keychain, client, FakeClock(_now), client: const GoogleClient('test')),
+    );
   }
 }
+
+SettingsEntry _e(String key, int at, [String device = 'A']) =>
+    SettingsEntry(key: key, value: '{"at":$at}', updatedAt: at, deviceId: device);
 
 void main() {
   test('no file reads null; the first write creates it in the appDataFolder, the next ones update it', () async {
     final drive = _Drive();
     final backend = drive.backend();
     expect(await backend.read(), isA<Ok<String?>>().having((r) => r.value, 'value', isNull));
-    expect(drive.requests.single.url.queryParameters['spaces'], 'appDataFolder');
+    final list = drive.requests.single.url.queryParameters;
+    expect((list['spaces'], list['orderBy']), ('appDataFolder', 'createdTime'));
 
     expect(await backend.write('{"schemaVersion":1}'), isA<Ok<void>>());
     final create = drive.requests.last;
@@ -74,36 +89,33 @@ void main() {
     expect(create.headers['authorization'], 'Bearer ya29.a');
     expect(create.body, contains('"parents":["appDataFolder"]'));
     expect(create.body, contains('"name":"postino-settings.json"'));
-    expect(drive.content, '{"schemaVersion":1}');
+    expect(drive.files, {'f1': '{"schemaVersion":1}'});
 
     final other = drive.backend();
     expect(await other.read(), isA<Ok<String?>>().having((r) => r.value, 'value', '{"schemaVersion":1}'));
     expect(await other.write('{"schemaVersion":1,"entries":{}}'), isA<Ok<void>>());
     expect(drive.requests.last.method, 'PATCH');
-    expect(drive.content, '{"schemaVersion":1,"entries":{}}');
+    expect(drive.files, {'f1': '{"schemaVersion":1,"entries":{}}'});
   });
 
-  test('a 403 without the drive.appdata scope is its own failure, not an AuthFailure', () async {
-    final drive = _Drive()..failure = http.Response('{"error":{"errors":[{"reason":"insufficientScopes"}]}}', 403);
+  test('two files from a concurrent first write are merged into the oldest, the other deleted', () async {
+    final drive = _Drive()
+      ..files['f1'] = encodeSettings([_e('auto_labels/a1', 5), _e('auto_labels/a2', 1)])
+      ..files['f2'] = encodeSettings([_e('auto_labels/a1', 3, 'B'), _e('auto_labels/a3', 2, 'B')]);
     final r = await drive.backend().read();
-    expect(r, isA<Err<String?>>().having((e) => e.failure, 'failure', isA<DriveScopeFailure>()));
+
+    final merged = [_e('auto_labels/a1', 5), _e('auto_labels/a2', 1), _e('auto_labels/a3', 2, 'B')];
+    expect(r, isA<Ok<String?>>().having((r) => r.value, 'value', encodeSettings(merged)));
+    expect(drive.files, {'f1': encodeSettings(merged)});
   });
 
-  test('a quota hit is a RateLimitFailure, no network an OfflineFailure', () async {
-    final drive = _Drive()..failure = http.Response('{"reason":"userRateLimitExceeded"}', 403);
-    expect((await drive.backend().write('{}') as Err).failure, isA<RateLimitFailure>());
-    final offline = DriveSettingsBackend(
-      _account,
-      FakeSecureStore()
-        ..values['oauth:$_account'] = jsonEncode({
-          'access': 'a',
-          'refresh': 'r',
-          'expiresAt': _now.add(const Duration(hours: 1)).toIso8601String(),
-        }),
-      MockClient((_) => throw http.ClientException('offline')),
-      FakeClock(_now),
-      client: const GoogleClient('test'),
-    );
-    expect((await offline.read() as Err).failure, isA<OfflineFailure>());
+  test('a duplicate that cannot be read is left alone: the oldest is read as it is', () async {
+    final oldest = encodeSettings([_e('auto_labels/a1', 5)]);
+    final drive = _Drive()
+      ..files['f1'] = oldest
+      ..files['f2'] = 'nope';
+    expect(await drive.backend().read(), isA<Ok<String?>>().having((r) => r.value, 'value', oldest));
+    expect(drive.files.keys, ['f1', 'f2']);
+    expect(drive.requests.map((r) => r.method), everyElement('GET'));
   });
 }

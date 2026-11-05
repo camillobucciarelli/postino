@@ -185,6 +185,30 @@ void main() {
     expect(find.text('biglietti'), findsOneWidget);
   });
 
+  testWidgets('a description synced from another device shows in the open field, never over a pending edit', (
+    tester,
+  ) async {
+    await _start(tester);
+    _simulated(wifi: true);
+    final repo = getIt<AutoLabelsRepository>();
+    await tester.runAsync(() async {
+      await repo.setAutomatic('a1', 'Label_12', automatic: true);
+      await repo.setDescription('a1', 'Label_12', 'biglietti');
+    });
+    await _run(tester);
+    await _openPage(tester);
+
+    // What SettingsSync applies when another device changed it.
+    await repo.setDescription('a1', 'Label_12', 'treni');
+    await tester.pumpAndSettle();
+    expect(find.text('treni'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'aerei');
+    await repo.setDescription('a1', 'Label_12', 'navi');
+    await tester.pumpAndSettle();
+    expect(find.text('aerei'), findsOneWidget);
+  });
+
   testWidgets('on Wi-Fi the first activation downloads at once and the switch stays on', (tester) async {
     await _start(tester);
     final model = _simulated(wifi: true)..failNext = false;

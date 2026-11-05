@@ -1,6 +1,6 @@
 name: Release
 
-# A vX.Y.Z tag (or a manual run) publishes the version in pubspec.yaml. One job per platform, each
+# A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
 # `needs: version`: TestFlight (#120) and the Android APK (#121) plug in as sibling jobs of `macos`.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
@@ -35,9 +35,14 @@ jobs:
     timeout-minutes: 120
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      APP: build/macos/Build/Products/Release/postino.app
+      APP: build/macos/Build/Products/Release/Postino.app
       DMG: build/release/Postino-${{ needs.version.outputs.version }}.dmg
     steps:
+      # Without it the app builds fine but no Gmail Account can connect (README, "Client OAuth di Google").
+      - name: Google OAuth client ID is set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: test -n "$GOOGLE_CLIENT_ID" || { echo "::error::Secret GOOGLE_CLIENT_ID is not set"; exit 1; }
       - uses: actions/checkout@v4
       - name: Flutter matches .fvmrc
         run: |
@@ -45,7 +50,11 @@ jobs:
           have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
           test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       # Generated code is committed (checked by ci.yml), so no codegen here.
-      - run: flutter build macos --release
+      # macOS uses the iOS-type client: ID only, no GOOGLE_CLIENT_SECRET (README).
+      - name: flutter build macos --release
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: flutter build macos --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
       - name: Developer ID certificate in a job keychain
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -77,7 +86,13 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          # Public base of the bucket (custom domain), a repository variable; optional.
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
         run: |
           key="macos/$VERSION/Postino-$VERSION.dmg"
           tool/release/r2_upload.sh "$DMG" "$key" application/x-apple-diskimage
-          echo "macOS: \`$key\` on R2" >> "$GITHUB_STEP_SUMMARY"
+          # Stable link for invitees, rewritten by every release.
+          tool/release/r2_upload.sh "$DMG" macos/latest/Postino.dmg application/x-apple-diskimage
+          for k in "$key" macos/latest/Postino.dmg; do
+            echo "- macOS: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$k" >> "$GITHUB_STEP_SUMMARY"
+          done

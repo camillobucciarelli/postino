@@ -110,13 +110,14 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             );
           }
         });
-        await _keepIntents(accountId);
+        await _keepIntents(accountId, {for (final m in batch.messages) m.id});
       });
 
   /// What the user did here wins over what the Provider still says: until its voce is replayed, and while its
   /// Conflitto is open (ADR 0008).
   // ponytail: one read-and-write per voce and Conflitto; set-based SQL per attribute if the queue ever grows big.
-  Future<void> _keepIntents(String accountId) async {
+  /// [synced]: the messages the batch brought, whose values here are now the Provider's.
+  Future<void> _keepIntents(String accountId, Set<String> synced) async {
     // A message gone (removed, or absent from a full snapshot) closes its Conflitti: nothing left to decide.
     await customUpdate(
       'DELETE FROM conflicts WHERE account_id = ?1 '
@@ -127,6 +128,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
     final attributes = attachedDatabase.attributesDao;
     for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
+      // Changed again elsewhere: «tieni quella del Provider» must bring the latest value.
+      if (synced.contains(c.messageId)) {
+        if (await attributes.read(accountId, c.messageId, c.attribute) case final provider?
+            when provider != c.provider) {
+          await (update(conflicts)..where(
+                (t) =>
+                    t.accountId.equals(accountId) & t.messageId.equals(c.messageId) & t.attribute.equals(c.attribute),
+              ))
+              .write(ConflictsCompanion(provider: Value(provider)));
+        }
+      }
       await attributes.write(accountId, c.messageId, c.attribute, c.local);
     }
     // After the Conflitti: an Azione queued over one shows here.

@@ -284,6 +284,23 @@ void main() {
     });
   });
 
+  test('changed again elsewhere while in Conflitto: «tieni quella del Provider» brings the latest value', () async {
+    a.goOffline();
+    await engine.act('a', ['1'], const Archive());
+    a
+      ..changeElsewhere('1', placementAttribute, Placement.trash)
+      ..goOnline();
+    await engine.syncAll();
+    a.changeElsewhere('1', placementAttribute, Placement.inbox);
+    await engine.syncAll();
+    final open = (await conflicts()).single;
+    expect(open.provider, Placement.inbox);
+    expect(placement(await here('1')), Placement.archive, reason: 'the local version stays while it is open');
+
+    await engine.resolveConflict(open, keepMine: false);
+    expect(placement(await here('1')), Placement.inbox);
+  });
+
   test('a message with a Conflitto gone from the Provider: the Conflitto closes', () async {
     a.goOffline();
     await engine.act('a', ['1'], const Archive());

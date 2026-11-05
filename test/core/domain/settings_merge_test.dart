@@ -18,6 +18,11 @@ void main() {
       expect(mergeSettings({'k': _e('k', '1', 12)}, {'k': _e('k', '2', 11, 'B')})['k']!.value, '1');
     });
 
+    test('on an exact tie (same time, same device) the remote copy wins, whichever side it is', () {
+      expect(mergeSettings({'k': _e('k', '1', 0, '')}, {'k': _e('k', '2', 0, '')})['k']!.value, '2');
+      expect(mergeSettings({'k': _e('k', '1', 10)}, {'k': _e('k', '2', 10)})['k']!.value, '2');
+    });
+
     test('different keys are both kept', () {
       expect(mergeSettings({'a': _e('a', '1', 1)}, {'b': _e('b', '2', 1)}).keys, ['a', 'b']);
     });

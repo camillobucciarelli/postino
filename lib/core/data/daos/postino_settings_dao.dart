@@ -60,7 +60,8 @@ class PostinoSettingsDao(super.attachedDatabase)
   Future<void> applyRemote(Iterable<SettingsEntry> remote) => transaction(() async {
     for (final e in remote) {
       final old = await _row(e.key);
-      if (old != null && !e.winsOver(_entry(old))) continue;
+      // An exact tie goes to the remote copy (see mergeSettings).
+      if (old != null && _entry(old).winsOver(e)) continue;
       await into(postinoSettings).insertOnConflictUpdate(
         PostinoSettingsCompanion.insert(
           key: e.key,

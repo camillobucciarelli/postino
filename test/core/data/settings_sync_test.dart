@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/device_settings_store.dart';
@@ -83,6 +83,34 @@ void main() {
       expect((await d.labels.watch('a2').first).keys, ['X']);
       expect((await d.labels.watch('a3').first).keys, ['Y']);
     }
+  });
+
+  test('two devices that migrated the same voce with different values converge on the first uploaded', () async {
+    for (final (d, v) in [(a, '{"A":1}'), (b, '{"B":1}')]) {
+      await d.db
+          .into(d.db.postinoSettings)
+          .insert(
+            PostinoSettingsCompanion.insert(
+              key: 'auto_labels/x',
+              value: Value(v),
+              updatedAt: 0,
+              deviceId: '',
+              dirty: true,
+            ),
+          );
+    }
+    for (final d in [a, b, a]) {
+      await d.sync.syncNow();
+    }
+    for (final d in [a, b]) {
+      expect((await d.db.postinoSettingsDao.entries()).single.value, '{"A":1}');
+      expect(await d.dirty(), 0);
+    }
+    final attempts = file.writeAttempts;
+    for (final d in [b, a, b]) {
+      await d.sync.syncNow();
+    }
+    expect(file.writeAttempts, attempts);
   });
 
   test('removing an Account writes tombstones that an older copy does not bring back', () async {

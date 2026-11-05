@@ -5,11 +5,13 @@ import 'package:get_it/get_it.dart';
 
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/label_name.dart';
+import '../../../core/domain/mail_notification.dart' show ConversationKey;
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/conversation_label_intents.dart';
 import 'conversation_labels.dart';
 
 /// The content of the picker of the Etichette of a Conversazione, read from the database: the user Etichette of
@@ -30,43 +32,25 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   List<Message> _messages = const [];
   List<Label> _labels = const [];
 
-  /// The last tick per Etichetta while the fetch of the whole Conversazione is under way (true: on, false: off).
-  final _pending = <String, bool>{};
-  bool _fetching = true;
-
-  /// The older messages the late replay took an Etichetta off, by Etichetta: Annulla puts it back on them too.
-  final _removedLate = <String, List<Message>>{};
+  late final ConversationKey _key = (accountId: widget.accountId, conversationId: widget.conversationId);
+  final _intents = GetIt.I<ConversationLabelIntents>();
 
   @override
   void initState() {
     super.initState();
     final repo = GetIt.I<InboxRepository>();
-    final accountId = widget.accountId;
-    final conversationId = widget.conversationId;
     // The whole Conversazione is brought here: from the list it may never have been opened, and the sync window
-    // leaves its older messages out. Ticks go at once to the local messages; when the fetch ends (late, the
-    // picker closed) the last tick per Etichetta goes to what it brought. Offline or failed, the local ones stand.
-    final pending = _pending;
+    // leaves its older messages out. The ticks taken meanwhile reach them when it ends, the picker closed or not.
     unawaited(
-      GetIt.I<MailSync>().completeConversation(accountId, conversationId).then((r) async {
-        _fetching = false;
-        if (r is! Ok<void> || pending.isEmpty) return;
-        final all = [for (final m in await repo.watchConversation(accountId, conversationId).first) m.message];
-        for (final MapEntry(:key, :value) in pending.entries) {
-          final targets = all.where((m) => m.labelIds.contains(key) != value).toList();
-          if (!value) _removedLate[key] = targets;
-          setLabelOn(accountId, targets, key, add: value);
-        }
-        pending.clear();
-      }),
+      _intents.fetch(_key, () => GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId)),
     );
     _subs
       ..add(
         repo
-            .watchConversation(accountId, conversationId)
+            .watchConversation(widget.accountId, widget.conversationId)
             .listen((c) => setState(() => _messages = [for (final m in c) m.message])),
       )
-      ..add(repo.watchLabels(accountId).listen((l) => setState(() => _labels = l)));
+      ..add(repo.watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)));
   }
 
   @override
@@ -81,19 +65,10 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
 
   void _toggle(String id) {
     final label = _labels.firstWhere((l) => l.id == id);
-    final remove = _selected.contains(id);
-    if (_fetching) _pending[id] = !remove;
-    if (remove) {
-      // Annulla before the replay: nothing left to take off the late ones; after it: put it back on them too.
-      removeConversationLabel(
-        widget.snackbarContext,
-        widget.accountId,
-        _messages,
-        label,
-        onUndo: () => _pending.remove(id) == null ? _removedLate.remove(id) ?? const [] : const [],
-      );
+    if (_selected.contains(id)) {
+      removeConversationLabel(widget.snackbarContext, _key, _messages, label);
     } else {
-      addConversationLabel(widget.accountId, _messages, id);
+      _intents.set(_key, _messages, id, add: true);
     }
   }
 
@@ -101,10 +76,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   Future<void> _create(String name) async {
     final r = await GetIt.I<MailSync>().createLabel(widget.accountId, name);
     if (r case Ok(:final value)) {
-      if (_fetching) _pending[value.id] = true;
       // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
       final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
-      addConversationLabel(widget.accountId, [for (final m in all) m.message], value.id);
+      _intents.set(_key, [for (final m in all) m.message], value.id, add: true);
     }
   }
 

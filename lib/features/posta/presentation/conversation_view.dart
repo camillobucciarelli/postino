@@ -15,6 +15,7 @@ import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/conversation_label_intents.dart';
 import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
@@ -143,9 +144,12 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _open() {
     _hydrationFailed = false;
     unawaited(
-      _sync.openConversation(widget.accountId, widget.conversationId).then((r) {
-        if (r is Err) _hydrationFailed = true;
-      }),
+      // The opening brings the older messages: an Etichetta action taken meanwhile reaches them too.
+      GetIt.I<ConversationLabelIntents>()
+          .fetch(conversationKey, () => _sync.openConversation(widget.accountId, widget.conversationId))
+          .then((r) {
+            if (r is Err) _hydrationFailed = true;
+          }),
     );
   }
 
@@ -256,9 +260,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
                     onToggle: _toggle,
                     onFetchBody: _fetchBody,
                     onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
-                    onRemoveLabel: (label) => removeConversationLabel(context, widget.accountId, [
-                      for (final m in messages) m.message,
-                    ], label),
+                    onRemoveLabel: (label) =>
+                        removeConversationLabel(context, conversationKey, [for (final m in messages) m.message], label),
                   ),
                 ),
                 // Under the thread, always in view: on the last message (ADR 0014: r, a, f).

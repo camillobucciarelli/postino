@@ -381,6 +381,54 @@ void main() {
     expect(_calls(from), containsAll([('o1', created.id, true), ('o0', created.id, true)]));
   });
 
+  // The × of a chip during the opening's slow fetch: the same last-action-wins replay as the picker's ticks.
+  Future<void> openSlowConversation(WidgetTester tester) async {
+    await _start(tester);
+    gmail.deliverOutsideWindow(
+      msg('o0', conversationId: 'o', subject: 'Altro', date: _day(1), isRead: true, labelIds: ['INBOX', 'Label_12']),
+    );
+    gmail.holdConversation = Completer<void>();
+    await _tap(tester, _row('o1'));
+  }
+
+  _onMac('the × of a chip during a slow opening reaches the older messages; the chip does not come back', (
+    tester,
+  ) async {
+    await openSlowConversation(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, find.byTooltip('Togli Etichetta Viaggi'));
+    // Gone here at once; the Provider hears it behind the fetch, which holds the Account's slot.
+    expect(find.byTooltip('Togli Etichetta Viaggi'), findsNothing);
+    await endFetch(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_12', false), ('o0', 'Label_12', false)]));
+    expect(find.byTooltip('Togli Etichetta Viaggi'), findsNothing);
+  });
+
+  _onMac('Annulla of a × before the slow opening ends leaves the older messages alone', (tester) async {
+    await openSlowConversation(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, find.byTooltip('Togli Etichetta Viaggi'));
+    await _tap(tester, _undo);
+    await endFetch(tester);
+    expect(_calls(from).where((c) => c.$1 == 'o0'), isEmpty);
+    expect(find.byTooltip('Togli Etichetta Viaggi'), findsOneWidget);
+  });
+
+  _onMac('Annulla of a × after the slow opening ended puts the Etichetta back on the older messages too', (
+    tester,
+  ) async {
+    await openSlowConversation(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, find.byTooltip('Togli Etichetta Viaggi'));
+    await endFetch(tester);
+    expect(_calls(from), contains(('o0', 'Label_12', false)));
+    await _tap(tester, _undo);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await _settle(tester);
+    expect(_calls(from), containsAll([('o1', 'Label_12', true), ('o0', 'Label_12', true)]));
+    expect(find.byTooltip('Togli Etichetta Viaggi'), findsOneWidget);
+  });
+
   _onMac('offline, the picker still labels the local messages at once', (tester) async {
     await _start(tester);
     gmail.goOffline();

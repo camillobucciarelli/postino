@@ -1,8 +1,8 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: `macos` (DMG) and `android` (sideloaded APK); TestFlight (#120) plugs in as a sibling. `guide`
-# publishes the invitees' guide (#123) next to them.
+# `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `guide` publishes the
+# invitees' guide (#123) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -271,3 +271,59 @@ jobs:
           else
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
           fi
+
+  # TestFlight (#120): internal testers only (no Beta App Review). Signing is Xcode's own, cloud-managed through the
+  # App Store Connect API key (tool/release/ios_ipa.sh): no certificate, profile or keychain secret exists. The build
+  # number is the same as the other platforms'; App Store Connect refuses one it already has, so a rerun of a released
+  # version fails at the upload (bump pubspec.yaml). Builds expire after 90 days: run this workflow by hand (with a
+  # version bumped in pubspec.yaml) at least every ~80 days to keep testers on a live build.
+  ios:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Required secrets are set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID APPLE_TEAM_ID APP_STORE_CONNECT_API_KEY_BASE64 APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # Generated code is committed (checked by ci.yml), so no codegen here. --config-only writes version, build number
+      # and dart-defines for the archive of ios_ipa.sh; iOS uses the iOS-type client: ID only (README).
+      - name: Configure the iOS build
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: |
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+      - name: Archive and export the IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/ios_ipa.sh build/release
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          tool/release/testflight_upload.sh build/release/Postino.ipa
+          echo "- iOS: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to TestFlight (internal testers)" >> "$GITHUB_STEP_SUMMARY"

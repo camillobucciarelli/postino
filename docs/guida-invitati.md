@@ -36,7 +36,22 @@ Dal 2027 Google richiede che le app installate fuori da Google Play vengano da u
 
 ## iOS
 
-In arrivo.
+### Installare Postino su iOS
+
+Postino su iPhone e iPad passa da TestFlight, l'app di Apple per provare le app in anteprima. Serve il tuo indirizzo email: l'autore ti aggiunge al gruppo «Invitati».
+
+1. Aspetta l'email di invito di TestFlight (mittente Apple) e aprila sull'iPhone o sull'iPad.
+2. Tocca «Visualizza in TestFlight» o «Inizia a testare». Se l'app TestFlight non è installata, l'App Store ti propone di scaricarla: installala, poi torna all'invito.
+3. In TestFlight tocca «Accetta», poi «Installa».
+4. Apri Postino dalla Schermata Home.
+
+### Aggiornare Postino su iOS
+
+Le versioni nuove arrivano da sole: TestFlight ti manda una notifica. Puoi anche aprire TestFlight e toccare «Aggiorna» accanto a Postino. Account e posta restano.
+
+### I build di TestFlight scadono dopo 90 giorni
+
+Ogni versione di Postino in TestFlight smette di aprirsi dopo 90 giorni. L'autore ne carica una nuova prima della scadenza: aggiornala da TestFlight. Se una versione è già scaduta, apri TestFlight e installa quella nuova.
 
 ## Collegare un Account Gmail
 

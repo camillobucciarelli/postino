@@ -6,12 +6,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/data/simulated_model_download.dart';
-import 'package:postino/core/data/simulated_network_type.dart';
 import 'package:postino/core/domain/auto_labels_repository.dart';
 import 'package:postino/core/domain/model_download.dart';
 import 'package:postino/core/domain/model_download_state.dart';
-import 'package:postino/core/domain/network_type.dart';
+import 'package:postino/core/domain/model_manager.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -20,6 +18,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/fake_model_download.dart';
+import '../../support/fake_model_manager.dart';
 import '../../support/harness.dart';
 
 const _cost = 310 * 1000 * 1000;
@@ -50,9 +49,12 @@ Future<void> _openPage(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-SimulatedModelDownload _simulated({required bool wifi}) {
-  (getIt<NetworkType>() as SimulatedNetworkType).onWifi = wifi;
-  return getIt<ModelDownload>() as SimulatedModelDownload..stepDelay = Duration.zero;
+/// The real model download on a model manager in memory, on Wi-Fi or not; [failNext] fails the next download.
+ModelDownload _managed({required bool wifi, bool failNext = false}) {
+  getIt<ModelManager>() as FakeModelManager
+    ..onWifi = wifi
+    ..failNext = failNext;
+  return getIt<ModelDownload>();
 }
 
 Future<FakeModelDownload> _fake() async {
@@ -102,7 +104,7 @@ void main() {
   ) async {
     final semantics = tester.ensureSemantics();
     await _start(tester);
-    final model = _simulated(wifi: true);
+    final model = _managed(wifi: true);
     await _run(tester);
     await _openPage(tester);
     expect(find.text('Descrizione (facoltativa)'), findsNothing);
@@ -155,7 +157,7 @@ void main() {
 
   testWidgets('turning the switch off while typing keeps the description; on again shows it', (tester) async {
     await _start(tester);
-    _simulated(wifi: true);
+    _managed(wifi: true);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(_row);
@@ -174,7 +176,7 @@ void main() {
 
   testWidgets('what was saved is read back when the page opens again', (tester) async {
     await _start(tester);
-    _simulated(wifi: true);
+    _managed(wifi: true);
     final repo = getIt<AutoLabelsRepository>();
     await tester.runAsync(() async {
       await repo.setAutomatic('a1', 'Label_12', automatic: true);
@@ -190,7 +192,7 @@ void main() {
     tester,
   ) async {
     await _start(tester);
-    _simulated(wifi: true);
+    _managed(wifi: true);
     final repo = getIt<AutoLabelsRepository>();
     await tester.runAsync(() async {
       await repo.setAutomatic('a1', 'Label_12', automatic: true);
@@ -212,7 +214,7 @@ void main() {
 
   testWidgets('on Wi-Fi the first activation downloads at once and the switch stays on', (tester) async {
     await _start(tester);
-    final model = _simulated(wifi: true)..failNext = false;
+    final model = _managed(wifi: true);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(_row);
@@ -228,11 +230,12 @@ void main() {
 
   testWidgets('on cellular a dialog asks: the focus is on «Scarica ora» and Esc waits for Wi-Fi', (tester) async {
     await _start(tester);
-    final model = _simulated(wifi: false);
+    final model = _managed(wifi: false);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(_row);
     await tester.pumpAndSettle();
+    // The harness downloads the GGUF Q8_0: 309 855 456 bytes, «310 MB» as published.
     expect(find.text('Scaricare 310 MB su rete cellulare?'), findsOneWidget);
     final focused = FocusManager.instance.primaryFocus!.context!;
     expect(focused.findAncestorWidgetOfExactType<PostinoButton>()?.label, 'Scarica ora');
@@ -255,7 +258,7 @@ void main() {
 
   testWidgets('«Aspetta il Wi-Fi» on the dialog waits too', (tester) async {
     await _start(tester);
-    final model = _simulated(wifi: false);
+    final model = _managed(wifi: false);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(_row);
@@ -267,7 +270,7 @@ void main() {
 
   testWidgets('a failed download shows the reason and «Riprova» downloads again', (tester) async {
     await _start(tester);
-    final model = _simulated(wifi: true)..failNext = true;
+    final model = _managed(wifi: true, failNext: true);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(_row);
@@ -349,7 +352,7 @@ void main() {
 
   testWidgets('«Crea Etichetta» refuses a bad name in place and creates a good one', (tester) async {
     final (:h, :provider) = await _start(tester);
-    _simulated(wifi: true);
+    _managed(wifi: true);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(find.text('Crea Etichetta'));
@@ -380,7 +383,7 @@ void main() {
 
   testWidgets('«Crea Etichetta» offline says so, stays open, and can be retried', (tester) async {
     final (:h, :provider) = await _start(tester);
-    _simulated(wifi: true);
+    _managed(wifi: true);
     await _run(tester);
     await _openPage(tester);
     await tester.tap(find.text('Crea Etichetta'));

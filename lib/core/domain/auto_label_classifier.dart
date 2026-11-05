@@ -1,11 +1,12 @@
 import 'dart:math';
 
-/// The cosine of the closest Etichetta at least this, or no Etichetta.
-// ponytail: from the spike #103 on synthetic mail; calibrate on real mail.
+/// The cosine of the closest Etichetta at least this, or no Etichetta: a floor against a broken vector.
+// ponytail: inert with EmbeddingGemma-2, whose top-1 cosines on the spike #103 mail are 0.66-0.94 (#135). A floor
+// against mail outside every Etichetta would differ for centroid and zero-shot; calibrate it on real mail.
 const minAutoLabelCosine = 0.30;
 
-/// The closest Etichetta at least this above the second, or no Etichetta: on the spike #103 a zero-shot margin
-/// of 0.02 gave precision 0.95 and coverage 0.74.
+/// The closest Etichetta at least this above the second, or no Etichetta: on the spike #103 mail with the
+/// `.litertlm` (#135), precision 1.00 and coverage 0.66 for the centroid, 0.95 and 0.74 for the zero-shot.
 const minAutoLabelMargin = 0.02;
 
 /// From this many examples an Etichetta's prototype is their centroid; with fewer, its name and description.

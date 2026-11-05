@@ -1,7 +1,7 @@
 import 'model_download_state.dart';
 
 /// The download of the Etichettatura automatica model, as the UI follows it (#107): the page and the banner
-/// read [watch], the switch and the dialogs call the actions. A simulated one until the model manager (#108).
+/// read [watch], the switch and the dialogs call the actions. The real one over the model manager in core/data (#135).
 abstract interface class ModelDownload() {
   /// Interfaccia: nessuno stato da costruire.
   this;

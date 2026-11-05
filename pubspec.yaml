@@ -69,6 +69,10 @@ dependencies:
   window_manager: ^0.6.0
   flutter_local_notifications: ^22.3.3
   share_plus: 13.3.1
+  # On-device AI (ADR 0015): llamadart and its Apple companions, linked through SwiftPM.
+  llamadart: ^0.17.5
+  llamadart_llama_cpp_flutter: ^0.17.3
+  llamadart_litert_lm_flutter: ^0.17.3
 
 dev_dependencies:
   flutter_test:
@@ -98,6 +102,9 @@ hooks:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # The llamadart companions exist only as Swift packages; the other plugins stay on CocoaPods.
+  config:
+    enable-swift-package-manager: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

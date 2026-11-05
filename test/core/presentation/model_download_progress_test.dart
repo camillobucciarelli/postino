@@ -7,5 +7,8 @@ void main() {
     expect(downloadProgress(309999999, 310000000), (received: '309 MB', total: '310 MB', percent: 99));
     expect(downloadProgress(310000000, 310000000).percent, 100);
     expect(downloadProgress(0, 0).percent, 0);
+    // Il totale arrotondato come la dimensione pubblicata; i MB ricevuti per difetto finché il download non è finito.
+    expect(downloadProgress(309800000, 309855456), (received: '309 MB', total: '310 MB', percent: 99));
+    expect(downloadProgress(309855456, 309855456), (received: '310 MB', total: '310 MB', percent: 100));
   });
 }

@@ -42,7 +42,12 @@ android {
         versionName = flutter.versionName
         manifestPlaceholders["googleAuthScheme"] =
             googleClientId?.let { "com.googleusercontent.apps.$it" } ?: "com.cbucciarelli.postino.oauth"
+        // llamadart has no armeabi-v7a runtime (ADR 0015): ship only 64-bit ABIs.
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
+
+    // The Flutter plugin re-adds armeabi-v7a to abiFilters (its default targets), so also drop it at packaging.
+    packaging { jniLibs { excludes += "lib/armeabi-v7a/**" } }
 
     // Upload key for the sideloaded APK (#121): set only by the release workflow (tool/release/android_keystore.sh
     // and the ANDROID_* secrets). Without it, release builds keep the debug keys so `flutter run --release` works.

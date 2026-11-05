@@ -1,6 +1,8 @@
 // Etichettatura automatica (#109) end to end: la sync incrementale porta la mail nuova, il motore la classifica
 // e l'Etichetta arriva al Provider passando dalla coda offline.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/auto_labels_repository.dart';
@@ -55,5 +57,22 @@ void main() {
     await sync();
     expect(h.embedder.texts, isNotEmpty);
     expect(a.labelCalls, isEmpty);
+  });
+
+  test('a model still loading does not block the sync; its mail is labelled once it is ready', () async {
+    await sync();
+    final loaded = Completer<void>();
+    final classify = h.embedder.vectorOf;
+    h.embedder.vectorOf = (text) async {
+      await loaded.future;
+      return classify(text);
+    };
+    a.deliver(msg('2', subject: 'Volo per Oporto', date: after));
+    await engine.syncAll();
+    expect(a.labelCalls, isEmpty);
+
+    loaded.complete();
+    await engine.autoLabeling['a'];
+    expect(a.labelCalls, [('2', _viaggi, true)]);
   });
 }

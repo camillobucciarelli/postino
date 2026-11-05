@@ -12,6 +12,7 @@ import '../domain/outbox_repository.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import 'mail_store.dart';
+import 'sync/auto_labeler.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
 import 'sync/new_mail_notifier.dart';
@@ -32,6 +33,7 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
   final NewMailNotifier _newMail,
+  final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
   late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
@@ -331,6 +333,18 @@ class SyncEngine(
     return false;
   }
 
+  /// The Etichettatura automatica of the new mail [fresh] (#109), then the replay of what it queued.
+  Future<void> _autoLabel(String accountId, List<Message> fresh, Map<String, MessageBody> bodies) async {
+    try {
+      if (!await _labeler.label(accountId, fresh, bodies)) return;
+      if (await _activeAccount(accountId) case final account?) {
+        await _serial(accountId, () => _replay(accountId, providerFor(account)));
+      }
+    } on Object catch (e, s) {
+      _log.record(e, stack: s, context: 'etichettatura $accountId');
+    }
+  }
+
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     // The queue first, so the sync brings back what the user did offline.
     await _replay(accountId, provider);
@@ -357,6 +371,8 @@ class SyncEngine(
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
         await _newMail.notify(accountId, fresh);
+        // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
+        if (fresh.isNotEmpty) unawaited(_autoLabel(accountId, fresh, value.bodies));
         debugPrint(
           '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
           '${value.messages.length} messages, ${value.removedMessageIds.length} removed',

@@ -11,6 +11,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/intent_replayer.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/data/sync/outbox_sender.dart';
@@ -170,6 +171,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     )..start();
     addTearDown(restarted.stop);
@@ -414,6 +416,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );
     await Future.wait([engine.flushOutbox('a'), other.flushOutbox('a')]);
@@ -636,6 +639,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );
     await other.send('a', _message(id));

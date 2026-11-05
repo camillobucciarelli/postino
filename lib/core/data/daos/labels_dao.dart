@@ -21,6 +21,9 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       into(labels)
           .insertOnConflictUpdate(LabelsCompanion.insert(accountId: accountId, id: l.id, name: l.name, kind: l.kind));
 
+  /// The Account's labels, once.
+  Future<List<LabelRow>> all(String accountId) => (select(labels)..where((t) => t.accountId.equals(accountId))).get();
+
   /// The Account's own Etichette, by name.
   Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)

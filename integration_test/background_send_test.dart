@@ -15,14 +15,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/background_send.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/platform_services.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/data/unready_text_embedder.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
@@ -70,7 +73,16 @@ void main() {
     GetIt.I
       ..registerSingleton<OutboxRepository>(outbox)
       ..registerSingleton<SyncEngine>(
-        SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store), FakeErrorLog()),
+        SyncEngine(
+          store,
+          outbox,
+          clock,
+          FakeConnectivity(),
+          FakeBackgroundSender(),
+          _notifier(store),
+          _labeler(),
+          FakeErrorLog(),
+        ),
       );
     await outbox.enqueueOutgoing(
       'a',
@@ -97,6 +109,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      _labeler(),
       FakeErrorLog(),
     );
     await first.send('a', message);
@@ -112,6 +125,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      _labeler(),
       FakeErrorLog(),
     )..start();
     addTearDown(restarted.stop);
@@ -131,6 +145,18 @@ const _message = OutgoingMessage(
 
 /// The engine's notifier, with notifications that are only recorded.
 NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotifications(), OpenConversation());
+
+/// The Etichettatura automatica, never at work here: the model is not ready.
+AutoLabeler _labeler() {
+  final db = PostinoDatabase.inMemory();
+  addTearDown(db.close);
+  return AutoLabeler(
+    db,
+    AutoLabelsStore(db, FakeClock(DateTime.now().toUtc())),
+    const UnreadyTextEmbedder(),
+    FakeErrorLog(),
+  );
+}
 
 /// A fresh SQLCipher database file with Account `a`, whose fake Provider is registered by its id.
 Future<(MailStore, OutboxStore, FakeMailProvider)> _realStore(String name) async {

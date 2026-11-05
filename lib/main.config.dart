@@ -32,9 +32,11 @@ import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
+import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
+import 'package:postino/core/data/unready_text_embedder.dart' as _i567;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
 import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
@@ -57,6 +59,7 @@ import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
     as _i114;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
+import 'package:postino/core/domain/text_embedder.dart' as _i374;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart'
     as _i320;
@@ -90,6 +93,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
     gh.lazySingleton<_i398.BackgroundSender>(
       () => _i524.SystemBackgroundSender(),
+      registerFor: {_prod},
+    );
+    gh.lazySingleton<_i374.TextEmbedder>(
+      () => const _i567.UnreadyTextEmbedder(),
       registerFor: {_prod},
     );
     gh.singleton<_i398.Connectivity>(
@@ -187,6 +194,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
+    gh.lazySingleton<_i95.AutoLabeler>(
+      () => _i95.AutoLabeler(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i205.AutoLabelsRepository>(),
+        gh<_i374.TextEmbedder>(),
+        gh<_i346.ErrorLog>(),
+      ),
+    );
     gh.factory<_i320.AutoLabelSwitchUseCase>(
       () => _i320.AutoLabelSwitchUseCase(
         gh<_i205.AutoLabelsRepository>(),
@@ -199,6 +214,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i184.Notifications>(),
         gh<_i350.OpenConversation>(),
       ),
+    );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+        gh<_i26.NewMailNotifier>(),
+        gh<_i95.AutoLabeler>(),
+        gh<_i346.ErrorLog>(),
+      ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i311.SettingsSync>(
       () => _i311.SettingsSync(
@@ -213,20 +243,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
       ),
-    );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i700.OutboxRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-        gh<_i26.NewMailNotifier>(),
-        gh<_i346.ErrorLog>(),
-      ),
-    );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
       () => _i812.ConversationLabelIntents(

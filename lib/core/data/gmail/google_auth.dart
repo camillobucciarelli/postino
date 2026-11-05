@@ -4,12 +4,12 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
-import 'gmail_failure.dart';
 import 'gmail_tokens.dart';
 import 'google_client.dart';
+import 'google_failure.dart';
 
 /// The OAuth tokens of a Google Account for any Google API (Gmail, Drive): from the keychain, refreshed when
-/// they expire. Failures are thrown as [GmailFailed].
+/// they expire. Failures are thrown as [GoogleFailed].
 class GoogleAuth(
   final String _accountId,
   final SecureStore _keychain,
@@ -34,7 +34,7 @@ class GoogleAuth(
   /// A new access token from the refresh token of [old], saved in the keychain.
   /// A revoked or expired refresh token is the Provider's definitive refusal: [AuthFailure].
   Future<GmailTokens> refresh(GmailTokens? old) async {
-    if (old == null) throw const GmailFailed(AuthFailure());
+    if (old == null) throw const GoogleFailed(AuthFailure());
     final r = await _http.post(
       _tokenEndpoint,
       body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
@@ -51,8 +51,8 @@ class GoogleAuth(
       return fresh;
     }
     if (r.statusCode == 401 || body['error'] == 'invalid_grant') {
-      throw const GmailFailed(AuthFailure());
+      throw const GoogleFailed(AuthFailure());
     }
-    throw GmailFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
+    throw GoogleFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
   }
 }

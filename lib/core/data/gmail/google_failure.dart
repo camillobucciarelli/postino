@@ -4,14 +4,14 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/result.dart';
 
-/// A failed Gmail call, unwound to [gmailGuard].
-final class const GmailFailed(final Failure failure) implements Exception {}
+/// A failed Google API call (Gmail, Drive), unwound to [googleGuard].
+final class const GoogleFailed(final Failure failure) implements Exception {}
 
 /// Adapters never throw: no network is [OfflineFailure], anything else [UnexpectedFailure].
-Future<Result<T>> gmailGuard<T>(Future<Result<T>> Function() body) async {
+Future<Result<T>> googleGuard<T>(Future<Result<T>> Function() body) async {
   try {
     return await body();
-  } on GmailFailed catch (e) {
+  } on GoogleFailed catch (e) {
     return Err(e.failure);
   } on http.RequestAbortedException {
     return const Err(CancelledFailure());

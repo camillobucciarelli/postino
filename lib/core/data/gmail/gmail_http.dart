@@ -8,13 +8,13 @@ import 'package:http/http.dart' as http;
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../mime.dart';
-import 'gmail_failure.dart';
 import 'gmail_tokens.dart';
 import 'google_auth.dart';
 import 'google_client.dart';
+import 'google_failure.dart';
 
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
-/// quota hits retried with backoff. Failures are thrown as [GmailFailed], which [gmailGuard] turns into an [Err].
+/// quota hits retried with backoff. Failures are thrown as [GoogleFailed], which [googleGuard] turns into an [Err].
 class GmailHttp(
   final String _accountId,
   final SecureStore _keychain,
@@ -94,7 +94,7 @@ class GmailHttp(
         '${r.body.length > 300 ? r.body.substring(0, 300) : r.body}',
       );
     }
-    throw GmailFailed(switch (r.statusCode) {
+    throw GoogleFailed(switch (r.statusCode) {
       401 => const AuthFailure(),
       // Token without the Gmail scope: only a new consent fixes it.
       403 when r.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || r.body.contains('insufficientPermissions') =>

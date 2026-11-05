@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../../domain/settings_backend.dart';
-import 'gmail_failure.dart';
 import 'google_auth.dart';
 import 'google_client.dart';
+import 'google_failure.dart';
 
 /// The file of the Impostazioni di Postino in the hidden appDataFolder of an Account's Drive (ADR 0016),
 /// over Drive v3 REST with the Account's tokens. Never an [AuthFailure]: a missing `drive.appdata` scope is a
@@ -35,14 +35,14 @@ class DriveSettingsBackend(
   String? _fileId;
 
   @override
-  Future<Result<String?>> read() => gmailGuard(() async {
+  Future<Result<String?>> read() => googleGuard(() async {
     final id = await _find();
     if (id == null) return const Ok(null);
     return Ok((await _send('GET', Uri.parse('$_api/$id').replace(queryParameters: {'alt': 'media'}))).body);
   });
 
   @override
-  Future<Result<void>> write(String json) => gmailGuard(() async {
+  Future<Result<void>> write(String json) => googleGuard(() async {
     if ((_fileId ?? await _find()) case final id?) {
       await _send(
         'PATCH',
@@ -93,7 +93,7 @@ class DriveSettingsBackend(
     return _fileId = files.isEmpty ? null : (files.first as Map<String, dynamic>)['id'] as String;
   }
 
-  /// A Drive call with a valid token, refreshed once more on a 401; anything but a 200 throws a [GmailFailed].
+  /// A Drive call with a valid token, refreshed once more on a 401; anything but a 200 throws a [GoogleFailed].
   Future<http.Response> _send(String method, Uri url, {String? body, String? type}) async {
     var tokens = await _auth.validTokens();
     Future<http.Response> attempt() {
@@ -112,7 +112,7 @@ class DriveSettingsBackend(
       r = await attempt();
     }
     if (r.statusCode == 200) return r;
-    throw GmailFailed(switch (r.statusCode) {
+    throw GoogleFailed(switch (r.statusCode) {
       429 => const RateLimitFailure(),
       403 when r.body.contains('ateLimitExceeded') => const RateLimitFailure(),
       // The token lacks drive.appdata: only the incremental consent fixes it.

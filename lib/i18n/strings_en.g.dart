@@ -296,6 +296,8 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+	@override String get checkForUpdates => 'Check for updates';
+	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
 	@override String get syncSection => 'Sync';
 	@override String get syncTitle => 'Sync to…';
 	@override String get syncNone => 'None';
@@ -563,6 +565,8 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'impostazioni.checkForUpdates' => 'Check for updates',
+			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
 			'impostazioni.syncSection' => 'Sync',
 			'impostazioni.syncTitle' => 'Sync to…',
 			'impostazioni.syncNone' => 'None',

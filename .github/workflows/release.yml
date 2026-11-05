@@ -45,12 +45,28 @@ jobs:
       APP: build/macos/Build/Products/Release/Postino.app
       DMG: build/release/Postino-${{ needs.version.outputs.version }}.dmg
     steps:
-      # Without it the app builds fine but no Gmail Account can connect (README, "Client OAuth di Google").
-      - name: Google OAuth client ID is set
+      # Without GOOGLE_CLIENT_ID the app builds fine but no Gmail Account can connect (README, "Client OAuth di
+      # Google"); without SPARKLE_ED_PRIVATE_KEY no appcast can be signed (#122): both stop the job before any build.
+      - name: Required secrets are set
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        run: test -n "$GOOGLE_CLIENT_ID" || { echo "::error::Secret GOOGLE_CLIENT_ID is not set"; exit 1; }
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID SPARKLE_ED_PRIVATE_KEY; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
       - uses: actions/checkout@v4
+      # A tag release is final (immutable cache, appcast signature): a rerun never overwrites it, before any build.
+      - name: No tag release of this version yet
+        if: github.event_name == 'push'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: tool/release/r2_unreleased.sh "macos/$VERSION/Postino-$VERSION.dmg"
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -58,10 +74,13 @@ jobs:
           test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       # Generated code is committed (checked by ci.yml), so no codegen here.
       # macOS uses the iOS-type client: ID only, no GOOGLE_CLIENT_SECRET (README).
+      # The build number (CFBundleVersion, what Sparkle compares) grows with the version: build_number.sh.
       - name: flutter build macos --release
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        run: flutter build macos --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+        run: |
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build macos --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
       - name: Developer ID certificate in a job keychain
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -87,6 +106,22 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: tool/release/notarize.sh "$DMG"
       - run: tool/release/verify.sh "$APP" "$DMG"
+      # Every run signs it, so a wrong key fails a manual run too; only a tag release of the highest version
+      # publishes it, below, after its DMG. The app's SUFeedURL (<base>/macos/appcast.xml) is what installed copies
+      # poll: the DMG link is built from it, and a RELEASE_BASE_URL pointing elsewhere stops the job.
+      - name: Signed Sparkle appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+        run: |
+          feed=$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$APP/Contents/Info.plist")
+          base=${feed%/macos/appcast.xml}
+          test "$base/macos/appcast.xml" = "$feed" || { echo "::error::SUFeedURL $feed is not <base>/macos/appcast.xml"; exit 1; }
+          if [ -n "$RELEASE_BASE_URL" ] && [ "${RELEASE_BASE_URL%/}" != "$base" ]; then
+            echo "::error::RELEASE_BASE_URL $RELEASE_BASE_URL is not the base of SUFeedURL $feed"
+            exit 1
+          fi
+          tool/release/appcast.sh "$DMG" "$base/macos/$VERSION/" build/release/appcast.xml
       - name: Upload the DMG to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -107,6 +142,9 @@ jobs:
             latest=$(tool/release/is_latest.sh "$VERSION")
             if [ "$latest" = yes ]; then
               upload macos/latest/Postino.dmg 'public, max-age=300'
+              # Sparkle's feed (#122), after the DMG it points at: installed copies find this version.
+              tool/release/r2_upload.sh build/release/appcast.xml macos/appcast.xml application/xml 'public, max-age=300'
+              echo "- macOS appcast: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}macos/appcast.xml" >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=300'
@@ -142,6 +180,15 @@ jobs:
           done
           exit "$missing"
       - uses: actions/checkout@v4
+      # As for the DMG: a tag release is never overwritten.
+      - name: No tag release of this version yet
+        if: github.event_name == 'push'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: tool/release/r2_unreleased.sh "android/$VERSION/Postino-$VERSION.apk"
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

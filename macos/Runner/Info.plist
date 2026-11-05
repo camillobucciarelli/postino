@@ -28,6 +28,16 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://postino.camillobucciarelli.dev/macos/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>FbsC6IZnMkOP60HyhsiTm/hr2dGEOiBeJF01pRguvKM=</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

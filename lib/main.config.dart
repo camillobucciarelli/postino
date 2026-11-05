@@ -16,6 +16,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
+import 'package:postino/core/data/desktop/app_updater_module.dart' as _i429;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
 import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
@@ -35,6 +36,7 @@ import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
+import 'package:postino/core/domain/app_updater.dart' as _i833;
 import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/auto_labels_repository.dart' as _i205;
@@ -77,6 +79,7 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
+    final appUpdaterModule = _$AppUpdaterModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final modelModule = _$ModelModule();
     final errorLogModule = _$ErrorLogModule();
@@ -100,6 +103,10 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
+    gh.lazySingleton<_i833.AppUpdater>(
+      () => appUpdaterModule.appUpdater(),
+      registerFor: {_prod},
+    );
     gh.lazySingleton<_i462.LaunchAtLogin>(
       () => launchAtLoginModule.launchAtLogin(),
       registerFor: {_prod},
@@ -292,6 +299,8 @@ extension GetItInjectableX on _i174.GetIt {
 class _$AttachmentModule extends _i524.AttachmentModule {}
 
 class _$HttpModule extends _i524.HttpModule {}
+
+class _$AppUpdaterModule extends _i429.AppUpdaterModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 

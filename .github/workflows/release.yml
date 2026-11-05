@@ -39,13 +39,12 @@ jobs:
 
   # The invitees' guide (#123), hand-written HTML twin of docs/guida-invitati.md, at a stable URL. R2's custom domain
   # serves no directory index, so the stable link is guida/index.html. A tag moves it only when it is the highest
-  # version, like the "latest" downloads; a manual run (from main) always publishes it, to fix the guide alone.
+  # version, like the "latest" downloads; a manual run (from main) always publishes it. No `needs: version`: a manual
+  # run of an already released version stops there (and so do the platform jobs), while the guide still goes out, so
+  # a fix to the guide alone needs no new version.
   guide:
-    needs: version
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
-    env:
-      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - run: tool/release/guide_check.sh
@@ -57,11 +56,13 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
         run: |
+          # version.sh refuses a mismatched tag or a manual run off main. Own assignments, so a failing
+          # version.sh or is_latest.sh fails the step instead of skipping the check.
+          version=$(tool/release/version.sh)
           if [ "$GITHUB_EVENT_NAME" = push ]; then
-            # Its own assignment, so a failing is_latest.sh fails the step instead of skipping the upload.
-            latest=$(tool/release/is_latest.sh "$VERSION")
+            latest=$(tool/release/is_latest.sh "$version")
             if [ "$latest" != yes ]; then
-              echo "v$VERSION is not the highest version: guide left as it is"
+              echo "v$version is not the highest version: guide left as it is"
               exit 0
             fi
           fi

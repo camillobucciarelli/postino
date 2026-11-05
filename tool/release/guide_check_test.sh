@@ -1,6 +1,6 @@
 #!/bin/bash
 # Self-check of guide_check.sh, run by ci.yml: the real guide passes, and each kind of drift between its Markdown
-# and its HTML (heading level, link, word, lang, broken markup) fails.
+# and its HTML (heading level, link target or text, unclosed or dropped link, word, lang, broken markup) fails.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 tmp=$(mktemp -d)
@@ -19,4 +19,7 @@ fails "link target" '' 's|android/latest/Postino.apk|android/1.0.0/Postino.apk|'
 fails "word" 's/rileggila/leggila/' ''
 fails "lang" '' 's/<html lang="it">/<html>/'
 fails "broken markup" "" "s|</ol>|</strong></ol>|"
+fails "unclosed link" '' 's|ultima versione\)</a>|ultima versione)|'
+fails "link turned into text" '' 's|<a (href="mailto:[^"]*">[^<]*)</a>|<span \1</span>|'
+fails "link text" '' 's|>Postino per macOS \(file DMG, ultima versione\)</a>|>Postino</a> per macOS (file DMG, ultima versione)|'
 echo "guide_check.sh ok"

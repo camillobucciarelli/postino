@@ -11,11 +11,11 @@ La versione aggiornata di questa guida è sempre a [postino.camillobucciarelli.d
 
 1. Scarica [Postino per macOS (file DMG, ultima versione)](https://postino.camillobucciarelli.dev/macos/latest/Postino.dmg).
 2. Apri il file DMG e trascina Postino nella cartella Applicazioni.
-3. Avvia Postino da Applicazioni. L'app è firmata dallo sviluppatore e notarizzata da Apple: macOS la apre senza avvisi.
+3. Avvia Postino da Applicazioni. Al primo avvio macOS chiede se vuoi aprire un'app scaricata da Internet: scegli «Apri». L'app è firmata dallo sviluppatore e notarizzata da Apple, quindi non vedrai altri avvisi.
 
 ### Aggiornare Postino su macOS
 
-Postino si aggiorna da solo. Al secondo avvio ti chiede il permesso di cercare gli aggiornamenti in automatico: rispondi di sì. Puoi anche cercarli quando vuoi con «Cerca aggiornamenti…» nel menu Postino o con «Cerca aggiornamenti» nelle Impostazioni.
+Postino si aggiorna da solo. Al secondo avvio ti chiede il permesso di cercare gli aggiornamenti in automatico: rispondi di sì. Puoi anche cercarli quando vuoi con «Cerca aggiornamenti…» nel menu Postino o con «Cerca aggiornamenti» in Impostazioni › Impostazioni del dispositivo.
 
 ## Android
 
@@ -59,6 +59,7 @@ Finché Google non verifica Postino, possono collegarsi al massimo 100 Account G
 Se qualcosa non va, manda una Segnalazione di un problema:
 
 - nell'app scegli «Segnala un problema» nelle Impostazioni, oppure premi il tasto `p` su desktop;
-- Postino prepara una Bozza per camillo@bucciarelli.dev con il log degli errori allegato: rileggila e decidi tu se inviarla.
+- Postino prepara una Bozza per camillo@bucciarelli.dev con il log degli errori nel testo: rileggila e decidi tu se inviarla;
+- se non hai ancora collegato un Account, Postino ti fa condividere il file del log: mandalo a camillo@bucciarelli.dev come preferisci.
 
 Se l'app non si apre, scrivi direttamente a [camillo@bucciarelli.dev](mailto:camillo@bucciarelli.dev).

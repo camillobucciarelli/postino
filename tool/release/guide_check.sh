@@ -19,15 +19,18 @@ differ() { # <what> <markdown side> <html side>
 differ headings \
   "$(sed -nE 's/^(#+) (.*)/\1 \2/p' "$md" | awk '{ n = length($1); $1 = n; print }')" \
   "$(sed -nE 's|.*<h([1-6])>(.*)</h[1-6]>.*|\1 \2|p' "$html")"
+# Each link as text|target, from a whole <a href="…">text</a>: an unclosed or dropped <a> fails here.
 differ links \
-  "$(grep -oE '\]\([^)]*\)' "$md" | sed -E 's/^\]\((.*)\)$/\1/')" \
-  "$(grep -oE 'href="[^"]*"' "$html" | sed -E 's/^href="(.*)"$/\1/')"
+  "$(grep -oE '\[[^]]*\]\([^)]*\)' "$md" | sed -E 's/^\[(.*)\]\((.*)\)$/\1|\2/')" \
+  "$(grep -oE '<a href="[^"]*">[^<]*</a>' "$html" | sed -E 's|^<a href="(.*)">(.*)</a>$|\2\|\1|')"
+differ "link count" "$(grep -o '<a href=' "$html" | wc -l)" "$(grep -o '</a>' "$html" | wc -l)"
 # Prose: Markdown without its markup, HTML <main> without its tags, word by word.
 differ words \
   "$(grep -v '^<!--' "$md" | sed -E 's/^#+ //; s/^[0-9]+\. //; s/^- //; s/\*\*//g; s/`//g; s/\[([^]]*)\]\([^)]*\)/\1/g' | tr -s '[:space:]' '\n' | sed '/^$/d')" \
   "$(sed -n '/<main>/,/<\/main>/p' "$html" | sed -E 's/<[^>]*>//g' | tr -s '[:space:]' '\n' | sed '/^$/d')"
 
 grep -q '<html lang="it">' "$html" || { echo "$html: no <html lang=\"it\">"; ok=0; }
+command -v xmllint > /dev/null || { echo "xmllint not found"; exit 1; }
 errors=$(xmllint --html --noout "$html" 2>&1 | grep 'parser error' | grep -v 'Tag main invalid' || true)
 [ -z "$errors" ] || { echo "$html: $errors"; ok=0; }
 

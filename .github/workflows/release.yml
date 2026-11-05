@@ -58,6 +58,15 @@ jobs:
           done
           exit "$missing"
       - uses: actions/checkout@v4
+      # A tag release is final (immutable cache, appcast signature): a rerun never overwrites it, before any build.
+      - name: No tag release of this version yet
+        if: github.event_name == 'push'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: tool/release/r2_unreleased.sh "macos/$VERSION/Postino-$VERSION.dmg"
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -171,6 +180,15 @@ jobs:
           done
           exit "$missing"
       - uses: actions/checkout@v4
+      # As for the DMG: a tag release is never overwritten.
+      - name: No tag release of this version yet
+        if: github.event_name == 'push'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: tool/release/r2_unreleased.sh "android/$VERSION/Postino-$VERSION.apk"
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

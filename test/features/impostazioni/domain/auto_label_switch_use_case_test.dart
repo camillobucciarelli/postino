@@ -27,7 +27,9 @@ void main() {
 
   test('turning on saves it and, on Wi-Fi, downloads the model', () async {
     await useCase.setAutomatic('a1', 'L1', automatic: true);
-    expect(await labels.watch('a1').first, {'L1': (automatic: true, description: null)});
+    expect(await labels.watch('a1').first, {
+      'L1': (automatic: true, description: null, activatedAt: DateTime.utc(2026, 11, 5).millisecondsSinceEpoch),
+    });
     await pumpEventQueue();
     expect(model.state, isA<ModelDownloadReady>());
   });

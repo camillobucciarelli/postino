@@ -191,6 +191,25 @@ void main() {
     expect(await db.select(db.syncCursors).get(), isEmpty);
   });
 
+  test('v17 adds the embeddings of the messages, keeping what was there', () async {
+    final raw = sqlite3.openInMemory();
+    // A current database taken back to the v16 shape: the embeddings dropped, one sync cursor in it.
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    raw
+      ..execute('DROP TABLE message_embeddings')
+      ..execute("INSERT INTO sync_cursors (account_id, cursor) VALUES ('a1', '7')")
+      ..execute('PRAGMA user_version = 16');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    await db.messageEmbeddingsDao.save('a1', 'm1', 'model', [0.5, -1]);
+    expect(await db.select(db.messageEmbeddings).get(), hasLength(1));
+    expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+  });
+
   test('v16 keeps the Impostazioni di Postino to upload, but older than any copy elsewhere', () async {
     final raw = sqlite3.openInMemory();
     // A current database taken back to the v15 shape: the voci with only key and value.
@@ -209,7 +228,7 @@ void main() {
     final row = await db.select(db.postinoSettings).getSingle();
     // updatedAt 0: a second device migrating later never overwrites what another device already synced.
     expect((row.dirty, row.deleted, row.updatedAt), (true, false, 0));
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
   });
 
   test('v15 adds the Impostazioni di Postino, keeping what was there', () async {
@@ -228,7 +247,7 @@ void main() {
     await db.postinoSettingsDao.write('k', 'v', at: DateTime.utc(2026));
     expect(await db.postinoSettingsDao.read('k'), 'v');
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
   });
 
   test('v14 adds the Etichette queue, keeping what was there', () async {
@@ -249,7 +268,7 @@ void main() {
     final row = (await db.intentsDao.pendingLabels('a1')).single;
     expect((row.messageId, row.labelId, row.added), ('m1', 'Label_12', true));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
   });
 
   test('v13 adds the outbox, keeping what was there', () async {
@@ -285,7 +304,7 @@ void main() {
     final row = (await db.outboxDao.due('a1', 1)).single;
     expect((row.failed, row.claimedUntil, row.conversationId), (false, null, 't'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
   });
 
   test(
@@ -323,7 +342,7 @@ void main() {
       );
       final d = await db.select(db.drafts).getSingle();
       expect((d.inReplyTo, d.references, d.conversationId), ('<m1>', '<m1>', 't'));
-      expect(raw.select('PRAGMA user_version').first.values.first, 16);
+      expect(raw.select('PRAGMA user_version').first.values.first, 17);
     },
   );
 
@@ -350,7 +369,7 @@ void main() {
     final d = await db.select(db.drafts).getSingle();
     expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
     expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 16);
+    expect(raw.select('PRAGMA user_version').first.values.first, 17);
   });
 
   test('a new database keeps the cursors it saves', () async {

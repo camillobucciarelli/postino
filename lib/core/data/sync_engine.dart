@@ -12,6 +12,7 @@ import '../domain/outbox_repository.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import 'mail_store.dart';
+import 'sync/auto_labeler.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
 import 'sync/new_mail_notifier.dart';
@@ -32,6 +33,7 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
   final NewMailNotifier _newMail,
+  final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
   late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
@@ -62,6 +64,10 @@ class SyncEngine(
 
   /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
   final _queuedSync = <String, Future<void>>{};
+
+  /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
+  @visibleForTesting
+  final autoLabeling = <String, Future<void>>{};
 
   /// Per Account, the ticker that sends its Bozze once the edits pause.
   final _draftTimers = <String, StreamSubscription<void>>{};
@@ -221,9 +227,7 @@ class SyncEngine(
   }) async {
     await _store.queueLabels(accountId, messageIds, labelId, add: add);
     // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
-    if (await _activeAccount(accountId) case final account?) {
-      await _serial(accountId, () => _replay(accountId, providerFor(account)));
-    }
+    await _replayIfActive(accountId);
   }
 
   @override
@@ -331,6 +335,13 @@ class SyncEngine(
     return false;
   }
 
+  /// Sends the Account's queue, in its turn, unless it may not go to the Provider now.
+  Future<void> _replayIfActive(String accountId) async {
+    if (await _activeAccount(accountId) case final account?) {
+      await _serial(accountId, () => _replay(accountId, providerFor(account)));
+    }
+  }
+
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
     // The queue first, so the sync brings back what the user did offline.
     await _replay(accountId, provider);
@@ -353,10 +364,16 @@ class SyncEngine(
       case Ok(:final value):
         // Before the apply, which makes every message known; the initial sync notifies nothing (#39).
         // ponytail: a sync redone for an expired cursor notifies nothing either; diff against the database if that loses mail.
-        final fresh = full ? const <Message>[] : await _newMail.fresh(accountId, value.messages);
+        final unknown = full ? const <Message>[] : await _store.unknown(accountId, value.messages);
+        final fresh = await _newMail.fresh(accountId, unknown);
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
         await _newMail.notify(accountId, fresh);
+        // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
+        if (unknown.isNotEmpty) {
+          final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);
+          unawaited(autoLabeling[accountId] = run.then((queued) => queued ? _replayIfActive(accountId) : null));
+        }
         debugPrint(
           '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
           '${value.messages.length} messages, ${value.removedMessageIds.length} removed',

@@ -5610,6 +5610,329 @@ class PostinoSettingsCompanion extends UpdateCompanion<PostinoSettingRow> {
   }
 }
 
+class $MessageEmbeddingsTable extends MessageEmbeddings
+    with TableInfo<$MessageEmbeddingsTable, MessageEmbeddingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MessageEmbeddingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vectorMeta = const VerificationMeta('vector');
+  @override
+  late final GeneratedColumn<Uint8List> vector = GeneratedColumn<Uint8List>(
+    'vector',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [accountId, messageId, modelId, vector];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'message_embeddings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MessageEmbeddingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelIdMeta);
+    }
+    if (data.containsKey('vector')) {
+      context.handle(
+        _vectorMeta,
+        vector.isAcceptableOrUnknown(data['vector']!, _vectorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vectorMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId};
+  @override
+  MessageEmbeddingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageEmbeddingRow(
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      )!,
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      )!,
+      vector: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}vector'],
+      )!,
+    );
+  }
+
+  @override
+  $MessageEmbeddingsTable createAlias(String alias) {
+    return $MessageEmbeddingsTable(attachedDatabase, alias);
+  }
+}
+
+class MessageEmbeddingRow extends DataClass
+    implements Insertable<MessageEmbeddingRow> {
+  final String accountId;
+  final String messageId;
+
+  /// The model that made [vector]: a row of another model is not comparable and is ignored.
+  final String modelId;
+
+  /// Float32 little-endian.
+  final Uint8List vector;
+  const MessageEmbeddingRow({
+    required this.accountId,
+    required this.messageId,
+    required this.modelId,
+    required this.vector,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['message_id'] = Variable<String>(messageId);
+    map['model_id'] = Variable<String>(modelId);
+    map['vector'] = Variable<Uint8List>(vector);
+    return map;
+  }
+
+  MessageEmbeddingsCompanion toCompanion(bool nullToAbsent) {
+    return MessageEmbeddingsCompanion(
+      accountId: Value(accountId),
+      messageId: Value(messageId),
+      modelId: Value(modelId),
+      vector: Value(vector),
+    );
+  }
+
+  factory MessageEmbeddingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageEmbeddingRow(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      modelId: serializer.fromJson<String>(json['modelId']),
+      vector: serializer.fromJson<Uint8List>(json['vector']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'messageId': serializer.toJson<String>(messageId),
+      'modelId': serializer.toJson<String>(modelId),
+      'vector': serializer.toJson<Uint8List>(vector),
+    };
+  }
+
+  MessageEmbeddingRow copyWith({
+    String? accountId,
+    String? messageId,
+    String? modelId,
+    Uint8List? vector,
+  }) => MessageEmbeddingRow(
+    accountId: accountId ?? this.accountId,
+    messageId: messageId ?? this.messageId,
+    modelId: modelId ?? this.modelId,
+    vector: vector ?? this.vector,
+  );
+  MessageEmbeddingRow copyWithCompanion(MessageEmbeddingsCompanion data) {
+    return MessageEmbeddingRow(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      vector: data.vector.present ? data.vector.value : this.vector,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageEmbeddingRow(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('modelId: $modelId, ')
+          ..write('vector: $vector')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    accountId,
+    messageId,
+    modelId,
+    $driftBlobEquality.hash(vector),
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageEmbeddingRow &&
+          other.accountId == this.accountId &&
+          other.messageId == this.messageId &&
+          other.modelId == this.modelId &&
+          $driftBlobEquality.equals(other.vector, this.vector));
+}
+
+class MessageEmbeddingsCompanion extends UpdateCompanion<MessageEmbeddingRow> {
+  final Value<String> accountId;
+  final Value<String> messageId;
+  final Value<String> modelId;
+  final Value<Uint8List> vector;
+  final Value<int> rowid;
+  const MessageEmbeddingsCompanion({
+    this.accountId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.vector = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MessageEmbeddingsCompanion.insert({
+    required String accountId,
+    required String messageId,
+    required String modelId,
+    required Uint8List vector,
+    this.rowid = const Value.absent(),
+  }) : accountId = Value(accountId),
+       messageId = Value(messageId),
+       modelId = Value(modelId),
+       vector = Value(vector);
+  static Insertable<MessageEmbeddingRow> custom({
+    Expression<String>? accountId,
+    Expression<String>? messageId,
+    Expression<String>? modelId,
+    Expression<Uint8List>? vector,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (messageId != null) 'message_id': messageId,
+      if (modelId != null) 'model_id': modelId,
+      if (vector != null) 'vector': vector,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MessageEmbeddingsCompanion copyWith({
+    Value<String>? accountId,
+    Value<String>? messageId,
+    Value<String>? modelId,
+    Value<Uint8List>? vector,
+    Value<int>? rowid,
+  }) {
+    return MessageEmbeddingsCompanion(
+      accountId: accountId ?? this.accountId,
+      messageId: messageId ?? this.messageId,
+      modelId: modelId ?? this.modelId,
+      vector: vector ?? this.vector,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (vector.present) {
+      map['vector'] = Variable<Uint8List>(vector.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageEmbeddingsCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('messageId: $messageId, ')
+          ..write('modelId: $modelId, ')
+          ..write('vector: $vector, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PostinoDatabase extends GeneratedDatabase {
   _$PostinoDatabase(QueryExecutor e) : super(e);
   $PostinoDatabaseManager get managers => $PostinoDatabaseManager(this);
@@ -5628,6 +5951,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $PostinoSettingsTable postinoSettings = $PostinoSettingsTable(
     this,
   );
+  late final $MessageEmbeddingsTable messageEmbeddings =
+      $MessageEmbeddingsTable(this);
   late final Index messagesConversation = Index(
     'messages_conversation',
     'CREATE INDEX messages_conversation ON messages (account_id, conversation_id)',
@@ -5648,6 +5973,9 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final PostinoSettingsDao postinoSettingsDao = PostinoSettingsDao(
     this as PostinoDatabase,
   );
+  late final MessageEmbeddingsDao messageEmbeddingsDao = MessageEmbeddingsDao(
+    this as PostinoDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5666,6 +5994,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     drafts,
     outbox,
     postinoSettings,
+    messageEmbeddings,
     messagesConversation,
   ];
 }
@@ -8719,6 +9048,211 @@ typedef $$PostinoSettingsTableProcessedTableManager =
       PostinoSettingRow,
       PrefetchHooks Function()
     >;
+typedef $$MessageEmbeddingsTableCreateCompanionBuilder =
+    MessageEmbeddingsCompanion Function({
+      required String accountId,
+      required String messageId,
+      required String modelId,
+      required Uint8List vector,
+      Value<int> rowid,
+    });
+typedef $$MessageEmbeddingsTableUpdateCompanionBuilder =
+    MessageEmbeddingsCompanion Function({
+      Value<String> accountId,
+      Value<String> messageId,
+      Value<String> modelId,
+      Value<Uint8List> vector,
+      Value<int> rowid,
+    });
+
+class $$MessageEmbeddingsTableFilterComposer
+    extends Composer<_$PostinoDatabase, $MessageEmbeddingsTable> {
+  $$MessageEmbeddingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get vector => $composableBuilder(
+    column: $table.vector,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MessageEmbeddingsTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $MessageEmbeddingsTable> {
+  $$MessageEmbeddingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get vector => $composableBuilder(
+    column: $table.vector,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MessageEmbeddingsTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $MessageEmbeddingsTable> {
+  $$MessageEmbeddingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get vector =>
+      $composableBuilder(column: $table.vector, builder: (column) => column);
+}
+
+class $$MessageEmbeddingsTableTableManager
+    extends
+        RootTableManager<
+          _$PostinoDatabase,
+          $MessageEmbeddingsTable,
+          MessageEmbeddingRow,
+          $$MessageEmbeddingsTableFilterComposer,
+          $$MessageEmbeddingsTableOrderingComposer,
+          $$MessageEmbeddingsTableAnnotationComposer,
+          $$MessageEmbeddingsTableCreateCompanionBuilder,
+          $$MessageEmbeddingsTableUpdateCompanionBuilder,
+          (
+            MessageEmbeddingRow,
+            BaseReferences<
+              _$PostinoDatabase,
+              $MessageEmbeddingsTable,
+              MessageEmbeddingRow
+            >,
+          ),
+          MessageEmbeddingRow,
+          PrefetchHooks Function()
+        > {
+  $$MessageEmbeddingsTableTableManager(
+    _$PostinoDatabase db,
+    $MessageEmbeddingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MessageEmbeddingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MessageEmbeddingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MessageEmbeddingsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> accountId = const Value.absent(),
+                Value<String> messageId = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
+                Value<Uint8List> vector = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MessageEmbeddingsCompanion(
+                accountId: accountId,
+                messageId: messageId,
+                modelId: modelId,
+                vector: vector,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String accountId,
+                required String messageId,
+                required String modelId,
+                required Uint8List vector,
+                Value<int> rowid = const Value.absent(),
+              }) => MessageEmbeddingsCompanion.insert(
+                accountId: accountId,
+                messageId: messageId,
+                modelId: modelId,
+                vector: vector,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MessageEmbeddingsTable, MessageEmbeddingRow>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$PostinoDatabase,
+                    $MessageEmbeddingsTable,
+                    MessageEmbeddingRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MessageEmbeddingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PostinoDatabase,
+      $MessageEmbeddingsTable,
+      MessageEmbeddingRow,
+      $$MessageEmbeddingsTableFilterComposer,
+      $$MessageEmbeddingsTableOrderingComposer,
+      $$MessageEmbeddingsTableAnnotationComposer,
+      $$MessageEmbeddingsTableCreateCompanionBuilder,
+      $$MessageEmbeddingsTableUpdateCompanionBuilder,
+      (
+        MessageEmbeddingRow,
+        BaseReferences<
+          _$PostinoDatabase,
+          $MessageEmbeddingsTable,
+          MessageEmbeddingRow
+        >,
+      ),
+      MessageEmbeddingRow,
+      PrefetchHooks Function()
+    >;
 
 class $PostinoDatabaseManager {
   final _$PostinoDatabase _db;
@@ -8749,4 +9283,6 @@ class $PostinoDatabaseManager {
       $$OutboxTableTableManager(_db, _db.outbox);
   $$PostinoSettingsTableTableManager get postinoSettings =>
       $$PostinoSettingsTableTableManager(_db, _db.postinoSettings);
+  $$MessageEmbeddingsTableTableManager get messageEmbeddings =>
+      $$MessageEmbeddingsTableTableManager(_db, _db.messageEmbeddings);
 }

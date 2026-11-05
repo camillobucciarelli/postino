@@ -18,6 +18,12 @@ class PostinoSettingsDao(super.attachedDatabase)
 
   Future<String?> read(String key) async => (await _live(key).getSingleOrNull())?.value;
 
+  /// The row of [key] now, then each time it changes; null while missing or removed.
+  Stream<PostinoSettingRow?> watchRow(String key) => _live(key).watchSingleOrNull();
+
+  /// The row of [key]; null when missing or removed.
+  Future<PostinoSettingRow?> readRow(String key) => _live(key).getSingleOrNull();
+
   /// Writes the voce here, to upload; a null [value] writes a tombstone instead of deleting the row.
   /// Stamped [at], or just after the copy it replaces if that is later (a clock behind, a remote copy ahead):
   /// a local write always wins over what it replaces.

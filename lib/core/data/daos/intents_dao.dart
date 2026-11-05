@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../auto_labels_json.dart';
 import '../postino_database.dart';
 import '../tables/intents_table.dart';
 import '../tables/label_intents_table.dart';
@@ -33,6 +34,29 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
             LabelIntentsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId, added: add),
           );
         }
+      });
+
+  /// True when the message has an Etichetta dell'utente: one of the Account's labels (system ones are not there).
+  Future<bool> hasUserLabel(String accountId, String messageId) async =>
+      await customSelect(
+        'SELECT 1 FROM message_labels ml JOIN labels l ON l.account_id = ml.account_id AND l.id = ml.label_id '
+        'WHERE ml.account_id = ?1 AND ml.message_id = ?2 LIMIT 1',
+        variables: [Variable(accountId), Variable(messageId)],
+      ).getSingleOrNull() !=
+      null;
+
+  /// The Etichettatura automatica (#109) puts [labelId] on the message as [queueLabels] does, unless the message
+  /// has an Etichetta dell'utente or is gone, or the Etichetta is no longer automatica with the activation
+  /// [activatedAt] the classification used: checked in the same transaction, so what the user did after the
+  /// classification wins. False when skipped.
+  Future<bool> queueAutoLabel(String accountId, String messageId, String labelId, {required int activatedAt}) =>
+      transaction(() async {
+        final config = autoLabelsOf(await attachedDatabase.postinoSettingsDao.readRow(autoLabelsKey(accountId)));
+        final label = config[labelId];
+        if (label == null || !label.automatic || label.activatedAt != activatedAt) return false;
+        if (await hasUserLabel(accountId, messageId) || await _messageMissing(accountId, messageId)) return false;
+        await queueLabels(accountId, [messageId], labelId, add: true);
+        return true;
       });
 
   /// The intent reached the Provider as [added]; one changed meanwhile stays.

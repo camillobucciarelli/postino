@@ -63,6 +63,23 @@ void main() {
     expect(h.sharer.shared, hasLength(1));
   });
 
+  testWidgets('after a failed report the next one is tried', (tester) async {
+    await start(tester, account: false);
+    h.sharer.failure = Exception('no sheet');
+    reportProblem();
+    await tester.pumpAndSettle();
+    await tester.runAsync(pumpEventQueue);
+    await tester.pumpAndSettle();
+    expect(h.sharer.shared, isEmpty);
+
+    h.sharer.failure = null;
+    reportProblem();
+    await tester.pumpAndSettle();
+    await tester.runAsync(pumpEventQueue);
+    await tester.pumpAndSettle();
+    expect(h.sharer.shared, hasLength(1));
+  });
+
   testWidgets('the drawer has the action too', (tester) async {
     final semantics = tester.ensureSemantics();
     await start(tester);

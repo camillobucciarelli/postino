@@ -1,3 +1,4 @@
+import 'package:file/file.dart' show FileSystemException;
 import 'package:file/local.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -27,7 +28,11 @@ abstract class ReportSharerModule() {
     final temp = (await getTemporaryDirectory()).path;
     // On Android share_plus copies the file to its own cache folder: the decrypted text goes at the same time.
     final copies = fs.directory('$temp/share_plus');
-    if (copies.existsSync()) await copies.delete(recursive: true);
+    try {
+      if (copies.existsSync()) await copies.delete(recursive: true);
+    } on FileSystemException catch (e) {
+      debugPrint('[segnalazione] cleanup: $e');
+    }
     final linux = !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
     return SystemReportSharer.open(
       fs.directory('$temp/postino-report'),

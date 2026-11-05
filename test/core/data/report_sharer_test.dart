@@ -1,3 +1,4 @@
+import 'package:file/file.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/report_sharer.dart';
@@ -12,8 +13,11 @@ void main() {
     });
 
     await sharer.share(text: 'il log', name: 'postino-log.txt', subject: 'Oggetto');
-    expect(shared, [('il log', 'Oggetto')]);
-    expect(dir.childFile('postino-log.txt').existsSync(), isTrue);
+    expect(shared.first, ('il log', 'Oggetto'));
+
+    // Each share has its own folder: a target still reading the first file does not see the second overwrite it.
+    await sharer.share(text: 'altro', name: 'postino-log.txt', subject: 'Oggetto');
+    expect(dir.listSync(recursive: true).whereType<File>(), hasLength(2));
 
     // The next start.
     await SystemReportSharer.open(dir, (_, _) async {});

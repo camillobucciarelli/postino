@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/features/composizione/domain/draft_html.dart';
 import 'package:postino/features/segnalazione/domain/problem_report_config.dart';
 import 'package:postino/features/segnalazione/domain/report_problem_use_case.dart';
 import 'package:postino/main.dart';
@@ -34,6 +35,19 @@ void main() {
     expect(h.sharer.shared, isEmpty);
   });
 
+  test('the log keeps its lines in the composer: one paragraph each', () async {
+    await h.addAccount('a1');
+    h.errorLog.record('prima');
+    h.errorLog.record('seconda');
+    await Future<void>.delayed(Duration.zero);
+
+    final draft = await getIt<ReportProblemUseCase>().start(subject: 'S', intro: 'Intro');
+    final m = await _saved(draft!);
+
+    final text = htmlToDelta(m.body).map((op) => op['insert']).join();
+    expect(text, matches(RegExp(r'Intro\n.*prima\n.*seconda')));
+  });
+
   test('a long log is cut to its latest entries in the Bozza, and whole in the shared file', () async {
     // Entries are capped at 8 KB each: many of them make the long log.
     for (var i = 0; i < 10; i++) {
@@ -49,8 +63,8 @@ void main() {
     final draft = await getIt<ReportProblemUseCase>().start(subject: 'S', intro: 'I');
     final m = await _saved(draft!);
     // Cut at a line start: the first line left starts an entry (its timestamp).
-    expect(m.body, contains('<pre>…2026-'));
-    expect(m.body, endsWith('FINE</pre>'));
+    expect(m.body, matches(RegExp(r'<p>…\d{4}-')));
+    expect(m.body, endsWith('FINE</p>'));
     expect(m.body.length, lessThan(ReportProblemUseCase.maxBodyChars + 200));
   });
 

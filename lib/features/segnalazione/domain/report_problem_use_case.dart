@@ -57,7 +57,12 @@ class ReportProblemUseCase(
     // Cut at a line start: no half entry, and never between the two halves of a surrogate pair.
     final cut = log.length - maxBodyChars;
     final newline = cut <= 0 ? 0 : log.indexOf('\n', cut);
-    final tail = cut <= 0 ? log : '…${log.substring(newline < 0 ? cut : newline + 1).trimLeft()}';
-    return '<p>${_escape.convert(intro)}</p><pre>${_escape.convert(tail)}</pre>';
+    // No newline left: cut anywhere, but not between the halves of a surrogate pair.
+    final lone = newline < 0 && cut < log.length && (log.codeUnitAt(cut) & 0xFC00) == 0xDC00;
+    final start = newline < 0 ? (lone ? cut + 1 : cut) : newline + 1;
+    final tail = cut <= 0 ? log : '…${log.substring(start).trimLeft()}';
+    // One paragraph per line: the composer's parser drops the line breaks of a <pre>.
+    final lines = [intro, ...tail.split('\n').where((l) => l.trim().isNotEmpty)];
+    return [for (final l in lines) '<p>${_escape.convert(l)}</p>'].join();
   }
 }

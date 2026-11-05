@@ -27,7 +27,8 @@ final List<Map<String, Object?> Function(Map<String, Object?>)> _migrations = []
 int get settingsSchemaVersion => _migrations.length + 1;
 
 /// Reads the file, migrated to [settingsSchemaVersion]. A malformed voce is skipped; a file that is not a
-/// settings document at all is an [UnexpectedFailure], so the caller never overwrites what it cannot read.
+/// settings document at all (no `entries` map, a `schemaVersion` below 1) is an [UnexpectedFailure], so the
+/// caller never overwrites what it cannot read.
 Result<SettingsDocument> decodeSettings(String json) {
   Object? root;
   try {
@@ -35,7 +36,7 @@ Result<SettingsDocument> decodeSettings(String json) {
   } on FormatException catch (e) {
     return Err(UnexpectedFailure(e));
   }
-  if (root is! Map<String, Object?> || root['schemaVersion'] is! int) {
+  if (root is! Map<String, Object?> || root['schemaVersion'] is! int || (root['schemaVersion']! as int) < 1) {
     return const Err(UnexpectedFailure('not a settings document'));
   }
   final version = root['schemaVersion']! as int;
@@ -43,16 +44,16 @@ Result<SettingsDocument> decodeSettings(String json) {
   for (var v = version; v < settingsSchemaVersion; v++) {
     doc = _migrations[v - 1](doc);
   }
-  final raw = doc['entries'];
-  return Ok(
-    SettingsDocument(
-      schemaVersion: version,
-      entries: {
-        if (raw is Map<String, Object?>)
-          for (final MapEntry(:key, :value) in raw.entries) key: ?_entry(key, value),
-      },
-    ),
-  );
+  // Without the voci it is not a settings document: read as empty, the next write would wipe it.
+  if (doc['entries'] case final Map<String, Object?> raw) {
+    return Ok(
+      SettingsDocument(
+        schemaVersion: version,
+        entries: {for (final MapEntry(:key, :value) in raw.entries) key: ?_entry(key, value)},
+      ),
+    );
+  }
+  return const Err(UnexpectedFailure('settings document without entries'));
 }
 
 /// The file for [entries] at [settingsSchemaVersion].

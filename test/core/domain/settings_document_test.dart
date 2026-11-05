@@ -48,5 +48,15 @@ void main() {
       expect(decodeSettings('nope'), isA<Err<SettingsDocument>>());
       expect(decodeSettings('{"entries":{}}'), isA<Err<SettingsDocument>>());
     });
+
+    test('a file without an entries map fails instead of reading as empty and being overwritten', () {
+      expect(decodeSettings('{"schemaVersion":1}'), isA<Err<SettingsDocument>>());
+      expect(decodeSettings('{"schemaVersion":1,"entries":[]}'), isA<Err<SettingsDocument>>());
+    });
+
+    test('a schemaVersion below 1 fails, never a RangeError', () {
+      expect(decodeSettings('{"schemaVersion":0,"entries":{}}'), isA<Err<SettingsDocument>>());
+      expect(decodeSettings('{"schemaVersion":-3,"entries":{}}'), isA<Err<SettingsDocument>>());
+    });
   });
 }

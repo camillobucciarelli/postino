@@ -19,8 +19,8 @@ const maxEmbeddingChars = 850;
 const maxEmbeddingBytes = 960;
 
 /// The [TextEmbedder] on the device (#135): the model of [_model] once [ModelManager] has it ready, loaded by
-/// [_load] on first use. The load runs in the background and [embed] answers null meanwhile, so the sync never
-/// waits for it: the mail of the next sync is classified.
+/// [_load] on first use. [embed] waits for the load, which the sync never does: `AutoLabeler` runs outside it, so
+/// the mail of the first sync after a launch is classified too.
 class OnDeviceTextEmbedder(
   final ModelManager _manager,
   final ModelDescriptor _model,
@@ -35,25 +35,20 @@ class OnDeviceTextEmbedder(
   /// The model file while [ModelReady], else null.
   String? _path;
 
-  /// The engine of [_path], once loaded.
-  EmbeddingEngine? _engine;
-
-  /// A load is in progress: one at a time.
-  var _loading = false;
+  /// Il caricamento di [_path], condiviso da ogni [embed]: uno alla volta. Null se è fallito: non si ritenta fino a
+  /// un file nuovo o al prossimo avvio, così un modello che non si carica non viene ricaricato a ogni sync.
+  Future<EmbeddingEngine?>? _engine;
 
   @override
   String get modelId => _model.id;
 
   @override
   Future<List<double>?> embed(String text) async {
-    final engine = _engine;
-    if (engine == null) {
-      if (_path case final path? when !_loading) {
-        _loading = true;
-        unawaited(_start(path));
-      }
-      return null;
-    }
+    final path = _path;
+    if (path == null) return null;
+    final engine = await (_engine ??= _start(path));
+    // Il modello è andato o cambiato durante il caricamento: il motore è del file vecchio.
+    if (engine == null || _path != path) return null;
     return engine.embed(await _cut(engine, text));
   }
 
@@ -64,20 +59,15 @@ class OnDeviceTextEmbedder(
     // Deleted or replaced: the loaded engine is the old file's.
     final old = _engine;
     _engine = null;
-    if (old != null) unawaited(old.dispose());
+    if (old != null) unawaited(old.then((engine) => engine?.dispose()));
   }
 
-  Future<void> _start(String path) async {
+  Future<EmbeddingEngine?> _start(String path) async {
     try {
-      final engine = await _load(path);
-      // The model went or changed while loading.
-      if (_path != path) return unawaited(engine.dispose());
-      _engine = engine;
+      return await _load(path);
     } on Object catch (e, s) {
-      // Tried again on a later embed.
       _log.record(e, stack: s, context: 'caricamento del modello ${_model.id}');
-    } finally {
-      _loading = false;
+      return null;
     }
   }
 

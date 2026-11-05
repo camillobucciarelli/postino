@@ -1,4 +1,4 @@
-// Il modello di embedding sul dispositivo (#135): pronto solo con il file, caricamento pigro che non blocca, testo
+// Il modello di embedding sul dispositivo (#135): pronto solo con il file, caricamento pigro e condiviso, testo
 // troncato. Motore e gestore dei modelli finti; il motore llamadart vero si verifica a mano (QA).
 
 import 'dart:async';
@@ -21,13 +21,13 @@ class _FakeEngine({final bool _tokenizer = true}) implements EmbeddingEngine {
   int get reservedTokens => 6;
 
   @override
-  Future<List<int>?> tokenize(String text) async =>
-      _tokenizer ? [for (final w in text.split(' ')) w.length] : null;
+  Future<List<int>?> tokenize(String text) async => _tokenizer ? [for (final w in text.split(' ')) w.length] : null;
 
   // Detokenizing "loses" nothing but adds a word every 100 tokens, as a real round trip may give a few more.
   @override
-  Future<String> detokenize(List<int> tokens) async =>
-      [for (var i = 0; i < tokens.length; i++) ...[if (i > 0 && i % 100 == 0) 'x', 'w' * tokens[i]]].join(' ');
+  Future<String> detokenize(List<int> tokens) async => [
+    for (var i = 0; i < tokens.length; i++) ...[if (i > 0 && i % 100 == 0) 'x', 'w' * tokens[i]],
+  ].join(' ');
 
   @override
   Future<List<double>> embed(String text) async {
@@ -56,13 +56,14 @@ void main() {
     }, log);
   });
 
-  /// The model on disk and its engine loaded: the first embed starts the load, [engine] finishes it.
+  /// Il modello sul disco e il suo motore caricato: il primo embed avvia il caricamento, [engine] lo completa.
   Future<void> ready(EmbeddingEngine engine) async {
     manager.emit(model, const ModelReady('/models/m.gguf'));
     await pumpEventQueue();
-    expect(await embedder.embed('primo'), isNull);
-    loads.last.complete(engine);
+    final first = embedder.embed('primo');
     await pumpEventQueue();
+    loads.last.complete(engine);
+    await first;
   }
 
   test('its id is the chosen model', () {
@@ -82,36 +83,48 @@ void main() {
     expect(loads, isEmpty);
   });
 
-  test('the load is lazy and does not block: null while it runs, one load at a time, then vectors', () async {
+  test('the load is lazy and shared: embeds wait for the one load, then get vectors', () async {
     manager.emit(model, const ModelReady('/models/m.gguf'));
     await pumpEventQueue();
     expect(loads, isEmpty, reason: 'nothing loads before the first embed');
 
-    // The load never finishes here: embed still answers at once.
-    expect(await embedder.embed('uno'), isNull);
-    expect(await embedder.embed('due'), isNull);
+    // Il primo dopo l'avvio non va perso: aspetta il caricamento invece di rispondere null.
+    final uno = embedder.embed('uno');
+    final due = embedder.embed('due');
+    await pumpEventQueue();
     expect(loads, hasLength(1));
 
     final engine = _FakeEngine();
     loads.single.complete(engine);
-    await pumpEventQueue();
+    expect(await uno, [3.0]);
+    expect(await due, [3.0]);
     expect(await embedder.embed('tre'), [3.0]);
-    expect(engine.texts, ['tre']);
+    expect(engine.texts, ['uno', 'due', 'tre']);
+    expect(loads, hasLength(1));
   });
 
-  test('a failed load is in the error log and tried again by a later embed', () async {
+  test('a failed load is in the error log once and not tried again until a new file', () async {
     manager.emit(model, const ModelReady('/models/m.gguf'));
     await pumpEventQueue();
-    expect(await embedder.embed('uno'), isNull);
-    loads.single.completeError(StateError('file rotto'));
+    final uno = embedder.embed('uno');
     await pumpEventQueue();
+    loads.single.completeError(StateError('file rotto'));
+    expect(await uno, isNull);
     expect(log.entries.single.$1, isA<StateError>());
 
+    // Nessun ricaricamento a ogni sync.
     expect(await embedder.embed('due'), isNull);
-    expect(loads, hasLength(2));
-    loads.last.complete(_FakeEngine());
+    expect(loads, hasLength(1));
+    expect(log.entries, hasLength(1));
+
+    // Un file nuovo si carica di nuovo.
+    manager.emit(model, const ModelReady('/models/m2.gguf'));
     await pumpEventQueue();
-    expect(await embedder.embed('tre'), isNotNull);
+    final tre = embedder.embed('tre');
+    await pumpEventQueue();
+    loads.last.complete(_FakeEngine());
+    expect(await tre, isNotNull);
+    expect(loads, hasLength(2));
   });
 
   test('the model deleted frees the engine and answers null again', () async {
@@ -126,13 +139,16 @@ void main() {
   test('an engine loaded after its model went is freed, not used', () async {
     manager.emit(model, const ModelReady('/models/m.gguf'));
     await pumpEventQueue();
-    await embedder.embed('uno');
+    final uno = embedder.embed('uno');
+    await pumpEventQueue();
     manager.emit(model, const ModelAbsent());
     await pumpEventQueue();
     final engine = _FakeEngine();
     loads.single.complete(engine);
+    expect(await uno, isNull);
     await pumpEventQueue();
     expect(engine.disposed, isTrue);
+    expect(engine.texts, isEmpty);
     expect(await embedder.embed('due'), isNull);
   });
 

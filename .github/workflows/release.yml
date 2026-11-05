@@ -103,12 +103,13 @@ jobs:
           # A tag build is final; a manual build of the same version is replaced by its tag run, so short cache.
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=31536000, immutable'
+            # Stable link for invitees: only a tag release of the highest version moves it.
+            latest=$(tool/release/is_latest.sh "$VERSION")
+            if [ "$latest" = yes ]; then
+              upload macos/latest/Postino.dmg 'public, max-age=300'
+            fi
           else
             upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=300'
-          fi
-          # Stable link for invitees: only a tag release of the highest version moves it.
-          if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
-            upload macos/latest/Postino.dmg 'public, max-age=300'
           fi
 
   android:
@@ -180,9 +181,10 @@ jobs:
           # Same cache policy as the DMG: a tag build is final, a manual build is replaced by its tag run.
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=31536000, immutable'
+            latest=$(tool/release/is_latest.sh "$VERSION")
+            if [ "$latest" = yes ]; then
+              upload android/latest/Postino.apk 'public, max-age=300'
+            fi
           else
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
-          fi
-          if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
-            upload android/latest/Postino.apk 'public, max-age=300'
           fi

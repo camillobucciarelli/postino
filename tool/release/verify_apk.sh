@@ -7,7 +7,7 @@ apk=${1:?usage: verify_apk.sh <apk> <certificate sha256>}
 expected=${2:?usage: verify_apk.sh <apk> <certificate sha256>}
 : "${ANDROID_HOME:?}"
 
-apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
+apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1 || true)
 test -n "$apksigner" || { echo "::error::No apksigner in $ANDROID_HOME/build-tools" >&2; exit 1; }
 
 certs=$("$apksigner" verify --print-certs "$apk")

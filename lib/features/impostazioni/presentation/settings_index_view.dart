@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
+import '../../../core/domain/app_updater.dart';
 import '../../../core/domain/launch_at_login_use_case.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
@@ -32,8 +33,8 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
         title: context.t.impostazioni.title,
         onBack: widget.onBack,
         sections: [
-          // ponytail: the device has only the avvio al login so far, so it shows where that exists (desktop).
-          if (GetIt.I<LaunchAtLoginUseCase>().supported)
+          // The device has the avvio al login (desktop) and the aggiornamenti (macOS): it shows where either exists.
+          if (GetIt.I<LaunchAtLoginUseCase>().supported || GetIt.I<AppUpdater>().supported)
             PostinoSettingsSection(
               title: context.t.impostazioni.deviceSection,
               children: [

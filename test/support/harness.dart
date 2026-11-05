@@ -5,6 +5,7 @@ import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/app_updater.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/google_consent.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
@@ -34,6 +35,7 @@ class Harness._() {
   final saver = FakeFileSaver();
   final background = FakeBackgroundSender();
   final launchAtLogin = FakeLaunchAtLogin();
+  final updater = FakeAppUpdater();
   final notifications = FakeNotifications();
   final sharer = FakeReportSharer();
   final embedder = FakeTextEmbedder();
@@ -60,6 +62,7 @@ class Harness._() {
       ..registerSingleton<FileSaver>(h.saver)
       ..registerSingleton<BackgroundSender>(h.background)
       ..registerSingleton<LaunchAtLogin>(h.launchAtLogin)
+      ..registerSingleton<AppUpdater>(h.updater)
       ..registerSingleton<Notifications>(h.notifications)
       ..registerSingleton<ErrorLog>(h.errorLog)
       ..registerSingleton<ReportSharer>(h.sharer)

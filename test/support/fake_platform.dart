@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:postino/core/domain/app_updater.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
@@ -137,6 +138,18 @@ class FakeLaunchAtLogin() implements LaunchAtLogin {
     if (failure case final f?) throw f;
     this.enabled = enabled;
   }
+}
+
+/// Counts the checks asked instead of showing Sparkle: [supported] false like a phone, until a test makes it a Mac.
+class FakeAppUpdater() implements AppUpdater {
+  @override
+  bool supported = false;
+
+  /// How many times «Cerca aggiornamenti» was asked.
+  var checks = 0;
+
+  @override
+  Future<void> checkForUpdates() async => checks++;
 }
 
 /// Keeps what it is given in memory: (error, crash).

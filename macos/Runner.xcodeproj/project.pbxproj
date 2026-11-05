@@ -30,6 +30,9 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */; };
 		42AC7ACA6738ACDB1B9E5D0D /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 590D4E703F09CB9E8037C4C7 /* Pods_Runner.framework */; };
+		5A9C1E2B7D3F40A1B2C3D402 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */; };
+		5A9C1E2B7D3F40A1B2C3D404 /* CheckForUpdatesMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */; };
+		5A9C1E2B7D3F40A1B2C3D407 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5A9C1E2B7D3F40A1B2C3D406 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +93,8 @@
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		9DBE4E5918A5D322490D08A4 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		AD21E12945A34E9A288D47D8 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
+		5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesMenuItem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +110,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A9C1E2B7D3F40A1B2C3D407 /* Sparkle in Frameworks */,
 				42AC7ACA6738ACDB1B9E5D0D /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -180,6 +186,8 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */,
+				5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */,
+				5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -251,6 +259,9 @@
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 			);
 			name = Runner;
+			packageProductDependencies = (
+				5A9C1E2B7D3F40A1B2C3D406 /* Sparkle */,
+			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* Postino.app */;
 			productType = "com.apple.product-type.application";
@@ -295,6 +306,9 @@
 				Base,
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
+			packageReferences = (
+				5A9C1E2B7D3F40A1B2C3D405 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -442,6 +456,8 @@
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */,
+				5A9C1E2B7D3F40A1B2C3D402 /* Updater.swift in Sources */,
+				5A9C1E2B7D3F40A1B2C3D404 /* CheckForUpdatesMenuItem.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);
@@ -800,6 +816,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5A9C1E2B7D3F40A1B2C3D405 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A9C1E2B7D3F40A1B2C3D406 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A9C1E2B7D3F40A1B2C3D405 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 33CC10E52044A3C60003C045 /* Project object */;
 }

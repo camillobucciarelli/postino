@@ -1,0 +1,82 @@
+name: Release
+
+# A vX.Y.Z tag (or a manual run) publishes the version in pubspec.yaml. One job per platform, each
+# `needs: version`: TestFlight (#120) and the Android APK (#121) plug in as sibling jobs of `macos`.
+# Steps live in tool/release/*.sh, one responsibility each.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One self-hosted runner: never cancel a release halfway (a notarization may already be submitted).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: [self-hosted, macOS, ARM64]
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        name: Version from pubspec.yaml matches the tag
+        run: |
+          version=$(tool/release/version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      APP: build/macos/Build/Products/Release/postino.app
+      DMG: build/release/Postino-${{ needs.version.outputs.version }}.dmg
+    steps:
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # Generated code is committed (checked by ci.yml), so no codegen here.
+      - run: flutter build macos --release
+      - name: Developer ID certificate in a job keychain
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: tool/release/keychain_create.sh
+      - run: tool/release/sign_app.sh "$APP"
+      - name: Notarize and staple the app
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/notarize.sh "$APP"
+      - run: tool/release/make_dmg.sh "$APP" "$DMG"
+      # Last use of the certificate: the keychain goes now, and even when an earlier step failed.
+      - name: Delete the job keychain
+        if: always()
+        run: tool/release/keychain_delete.sh
+      - name: Notarize and staple the DMG
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/notarize.sh "$DMG"
+      - run: tool/release/verify.sh "$APP" "$DMG"
+      - name: Upload the DMG to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          key="macos/$VERSION/Postino-$VERSION.dmg"
+          tool/release/r2_upload.sh "$DMG" "$key" application/x-apple-diskimage
+          echo "macOS: \`$key\` on R2" >> "$GITHUB_STEP_SUMMARY"

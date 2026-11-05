@@ -110,7 +110,7 @@ class SyncEngine(
     final fetched = await _serial(accountId, () async {
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      final fetched = await provider.fetchConversation(conversationId);
+      final fetched = _pauseFailure(accountId) ?? await provider.fetchConversation(conversationId);
       if (fetched case Ok(:final value)) {
         await _store.applyPage(accountId, value, const {});
         await _store.markConversationRead(accountId, conversationId);
@@ -232,7 +232,7 @@ class SyncEngine(
     final provider = providerFor(account);
     // Unlike openConversation it does not mark the Conversazione read.
     final fetched = await _serial(accountId, () async {
-      final fetched = await provider.fetchConversation(conversationId);
+      final fetched = _pauseFailure(accountId) ?? await provider.fetchConversation(conversationId);
       if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
       return fetched;
     });
@@ -310,6 +310,10 @@ class SyncEngine(
       return _syncOnce(id, providerFor(account));
     });
   }
+
+  /// While the Provider's pause holds, the failure a request made now would get, without asking the Provider.
+  Err<List<Message>>? _pauseFailure(String id) =>
+      _paused(id) ? Err(RateLimitFailure(retryAfter: _pausedUntil[id])) : null;
 
   /// True while the Provider's pause holds; a lapsed pause is forgotten.
   bool _paused(String id) {

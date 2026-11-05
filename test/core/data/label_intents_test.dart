@@ -188,6 +188,25 @@ void main() {
     expect(c.every((m) => !m.message.isRead), isTrue);
   });
 
+  test('while the Provider\'s pause holds, completeConversation and openConversation do not ask the Provider; '
+      'the Etichetta goes on the local messages', () async {
+    a
+      ..deliverOutsideWindow(msg('old', conversationId: 't-1'))
+      ..rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.syncAll();
+    a.rateLimit(on: false);
+
+    expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+    expect(await engine.openConversation('a', 't-1'), isA<Err<void>>());
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+    // The Provider would have brought the older message.
+    expect(c.map((m) => m.message.id), ['1']);
+
+    await engine.setConversationLabel('a', ['1'], _viaggi, add: true);
+    expect(await here('1'), contains(_viaggi));
+    expect(a.labelCalls, isEmpty);
+  });
+
   test('while the Provider\'s pause holds: done here, queued, the Provider not called', () async {
     a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     await engine.syncAll();

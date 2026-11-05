@@ -38,7 +38,12 @@ class IntentReplayer(
   /// transport's backoff, holding the Account's queue for minutes; the rest stays queued for the next replay.
   /// True when it paused the Account.
   Future<bool> _replayActions(String accountId, MailProvider provider) async {
-    for (final q in await _store.pendingActions(accountId, _clock.now())) {
+    for (final captured in await _store.pendingActions(accountId, _clock.now())) {
+      // Read again just before sending: what the user did during the earlier calls (resolved the Conflitto, merged
+      // another Azione) wins over the list taken at the start.
+      // ponytail: a change during this very call still races it; a per-voce lock if that ever shows.
+      final q = await _store.currentAction(accountId, captured);
+      if (q == null) continue;
       switch (await provider.applyAction(q.messageId, q.action, expected: q.expected)) {
         // Gone from the Provider: the voce is dropped in silence.
         case Ok(value: ActionApplied() || ActionMessageGone()) || Err(failure: NotFoundFailure()):

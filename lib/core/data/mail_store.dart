@@ -108,16 +108,25 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   /// The Account's voci to replay at [now], decoded; the «trattenute» ones wait for their deadline.
   Future<List<QueuedAction>> pendingActions(String accountId, DateTime now) async => [
-    for (final r in await _db.intentsDao.pending(accountId, now: now.millisecondsSinceEpoch))
-      (
-        messageId: r.messageId,
-        action: actionOf(r.attribute, r.wanted),
-        expected: switch (r.expected) {
-          final e? => decodeValue(r.attribute, e),
-          null => null,
-        },
-      ),
+    for (final r in await _db.intentsDao.pending(accountId, now: now.millisecondsSinceEpoch)) _queuedOf(r),
   ];
+
+  /// The voce of [q] as it is now, about to be sent: null when it left the queue meanwhile (a Conflitto resolved,
+  /// an Annulla) or is held again.
+  Future<QueuedAction?> currentAction(String accountId, QueuedAction q) async =>
+      switch (await _db.intentsDao.voce(accountId, q.messageId, q.action.attribute)) {
+        final r? when r.heldUntil == null => _queuedOf(r),
+        _ => null,
+      };
+
+  static QueuedAction _queuedOf(IntentRow r) => (
+    messageId: r.messageId,
+    action: actionOf(r.attribute, r.wanted),
+    expected: switch (r.expected) {
+      final e? => decodeValue(r.attribute, e),
+      null => null,
+    },
+  );
 
   /// The voce reached the Provider, or its message is gone: it leaves the queue unless changed meanwhile.
   Future<void> actionDone(String accountId, QueuedAction q) =>

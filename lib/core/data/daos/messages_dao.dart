@@ -117,6 +117,14 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   /// Conflitto is open (ADR 0008).
   // ponytail: one read-and-write per voce and Conflitto; set-based SQL per attribute if the queue ever grows big.
   Future<void> _keepIntents(String accountId) async {
+    // A message gone (removed, or absent from a full snapshot) closes its Conflitti: nothing left to decide.
+    await customUpdate(
+      'DELETE FROM conflicts WHERE account_id = ?1 '
+      'AND message_id NOT IN (SELECT id FROM messages WHERE account_id = ?1)',
+      variables: [Variable(accountId)],
+      updates: {conflicts},
+      updateKind: UpdateKind.delete,
+    );
     final attributes = attachedDatabase.attributesDao;
     for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
       await attributes.write(accountId, c.messageId, c.attribute, c.local);

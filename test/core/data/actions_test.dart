@@ -284,6 +284,50 @@ void main() {
     });
   });
 
+  test('a message with a Conflitto gone from the Provider: the Conflitto closes', () async {
+    a.goOffline();
+    await engine.act('a', ['1'], const Archive());
+    a
+      ..changeElsewhere('1', placementAttribute, Placement.trash)
+      ..goOnline();
+    await engine.syncAll();
+    expect(await conflicts(), hasLength(1));
+
+    a.removeRemotely('1');
+    await engine.syncAll();
+    expect(await conflicts(), isEmpty);
+  });
+
+  test('«tieni quella del Provider» while the replay sends the voci before: its voce is not sent', () async {
+    a.deliver(msg('2'));
+    await engine.syncAll();
+    a.goOffline();
+    await engine.act('a', ['2'], const Archive());
+    a
+      ..changeElsewhere('2', placementAttribute, Placement.trash)
+      ..goOnline();
+    await engine.syncAll();
+    final open = (await conflicts()).single;
+    // Offline: a read sent first, then a new Archivia over the Conflitto.
+    a.goOffline();
+    await engine.act('a', ['1'], const MarkRead());
+    await engine.act('a', ['2'], const Archive());
+    a.goOnline();
+
+    final sending = a.holdRead = Completer<void>();
+    final sync = engine.syncAll();
+    await pumpEventQueue();
+    await engine.resolveConflict(open, keepMine: false);
+    a.holdRead = null;
+    sending.complete();
+    await sync;
+
+    expect(placement(await there('2')), Placement.trash, reason: 'the choice is not overwritten');
+    expect(placement(await here('2')), Placement.trash);
+    expect(await conflicts(), isEmpty);
+    expect(await queued(), isEmpty);
+  });
+
   test('an Azione undone while it was being sent: no Conflitto with its own write', () async {
     final sending = a.holdRead = Completer<void>();
     final read = engine.act('a', ['1'], const MarkRead());

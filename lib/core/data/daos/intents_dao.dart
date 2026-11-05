@@ -21,6 +21,10 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
     return (select(intents)..where((t) => t.accountId.equals(accountId) & t.heldUntil.isNull())).get();
   });
 
+  /// The voce of the message on [attribute], if queued.
+  Future<IntentRow?> voce(String accountId, String messageId, String attribute) =>
+      (select(intents)..where(_key(accountId, messageId, attribute))).getSingleOrNull();
+
   /// Applies [action] to [messageIds] here at once and queues it, merging with the voce already on the same
   /// attribute: the last wanted value stays, with the first expected one. One transaction, so the messages of a
   /// Conversazione change all or none. [heldUntil] (ms since epoch) makes the voci «trattenute» until then.

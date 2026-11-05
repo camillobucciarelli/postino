@@ -114,11 +114,17 @@ void _driveTests() {
       final before = Map.of(h.keychain.values);
 
       h.consent.failure = const DriveScopeFailure();
-      expect((await getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com') as Err).failure, isA<DriveScopeFailure>());
+      expect(
+        (await getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com') as Err).failure,
+        isA<DriveScopeFailure>(),
+      );
 
       h.consent.failure = null;
       h.consent.address = 'bob@gmail.com';
-      expect((await getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com') as Err).failure, isA<WrongAccountFailure>());
+      expect(
+        (await getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com') as Err).failure,
+        isA<WrongAccountFailure>(),
+      );
 
       expect(h.keychain.values, before);
       expect((await getIt<MailStore>().accounts()).single.status, AccountStatus.attivo);

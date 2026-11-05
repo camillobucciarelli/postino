@@ -13,9 +13,11 @@ import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
+import 'core/data/error_log/uncaught_errors.dart';
 import 'core/data/postino_database.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
+import 'core/domain/error_log.dart';
 import 'core/domain/launch_at_login_use_case.dart';
 import 'core/domain/mail_notification.dart';
 import 'core/domain/notifications.dart';
@@ -54,6 +56,7 @@ void sendOutboxDispatcher() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  captureUncaughtErrors(() => getIt.isRegistered<ErrorLog>() ? getIt<ErrorLog>() : null);
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(const [
       'Caprasimo',

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/outbox_repository.dart';
 import '../../domain/platform_services.dart';
@@ -16,7 +17,8 @@ const draftDebounce = Duration(seconds: 5);
 class IntentReplayer(
   final MailStore _store,
   final OutboxRepository _outbox,
-  final Clock _clock, {
+  final Clock _clock,
+  final ErrorLog _log, {
 
   /// The Provider rate-limited the Account: no sync nor send before the deadline.
   required final void Function(String accountId, DateTime until) _pause,
@@ -44,6 +46,7 @@ class IntentReplayer(
           await _store.readDone(accountId, ids, isRead: read);
         case Err(:final failure):
           debugPrint('[sync] $accountId: replay failed, $failure');
+          _log.failure('replay $accountId', failure);
           return;
       }
     }
@@ -60,10 +63,12 @@ class IntentReplayer(
           await _store.labelDone(accountId, i.messageId, i.labelId, added: i.added);
         // ponytail: a refusal (an Etichetta deleted elsewhere) would be retried forever, and the message may never
         // come back in the history: the intent is dropped and the change undone here.
-        case Err(failure: RejectedFailure()):
+        case Err(failure: final f && RejectedFailure()):
+          _log.failure('label replay $accountId', f);
           await _store.labelRejected(accountId, i.messageId, i.labelId, added: i.added);
         case Err(:final failure):
           debugPrint('[sync] $accountId: label replay failed, $failure');
+          _log.failure('label replay $accountId', failure);
           // Rate limited: the Account waits for the deadline, as after a sync or a send.
           if (failure case RateLimitFailure(:final retryAfter?)) {
             _pause(accountId, retryAfter);
@@ -106,6 +111,7 @@ class IntentReplayer(
           }
         case Err(:final failure):
           debugPrint('[sync] $accountId: draft replay failed, $failure');
+          _log.failure('draft replay $accountId', failure);
       }
     }
   }

@@ -70,7 +70,7 @@ void main() {
     GetIt.I
       ..registerSingleton<OutboxRepository>(outbox)
       ..registerSingleton<SyncEngine>(
-        SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store)),
+        SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store), FakeErrorLog()),
       );
     await outbox.enqueueOutgoing(
       'a',
@@ -90,15 +90,30 @@ void main() {
 
     // Invia, then the app dies before the window ends: the row stays.
     final clock = FakeClock(DateTime.now().toUtc());
-    final first = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store));
+    final first = SyncEngine(
+      store,
+      outbox,
+      clock,
+      FakeConnectivity(),
+      FakeBackgroundSender(),
+      _notifier(store),
+      FakeErrorLog(),
+    );
     await first.send('a', message);
     await first.stop();
     expect(provider.sent, isEmpty);
 
     // The next start sends what is due.
     clock.advance(const Duration(minutes: 1));
-    final restarted = SyncEngine(store, outbox, clock, FakeConnectivity(), FakeBackgroundSender(), _notifier(store))
-      ..start();
+    final restarted = SyncEngine(
+      store,
+      outbox,
+      clock,
+      FakeConnectivity(),
+      FakeBackgroundSender(),
+      _notifier(store),
+      FakeErrorLog(),
+    )..start();
     addTearDown(restarted.stop);
     await tester.pumpAndSettle();
     expect(provider.sent, hasLength(1));

@@ -1,8 +1,11 @@
 import 'package:file/memory.dart';
 import 'package:postino/core/data/attachment_cache.dart';
+import 'package:postino/core/data/error_log/encrypted_error_log.dart';
+import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/google_consent.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/mail_provider.dart';
@@ -16,7 +19,8 @@ import 'fake_notifications.dart';
 import 'fake_platform.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
-/// links, Save As, background sender, avvio al login, notifications and file system.
+/// links, Save As, background sender, avvio al login, notifications and file system; the error log is the real
+/// one on that file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
   final keychain = FakeSecureStore();
@@ -33,6 +37,9 @@ class Harness._() {
   late final fs = MemoryFileSystem(opHandle: (path, op) => onFileOp?.call(path, op));
   void Function(String path, FileSystemOp op)? onFileOp;
 
+  /// The real error log, on [fs] under a test key.
+  late final errorLog = EncryptedErrorLog(fs.directory('/support/logs'), logKeysFrom('0f' * 32), clock);
+
   /// [attachmentCap]: the attachment cache's cap in bytes, small to test eviction.
   static Future<Harness> create({int? attachmentCap}) async {
     await getIt.reset();
@@ -48,6 +55,7 @@ class Harness._() {
       ..registerSingleton<BackgroundSender>(h.background)
       ..registerSingleton<LaunchAtLogin>(h.launchAtLogin)
       ..registerSingleton<Notifications>(h.notifications)
+      ..registerSingleton<ErrorLog>(h.errorLog)
       ..registerSingleton<AttachmentStorage>(
         await AttachmentStorage.open(
           h.fs.directory('/support/attachments'),

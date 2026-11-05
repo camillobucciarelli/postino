@@ -120,6 +120,30 @@ void main() {
     expect(await manager.sizeOnDisk(model), 0);
   });
 
+  test('a listener cancelling on the first state aborts the download', () async {
+    final body = StreamController<List<int>>();
+    serve = (r) async {
+      unawaited(
+        (r as http.Abortable).abortTrigger!.then((_) async {
+          body.addError(http.RequestAbortedException(r.url));
+          await body.close();
+        }),
+      );
+      return http.StreamedResponse(body.stream, 200);
+    };
+    Future<void>? cancelling;
+    manager.watch(model).listen((s) {
+      if (s is ModelDownloading && cancelling == null) cancelling = manager.cancel(model);
+    });
+    final downloading = manager.download(model);
+    await pumpEventQueue();
+    if (!body.isClosed) body.add(bytes);
+    await cancelling;
+    await downloading;
+    expect(states.last, isA<ModelAbsent>());
+    expect(fs.file('/support/models/m.litertlm').existsSync(), isFalse);
+  });
+
   test('cancel drops a pending confirmation', () async {
     network.wifi = false;
     await manager.activate(model);

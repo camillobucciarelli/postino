@@ -82,6 +82,8 @@ class FileModelManager(
     final part = _part(model);
     // Aborts the request on any failure of ours too, e.g. headers that never arrive.
     final failed = Completer<void>();
+    // Past a microtask, so download() has registered the job: a listener of this first state can cancel it.
+    await null;
     _emit(model, ModelDownloading(0, model.sizeBytes));
     try {
       await _dir.create(recursive: true);

@@ -95,6 +95,8 @@ class _ConversationBodyState() extends State<ConversationBody> {
       html: table.html,
       contentWidth: part.width,
       quiet: quiet,
+      // A trusted sender's images are not blocked: a src-less one there is a `cid:` one, labelled by its alt.
+      blockedImageLabel: allow ? null : context.t.conversazione.blockedImage,
       onTapUrl: (url) => unawaited(openTokenLink(context, table, url)),
     );
   }
@@ -145,8 +147,10 @@ class _ConversationBodyState() extends State<ConversationBody> {
     final shown = {
       for (final (i, MapEntry(:key, :value)) in parts.entries.indexed) key: foldBody(value, repeated: flags[i]),
     };
+    final subject = messages.first.message.subject;
     return PostinoThreadView(
-      subject: messages.first.message.subject,
+      subject: subject,
+      announcement: t.announcement(subject: subject, n: messages.length),
       account: accountRef,
       accountName: a.name,
       importantLabel: messages.any((m) => m.message.labelIds.contains('IMPORTANT')) ? t.important : null,
@@ -205,6 +209,7 @@ class _ConversationBodyState() extends State<ConversationBody> {
               ],
             ),
             unread: !message.isRead,
+            unreadLabel: context.t.list.unread,
             expanded: widget.expanded[message.id]!,
             // A body without its attachments known (stored before v9) is downloaded again too.
             onToggle: () => widget.onToggle(message.id, hasBody: body != null && body.attachments != null),

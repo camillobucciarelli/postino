@@ -63,6 +63,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tray$en tray = _Translations$tray$en._(_root);
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
+	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
 }
 
 // Path: sidebar
@@ -183,6 +184,11 @@ class _Translations$conversazione$en extends Translations$conversazione$it {
 	@override String toCc({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}';
 	@override String get cc => 'Cc';
 	@override String get showQuoted => 'Show quoted text';
+	@override String get blockedImage => 'Blocked image';
+	@override String announcement({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${subject}, ${n} message',
+		other: '${subject}, ${n} messages',
+	);
 	@override String get important => 'Important';
 	@override String get attachmentOpen => 'Open';
 	@override String attachmentDownloading({required Object percent}) => 'Downloading… ${percent}%';
@@ -358,6 +364,21 @@ class _Translations$etichetteAutomatiche$en extends Translations$etichetteAutoma
 	@override late final _Translations$etichetteAutomatiche$model$en model = _Translations$etichetteAutomatiche$model$en._(_root);
 }
 
+// Path: notifiche
+class _Translations$notifiche$en extends Translations$notifiche$it {
+	_Translations$notifiche$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get channel => 'New mail';
+	@override String get open => 'Open';
+	@override String get permissionTitle => 'New mail notifications';
+	@override String get permissionBody => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.';
+	@override String get permissionAllow => 'Continue';
+	@override String get permissionLater => 'Not now';
+}
+
 // Path: etichetteAutomatiche.model
 class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
 	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -442,6 +463,8 @@ extension on TranslationsEn {
 			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'to ${recipients}, cc ${cc}',
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Show quoted text',
+			'conversazione.blockedImage' => 'Blocked image',
+			'conversazione.announcement' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${subject}, ${n} message', other: '${subject}, ${n} messages', ), 
 			'conversazione.important' => 'Important',
 			'conversazione.attachmentOpen' => 'Open',
 			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Downloading… ${percent}%',
@@ -563,6 +586,12 @@ extension on TranslationsEn {
 			'etichetteAutomatiche.model.dismiss' => 'OK',
 			'etichetteAutomatiche.model.confirmTitle' => ({required Object size}) => 'Download ${size} over cellular?',
 			'etichetteAutomatiche.model.confirmWait' => 'Wait for Wi-Fi',
+			'notifiche.channel' => 'New mail',
+			'notifiche.open' => 'Open',
+			'notifiche.permissionTitle' => 'New mail notifications',
+			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
+			'notifiche.permissionAllow' => 'Continue',
+			'notifiche.permissionLater' => 'Not now',
 			_ => null,
 		};
 	}

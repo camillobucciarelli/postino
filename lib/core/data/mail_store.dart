@@ -23,6 +23,9 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   Future<String?> cursor(String accountId) => _db.messagesDao.cursor(accountId);
 
+  /// True when the Account already has the message with Provider id [id].
+  Future<bool> hasMessage(String accountId, String id) => _db.messagesDao.exists(accountId, id);
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   Future<void> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false}) async {
     await _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);

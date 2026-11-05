@@ -71,6 +71,11 @@
     "toCc": "a $recipients, cc $cc",
     "cc": "Cc",
     "showQuoted": "Mostra testo citato",
+    "blockedImage": "Immagine bloccata",
+    "announcement": {
+      "one": "$subject, $n messaggio",
+      "other": "$subject, $n messaggi"
+    },
     "important": "Importante",
     "attachmentOpen": "Apri",
     "attachmentDownloading": "Scaricamento… $percent%",
@@ -212,5 +217,13 @@
       "confirmTitle": "Scaricare $size su rete cellulare?",
       "confirmWait": "Aspetta il Wi-Fi"
     }
+  },
+  "notifiche": {
+    "channel": "Posta nuova",
+    "open": "Apri",
+    "permissionTitle": "Notifiche della posta nuova",
+    "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
+    "permissionAllow": "Continua",
+    "permissionLater": "Non ora"
   }
 }

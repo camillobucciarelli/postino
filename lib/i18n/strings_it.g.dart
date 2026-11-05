@@ -79,6 +79,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$tray$it tray = Translations$tray$it.internal(_root);
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
+	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
 }
 
 // Path: sidebar
@@ -289,6 +290,15 @@ class Translations$conversazione$it {
 
 	/// it: 'Mostra testo citato'
 	String get showQuoted => 'Mostra testo citato';
+
+	/// it: 'Immagine bloccata'
+	String get blockedImage => 'Immagine bloccata';
+
+	/// it: '(one) {$subject, $n messaggio} (other) {$subject, $n messaggi}'
+	String announcement({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${subject}, ${n} messaggio',
+		other: '${subject}, ${n} messaggi',
+	);
 
 	/// it: 'Importante'
 	String get important => 'Importante';
@@ -675,6 +685,33 @@ class Translations$etichetteAutomatiche$it {
 	late final Translations$etichetteAutomatiche$model$it model = Translations$etichetteAutomatiche$model$it.internal(_root);
 }
 
+// Path: notifiche
+class Translations$notifiche$it {
+	Translations$notifiche$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Posta nuova'
+	String get channel => 'Posta nuova';
+
+	/// it: 'Apri'
+	String get open => 'Apri';
+
+	/// it: 'Notifiche della posta nuova'
+	String get permissionTitle => 'Notifiche della posta nuova';
+
+	/// it: 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.'
+	String get permissionBody => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.';
+
+	/// it: 'Continua'
+	String get permissionAllow => 'Continua';
+
+	/// it: 'Non ora'
+	String get permissionLater => 'Non ora';
+}
+
 // Path: etichetteAutomatiche.model
 class Translations$etichetteAutomatiche$model$it {
 	Translations$etichetteAutomatiche$model$it.internal(this._root);
@@ -791,6 +828,8 @@ extension on Translations {
 			'conversazione.toCc' => ({required Object recipients, required Object cc}) => 'a ${recipients}, cc ${cc}',
 			'conversazione.cc' => 'Cc',
 			'conversazione.showQuoted' => 'Mostra testo citato',
+			'conversazione.blockedImage' => 'Immagine bloccata',
+			'conversazione.announcement' => ({required num n, required Object subject}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${subject}, ${n} messaggio', other: '${subject}, ${n} messaggi', ), 
 			'conversazione.important' => 'Importante',
 			'conversazione.attachmentOpen' => 'Apri',
 			'conversazione.attachmentDownloading' => ({required Object percent}) => 'Scaricamento… ${percent}%',
@@ -912,6 +951,12 @@ extension on Translations {
 			'etichetteAutomatiche.model.dismiss' => 'Ok',
 			'etichetteAutomatiche.model.confirmTitle' => ({required Object size}) => 'Scaricare ${size} su rete cellulare?',
 			'etichetteAutomatiche.model.confirmWait' => 'Aspetta il Wi-Fi',
+			'notifiche.channel' => 'Posta nuova',
+			'notifiche.open' => 'Apri',
+			'notifiche.permissionTitle' => 'Notifiche della posta nuova',
+			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
+			'notifiche.permissionAllow' => 'Continua',
+			'notifiche.permissionLater' => 'Non ora',
 			_ => null,
 		};
 	}

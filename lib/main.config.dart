@@ -21,12 +21,14 @@ import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
 import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
+import 'package:postino/core/data/local_notifications.dart' as _i102;
 import 'package:postino/core/data/mail_store.dart' as _i385;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
+import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -40,6 +42,8 @@ import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/model_download.dart' as _i96;
 import 'package:postino/core/domain/network_type.dart' as _i421;
+import 'package:postino/core/domain/notifications.dart' as _i184;
+import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
@@ -65,6 +69,7 @@ extension GetItInjectableX on _i174.GetIt {
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
+    gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
     gh.lazySingleton<_i421.NetworkType>(() => _i614.SimulatedNetworkType());
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
     gh.lazySingleton<_i398.BackgroundSender>(
@@ -105,6 +110,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i184.Notifications>(
+      () => _i102.LocalNotifications(),
+      registerFor: {_prod},
+    );
     gh.singleton<_i398.LinkOpener>(
       () => _i524.SystemLinkOpener(),
       registerFor: {_prod},
@@ -138,23 +147,18 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
     );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i700.OutboxRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-      ),
-    );
     gh.factory<_i320.AutoLabelSwitchUseCase>(
       () => _i320.AutoLabelSwitchUseCase(
         gh<_i205.AutoLabelsRepository>(),
         gh<_i96.ModelDownload>(),
       ),
     );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    gh.lazySingleton<_i26.NewMailNotifier>(
+      () => _i26.NewMailNotifier(
+        gh<_i385.MailStore>(),
+        gh<_i184.Notifications>(),
+        gh<_i350.OpenConversation>(),
+      ),
     );
     gh.factory<_i166.LaunchAtLoginUseCase>(
       () => _i166.LaunchAtLoginUseCase(
@@ -162,10 +166,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i307.SettingsRepository>(),
       ),
     );
-    gh.factory<_i510.ReplyDraftUseCase>(
-      () => _i510.ReplyDraftUseCase(
-        gh<_i705.MailSync>(),
-        gh<_i845.InboxRepository>(),
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+        gh<_i26.NewMailNotifier>(),
       ),
     );
     gh.lazySingleton<_i382.AccountsRepository>(
@@ -174,6 +182,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i902.GoogleConsent>(),
         gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
+      ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    );
+    gh.factory<_i510.ReplyDraftUseCase>(
+      () => _i510.ReplyDraftUseCase(
+        gh<_i705.MailSync>(),
+        gh<_i845.InboxRepository>(),
       ),
     );
     gh.lazySingleton<_i278.AttachmentRepository>(

@@ -238,7 +238,7 @@ void main() {
     expect(find.byKey(const ValueKey('conversation-a1/n'), skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('the semantics stay: subject as header, message expanded, one custom action', (tester) async {
+  testWidgets('the semantics stay: subject as header, message header expanded, one custom action', (tester) async {
     final handle = tester.ensureSemantics();
     await _start(tester);
     await _open(tester, 'h1');
@@ -246,9 +246,12 @@ void main() {
       find.descendant(of: _conversation, matching: find.text('Contratto Rossi')).first,
     );
     expect(subject.getSemanticsData().flagsCollection.isHeader, isTrue);
-    final message = tester.getSemantics(find.byType(PostinoThreadMessage).first);
-    expect(message.getSemanticsData().flagsCollection.isExpanded, Tristate.isTrue);
-    expect(message.getSemanticsData().customSemanticsActionIds, hasLength(1));
+    final header = tester.getSemantics(
+      find.descendant(of: find.byType(PostinoThreadMessage).first, matching: find.byType(InkWell)).first,
+    );
+    expect(header.getSemanticsData().flagsCollection.isExpanded, Tristate.isTrue);
+    // On the header, the node screen readers focus, so its details action can be reached.
+    expect(header.getSemanticsData().customSemanticsActionIds, hasLength(1));
     handle.dispose();
   });
 

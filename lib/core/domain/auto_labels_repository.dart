@@ -8,7 +8,8 @@ abstract interface class AutoLabelsRepository() {
   /// By Etichetta id, the Etichette of [accountId] ever set up; an Etichetta missing here is not automatica.
   Stream<Map<String, AutoLabel>> watch(String accountId);
 
-  /// The «Automatica» switch; the description is kept when it is turned off.
+  /// The «Automatica» switch; the description is kept when it is turned off. Turning it on stamps the activation
+  /// (now), turning it off clears it.
   Future<void> setAutomatic(String accountId, String labelId, {required bool automatic});
 
   /// «Descrizione (facoltativa)»: trimmed, blank removes it.

@@ -135,7 +135,8 @@ void main() {
     expect(saved, findsOneWidget);
     expect(tester.getSemantics(saved), matchesSemantics(label: 'Descrizione salvata', isLiveRegion: true));
     final stored = (await tester.runAsync(() => getIt<AutoLabelsRepository>().watch('a1').first))!;
-    expect(stored.values.single, (automatic: true, description: 'fatture dei fornitori'));
+    final (:automatic, :description, :activatedAt) = stored.values.single;
+    expect((automatic, description, activatedAt != null), (true, 'fatture dei fornitori', true));
 
     // Typing again takes the notice away; an unchanged text saves nothing new.
     await tester.enterText(find.byType(TextField), 'fatture dei fornitori ');
@@ -164,7 +165,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(_on(tester), isFalse);
     final stored = (await tester.runAsync(() => getIt<AutoLabelsRepository>().watch('a1').first))!;
-    expect(stored.values.single, (automatic: false, description: 'fatture'));
+    expect(stored.values.single, (automatic: false, description: 'fatture', activatedAt: null));
 
     await tester.tap(_row);
     await tester.pumpAndSettle();

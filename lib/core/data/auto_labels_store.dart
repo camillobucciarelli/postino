@@ -14,13 +14,25 @@ class AutoLabelsStore(final PostinoDatabase _db, final Clock _clock) implements 
       _db.postinoSettingsDao.watch(_key(accountId)).map(decodeAutoLabels);
 
   @override
-  Future<void> setAutomatic(String accountId, String labelId, {required bool automatic}) =>
-      _update(accountId, labelId, (l) => (automatic: automatic, description: l.description));
+  Future<void> setAutomatic(String accountId, String labelId, {required bool automatic}) => _update(
+    accountId,
+    labelId,
+    (l) => (
+      automatic: automatic,
+      description: l.description,
+      // Stamped when the switch goes on, kept while it stays on, cleared when it goes off.
+      activatedAt: !automatic ? null : l.activatedAt ?? _clock.now().millisecondsSinceEpoch,
+    ),
+  );
 
   @override
   Future<void> setDescription(String accountId, String labelId, String? description) {
     final d = description?.trim();
-    return _update(accountId, labelId, (l) => (automatic: l.automatic, description: d == null || d.isEmpty ? null : d));
+    return _update(
+      accountId,
+      labelId,
+      (l) => (automatic: l.automatic, description: d == null || d.isEmpty ? null : d, activatedAt: l.activatedAt),
+    );
   }
 
   /// Read, change one Etichetta, write: in a transaction, so two quick edits do not lose each other.

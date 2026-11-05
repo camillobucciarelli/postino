@@ -64,7 +64,9 @@ void main() {
     await a.labels.setAutomatic('a1', 'L1', automatic: true);
     await a.sync.syncNow();
     await b.sync.syncNow();
-    expect(await b.labels.watch('a1').first, {'L1': (automatic: true, description: null)});
+    expect(await b.labels.watch('a1').first, {
+      'L1': (automatic: true, description: null, activatedAt: DateTime.utc(2026, 11, 5, 9).millisecondsSinceEpoch),
+    });
     expect(await a.dirty(), 0);
     expect(await b.dirty(), 0);
   });
@@ -79,7 +81,13 @@ void main() {
       await d.sync.syncNow();
     }
     for (final d in [a, b]) {
-      expect(await d.labels.watch('a1').first, {'L2': (automatic: true, description: null)});
+      expect(await d.labels.watch('a1').first, {
+        'L2': (
+          automatic: true,
+          description: null,
+          activatedAt: DateTime.utc(2026, 11, 5, 9, 0, 1).millisecondsSinceEpoch,
+        ),
+      });
       expect((await d.labels.watch('a2').first).keys, ['X']);
       expect((await d.labels.watch('a3').first).keys, ['Y']);
     }
@@ -214,7 +222,7 @@ void main() {
     file.file = newer;
     await a.labels.setAutomatic('a2', 'X', automatic: true);
     await a.sync.syncNow();
-    expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null)});
+    expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null, activatedAt: null)});
     expect(file.file, newer);
     expect(file.writes, 0);
     expect(await a.dirty(), 1);

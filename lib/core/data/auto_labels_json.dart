@@ -3,7 +3,7 @@ import 'dart:convert';
 import '../domain/auto_label.dart';
 
 /// The Etichette automatiche of an Account as the JSON voce of the Impostazioni di Postino (ADR 0004):
-/// `{"<labelId>": {"automatic": true, "description": "…"}}`. Reading is lenient both ways: a file written
+/// `{"<labelId>": {"automatic": true, "description": "…", "activatedAt": <ms epoch>}}`. Reading is lenient both ways: a file written
 /// before the voce or a field existed, or a malformed one, reads as not automatica and no description;
 /// unknown fields are ignored, for files written by a newer version.
 Map<String, AutoLabel> decodeAutoLabels(String? json) {
@@ -23,6 +23,10 @@ Map<String, AutoLabel> decodeAutoLabels(String? json) {
             final String d when d.trim().isNotEmpty => d,
             _ => null,
           },
+          activatedAt: switch (value['activatedAt']) {
+            final int at => at,
+            _ => null,
+          },
         ),
   };
 }
@@ -32,7 +36,7 @@ String? encodeAutoLabels(Map<String, AutoLabel> labels) {
   final kept = {
     for (final MapEntry(:key, :value) in labels.entries)
       if (value.automatic || value.description != null)
-        key: {'automatic': value.automatic, 'description': ?value.description},
+        key: {'automatic': value.automatic, 'description': ?value.description, 'activatedAt': ?value.activatedAt},
   };
   return kept.isEmpty ? null : jsonEncode(kept);
 }

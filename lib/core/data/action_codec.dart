@@ -22,8 +22,9 @@ MailAction actionOf(String attribute, String wanted) {
       // ponytail: no Azione brings a message back to the inbox in v1; add one when the UI offers it.
       _ => throw StateError('no Azione puts a message in the inbox'),
     },
-    _ when attribute.startsWith('label:') =>
-      want == true ? ApplyLabel(attribute.substring(6)) : RemoveLabel(attribute.substring(6)),
-    _ => throw StateError('unknown attribute $attribute'),
+    _ => switch (labelIdOf(attribute)) {
+      final id? => want == true ? ApplyLabel(id) : RemoveLabel(id),
+      null => throw StateError('unknown attribute $attribute'),
+    },
   };
 }

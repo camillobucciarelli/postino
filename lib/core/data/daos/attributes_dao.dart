@@ -34,7 +34,7 @@ class AttributesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoData
             : labels.contains(inboxLabelId)
             ? Placement.inbox
             : Placement.archive,
-      _ => labels.contains(attribute.substring('label:'.length)),
+      _ => labels.contains(labelIdOf(attribute)),
     });
   }
 
@@ -57,7 +57,7 @@ class AttributesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoData
         await _label(accountId, messageId, inboxLabelId, on: v == Placement.inbox);
         await _label(accountId, messageId, trashLabelId, on: v == Placement.trash);
       default:
-        await _label(accountId, messageId, attribute.substring('label:'.length), on: v == true);
+        await _label(accountId, messageId, labelIdOf(attribute)!, on: v == true);
     }
   }
 

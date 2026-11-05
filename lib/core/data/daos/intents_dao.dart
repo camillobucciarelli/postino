@@ -24,8 +24,8 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
   /// Applies [action] to [messageIds] here at once and queues it, merging with the voce already on the same
   /// attribute: the last wanted value stays, with the first expected one. One transaction, so the messages of a
   /// Conversazione change all or none. [heldUntil] (ms since epoch) makes the voci «trattenute» until then.
-  /// An Azione that changes nothing here queues nothing; one on an attribute in Conflitto closes it, expecting the
-  /// Provider's value.
+  /// An Azione that changes nothing here queues nothing; one on an attribute in Conflitto expects the Provider's
+  /// value, and the Conflitto closes once it reaches the Provider (its Annulla brings the Conflitto back as it was).
   Future<void> queue(String accountId, Iterable<String> messageIds, MailAction action, {int? heldUntil}) =>
       transaction(() async {
         final attribute = action.attribute;
@@ -50,7 +50,6 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
               ),
             );
           } else if (conflict != null || local != wanted) {
-            if (conflict != null) await (delete(conflicts)..where(_conflictKey(accountId, messageId, attribute))).go();
             await into(intents).insert(
               IntentsCompanion.insert(
                 accountId: accountId,
@@ -68,39 +67,64 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
         }
       });
 
-  /// Annulla of the «trattenute» voci of [attribute] on [messageIds]: each leaves the queue and the message gets
-  /// back its value here (the one before the held Azione). False when none was still held.
-  Future<bool> cancelHeld(String accountId, Iterable<String> messageIds, String attribute) => transaction(() async {
-    var any = false;
-    final attributes = attachedDatabase.attributesDao;
-    for (final messageId in messageIds) {
-      final key = _key(accountId, messageId, attribute);
-      final voce = await (select(intents)..where((t) => key(t) & t.heldUntil.isNotNull())).getSingleOrNull();
-      if (voce == null) continue;
-      any = true;
-      if (voce.previous case final previous?) {
-        await (update(intents)..where(key)).write(
-          IntentsCompanion(wanted: Value(previous), heldUntil: const Value(null), previous: const Value(null)),
-        );
-        await attributes.write(accountId, messageId, attribute, previous);
-      } else {
-        await (delete(intents)..where(key)).go();
-        if (voce.expected case final expected?) await attributes.write(accountId, messageId, attribute, expected);
-      }
+  /// Annulla of [action], held on [messageIds] and still within its window at [now]: each voce leaves the queue and
+  /// the message gets back its value here (the one before the held Azione). False when none was still held: the
+  /// window ended, or a later Azione replaced it.
+  Future<bool> cancelHeld(String accountId, Iterable<String> messageIds, MailAction action, {required int now}) =>
+      transaction(() async {
+        final attribute = action.attribute;
+        var any = false;
+        final attributes = attachedDatabase.attributesDao;
+        for (final messageId in messageIds) {
+          final key = _key(accountId, messageId, attribute);
+          final voce =
+              await (select(intents)..where(
+                    (t) => key(t) & t.wanted.equals(encodeValue(action.wanted)) & t.heldUntil.isBiggerThanValue(now),
+                  ))
+                  .getSingleOrNull();
+          if (voce == null) continue;
+          any = true;
+          if (voce.previous case final previous?) {
+            await (update(intents)..where(key)).write(
+              IntentsCompanion(wanted: Value(previous), heldUntil: const Value(null), previous: const Value(null)),
+            );
+            await attributes.write(accountId, messageId, attribute, previous);
+          } else {
+            await (delete(intents)..where(key)).go();
+            if (await _localBefore(accountId, messageId, attribute, voce.expected) case final value?) {
+              await attributes.write(accountId, messageId, attribute, value);
+            }
+          }
+        }
+        return any;
+      });
+
+  /// The voce reached the Provider as [wanted] (or its message is gone): it leaves, closing the Conflitto it was
+  /// queued over. One changed meanwhile stays, now expecting [wanted]: the Provider has it.
+  Future<void> done(String accountId, String messageId, String attribute, String wanted) => transaction(() async {
+    if (await _drop(accountId, messageId, attribute, wanted) > 0) {
+      await (delete(conflicts)..where(_conflictKey(accountId, messageId, attribute))).go();
+    } else {
+      await (update(intents)..where((t) => _key(accountId, messageId, attribute)(t) & t.expected.isNotNull())).write(
+        IntentsCompanion(expected: Value(wanted)),
+      );
     }
-    return any;
   });
 
-  /// The voce reached the Provider as [wanted] (or its message is gone): it leaves; one changed meanwhile stays.
-  Future<int> done(String accountId, String messageId, String attribute, String wanted) => (delete(
+  Future<int> _drop(String accountId, String messageId, String attribute, String wanted) => (delete(
     intents,
   )..where((t) => _key(accountId, messageId, attribute)(t) & t.wanted.equals(wanted) & t.heldUntil.isNull())).go();
+
+  /// What the message showed here before its voce: the local version of the Conflitto it was queued over, or [expected].
+  Future<String?> _localBefore(String accountId, String messageId, String attribute, String? expected) async =>
+      (await (select(conflicts)..where(_conflictKey(accountId, messageId, attribute))).getSingleOrNull())?.local ??
+      expected;
 
   /// The Provider has [provider], changed elsewhere: the voce becomes a Conflitto and the message keeps [wanted]
   /// here. One changed meanwhile stays queued instead.
   Future<void> conflict(String accountId, String messageId, String attribute, String wanted, String provider) =>
       transaction(() async {
-        if (await done(accountId, messageId, attribute, wanted) == 0) return;
+        if (await _drop(accountId, messageId, attribute, wanted) == 0) return;
         await into(conflicts).insertOnConflictUpdate(
           ConflictsCompanion.insert(
             accountId: accountId,
@@ -116,8 +140,10 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
   /// One changed meanwhile stays, with its local change.
   Future<void> rejected(String accountId, String messageId, String attribute, String wanted, String? expected) =>
       transaction(() async {
-        if (await done(accountId, messageId, attribute, wanted) == 0 || expected == null) return;
-        await attachedDatabase.attributesDao.write(accountId, messageId, attribute, expected);
+        if (await _drop(accountId, messageId, attribute, wanted) == 0) return;
+        if (await _localBefore(accountId, messageId, attribute, expected) case final value?) {
+          await attachedDatabase.attributesDao.write(accountId, messageId, attribute, value);
+        }
       });
 
   /// True when the message has an Etichetta dell'utente: one of the Account's labels (system ones are not there).

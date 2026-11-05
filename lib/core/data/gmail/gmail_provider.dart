@@ -153,9 +153,15 @@ class GmailProvider(
   @override
   Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async {
     final written = switch (action) {
-      MarkRead() || MarkUnread() => setRead([messageId], read: action.wanted == true),
+      // One messages.modify (5 quota units), not a batchModify (50) per message.
+      MarkRead() || MarkUnread() => setLabel(messageId, 'UNREAD', add: action.wanted == false),
       Star() || Unstar() => setLabel(messageId, starredLabelId, add: action.wanted == true),
-      Archive() => setLabel(messageId, inboxLabelId, add: false),
+      // Out of the Cestino too, as here. ponytail: always untrash first (one call more); T2 reads first.
+      Archive() => googleGuard(() async {
+        await _gmail.send('POST', 'messages/$messageId/untrash');
+        await _labels.set(messageId, inboxLabelId, add: false);
+        return const Ok(null);
+      }),
       Delete() => googleGuard(() async {
         await _gmail.send('POST', 'messages/$messageId/trash');
         return const Ok(null);
@@ -169,21 +175,6 @@ class GmailProvider(
       Err(:final failure) => Err(failure),
     };
   }
-
-  /// Marks [messageIds] read (or unread): one batchModify call per 1000 ids, Gmail's cap.
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => googleGuard(() async {
-    for (var i = 0; i < messageIds.length; i += 1000) {
-      await _gmail.send(
-        'POST',
-        'messages/batchModify',
-        body: {
-          'ids': messageIds.skip(i).take(1000).toList(),
-          read ? 'removeLabelIds' : 'addLabelIds': ['UNREAD'],
-        },
-      );
-    }
-    return const Ok(null);
-  });
 
   /// [attachmentId] is the part id ([gmailAttachments]): the message comes first, then the part's data,
   /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.

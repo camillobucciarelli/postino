@@ -239,7 +239,7 @@ class SyncEngine(
 
   @override
   Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>
-      _store.cancelHeld(accountId, messageIds, action);
+      _store.cancelHeld(accountId, messageIds, action, _clock.now());
 
   @override
   Future<void> resolveConflict(Conflict conflict, {required bool keepMine}) async {

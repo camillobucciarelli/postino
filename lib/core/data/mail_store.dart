@@ -103,8 +103,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.intentsDao.queue(accountId, messageIds, action, heldUntil: heldUntil?.millisecondsSinceEpoch);
 
   /// Annulla of a «trattenuta» Azione: out of the queue, the messages back as they were. False when none was held.
-  Future<bool> cancelHeld(String accountId, Iterable<String> messageIds, MailAction action) =>
-      _db.intentsDao.cancelHeld(accountId, messageIds, action.attribute);
+  Future<bool> cancelHeld(String accountId, Iterable<String> messageIds, MailAction action, DateTime now) =>
+      _db.intentsDao.cancelHeld(accountId, messageIds, action, now: now.millisecondsSinceEpoch);
 
   /// The Account's voci to replay at [now], decoded; the «trattenute» ones wait for their deadline.
   Future<List<QueuedAction>> pendingActions(String accountId, DateTime now) async => [

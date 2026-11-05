@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Azioni through the offline queue with the expected value, and the Conflitti (#144, ADR 0008): on the seam of the
 // fake Provider, with the real database, sync engine and queue under it.
 import 'package:flutter_test/flutter_test.dart';
@@ -248,5 +250,51 @@ void main() {
       final voce = (await queued()).single;
       expect((voce.wanted, voce.expected, voce.heldUntil), ('archive', 'inbox', null));
     });
+
+    test('the Annulla of an earlier Azione does not take back a later one', () async {
+      await engine.act('a', ['1'], const Archive(), hold: window);
+      await engine.act('a', ['1'], const Delete(), hold: window);
+      expect(await engine.cancelAction('a', ['1'], const Archive()), isFalse);
+      expect(placement(await here('1')), Placement.trash);
+    });
+
+    test('once the window ended, Annulla takes nothing back, also when the replay could not run', () async {
+      await getIt<MailStore>().setStatus('a', AccountStatus.daRicollegare);
+      await engine.act('a', ['1'], const Archive(), hold: window);
+      h.clock.advance(window);
+      expect(await engine.cancelAction('a', ['1'], const Archive()), isFalse);
+      expect(placement(await here('1')), Placement.archive);
+    });
+
+    test('Annulla of an Azione over a Conflitto brings the Conflitto back, with its local version', () async {
+      a
+        ..goOffline()
+        ..changeElsewhere('1', placementAttribute, Placement.trash);
+      await engine.act('a', ['1'], const Star());
+      await engine.act('a', ['1'], const Archive());
+      a.goOnline();
+      await engine.syncAll();
+      final open = await conflicts();
+      expect(open, hasLength(1));
+
+      await engine.act('a', ['1'], const Delete(), hold: window);
+      expect(await engine.cancelAction('a', ['1'], const Delete()), isTrue);
+      expect(await conflicts(), open);
+      expect(placement(await here('1')), Placement.archive);
+    });
+  });
+
+  test('an Azione undone while it was being sent: no Conflitto with its own write', () async {
+    final sending = a.holdRead = Completer<void>();
+    final read = engine.act('a', ['1'], const MarkRead());
+    await pumpEventQueue();
+    final unread = engine.act('a', ['1'], const MarkUnread());
+    await pumpEventQueue();
+    a.holdRead = null;
+    sending.complete();
+    await (read, unread).wait;
+    expect(await conflicts(), isEmpty);
+    expect((await there('1')).isRead, isFalse);
+    expect(await queued(), isEmpty);
   });
 }

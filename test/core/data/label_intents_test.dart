@@ -31,7 +31,7 @@ void main() {
     final db = getIt<PostinoDatabase>();
     return [
       for (final i in await db.select(db.intents).get())
-        if (i.attribute.startsWith('label:')) i,
+        if (labelIdOf(i.attribute) != null) i,
     ];
   }
 
@@ -280,7 +280,7 @@ void main() {
       await Future.wait([adding, removing]);
 
       expect((await conversation()).where((m) => m.labelIds.contains(_viaggi)), isEmpty);
-      final intents = (await queued()).where((i) => i.attribute == 'label:$_viaggi');
+      final intents = (await queued()).where((i) => i.attribute == labelAttribute(_viaggi));
       expect(intents, hasLength(50));
       expect(intents.every((i) => i.wanted == 'false'), isTrue);
     },
@@ -299,7 +299,10 @@ void main() {
     ]);
     final c = await getIt<InboxRepository>().watchConversation('a', 't-big').first;
     expect(c.where((m) => m.message.labelIds.contains(_viaggi)), isEmpty);
-    expect((await queued()).where((i) => i.attribute == 'label:$_viaggi').every((i) => i.wanted == 'false'), isTrue);
+    expect(
+      (await queued()).where((i) => i.attribute == labelAttribute(_viaggi)).every((i) => i.wanted == 'false'),
+      isTrue,
+    );
   });
 
   test('an intent replaced while the replay ran stays: only the replayed value leaves', () async {

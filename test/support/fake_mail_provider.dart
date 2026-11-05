@@ -496,7 +496,7 @@ Object valueOf(Message m, String attribute) => switch (attribute) {
         : m.labelIds.contains(inboxLabelId)
         ? Placement.inbox
         : Placement.archive,
-  _ => m.labelIds.contains(attribute.substring('label:'.length)),
+  _ => m.labelIds.contains(labelIdOf(attribute)),
 };
 
 /// [m] with [value] for [attribute]: what an Azione, here or elsewhere, does to it.
@@ -517,7 +517,7 @@ Message withValue(Message m, String attribute, Object value) {
         if (value == Placement.trash) trashLabelId,
       ],
     ),
-    _ => copyOf(m, labelIds: label(attribute.substring('label:'.length), on: value == true)),
+    _ => copyOf(m, labelIds: label(labelIdOf(attribute)!, on: value == true)),
   };
 }
 

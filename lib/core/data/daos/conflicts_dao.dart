@@ -14,22 +14,26 @@ class ConflictsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatab
     conflicts,
   )..where((t) => accountId == null ? const Constant(true) : t.accountId.equals(accountId))).watch();
 
-  /// «Tieni la mia»: the Conflitto closes and its local value is queued again, forced on the Provider.
-  /// False when it was no longer open.
+  /// «Tieni la mia»: the Conflitto closes and its local value is queued again, forced on the Provider; a newer
+  /// Azione queued over it stands instead. False when it was no longer open.
   Future<bool> keepMine(String accountId, String messageId, String attribute) => transaction(() async {
     final c = await _take(accountId, messageId, attribute);
     if (c == null) return false;
-    await into(intents).insertOnConflictUpdate(
+    await into(intents).insert(
       IntentsCompanion.insert(accountId: accountId, messageId: messageId, attribute: attribute, wanted: c.local),
+      mode: InsertMode.insertOrIgnore,
     );
     return true;
   });
 
-  /// «Tieni quella del Provider»: the Conflitto closes and the message takes the Provider's value here.
-  /// False when it was no longer open.
+  /// «Tieni quella del Provider»: the Conflitto closes, the message takes the Provider's value here and nothing on
+  /// the attribute stays queued. False when it was no longer open.
   Future<bool> keepProvider(String accountId, String messageId, String attribute) => transaction(() async {
     final c = await _take(accountId, messageId, attribute);
     if (c == null) return false;
+    await (delete(intents)
+          ..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId) & t.attribute.equals(attribute)))
+        .go();
     await attachedDatabase.attributesDao.write(accountId, messageId, attribute, c.provider);
     return true;
   });

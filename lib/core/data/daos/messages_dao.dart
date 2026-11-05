@@ -118,11 +118,12 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   // ponytail: one read-and-write per voce and Conflitto; set-based SQL per attribute if the queue ever grows big.
   Future<void> _keepIntents(String accountId) async {
     final attributes = attachedDatabase.attributesDao;
-    for (final v in await (select(intents)..where((t) => t.accountId.equals(accountId))).get()) {
-      await attributes.write(accountId, v.messageId, v.attribute, v.wanted);
-    }
     for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
       await attributes.write(accountId, c.messageId, c.attribute, c.local);
+    }
+    // After the Conflitti: an Azione queued over one shows here.
+    for (final v in await (select(intents)..where((t) => t.accountId.equals(accountId))).get()) {
+      await attributes.write(accountId, v.messageId, v.attribute, v.wanted);
     }
   }
 

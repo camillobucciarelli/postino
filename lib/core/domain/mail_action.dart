@@ -38,7 +38,13 @@ const starredAttribute = 'starred';
 const placementAttribute = 'placement';
 
 /// The attribute of [ApplyLabel] and [RemoveLabel] for the Etichetta [labelId].
-String labelAttribute(String labelId) => 'label:$labelId';
+String labelAttribute(String labelId) => '$_labelPrefix$labelId';
+
+/// The Etichetta of a [labelAttribute]; null for the other attributes.
+String? labelIdOf(String attribute) =>
+    attribute.startsWith(_labelPrefix) ? attribute.substring(_labelPrefix.length) : null;
+
+const _labelPrefix = 'label:';
 
 /// Segna come letto.
 final class const MarkRead() extends MailAction {

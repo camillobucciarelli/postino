@@ -235,14 +235,14 @@ void main() {
     await _openPage(tester);
     await tester.tap(_row);
     await tester.pumpAndSettle();
-    // The harness downloads the GGUF Q8_0: 309 855 456 bytes.
-    expect(find.text('Scaricare 309 MB su rete cellulare?'), findsOneWidget);
+    // The harness downloads the GGUF Q8_0: 309 855 456 bytes, «310 MB» as published.
+    expect(find.text('Scaricare 310 MB su rete cellulare?'), findsOneWidget);
     final focused = FocusManager.instance.primaryFocus!.context!;
     expect(focused.findAncestorWidgetOfExactType<PostinoButton>()?.label, 'Scarica ora');
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    expect(find.text('Scaricare 309 MB su rete cellulare?'), findsNothing);
+    expect(find.text('Scaricare 310 MB su rete cellulare?'), findsNothing);
     expect(model.state, isA<ModelDownloadWaitingForWifi>());
     expect(_on(tester), isTrue);
     expect(_inPage('In attesa del Wi-Fi'), findsOneWidget);
@@ -250,7 +250,7 @@ void main() {
     // «Scarica ora» opens the question again; Invio takes the default.
     await tester.tap(find.descendant(of: _banner, matching: find.text('Scarica ora')));
     await tester.pumpAndSettle();
-    expect(find.text('Scaricare 309 MB su rete cellulare?'), findsOneWidget);
+    expect(find.text('Scaricare 310 MB su rete cellulare?'), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(model.state, isA<ModelDownloadReady>());

@@ -140,7 +140,16 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.lazySingleton<_i205.AutoLabelsRepository>(
-      () => _i452.AutoLabelsStore(gh<_i1028.PostinoDatabase>()),
+      () => _i452.AutoLabelsStore(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+      ),
+    );
+    gh.factory<_i320.AutoLabelSwitchUseCase>(
+      () => _i320.AutoLabelSwitchUseCase(
+        gh<_i205.AutoLabelsRepository>(),
+        gh<_i96.ModelDownload>(),
+      ),
     );
     gh.lazySingleton<_i385.MailStore>(
       () => _i385.MailStore(gh<_i1028.PostinoDatabase>()),
@@ -159,12 +168,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
-    );
-    gh.factory<_i320.AutoLabelSwitchUseCase>(
-      () => _i320.AutoLabelSwitchUseCase(
-        gh<_i205.AutoLabelsRepository>(),
-        gh<_i96.ModelDownload>(),
-      ),
     );
     gh.lazySingleton<_i26.NewMailNotifier>(
       () => _i26.NewMailNotifier(

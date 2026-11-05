@@ -8,6 +8,8 @@ import 'package:postino/core/data/simulated_network_type.dart';
 import 'package:postino/core/domain/model_download_state.dart';
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart';
 
+import '../../../support/fake_platform.dart';
+
 void main() {
   late PostinoDatabase db;
   late AutoLabelsStore labels;
@@ -16,7 +18,7 @@ void main() {
   late AutoLabelSwitchUseCase useCase;
   setUp(() {
     db = PostinoDatabase.inMemory();
-    labels = AutoLabelsStore(db);
+    labels = AutoLabelsStore(db, FakeClock(DateTime.utc(2026, 11, 5)));
     network = SimulatedNetworkType();
     model = SimulatedModelDownload(network)..stepDelay = Duration.zero;
     useCase = AutoLabelSwitchUseCase(labels, model);

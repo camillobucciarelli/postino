@@ -2,12 +2,13 @@ import 'package:injectable/injectable.dart';
 
 import '../domain/auto_label.dart';
 import '../domain/auto_labels_repository.dart';
+import '../domain/platform_services.dart';
 import 'auto_labels_json.dart';
 import 'postino_database.dart';
 
-// ponytail: local only, like every Impostazione di Postino in v1; the Drive sync (v1.1) uploads the same voce.
+/// The voce `auto_labels/<accountId>` of the Impostazioni di Postino: SettingsSync uploads it (ADR 0016).
 @LazySingleton(as: AutoLabelsRepository)
-class AutoLabelsStore(final PostinoDatabase _db) implements AutoLabelsRepository {
+class AutoLabelsStore(final PostinoDatabase _db, final Clock _clock) implements AutoLabelsRepository {
   @override
   Stream<Map<String, AutoLabel>> watch(String accountId) =>
       _db.postinoSettingsDao.watch(_key(accountId)).map(decodeAutoLabels);
@@ -28,7 +29,7 @@ class AutoLabelsStore(final PostinoDatabase _db) implements AutoLabelsRepository
         final key = _key(accountId);
         final labels = decodeAutoLabels(await _db.postinoSettingsDao.read(key));
         labels[labelId] = change(labels[labelId] ?? autoLabelDefault);
-        await _db.postinoSettingsDao.write(key, encodeAutoLabels(labels));
+        await _db.postinoSettingsDao.write(key, encodeAutoLabels(labels), at: _clock.now());
       });
 
   static String _key(String accountId) => 'auto_labels/$accountId';

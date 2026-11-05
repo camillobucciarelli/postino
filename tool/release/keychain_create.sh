@@ -27,12 +27,14 @@ security unlock-keychain -p "$password" "$keychain"
 security import "$p12" -k "$keychain" -f pkcs12 -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign > /dev/null
 # Apple's public Developer ID G2 intermediate (www.apple.com/certificateauthority): macOS ships only G1, and
 # without G2 the identity is not valid. Fetched from Apple, chain checked against the system Apple Root CA.
-security import "$(dirname "$0")/DeveloperIDG2CA.cer" -k "$keychain" > /dev/null
+# A p12 exported with its chain already brings it, and a second import fails as a duplicate.
+security find-certificate -a -Z "$keychain" | grep 5B45F61068B29FCC8FFFF1A7E99B78DA9E9C4635 > /dev/null ||
+  security import "$(dirname "$0")/DeveloperIDG2CA.cer" -k "$keychain" > /dev/null
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
 xargs security list-keychains -d user -s "$keychain" < "$saved_list"
 # The user's trustd agent caches the search list, so codesign (which builds the chain through trustd) would
 # not see the G2 intermediate above and fail with errSecInternalComponent. launchd restarts it on demand.
-pkill -U "$(id -u)" -x trustd || true
+pkill -U "$(id -u)" -x trustd || [ $? -eq 1 ] # 1: no agent running
 
 identity=$(security find-identity -v -p codesigning "$keychain" | 
   awk -v team="($APPLE_TEAM_ID)\"" 'index($0, "\"Developer ID Application: ") && index($0, team) { print $2; exit }')

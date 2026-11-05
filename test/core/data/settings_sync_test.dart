@@ -1,5 +1,6 @@
 // The Impostazioni di Postino synced between devices through one file (#124, ADR 0016):
 // two in-memory databases, one shared fake backend standing for the file on Drive.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -123,14 +124,35 @@ void main() {
     expect(await a.dirty(), 0);
   });
 
+  test('a failed read leaves the voci dirty and writes nothing', () async {
+    await a.labels.setAutomatic('a1', 'L1', automatic: true);
+    file.readFailure = const DriveScopeFailure();
+    await a.sync.syncNow();
+    expect((file.writeAttempts, await a.dirty()), (0, 1));
+  });
+
   test('a failed upload keeps the voci dirty for the next cycle', () async {
     await a.labels.setAutomatic('a1', 'L1', automatic: true);
-    file.failure = const DriveScopeFailure();
+    file.writeFailure = const OfflineFailure();
     await a.sync.syncNow();
+    expect(file.writeAttempts, 1);
+    expect(file.file, isNull);
     expect(await a.dirty(), 1);
-    file.failure = null;
+    file.writeFailure = null;
     await a.sync.syncNow();
+    expect(file.writeAttempts, 2);
+    expect(_entries(file.file).keys, ['auto_labels/a1']);
     expect(await a.dirty(), 0);
+  });
+
+  test('syncNow while a cycle runs: never two at once, then exactly one more cycle', () async {
+    final gate = file.readGate = Completer<void>();
+    final calls = [for (var i = 0; i < 4; i++) a.sync.syncNow()];
+    await pumpEventQueue();
+    expect(file.reads, 1);
+    gate.complete();
+    await Future.wait(calls);
+    expect((file.reads, file.maxInFlight), (2, 1));
   });
 
   test('a file from a newer Postino is read but never overwritten', () async {

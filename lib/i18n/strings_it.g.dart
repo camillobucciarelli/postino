@@ -547,6 +547,12 @@ class Translations$impostazioni$it {
 	/// it: 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.'
 	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
 
+	/// it: 'Cerca aggiornamenti'
+	String get checkForUpdates => 'Cerca aggiornamenti';
+
+	/// it: 'Cerca subito una nuova versione di Postino.'
+	String get checkForUpdatesBody => 'Cerca subito una nuova versione di Postino.';
+
 	/// it: 'Sincronizzazione'
 	String get syncSection => 'Sincronizzazione';
 
@@ -964,6 +970,8 @@ extension on Translations {
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
+			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
 			'impostazioni.syncSection' => 'Sincronizzazione',
 			'impostazioni.syncTitle' => 'Sincronizza su…',
 			'impostazioni.syncNone' => 'Nessuno',

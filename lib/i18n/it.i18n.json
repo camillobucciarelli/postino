@@ -154,6 +154,8 @@
     "launchAtLogin": "Avvio al login",
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
     "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.",
+    "checkForUpdates": "Cerca aggiornamenti",
+    "checkForUpdatesBody": "Cerca subito una nuova versione di Postino.",
     "syncSection": "Sincronizzazione",
     "syncTitle": "Sincronizza su…",
     "syncNone": "Nessuno",

@@ -1,4 +1,5 @@
-// Impostazioni del dispositivo (#38): the avvio al login switch, with a fake OS, reached from the drawer on desktop.
+// Impostazioni del dispositivo (#38): the avvio al login switch, with a fake OS, reached from the drawer on desktop;
+// «Cerca aggiornamenti» (#122) with a fake updater.
 
 import 'dart:async';
 
@@ -15,18 +16,20 @@ import 'package:routefly/routefly.dart';
 import '../../support/harness.dart';
 
 final _row = find.byKey(const ValueKey('launch-at-login'));
+final _updates = find.byKey(const ValueKey('check-for-updates'));
 
 bool _switchOn(WidgetTester tester) =>
     tester.widget<Switch>(find.descendant(of: _row, matching: find.byType(Switch))).value;
 
 /// The app at desktop width, Italian, with the drawer docked; [firstRun] applies the default as main() does.
-Future<Harness> _start(WidgetTester tester, {bool supported = true, bool firstRun = true}) async {
+Future<Harness> _start(WidgetTester tester, {bool supported = true, bool updates = false, bool firstRun = true}) async {
   tester.view
     ..physicalSize = const Size(1200, 900)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final h = await Harness.create();
   h.launchAtLogin.supported = supported;
+  h.updater.supported = updates;
   await h.addAccount('a1');
   if (firstRun) await getIt<LaunchAtLoginUseCase>().applyDefault();
   LocaleSettings.setLocaleSync(AppLocale.it);
@@ -149,5 +152,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-device')), findsNothing);
     expect(h.launchAtLogin.changes, isEmpty);
+  });
+
+  testWidgets('«Cerca aggiornamenti» asks the updater, which answers with its own window', (tester) async {
+    final h = await _start(tester, updates: true);
+    await _openSettings(tester);
+    expect(find.text('Cerca aggiornamenti'), findsOneWidget);
+    await tester.tap(_updates);
+    await tester.pumpAndSettle();
+    expect(h.updater.checks, 1);
+  });
+
+  testWidgets('«Cerca aggiornamenti» is one button for the screen reader, pressed from the keyboard', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final h = await _start(tester, updates: true);
+    await _openSettings(tester);
+    expect(
+      tester.getSemantics(_updates),
+      matchesSemantics(
+        label: 'Cerca aggiornamenti\nCerca subito una nuova versione di Postino.',
+        isButton: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    // Focus order: the back arrow, the avvio al login, then «Cerca aggiornamenti».
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    }
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(h.updater.checks, 1);
+    semantics.dispose();
+  });
+
+  testWidgets('where only the updater exists, the device settings still show, with it alone', (tester) async {
+    await _start(tester, supported: false, updates: true);
+    await _openSettings(tester);
+    expect(_updates, findsOneWidget);
+    expect(_row, findsNothing);
+  });
+
+  testWidgets('no «Cerca aggiornamenti» where Postino does not update itself', (tester) async {
+    await _start(tester);
+    await _openSettings(tester);
+    expect(_row, findsOneWidget);
+    expect(_updates, findsNothing);
   });
 }

@@ -14,9 +14,13 @@ codesign -d --entitlements - --xml "$app" > "$entitlements"
 # Xcode's ad-hoc "Sign to Run Locally" adds get-task-allow even in Release; notarization rejects it.
 /usr/libexec/PlistBuddy -c 'Delete :com.apple.security.get-task-allow' "$entitlements" 2> /dev/null || true
 
-# -depth lists children before their parents, the order codesign needs.
-# ponytail: bundles and dylibs only; bare helper executables (Sparkle's Autoupdate, #122) need adding here.
-find "$app/Contents" -depth \( -name '*.framework' -o -name '*.dylib' -o -name '*.xpc' -o -name '*.app' \) -print0 |
+# -depth lists children before their parents, the order codesign needs. Sparkle (#122) adds XPC services, an
+# Updater.app and the bare Autoupdate executable. Nested code gets no entitlements: Autoupdate ships with an
+# unprefixed application-identifier that Developer ID must not carry, and Downloader.xpc (unused: the app has
+# network.client) ships with none.
+# ponytail: bare helper executables are listed by name; add the next one here.
+find "$app/Contents" -depth \( -name '*.framework' -o -name '*.dylib' -o -name '*.xpc' -o -name '*.app' \
+  -o \( -type f -name Autoupdate \) \) -print0 |
   while IFS= read -r -d '' code; do
     codesign --force --options runtime --timestamp --sign "$identity" "$code"
   done

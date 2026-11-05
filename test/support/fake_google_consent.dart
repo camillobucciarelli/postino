@@ -7,10 +7,12 @@ class FakeGoogleConsent() implements GoogleConsent {
   Failure? failure;
   int runs = 0;
   String? lastLoginHint;
+  bool? lastDrive;
 
   @override
-  Future<Result<GoogleGrant>> run({String? loginHint}) async {
+  Future<Result<GoogleGrant>> run({String? loginHint, bool drive = false}) async {
     lastLoginHint = loginHint;
+    lastDrive = drive;
     final f = failure;
     if (f != null) return Err(f);
     runs++;

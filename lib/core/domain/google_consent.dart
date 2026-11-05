@@ -33,5 +33,7 @@ abstract interface class GoogleConsent() {
   this;
 
   /// [loginHint] preselects the Google account, for the reconnection of a Da ricollegare Account.
-  Future<Result<GoogleGrant>> run({String? loginHint});
+  /// [drive] asks also for the `drive.appdata` scope on top of those already granted (incremental consent,
+  /// ADR 0016): the grant keeps the Gmail scope, and without the Drive one the result is [DriveScopeFailure].
+  Future<Result<GoogleGrant>> run({String? loginHint, bool drive = false});
 }

@@ -50,6 +50,8 @@ import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
+import 'package:postino/core/domain/settings_sync_account_use_case.dart'
+    as _i114;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart'
@@ -207,6 +209,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i902.GoogleConsent>(),
         gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
+      ),
+    );
+    gh.factory<_i114.SettingsSyncAccountUseCase>(
+      () => _i114.SettingsSyncAccountUseCase(
+        gh<_i382.AccountsRepository>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     gh.lazySingleton<_i705.MailSync>(

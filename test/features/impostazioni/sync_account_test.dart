@@ -135,7 +135,7 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
-    // Nessuno is ticked, so it has the focus; Down moves to the first Account.
+    // Nessuno is ticked, so it has the focus; Tab moves to the first Account.
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
@@ -160,6 +160,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Sincronizza le Impostazioni su'), findsWidgets);
     expect(find.bySemanticsLabel('Nessuno'), findsWidgets);
+    // One choice out of many: read as a radio group, the current one checked.
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('sync-none'))),
+      isSemantics(label: 'Nessuno', isInMutuallyExclusiveGroup: true, hasCheckedState: true, isChecked: true),
+    );
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('sync-a1'))),
+      isSemantics(isInMutuallyExclusiveGroup: true, hasCheckedState: true, isChecked: false),
+    );
     semantics.dispose();
   });
 }

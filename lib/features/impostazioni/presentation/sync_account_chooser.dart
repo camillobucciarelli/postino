@@ -55,6 +55,7 @@ class _ChooserState() extends State<_Chooser> {
               label: t.syncNone,
               value: !known,
               focusNode: !known ? _first : null,
+              exclusive: true,
               onChanged: (_) => pick(null),
             ),
             for (final a in widget.accounts)
@@ -63,6 +64,7 @@ class _ChooserState() extends State<_Chooser> {
                 label: a.name,
                 value: a.id == current,
                 focusNode: a.id == current ? _first : null,
+                exclusive: true,
                 onChanged: (_) => pick(a.id),
               ),
           ],

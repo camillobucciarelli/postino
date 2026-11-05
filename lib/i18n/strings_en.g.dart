@@ -295,6 +295,17 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+	@override String get syncSection => 'Sync';
+	@override String get syncTitle => 'Sync to…';
+	@override String get syncNone => 'None';
+	@override String get syncBody => 'Postino\'s settings (for example the automatic labels) are saved in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.';
+	@override String get syncChooserTitle => 'Sync settings to';
+	@override String get syncCancel => 'Cancel';
+	@override String get syncBusy => 'Connecting to Drive…';
+	@override String get syncDenied => 'Google did not grant access to the hidden Drive space. Syncing stays as it was.';
+	@override String syncWrongAccount({required Object address}) => 'You picked another Google account. Pick ${address}.';
+	@override String get syncOffline => 'You are offline. Try again when the network is back.';
+	@override String get syncFailed => 'Could not connect Drive. Try again.';
 }
 
 // Path: tray
@@ -535,6 +546,17 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'impostazioni.syncSection' => 'Sync',
+			'impostazioni.syncTitle' => 'Sync to…',
+			'impostazioni.syncNone' => 'None',
+			'impostazioni.syncBody' => 'Postino\'s settings (for example the automatic labels) are saved in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.',
+			'impostazioni.syncChooserTitle' => 'Sync settings to',
+			'impostazioni.syncCancel' => 'Cancel',
+			'impostazioni.syncBusy' => 'Connecting to Drive…',
+			'impostazioni.syncDenied' => 'Google did not grant access to the hidden Drive space. Syncing stays as it was.',
+			'impostazioni.syncWrongAccount' => ({required Object address}) => 'You picked another Google account. Pick ${address}.',
+			'impostazioni.syncOffline' => 'You are offline. Try again when the network is back.',
+			'impostazioni.syncFailed' => 'Could not connect Drive. Try again.',
 			'tray.open' => 'Open Postino',
 			'tray.quit' => 'Quit',
 			'selettoreEtichette.button' => 'Labels',

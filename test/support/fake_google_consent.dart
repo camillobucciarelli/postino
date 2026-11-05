@@ -9,10 +9,14 @@ class FakeGoogleConsent() implements GoogleConsent {
   String? lastLoginHint;
   bool? lastDrive;
 
+  /// While set, the consent waits for it (the user is on Google's page).
+  Future<void>? gate;
+
   @override
   Future<Result<GoogleGrant>> run({String? loginHint, bool drive = false}) async {
     lastLoginHint = loginHint;
     lastDrive = drive;
+    await gate;
     final f = failure;
     if (f != null) return Err(f);
     runs++;

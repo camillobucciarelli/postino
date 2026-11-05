@@ -153,7 +153,18 @@
     "device": "Device settings",
     "launchAtLogin": "Launch at login",
     "launchAtLoginBody": "Postino opens when you log in and stays in the tray, so mail keeps arriving.",
-    "launchAtLoginFailed": "The system did not accept the change. Try again, or check the login items in the system settings."
+    "launchAtLoginFailed": "The system did not accept the change. Try again, or check the login items in the system settings.",
+    "syncSection": "Sync",
+    "syncTitle": "Sync to…",
+    "syncNone": "None",
+    "syncBody": "Postino's settings (for example the automatic labels) are saved in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.",
+    "syncChooserTitle": "Sync settings to",
+    "syncCancel": "Cancel",
+    "syncBusy": "Connecting to Drive…",
+    "syncDenied": "Google did not grant access to the hidden Drive space. Syncing stays as it was.",
+    "syncWrongAccount": "You picked another Google account. Pick $address.",
+    "syncOffline": "You are offline. Try again when the network is back.",
+    "syncFailed": "Could not connect Drive. Try again."
   },
   "tray": {
     "open": "Open Postino",

@@ -545,6 +545,39 @@ class Translations$impostazioni$it {
 
 	/// it: 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.'
 	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
+
+	/// it: 'Sincronizzazione'
+	String get syncSection => 'Sincronizzazione';
+
+	/// it: 'Sincronizza su…'
+	String get syncTitle => 'Sincronizza su…';
+
+	/// it: 'Nessuno'
+	String get syncNone => 'Nessuno';
+
+	/// it: 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.'
+	String get syncBody => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.';
+
+	/// it: 'Sincronizza le Impostazioni su'
+	String get syncChooserTitle => 'Sincronizza le Impostazioni su';
+
+	/// it: 'Annulla'
+	String get syncCancel => 'Annulla';
+
+	/// it: 'Accesso a Drive in corso…'
+	String get syncBusy => 'Accesso a Drive in corso…';
+
+	/// it: 'Google non ha concesso l'accesso allo spazio nascosto di Drive. La sincronizzazione resta com'era.'
+	String get syncDenied => 'Google non ha concesso l\'accesso allo spazio nascosto di Drive. La sincronizzazione resta com\'era.';
+
+	/// it: 'Hai scelto un altro account Google. Scegli $address.'
+	String syncWrongAccount({required Object address}) => 'Hai scelto un altro account Google. Scegli ${address}.';
+
+	/// it: 'Sei offline. Riprova quando torna la rete.'
+	String get syncOffline => 'Sei offline. Riprova quando torna la rete.';
+
+	/// it: 'Non è stato possibile collegare Drive. Riprova.'
+	String get syncFailed => 'Non è stato possibile collegare Drive. Riprova.';
 }
 
 // Path: tray
@@ -900,6 +933,17 @@ extension on Translations {
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'impostazioni.syncSection' => 'Sincronizzazione',
+			'impostazioni.syncTitle' => 'Sincronizza su…',
+			'impostazioni.syncNone' => 'Nessuno',
+			'impostazioni.syncBody' => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.',
+			'impostazioni.syncChooserTitle' => 'Sincronizza le Impostazioni su',
+			'impostazioni.syncCancel' => 'Annulla',
+			'impostazioni.syncBusy' => 'Accesso a Drive in corso…',
+			'impostazioni.syncDenied' => 'Google non ha concesso l\'accesso allo spazio nascosto di Drive. La sincronizzazione resta com\'era.',
+			'impostazioni.syncWrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google. Scegli ${address}.',
+			'impostazioni.syncOffline' => 'Sei offline. Riprova quando torna la rete.',
+			'impostazioni.syncFailed' => 'Non è stato possibile collegare Drive. Riprova.',
 			'tray.open' => 'Apri Postino',
 			'tray.quit' => 'Esci',
 			'selettoreEtichette.button' => 'Etichette',

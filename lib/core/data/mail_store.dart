@@ -53,7 +53,7 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
   Stream<List<InboxEntry>> _entries(String? accountId, String labelId) =>
       _db.messagesDao.watchMessages(accountId: accountId, labelId: labelId).map((rows) {
-        final groups = <(String, String), List<(AccountRow, MessageRow)>>{};
+        final groups = <(String, String), List<(AccountRow, MessageRow, List<String>)>>{};
         for (final r in rows) {
           (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
         }
@@ -61,7 +61,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
           for (final g in groups.values)
             InboxEntry(
               account: accountOf(g.first.$1),
-              message: messageOf(g.first.$2),
+              // The Conversazione's labels: those of any of its messages.
+              message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
               count: g.length,
               unread: g.any((r) => !r.$2.isRead),
             ),
@@ -88,9 +89,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> readDone(String accountId, List<String> messageIds, {required bool isRead}) =>
       _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
 
-  /// Puts the Etichetta on the message here at once (or takes it off) and queues the intent (ADR 0008).
-  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) =>
-      _db.intentsDao.queueLabel(accountId, messageId, labelId, add: add);
+  /// Puts the Etichetta on the messages here at once (or takes it off) and queues the intents (ADR 0008),
+  /// in one transaction.
+  Future<void> queueLabels(String accountId, Iterable<String> messageIds, String labelId, {required bool add}) =>
+      _db.intentsDao.queueLabels(accountId, messageIds, labelId, add: add);
 
   Future<List<LabelIntentRow>> pendingLabelIntents(String accountId) => _db.intentsDao.pendingLabels(accountId);
 

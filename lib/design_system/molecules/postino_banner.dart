@@ -25,6 +25,7 @@ enum PostinoBannerTone() {
 
 /// A lasting problem at the top of the list, or a notice above a message: [title] says what happens,
 /// [message] why or what to do, up to two actions (two sit under the text, wrapping). With [account] its mark sits in the title.
+/// [leading] and [progress] show a download or a preparation (spinner, bar).
 /// [spaced] adds the gap under it, for a list of banners; off inside a message, whose own layout spaces it.
 class const PostinoBanner({
   super.key,
@@ -58,6 +59,13 @@ class const PostinoBanner({
 
   /// Aggiunge lo spazio sotto il banner (liste di banner).
   final bool spaced = true,
+
+  /// In place of the tone's icon, in an `icon-lg` square: a PostinoSpinner while something is being prepared.
+  final Widget? leading,
+
+  /// Under the message, a PostinoProgressBar; the banner is a live region, so keep what changes at every tick
+  /// out of the [message] and let the bar's stepped value speak.
+  final Widget? progress,
 }) extends StatelessWidget {
   /// Crea il banner; `tone` sceglie colori e icona predefinita.
   this;
@@ -83,7 +91,7 @@ class const PostinoBanner({
       if (actionLabel case final l?) button(l, onAction),
       if (secondaryActionLabel case final l?) button(l, onSecondaryAction),
     ];
-    final under = large || actions.length > 1;
+    final under = large || actions.length > 1 || progress != null;
     return Padding(
       padding: EdgeInsets.only(bottom: spaced ? PostinoSpacing.s2 : 0),
       child: PostinoSelectable(
@@ -110,16 +118,22 @@ class const PostinoBanner({
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: PostinoSpacing.s3,
               children: [
-                PostinoIcon(
-                  icon ?? (tone == PostinoBannerTone.offline ? PostinoIcons.cloudOff : PostinoIcons.alert),
-                  size: PostinoSize.iconLg,
-                  color: switch (tone) {
-                    PostinoBannerTone.danger => c.danger,
-                    PostinoBannerTone.warning => c.warning,
-                    PostinoBannerTone.info => c.brand,
-                    PostinoBannerTone.offline => c.inkMuted,
-                  },
-                ),
+                if (leading case final l?)
+                  SizedBox.square(
+                    dimension: PostinoSize.iconLg,
+                    child: Center(child: l),
+                  )
+                else
+                  PostinoIcon(
+                    icon ?? (tone == PostinoBannerTone.offline ? PostinoIcons.cloudOff : PostinoIcons.alert),
+                    size: PostinoSize.iconLg,
+                    color: switch (tone) {
+                      PostinoBannerTone.danger => c.danger,
+                      PostinoBannerTone.warning => c.warning,
+                      PostinoBannerTone.info => c.brand,
+                      PostinoBannerTone.offline => c.inkMuted,
+                    },
+                  ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: PostinoSpacing.s0_5),
@@ -147,6 +161,11 @@ class const PostinoBanner({
                           style: PostinoText.subject.copyWith(color: c.ink),
                         ),
                         if (message case final m?) Text(m, style: PostinoText.preview.copyWith(color: c.ink)),
+                        if (progress case final p?)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s1),
+                            child: p,
+                          ),
                         if (under && actions.isNotEmpty)
                           // The buttons' own padding is not part of the text's edge.
                           Transform.translate(

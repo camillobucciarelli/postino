@@ -143,8 +143,11 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   }
 
   /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox), each with its Account;
-  /// of every Account, or only of [accountId]. Grouping is the caller's.
-  Stream<List<(AccountRow, MessageRow)>> watchMessages({String? accountId, String labelId = inboxLabelId}) {
+  /// of every Account, or only of [accountId], with each message's label ids. Grouping is the caller's.
+  Stream<List<(AccountRow, MessageRow, List<String>)>> watchMessages({
+    String? accountId,
+    String labelId = inboxLabelId,
+  }) {
     final m = messages;
     final a = accounts;
     final t = alias(messages, 't');
@@ -157,22 +160,28 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
       ),
     ])..where(t.accountId.equalsExp(m.accountId) & t.conversationId.equalsExp(m.conversationId));
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
+      ..addColumns([_labelIds])
       ..where(existsQuery(withLabel))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (accountId != null) query.where(m.accountId.equals(accountId));
-    return query.watch().map((rows) => [for (final r in rows) (r.readTable(a), r.readTable(m))]);
+    return query.watch().map(
+      (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m), r.read(_labelIds)?.split('\n') ?? const [])],
+    );
   }
+
+  /// The label ids of a `messages` row, one per line.
+  CustomExpression<String> get _labelIds => CustomExpression<String>(
+    '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
+    'WHERE l.account_id = messages.account_id AND l.message_id = messages.id)',
+    watchedTables: [messageLabels],
+  );
 
   /// The stored messages of one Conversazione, oldest first, with their body if downloaded
   /// and their label ids (system ones too: IMPORTANT, STARRED…).
   Stream<List<(MessageRow, BodyRow?, List<String>)>> watchConversation(String accountId, String conversationId) {
     final m = messages;
     final b = bodies;
-    final labelIds = CustomExpression<String>(
-      '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
-      'WHERE l.account_id = messages.account_id AND l.message_id = messages.id)',
-      watchedTables: [messageLabels],
-    );
+    final labelIds = _labelIds;
     final query = select(m).join([leftOuterJoin(b, b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id))])
       ..addColumns([labelIds])
       ..where(m.accountId.equals(accountId) & m.conversationId.equals(conversationId))

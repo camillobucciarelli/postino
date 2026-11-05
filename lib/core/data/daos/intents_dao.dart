@@ -22,14 +22,17 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
   Future<List<LabelIntentRow>> pendingLabels(String accountId) =>
       (select(labelIntents)..where((t) => t.accountId.equals(accountId))).get();
 
-  /// Puts the Etichetta [labelId] on message [messageId] here at once ([add] false: takes it off)
-  /// and queues the same intent for the Provider, replacing any earlier one on the pair.
-  Future<void> queueLabel(String accountId, String messageId, String labelId, {required bool add}) =>
+  /// Puts the Etichetta [labelId] on [messageIds] here at once ([add] false: takes it off) and queues the same
+  /// intents for the Provider, replacing any earlier one on each pair: one transaction, so the messages of a
+  /// Conversazione show it all or none, and a later batch never interleaves with this one.
+  Future<void> queueLabels(String accountId, Iterable<String> messageIds, String labelId, {required bool add}) =>
       transaction(() async {
-        await _setLocal(accountId, messageId, labelId, add: add);
-        await into(labelIntents).insertOnConflictUpdate(
-          LabelIntentsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId, added: add),
-        );
+        for (final messageId in messageIds) {
+          await _setLocal(accountId, messageId, labelId, add: add);
+          await into(labelIntents).insertOnConflictUpdate(
+            LabelIntentsCompanion.insert(accountId: accountId, messageId: messageId, labelId: labelId, added: add),
+          );
+        }
       });
 
   /// The intent reached the Provider as [added]; one changed meanwhile stays.

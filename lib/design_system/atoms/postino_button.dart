@@ -42,6 +42,9 @@ class const PostinoButton({
 
   /// A ghost on a tinted surface (Banner) reads as a link.
   final bool underline = false,
+
+  /// Takes the focus when it first appears: the safe answer of a dialog, so Enter picks it.
+  final bool autofocus = false,
 }) extends StatelessWidget {
   /// Crea un pulsante.
   this;
@@ -73,8 +76,13 @@ class const PostinoButton({
     // Buttons are controls, not content: out of any selection.
     final child = SelectionContainer.disabled(child: Text(label));
     return switch (variant) {
-      PostinoButtonVariant.primary => FilledButton(onPressed: onPressed, style: style, child: child),
-      PostinoButtonVariant.ghost => TextButton(onPressed: onPressed, style: style, child: child),
+      PostinoButtonVariant.primary => FilledButton(
+        onPressed: onPressed,
+        autofocus: autofocus,
+        style: style,
+        child: child,
+      ),
+      PostinoButtonVariant.ghost => TextButton(onPressed: onPressed, autofocus: autofocus, style: style, child: child),
     };
   }
 }

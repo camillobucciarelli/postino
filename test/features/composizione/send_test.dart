@@ -456,4 +456,9 @@ class _TooBig(
   Future<Result<Label>> createLabel(String a, String name) => real.createLabel(a, name);
   @override
   Future<void> setLabel(String a, String m, String l, {required bool add}) => real.setLabel(a, m, l, add: add);
+  @override
+  Future<void> setConversationLabel(String a, Iterable<String> m, String l, {required bool add}) =>
+      real.setConversationLabel(a, m, l, add: add);
+  @override
+  Future<Result<void>> completeConversation(String a, String c) => real.completeConversation(a, c);
 }

@@ -61,6 +61,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$inviati$en inviati = _Translations$inviati$en._(_root);
 	@override late final _Translations$impostazioni$en impostazioni = _Translations$impostazioni$en._(_root);
 	@override late final _Translations$tray$en tray = _Translations$tray$en._(_root);
+	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
+	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
 }
 
@@ -288,6 +290,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 
 	// Translations
 	@override String get title => 'Settings';
+	@override String get deviceSection => 'Device';
 	@override String get device => 'Device settings';
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
@@ -305,6 +308,62 @@ class _Translations$tray$en extends Translations$tray$it {
 	@override String get quit => 'Quit';
 }
 
+// Path: selettoreEtichette
+class _Translations$selettoreEtichette$en extends Translations$selettoreEtichette$it {
+	_Translations$selettoreEtichette$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get button => 'Labels';
+	@override String get menuItem => 'Labels…';
+	@override String get close => 'Close labels';
+	@override String get search => 'Search or create a label';
+	@override String get nestHelp => 'Use “/” to nest it, e.g. Projects/Postino.';
+	@override String create({required Object name}) => 'Create “${name}”';
+	@override String selected({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		zero: 'Labels, none selected',
+		one: 'Labels, ${n} selected',
+		other: 'Labels, ${n} selected',
+	);
+	@override String get empty => 'No labels';
+	@override String removed({required Object name}) => 'Label “${name}” removed';
+	@override String get undo => 'Undo';
+	@override String remove({required Object name}) => 'Remove label ${name}';
+	@override String get errorEmpty => 'Type a name for the label.';
+	@override String get errorEmptyLevel => 'Every level needs a name: no “/” at the start, at the end or doubled.';
+	@override String get errorDuplicate => 'A label with this name already exists.';
+}
+
+// Path: etichetteAutomatiche
+class _Translations$etichetteAutomatiche$en extends Translations$etichetteAutomatiche$it {
+	_Translations$etichetteAutomatiche$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Automatic labels';
+	@override String page({required Object account}) => 'Settings · ${account}';
+	@override String get intro => 'A model running on your device assigns labels to incoming email.\nIt only applies to new email that arrives after you turn it on.\nEach email gets at most one label, and email that already has one is skipped.\nThe label is written to Gmail.';
+	@override String get labels => 'Labels';
+	@override String get empty => 'No labels: create one to start.';
+	@override String get automatic => 'Automatic';
+	@override String get description => 'Description (optional)';
+	@override String get descriptionHelp => 'Describe which email goes here, e.g. invoices and receipts from suppliers';
+	@override String get descriptionSaved => 'Description saved';
+	@override String get create => 'Create label';
+	@override String get createTitle => 'Create label';
+	@override String get createName => 'Label name';
+	@override String get createHelp => 'Use “/” to nest it, e.g. Projects/Postino.';
+	@override String get createAction => 'Create';
+	@override String get createCancel => 'Cancel';
+	@override String get createFailed => 'The label could not be created. Check your connection and try again.';
+	@override String get errorEmpty => 'Type a name for the label.';
+	@override String get errorEmptyLevel => 'Every level needs a name: no “/” at the start, at the end or doubled.';
+	@override String get errorDuplicate => 'A label with this name already exists.';
+	@override late final _Translations$etichetteAutomatiche$model$en model = _Translations$etichetteAutomatiche$model$en._(_root);
+}
+
 // Path: notifiche
 class _Translations$notifiche$en extends Translations$notifiche$it {
 	_Translations$notifiche$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -318,6 +377,31 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String get permissionBody => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.';
 	@override String get permissionAllow => 'Continue';
 	@override String get permissionLater => 'Not now';
+}
+
+// Path: etichetteAutomatiche.model
+class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
+	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get preparing => 'Preparing the model';
+	@override String get waitingTitle => 'Waiting for Wi-Fi';
+	@override String waitingBody({required Object size}) => 'The model (${size}) downloads when you are on Wi-Fi.';
+	@override String get downloadNow => 'Download now';
+	@override String get downloading => 'Downloading the model';
+	@override String progress({required Object received, required Object total, required Object percent}) => '${received} of ${total} · ${percent}%';
+	@override String get failedTitle => 'Model download failed';
+	@override String get failedOffline => 'Connection lost.';
+	@override String get failedOther => 'Unexpected error.';
+	@override String get retry => 'Retry';
+	@override String get ready => 'Model ready';
+	@override String get readyBody => 'New email gets automatic labels.';
+	@override String get readySnackbar => 'Automatic labels ready';
+	@override String get dismiss => 'OK';
+	@override String confirmTitle({required Object size}) => 'Download ${size} over cellular?';
+	@override String get confirmWait => 'Wait for Wi-Fi';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -446,12 +530,62 @@ extension on TranslationsEn {
 			'inviati.emptyTitle' => 'No sent messages',
 			'inviati.emptyBody' => 'Messages you send show up here.',
 			'impostazioni.title' => 'Settings',
+			'impostazioni.deviceSection' => 'Device',
 			'impostazioni.device' => 'Device settings',
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
 			'tray.open' => 'Open Postino',
 			'tray.quit' => 'Quit',
+			'selettoreEtichette.button' => 'Labels',
+			'selettoreEtichette.menuItem' => 'Labels…',
+			'selettoreEtichette.close' => 'Close labels',
+			'selettoreEtichette.search' => 'Search or create a label',
+			'selettoreEtichette.nestHelp' => 'Use “/” to nest it, e.g. Projects/Postino.',
+			'selettoreEtichette.create' => ({required Object name}) => 'Create “${name}”',
+			'selettoreEtichette.selected' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, zero: 'Labels, none selected', one: 'Labels, ${n} selected', other: 'Labels, ${n} selected', ), 
+			'selettoreEtichette.empty' => 'No labels',
+			'selettoreEtichette.removed' => ({required Object name}) => 'Label “${name}” removed',
+			'selettoreEtichette.undo' => 'Undo',
+			'selettoreEtichette.remove' => ({required Object name}) => 'Remove label ${name}',
+			'selettoreEtichette.errorEmpty' => 'Type a name for the label.',
+			'selettoreEtichette.errorEmptyLevel' => 'Every level needs a name: no “/” at the start, at the end or doubled.',
+			'selettoreEtichette.errorDuplicate' => 'A label with this name already exists.',
+			'etichetteAutomatiche.title' => 'Automatic labels',
+			'etichetteAutomatiche.page' => ({required Object account}) => 'Settings · ${account}',
+			'etichetteAutomatiche.intro' => 'A model running on your device assigns labels to incoming email.\nIt only applies to new email that arrives after you turn it on.\nEach email gets at most one label, and email that already has one is skipped.\nThe label is written to Gmail.',
+			'etichetteAutomatiche.labels' => 'Labels',
+			'etichetteAutomatiche.empty' => 'No labels: create one to start.',
+			'etichetteAutomatiche.automatic' => 'Automatic',
+			'etichetteAutomatiche.description' => 'Description (optional)',
+			'etichetteAutomatiche.descriptionHelp' => 'Describe which email goes here, e.g. invoices and receipts from suppliers',
+			'etichetteAutomatiche.descriptionSaved' => 'Description saved',
+			'etichetteAutomatiche.create' => 'Create label',
+			'etichetteAutomatiche.createTitle' => 'Create label',
+			'etichetteAutomatiche.createName' => 'Label name',
+			'etichetteAutomatiche.createHelp' => 'Use “/” to nest it, e.g. Projects/Postino.',
+			'etichetteAutomatiche.createAction' => 'Create',
+			'etichetteAutomatiche.createCancel' => 'Cancel',
+			'etichetteAutomatiche.createFailed' => 'The label could not be created. Check your connection and try again.',
+			'etichetteAutomatiche.errorEmpty' => 'Type a name for the label.',
+			'etichetteAutomatiche.errorEmptyLevel' => 'Every level needs a name: no “/” at the start, at the end or doubled.',
+			'etichetteAutomatiche.errorDuplicate' => 'A label with this name already exists.',
+			'etichetteAutomatiche.model.preparing' => 'Preparing the model',
+			'etichetteAutomatiche.model.waitingTitle' => 'Waiting for Wi-Fi',
+			'etichetteAutomatiche.model.waitingBody' => ({required Object size}) => 'The model (${size}) downloads when you are on Wi-Fi.',
+			'etichetteAutomatiche.model.downloadNow' => 'Download now',
+			'etichetteAutomatiche.model.downloading' => 'Downloading the model',
+			'etichetteAutomatiche.model.progress' => ({required Object received, required Object total, required Object percent}) => '${received} of ${total} · ${percent}%',
+			'etichetteAutomatiche.model.failedTitle' => 'Model download failed',
+			'etichetteAutomatiche.model.failedOffline' => 'Connection lost.',
+			'etichetteAutomatiche.model.failedOther' => 'Unexpected error.',
+			'etichetteAutomatiche.model.retry' => 'Retry',
+			'etichetteAutomatiche.model.ready' => 'Model ready',
+			'etichetteAutomatiche.model.readyBody' => 'New email gets automatic labels.',
+			'etichetteAutomatiche.model.readySnackbar' => 'Automatic labels ready',
+			'etichetteAutomatiche.model.dismiss' => 'OK',
+			'etichetteAutomatiche.model.confirmTitle' => ({required Object size}) => 'Download ${size} over cellular?',
+			'etichetteAutomatiche.model.confirmWait' => 'Wait for Wi-Fi',
 			'notifiche.channel' => 'New mail',
 			'notifiche.open' => 'Open',
 			'notifiche.permissionTitle' => 'New mail notifications',

@@ -29,7 +29,7 @@ Regole decise dall'owner il 2026-11-04. Prevalgono su "meno file possibile": la 
 ## Design system
 
 - Il barrel `lib/design_system/design_system.dart` è stabile: gli split interni non cambiano gli import dei consumer.
-- `Actions`/`Shortcuts` stanno nell'organismo radice (ADR 0014).
+- `Actions`/`Shortcuts` stanno nell'organismo radice (ADR 0014). Eccezione: le scorciatoie che agiscono sull'elemento col focus (tasto Menu/Maiusc+F10 del menu contestuale) stanno nel componente che possiede quel focus.
 
 ## Coda offline
 

@@ -18,6 +18,24 @@ Future<MailStore> _store() async {
 }
 
 void main() {
+  test('a sync result for an Account removed meanwhile writes nothing', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    final store = MailStore(db);
+    await store.addAccount(
+      const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
+    );
+    await db.accountsDao.remove('a');
+
+    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')]));
+    await store.applyPage('a', [msg('2')], const {});
+
+    for (final t in db.allTables) {
+      if (!t.columnsByName.containsKey('account_id')) continue;
+      expect(await db.customSelect('SELECT * FROM ${t.actualTableName}').get(), isEmpty, reason: t.actualTableName);
+    }
+  });
+
   test('sender name, To, Cc and labels are stored and read back in the Conversazione', () async {
     final store = await _store();
     await store.applySync(

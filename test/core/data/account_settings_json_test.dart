@@ -39,9 +39,17 @@ void main() {
 
   test('unknown fields are ignored and a color outside the palette wraps into it', () {
     final a = decodeAccountSettings(
-      'x',
+      'gmail:a@b.c',
       '{"address":"a@b.c","provider":"gmail","color":${accountColorCount + 1},"position":4,"name":"Ada"}',
     );
     expect((a!.color, a.position), (1, 4));
+  });
+
+  test('a voce whose id is not provider:address is ignored; the address is normalized as connecting does', () {
+    const json = '{"address":" A@B.c ","provider":"gmail","color":1,"position":0}';
+    expect(decodeAccountSettings('gmail:a@b.c', json)?.address, 'a@b.c');
+    for (final id in ['gmail:z@b.c', 'microsoft:a@b.c', 'a@b.c']) {
+      expect(decodeAccountSettings(id, json), isNull, reason: id);
+    }
   });
 }

@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import '../domain/account.dart';
+import '../domain/synced_settings.dart';
 
 /// The key of the voce of [accountId] in the Impostazioni di Postino.
-String accountSettingsKey(String accountId) => 'accounts/$accountId';
+String accountSettingsKey(String accountId) => '$accountsSettingPrefix$accountId';
 
 /// The Account as its JSON voce of the Impostazioni di Postino (ADR 0016):
 /// `{"address":"…","provider":"gmail","color":<palette index>,"position":<int>}`.
@@ -13,7 +14,8 @@ String encodeAccountSettings(Account a) =>
 
 /// The Account [accountId] of the voce [json], da ricollegare until it is connected here. Reading is lenient:
 /// a malformed voce, or one with a Provider this Postino does not know, is null and is ignored; unknown fields
-/// are ignored, for voci written by a newer version; a color outside the palette wraps into it.
+/// are ignored, for voci written by a newer version; a color outside the palette wraps into it. A voce whose
+/// [accountId] is not `<provider>:<address>` (the address normalized as connecting does) is incoherent: ignored too.
 Account? decodeAccountSettings(String accountId, String? json) {
   final Object? root;
   try {
@@ -25,17 +27,21 @@ Account? decodeAccountSettings(String accountId, String? json) {
   final name = root['provider'];
   final provider = ProviderKind.values.where((p) => p.name == name).firstOrNull;
   return switch ((root['address'], root['color'], root['position'])) {
-    (final String address, final int color, final int position) when provider != null && address.isNotEmpty => Account(
-      id: accountId,
-      address: address,
-      provider: provider,
-      color: color % accountColorCount,
-      position: position,
-      status: AccountStatus.daRicollegare,
-    ),
+    (final String raw, final int color, final int position)
+        when provider != null && raw.trim().isNotEmpty && accountId == '${provider.name}:${_normalized(raw)}' =>
+      Account(
+        id: accountId,
+        address: _normalized(raw),
+        provider: provider,
+        color: color % accountColorCount,
+        position: position,
+        status: AccountStatus.daRicollegare,
+      ),
     _ => null,
   };
 }
+
+String _normalized(String address) => address.trim().toLowerCase();
 
 /// Whether [a] and [b] say the same in the voce: address, Provider, color and position (not the status).
 bool sameAccountSettings(Account a, Account b) =>

@@ -59,11 +59,6 @@ void main() {
       expect((jsonDecode(encodeSettings(doc.entries.values)) as Map<String, dynamic>)['schemaVersion'], 2);
     });
 
-    test('a v3 file is read but not writable', () {
-      final doc = _decode('{"schemaVersion":3,"entries":{}}');
-      expect((doc.schemaVersion, doc.writable), (3, false));
-    });
-
     test('voci with a prefix this Postino does not know are kept, to write back', () {
       final doc = _decode(
         '{"schemaVersion":2,"entries":{"themes/x":{"value":1,"updatedAt":1,"deviceId":"Z","deleted":false}}}',

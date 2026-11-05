@@ -185,12 +185,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
-    gh.lazySingleton<_i400.AccountsSettingsMirror>(
-      () => _i400.AccountsSettingsMirror(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.SecureStore>(),
-      ),
-    );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
     );
@@ -198,6 +192,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i452.AutoLabelsStore(
         gh<_i1028.PostinoDatabase>(),
         gh<_i398.Clock>(),
+      ),
+    );
+    gh.lazySingleton<_i400.AccountsSettingsMirror>(
+      () => _i400.AccountsSettingsMirror(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.SecureStore>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     gh.lazySingleton<_i95.AutoLabeler>(
@@ -231,6 +232,17 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i26.NewMailNotifier>(),
         gh<_i95.AutoLabeler>(),
         gh<_i346.ErrorLog>(),
+      ),
+    );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     gh.lazySingleton<_i705.MailSync>(
@@ -268,16 +280,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.SecureStore>(),
         gh<_i398.Clock>(),
         gh<_i696.AttachmentStorage>(),
-      ),
-    );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.Clock>(),
       ),
     );
     gh.factory<_i802.ReportProblemUseCase>(

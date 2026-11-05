@@ -6,6 +6,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
@@ -94,6 +95,45 @@ void main() {
     final voce = await getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com');
     expect(jsonDecode(voce!.value!), {'address': 'ada@gmail.com', 'provider': 'gmail', 'color': 1, 'position': 2});
     expect(voce.dirty, isTrue);
+  });
+
+  test('a new Account with the sync on is stamped now, with the sync off before any synced copy', () async {
+    final h = await Harness.create();
+    h
+      ..providerFor('gmail:ada@gmail.com')
+      ..providerFor('gmail:bob@gmail.com');
+    final dao = getIt<PostinoDatabase>().postinoSettingsDao;
+    await getIt<AccountsRepository>().connectGmail();
+    final off = await dao.readRow('accounts/gmail:ada@gmail.com');
+    expect((off!.updatedAt, off.deviceId, off.dirty), (0, '', true));
+
+    await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:ada@gmail.com');
+    h.consent.address = 'bob@gmail.com';
+    await getIt<AccountsRepository>().connectGmail();
+    final on = await dao.readRow('accounts/gmail:bob@gmail.com');
+    expect((on!.updatedAt, on.dirty), (h.clock.now().millisecondsSinceEpoch, true));
+  });
+
+  test('reconnecting an Account whose voce says something else writes it again, newer and to upload', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    final accounts = getIt<AccountsRepository>();
+    await accounts.connectGmail();
+    final db = getIt<PostinoDatabase>();
+    await db.postinoSettingsDao.markClean(await db.postinoSettingsDao.entries());
+    final before = (await db.postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com'))!;
+    final ada = (await getIt<MailStore>().accounts()).single;
+    await db.accountsDao.updateSettings(
+      Account(id: ada.id, address: ada.address, provider: ada.provider, color: 5, position: ada.position),
+    );
+
+    h.clock.advance(const Duration(minutes: 1));
+    await accounts.connectGmail(loginHint: 'ada@gmail.com');
+
+    final after = (await db.postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com'))!;
+    expect((jsonDecode(after.value!) as Map<String, dynamic>)['color'], 5);
+    expect(after.updatedAt, greaterThan(before.updatedAt));
+    expect(after.dirty, isTrue);
   });
 
   test('reconnecting with nothing changed leaves the synced voce as it was', () async {

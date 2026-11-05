@@ -41,6 +41,17 @@ class PostinoSettingsDao(super.attachedDatabase)
     );
   });
 
+  /// Writes [value] as a voce written before the sync (ADR 0016): to upload, but older than any copy elsewhere
+  /// (updatedAt 0, no device), so a synced copy wins over it. Only when [key] has no row here, tombstone included:
+  /// false, and nothing written, otherwise.
+  Future<bool> writeBeforeSync(String key, String value) => transaction(() async {
+    if (await _row(key) != null) return false;
+    await into(
+      postinoSettings,
+    ).insert(PostinoSettingsCompanion.insert(key: key, value: Value(value), updatedAt: 0, deviceId: '', dirty: true));
+    return true;
+  });
+
   /// Tombstones for every synced voce of [accountId], present here or not: the removal reaches every device.
   Future<void> tombstoneAccount(String accountId, {required DateTime at}) => transaction(() async {
     for (final key in accountSettingKeys(accountId)) {

@@ -39,6 +39,10 @@ class AccountsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     await (delete(accounts)..where((t) => t.id.equals(id))).go();
   });
 
+  /// Whether the Account [id] is here.
+  Future<bool> exists(String id) async =>
+      await (select(accounts)..where((t) => t.id.equals(id))).getSingleOrNull() != null;
+
   Future<void> setStatus(String id, AccountStatus status) =>
       (update(accounts)..where((t) => t.id.equals(id))).write(AccountsCompanion(status: Value(status)));
 

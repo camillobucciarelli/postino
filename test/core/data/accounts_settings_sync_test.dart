@@ -9,7 +9,6 @@ import 'package:postino/core/data/accounts_settings_mirror.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
-import 'package:postino/core/data/row_mappers.dart';
 import 'package:postino/core/data/settings_sync.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
@@ -25,7 +24,7 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
   final keychain = FakeSecureStore();
   late final settings = DeviceSettingsStore(db);
   late final sync = SettingsSync(db, settings, clock, FakeConnectivity(), backendFor: (_) => backend);
-  late final mirror = AccountsSettingsMirror(db, keychain);
+  late final mirror = AccountsSettingsMirror(db, keychain, settings);
 
   Future<void> start() async {
     await settings.setSettingsSyncAccount('a1');
@@ -47,7 +46,7 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
     await pumpEventQueue();
   }
 
-  Future<List<Account>> accounts() async => [for (final r in await db.accountsDao.byPosition()) accountOf(r)];
+  Future<List<Account>> accounts() => MailStore(db).accounts();
 }
 
 Account _account(String name, {int color = 0, int position = 0}) => Account(
@@ -172,6 +171,42 @@ void main() {
       await settings.setSettingsSyncAccount('gmail:ada@gmail.com');
       return SettingsSync(db, settings, h.clock, h.connectivity, backendFor: (_) => file);
     }
+
+    test('its first Account, connected before the sync is on, takes the synced color and position', () async {
+      final file = FakeSettingsBackend();
+
+      // Device A: ada (0, 0) and bob (1, 1), synced.
+      var h = await Harness.create();
+      h
+        ..providerFor('gmail:ada@gmail.com')
+        ..providerFor('gmail:bob@gmail.com');
+      await getIt<AccountsRepository>().connectGmail();
+      h.consent.address = 'bob@gmail.com';
+      await getIt<AccountsRepository>().connectGmail();
+      await (await syncedWith(h, file)).syncNow();
+      Object? bobInFile() => (_entries(file.file)['accounts/gmail:bob@gmail.com']! as Map<String, Object?>)['value'];
+      final bobOnA = bobInFile();
+      expect(bobOnA, {'address': 'bob@gmail.com', 'provider': 'gmail', 'color': 1, 'position': 1});
+
+      // Device B, as the app goes: the onboarding connects bob (the first Account here, so 0, 0), then
+      // «Sincronizza su…» turns the sync on.
+      await pumpEventQueue();
+      h = await Harness.create();
+      final mirror = getIt<AccountsSettingsMirror>()..start();
+      addTearDown(mirror.stop);
+      h
+        ..providerFor('gmail:bob@gmail.com')
+        ..consent.address = 'bob@gmail.com';
+      await getIt<AccountsRepository>().connectGmail();
+      await (await syncedWith(h, file)).syncNow();
+      await pumpEventQueue();
+
+      expect((await getIt<MailStore>().accounts()).map((x) => (x.address, x.color, x.position, x.status)), [
+        ('ada@gmail.com', 0, 0, AccountStatus.daRicollegare),
+        ('bob@gmail.com', 1, 1, AccountStatus.attivo),
+      ]);
+      expect(bobInFile(), bobOnA);
+    });
 
     test(
       'gets the Accounts da ricollegare, identical; reconnecting one makes no duplicate nor rewrites its voce',

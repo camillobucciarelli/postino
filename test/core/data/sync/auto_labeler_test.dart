@@ -5,6 +5,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/auto_labels_repository.dart';
+import 'package:postino/core/domain/embedding_models.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/main.dart';
@@ -71,6 +72,20 @@ void main() {
     await labeler.queueAutoLabels('a', [m], const {});
     expect(await queued(), [('1', _viaggi)]);
     expect(h.embedder.texts, isNot(contains('Viaggi: voli e alberghi')));
+  });
+
+  test("another format's vectors are not examples: the mail is embedded again with the current model", () async {
+    // Saved by the .litertlm; the model now is another (the fake's): those vectors are never compared.
+    for (final id in ['e1', 'e2', 'e3']) {
+      await stored(msg(id, labelIds: const [inboxLabelId, _viaggi]));
+      await db.messageEmbeddingsDao.save('a', id, embeddingGemmaLiteRt.id, [0.4, 1]);
+    }
+    final m = await stored(msg('1', subject: 'Lisbona', date: after));
+    await labeler.queueAutoLabels('a', [m], const {});
+    // Embedded again, the examples are [0, 0]: Viaggi's prototype is null, Fatture wins.
+    expect(await queued(), [('1', _fatture.id)]);
+    final models = {for (final r in await db.select(db.messageEmbeddings).get()) r.messageId: r.modelId};
+    expect(models, {'e1': 'fake', 'e2': 'fake', 'e3': 'fake', '1': 'fake'});
   });
 
   test('below the threshold no Etichetta', () async {

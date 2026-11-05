@@ -1,90 +1,16 @@
 PODS:
-  - connectivity_plus (0.0.1):
-    - FlutterMacOS
-  - desktop_webview_window (0.0.1):
-    - FlutterMacOS
-  - file_selector_macos (0.0.1):
-    - FlutterMacOS
-  - flutter_local_notifications (0.0.1):
-    - FlutterMacOS
-  - flutter_secure_storage_darwin (10.0.0):
-    - Flutter
-    - FlutterMacOS
-  - flutter_web_auth_2 (5.0.0):
-    - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - quill_native_bridge_macos (0.0.1):
-    - FlutterMacOS
-  - share_plus (0.0.1):
-    - FlutterMacOS
-  - url_launcher_macos (0.0.1):
-    - FlutterMacOS
-  - webview_flutter_wkwebview (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - window_to_front (0.0.4):
-    - FlutterMacOS
-  - workmanager_apple (0.0.1):
-    - FlutterMacOS
 
 DEPENDENCIES:
-  - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos`)
-  - desktop_webview_window (from `Flutter/ephemeral/.symlinks/plugins/desktop_webview_window/macos`)
-  - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
-  - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
-  - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
-  - flutter_web_auth_2 (from `Flutter/ephemeral/.symlinks/plugins/flutter_web_auth_2/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - quill_native_bridge_macos (from `Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos`)
-  - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
-  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
-  - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
-  - window_to_front (from `Flutter/ephemeral/.symlinks/plugins/window_to_front/macos`)
-  - workmanager_apple (from `Flutter/ephemeral/.symlinks/plugins/workmanager_apple/macos`)
 
 EXTERNAL SOURCES:
-  connectivity_plus:
-    :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos
-  desktop_webview_window:
-    :path: Flutter/ephemeral/.symlinks/plugins/desktop_webview_window/macos
-  file_selector_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos
-  flutter_local_notifications:
-    :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
-  flutter_secure_storage_darwin:
-    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
-  flutter_web_auth_2:
-    :path: Flutter/ephemeral/.symlinks/plugins/flutter_web_auth_2/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
-  quill_native_bridge_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos
-  share_plus:
-    :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
-  url_launcher_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
-  webview_flutter_wkwebview:
-    :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
-  window_to_front:
-    :path: Flutter/ephemeral/.symlinks/plugins/window_to_front/macos
-  workmanager_apple:
-    :path: Flutter/ephemeral/.symlinks/plugins/workmanager_apple/macos
 
 SPEC CHECKSUMS:
-  connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
-  desktop_webview_window: 07ec5b575166556b3b9c96c5b7c962b2c044b452
-  file_selector_macos: 3af0fddc391c32a6a3956a7d3898ca3a86057a4f
-  flutter_local_notifications: 1fc7ffb10a83d6a2eeeeddb152d43f1944b0aad0
-  flutter_secure_storage_darwin: 46e401699982ee74142909676535e0f6a7321e58
-  flutter_web_auth_2: 7fe624ff12ddcb4c19e5dbcd56c9e9ea4899d967
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
-  quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
-  share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
-  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
-  window_to_front: 2d7d31f268d0b13b7e63b26e31eb0a2e9612239e
-  workmanager_apple: 573f1503f9752eadd70a35bb478dfd2a103c4d18
 
-PODFILE CHECKSUM: 1e95c36afbfd1cb6423ceca4de7a8e1b256fb6ac
+PODFILE CHECKSUM: d16f5e5d196d1ca9863d7a71d5885cad7ffa7d2d
 
 COCOAPODS: 1.17.0

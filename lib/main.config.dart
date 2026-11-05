@@ -31,13 +31,10 @@ import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
-import 'package:postino/core/data/simulated_model_download.dart' as _i29;
-import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
-import 'package:postino/core/data/unready_text_embedder.dart' as _i567;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
 import 'package:postino/core/domain/app_updater.dart' as _i833;
 import 'package:postino/core/domain/app_window.dart' as _i853;
@@ -51,7 +48,6 @@ import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/model_download.dart' as _i96;
 import 'package:postino/core/domain/model_manager.dart' as _i689;
-import 'package:postino/core/domain/network_type.dart' as _i421;
 import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
@@ -92,14 +88,9 @@ extension GetItInjectableX on _i174.GetIt {
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
-    gh.lazySingleton<_i421.NetworkType>(() => _i614.SimulatedNetworkType());
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
     gh.lazySingleton<_i398.BackgroundSender>(
       () => _i524.SystemBackgroundSender(),
-      registerFor: {_prod},
-    );
-    gh.lazySingleton<_i374.TextEmbedder>(
-      () => const _i567.UnreadyTextEmbedder(),
       registerFor: {_prod},
     );
     gh.singleton<_i398.Connectivity>(
@@ -148,9 +139,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i524.SystemLinkOpener(),
       registerFor: {_prod},
     );
-    gh.lazySingleton<_i96.ModelDownload>(
-      () => _i29.SimulatedModelDownload(gh<_i421.NetworkType>()),
-    );
     await gh.singletonAsync<_i689.ModelManager>(
       () => modelModule.modelManager(
         gh<_i519.Client>(),
@@ -168,6 +156,17 @@ extension GetItInjectableX on _i174.GetIt {
       () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
       registerFor: {_prod},
       preResolve: true,
+    );
+    gh.lazySingleton<_i96.ModelDownload>(
+      () => modelModule.modelDownload(gh<_i689.ModelManager>()),
+      registerFor: {_prod},
+    );
+    gh.lazySingleton<_i374.TextEmbedder>(
+      () => modelModule.textEmbedder(
+        gh<_i689.ModelManager>(),
+        gh<_i346.ErrorLog>(),
+      ),
+      registerFor: {_prod},
     );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
       () => databaseModule.database(

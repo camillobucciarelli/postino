@@ -3,13 +3,17 @@ import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/managed_model_download.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/app_updater.dart';
+import 'package:postino/core/domain/embedding_models.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/google_consent.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/model_download.dart';
+import 'package:postino/core/domain/model_manager.dart';
 import 'package:postino/core/domain/notifications.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/report_sharer.dart';
@@ -18,13 +22,14 @@ import 'package:postino/main.dart';
 
 import 'fake_google_consent.dart';
 import 'fake_mail_provider.dart';
+import 'fake_model_manager.dart';
 import 'fake_notifications.dart';
 import 'fake_platform.dart';
 import 'fake_report_sharer.dart';
 import 'fake_text_embedder.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
-/// links, Save As, report sharing, background sender, avvio al login, notifications, embedding model and file system; the error log is the real
+/// links, Save As, report sharing, background sender, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
 /// one on that file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
@@ -39,6 +44,7 @@ class Harness._() {
   final notifications = FakeNotifications();
   final sharer = FakeReportSharer();
   final embedder = FakeTextEmbedder();
+  final models = FakeModelManager();
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
@@ -67,6 +73,8 @@ class Harness._() {
       ..registerSingleton<ErrorLog>(h.errorLog)
       ..registerSingleton<ReportSharer>(h.sharer)
       ..registerSingleton<TextEmbedder>(h.embedder)
+      ..registerSingleton<ModelManager>(h.models)
+      ..registerSingleton<ModelDownload>(ManagedModelDownload(h.models, embeddingGemmaGguf))
       ..registerSingleton<AttachmentStorage>(
         await AttachmentStorage.open(
           h.fs.directory('/support/attachments'),

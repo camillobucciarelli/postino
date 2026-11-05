@@ -42,6 +42,27 @@ void main() {
     expect(h.sharer.shared, hasLength(1));
   });
 
+  testWidgets('p during the onboarding shares the log without an Account', (tester) async {
+    await start(tester, account: false);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+    await tester.runAsync(pumpEventQueue);
+    expect(h.sharer.shared, hasLength(1));
+  });
+
+  testWidgets('a held p reports once: the repeats after the first report is done start nothing', (tester) async {
+    await start(tester, account: false);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.keyP);
+    await tester.runAsync(pumpEventQueue);
+    expect(h.sharer.shared, hasLength(1));
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.keyP);
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.keyP);
+    await tester.runAsync(pumpEventQueue);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyP);
+    expect(h.sharer.shared, hasLength(1));
+  });
+
   testWidgets('the drawer has the action too', (tester) async {
     final semantics = tester.ensureSemantics();
     await start(tester);

@@ -84,18 +84,19 @@ class _PostaLayoutState() extends State<PostaLayout> {
     }
 
     // One shell above the content: only the content is replaced on navigation.
-    final shell = CrashReportPrompt(
-      onReport: reportProblem,
-      child: OnboardingGate(
-        onReportProblem: reportProblem,
-        child: ModelReadyNotifier(
-          child: FutureBuilder<(bool?, double?)>(
-            future: _saved,
-            builder: (context, saved) => saved.connectionState != ConnectionState.done
-                ? const SizedBox.shrink()
-                : PostaShortcuts(
-                    cursor: _cursor,
-                    child: PostinoSidebarShell(
+    // Above the gate: the keys work during the onboarding too (p shares the log without an Account).
+    final shell = PostaShortcuts(
+      cursor: _cursor,
+      child: CrashReportPrompt(
+        onReport: reportProblem,
+        child: OnboardingGate(
+          onReportProblem: reportProblem,
+          child: ModelReadyNotifier(
+            child: FutureBuilder<(bool?, double?)>(
+              future: _saved,
+              builder: (context, saved) => saved.connectionState != ConnectionState.done
+                  ? const SizedBox.shrink()
+                  : PostinoSidebarShell(
                       drawer: postaDrawer(accountId: accountId, labelId: labelId),
                       closeLabel: context.t.sidebar.close,
                       openLabel: context.t.sidebar.open,
@@ -144,7 +145,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
                         ),
                       ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),

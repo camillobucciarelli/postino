@@ -25,6 +25,9 @@ class const PostaShortcut(
   final PostaAction action, {
   final bool listOnly = false,
   final bool command = false,
+
+  /// Whether holding the key repeats the action: false for one that starts something (a report), true for moving.
+  final bool repeats = true,
 }) {}
 
 /// The one table key + modifiers -> action of the Posta views (ADR 0014); a test checks that no pair appears twice.
@@ -40,7 +43,7 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyA, PostaAction.replyAll),
   PostaShortcut(LogicalKeyboardKey.keyF, PostaAction.forward),
   PostaShortcut(LogicalKeyboardKey.keyL, PostaAction.labels),
-  PostaShortcut(LogicalKeyboardKey.keyP, PostaAction.reportProblem),
+  PostaShortcut(LogicalKeyboardKey.keyP, PostaAction.reportProblem, repeats: false),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -80,7 +83,8 @@ class const PostaShortcuts({super.key, required final ListCursor cursor, require
     return Shortcuts(
       shortcuts: {
         for (final s in postaShortcuts)
-          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac): PostaIntent(s),
+          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac, includeRepeats: s.repeats):
+              PostaIntent(s),
       },
       child: Actions(actions: {PostaIntent: _PostaAction(cursor)}, child: child),
     );

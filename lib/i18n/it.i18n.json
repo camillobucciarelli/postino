@@ -153,7 +153,18 @@
     "device": "Impostazioni del dispositivo",
     "launchAtLogin": "Avvio al login",
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
-    "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema."
+    "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.",
+    "syncSection": "Sincronizzazione",
+    "syncTitle": "Sincronizza su…",
+    "syncNone": "Nessuno",
+    "syncBody": "Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.",
+    "syncChooserTitle": "Sincronizza le Impostazioni su",
+    "syncCancel": "Annulla",
+    "syncBusy": "Accesso a Drive in corso…",
+    "syncDenied": "Google non ha concesso l'accesso allo spazio nascosto di Drive. La sincronizzazione resta com'era.",
+    "syncWrongAccount": "Hai scelto un altro account Google. Scegli $address.",
+    "syncOffline": "Sei offline. Riprova quando torna la rete.",
+    "syncFailed": "Non è stato possibile collegare Drive. Riprova."
   },
   "segnalazione": {
     "action": "Segnala un problema",

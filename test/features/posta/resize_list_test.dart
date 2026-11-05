@@ -45,6 +45,15 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
 
   @override
   Future<void> setNotificationsAsked() async {}
+
+  @override
+  Future<String?> settingsSyncAccount() async => null;
+
+  @override
+  Stream<String?> watchSettingsSyncAccount() => Stream.value(null);
+
+  @override
+  Future<void> setSettingsSyncAccount(String? accountId) async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {

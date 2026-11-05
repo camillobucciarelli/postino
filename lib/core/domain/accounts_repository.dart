@@ -13,4 +13,10 @@ abstract interface class AccountsRepository() {
   /// [loginHint] is the address of the Account being reconnected: it preselects it and the grant must match it
   /// (else [WrongAccountFailure], nothing written).
   Future<Result<Account>> connectGmail({String? loginHint});
+
+  /// Incremental consent for Drive (ADR 0016) on the Gmail Account [accountId], for the Impostazioni di Postino.
+  /// On success the new tokens replace the Account's; otherwise nothing is written: [DriveScopeFailure] if the
+  /// user did not grant Drive, [WrongAccountFailure] if they picked another Google identity. Never makes the
+  /// Account Da ricollegare.
+  Future<Result<void>> grantDriveAccess(String accountId);
 }

@@ -106,6 +106,13 @@ List<String> violations(String file, String source) {
         t.endsWith('core/data/gmail/gmail_provider.dart')) {
       bad('only the provider factory may import a concrete Provider');
     }
+    // ADR 0016: the backend of the Impostazioni di Postino is picked in one factory too.
+    if (file.startsWith('core/data/') &&
+        file != 'core/data/sync/settings_backend_factory.dart' &&
+        !file.startsWith('core/data/gmail/') &&
+        t.endsWith('core/data/gmail/drive_settings_backend.dart')) {
+      bad('only the settings backend factory may import a concrete SettingsBackend');
+    }
   }
   return out;
 }
@@ -257,6 +264,18 @@ void main() {
         expect(violations(file, "import '$uri';"), contains(contains('only the provider factory')));
       });
     }
+    test('the settings backend factory may import the Drive backend', () {
+      expect(
+        violations('core/data/sync/settings_backend_factory.dart', "import '../gmail/drive_settings_backend.dart';"),
+        isEmpty,
+      );
+    });
+    test('the settings sync may not import the Drive backend', () {
+      expect(
+        violations('core/data/settings_sync.dart', "import 'gmail/drive_settings_backend.dart';"),
+        contains(contains('only the settings backend factory')),
+      );
+    });
     for (final uri in [
       'package:postino/core/domain/account.dart',
       '../../features/posta/presentation/x.dart',

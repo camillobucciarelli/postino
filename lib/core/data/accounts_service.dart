@@ -52,4 +52,18 @@ class AccountsService(
     unawaited(_sync.syncAll());
     return Ok(account);
   }
+
+  @override
+  Future<Result<void>> grantDriveAccess(String accountId) async {
+    final account = (await _store.accounts()).where((a) => a.id == accountId).firstOrNull;
+    if (account == null) return const Err(NotFoundFailure());
+    switch (await _consent.run(loginHint: account.address, drive: true)) {
+      case Err(:final failure):
+        return Err(failure);
+      case Ok(:final value):
+        if (value.address.trim().toLowerCase() != account.address) return Err(WrongAccountFailure(account.address));
+        await GmailTokens.of(value).write(_keychain, account.id);
+        return const Ok(null);
+    }
+  }
 }

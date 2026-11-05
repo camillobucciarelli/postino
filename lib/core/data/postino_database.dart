@@ -126,7 +126,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -192,6 +192,28 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       if (from < 13) await m.createTable(outbox);
       if (from < 14) await m.createTable(labelIntents);
       if (from < 15) await m.createTable(postinoSettings);
+      // From v14 the table was just created above, already with them.
+      if (from == 15) {
+        // The voci written before the sync are still to upload, but older than any copy elsewhere (updatedAt 0):
+        // a device migrating later must never overwrite what another device already synced.
+        // ponytail: no device id for them yet; the next write of the voce stamps it.
+        await m.alterTable(
+          TableMigration(
+            postinoSettings,
+            newColumns: [
+              postinoSettings.updatedAt,
+              postinoSettings.deviceId,
+              postinoSettings.deleted,
+              postinoSettings.dirty,
+            ],
+            columnTransformer: {
+              postinoSettings.updatedAt: const Constant(0),
+              postinoSettings.deviceId: const Constant(''),
+              postinoSettings.dirty: const Constant(true),
+            },
+          ),
+        );
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

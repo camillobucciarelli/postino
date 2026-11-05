@@ -8,6 +8,7 @@ import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'escape_to_go_back.dart';
+import 'sync_account_section.dart';
 
 /// The Impostazioni (the drawer's last entry): those of the device, then one group per Account.
 /// Routing is the caller's: Esc and the back arrow call [onBack].
@@ -43,6 +44,7 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
                 ),
               ],
             ),
+          const SyncAccountSection(),
           for (final a in accounts.value.value ?? const <Account>[])
             PostinoSettingsSection(
               title: a.name,

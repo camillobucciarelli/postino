@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 
+import '../../support/fake_platform.dart';
+
 void main() {
   late PostinoDatabase db;
   late AutoLabelsStore store;
   setUp(() {
     db = PostinoDatabase.inMemory();
-    store = AutoLabelsStore(db);
+    store = AutoLabelsStore(db, FakeClock(DateTime.utc(2026, 11, 5)));
   });
   tearDown(() => db.close());
 
@@ -28,13 +30,14 @@ void main() {
     expect(await store.watch('a2').first, {'L9': (automatic: true, description: null)});
   });
 
-  test('a blank description removes it, and an Etichetta left with nothing removes the voce', () async {
+  test('a blank description removes it, and an Etichetta left with nothing leaves a tombstone', () async {
     await store.setAutomatic('a1', 'L1', automatic: true);
     await store.setDescription('a1', 'L1', 'x');
     await store.setDescription('a1', 'L1', '   ');
     await store.setAutomatic('a1', 'L1', automatic: false);
     expect(await store.watch('a1').first, isEmpty);
-    expect(await db.select(db.postinoSettings).get(), isEmpty);
+    expect(await db.postinoSettingsDao.read('auto_labels/a1'), isNull);
+    expect((await db.select(db.postinoSettings).getSingle()).deleted, isTrue);
   });
 
   test('watch follows the changes, and two quick edits do not lose each other', () async {

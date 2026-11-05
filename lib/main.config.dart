@@ -29,6 +29,7 @@ import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
+import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
@@ -53,6 +54,8 @@ import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
+import 'package:postino/core/domain/settings_sync_account_use_case.dart'
+    as _i114;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart'
@@ -178,6 +181,18 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
     );
+    gh.lazySingleton<_i205.AutoLabelsRepository>(
+      () => _i452.AutoLabelsStore(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+      ),
+    );
+    gh.factory<_i320.AutoLabelSwitchUseCase>(
+      () => _i320.AutoLabelSwitchUseCase(
+        gh<_i205.AutoLabelsRepository>(),
+        gh<_i96.ModelDownload>(),
+      ),
+    );
     gh.lazySingleton<_i26.NewMailNotifier>(
       () => _i26.NewMailNotifier(
         gh<_i385.MailStore>(),
@@ -185,8 +200,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i350.OpenConversation>(),
       ),
     );
-    gh.lazySingleton<_i205.AutoLabelsRepository>(
-      () => _i452.AutoLabelsStore(gh<_i1028.PostinoDatabase>()),
+    gh.lazySingleton<_i311.SettingsSync>(
+      () => _i311.SettingsSync(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+      ),
     );
     gh.factory<_i166.LaunchAtLoginUseCase>(
       () => _i166.LaunchAtLoginUseCase(
@@ -203,12 +223,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.BackgroundSender>(),
         gh<_i26.NewMailNotifier>(),
         gh<_i346.ErrorLog>(),
-      ),
-    );
-    gh.factory<_i320.AutoLabelSwitchUseCase>(
-      () => _i320.AutoLabelSwitchUseCase(
-        gh<_i205.AutoLabelsRepository>(),
-        gh<_i96.ModelDownload>(),
       ),
     );
     gh.lazySingleton<_i705.MailSync>(
@@ -248,6 +262,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i382.AccountsRepository>(),
         gh<_i705.MailSync>(),
         gh<_i325.ReportSharer>(),
+      ),
+    );
+    gh.factory<_i114.SettingsSyncAccountUseCase>(
+      () => _i114.SettingsSyncAccountUseCase(
+        gh<_i382.AccountsRepository>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     return this;

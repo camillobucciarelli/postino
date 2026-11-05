@@ -51,16 +51,28 @@ class _DescriptionFieldState() extends State<_DescriptionField> {
   late final _text = TextEditingController(text: widget.saved);
   final _focus = FocusNode();
 
-  /// What was last saved (or read); only a different text is saved again.
-  late String _kept = widget.saved ?? '';
+  /// What was last saved (or read); only a different text is saved again. Set in [initState], not lazily: read
+  /// first after an update, a lazy initializer would take the new value.
+  late String _kept;
   var _announce = false;
 
   @override
   void initState() {
     super.initState();
+    _kept = widget.saved ?? '';
     _focus.addListener(() {
       if (!_focus.hasFocus) unawaited(_save());
     });
+  }
+
+  @override
+  void didUpdateWidget(_DescriptionField old) {
+    super.didUpdateWidget(old);
+    // A description synced from another device shows here, unless the user is editing a different one.
+    final saved = widget.saved ?? '';
+    if (saved == (old.saved ?? '') || _text.text.trim() != _kept) return;
+    _kept = saved;
+    if (_text.text != saved) _text.text = saved;
   }
 
   /// Saves a changed text; false when there was nothing new.

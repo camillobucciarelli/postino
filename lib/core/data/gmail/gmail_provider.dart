@@ -11,11 +11,11 @@ import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
-import 'gmail_failure.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
 import 'google_client.dart';
+import 'google_failure.dart';
 
 /// Headers of the last [syncWindow] are synced (ADR 0003).
 const syncWindow = Duration(days: 90);
@@ -46,13 +46,13 @@ class GmailProvider(
   static const _page = 100;
 
   @override
-  Future<Result<void>> refreshAuth() => gmailGuard(() async {
+  Future<Result<void>> refreshAuth() => googleGuard(() async {
     await _gmail.refreshAuth();
     return const Ok(null);
   });
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => gmailGuard(() async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => googleGuard(() async {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
     final cursor = (await _gmail.get('profile'))['historyId'] as String;
     final labels = await _labels.list();
@@ -78,7 +78,7 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<SyncBatch>> incrementalSync(String cursor) => gmailGuard(() async {
+  Future<Result<SyncBatch>> incrementalSync(String cursor) => googleGuard(() async {
     final changed = <String>{};
     final deleted = <String>{};
     var latest = cursor;
@@ -132,7 +132,7 @@ class GmailProvider(
       _idle(host: 'imap.gmail.com', user: _address, accessToken: () async => (await _gmail.validTokens()).access);
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) => gmailGuard(() async {
+  Future<Result<MessageBody>> fetchBody(String messageId) => googleGuard(() async {
     final j = await _gmail.get('messages/$messageId', query: {'format': 'full'});
     return Ok(
       await _body(messageId, j['payload'] as Map<String, dynamic>? ?? const {}) ??
@@ -141,14 +141,14 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) => gmailGuard(() async {
+  Future<Result<List<Message>>> fetchConversation(String conversationId) => googleGuard(() async {
     final j = await _gmail.get('threads/$conversationId', query: {'format': 'metadata', 'metadataHeaders': _headers});
     return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
   });
 
   /// One batchModify call per 1000 ids, Gmail's cap.
   @override
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => gmailGuard(() async {
+  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => googleGuard(() async {
     for (var i = 0; i < messageIds.length; i += 1000) {
       await _gmail.send(
         'POST',
@@ -170,12 +170,12 @@ class GmailProvider(
     String attachmentId, {
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) => gmailGuard(() async {
+  }) => googleGuard(() async {
     final j = await _gmail.get('messages/$messageId', query: {'format': 'full'}, cancel: cancel);
     final part = gmailAttachmentParts(j['payload'] as Map<String, dynamic>? ?? const {})
         .where((p) => p['partId'] == attachmentId)
         .firstOrNull;
-    if (part == null) throw const GmailFailed(NotFoundFailure());
+    if (part == null) throw const GoogleFailed(NotFoundFailure());
     final body = part['body'] as Map;
     // An empty file has neither.
     if (body['data'] == null && body['attachmentId'] == null) {
@@ -198,7 +198,7 @@ class GmailProvider(
   /// Inviati is searched first: a message already there (a send whose answer was lost) is not sent twice.
   /// The Bozza holding the Message-ID is then deleted, best effort: Gmail does not drop it on its own.
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) => gmailGuard(() async {
+  Future<Result<String>> send(String messageId, String raw, {String? threadId}) => googleGuard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
     String? id;
     if (bare.isNotEmpty) {
@@ -224,10 +224,10 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<Label>> createLabel(String name) => gmailGuard(() async => Ok(await _labels.create(name)));
+  Future<Result<Label>> createLabel(String name) => googleGuard(() async => Ok(await _labels.create(name)));
 
   @override
-  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => gmailGuard(() async {
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => googleGuard(() async {
     await _labels.set(messageId, labelId, add: add);
     return const Ok(null);
   });
@@ -238,12 +238,12 @@ class GmailProvider(
   final _draftIds = <String, String>{};
 
   @override
-  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) => gmailGuard(() async {
+  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) => googleGuard(() async {
     final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
       Ok(:final value) => value,
       // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-      Err(failure: NotFoundFailure()) => throw const GmailFailed(UnexpectedFailure('forwarded attachment gone')),
-      Err(:final failure) => throw GmailFailed(failure),
+      Err(failure: NotFoundFailure()) => throw const GoogleFailed(UnexpectedFailure('forwarded attachment gone')),
+      Err(:final failure) => throw GoogleFailed(failure),
     };
     final message = {
       'raw': base64Url.encode(utf8.encode(raw)),
@@ -258,7 +258,7 @@ class GmailProvider(
     final String id;
     try {
       id = await _draftId(draft.messageId);
-    } on GmailFailed catch (e) {
+    } on GoogleFailed catch (e) {
       if (!isNew || e.failure is! NotFoundFailure) rethrow;
       await create();
       return const Ok(null);
@@ -268,7 +268,7 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<void>> deleteDraft(String messageId) => gmailGuard(() async {
+  Future<Result<void>> deleteDraft(String messageId) => googleGuard(() async {
     await _gmail.send('DELETE', 'drafts/${await _draftId(messageId)}');
     _draftIds.remove(messageId);
     return const Ok(null);
@@ -280,10 +280,10 @@ class GmailProvider(
   Future<String> _draftId(String messageId) async {
     if (_draftIds[messageId] case final id?) return id;
     // An empty `rfc822msgid:` would match any draft.
-    if (messageId.isEmpty) throw const GmailFailed(NotFoundFailure());
+    if (messageId.isEmpty) throw const GoogleFailed(NotFoundFailure());
     final r = await _gmail.get('drafts', query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'});
     final id = jsonObjects(r['drafts']).firstOrNull?['id'] as String?;
-    if (id == null) throw const GmailFailed(NotFoundFailure());
+    if (id == null) throw const GoogleFailed(NotFoundFailure());
     return _draftIds[messageId] = id;
   }
 
@@ -325,7 +325,7 @@ class GmailProvider(
         'messages/$id',
         query: {'format': full ? 'full' : 'metadata', if (!full) 'metadataHeaders': _headers},
       );
-    } on GmailFailed catch (e) {
+    } on GoogleFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }
@@ -333,7 +333,7 @@ class GmailProvider(
     if (!full) return (message, null);
     try {
       return (message, await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}));
-    } on GmailFailed catch (e) {
+    } on GoogleFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }

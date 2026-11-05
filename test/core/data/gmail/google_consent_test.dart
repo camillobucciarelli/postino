@@ -124,4 +124,35 @@ void main() {
     expect(r, isA<Err<Object?>>());
     expect(requests, isEmpty);
   });
+
+  test('the Gmail consent never asks for Drive', () async {
+    await consent().run(loginHint: 'ada@gmail.com');
+    expect(opened.queryParameters['scope'], isNot(contains('drive')));
+    expect(opened.queryParameters.containsKey('include_granted_scopes'), isFalse);
+  });
+
+  test('the incremental consent asks for drive.appdata on top of the granted scopes, for that address', () async {
+    token = 'token_exchange_drive';
+    final r = await consent().run(loginHint: 'ada@gmail.com', drive: true);
+
+    expect(r, isA<Ok<GoogleGrant>>());
+    final q = opened.queryParameters;
+    expect(
+      q['scope']!.split(' '),
+      containsAll(['https://mail.google.com/', 'https://www.googleapis.com/auth/drive.appdata']),
+    );
+    expect(q['include_granted_scopes'], 'true');
+    expect(q['login_hint'], 'ada@gmail.com');
+  });
+
+  test('a grant without drive.appdata is a DriveScopeFailure', () async {
+    final r = await consent().run(drive: true);
+    expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<DriveScopeFailure>()));
+  });
+
+  test('a grant without Gmail is still a MissingPermissionFailure when Drive is asked', () async {
+    token = 'token_exchange_no_gmail';
+    final r = await consent().run(drive: true);
+    expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<MissingPermissionFailure>()));
+  });
 }

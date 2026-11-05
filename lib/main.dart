@@ -15,6 +15,7 @@ import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
 import 'core/data/error_log/uncaught_errors.dart';
 import 'core/data/postino_database.dart';
+import 'core/data/settings_sync.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
@@ -109,6 +110,7 @@ Future<void> _startDesktop() async {
       quitLabel: t.tray.quit,
       beforeQuit: () async {
         await getIt<SyncEngine>().stop();
+        await getIt<SettingsSync>().stop();
         await getIt<PostinoDatabase>().close();
       },
     );
@@ -139,6 +141,7 @@ class _PostinoAppState() extends State<PostinoApp> {
   void initState() {
     super.initState();
     getIt<SyncEngine>().start();
+    getIt<SettingsSync>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
     _whenRouted(() {
       if (widget.launch case final launch?) _open(launch);
@@ -179,6 +182,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     unawaited(_taps?.cancel());
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
+    unawaited(getIt<SettingsSync>().stop());
     super.dispose();
   }
 

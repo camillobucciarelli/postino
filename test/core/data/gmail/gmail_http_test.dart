@@ -5,10 +5,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:postino/core/data/gmail/gmail_failure.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart';
 import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
+import 'package:postino/core/data/gmail/google_failure.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -86,15 +86,15 @@ void main() {
       }
       return _json({}, 401);
     });
-    final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
+    final r = await googleGuard(() async => Ok(await t.gmail.get('profile')));
     expect(r, isA<Err<Map<String, dynamic>>>());
     expect((r as Err).failure, isA<AuthFailure>());
     expect(t.requests, hasLength(3));
   });
 
-  test('gmailGuard maps a 404 to NotFoundFailure', () async {
+  test('googleGuard maps a 404 to NotFoundFailure', () async {
     final t = _gmail((r) async => _json({}, 404));
-    final r = await gmailGuard(() async => Ok(await t.gmail.get('messages/x')));
+    final r = await googleGuard(() async => Ok(await t.gmail.get('messages/x')));
     expect((r as Err).failure, isA<NotFoundFailure>());
   });
 
@@ -121,14 +121,14 @@ void main() {
       },
       stall: const Duration(milliseconds: 50),
     );
-    final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
+    final r = await googleGuard(() async => Ok(await t.gmail.get('profile')));
     expect((r as Err).failure, isA<OfflineFailure>());
     await (sent as http.AbortableRequest).abortTrigger!.timeout(const Duration(seconds: 1));
   });
 
   test('a permanent 429 is retried 5 times, then a RateLimitFailure', () async {
     final t = _gmail((r) async => http.Response('{}', 429));
-    final r = await gmailGuard(() async => Ok(await t.gmail.get('profile')));
+    final r = await googleGuard(() async => Ok(await t.gmail.get('profile')));
     expect((r as Err).failure, isA<RateLimitFailure>());
     expect(t.sleeps, hasLength(5));
     expect(t.requests, hasLength(6));

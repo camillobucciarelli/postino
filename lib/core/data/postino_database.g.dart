@@ -5207,12 +5207,68 @@ class $PostinoSettingsTable extends PostinoSettings
   late final GeneratedColumn<String> value = GeneratedColumn<String>(
     'value',
     aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   @override
-  List<GeneratedColumn> get $columns => [key, value];
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    key,
+    value,
+    updatedAt,
+    deviceId,
+    deleted,
+    dirty,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5238,8 +5294,36 @@ class $PostinoSettingsTable extends PostinoSettings
         _valueMeta,
         value.isAcceptableOrUnknown(data['value']!, _valueMeta),
       );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
-      context.missing(_valueMeta);
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dirtyMeta);
     }
     return context;
   }
@@ -5257,6 +5341,22 @@ class $PostinoSettingsTable extends PostinoSettings
       value: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}value'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
       )!,
     );
   }
@@ -5270,18 +5370,52 @@ class $PostinoSettingsTable extends PostinoSettings
 class PostinoSettingRow extends DataClass
     implements Insertable<PostinoSettingRow> {
   final String key;
-  final String value;
-  const PostinoSettingRow({required this.key, required this.value});
+
+  /// Null for a tombstone.
+  final String? value;
+
+  /// When the voce was written, in milliseconds UTC since the epoch.
+  final int updatedAt;
+
+  /// The device that wrote it: it decides a tie on [updatedAt].
+  final String deviceId;
+  final bool deleted;
+
+  /// Written here and not yet in the synced file.
+  final bool dirty;
+  const PostinoSettingRow({
+    required this.key,
+    this.value,
+    required this.updatedAt,
+    required this.deviceId,
+    required this.deleted,
+    required this.dirty,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['key'] = Variable<String>(key);
-    map['value'] = Variable<String>(value);
+    if (!nullToAbsent || value != null) {
+      map['value'] = Variable<String>(value);
+    }
+    map['updated_at'] = Variable<int>(updatedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    map['deleted'] = Variable<bool>(deleted);
+    map['dirty'] = Variable<bool>(dirty);
     return map;
   }
 
   PostinoSettingsCompanion toCompanion(bool nullToAbsent) {
-    return PostinoSettingsCompanion(key: Value(key), value: Value(value));
+    return PostinoSettingsCompanion(
+      key: Value(key),
+      value: value == null && nullToAbsent
+          ? const Value.absent()
+          : Value(value),
+      updatedAt: Value(updatedAt),
+      deviceId: Value(deviceId),
+      deleted: Value(deleted),
+      dirty: Value(dirty),
+    );
   }
 
   factory PostinoSettingRow.fromJson(
@@ -5291,7 +5425,11 @@ class PostinoSettingRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PostinoSettingRow(
       key: serializer.fromJson<String>(json['key']),
-      value: serializer.fromJson<String>(json['value']),
+      value: serializer.fromJson<String?>(json['value']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
     );
   }
   @override
@@ -5299,16 +5437,37 @@ class PostinoSettingRow extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
-      'value': serializer.toJson<String>(value),
+      'value': serializer.toJson<String?>(value),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'deleted': serializer.toJson<bool>(deleted),
+      'dirty': serializer.toJson<bool>(dirty),
     };
   }
 
-  PostinoSettingRow copyWith({String? key, String? value}) =>
-      PostinoSettingRow(key: key ?? this.key, value: value ?? this.value);
+  PostinoSettingRow copyWith({
+    String? key,
+    Value<String?> value = const Value.absent(),
+    int? updatedAt,
+    String? deviceId,
+    bool? deleted,
+    bool? dirty,
+  }) => PostinoSettingRow(
+    key: key ?? this.key,
+    value: value.present ? value.value : this.value,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deviceId: deviceId ?? this.deviceId,
+    deleted: deleted ?? this.deleted,
+    dirty: dirty ?? this.dirty,
+  );
   PostinoSettingRow copyWithCompanion(PostinoSettingsCompanion data) {
     return PostinoSettingRow(
       key: data.key.present ? data.key.value : this.key,
       value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
     );
   }
 
@@ -5316,56 +5475,95 @@ class PostinoSettingRow extends DataClass
   String toString() {
     return (StringBuffer('PostinoSettingRow(')
           ..write('key: $key, ')
-          ..write('value: $value')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(key, value);
+  int get hashCode =>
+      Object.hash(key, value, updatedAt, deviceId, deleted, dirty);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PostinoSettingRow &&
           other.key == this.key &&
-          other.value == this.value);
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt &&
+          other.deviceId == this.deviceId &&
+          other.deleted == this.deleted &&
+          other.dirty == this.dirty);
 }
 
 class PostinoSettingsCompanion extends UpdateCompanion<PostinoSettingRow> {
   final Value<String> key;
-  final Value<String> value;
+  final Value<String?> value;
+  final Value<int> updatedAt;
+  final Value<String> deviceId;
+  final Value<bool> deleted;
+  final Value<bool> dirty;
   final Value<int> rowid;
   const PostinoSettingsCompanion({
     this.key = const Value.absent(),
     this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PostinoSettingsCompanion.insert({
     required String key,
-    required String value,
+    this.value = const Value.absent(),
+    required int updatedAt,
+    required String deviceId,
+    this.deleted = const Value.absent(),
+    required bool dirty,
     this.rowid = const Value.absent(),
   }) : key = Value(key),
-       value = Value(value);
+       updatedAt = Value(updatedAt),
+       deviceId = Value(deviceId),
+       dirty = Value(dirty);
   static Insertable<PostinoSettingRow> custom({
     Expression<String>? key,
     Expression<String>? value,
+    Expression<int>? updatedAt,
+    Expression<String>? deviceId,
+    Expression<bool>? deleted,
+    Expression<bool>? dirty,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (key != null) 'key': key,
       if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (deleted != null) 'deleted': deleted,
+      if (dirty != null) 'dirty': dirty,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   PostinoSettingsCompanion copyWith({
     Value<String>? key,
-    Value<String>? value,
+    Value<String?>? value,
+    Value<int>? updatedAt,
+    Value<String>? deviceId,
+    Value<bool>? deleted,
+    Value<bool>? dirty,
     Value<int>? rowid,
   }) {
     return PostinoSettingsCompanion(
       key: key ?? this.key,
       value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deviceId: deviceId ?? this.deviceId,
+      deleted: deleted ?? this.deleted,
+      dirty: dirty ?? this.dirty,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5379,6 +5577,18 @@ class PostinoSettingsCompanion extends UpdateCompanion<PostinoSettingRow> {
     if (value.present) {
       map['value'] = Variable<String>(value.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5390,6 +5600,10 @@ class PostinoSettingsCompanion extends UpdateCompanion<PostinoSettingRow> {
     return (StringBuffer('PostinoSettingsCompanion(')
           ..write('key: $key, ')
           ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8270,13 +8484,21 @@ typedef $$OutboxTableProcessedTableManager =
 typedef $$PostinoSettingsTableCreateCompanionBuilder =
     PostinoSettingsCompanion Function({
       required String key,
-      required String value,
+      Value<String?> value,
+      required int updatedAt,
+      required String deviceId,
+      Value<bool> deleted,
+      required bool dirty,
       Value<int> rowid,
     });
 typedef $$PostinoSettingsTableUpdateCompanionBuilder =
     PostinoSettingsCompanion Function({
       Value<String> key,
-      Value<String> value,
+      Value<String?> value,
+      Value<int> updatedAt,
+      Value<String> deviceId,
+      Value<bool> deleted,
+      Value<bool> dirty,
       Value<int> rowid,
     });
 
@@ -8296,6 +8518,26 @@ class $$PostinoSettingsTableFilterComposer
 
   ColumnFilters<String> get value => $composableBuilder(
     column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8318,6 +8560,26 @@ class $$PostinoSettingsTableOrderingComposer
     column: $table.value,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PostinoSettingsTableAnnotationComposer
@@ -8334,6 +8596,18 @@ class $$PostinoSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get value =>
       $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
 }
 
 class $$PostinoSettingsTableTableManager
@@ -8371,19 +8645,40 @@ class $$PostinoSettingsTableTableManager
               $$PostinoSettingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$PostinoSettingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> key = const Value.absent(),
-            Value<String> value = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) => PostinoSettingsCompanion(key: key, value: value, rowid: rowid),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String?> value = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PostinoSettingsCompanion(
+                key: key,
+                value: value,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                deleted: deleted,
+                dirty: dirty,
+                rowid: rowid,
+              ),
           createCompanionCallback:
               ({
                 required String key,
-                required String value,
+                Value<String?> value = const Value.absent(),
+                required int updatedAt,
+                required String deviceId,
+                Value<bool> deleted = const Value.absent(),
+                required bool dirty,
                 Value<int> rowid = const Value.absent(),
               }) => PostinoSettingsCompanion.insert(
                 key: key,
                 value: value,
+                updatedAt: updatedAt,
+                deviceId: deviceId,
+                deleted: deleted,
+                dirty: dirty,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

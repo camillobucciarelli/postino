@@ -17,6 +17,7 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: SizeLimitFailure(:final limitBytes)) => 'size $limitBytes',
   Err(failure: RejectedFailure(:final reason)) => 'rejected $reason',
   Err(failure: IntegrityFailure()) => 'integrity',
+  Err(failure: DriveScopeFailure()) => 'drive-scope',
 };
 
 void main() {

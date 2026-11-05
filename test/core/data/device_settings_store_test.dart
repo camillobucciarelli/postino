@@ -45,4 +45,16 @@ void main() {
     await store.setNotificationsAsked();
     expect(await store.notificationsAsked(), isTrue);
   });
+
+  test('the Account of the sync is followed, and null turns the sync off (#124)', () async {
+    final seen = <String?>[];
+    final sub = store.watchSettingsSyncAccount().listen(seen.add);
+    addTearDown(sub.cancel);
+    await pumpEventQueue();
+    await store.setSettingsSyncAccount('a1');
+    await pumpEventQueue();
+    await store.setSettingsSyncAccount(null);
+    await pumpEventQueue();
+    expect(seen, [null, 'a1', null]);
+  });
 }

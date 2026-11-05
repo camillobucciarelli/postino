@@ -20,38 +20,44 @@ class const PostinoCheckboxTile({
 
   /// The row's focus, for a list that moves it with the keyboard.
   final FocusNode? focusNode,
+
+  /// True for one choice out of many: the screen reader announces a radio group, not independent boxes.
+  final bool exclusive = false,
 }) extends StatelessWidget {
   /// Crea la riga con la casella.
   this;
 
   @override
   Widget build(BuildContext context) => MergeSemantics(
-    child: Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        focusNode: focusNode,
-        onTap: () => onChanged(!value),
-        child: PostinoFocusRing(
-          inset: true,
-          borderRadius: BorderRadius.circular(PostinoRadius.sm),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
-              child: Row(
-                spacing: PostinoSpacing.s1,
-                children: [
-                  // The row is the focus stop; the box only draws and tells the state.
-                  ExcludeFocus(
-                    child: Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
-                  ),
-                  Expanded(
-                    // A control's label: out of any selection.
-                    child: SelectionContainer.disabled(
-                      child: Text(label, style: PostinoText.label.copyWith(color: context.pc.ink)),
+    child: Semantics(
+      inMutuallyExclusiveGroup: exclusive ? true : null,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          focusNode: focusNode,
+          onTap: () => onChanged(!value),
+          child: PostinoFocusRing(
+            inset: true,
+            borderRadius: BorderRadius.circular(PostinoRadius.sm),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
+                child: Row(
+                  spacing: PostinoSpacing.s1,
+                  children: [
+                    // The row is the focus stop; the box only draws and tells the state.
+                    ExcludeFocus(
+                      child: Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      // A control's label: out of any selection.
+                      child: SelectionContainer.disabled(
+                        child: Text(label, style: PostinoText.label.copyWith(color: context.pc.ink)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

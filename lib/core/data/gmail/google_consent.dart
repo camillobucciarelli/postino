@@ -40,10 +40,11 @@ class GoogleWebConsent(
   // ponytail: fixed loopback port; pick a free one if it ever clashes.
   static const _loopbackRedirect = 'http://localhost:53682';
   static const _gmailScope = 'https://mail.google.com/';
+  static const _driveScope = 'https://www.googleapis.com/auth/drive.appdata';
   static const _scopes = '$_gmailScope openid email';
 
   @override
-  Future<Result<GoogleGrant>> run({String? loginHint}) async {
+  Future<Result<GoogleGrant>> run({String? loginHint, bool drive = false}) async {
     if (_client.id.isEmpty) {
       return const Err(ConfigurationFailure('GOOGLE_CLIENT_ID'));
     }
@@ -61,7 +62,8 @@ class GoogleWebConsent(
             'client_id': _client.id,
             'redirect_uri': redirect,
             'response_type': 'code',
-            'scope': _scopes,
+            'scope': drive ? '$_scopes $_driveScope' : _scopes,
+            if (drive) 'include_granted_scopes': 'true',
             'code_challenge': base64Url.encode(sha256.convert(ascii.encode(verifier)).bytes).replaceAll('=', ''),
             'code_challenge_method': 'S256',
             'state': state,
@@ -93,9 +95,11 @@ class GoogleWebConsent(
       }
       final body = jsonDecode(r.body) as Map<String, dynamic>;
       // Granular consent: the user can untick the Gmail permission and still get tokens.
-      if (!((body['scope'] as String?) ?? '').split(' ').contains(_gmailScope)) {
+      final granted = ((body['scope'] as String?) ?? '').split(' ');
+      if (!granted.contains(_gmailScope)) {
         return const Err(MissingPermissionFailure());
       }
+      if (drive && !granted.contains(_driveScope)) return const Err(DriveScopeFailure());
       final refreshToken = body['refresh_token'] as String?;
       if (refreshToken == null) {
         return const Err(UnexpectedFailure('no refresh_token in code exchange'));

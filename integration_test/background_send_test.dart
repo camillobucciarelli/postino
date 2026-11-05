@@ -25,7 +25,6 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/data/sync_engine.dart';
-import 'package:postino/core/data/unready_text_embedder.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
@@ -37,6 +36,7 @@ import 'package:workmanager/workmanager.dart';
 import '../test/support/fake_mail_provider.dart';
 import '../test/support/fake_notifications.dart';
 import '../test/support/fake_platform.dart';
+import '../test/support/fake_text_embedder.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -153,7 +153,7 @@ AutoLabeler _labeler() {
   return AutoLabeler(
     db,
     AutoLabelsStore(db, FakeClock(DateTime.now().toUtc())),
-    const UnreadyTextEmbedder(),
+    FakeTextEmbedder(),
     FakeErrorLog(),
   );
 }

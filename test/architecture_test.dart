@@ -28,6 +28,9 @@ bool _infrastructure(String uri) =>
       'enough_mail',
       'connectivity_plus',
       'path_provider',
+      'llamadart',
+      'llamadart_llama_cpp_flutter',
+      'llamadart_litert_lm_flutter',
     ].any((p) => uri.startsWith('package:$p/'));
 
 /// Resolves a directive to a lib-relative path (`features/x/...`), or returns the raw URI for external ones.
@@ -160,6 +163,7 @@ void main() {
       'package:enough_mail/enough_mail.dart',
       'package:connectivity_plus/connectivity_plus.dart',
       'package:path_provider/path_provider.dart',
+      'package:llamadart/llamadart.dart',
     ]) {
       test('domain may not import the I/O package $uri', () {
         expect(violations('core/domain/model_manager.dart', "import '$uri';"), isNotEmpty);

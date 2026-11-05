@@ -2,25 +2,26 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
+import 'package:postino/core/data/managed_model_download.dart';
 import 'package:postino/core/data/postino_database.dart';
-import 'package:postino/core/data/simulated_model_download.dart';
-import 'package:postino/core/data/simulated_network_type.dart';
+import 'package:postino/core/domain/embedding_models.dart';
 import 'package:postino/core/domain/model_download_state.dart';
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart';
 
+import '../../../support/fake_model_manager.dart';
 import '../../../support/fake_platform.dart';
 
 void main() {
   late PostinoDatabase db;
   late AutoLabelsStore labels;
-  late SimulatedNetworkType network;
-  late SimulatedModelDownload model;
+  late FakeModelManager models;
+  late ManagedModelDownload model;
   late AutoLabelSwitchUseCase useCase;
   setUp(() {
     db = PostinoDatabase.inMemory();
     labels = AutoLabelsStore(db, FakeClock(DateTime.utc(2026, 11, 5)));
-    network = SimulatedNetworkType();
-    model = SimulatedModelDownload(network)..stepDelay = Duration.zero;
+    models = FakeModelManager();
+    model = ManagedModelDownload(models, embeddingGemmaGguf);
     useCase = AutoLabelSwitchUseCase(labels, model);
   });
   tearDown(() => db.close());
@@ -35,7 +36,7 @@ void main() {
   });
 
   test('on cellular the first activation asks for confirmation', () async {
-    network.onWifi = false;
+    models.onWifi = false;
     await useCase.setAutomatic('a1', 'L1', automatic: true);
     await pumpEventQueue();
     expect(model.state, isA<ModelDownloadAwaitingConfirmation>());

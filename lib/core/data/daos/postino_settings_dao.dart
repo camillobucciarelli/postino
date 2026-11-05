@@ -48,6 +48,12 @@ class PostinoSettingsDao(super.attachedDatabase)
     }
   });
 
+  /// The rows whose key starts with [prefix], tombstones included, now and after each change.
+  Stream<List<PostinoSettingRow>> watchPrefix(String prefix) => _prefix(prefix).watch();
+
+  /// The rows whose key starts with [prefix], tombstones included.
+  Future<List<PostinoSettingRow>> readPrefix(String prefix) => _prefix(prefix).get();
+
   /// Every voce, tombstones included.
   Future<List<SettingsEntry>> entries() async => [for (final r in await select(postinoSettings).get()) _entry(r)];
 
@@ -92,6 +98,10 @@ class PostinoSettingsDao(super.attachedDatabase)
 
   SimpleSelectStatement<$PostinoSettingsTable, PostinoSettingRow> _live(String key) =>
       select(postinoSettings)..where((t) => t.key.equals(key) & t.deleted.not());
+
+  // ponytail: substr, not LIKE, so a `_` or `%` in the prefix is literal.
+  SimpleSelectStatement<$PostinoSettingsTable, PostinoSettingRow> _prefix(String prefix) =>
+      select(postinoSettings)..where((t) => t.key.substr(1, prefix.length).equals(prefix));
 
   Future<PostinoSettingRow?> _row(String key) =>
       (select(postinoSettings)..where((t) => t.key.equals(key))).getSingleOrNull();

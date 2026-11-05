@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -75,6 +77,37 @@ void main() {
     expect(all.map((a) => a.id), ['gmail:ada@gmail.com']);
     expect(all.single.status, AccountStatus.attivo);
     expect(h.keychain.values.keys, ['oauth:gmail:ada@gmail.com']);
+  });
+
+  test('a new Account goes after the last one and writes its synced voce', () async {
+    final h = await Harness.create();
+    // Positions with a gap, as after a removal: a count would collide with the last one.
+    await h.addAccount('a1');
+    await h.addAccount('a2');
+    await getIt<PostinoDatabase>().accountsDao.remove('a1');
+    h.providerFor('gmail:ada@gmail.com');
+
+    await getIt<AccountsRepository>().connectGmail();
+
+    final ada = (await getIt<MailStore>().accounts()).last;
+    expect((ada.id, ada.position), ('gmail:ada@gmail.com', 2));
+    final voce = await getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com');
+    expect(jsonDecode(voce!.value!), {'address': 'ada@gmail.com', 'provider': 'gmail', 'color': 1, 'position': 2});
+    expect(voce.dirty, isTrue);
+  });
+
+  test('reconnecting with nothing changed leaves the synced voce as it was', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    final accounts = getIt<AccountsRepository>();
+    await accounts.connectGmail();
+    final dao = getIt<PostinoDatabase>().postinoSettingsDao;
+    final before = await dao.readRow('accounts/gmail:ada@gmail.com');
+
+    h.clock.advance(const Duration(minutes: 1));
+    await accounts.connectGmail(loginHint: 'ada@gmail.com');
+
+    expect(await dao.readRow('accounts/gmail:ada@gmail.com'), before);
   });
 
   test('onboarding with a mixed-case address creates a lowercase id', () async {

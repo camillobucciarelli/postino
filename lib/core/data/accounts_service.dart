@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:injectable/injectable.dart';
 
@@ -7,8 +8,10 @@ import '../domain/accounts_repository.dart';
 import '../domain/google_consent.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
+import 'account_settings_json.dart';
 import 'gmail/gmail_tokens.dart';
 import 'mail_store.dart';
+import 'postino_database.dart';
 import 'sync_engine.dart';
 
 @LazySingleton(as: AccountsRepository)
@@ -17,6 +20,8 @@ class AccountsService(
   final GoogleConsent _consent,
   final SecureStore _keychain,
   final SyncEngine _sync,
+  final PostinoDatabase _db,
+  final Clock _clock,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -38,6 +43,15 @@ class AccountsService(
     final address = grant.address.trim().toLowerCase();
     final id = 'gmail:$address';
     await GmailTokens.of(grant).write(_keychain, id);
+    final account = await _save(id, address);
+    unawaited(_sync.syncAll());
+    return Ok(account);
+  }
+
+  /// The Account here and its synced voce (ADR 0016), in one transaction: the AccountsSettingsMirror sees both or
+  /// neither. A known Account (da ricollegare, maybe from another device) keeps color and position, and its voce is
+  /// written only if it says something else, so a reconnection does not move the voce's updatedAt.
+  Future<Account> _save(String id, String address) => _db.transaction(() async {
     final all = await _store.accounts();
     final known = all.where((a) => a.id == id).firstOrNull;
     final account = Account(
@@ -45,13 +59,17 @@ class AccountsService(
       address: address,
       provider: ProviderKind.gmail,
       color: known?.color ?? all.length % accountColorCount,
-      // ponytail: no Account removal yet, so the count is the next free position.
-      position: known?.position ?? all.length,
+      // After the last one: a count would collide once Accounts are removed or arrive from another device.
+      position: known?.position ?? (all.isEmpty ? 0 : all.map((a) => a.position).reduce(max) + 1),
     );
     await _store.addAccount(account);
-    unawaited(_sync.syncAll());
-    return Ok(account);
-  }
+    final key = accountSettingsKey(id);
+    final voce = decodeAccountSettings(id, await _db.postinoSettingsDao.read(key));
+    if (voce == null || !sameAccountSettings(voce, account)) {
+      await _db.postinoSettingsDao.write(key, encodeAccountSettings(account), at: _clock.now());
+    }
+    return account;
+  });
 
   @override
   Future<Result<void>> grantDriveAccess(String accountId) async {

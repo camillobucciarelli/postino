@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,6 +193,31 @@ void main() {
     expect(await db.select(db.syncCursors).get(), isEmpty);
   });
 
+  test('v18 puts the Accounts already here in the synced voci, to upload but older than any copy elsewhere', () async {
+    final raw = sqlite3.openInMemory();
+    // A current database taken back to the v17 shape: two Accounts, one of them with its voce already synced.
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    raw
+      ..execute("INSERT INTO accounts VALUES ('gmail:a@b.c', 'a@b.c', 'gmail', 3, 1, 'daRicollegare')")
+      ..execute("INSERT INTO accounts VALUES ('gmail:z@b.c', 'z@b.c', 'gmail', 0, 0, 'attivo')")
+      ..execute(
+        'INSERT INTO postino_settings (key, value, updated_at, device_id, deleted, dirty) '
+        "VALUES ('accounts/gmail:z@b.c', '{\"x\":1}', 9, 'd', 0, 0)",
+      )
+      ..execute('PRAGMA user_version = 17');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    final a = (await db.postinoSettingsDao.readRow('accounts/gmail:a@b.c'))!;
+    expect(jsonDecode(a.value!), {'address': 'a@b.c', 'provider': 'gmail', 'color': 3, 'position': 1});
+    expect((a.updatedAt, a.deviceId, a.dirty, a.deleted), (0, '', true, false));
+    final z = (await db.postinoSettingsDao.readRow('accounts/gmail:z@b.c'))!;
+    expect((z.value, z.updatedAt, z.dirty), ('{"x":1}', 9, false));
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
+  });
+
   test('v17 adds the embeddings of the messages, keeping what was there', () async {
     final raw = sqlite3.openInMemory();
     // A current database taken back to the v16 shape: the embeddings dropped, one sync cursor in it.
@@ -207,7 +234,7 @@ void main() {
     await db.messageEmbeddingsDao.save('a1', 'm1', 'model', [0.5, -1]);
     expect(await db.select(db.messageEmbeddings).get(), hasLength(1));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test('v16 keeps the Impostazioni di Postino to upload, but older than any copy elsewhere', () async {
@@ -228,7 +255,7 @@ void main() {
     final row = await db.select(db.postinoSettings).getSingle();
     // updatedAt 0: a second device migrating later never overwrites what another device already synced.
     expect((row.dirty, row.deleted, row.updatedAt), (true, false, 0));
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test('v15 adds the Impostazioni di Postino, keeping what was there', () async {
@@ -247,7 +274,7 @@ void main() {
     await db.postinoSettingsDao.write('k', 'v', at: DateTime.utc(2026));
     expect(await db.postinoSettingsDao.read('k'), 'v');
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test('v14 adds the Etichette queue, keeping what was there', () async {
@@ -268,7 +295,7 @@ void main() {
     final row = (await db.intentsDao.pendingLabels('a1')).single;
     expect((row.messageId, row.labelId, row.added), ('m1', 'Label_12', true));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test('v13 adds the outbox, keeping what was there', () async {
@@ -304,7 +331,7 @@ void main() {
     final row = (await db.outboxDao.due('a1', 1)).single;
     expect((row.failed, row.claimedUntil, row.conversationId), (false, null, 't'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test(
@@ -342,7 +369,7 @@ void main() {
       );
       final d = await db.select(db.drafts).getSingle();
       expect((d.inReplyTo, d.references, d.conversationId), ('<m1>', '<m1>', 't'));
-      expect(raw.select('PRAGMA user_version').first.values.first, 17);
+      expect(raw.select('PRAGMA user_version').first.values.first, 18);
     },
   );
 
@@ -369,7 +396,7 @@ void main() {
     final d = await db.select(db.drafts).getSingle();
     expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
     expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 17);
+    expect(raw.select('PRAGMA user_version').first.values.first, 18);
   });
 
   test('a new database keeps the cursors it saves', () async {

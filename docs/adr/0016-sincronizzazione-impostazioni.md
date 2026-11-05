@@ -7,16 +7,25 @@ date: 2026-11-05
 
 Le Impostazioni di Postino si sincronizzano in un solo file, `postino-settings.json`, nella appDataFolder di Google Drive dell'Account che l'utente sceglie nelle Impostazioni alla voce "Sincronizza su…": l'**Account di sincronizzazione**. La scelta è un'Impostazione del dispositivo (`settings_sync_account` in `device_settings`); senza una scelta la sincronizzazione è spenta e le Impostazioni restano locali. Lo scope `drive.appdata` si chiede con un consenso incrementale (`include_granted_scopes=true`) solo per quell'Account.
 
-**Il file.** `{"schemaVersion":1,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`, una voce per chiave di `postino_settings`. Token e credenziali non vanno mai nel file.
+**Il file.** `{"schemaVersion":2,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`, una voce per chiave di `postino_settings`. Token e credenziali non vanno mai nel file.
 
-- Le migrazioni dello schema vanno solo in avanti e si applicano in lettura, con una catena vN→vN+1: una versione nuova è una funzione in più. Oggi c'è solo la v1.
+- Le migrazioni dello schema vanno solo in avanti e si applicano in lettura, con una catena vN→vN+1: una versione nuova è una funzione in più. Oggi lo schema è la v2: v1→v2 aggiunge la famiglia `accounts/` all'elenco chiuso e non cambia la forma delle voci, quindi è l'identità.
 - Un file con `schemaVersion` maggiore di quella supportata si legge (le voci che si decodificano) ma non si sovrascrive mai: le voci locali restano da caricare finché l'app non si aggiorna.
 - Un file che non si riesce a leggere non si sovrascrive: tale è anche un file senza `entries` o con `schemaVersion` minore di 1.
 - Se due dispositivi creano il file insieme, la ricerca per `createdTime` trova le copie: si uniscono come sotto nella più vecchia e le altre si cancellano.
 
 **Unione.** Per ogni chiave vince `updatedAt` maggiore, a parità il `deviceId` maggiore (un id casuale stabile del dispositivo, in `device_settings`). A parità esatta di entrambi (le voci migrate con valori diversi su due dispositivi hanno `updatedAt` 0 e `deviceId` vuoto) vince la copia remota: il secondo dispositivo adotta il valore già caricato dal primo e smette di ricaricare. I tombstone partecipano come le altre voci: scrivere null non cancella la riga ma lascia un tombstone, così una copia più vecchia non resuscita la voce. Una scrittura locale non va mai indietro nel tempo rispetto alla copia che sostituisce. Le voci scritte prima della sincronizzazione (migrazione allo schema 16 del database) hanno `updatedAt` 0 e restano da caricare: entrano nel file solo se manca la voce, e non sovrascrivono mai una copia già sincronizzata da un altro dispositivo.
 
-**Elenco chiuso.** Entrano nel file solo le voci con un prefisso dell'elenco (oggi `auto_labels/`); le Impostazioni del dispositivo mai. Le voci fuori elenco scritte da un Postino più nuovo restano nel file ma non si applicano in locale.
+**Elenco chiuso.** Entrano nel file solo le voci con un prefisso dell'elenco (`auto_labels/`, `accounts/`); le Impostazioni del dispositivo mai. Le voci fuori elenco scritte da un Postino più nuovo restano nel file ma non si applicano in locale.
+
+**Account collegati.** Ogni Account è la voce `accounts/<accountId>` con valore `{"address":"…","provider":"gmail","color":<indice della palette>,"position":<int>}`; mai lo stato, mai credenziali o token. La lettura è tollerante: una voce malformata o con un Provider sconosciuto si ignora, i campi sconosciuti pure.
+
+- La voce è la fonte di verità per indirizzo, Provider, colore e ordine; la tabella `accounts` ne è lo specchio locale e tiene in più lo stato (`attivo`/`daRicollegare`), che resta solo sul dispositivo.
+- Locale → voce: collegare un Account nuovo, o un Account il cui colore o posizione non coincidono con la voce, la scrive insieme alla riga, in una transazione. Un ricollegamento con valori identici non la riscrive, così il suo `updatedAt` non avanza.
+- Voce → locale: `AccountsSettingsMirror` osserva le voci `accounts/*` (tombstone compresi). Una voce viva per un Account assente crea l'Account "da collegare": `daRicollegare`, senza credenziali, già con colore e ordine; lo SyncEngine lo salta e il banner "Accedi" lo collega con `connectGmail(loginHint)`, che per l'id deterministico (`gmail:<indirizzo>`) aggiorna la stessa riga senza duplicati. Una voce viva per un Account presente aggiorna indirizzo, colore e posizione e preserva lo stato. Un Account locale senza voce non si tocca.
+- Un tombstone rimuove l'Account dal dispositivo: prima le credenziali dal Keychain/Keystore, poi, in una transazione, la riga e i dati di posta locali (ogni tabella con `account_id`).
+- Un Account nuovo prende la posizione massima + 1; l'elenco si ordina per posizione e poi per id, così l'ordine resta stabile anche con posizioni uguali (due Account aggiunti insieme su due dispositivi).
+- Gli Account già presenti all'aggiornamento entrano con la migrazione 18 del database come le voci pre-sync: `updatedAt` 0, `deviceId` vuoto, da caricare; non sovrascrivono mai una copia già sincronizzata.
 
 **Scheduler.** `SettingsSync` è separato dal motore della posta ([ADR 0008](0008-motore-di-sincronizzazione.md)). Un ciclo parte all'avvio, quando cambia l'Account di sincronizzazione, quando torna la rete, ogni 60 s e qualche secondo dopo l'ultima scrittura locale; mai due cicli insieme. Il ciclo legge il file, unisce le due copie, applica in locale le voci remote vincenti (già caricate), scrive il file se è cambiato e la versione lo permette, poi segna come caricate le voci locali non riscritte nel frattempo. Offline o con un errore le voci restano da caricare e si riprova al ciclo dopo.
 
@@ -37,6 +46,5 @@ Le Impostazioni di Postino si sincronizzano in un solo file, `postino-settings.j
 
 ## Conseguenze
 
-- Rimuovere un Account scrive i tombstone delle sue voci (`tombstoneAccount`); la UI arriva con il ticket della rimozione degli Account.
-- Un ticket futuro aggiunge gli Account (indirizzo, Provider, colore, ordine) alle voci sincronizzate.
+- Rimuovere un Account scrive i tombstone delle sue voci (`tombstoneAccount`) e il mirror lo toglie da ogni dispositivo, credenziali comprese; la UI arriva con il ticket della rimozione degli Account.
 - Last-write-wins per voce: modifiche concorrenti a due Etichette dello stesso Account sono una sola voce, e vince l'ultima.

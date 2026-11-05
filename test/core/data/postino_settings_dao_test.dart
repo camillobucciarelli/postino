@@ -65,6 +65,9 @@ void main() {
     await db.postinoSettingsDao.tombstoneAccount('a1', at: _t.add(const Duration(seconds: 1)));
     await db.postinoSettingsDao.tombstoneAccount('a2', at: _t);
     final entries = await db.postinoSettingsDao.entries();
-    expect({for (final e in entries) e.key: e.deleted}, {'auto_labels/a1': true, 'auto_labels/a2': true});
+    expect(
+      {for (final e in entries) e.key: e.deleted},
+      {'auto_labels/a1': true, 'accounts/a1': true, 'auto_labels/a2': true, 'accounts/a2': true},
+    );
   });
 }

@@ -4,7 +4,7 @@ import 'result.dart';
 import 'settings_entry.dart';
 
 /// The file of the Impostazioni di Postino (ADR 0016):
-/// `{"schemaVersion":1,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`.
+/// `{"schemaVersion":2,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`.
 class const SettingsDocument({
   /// La versione dello schema con cui il file è stato scritto.
   required final int schemaVersion,
@@ -21,7 +21,10 @@ class const SettingsDocument({
 
 /// The migrations, forward only and applied on read: the one at index i takes a document from v(i+1) to v(i+2).
 /// A new schema version is one function appended here.
-final List<Map<String, Object?> Function(Map<String, Object?>)> _migrations = [];
+final List<Map<String, Object?> Function(Map<String, Object?>)> _migrations = [
+  // v1→v2: the voci `accounts/<accountId>` join the closed list (#142); the shape of the voci does not change.
+  (doc) => doc,
+];
 
 /// La versione dello schema che questo Postino scrive.
 int get settingsSchemaVersion => _migrations.length + 1;

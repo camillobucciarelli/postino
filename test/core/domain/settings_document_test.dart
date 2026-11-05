@@ -44,6 +44,34 @@ void main() {
       expect(doc.entries.keys, ['auto_labels/a1']);
     });
 
+    test('a v1 file is read through the migration chain, and the file written is v2', () {
+      expect(settingsSchemaVersion, 2);
+      final doc = _decode(
+        jsonEncode({
+          'schemaVersion': 1,
+          'entries': {
+            'auto_labels/a1': {'value': <String, Object>{}, 'updatedAt': 1, 'deviceId': 'Z', 'deleted': false},
+          },
+        }),
+      );
+      expect(doc.writable, isTrue);
+      expect(doc.entries.values, [_e('auto_labels/a1', '{}', 1, 'Z')]);
+      expect((jsonDecode(encodeSettings(doc.entries.values)) as Map<String, dynamic>)['schemaVersion'], 2);
+    });
+
+    test('a v3 file is read but not writable', () {
+      final doc = _decode('{"schemaVersion":3,"entries":{}}');
+      expect((doc.schemaVersion, doc.writable), (3, false));
+    });
+
+    test('voci with a prefix this Postino does not know are kept, to write back', () {
+      final doc = _decode(
+        '{"schemaVersion":2,"entries":{"themes/x":{"value":1,"updatedAt":1,"deviceId":"Z","deleted":false}}}',
+      );
+      expect(doc.entries.keys, ['themes/x']);
+      expect(encodeSettings(doc.entries.values), contains('themes/x'));
+    });
+
     test('what is not a settings document fails, so it is never overwritten', () {
       expect(decodeSettings('nope'), isA<Err<SettingsDocument>>());
       expect(decodeSettings('{"entries":{}}'), isA<Err<SettingsDocument>>());

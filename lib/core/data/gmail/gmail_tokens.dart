@@ -24,6 +24,9 @@ class const GmailTokens({
     );
   }
 
+  /// Forgets the tokens of [accountId]: the Account was removed.
+  static Future<void> delete(SecureStore keychain, String accountId) => keychain.delete(_key(accountId));
+
   Future<void> write(SecureStore keychain, String accountId) => keychain.write(
     _key(accountId),
     jsonEncode({'access': access, 'refresh': refresh, 'expiresAt': expiresAt.toUtc().toIso8601String()}),

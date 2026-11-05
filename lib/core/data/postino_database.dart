@@ -10,6 +10,7 @@ import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
+import 'account_settings_json.dart';
 import 'attachment_crypto.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/bodies_dao.dart';
@@ -22,6 +23,7 @@ import 'daos/messages_dao.dart';
 import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'row_mappers.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
 import 'tables/device_settings_table.dart';
@@ -130,7 +132,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -219,6 +221,22 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         );
       }
       if (from < 17) await m.createTable(messageEmbeddings);
+      if (from < 18) {
+        // The Accounts already here join the synced voci (ADR 0016) as the voci written before the sync did:
+        // to upload, but older than any copy elsewhere (updatedAt 0), so they never overwrite a synced one.
+        for (final r in await select(accounts).get()) {
+          await into(postinoSettings).insert(
+            PostinoSettingsCompanion.insert(
+              key: accountSettingsKey(r.id),
+              value: Value(encodeAccountSettings(accountOf(r))),
+              updatedAt: 0,
+              deviceId: '',
+              dirty: true,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

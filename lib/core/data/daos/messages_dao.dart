@@ -128,15 +128,18 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
     final attributes = attachedDatabase.attributesDao;
     for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
-      // Changed again elsewhere: «tieni quella del Provider» must bring the latest value.
+      Expression<bool> key($ConflictsTable t) =>
+          t.accountId.equals(accountId) & t.messageId.equals(c.messageId) & t.attribute.equals(c.attribute);
+      // Changed again elsewhere: «tieni quella del Provider» must bring the latest value, and once the Provider has
+      // the local one there is nothing left to decide.
       if (synced.contains(c.messageId)) {
         if (await attributes.read(accountId, c.messageId, c.attribute) case final provider?
             when provider != c.provider) {
-          await (update(conflicts)..where(
-                (t) =>
-                    t.accountId.equals(accountId) & t.messageId.equals(c.messageId) & t.attribute.equals(c.attribute),
-              ))
-              .write(ConflictsCompanion(provider: Value(provider)));
+          if (provider == c.local) {
+            await (delete(conflicts)..where(key)).go();
+            continue;
+          }
+          await (update(conflicts)..where(key)).write(ConflictsCompanion(provider: Value(provider)));
         }
       }
       await attributes.write(accountId, c.messageId, c.attribute, c.local);

@@ -301,6 +301,22 @@ void main() {
     expect(placement(await here('1')), Placement.inbox);
   });
 
+  test('changed elsewhere to the local value while in Conflitto: it closes, nothing queued', () async {
+    a.goOffline();
+    await engine.act('a', ['1'], const Archive());
+    a
+      ..changeElsewhere('1', placementAttribute, Placement.trash)
+      ..goOnline();
+    await engine.syncAll();
+    expect(await conflicts(), hasLength(1));
+
+    a.changeElsewhere('1', placementAttribute, Placement.archive);
+    await engine.syncAll();
+    expect(await conflicts(), isEmpty);
+    expect(await queued(), isEmpty);
+    expect(placement(await here('1')), Placement.archive);
+  });
+
   test('a message with a Conflitto gone from the Provider: the Conflitto closes', () async {
     a.goOffline();
     await engine.act('a', ['1'], const Archive());

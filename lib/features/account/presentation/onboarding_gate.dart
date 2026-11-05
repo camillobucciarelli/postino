@@ -11,8 +11,9 @@ import '../../../i18n/strings.g.dart';
 import 'connect_error.dart';
 import 'notification_permission.dart';
 
-/// Shows the onboarding while there is no Account, [child] afterwards, offering the notifications once per device.
-class const OnboardingGate({super.key, required final Widget child}) extends StatefulWidget {
+/// Shows the onboarding while there is no Account (with [onReportProblem] on it), [child] afterwards, offering the notifications once per device.
+class const OnboardingGate({super.key, required final Widget child, required final VoidCallback onReportProblem})
+    extends StatefulWidget {
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
@@ -29,7 +30,7 @@ class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
       case null:
         return const SizedBox.shrink();
       case []:
-        return const _Onboarding();
+        return _Onboarding(onReportProblem: widget.onReportProblem);
       case _:
         if (!_offered) {
           _offered = true;
@@ -42,7 +43,7 @@ class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
   }
 }
 
-class const _Onboarding() extends StatefulWidget {
+class const _Onboarding({required final VoidCallback onReportProblem}) extends StatefulWidget {
   @override
   State<_Onboarding> createState() => _OnboardingState();
 }
@@ -67,6 +68,12 @@ class _OnboardingState() extends State<_Onboarding> {
       label: context.t.onboarding.connectGmail,
       onPressed: _connect,
       size: PostinoButtonSize.lg,
+    ),
+    // Without an Account the Impostazioni and the drawer are out of reach: this is the way to report (#117).
+    secondaryAction: PostinoButton(
+      label: context.t.segnalazione.action,
+      variant: PostinoButtonVariant.ghost,
+      onPressed: widget.onReportProblem,
     ),
   );
 }

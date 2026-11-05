@@ -28,6 +28,7 @@ import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
+import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
@@ -50,6 +51,7 @@ import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
@@ -59,6 +61,8 @@ import 'package:postino/features/posta/domain/conversation_label_intents.dart'
     as _i812;
 import 'package:postino/features/posta/domain/reply_draft_use_case.dart'
     as _i510;
+import 'package:postino/features/segnalazione/domain/report_problem_use_case.dart'
+    as _i802;
 
 const String _prod = 'prod';
 
@@ -74,6 +78,7 @@ extension GetItInjectableX on _i174.GetIt {
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final modelModule = _$ModelModule();
     final errorLogModule = _$ErrorLogModule();
+    final reportSharerModule = _$ReportSharerModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
@@ -139,6 +144,11 @@ extension GetItInjectableX on _i174.GetIt {
     );
     await gh.singletonAsync<_i346.ErrorLog>(
       () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
+      registerFor: {_prod},
+      preResolve: true,
+    );
+    await gh.singletonAsync<_i325.ReportSharer>(
+      () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
       registerFor: {_prod},
       preResolve: true,
     );
@@ -232,6 +242,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i696.AttachmentStorage>(),
       ),
     );
+    gh.factory<_i802.ReportProblemUseCase>(
+      () => _i802.ReportProblemUseCase(
+        gh<_i346.ErrorLog>(),
+        gh<_i382.AccountsRepository>(),
+        gh<_i705.MailSync>(),
+        gh<_i325.ReportSharer>(),
+      ),
+    );
     return this;
   }
 }
@@ -245,6 +263,8 @@ class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 class _$ModelModule extends _i260.ModelModule {}
 
 class _$ErrorLogModule extends _i907.ErrorLogModule {}
+
+class _$ReportSharerModule extends _i439.ReportSharerModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

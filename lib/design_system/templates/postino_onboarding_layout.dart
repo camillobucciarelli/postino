@@ -18,6 +18,9 @@ class const PostinoOnboardingLayout({
 
   /// Shown above the action, e.g. a `danger` Banner.
   final Widget? error,
+
+  /// A quieter action under the main one (e.g. Segnala un problema).
+  final Widget? secondaryAction,
 }) extends StatelessWidget {
   /// Crea il layout di un passaggio dell'onboarding.
   this;
@@ -47,6 +50,10 @@ class const PostinoOnboardingLayout({
                         const Spacer(),
                         ?error,
                         primaryAction,
+                        if (secondaryAction case final secondary?) ...[
+                          const SizedBox(height: PostinoSpacing.s2),
+                          secondary,
+                        ],
                       ],
                     ),
                   ),

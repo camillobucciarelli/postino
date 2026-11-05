@@ -60,6 +60,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$bozze$en bozze = _Translations$bozze$en._(_root);
 	@override late final _Translations$inviati$en inviati = _Translations$inviati$en._(_root);
 	@override late final _Translations$impostazioni$en impostazioni = _Translations$impostazioni$en._(_root);
+	@override late final _Translations$segnalazione$en segnalazione = _Translations$segnalazione$en._(_root);
 	@override late final _Translations$tray$en tray = _Translations$tray$en._(_root);
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
@@ -295,6 +296,22 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+}
+
+// Path: segnalazione
+class _Translations$segnalazione$en extends Translations$segnalazione$it {
+	_Translations$segnalazione$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get action => 'Report a problem';
+	@override String get subject => 'Problem in Postino';
+	@override String get intro => 'Describe here what went wrong. Below is Postino\'s error log: it has no passwords or tokens, read it before sending.';
+	@override String get crashTitle => 'Postino closed unexpectedly';
+	@override String get crashBody => 'Do you want to report the problem? A draft opens with the error log: you read it and decide whether to send it.';
+	@override String get crashConfirm => 'Report';
+	@override String get crashDismiss => 'Not now';
 }
 
 // Path: tray
@@ -535,6 +552,13 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'segnalazione.action' => 'Report a problem',
+			'segnalazione.subject' => 'Problem in Postino',
+			'segnalazione.intro' => 'Describe here what went wrong. Below is Postino\'s error log: it has no passwords or tokens, read it before sending.',
+			'segnalazione.crashTitle' => 'Postino closed unexpectedly',
+			'segnalazione.crashBody' => 'Do you want to report the problem? A draft opens with the error log: you read it and decide whether to send it.',
+			'segnalazione.crashConfirm' => 'Report',
+			'segnalazione.crashDismiss' => 'Not now',
 			'tray.open' => 'Open Postino',
 			'tray.quit' => 'Quit',
 			'selettoreEtichette.button' => 'Labels',

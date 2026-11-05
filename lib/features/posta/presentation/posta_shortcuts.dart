@@ -14,6 +14,7 @@ enum PostaAction() {
   replyAll,
   forward,
   labels,
+  reportProblem,
 }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
@@ -24,6 +25,9 @@ class const PostaShortcut(
   final PostaAction action, {
   final bool listOnly = false,
   final bool command = false,
+
+  /// Whether holding the key repeats the action: false for one that starts something (a report), true for moving.
+  final bool repeats = true,
 }) {}
 
 /// The one table key + modifiers -> action of the Posta views (ADR 0014); a test checks that no pair appears twice.
@@ -39,6 +43,7 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyA, PostaAction.replyAll),
   PostaShortcut(LogicalKeyboardKey.keyF, PostaAction.forward),
   PostaShortcut(LogicalKeyboardKey.keyL, PostaAction.labels),
+  PostaShortcut(LogicalKeyboardKey.keyP, PostaAction.reportProblem, repeats: false),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -60,6 +65,9 @@ class ListCursor() {
 
   /// Opens the picker of the Etichette of the open Conversazione (`l`, #107): the Conversazione plugs itself in.
   VoidCallback? labels;
+
+  /// Starts the Segnalazione di un problema (`p`, #117): the Posta layout plugs it in.
+  VoidCallback? reportProblem;
 }
 
 class const PostaIntent(final PostaShortcut shortcut) extends Intent {}
@@ -75,7 +83,8 @@ class const PostaShortcuts({super.key, required final ListCursor cursor, require
     return Shortcuts(
       shortcuts: {
         for (final s in postaShortcuts)
-          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac): PostaIntent(s),
+          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac, includeRepeats: s.repeats):
+              PostaIntent(s),
       },
       child: Actions(actions: {PostaIntent: _PostaAction(cursor)}, child: child),
     );
@@ -123,6 +132,8 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
         cursor.forward?.call();
       case PostaAction.labels:
         cursor.labels?.call();
+      case PostaAction.reportProblem:
+        cursor.reportProblem?.call();
     }
     return null;
   }

@@ -10,7 +10,7 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]).
-/// [onOpenSettings], when given, adds the Impostazioni at the end. Routing is the caller's: features don't know the routes.
+/// [onOpenSettings], when given, adds the Impostazioni at the end, [onReportProblem] Segnala un problema (#117). Routing is the caller's: features don't know the routes.
 class const PostaDrawer({
   super.key,
   final String? accountId,
@@ -21,6 +21,7 @@ class const PostaDrawer({
   required final void Function(String accountId) onOpenDrafts,
   required final void Function(String accountId) onOpenSent,
   final VoidCallback? onOpenSettings,
+  final VoidCallback? onReportProblem,
 }) extends StatefulWidget {
   @override
   State<PostaDrawer> createState() => _PostaDrawerState();
@@ -126,6 +127,13 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
                   icon: PostinoIcons.settings,
                   onTap: open,
                 ),
+                if (widget.onReportProblem case final report?)
+                  PostinoDrawerItem(
+                    key: const ValueKey('drawer-segnala'),
+                    label: t.segnalazione.action,
+                    icon: PostinoIcons.important,
+                    onTap: report,
+                  ),
               ],
             ),
         ],

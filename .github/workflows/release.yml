@@ -1,0 +1,112 @@
+name: Release
+
+# A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
+# `needs: version`: TestFlight (#120) and the Android APK (#121) plug in as sibling jobs of `macos`.
+# Steps live in tool/release/*.sh, one responsibility each.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One self-hosted runner: never cancel a release halfway (a notarization may already be submitted).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: [self-hosted, macOS, ARM64]
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        name: Release ref (tag or main) and version from pubspec.yaml
+        run: |
+          version=$(tool/release/version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: A manual run never replaces a released version
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag=$(git ls-remote --tags origin "refs/tags/v$VERSION")
+          test -z "$tag" || { echo "::error::v$VERSION is already released: bump the version in pubspec.yaml"; exit 1; }
+
+  macos:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      APP: build/macos/Build/Products/Release/Postino.app
+      DMG: build/release/Postino-${{ needs.version.outputs.version }}.dmg
+    steps:
+      # Without it the app builds fine but no Gmail Account can connect (README, "Client OAuth di Google").
+      - name: Google OAuth client ID is set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: test -n "$GOOGLE_CLIENT_ID" || { echo "::error::Secret GOOGLE_CLIENT_ID is not set"; exit 1; }
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # Generated code is committed (checked by ci.yml), so no codegen here.
+      # macOS uses the iOS-type client: ID only, no GOOGLE_CLIENT_SECRET (README).
+      - name: flutter build macos --release
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: flutter build macos --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+      - name: Developer ID certificate in a job keychain
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: tool/release/keychain_create.sh
+      - run: tool/release/sign_app.sh "$APP"
+      - name: Notarize and staple the app
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/notarize.sh "$APP"
+      - run: tool/release/make_dmg.sh "$APP" "$DMG"
+      # Last use of the certificate: the keychain goes now, and even when an earlier step failed.
+      - name: Delete the job keychain
+        if: always()
+        run: tool/release/keychain_delete.sh
+      - name: Notarize and staple the DMG
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/notarize.sh "$DMG"
+      - run: tool/release/verify.sh "$APP" "$DMG"
+      - name: Upload the DMG to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          # Public base of the bucket (custom domain), a repository variable; optional.
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+        run: |
+          upload() {
+            tool/release/r2_upload.sh "$DMG" "$1" application/x-apple-diskimage "$2"
+            echo "- macOS: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$1" >> "$GITHUB_STEP_SUMMARY"
+          }
+          # A tag build is final; a manual build of the same version is replaced by its tag run, so short cache.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=31536000, immutable'
+          else
+            upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=300'
+          fi
+          # Stable link for invitees: only a tag release of the highest version moves it.
+          if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
+            upload macos/latest/Postino.dmg 'public, max-age=300'
+          fi

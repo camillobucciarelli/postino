@@ -1,10 +1,12 @@
 ---
 status: Accettato
 date: 2026-10-27
-updated: 2026-10-28
+updated: 2026-11-05
 ---
 
 # Impostazioni di Postino sincronizzate via Google Drive
+
+> Aggiornata dall'[ADR 0016](0016-sincronizzazione-impostazioni.md): il file sta su Drive del solo Account di sincronizzazione scelto dall'utente.
 
 Le Impostazioni di Postino (Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa, mittenti fidati, configurazione delle Etichette automatiche per Account: quali Etichette sono attive e le loro descrizioni, vedi [ADR 0015](0015-ia-sul-dispositivo.md)) si sincronizzano tra dispositivi in un file nascosto nella appDataFolder di Google Drive, con last-write-wins per singola voce. I messaggi posticipati vengono inoltre spostati nell'Etichetta Posticipati sul Provider, così webmail e altri dispositivi concordano. Senza un account Google le impostazioni restano locali e si possono esportare/importare come file, che l'utente conserva o condivide come preferisce.
 

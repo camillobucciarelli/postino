@@ -122,8 +122,12 @@ _Avoid_: Certificato, password, chiave privata
 ### Preferenze
 
 **Impostazioni di Postino**:
-Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa e mittenti fidati. Possono seguire l'utente tra i dispositivi tramite il suo spazio Google, oppure essere esportate in un file che l'utente conserva, salva o condivide come preferisce.
+Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa, mittenti fidati e configurazione delle Etichette automatiche. Seguono l'utente tra i dispositivi tramite l'Account di sincronizzazione, oppure si esportano in un file che l'utente conserva, salva o condivide come preferisce.
 _Avoid_: Config, profilo
+
+**Account di sincronizzazione**:
+L'Account scelto alla voce "Sincronizza su…" nel cui spazio Google (Drive) stanno le Impostazioni di Postino. È un'Impostazione del dispositivo; senza una scelta le Impostazioni di Postino restano locali.
+_Avoid_: Account principale, Account di backup
 
 **Impostazioni del dispositivo**:
 Le preferenze che valgono solo per un dispositivo e non si sincronizzano tra dispositivi, a differenza delle Impostazioni di Postino. Ad esempio le Notifiche immediate, l'avvio al login, il tema e l'Observability.

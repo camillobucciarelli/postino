@@ -25,13 +25,18 @@ security unlock-keychain -p "$password" "$keychain"
 # ponytail: `security` takes passwords only as arguments (visible to `ps` on the runner for the call's
 # duration); the keychain password is single-use and the p12 file is gone when this script ends.
 security import "$p12" -k "$keychain" -f pkcs12 -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign > /dev/null
+# Apple's public Developer ID G2 intermediate (www.apple.com/certificateauthority): macOS ships only G1, and
+# without G2 the identity is not valid. Fetched from Apple, chain checked against the system Apple Root CA.
+security import "$(dirname "$0")/DeveloperIDG2CA.cer" -k "$keychain" > /dev/null
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
 xargs security list-keychains -d user -s "$keychain" < "$saved_list"
+# The user's trustd agent caches the search list, so codesign (which builds the chain through trustd) would
+# not see the G2 intermediate above and fail with errSecInternalComponent. launchd restarts it on demand.
+pkill -U "$(id -u)" -x trustd || true
 
 identity=$(security find-identity -v -p codesigning "$keychain" | 
   awk -v team="($APPLE_TEAM_ID)\"" 'index($0, "\"Developer ID Application: ") && index($0, team) { print $2; exit }')
 if [ -z "$identity" ]; then
-  # A valid identity needs the "Developer ID Certification Authority" intermediate in the System keychain.
   echo "::error::No valid Developer ID Application identity of team $APPLE_TEAM_ID in the p12 (wrong team, expired, or intermediate CA missing)" >&2
   exit 1
 fi

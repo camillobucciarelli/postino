@@ -31,6 +31,7 @@ class SettingsSync(
   final Clock _clock,
   final Connectivity _connectivity, {
   @ignoreParam final SettingsBackend Function(String accountId) _backendFor = settingsBackendFor,
+  @ignoreParam final Duration _stopWait = const Duration(seconds: 5),
 }) {
   final _subs = <StreamSubscription<Object?>>[];
   StreamSubscription<void>? _debounce;
@@ -55,13 +56,14 @@ class SettingsSync(
       );
   }
 
-  /// Stops every trigger and waits for the cycle in flight, so the database can be closed after it.
+  /// Stops every trigger and waits for the cycle in flight, so the database can be closed after it; at most
+  /// [_stopWait], so quitting never hangs on a stalled cycle (its voci stay dirty for the next start).
   Future<void> stop() async {
     final subs = [..._subs, ?_debounce];
     _subs.clear();
     _debounce = null;
     await Future.wait([for (final s in subs) s.cancel()]);
-    await _running;
+    await _running?.timeout(_stopWait, onTimeout: () => debugPrint('[settings] stop: cycle still in flight'));
   }
 
   /// Runs a cycle now; while one runs, one more follows it and this completes after it.

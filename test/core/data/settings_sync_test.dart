@@ -16,12 +16,16 @@ import '../../support/fake_platform.dart';
 import '../../support/fake_settings_backend.dart';
 
 /// One device: its database, its Impostazioni and its sync, on the file in [backend].
-class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
+class _Device(
+  final FakeSettingsBackend backend,
+  final FakeClock clock, {
+  final Duration stopWait = const Duration(seconds: 5),
+}) {
   final db = PostinoDatabase.inMemory();
   final connectivity = FakeConnectivity();
   late final settings = DeviceSettingsStore(db);
   late final labels = AutoLabelsStore(db, clock);
-  late final sync = SettingsSync(db, settings, clock, connectivity, backendFor: (_) => backend);
+  late final sync = SettingsSync(db, settings, clock, connectivity, backendFor: (_) => backend, stopWait: stopWait);
 
   Future<int> dirty() => db.postinoSettingsDao.watchDirty().first;
 }
@@ -153,6 +157,16 @@ void main() {
     gate.complete();
     await Future.wait(calls);
     expect((file.reads, file.maxInFlight), (2, 1));
+  });
+
+  test('stop does not wait forever for a cycle that never ends', () async {
+    file.readGate = Completer<void>();
+    final hung = _Device(file, clock, stopWait: const Duration(milliseconds: 50));
+    await hung.settings.setSettingsSyncAccount('a1');
+    unawaited(hung.sync.syncNow());
+    await pumpEventQueue();
+    await hung.sync.stop().timeout(const Duration(seconds: 5));
+    await hung.db.close();
   });
 
   test('a file from a newer Postino is read but never overwritten', () async {

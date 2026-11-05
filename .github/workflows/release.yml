@@ -98,14 +98,21 @@ jobs:
         run: tool/release/notarize.sh "$DMG"
       - run: tool/release/verify.sh "$APP" "$DMG"
       # Every run signs it, so a wrong key fails a manual run too; only a tag release of the highest version
-      # publishes it, below, after its DMG.
+      # publishes it, below, after its DMG. The app's SUFeedURL (<base>/macos/appcast.xml) is what installed copies
+      # poll: the DMG link is built from it, and a RELEASE_BASE_URL pointing elsewhere stops the job.
       - name: Signed Sparkle appcast
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
           RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
         run: |
-          test -n "$RELEASE_BASE_URL" || { echo "::error::Variable RELEASE_BASE_URL is not set"; exit 1; }
-          tool/release/appcast.sh "$DMG" "${RELEASE_BASE_URL%/}/macos/$VERSION/" build/release/appcast.xml
+          feed=$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$APP/Contents/Info.plist")
+          base=${feed%/macos/appcast.xml}
+          test "$base/macos/appcast.xml" = "$feed" || { echo "::error::SUFeedURL $feed is not <base>/macos/appcast.xml"; exit 1; }
+          if [ -n "$RELEASE_BASE_URL" ] && [ "${RELEASE_BASE_URL%/}" != "$base" ]; then
+            echo "::error::RELEASE_BASE_URL $RELEASE_BASE_URL is not the base of SUFeedURL $feed"
+            exit 1
+          fi
+          tool/release/appcast.sh "$DMG" "$base/macos/$VERSION/" build/release/appcast.xml
       - name: Upload the DMG to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

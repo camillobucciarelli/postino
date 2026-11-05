@@ -27,6 +27,7 @@ import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
+import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
@@ -174,6 +175,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i385.MailStore>(),
         gh<_i184.Notifications>(),
         gh<_i350.OpenConversation>(),
+      ),
+    );
+    gh.lazySingleton<_i311.SettingsSync>(
+      () => _i311.SettingsSync(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
       ),
     );
     gh.factory<_i166.LaunchAtLoginUseCase>(

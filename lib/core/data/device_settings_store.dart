@@ -41,6 +41,9 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   Future<void> setNotificationsAsked() => _db.deviceSettingsDao.write(_notificationsAsked, 'true');
 
   @override
+  Future<String?> settingsSyncAccount() => _db.deviceSettingsDao.read(_settingsSyncAccount);
+
+  @override
   Stream<String?> watchSettingsSyncAccount() => _db.deviceSettingsDao.watch(_settingsSyncAccount);
 
   @override

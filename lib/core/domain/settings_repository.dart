@@ -27,6 +27,9 @@ abstract interface class SettingsRepository() {
   /// Ricorda che la spiegazione delle notifiche è stata mostrata.
   Future<void> setNotificationsAsked();
 
+  /// The id of the Account whose Drive holds the Impostazioni di Postino (ADR 0016); null: no sync.
+  Future<String?> settingsSyncAccount();
+
   /// The id of the Account whose Drive holds the Impostazioni di Postino (ADR 0016), now and after each change;
   /// null: no sync.
   Stream<String?> watchSettingsSyncAccount();

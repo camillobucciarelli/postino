@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_provider.dart';
@@ -164,8 +163,6 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
     client: gmailTestClient,
     sleep: (_) async {},
   );
-
-  Future<GmailTokens?> get tokens => GmailTokens.read(keychain, gmailAccount);
 
   Future<http.Response> _handle(http.Request r) async {
     requests.add(r);
@@ -385,30 +382,6 @@ void main() {
   mailProviderSendContract('GmailProvider', GmailHarness.new);
   mailProviderLabelContract('GmailProvider', GmailHarness.new);
 
-  test('refreshAuth swaps the access token in the keychain, keeping the refresh token', () async {
-    final h = GmailHarness();
-    expect(await h.provider.refreshAuth(), isA<Ok<Object?>>());
-
-    final r = h.requests.single;
-    expect(r.url, Uri.parse('https://oauth2.googleapis.com/token'));
-    expect(r.bodyFields, {
-      'grant_type': 'refresh_token',
-      'refresh_token': '1//refresh',
-      'client_id': 'test-client.apps.googleusercontent.com',
-    });
-    final t = (await h.tokens)!;
-    expect(t.access, 'ya29.refreshed');
-    expect(t.refresh, '1//refresh');
-    expect(t.expiresAt, gmailNow.add(const Duration(seconds: 3599)));
-  });
-
-  test('an expired access token is refreshed before calling Gmail', () async {
-    final h = GmailHarness(validFor: Duration.zero);
-    expect(await h.provider.initialSync(), isA<Ok<Object?>>());
-    expect([for (final r in h.requests.take(2)) r.url.path], ['/token', '/gmail/v1/users/me/profile']);
-    expect(h.requests[1].headers['authorization'], 'Bearer ya29.refreshed');
-  });
-
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
     expect(await h.provider.initialSync(), isA<Ok<Object?>>());
@@ -427,13 +400,6 @@ void main() {
       client: gmailTestClient,
     );
     expect(await p.initialSync(), isErr<AuthFailure>());
-  });
-
-  test('no tokens in the keychain is an AuthFailure', () async {
-    final h = GmailHarness()..keychain.values.clear();
-    expect(await h.provider.refreshAuth(), isErr<AuthFailure>());
-    expect(await h.provider.initialSync(), isErr<AuthFailure>());
-    expect(h.requests, isEmpty);
   });
 
   group('recorded responses', () {

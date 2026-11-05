@@ -31,6 +31,14 @@ class GoogleAuth(
     return refresh(tokens);
   }
 
+  /// [send] with a valid access token; on a 401 the token is refreshed once and [send] runs again.
+  Future<http.Response> authorized(Future<http.Response> Function(String access) send) async {
+    final tokens = await validTokens();
+    final r = await send(tokens.access);
+    if (r.statusCode != 401) return r;
+    return send((await refresh(tokens)).access);
+  }
+
   /// A new access token from the refresh token of [old], saved in the keychain.
   /// A revoked or expired refresh token is the Provider's definitive refusal: [AuthFailure].
   Future<GmailTokens> refresh(GmailTokens? old) async {

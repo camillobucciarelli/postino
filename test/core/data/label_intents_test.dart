@@ -207,6 +207,22 @@ void main() {
     expect(a.labelCalls, isEmpty);
   });
 
+  test(
+    'a rate limit on the fetch of a Conversazione pauses the Account: the next fetch does not ask the Provider',
+    () async {
+      a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+      expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+      a
+        ..rateLimit(on: false)
+        ..deliverOutsideWindow(msg('old', conversationId: 't-1'));
+
+      expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+      expect(await engine.openConversation('a', 't-1'), isA<Err<void>>());
+      final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+      expect(c.map((m) => m.message.id), ['1']);
+    },
+  );
+
   test('while the Provider\'s pause holds: done here, queued, the Provider not called', () async {
     a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     await engine.syncAll();

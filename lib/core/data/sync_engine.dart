@@ -110,7 +110,7 @@ class SyncEngine(
     final fetched = await _serial(accountId, () async {
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      final fetched = _pauseFailure(accountId) ?? await provider.fetchConversation(conversationId);
+      final fetched = await _fetchConversation(accountId, provider, conversationId);
       if (fetched case Ok(:final value)) {
         await _store.applyPage(accountId, value, const {});
         await _store.markConversationRead(accountId, conversationId);
@@ -230,7 +230,7 @@ class SyncEngine(
     final provider = providerFor(account);
     // Unlike openConversation it does not mark the Conversazione read.
     final fetched = await _serial(accountId, () async {
-      final fetched = _pauseFailure(accountId) ?? await provider.fetchConversation(conversationId);
+      final fetched = await _fetchConversation(accountId, provider, conversationId);
       if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
       return fetched;
     });
@@ -311,9 +311,13 @@ class SyncEngine(
     });
   }
 
-  /// While the Provider's pause holds, the failure a request made now would get, without asking the Provider.
-  Err<List<Message>>? _pauseFailure(String id) =>
-      _paused(id) ? Err(RateLimitFailure(retryAfter: _pausedUntil[id])) : null;
+  /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
+  Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
+    if (_paused(id)) return Err(RateLimitFailure(retryAfter: _pausedUntil[id]));
+    final fetched = await provider.fetchConversation(conversationId);
+    if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _pauseAccount(id, retryAfter);
+    return fetched;
+  }
 
   /// True while the Provider's pause holds; a lapsed pause is forgotten.
   bool _paused(String id) {
@@ -357,7 +361,7 @@ class SyncEngine(
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
         if (failure case RateLimitFailure(:final retryAfter?)) {
-          _pausedUntil[accountId] = retryAfter;
+          _pauseAccount(accountId, retryAfter);
           debugPrint('[sync] $accountId: paused until $retryAfter');
         }
         // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.

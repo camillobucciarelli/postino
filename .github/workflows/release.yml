@@ -1,7 +1,7 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: TestFlight (#120) and the Android APK (#121) plug in as sibling jobs of `macos`.
+# `needs: version`: `macos` (DMG) and `android` (sideloaded APK); TestFlight (#120) plugs in as a sibling.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -109,4 +109,80 @@ jobs:
           # Stable link for invitees: only a tag release of the highest version moves it.
           if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
             upload macos/latest/Postino.dmg 'public, max-age=300'
+          fi
+
+  android:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      APK: build/app/outputs/flutter-apk/app-release.apk
+      # Upload key certificate (public): verify_apk.sh refuses any other signer, the debug key included.
+      ANDROID_CERT_SHA256: 47:03:4A:D7:65:75:3A:E5:27:8C:6C:09:F6:5E:E8:5F:E7:6B:26:56:85:9C:04:AC:78:54:2D:8A:8D:12:1F:04
+    steps:
+      # Before any build: a missing secret would otherwise surface late, or as an APK no Account can use.
+      - name: Required secrets are set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ACCOUNT_ID R2_BUCKET; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      - name: Upload keystore in RUNNER_TEMP
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: tool/release/android_keystore.sh
+      # Generated code is committed (checked by ci.yml), so no codegen here. JDK and ANDROID_HOME come from the
+      # runner, as in ci.yml's android job. Android uses the iOS-type client: ID only (README).
+      - name: flutter build apk --release
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: flutter build apk --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+      # Last use of the keystore: it goes now, and even when an earlier step failed.
+      - name: Delete the upload keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload-keystore.p12"
+      - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256"
+      - name: Upload the APK to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+        run: |
+          echo "- Android APK sha256: \`$(shasum -a 256 "$APK" | cut -d ' ' -f 1)\`" >> "$GITHUB_STEP_SUMMARY"
+          upload() {
+            tool/release/r2_upload.sh "$APK" "$1" application/vnd.android.package-archive "$2"
+            echo "- Android: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$1" >> "$GITHUB_STEP_SUMMARY"
+          }
+          # Same cache policy as the DMG: a tag build is final, a manual build is replaced by its tag run.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=31536000, immutable'
+          else
+            upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
+            upload android/latest/Postino.apk 'public, max-age=300'
           fi

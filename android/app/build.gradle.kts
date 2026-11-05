@@ -44,11 +44,23 @@ android {
             googleClientId?.let { "com.googleusercontent.apps.$it" } ?: "com.cbucciarelli.postino.oauth"
     }
 
+    // Upload key for the sideloaded APK (#121): set only by the release workflow (tool/release/android_keystore.sh
+    // and the ANDROID_* secrets). Without it, release builds keep the debug keys so `flutter run --release` works.
+    val releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")?.takeIf { it.isNotEmpty() }
+    if (releaseKeystore != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
 }

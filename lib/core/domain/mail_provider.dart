@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'action_outcome.dart';
+import 'mail_action.dart';
 import 'message.dart';
 import 'result.dart';
 
@@ -45,7 +47,7 @@ enum ChangeSignal() {
 }
 
 /// The single adapter interface (ADR 0002), one instance per Account.
-// ponytail: Search and conditional Action join the interface at steps 3 and 6.
+// ponytail: Search joins the interface at step 6.
 abstract interface class MailProvider() {
   /// Interfaccia: nessuno stato da costruire.
   this;
@@ -71,8 +73,11 @@ abstract interface class MailProvider() {
   /// headers only, bodies come from [fetchBody].
   Future<Result<List<Message>>> fetchConversation(String conversationId);
 
-  /// Marks [messageIds] read (or unread); idempotent, so a replayed intent is harmless.
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read});
+  /// Applies [action] to message [messageId] only if its attribute still has [expected] (the value it had here when
+  /// the Azione was queued) or already the wanted one: [ActionApplied]; another value, changed elsewhere, writes
+  /// nothing and is [ActionConflict]; a message gone is [ActionMessageGone]. [Delete] never conflicts, and a null
+  /// [expected] forces the write («tieni la mia»). Adapters without a native conditional write read and compare first.
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected});
 
   /// One attachment of [messageId] ([Attachment.id]); [onProgress] gets the share downloaded so far (0–1),
   /// and completing [cancel] stops the download with [CancelledFailure].
@@ -98,8 +103,4 @@ abstract interface class MailProvider() {
 
   /// Creates the Etichetta [name]; idempotent on the name: one that already exists is returned, not duplicated.
   Future<Result<Label>> createLabel(String name);
-
-  /// Adds the Etichetta [labelId] to message [messageId] (with [add] false, removes it); idempotent, so a replayed
-  /// intent is harmless. [NotFoundFailure] when the message is gone from the Provider.
-  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add});
 }

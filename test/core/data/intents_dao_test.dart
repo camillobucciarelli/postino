@@ -40,14 +40,14 @@ void main() {
 
   test('system labels are not Etichette dell\'utente: the Etichetta is put on and queued', () async {
     expect(await db.intentsDao.queueAutoLabel('a1', 'plain', _viaggi.id, activatedAt: _at), isTrue);
-    final intent = (await db.intentsDao.pendingLabels('a1')).single;
-    expect((intent.messageId, intent.labelId, intent.added), ('plain', _viaggi.id, true));
+    final intent = (await db.intentsDao.pending('a1', now: 0)).single;
+    expect((intent.messageId, intent.attribute, intent.wanted), ('plain', 'label:${_viaggi.id}', 'true'));
   });
 
   test("a message with an Etichetta dell'utente, or gone, is skipped: nothing written", () async {
     expect(await db.intentsDao.queueAutoLabel('a1', 'mine', _viaggi.id, activatedAt: _at), isFalse);
     expect(await db.intentsDao.queueAutoLabel('a1', 'gone', _viaggi.id, activatedAt: _at), isFalse);
-    expect(await db.intentsDao.pendingLabels('a1'), isEmpty);
+    expect(await db.intentsDao.pending('a1', now: 0), isEmpty);
     final rows = await (db.select(db.messageLabels)..where((t) => t.labelId.equals(_viaggi.id))).get();
     expect(rows, isEmpty);
   });
@@ -60,6 +60,6 @@ void main() {
       await db.postinoSettingsDao.write('auto_labels/a1', json, at: DateTime.utc(2026));
       expect(await db.intentsDao.queueAutoLabel('a1', 'plain', _viaggi.id, activatedAt: _at), isFalse, reason: json);
     }
-    expect(await db.intentsDao.pendingLabels('a1'), isEmpty);
+    expect(await db.intentsDao.pending('a1', now: 0), isEmpty);
   });
 }

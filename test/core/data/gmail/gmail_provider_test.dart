@@ -10,6 +10,8 @@ import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/action_outcome.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -287,7 +289,14 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
     if (m == null) return gmailFixture('not_found');
     final add = [for (final l in body['addLabelIds'] as List? ?? const []) l as String];
     final remove = [for (final l in body['removeLabelIds'] as List? ?? const []) l as String];
-    _mailbox[id] = copyOf(m, labelIds: {...m.labelIds.where((l) => !remove.contains(l)), ...add}.toList());
+    // UNREAD and STARRED are the message's read and Stella fields, as [_labels] shows them.
+    const fields = {'UNREAD', 'STARRED'};
+    _mailbox[id] = copyOf(
+      m,
+      labelIds: {...m.labelIds.where((l) => !remove.contains(l)), ...add.where((l) => !fields.contains(l))}.toList(),
+      isRead: add.contains('UNREAD') ? false : (remove.contains('UNREAD') ? true : m.isRead),
+      isStarred: add.contains('STARRED') ? true : (remove.contains('STARRED') ? false : m.isStarred),
+    );
     _history.add((++_historyId, add.isEmpty ? 'labelsRemoved' : 'labelsAdded', id));
     return gmailJson(_resource(_mailbox[id]!, full: false));
   }
@@ -689,28 +698,44 @@ void main() {
       expect(await g.provider.fetchConversation(_f1), isErr<NotFoundFailure>());
     });
 
-    test('marking read is one batchModify removing UNREAD', () async {
-      final g = RecordedGmail((r, path) => 'batch_modify');
-      okValue(await g.provider.setRead([_f1, _f2], read: true));
+    test('marking read is one messages.modify removing UNREAD', () async {
+      final g = RecordedGmail((r, path) => 'message_modify');
+      expect(okValue(await g.provider.applyAction(_f1, const MarkRead(), expected: false)), isA<ActionApplied>());
 
       final r = g.requests.single;
       expect(r.method, 'POST');
-      expect(r.url.path, '${gmailApi}messages/batchModify');
+      expect(r.url.path, '${gmailApi}messages/$_f1/modify');
       expect(r.headers['content-type'], startsWith('application/json'));
       expect(r.headers['authorization'], 'Bearer ya29.initial');
       expect(jsonDecode(r.body), {
-        'ids': [_f1, _f2],
         'removeLabelIds': ['UNREAD'],
       });
     });
 
-    test('marking unread adds UNREAD back', () async {
-      final g = RecordedGmail((r, path) => 'batch_modify');
-      okValue(await g.provider.setRead([_f1], read: false));
-      expect(jsonDecode(g.requests.single.body), {
-        'ids': [_f1],
-        'addLabelIds': ['UNREAD'],
-      });
+    test('each Azione is its Gmail request: Stella, Archivia out of the Cestino too, Elimina to the Cestino', () async {
+      final g = RecordedGmail((r, path) => 'message_modify');
+      for (final a in const [MarkUnread(), Star(), Unstar(), Archive(), Delete()]) {
+        okValue(await g.provider.applyAction(_f1, a, expected: false));
+      }
+      expect(
+        [
+          for (final r in g.requests)
+            (r.url.path.substring(gmailApi.length), r.body.isEmpty ? null : jsonDecode(r.body).toString()),
+        ],
+        [
+          ('messages/$_f1/modify', '{addLabelIds: [UNREAD]}'),
+          ('messages/$_f1/modify', '{addLabelIds: [STARRED]}'),
+          ('messages/$_f1/modify', '{removeLabelIds: [STARRED]}'),
+          ('messages/$_f1/untrash', null),
+          ('messages/$_f1/modify', '{removeLabelIds: [INBOX]}'),
+          ('messages/$_f1/trash', null),
+        ],
+      );
+    });
+
+    test('an Azione on a message gone is messaggioSparito', () async {
+      final g = RecordedGmail((r, path) => 'not_found');
+      expect(okValue(await g.provider.applyAction(_f1, const Delete(), expected: false)), isA<ActionMessageGone>());
     });
 
     group('Bozze', () {

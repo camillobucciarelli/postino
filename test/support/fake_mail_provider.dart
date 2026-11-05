@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart' show MimeMessage;
+import 'package:postino/core/domain/action_outcome.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -67,7 +69,7 @@ class FakeMailProvider() implements MailProvider {
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
 
-  /// While set, [fetchConversation] and [setRead] answer only once it completes: in-flight requests.
+  /// While set, [fetchConversation] and a read Azione answer only once it completes: in-flight requests.
   Completer<void>? holdConversation;
   Completer<void>? holdRead;
 
@@ -87,17 +89,20 @@ class FakeMailProvider() implements MailProvider {
   bool loseSendResponse = false;
   int _sentSeq = 0;
 
-  /// While set, [setRead] fails as offline even though the syncs work: a passing replay failure.
+  /// While set, a read Azione fails as offline even though the syncs work: a passing replay failure.
   bool failSetRead = false;
 
-  /// Every [setRead] that reached the Provider: (ids, read).
+  /// Every read Azione that reached the Provider, conflicting ones too: (`[id]`, read).
   final readCalls = <(List<String>, bool)>[];
 
-  /// While set, [setLabel] answers it even though the syncs work: a passing replay failure or a refusal.
+  /// While set, an Etichetta Azione answers it even though the syncs work: a passing replay failure or a refusal.
   Failure? setLabelFailure;
 
-  /// Every [setLabel] that reached the Provider, refused ones too: (message id, label id, add).
+  /// Every Etichetta Azione that reached the Provider, refused ones too: (message id, label id, add).
   final labelCalls = <(String, String, bool)>[];
+
+  /// Every [applyAction] that reached the Provider: (message id, Azione, expected value).
+  final actionCalls = <(String, MailAction, Object?)>[];
 
   /// Body kind of [fetchBody]; the sync bodies are plain text.
   BodyKind bodyKind = BodyKind.testo;
@@ -170,6 +175,10 @@ class FakeMailProvider() implements MailProvider {
     _log.add((++_version, null, id));
     if (signal && _signalUp) _changes.add(ChangeSignal.changed);
   }
+
+  /// Another client gives message [id] [value] for [attribute] (`MailAction.attribute`), also while offline here.
+  void changeElsewhere(String id, String attribute, Object value) =>
+      deliver(withValue(_messages[id]!, attribute, value));
 
   /// A Bozza written by another client: in the Bozze folder, with its HTML body; its Provider id is `d-<n>`.
   void deliverDraft(OutgoingMessage d, {DateTime? date, String? conversationId}) {
@@ -337,20 +346,6 @@ class FakeMailProvider() implements MailProvider {
   }
 
   @override
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) async {
-    await holdRead?.future;
-    return failSetRead
-        ? const Err(OfflineFailure())
-        : _guard(() {
-            readCalls.add((messageIds, read));
-            for (final id in messageIds) {
-              if (_old[id] case final m?) _old[id] = copyOf(m, isRead: read);
-              if (_messages[id] case final m?) deliver(copyOf(m, isRead: read));
-            }
-          });
-  }
-
-  @override
   Future<Result<Uint8List>> fetchAttachment(
     String messageId,
     String attachmentId, {
@@ -454,27 +449,86 @@ class FakeMailProvider() implements MailProvider {
     return created;
   });
 
+  /// The conditional write of ADR 0008: applied when the attribute has [expected] or the wanted value already (or
+  /// [expected] is null, or the Azione is Elimina), a Conflitto otherwise; the old `setRead`/`setLabel` hooks
+  /// ([holdRead], [failSetRead], [readCalls], [setLabelFailure], [labelCalls]) still see the read and Etichette ones.
   @override
-  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) async {
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async {
+    final labelId = switch (action) {
+      ApplyLabel(:final labelId) || RemoveLabel(:final labelId) => labelId,
+      _ => null,
+    };
+    if (action is MarkRead || action is MarkUnread) {
+      await holdRead?.future;
+      if (failSetRead) return const Err(OfflineFailure());
+    }
     if (_failure case final f?) return Err(f);
-    labelCalls.add((messageId, labelId, add));
-    if (setLabelFailure case final f?) return Err(f);
-    final m = _messages[messageId];
-    if (m == null) return const Err(NotFoundFailure());
-    final others = m.labelIds.where((l) => l != labelId);
-    deliver(copyOf(m, labelIds: [...others, if (add) labelId]));
-    return const Ok(null);
+    actionCalls.add((messageId, action, expected));
+    if (action is MarkRead || action is MarkUnread) readCalls.add(([messageId], action.wanted == true));
+    if (labelId != null) {
+      labelCalls.add((messageId, labelId, action.wanted == true));
+      if (setLabelFailure case final f?) return Err(f);
+    }
+    final old = _old[messageId];
+    final m = _messages[messageId] ?? old;
+    if (m == null) return const Ok(ActionMessageGone());
+    final current = valueOf(m, action.attribute);
+    if (expected != null && action is! Delete && current != expected && current != action.wanted) {
+      return Ok(ActionConflict(current));
+    }
+    final changed = withValue(m, action.attribute, action.wanted);
+    if (old != null) {
+      _old[messageId] = changed;
+    } else {
+      deliver(changed);
+    }
+    return const Ok(ActionApplied());
   }
 }
 
-/// [m] changed elsewhere: its Etichette or its read state; every other field kept.
-Message copyOf(Message m, {List<String>? labelIds, bool? isRead}) => Message(
+/// The value of [attribute] on [m], as the Provider sees it.
+Object valueOf(Message m, String attribute) => switch (attribute) {
+  readAttribute => m.isRead,
+  starredAttribute => m.isStarred,
+  placementAttribute =>
+    m.labelIds.contains(trashLabelId)
+        ? Placement.trash
+        : m.labelIds.contains(inboxLabelId)
+        ? Placement.inbox
+        : Placement.archive,
+  _ => m.labelIds.contains(labelIdOf(attribute)),
+};
+
+/// [m] with [value] for [attribute]: what an Azione, here or elsewhere, does to it.
+Message withValue(Message m, String attribute, Object value) {
+  List<String> label(String id, {required bool on}) => [...m.labelIds.where((l) => l != id), if (on) id];
+  return switch (attribute) {
+    readAttribute => copyOf(m, isRead: value == true),
+    starredAttribute => copyOf(
+      m,
+      isStarred: value == true,
+      labelIds: label(starredLabelId, on: value == true),
+    ),
+    placementAttribute => copyOf(
+      m,
+      labelIds: [
+        ...m.labelIds.where((l) => l != inboxLabelId && l != trashLabelId),
+        if (value == Placement.inbox) inboxLabelId,
+        if (value == Placement.trash) trashLabelId,
+      ],
+    ),
+    _ => copyOf(m, labelIds: label(labelIdOf(attribute)!, on: value == true)),
+  };
+}
+
+/// [m] changed elsewhere: its Etichette, read state or Stella; every other field kept.
+Message copyOf(Message m, {List<String>? labelIds, bool? isRead, bool? isStarred}) => Message(
   id: m.id,
   messageId: m.messageId,
   conversationId: m.conversationId,
   labelIds: labelIds ?? m.labelIds,
   isRead: isRead ?? m.isRead,
-  isStarred: m.isStarred,
+  isStarred: isStarred ?? m.isStarred,
   from: m.from,
   fromName: m.fromName,
   to: m.to,

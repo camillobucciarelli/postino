@@ -6,6 +6,7 @@ import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/auto_labels_repository.dart';
 import 'package:postino/core/domain/embedding_models.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/main.dart';
@@ -32,7 +33,7 @@ void main() {
   }
 
   Future<List<(String, String)>> queued() async => [
-    for (final r in await db.intentsDao.pendingLabels('a')) (r.messageId, r.labelId),
+    for (final r in await db.intentsDao.pending('a', now: 0)) (r.messageId, labelIdOf(r.attribute)!),
   ];
 
   setUp(() async {

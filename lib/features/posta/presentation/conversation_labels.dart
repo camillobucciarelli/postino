@@ -44,7 +44,7 @@ void removeConversationLabel(BuildContext context, ConversationKey key, List<Mes
       actionLabel: t.undo,
       until: clock.now().add(PostinoMotion.undoWindow),
       now: clock.now,
-      onAction: () => intents.undoRemoval(token),
+      onAction: () => unawaited(intents.undoRemoval(token)),
     ).closed.then((_) => intents.forget(token)),
   );
 }

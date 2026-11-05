@@ -459,6 +459,55 @@ void main() {
     expect(getIt<ConversationLabelIntents>().openRemovals, 0);
   });
 
+  // The desired state per Etichetta during a slow fetch, from the picker: whatever the order of the actions, of
+  // Annulla and of the end of the fetch, the older message o0 ends as the last action the user kept says.
+  // Viaggi (Label_12) is on o1 and o0, Fatture (Label_13) on neither; Annulla before or after the end, or expired.
+  for (final (actions, name, labelId, undo, has) in const [
+    ('aggiunta', 'Fatture', 'Label_13', 'none', true),
+    ('rimozione', 'Viaggi', 'Label_12', 'none', false),
+    ('rimozione', 'Viaggi', 'Label_12', 'before', true),
+    ('rimozione', 'Viaggi', 'Label_12', 'after', true),
+    ('rimozione', 'Viaggi', 'Label_12', 'expired', false),
+    ('aggiunta→rimozione', 'Fatture', 'Label_13', 'none', false),
+    ('aggiunta→rimozione', 'Fatture', 'Label_13', 'before', true),
+    ('aggiunta→rimozione', 'Fatture', 'Label_13', 'after', true),
+    ('aggiunta→rimozione', 'Fatture', 'Label_13', 'expired', false),
+  ]) {
+    _onMac('$actions of $name during a slow fetch, Annulla: $undo → the older message ${has ? 'has' : 'lacks'} it', (
+      tester,
+    ) async {
+      await openSlowPicker(tester);
+      final from = gmail.labelCalls.length;
+      final initially = labelId == 'Label_12';
+      await _tap(tester, _tile(name));
+      if (actions == 'aggiunta→rimozione') await _tap(tester, _tile(name));
+      await _escape(tester);
+      Future<void> annulla() async {
+        await _tap(tester, _undo);
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await _settle(tester);
+      }
+
+      switch (undo) {
+        case 'before':
+          await annulla();
+          await endFetch(tester);
+        case 'after':
+          await endFetch(tester);
+          await annulla();
+        case 'expired':
+          await tester.pump(PostinoMotion.undoWindow + const Duration(seconds: 1));
+          await _settle(tester);
+          await endFetch(tester);
+          expect(getIt<ConversationLabelIntents>().openRemovals, 0);
+        default:
+          await endFetch(tester);
+      }
+      final last = _calls(from).lastWhere((c) => c.$1 == 'o0' && c.$2 == labelId, orElse: () => ('', '', initially));
+      expect(last.$3, has);
+    });
+  }
+
   _onMac('offline, the picker still labels the local messages at once', (tester) async {
     await _start(tester);
     gmail.goOffline();

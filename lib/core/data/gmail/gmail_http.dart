@@ -10,6 +10,7 @@ import '../../domain/result.dart';
 import '../mime.dart';
 import 'gmail_failure.dart';
 import 'gmail_tokens.dart';
+import 'google_auth.dart';
 import 'google_client.dart';
 
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
@@ -23,7 +24,6 @@ class GmailHttp(
   required final Future<void> Function(Duration) _sleep,
   required final Duration _stall,
 }) {
-  static final _tokenEndpoint = Uri.parse('https://oauth2.googleapis.com/token');
   static final _api = Uri.parse('https://gmail.googleapis.com/gmail/v1/users/me/');
 
   /// Retries per request on a quota hit: 1, 2, 4, 8, 16 s (plus jitter), or the server's Retry-After.
@@ -31,19 +31,15 @@ class GmailHttp(
   static const _maxWait = 32;
   static final _random = Random();
 
+  late final _auth = GoogleAuth(_accountId, _keychain, _http, _clock, client: _client);
+
   /// Refreshes the access token now.
   Future<void> refreshAuth() async {
-    await _refresh(await _tokens());
+    await _auth.refresh(await _auth.tokens());
   }
 
   /// Tokens with an access token still valid for at least a minute.
-  Future<GmailTokens> validTokens() async {
-    final tokens = await _tokens();
-    if (tokens != null && _clock.now().isBefore(tokens.expiresAt.subtract(const Duration(minutes: 1)))) {
-      return tokens;
-    }
-    return _refresh(tokens);
-  }
+  Future<GmailTokens> validTokens() => _auth.validTokens();
 
   /// A read: GET [path] with [query].
   /// [onProgress] gets the share of the response read, out of its length or else [expected] bytes;
@@ -76,7 +72,7 @@ class GmailHttp(
 
     var r = await send();
     if (r.statusCode == 401) {
-      tokens = await _refresh(tokens);
+      tokens = await _auth.refresh(tokens);
       r = await send();
     }
     // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
@@ -197,32 +193,6 @@ class GmailHttp(
   /// Gmail answers a quota hit with 429, or with 403 and a rate-limit reason.
   static bool _rateLimited(http.Response r) =>
       r.statusCode == 429 || (r.statusCode == 403 && r.body.contains('ateLimitExceeded'));
-
-  Future<GmailTokens?> _tokens() => GmailTokens.read(_keychain, _accountId);
-
-  /// A revoked or expired refresh token is the Provider's definitive refusal: [AuthFailure].
-  Future<GmailTokens> _refresh(GmailTokens? old) async {
-    if (old == null) throw const GmailFailed(AuthFailure());
-    final r = await _http.post(
-      _tokenEndpoint,
-      body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
-    );
-    final body = jsonDecode(r.body) as Map<String, dynamic>;
-    if (r.statusCode == 200) {
-      final fresh = GmailTokens(
-        access: body['access_token'] as String,
-        // Google may rotate it.
-        refresh: body['refresh_token'] as String? ?? old.refresh,
-        expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
-      );
-      await fresh.write(_keychain, _accountId);
-      return fresh;
-    }
-    if (r.statusCode == 401 || body['error'] == 'invalid_grant') {
-      throw const GmailFailed(AuthFailure());
-    }
-    throw GmailFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
-  }
 }
 
 /// Time for the answer to start: [stall] plus 1 s per 50 KB of [bodyBytes] (a 400 kbit/s floor, so 35 MB gets ~12 min).

@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../domain/action_outcome.dart';
+import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
@@ -146,8 +148,29 @@ class GmailProvider(
     return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
   });
 
-  /// One batchModify call per 1000 ids, Gmail's cap.
+  // ponytail: no read-and-compare yet, every Azione is written as forced (as the replay did before #144); the
+  // conditional write on the system labels comes with the Gmail adapter of the Azioni (T2).
   @override
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async {
+    final written = switch (action) {
+      MarkRead() || MarkUnread() => setRead([messageId], read: action.wanted == true),
+      Star() || Unstar() => setLabel(messageId, starredLabelId, add: action.wanted == true),
+      Archive() => setLabel(messageId, inboxLabelId, add: false),
+      Delete() => googleGuard(() async {
+        await _gmail.send('POST', 'messages/$messageId/trash');
+        return const Ok(null);
+      }),
+      ApplyLabel(:final labelId) => setLabel(messageId, labelId, add: true),
+      RemoveLabel(:final labelId) => setLabel(messageId, labelId, add: false),
+    };
+    return switch (await written) {
+      Ok() => const Ok(ActionApplied()),
+      Err(failure: NotFoundFailure()) => const Ok(ActionMessageGone()),
+      Err(:final failure) => Err(failure),
+    };
+  }
+
+  /// Marks [messageIds] read (or unread): one batchModify call per 1000 ids, Gmail's cap.
   Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => googleGuard(() async {
     for (var i = 0; i < messageIds.length; i += 1000) {
       await _gmail.send(
@@ -226,7 +249,8 @@ class GmailProvider(
   @override
   Future<Result<Label>> createLabel(String name) => googleGuard(() async => Ok(await _labels.create(name)));
 
-  @override
+  /// Adds the label [labelId] to message [messageId] (with [add] false, removes it); idempotent.
+  /// [NotFoundFailure] when the message is gone.
   Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => googleGuard(() async {
     await _labels.set(messageId, labelId, add: add);
     return const Ok(null);

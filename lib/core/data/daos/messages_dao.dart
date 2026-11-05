@@ -5,6 +5,7 @@ import '../../domain/message.dart';
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
 import '../tables/bodies_table.dart';
+import '../tables/conflicts_table.dart';
 import '../tables/intents_table.dart';
 import '../tables/message_labels_table.dart';
 import '../tables/messages_table.dart';
@@ -12,7 +13,7 @@ import '../tables/sync_cursors_table.dart';
 
 part 'messages_dao.g.dart';
 
-@DriftAccessor(tables: [Accounts, Messages, MessageLabels, Bodies, SyncCursors, Intents])
+@DriftAccessor(tables: [Accounts, Messages, MessageLabels, Bodies, SyncCursors, Intents, Conflicts])
 class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$MessagesDaoMixin {
   /// Where the Account's next incremental sync starts; null before its first sync.
   Future<String?> cursor(String accountId) async =>
@@ -112,34 +113,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
         await _keepIntents(accountId);
       });
 
-  /// What the user did here wins over what the Provider still says, until the intent is replayed.
+  /// What the user did here wins over what the Provider still says: until its voce is replayed, and while its
+  /// Conflitto is open (ADR 0008).
+  // ponytail: one read-and-write per voce and Conflitto; set-based SQL per attribute if the queue ever grows big.
   Future<void> _keepIntents(String accountId) async {
-    final account = [Variable(accountId)];
-    await customUpdate(
-      'UPDATE messages SET is_read = (SELECT i.is_read FROM intents i '
-      'WHERE i.account_id = messages.account_id AND i.message_id = messages.id) '
-      'WHERE account_id = ?1 AND id IN '
-      '(SELECT message_id FROM intents WHERE account_id = ?1 AND is_read IS NOT NULL)',
-      variables: account,
-      updates: {messages},
-    );
-    await customUpdate(
-      'DELETE FROM message_labels WHERE account_id = ?1 AND EXISTS (SELECT 1 FROM label_intents i '
-      'WHERE i.account_id = message_labels.account_id AND i.message_id = message_labels.message_id '
-      'AND i.label_id = message_labels.label_id AND NOT i.added)',
-      variables: account,
-      updates: {messageLabels},
-      updateKind: UpdateKind.delete,
-    );
-    // Only on messages still here: one removed by this batch gets no orphan label.
-    await customInsert(
-      'INSERT OR IGNORE INTO message_labels (account_id, message_id, label_id) '
-      'SELECT i.account_id, i.message_id, i.label_id FROM label_intents i '
-      'JOIN messages m ON m.account_id = i.account_id AND m.id = i.message_id '
-      'WHERE i.account_id = ?1 AND i.added',
-      variables: account,
-      updates: {messageLabels},
-    );
+    final attributes = attachedDatabase.attributesDao;
+    for (final v in await (select(intents)..where((t) => t.accountId.equals(accountId))).get()) {
+      await attributes.write(accountId, v.messageId, v.attribute, v.wanted);
+    }
+    for (final c in await (select(conflicts)..where((t) => t.accountId.equals(accountId))).get()) {
+      await attributes.write(accountId, c.messageId, c.attribute, c.local);
+    }
   }
 
   /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox), each with its Account;
@@ -193,29 +177,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
   }
 
-  /// Marks the Conversazione's unread messages read here and queues the same intent for the Provider.
-  Future<void> markConversationRead(String accountId, String conversationId) => transaction(() async {
-    final unread =
-        await (selectOnly(messages)
-              ..addColumns([messages.id])
-              ..where(
-                messages.accountId.equals(accountId) &
-                    messages.conversationId.equals(conversationId) &
-                    messages.isRead.equals(false),
-              ))
-            .map((r) => r.read(messages.id)!)
-            .get();
-    if (unread.isEmpty) return;
-    await (update(messages)..where((t) => t.accountId.equals(accountId) & t.id.isIn(unread))).write(
-      const MessagesCompanion(isRead: Value(true)),
-    );
-    await batch(
-      (b) => b.insertAllOnConflictUpdate(intents, [
-        for (final id in unread)
-          IntentsCompanion.insert(accountId: accountId, messageId: id, isRead: const Value(true)),
-      ]),
-    );
-  });
+  /// The Conversazione's unread messages, by Provider-side id.
+  Future<List<String>> unreadIn(String accountId, String conversationId) =>
+      (selectOnly(messages)
+            ..addColumns([messages.id])
+            ..where(
+              messages.accountId.equals(accountId) &
+                  messages.conversationId.equals(conversationId) &
+                  messages.isRead.equals(false),
+            ))
+          .map((r) => r.read(messages.id)!)
+          .get();
 
   /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if

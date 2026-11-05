@@ -32,7 +32,7 @@ void main() {
   }
 
   Future<List<(String, String)>> queued() async => [
-    for (final r in await db.intentsDao.pendingLabels('a')) (r.messageId, r.labelId),
+    for (final r in await db.intentsDao.pending('a', now: 0)) (r.messageId, r.attribute.substring('label:'.length)),
   ];
 
   setUp(() async {

@@ -5,6 +5,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/main.dart';
@@ -26,9 +27,12 @@ void main() {
     Ok(:final value) => value.messages.singleWhere((m) => m.id == id).labelIds,
     Err(:final failure) => fail('$failure'),
   };
-  Future<List<LabelIntentRow>> queued() {
+  Future<List<IntentRow>> queued() async {
     final db = getIt<PostinoDatabase>();
-    return db.select(db.labelIntents).get();
+    return [
+      for (final i in await db.select(db.intents).get())
+        if (i.attribute.startsWith('label:')) i,
+    ];
   }
 
   Future<List<MessageLabelRow>> labelRows(String id) {
@@ -68,14 +72,17 @@ void main() {
     expect(await there('1'), isNot(contains(_viaggi)));
   });
 
-  test('repeating an intent does not change the result', () async {
-    await engine.setLabel('a', '1', _viaggi, add: true);
-    await engine.setLabel('a', '1', _viaggi, add: true);
-    expect(a.labelCalls, hasLength(2));
-    expect((await there('1')).where((l) => l == _viaggi), hasLength(1));
-    expect((await here('1')).where((l) => l == _viaggi), hasLength(1));
-    expect(await queued(), isEmpty);
-  });
+  test(
+    'repeating an intent does not change the result: the second changes nothing here, so nothing is queued',
+    () async {
+      await engine.setLabel('a', '1', _viaggi, add: true);
+      await engine.setLabel('a', '1', _viaggi, add: true);
+      expect(a.labelCalls, hasLength(1));
+      expect((await there('1')).where((l) => l == _viaggi), hasLength(1));
+      expect((await here('1')).where((l) => l == _viaggi), hasLength(1));
+      expect(await queued(), isEmpty);
+    },
+  );
 
   test('a sync before the replay does not undo what was done here', () async {
     a
@@ -273,9 +280,9 @@ void main() {
       await Future.wait([adding, removing]);
 
       expect((await conversation()).where((m) => m.labelIds.contains(_viaggi)), isEmpty);
-      final intents = (await queued()).where((i) => i.labelId == _viaggi);
+      final intents = (await queued()).where((i) => i.attribute == 'label:$_viaggi');
       expect(intents, hasLength(50));
-      expect(intents.every((i) => !i.added), isTrue);
+      expect(intents.every((i) => i.wanted == 'false'), isTrue);
     },
   );
 
@@ -292,15 +299,15 @@ void main() {
     ]);
     final c = await getIt<InboxRepository>().watchConversation('a', 't-big').first;
     expect(c.where((m) => m.message.labelIds.contains(_viaggi)), isEmpty);
-    expect((await queued()).where((i) => i.labelId == _viaggi).every((i) => !i.added), isTrue);
+    expect((await queued()).where((i) => i.attribute == 'label:$_viaggi').every((i) => i.wanted == 'false'), isTrue);
   });
 
   test('an intent replaced while the replay ran stays: only the replayed value leaves', () async {
     final store = getIt<MailStore>();
-    await store.queueLabels('a', ['1'], _viaggi, add: true);
-    await store.queueLabels('a', ['1'], _viaggi, add: false);
-    await store.labelDone('a', '1', _viaggi, added: true);
-    expect((await queued()).map((i) => i.added), [false]);
+    await store.queue('a', ['1'], const ApplyLabel(_viaggi));
+    await store.queue('a', ['1'], const RemoveLabel(_viaggi));
+    await store.actionDone('a', (messageId: '1', action: const ApplyLabel(_viaggi), expected: false));
+    expect((await queued()).map((i) => i.wanted), ['false']);
   });
 
   test('a created Etichetta is listed here at once; offline it is an Err and nothing is stored', () async {

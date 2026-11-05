@@ -51,7 +51,7 @@ void main() {
     a.setLabelFailure = const RejectedFailure('Etichetta sparita');
     await engine.setLabel('a', '1', 'Label_12', add: true);
     await engine.syncAll();
-    expect(await h.errorLog.read(), contains('[label replay a] RejectedFailure(Etichetta sparita)'));
+    expect(await h.errorLog.read(), contains('[action replay a] RejectedFailure(Etichetta sparita)'));
   });
 
   test('a send the Provider rate-limits ends up in the log', () async {

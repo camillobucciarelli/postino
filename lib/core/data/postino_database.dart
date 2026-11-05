@@ -12,7 +12,9 @@ import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_crypto.dart';
 import 'daos/accounts_dao.dart';
+import 'daos/attributes_dao.dart';
 import 'daos/bodies_dao.dart';
+import 'daos/conflicts_dao.dart';
 import 'daos/device_settings_dao.dart';
 import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
@@ -24,10 +26,10 @@ import 'daos/postino_settings_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
+import 'tables/conflicts_table.dart';
 import 'tables/device_settings_table.dart';
 import 'tables/drafts_table.dart';
 import 'tables/intents_table.dart';
-import 'tables/label_intents_table.dart';
 import 'tables/labels_table.dart';
 import 'tables/message_embeddings_table.dart';
 import 'tables/message_labels_table.dart';
@@ -49,7 +51,7 @@ part 'postino_database.g.dart';
     Bodies,
     SyncCursors,
     Intents,
-    LabelIntents,
+    Conflicts,
     TrustedSenders,
     DeviceSettings,
     Drafts,
@@ -63,6 +65,8 @@ part 'postino_database.g.dart';
     LabelsDao,
     BodiesDao,
     IntentsDao,
+    AttributesDao,
+    ConflictsDao,
     TrustedSendersDao,
     DeviceSettingsDao,
     DraftsDao,
@@ -130,7 +134,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -166,7 +170,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
             "OR body LIKE '%<br>%' OR body LIKE '%<br/%' OR body LIKE '%<br /%'",
           );
         }
-        await m.createTable(intents);
+        // The queue is created by the v18 step, in its current shape.
         await m.createIndex(messagesConversation);
       }
       if (from < 6) await m.createTable(trustedSenders);
@@ -194,7 +198,6 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         }
       }
       if (from < 13) await m.createTable(outbox);
-      if (from < 14) await m.createTable(labelIntents);
       if (from < 15) await m.createTable(postinoSettings);
       // From v14 the table was just created above, already with them.
       if (from == 15) {
@@ -219,6 +222,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         );
       }
       if (from < 17) await m.createTable(messageEmbeddings);
+      if (from < 18) await _queueOfAzioni(m);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);
@@ -241,6 +245,38 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
     },
   );
+
+  /// v18: one queue of Azioni with the expected value, and the Conflitti (#144). The read intents (v5) and the
+  /// Etichette ones (v14) move into it; their value at enqueue was not kept, so the expected one is the opposite of
+  /// the wanted one: what the old replay assumed, an attribute that is on or off never meeting a Conflitto.
+  Future<void> _queueOfAzioni(Migrator m) async {
+    // By name, not by version: a database is what its file holds.
+    final old = {
+      for (final r in await customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('intents', 'label_intents')",
+      ).get())
+        r.read<String>('name'),
+    };
+    if (old.contains('intents')) await customStatement('ALTER TABLE intents RENAME TO intents_v17');
+    await m.createTable(intents);
+    await m.createTable(conflicts);
+    if (old.contains('intents')) {
+      await customStatement(
+        'INSERT INTO intents (account_id, message_id, attribute, wanted, expected) '
+        "SELECT account_id, message_id, 'read', CASE is_read WHEN 1 THEN 'true' ELSE 'false' END, "
+        "CASE is_read WHEN 1 THEN 'false' ELSE 'true' END FROM intents_v17 WHERE is_read IS NOT NULL",
+      );
+      await customStatement('DROP TABLE intents_v17');
+    }
+    if (old.contains('label_intents')) {
+      await customStatement(
+        'INSERT INTO intents (account_id, message_id, attribute, wanted, expected) '
+        "SELECT account_id, message_id, 'label:' || label_id, CASE added WHEN 1 THEN 'true' ELSE 'false' END, "
+        "CASE added WHEN 1 THEN 'false' ELSE 'true' END FROM label_intents",
+      );
+      await customStatement('DROP TABLE label_intents');
+    }
+  }
 }
 
 void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');

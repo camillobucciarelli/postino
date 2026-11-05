@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'account.dart';
+import 'conflict.dart';
 import 'message.dart';
 
 /// A Conversazione in a list: its latest [message], how many messages it has, and whether any is unread.
@@ -76,4 +77,7 @@ abstract interface class InboxRepository() {
 
   /// Every stored message of a Conversazione, oldest first.
   Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId);
+
+  /// The open Conflitti (ADR 0008), of every Account or only of [accountId].
+  Stream<List<Conflict>> watchConflicts({String? accountId});
 }

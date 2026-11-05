@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 
@@ -77,9 +78,10 @@ void main() {
     await store.markConversationRead('a', 't-1');
     await store.applySync('a', SyncBatch(cursor: '2', messages: [msg('1')]));
     expect((await store.watchUnifiedInbox().first).single.unread, isFalse);
-    expect([for (final i in await store.pendingIntents('a')) (i.messageId, i.isRead)], [('1', true)]);
+    final pending = await store.pendingActions('a', DateTime.utc(2026));
+    expect([for (final q in pending) (q.messageId, q.action, q.expected)], [('1', const MarkRead(), false)]);
 
-    await store.readDone('a', ['1'], isRead: true);
-    expect(await store.pendingIntents('a'), isEmpty);
+    await store.actionDone('a', pending.single);
+    expect(await store.pendingActions('a', DateTime.utc(2026)), isEmpty);
   });
 }

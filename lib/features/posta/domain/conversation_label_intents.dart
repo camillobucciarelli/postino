@@ -18,8 +18,9 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   final _fetches = <ConversationKey, ({int running, Map<String, bool> pending})>{};
 
   /// The removals whose Annulla is still offered, by the token [remove] returns: what they took the Etichetta off,
-  /// the local messages and the older ones a late replay reached. [forget] drops one when its Annulla goes away.
-  final _removals = <Object, ({ConversationKey key, String labelId, List<Message> had})>{};
+  /// the local messages and the older ones a late replay reached, and the action on it that was waiting for the
+  /// fetch before it (null: none). [forget] drops one when its Annulla goes away.
+  final _removals = <Object, ({ConversationKey key, String labelId, List<Message> had, bool? before})>{};
 
   /// How many removals still offer Annulla (for the tests: none is kept once its snackbar closes).
   int get openRemovals => _removals.length;
@@ -62,17 +63,24 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   /// to [forget] when that Annulla is no longer offered.
   Object remove(ConversationKey key, Iterable<Message> messages, String labelId) {
     final token = Object();
-    _removals[token] = (key: key, labelId: labelId, had: _set(key, messages, labelId, add: false));
+    final before = _fetches[key]?.pending[labelId];
+    _removals[token] = (key: key, labelId: labelId, had: _set(key, messages, labelId, add: false), before: before);
     return token;
   }
 
   /// Annulla of the removal [token]: the Etichetta back on what it took it off, the older messages a replay
-  /// reached too; before the replay the removal is dropped, so it never reaches them.
+  /// reached too; before the replay the removal gives way to the action waiting before it (an addition stands).
   void undoRemoval(Object token) {
     final r = _removals.remove(token);
     if (r == null) return;
     final pending = _fetches[r.key]?.pending;
-    if (pending?[r.labelId] == false) pending!.remove(r.labelId);
+    if (pending?[r.labelId] == false) {
+      if (r.before case final before?) {
+        pending![r.labelId] = before;
+      } else {
+        pending!.remove(r.labelId);
+      }
+    }
     _apply(r.key.accountId, r.had, r.labelId, add: true);
   }
 

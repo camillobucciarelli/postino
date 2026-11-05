@@ -357,6 +357,20 @@ void main() {
     expect(_calls(from).where((c) => c.$1 == 'o0' && c.$2 == 'Label_13'), isEmpty);
   });
 
+  _onMac('a tick, an untick and its Annulla during a slow fetch: the tick still reaches the older messages', (
+    tester,
+  ) async {
+    await openSlowPicker(tester);
+    final from = gmail.labelCalls.length;
+    await _tap(tester, _tile('Fatture'));
+    await _tap(tester, _tile('Fatture'));
+    await _escape(tester);
+    await _tap(tester, _undo);
+    await endFetch(tester);
+    expect(_calls(from), contains(('o0', 'Label_13', true)));
+    expect(_calls(from).where((c) => c.$1 == 'o0' && c.$2 == 'Label_13' && !c.$3), isEmpty);
+  });
+
   _onMac('Annulla after the fetch ended puts the Etichetta back on the older messages too', (tester) async {
     await openSlowPicker(tester);
     final from = gmail.labelCalls.length;

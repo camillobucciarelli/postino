@@ -24,10 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: version
-        name: Version from pubspec.yaml matches the tag
+        name: Release ref (tag or main) and version from pubspec.yaml
         run: |
           version=$(tool/release/version.sh)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: A manual run never replaces a released version
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag=$(git ls-remote --tags origin "refs/tags/v$VERSION")
+          test -z "$tag" || { echo "::error::v$VERSION is already released: bump the version in pubspec.yaml"; exit 1; }
 
   macos:
     needs: version
@@ -89,10 +96,12 @@ jobs:
           # Public base of the bucket (custom domain), a repository variable; optional.
           RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
         run: |
-          key="macos/$VERSION/Postino-$VERSION.dmg"
-          tool/release/r2_upload.sh "$DMG" "$key" application/x-apple-diskimage
-          # Stable link for invitees, rewritten by every release.
-          tool/release/r2_upload.sh "$DMG" macos/latest/Postino.dmg application/x-apple-diskimage
-          for k in "$key" macos/latest/Postino.dmg; do
-            echo "- macOS: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$k" >> "$GITHUB_STEP_SUMMARY"
+          keys=("macos/$VERSION/Postino-$VERSION.dmg")
+          # Stable link for invitees: only a tag release of the highest version moves it.
+          if [ "$GITHUB_EVENT_NAME" = push ] && tool/release/is_latest.sh "$VERSION"; then
+            keys+=(macos/latest/Postino.dmg)
+          fi
+          for key in "${keys[@]}"; do
+            tool/release/r2_upload.sh "$DMG" "$key" application/x-apple-diskimage
+            echo "- macOS: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$key" >> "$GITHUB_STEP_SUMMARY"
           done

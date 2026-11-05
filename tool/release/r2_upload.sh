@@ -1,6 +1,7 @@
 #!/bin/bash
 # Uploads a file to the Cloudflare R2 bucket via its S3 API (curl's SigV4, no aws CLI). An existing
-# object at the same key is replaced, so the tag run of a version supersedes a manual run of it.
+# object at the same key is replaced: the tag run of a version supersedes a manual run of it (release.yml
+# refuses manual runs of a version that already has its tag).
 # Usage: r2_upload.sh <file> <object key> <content type>
 set -euo pipefail
 file=${1:?usage: r2_upload.sh <file> <key> <content type>}

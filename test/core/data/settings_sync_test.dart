@@ -222,7 +222,8 @@ void main() {
     file.file = newer;
     await a.labels.setAutomatic('a2', 'X', automatic: true);
     await a.sync.syncNow();
-    expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null, activatedAt: null)});
+    // Without an activation in the file: active since the voce was written (its updatedAt).
+    expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null, activatedAt: 1)});
     expect(file.file, newer);
     expect(file.writes, 0);
     expect(await a.dirty(), 1);

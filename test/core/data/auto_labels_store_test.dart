@@ -74,4 +74,14 @@ void main() {
       expect((await store.watch('a1').first)['L1']!.activatedAt, _now + const Duration(hours: 1).inMilliseconds);
     },
   );
+
+  test('an Etichetta automatica saved without activation is active since the voce was written, and stays so', () async {
+    final written = DateTime.utc(2026, 11, 2);
+    await db.postinoSettingsDao.write('auto_labels/a1', '{"L1": {"automatic": true}}', at: written);
+    expect((await store.watch('a1').first)['L1']!.activatedAt, written.millisecondsSinceEpoch);
+
+    // A later write keeps it: the activation does not move with the voce.
+    await store.setDescription('a1', 'L2', 'Fatture');
+    expect((await store.watch('a1').first)['L1']!.activatedAt, written.millisecondsSinceEpoch);
+  });
 }

@@ -45,4 +45,18 @@ void main() {
       '{"L1":{"automatic":true,"activatedAt":7}}',
     );
   });
+
+  test('an Etichetta automatica without activation takes the fallback, one off does not', () {
+    expect(
+      decodeAutoLabels(
+        '{"L1": {"automatic": true}, "L2": {}, "L3": {"automatic": true, "activatedAt": 3}}',
+        activatedFallback: 9,
+      ),
+      {
+        'L1': (automatic: true, description: null, activatedAt: 9),
+        'L2': (automatic: false, description: null, activatedAt: null),
+        'L3': (automatic: true, description: null, activatedAt: 3),
+      },
+    );
+  });
 }

@@ -11,7 +11,7 @@ import 'postino_database.dart';
 class AutoLabelsStore(final PostinoDatabase _db, final Clock _clock) implements AutoLabelsRepository {
   @override
   Stream<Map<String, AutoLabel>> watch(String accountId) =>
-      _db.postinoSettingsDao.watch(_key(accountId)).map(decodeAutoLabels);
+      _db.postinoSettingsDao.watchRow(autoLabelsKey(accountId)).map(autoLabelsOf);
 
   @override
   Future<void> setAutomatic(String accountId, String labelId, {required bool automatic}) => _update(
@@ -38,11 +38,9 @@ class AutoLabelsStore(final PostinoDatabase _db, final Clock _clock) implements 
   /// Read, change one Etichetta, write: in a transaction, so two quick edits do not lose each other.
   Future<void> _update(String accountId, String labelId, AutoLabel Function(AutoLabel) change) =>
       _db.transaction(() async {
-        final key = _key(accountId);
-        final labels = decodeAutoLabels(await _db.postinoSettingsDao.read(key));
+        final key = autoLabelsKey(accountId);
+        final labels = autoLabelsOf(await _db.postinoSettingsDao.readRow(key));
         labels[labelId] = change(labels[labelId] ?? autoLabelDefault);
         await _db.postinoSettingsDao.write(key, encodeAutoLabels(labels), at: _clock.now());
       });
-
-  static String _key(String accountId) => 'auto_labels/$accountId';
 }

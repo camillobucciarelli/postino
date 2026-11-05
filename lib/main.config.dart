@@ -28,6 +28,7 @@ import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
+import 'package:postino/core/data/report_sharer.dart' as _i220;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
@@ -50,6 +51,7 @@ import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
@@ -59,6 +61,8 @@ import 'package:postino/features/posta/domain/conversation_label_intents.dart'
     as _i812;
 import 'package:postino/features/posta/domain/reply_draft_use_case.dart'
     as _i510;
+import 'package:postino/features/segnalazione/domain/report_problem_use_case.dart'
+    as _i802;
 
 const String _prod = 'prod';
 
@@ -71,6 +75,7 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
+    final reportSharerModule = _$ReportSharerModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final modelModule = _$ModelModule();
     final errorLogModule = _$ErrorLogModule();
@@ -94,6 +99,11 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
+    await gh.singletonAsync<_i325.ReportSharer>(
+      () => reportSharerModule.reportSharer(),
+      registerFor: {_prod},
+      preResolve: true,
+    );
     gh.lazySingleton<_i462.LaunchAtLogin>(
       () => launchAtLoginModule.launchAtLogin(),
       registerFor: {_prod},
@@ -232,6 +242,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i696.AttachmentStorage>(),
       ),
     );
+    gh.factory<_i802.ReportProblemUseCase>(
+      () => _i802.ReportProblemUseCase(
+        gh<_i346.ErrorLog>(),
+        gh<_i382.AccountsRepository>(),
+        gh<_i705.MailSync>(),
+        gh<_i325.ReportSharer>(),
+      ),
+    );
     return this;
   }
 }
@@ -239,6 +257,8 @@ extension GetItInjectableX on _i174.GetIt {
 class _$AttachmentModule extends _i524.AttachmentModule {}
 
 class _$HttpModule extends _i524.HttpModule {}
+
+class _$ReportSharerModule extends _i220.ReportSharerModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 

@@ -155,6 +155,15 @@
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
     "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema."
   },
+  "segnalazione": {
+    "action": "Segnala un problema",
+    "subject": "Problema in Postino",
+    "intro": "Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.",
+    "crashTitle": "Postino si è chiuso in modo imprevisto",
+    "crashBody": "Vuoi segnalare il problema? Si apre una bozza con il log degli errori: la rileggi e decidi tu se inviarla.",
+    "crashConfirm": "Segnala",
+    "crashDismiss": "Non ora"
+  },
   "tray": {
     "open": "Apri Postino",
     "quit": "Esci"

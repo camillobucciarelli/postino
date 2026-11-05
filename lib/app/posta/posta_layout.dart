@@ -11,7 +11,9 @@ import '../../core/presentation/model_ready_notifier.dart';
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
+import '../../features/segnalazione/presentation/crash_report_prompt.dart';
 import '../../i18n/strings.g.dart';
+import '../report_problem.dart';
 import 'posta_routes.dart';
 import 'posta_views.dart';
 
@@ -42,6 +44,12 @@ class _PostaLayoutState() extends State<PostaLayout> {
 
   /// The current preferred list width: the list is recreated on every Account/Etichetta, so it must outlive it.
   double? _width;
+
+  @override
+  void initState() {
+    super.initState();
+    _cursor.reportProblem = () => unawaited(reportProblem());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,64 +84,67 @@ class _PostaLayoutState() extends State<PostaLayout> {
     }
 
     // One shell above the content: only the content is replaced on navigation.
-    final shell = OnboardingGate(
-      child: ModelReadyNotifier(
-        child: FutureBuilder<(bool?, double?)>(
-          future: _saved,
-          builder: (context, saved) => saved.connectionState != ConnectionState.done
-              ? const SizedBox.shrink()
-              : PostaShortcuts(
-                  cursor: _cursor,
-                  child: PostinoSidebarShell(
-                    drawer: postaDrawer(accountId: accountId, labelId: labelId),
-                    closeLabel: context.t.sidebar.close,
-                    openLabel: context.t.sidebar.open,
-                    expanded: saved.data!.$1,
-                    onExpandedChanged: (expanded) =>
-                        GetIt.I<SettingsRepository>().setSidebarExpanded(expanded: expanded),
-                    child: PostinoSnackbarHost(
-                      child: PostinoFadeThrough(
-                        transitionKey: list,
-                        child: PostinoListDetailLayout(
-                          listWidth: _width,
-                          onListWidthChanged: (w) {
-                            _width = w;
-                            unawaited(GetIt.I<SettingsRepository>().setListWidth(w));
-                          },
-                          resizeLabel: context.t.listWidth.label,
-                          resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
-                          list: switch ((accountId, labelId)) {
-                            (final a?, draftLabelId) => postaDraftsView(a, selected: detail, cursor: _cursor),
-                            (final a?, sentLabelId) => postaSentView(a, selected: open, cursor: _cursor),
-                            (final a?, final l?) => postaLabelView(a, l, selected: open, cursor: _cursor),
-                            (final a?, null) => postaAccountView(a, selected: open, cursor: _cursor),
-                            _ => postaUnifiedView(selected: open, cursor: _cursor),
-                          },
-                          detail: draft != null
-                              ? postaComposerView(draft.$1, draft.$2, onClose: back, onQueued: queued)
-                              : open == null
-                              ? null
-                              : postaConversationView(
-                                  open.$1,
-                                  open.$2,
-                                  onBack: back,
-                                  cursor: _cursor,
-                                  onOpenDraft: (id) => openDraft(open.$1, id),
-                                ),
-                          detailKey: detail,
-                          empty: Builder(
-                            builder: (context) => PostinoEmptyState(
-                              title: context.t.conversazione.selectTitle,
-                              body: context.t.conversazione.selectBody,
-                              icon: PostinoIcons.inbox,
+    final shell = CrashReportPrompt(
+      onReport: () => unawaited(reportProblem()),
+      child: OnboardingGate(
+        child: ModelReadyNotifier(
+          child: FutureBuilder<(bool?, double?)>(
+            future: _saved,
+            builder: (context, saved) => saved.connectionState != ConnectionState.done
+                ? const SizedBox.shrink()
+                : PostaShortcuts(
+                    cursor: _cursor,
+                    child: PostinoSidebarShell(
+                      drawer: postaDrawer(accountId: accountId, labelId: labelId),
+                      closeLabel: context.t.sidebar.close,
+                      openLabel: context.t.sidebar.open,
+                      expanded: saved.data!.$1,
+                      onExpandedChanged: (expanded) =>
+                          GetIt.I<SettingsRepository>().setSidebarExpanded(expanded: expanded),
+                      child: PostinoSnackbarHost(
+                        child: PostinoFadeThrough(
+                          transitionKey: list,
+                          child: PostinoListDetailLayout(
+                            listWidth: _width,
+                            onListWidthChanged: (w) {
+                              _width = w;
+                              unawaited(GetIt.I<SettingsRepository>().setListWidth(w));
+                            },
+                            resizeLabel: context.t.listWidth.label,
+                            resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
+                            list: switch ((accountId, labelId)) {
+                              (final a?, draftLabelId) => postaDraftsView(a, selected: detail, cursor: _cursor),
+                              (final a?, sentLabelId) => postaSentView(a, selected: open, cursor: _cursor),
+                              (final a?, final l?) => postaLabelView(a, l, selected: open, cursor: _cursor),
+                              (final a?, null) => postaAccountView(a, selected: open, cursor: _cursor),
+                              _ => postaUnifiedView(selected: open, cursor: _cursor),
+                            },
+                            detail: draft != null
+                                ? postaComposerView(draft.$1, draft.$2, onClose: back, onQueued: queued)
+                                : open == null
+                                ? null
+                                : postaConversationView(
+                                    open.$1,
+                                    open.$2,
+                                    onBack: back,
+                                    cursor: _cursor,
+                                    onOpenDraft: (id) => openDraft(open.$1, id),
+                                  ),
+                            detailKey: detail,
+                            empty: Builder(
+                              builder: (context) => PostinoEmptyState(
+                                title: context.t.conversazione.selectTitle,
+                                body: context.t.conversazione.selectBody,
+                                icon: PostinoIcons.inbox,
+                              ),
                             ),
+                            onClose: back,
                           ),
-                          onClose: back,
                         ),
                       ),
                     ),
                   ),
-                ),
+          ),
         ),
       ),
     );

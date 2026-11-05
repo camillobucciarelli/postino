@@ -76,6 +76,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$bozze$it bozze = Translations$bozze$it.internal(_root);
 	late final Translations$inviati$it inviati = Translations$inviati$it.internal(_root);
 	late final Translations$impostazioni$it impostazioni = Translations$impostazioni$it.internal(_root);
+	late final Translations$segnalazione$it segnalazione = Translations$segnalazione$it.internal(_root);
 	late final Translations$tray$it tray = Translations$tray$it.internal(_root);
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
@@ -547,6 +548,36 @@ class Translations$impostazioni$it {
 	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
 }
 
+// Path: segnalazione
+class Translations$segnalazione$it {
+	Translations$segnalazione$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Segnala un problema'
+	String get action => 'Segnala un problema';
+
+	/// it: 'Problema in Postino'
+	String get subject => 'Problema in Postino';
+
+	/// it: 'Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.'
+	String get intro => 'Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.';
+
+	/// it: 'Postino si è chiuso in modo imprevisto'
+	String get crashTitle => 'Postino si è chiuso in modo imprevisto';
+
+	/// it: 'Vuoi segnalare il problema? Si apre una bozza con il log degli errori: la rileggi e decidi tu se inviarla.'
+	String get crashBody => 'Vuoi segnalare il problema? Si apre una bozza con il log degli errori: la rileggi e decidi tu se inviarla.';
+
+	/// it: 'Segnala'
+	String get crashConfirm => 'Segnala';
+
+	/// it: 'Non ora'
+	String get crashDismiss => 'Non ora';
+}
+
 // Path: tray
 class Translations$tray$it {
 	Translations$tray$it.internal(this._root);
@@ -900,6 +931,13 @@ extension on Translations {
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'segnalazione.action' => 'Segnala un problema',
+			'segnalazione.subject' => 'Problema in Postino',
+			'segnalazione.intro' => 'Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.',
+			'segnalazione.crashTitle' => 'Postino si è chiuso in modo imprevisto',
+			'segnalazione.crashBody' => 'Vuoi segnalare il problema? Si apre una bozza con il log degli errori: la rileggi e decidi tu se inviarla.',
+			'segnalazione.crashConfirm' => 'Segnala',
+			'segnalazione.crashDismiss' => 'Non ora',
 			'tray.open' => 'Apri Postino',
 			'tray.quit' => 'Esci',
 			'selettoreEtichette.button' => 'Etichette',

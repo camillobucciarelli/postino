@@ -139,3 +139,11 @@ final class const WrongAccountFailure(
   /// Crea il fallimento con l'indirizzo [expected] atteso.
   this;
 }
+
+/// Drive refused the file of the Impostazioni di Postino for lack of the `drive.appdata` scope: only the
+/// incremental consent fixes it. Not an [AuthFailure]: the Account's mail still works and it never becomes
+/// Da ricollegare.
+final class const DriveScopeFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}

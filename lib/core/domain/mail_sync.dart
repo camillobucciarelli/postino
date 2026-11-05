@@ -59,4 +59,11 @@ abstract interface class MailSync() {
   /// Puts the Etichetta [labelId] on the message (with [add] false, takes it off): here at once, on the Provider
   /// now or when back online (ADR 0008). Completes offline too, the intent stays queued.
   Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add});
+
+  /// [setLabel] on every message of a Conversazione: all queued, then a single replay.
+  Future<void> setConversationLabel(String accountId, Iterable<String> messageIds, String labelId, {required bool add});
+
+  /// Brings the whole Conversazione here (the sync window leaves older messages out) without reading it:
+  /// before putting an Etichetta on all of it. [Err] offline or on a failed fetch.
+  Future<Result<void>> completeConversation(String accountId, String conversationId);
 }

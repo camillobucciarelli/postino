@@ -34,7 +34,7 @@ class SyncEngine(
   final NewMailNotifier _newMail,
   final ErrorLog _log,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log);
+  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
   late final _drafts = DraftOpener(_store, _outboxStore);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
@@ -45,8 +45,10 @@ class SyncEngine(
     _log,
     account: _account,
     flushOutbox: flushOutbox,
-    pause: (id, until) => _pausedUntil[id] = until,
+    pause: _pauseAccount,
   );
+
+  void _pauseAccount(String id, DateTime until) => _pausedUntil[id] = until;
 
   final _subs = <StreamSubscription<Object?>>[];
   final _signals = <String, StreamSubscription<ChangeSignal>>{};
@@ -111,7 +113,7 @@ class SyncEngine(
     final fetched = await _serial(accountId, () async {
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      final fetched = await provider.fetchConversation(conversationId);
+      final fetched = await _fetchConversation(accountId, provider, conversationId);
       if (fetched case Ok(:final value)) {
         await _store.applyPage(accountId, value, const {});
         await _store.markConversationRead(accountId, conversationId);
@@ -207,11 +209,38 @@ class SyncEngine(
   }
 
   @override
-  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) async {
-    await _store.queueLabel(accountId, messageId, labelId, add: add);
+  Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) =>
+      setConversationLabel(accountId, [messageId], labelId, add: add);
+
+  @override
+  Future<void> setConversationLabel(
+    String accountId,
+    Iterable<String> messageIds,
+    String labelId, {
+    required bool add,
+  }) async {
+    await _store.queueLabels(accountId, messageIds, labelId, add: add);
+    // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
     if (await _activeAccount(accountId) case final account?) {
       await _serial(accountId, () => _replay(accountId, providerFor(account)));
     }
+  }
+
+  @override
+  Future<Result<void>> completeConversation(String accountId, String conversationId) async {
+    final account = await _account(accountId);
+    if (account == null) return const Err(NotFoundFailure());
+    final provider = providerFor(account);
+    // Unlike openConversation it does not mark the Conversazione read.
+    final fetched = await _serial(accountId, () async {
+      final fetched = await _fetchConversation(accountId, provider, conversationId);
+      if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
+      return fetched;
+    });
+    return switch (fetched) {
+      Ok() => const Ok(null),
+      Err(:final failure) => Err(failure),
+    };
   }
 
   Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
@@ -238,6 +267,8 @@ class SyncEngine(
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
+    // The replay may have just paused it (a rate-limited Etichetta): no send before the deadline.
+    if (_paused(accountId)) return;
     await _outbox.sendDue(accountId, provider);
   }
 
@@ -283,6 +314,14 @@ class SyncEngine(
     });
   }
 
+  /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
+  Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
+    if (_paused(id)) return Err(RateLimitFailure(retryAfter: _pausedUntil[id]));
+    final fetched = await provider.fetchConversation(conversationId);
+    if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _pauseAccount(id, retryAfter);
+    return fetched;
+  }
+
   /// True while the Provider's pause holds; a lapsed pause is forgotten.
   bool _paused(String id) {
     if (_pausedUntil[id] case final until?) {
@@ -326,7 +365,7 @@ class SyncEngine(
         debugPrint('[sync] $accountId: failed, $failure');
         _log.failure('sync $accountId', failure);
         if (failure case RateLimitFailure(:final retryAfter?)) {
-          _pausedUntil[accountId] = retryAfter;
+          _pauseAccount(accountId, retryAfter);
           debugPrint('[sync] $accountId: paused until $retryAfter');
         }
         // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.

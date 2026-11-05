@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/domain/launch_at_login_use_case.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'escape_to_go_back.dart';
 
 /// The Impostazioni del dispositivo (spec #28, story 98): so far the avvio al login, on desktop (#38).
 /// Esc and the back arrow call [onBack]; routing is the caller's.
@@ -58,26 +58,21 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
   Widget build(BuildContext context) {
     final t = context.t.impostazioni;
     final enabled = _enabled;
-    // The screen's root holds its shortcuts (docs/agents/struttura-codice.md): Esc goes back, from anywhere in it.
-    return CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): widget.onBack},
-      // Focus inside, so Esc works before anything was clicked.
-      child: FocusScope(
-        autofocus: true,
-        child: PostinoSinglePaneLayout(
-          appBar: PostinoAppBar(title: t.device, onBack: widget.onBack),
-          body: ListView(
-            children: [
-              if (_launchAtLogin.supported)
-                PostinoSwitchRow(
-                  key: const ValueKey('launch-at-login'),
-                  title: t.launchAtLogin,
-                  description: _failed ? t.launchAtLoginFailed : t.launchAtLoginBody,
-                  value: enabled ?? false,
-                  onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
-                ),
-            ],
-          ),
+    return EscapeToGoBack(
+      onBack: widget.onBack,
+      child: PostinoSinglePaneLayout(
+        appBar: PostinoAppBar(title: t.device, onBack: widget.onBack),
+        body: ListView(
+          children: [
+            if (_launchAtLogin.supported)
+              PostinoSwitchRow(
+                key: const ValueKey('launch-at-login'),
+                title: t.launchAtLogin,
+                description: _failed ? t.launchAtLoginFailed : t.launchAtLoginBody,
+                value: enabled ?? false,
+                onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
+              ),
+          ],
         ),
       ),
     );

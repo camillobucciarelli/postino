@@ -675,6 +675,36 @@ void main() {
     },
   );
 
+  test(
+    'a RateLimitFailure of an Etichetta in the replay stops it: no Bozza upload nor send until the deadline',
+    () async {
+      a.deliver(msg('1'));
+      await engine.syncAll();
+      // Offline: the Etichetta, the Bozza and the message wait in the queue, the send due.
+      a.goOffline();
+      await engine.send('a', _message(id));
+      await engine.saveDraft('a', _message('<d@example.com>'));
+      await engine.setLabel('a', '1', 'Label_12', add: true);
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      final (labels, drafts, sends) = (a.labelCalls.length, a.draftCalls.length, a.sendCalls);
+
+      a
+        ..goOnline()
+        ..setLabelFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+      await engine.flushDrafts('a');
+      expect(a.labelCalls, hasLength(labels + 1));
+      expect(a.draftCalls, hasLength(drafts));
+      expect(a.sendCalls, sends);
+
+      a.setLabelFailure = null;
+      h.clock.advance(const Duration(minutes: 5));
+      await engine.flushDrafts('a');
+      expect(a.sent.map((s) => s.$1), [id]);
+      expect(a.draftCalls.map((c) => c.$1), contains('<d@example.com>'));
+    },
+  );
+
   test('a queued message does not upload its Bozza: the send goes at 10 s without a draft PUT', () async {
     engine.start();
     addTearDown(engine.stop);

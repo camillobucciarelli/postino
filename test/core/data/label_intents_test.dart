@@ -166,6 +166,63 @@ void main() {
     expect(await queued(), hasLength(2));
   });
 
+  test('a Conversazione\'s Etichetta replays once for all its messages; a rate limit pauses the Account', () async {
+    a
+      ..deliver(msg('2'))
+      ..deliver(msg('3'));
+    await engine.syncAll();
+    a.setLabelFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.setConversationLabel('a', ['1', '2', '3'], _viaggi, add: true);
+    expect(a.labelCalls, hasLength(1));
+    expect(await queued(), hasLength(3));
+    // Paused: the next change is queued without calling the Provider again.
+    await engine.setLabel('a', '1', _lavoro.id, add: true);
+    expect(a.labelCalls, hasLength(1));
+  });
+
+  test('completeConversation brings the older messages and does not read the Conversazione', () async {
+    a.deliverOutsideWindow(msg('old', conversationId: 't-1'));
+    await engine.completeConversation('a', 't-1');
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+    expect(c.map((m) => m.message.id), containsAll(['1', 'old']));
+    expect(c.every((m) => !m.message.isRead), isTrue);
+  });
+
+  test('while the Provider\'s pause holds, completeConversation and openConversation do not ask the Provider; '
+      'the Etichetta goes on the local messages', () async {
+    a
+      ..deliverOutsideWindow(msg('old', conversationId: 't-1'))
+      ..rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.syncAll();
+    a.rateLimit(on: false);
+
+    expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+    expect(await engine.openConversation('a', 't-1'), isA<Err<void>>());
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+    // The Provider would have brought the older message.
+    expect(c.map((m) => m.message.id), ['1']);
+
+    await engine.setConversationLabel('a', ['1'], _viaggi, add: true);
+    expect(await here('1'), contains(_viaggi));
+    expect(a.labelCalls, isEmpty);
+  });
+
+  test(
+    'a rate limit on the fetch of a Conversazione pauses the Account: the next fetch does not ask the Provider',
+    () async {
+      a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+      expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+      a
+        ..rateLimit(on: false)
+        ..deliverOutsideWindow(msg('old', conversationId: 't-1'));
+
+      expect(await engine.completeConversation('a', 't-1'), isA<Err<void>>());
+      expect(await engine.openConversation('a', 't-1'), isA<Err<void>>());
+      final c = await getIt<InboxRepository>().watchConversation('a', 't-1').first;
+      expect(c.map((m) => m.message.id), ['1']);
+    },
+  );
+
   test('while the Provider\'s pause holds: done here, queued, the Provider not called', () async {
     a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
     await engine.syncAll();
@@ -184,10 +241,64 @@ void main() {
     expect(a.labelCalls, isEmpty);
   });
 
+  test(
+    'a Conversazione\'s Etichetta is one batch: its messages show it all or none; on then off at once ends off',
+    () async {
+      final ids = [for (var i = 0; i < 50; i++) 'c$i'];
+      for (final id in ids) {
+        a.deliver(msg(id, conversationId: 't-big'));
+      }
+      await engine.syncAll();
+      a.goOffline();
+      Future<List<Message>> conversation() async => [
+        for (final m in await getIt<InboxRepository>().watchConversation('a', 't-big').first) m.message,
+      ];
+
+      final adding = engine.setConversationLabel('a', ids, _viaggi, add: true);
+      // As the picker does: the removal goes to the messages that show the Etichetta now.
+      late List<Message> shown;
+      do {
+        shown = await conversation();
+      } while (!shown.any((m) => m.labelIds.contains(_viaggi)));
+      expect(shown.where((m) => !m.labelIds.contains(_viaggi)), isEmpty);
+      final removing = engine.setConversationLabel(
+        'a',
+        [
+          for (final m in shown)
+            if (m.labelIds.contains(_viaggi)) m.id,
+        ],
+        _viaggi,
+        add: false,
+      );
+      await Future.wait([adding, removing]);
+
+      expect((await conversation()).where((m) => m.labelIds.contains(_viaggi)), isEmpty);
+      final intents = (await queued()).where((i) => i.labelId == _viaggi);
+      expect(intents, hasLength(50));
+      expect(intents.every((i) => !i.added), isTrue);
+    },
+  );
+
+  test('two batches called one after the other apply in that order', () async {
+    final ids = [for (var i = 0; i < 50; i++) 'c$i'];
+    for (final id in ids) {
+      a.deliver(msg(id, conversationId: 't-big'));
+    }
+    await engine.syncAll();
+    a.goOffline();
+    await Future.wait([
+      engine.setConversationLabel('a', ids, _viaggi, add: true),
+      engine.setConversationLabel('a', ids, _viaggi, add: false),
+    ]);
+    final c = await getIt<InboxRepository>().watchConversation('a', 't-big').first;
+    expect(c.where((m) => m.message.labelIds.contains(_viaggi)), isEmpty);
+    expect((await queued()).where((i) => i.labelId == _viaggi).every((i) => !i.added), isTrue);
+  });
+
   test('an intent replaced while the replay ran stays: only the replayed value leaves', () async {
     final store = getIt<MailStore>();
-    await store.queueLabel('a', '1', _viaggi, add: true);
-    await store.queueLabel('a', '1', _viaggi, add: false);
+    await store.queueLabels('a', ['1'], _viaggi, add: true);
+    await store.queueLabels('a', ['1'], _viaggi, add: false);
     await store.labelDone('a', '1', _viaggi, added: true);
     expect((await queued()).map((i) => i.added), [false]);
   });

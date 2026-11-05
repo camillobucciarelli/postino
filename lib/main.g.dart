@@ -4,36 +4,46 @@ part of 'main.dart';
 
 List<RouteEntity> get routes => [
   RouteEntity(key: '/impostazioni', uri: Uri.parse('/impostazioni'), routeBuilder: b0Builder),
-  RouteEntity(key: '/posta', uri: Uri.parse('/posta'), routeBuilder: b1Builder),
+  RouteEntity(
+    key: '/impostazioni/[accountId]/etichette',
+    uri: Uri.parse('/impostazioni/[accountId]/etichette'),
+    routeBuilder: b1Builder,
+  ),
+  RouteEntity(key: '/impostazioni/dispositivo', uri: Uri.parse('/impostazioni/dispositivo'), routeBuilder: b2Builder),
+  RouteEntity(key: '/posta', uri: Uri.parse('/posta'), routeBuilder: b3Builder),
   RouteEntity(
     key: '/posta/[accountId]/bozza/[messageId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/bozza/[messageId]'),
-    routeBuilder: b2Builder,
+    routeBuilder: b4Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]/conversazione/[conversationId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/conversazione/[conversationId]'),
-    routeBuilder: b3Builder,
+    routeBuilder: b5Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]/etichetta/[labelId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/etichetta/[labelId]'),
-    routeBuilder: b4Builder,
+    routeBuilder: b6Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]'),
-    routeBuilder: b5Builder,
+    routeBuilder: b7Builder,
   ),
 ];
 
 const routePaths = (
   path: '/',
-  impostazioni: '/impostazioni',
+  impostazioni: (
+    path: '/impostazioni',
+    $accountId: (path: '/impostazioni/[accountId]', etichette: '/impostazioni/[accountId]/etichette'),
+    dispositivo: '/impostazioni/dispositivo',
+  ),
   posta: (
     path: '/posta',
     $accountId: (

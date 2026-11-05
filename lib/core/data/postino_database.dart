@@ -19,6 +19,7 @@ import 'daos/intents_dao.dart';
 import 'daos/labels_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/outbox_dao.dart';
+import 'daos/postino_settings_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
@@ -30,6 +31,7 @@ import 'tables/labels_table.dart';
 import 'tables/message_labels_table.dart';
 import 'tables/messages_table.dart';
 import 'tables/outbox_table.dart';
+import 'tables/postino_settings_table.dart';
 import 'tables/sync_cursors_table.dart';
 import 'tables/trusted_senders_table.dart';
 
@@ -50,6 +52,7 @@ part 'postino_database.g.dart';
     DeviceSettings,
     Drafts,
     Outbox,
+    PostinoSettings,
   ],
   daos: [
     AccountsDao,
@@ -61,6 +64,7 @@ part 'postino_database.g.dart';
     DeviceSettingsDao,
     DraftsDao,
     OutboxDao,
+    PostinoSettingsDao,
   ],
 )
 class PostinoDatabase(super.e) extends _$PostinoDatabase {
@@ -122,7 +126,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -187,6 +191,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
       if (from < 13) await m.createTable(outbox);
       if (from < 14) await m.createTable(labelIntents);
+      if (from < 15) await m.createTable(postinoSettings);
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

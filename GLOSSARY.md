@@ -102,7 +102,7 @@ L'assegnazione, decisa sul dispositivo, di un'Etichetta automatica a un messaggi
 _Avoid_: Classificazione, smistamento automatico, filtro intelligente, categoria
 
 **Etichetta automatica**:
-Un'Etichetta per cui l'utente ha attivato l'Etichettatura automatica, con una descrizione facoltativa che ne spiega il significato.
+Un'Etichetta per cui l'utente ha attivato l'Etichettatura automatica, con una descrizione facoltativa che ne spiega il significato. Non è una Regola: non ha una condizione esplicita e non la applica il Provider; la configurazione (attiva, descrizione) è un'Impostazione di Postino.
 _Avoid_: Categoria
 
 ### Sicurezza

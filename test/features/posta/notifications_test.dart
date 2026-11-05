@@ -135,7 +135,7 @@ void main() {
       await tester.tap(find.text('Primo'));
       await tester.pumpAndSettle();
 
-      unawaited(Routefly.push<void>(routePaths.impostazioni));
+      unawaited(Routefly.push<void>(routePaths.impostazioni.path));
       await tester.pumpAndSettle();
       gmail.deliver(msg('a2', conversationId: 't-a'));
       await tester.pumpAndSettle();

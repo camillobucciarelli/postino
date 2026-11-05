@@ -13,6 +13,7 @@ enum PostaAction() {
   reply,
   replyAll,
   forward,
+  labels,
 }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
@@ -37,6 +38,7 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyR, PostaAction.reply),
   PostaShortcut(LogicalKeyboardKey.keyA, PostaAction.replyAll),
   PostaShortcut(LogicalKeyboardKey.keyF, PostaAction.forward),
+  PostaShortcut(LogicalKeyboardKey.keyL, PostaAction.labels),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -55,6 +57,9 @@ class ListCursor() {
   VoidCallback? reply;
   VoidCallback? replyAll;
   VoidCallback? forward;
+
+  /// Opens the picker of the Etichette of the open Conversazione (`l`, #107): the Conversazione plugs itself in.
+  VoidCallback? labels;
 }
 
 class const PostaIntent(final PostaShortcut shortcut) extends Intent {}
@@ -116,6 +121,8 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
         cursor.replyAll?.call();
       case PostaAction.forward:
         cursor.forward?.call();
+      case PostaAction.labels:
+        cursor.labels?.call();
     }
     return null;
   }

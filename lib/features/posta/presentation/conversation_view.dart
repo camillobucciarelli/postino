@@ -15,10 +15,12 @@ import '../../../core/domain/trusted_senders_repository.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/conversation_label_intents.dart';
 import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_body.dart';
+import 'conversation_labels.dart';
 import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
 
@@ -73,6 +75,23 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
 
+  /// The «Etichette» button: the picker anchors to it and gives it the focus back (`l` opens it too).
+  final _labelsKey = GlobalKey();
+  final _labelsFocus = FocusNode(debugLabel: 'Etichette');
+
+  void _openLabels() {
+    final anchor = _labelsKey.currentContext;
+    if (anchor == null) return;
+    unawaited(
+      openLabelPicker(
+        anchor,
+        accountId: widget.accountId,
+        conversationId: widget.conversationId,
+        returnFocus: _labelsFocus,
+      ),
+    );
+  }
+
   @override
   late final ConversationKey conversationKey = (accountId: widget.accountId, conversationId: widget.conversationId);
 
@@ -82,7 +101,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     widget.cursor
       ?..reply = _reply
       ..replyAll = _replyAll
-      ..forward = _forward;
+      ..forward = _forward
+      ..labels = _openLabels;
     _subs
       ..add(GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).listen(_onMessages))
       ..add(GetIt.I<InboxRepository>().watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)))
@@ -124,9 +144,12 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
   void _open() {
     _hydrationFailed = false;
     unawaited(
-      _sync.openConversation(widget.accountId, widget.conversationId).then((r) {
-        if (r is Err) _hydrationFailed = true;
-      }),
+      // The opening brings the older messages: an Etichetta action taken meanwhile reaches them too.
+      GetIt.I<ConversationLabelIntents>()
+          .fetch(conversationKey, () => _sync.openConversation(widget.accountId, widget.conversationId))
+          .then((r) {
+            if (r is Err) _hydrationFailed = true;
+          }),
     );
   }
 
@@ -186,11 +209,13 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
       if (cursor.reply == _reply) cursor.reply = null;
       if (cursor.replyAll == _replyAll) cursor.replyAll = null;
       if (cursor.forward == _forward) cursor.forward = null;
+      if (cursor.labels == _openLabels) cursor.labels = null;
     }
     for (final s in _subs) {
       unawaited(s.cancel());
     }
     _attachments.dispose();
+    _labelsFocus.dispose();
     super.dispose();
   }
 
@@ -201,13 +226,24 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     final t = context.t.conversazione;
     final messages = _messages;
     final a = _account;
+    final ready = messages != null && messages.isNotEmpty && a != null;
     return PostinoSinglePaneLayout(
       // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
       appBar: PostinoAppBar(
         title: '',
         onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
+        actions: [
+          if (ready)
+            PostinoIconButton(
+              key: _labelsKey,
+              icon: PostinoIcons.tag,
+              label: context.t.selettoreEtichette.button,
+              focusNode: _labelsFocus,
+              onPressed: _openLabels,
+            ),
+        ],
       ),
-      body: messages == null || messages.isEmpty || a == null
+      body: !ready
           ? const SizedBox.shrink()
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -224,6 +260,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
                     onToggle: _toggle,
                     onFetchBody: _fetchBody,
                     onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
+                    onRemoveLabel: (label) =>
+                        removeConversationLabel(context, conversationKey, [for (final m in messages) m.message], label),
                   ),
                 ),
                 // Under the thread, always in view: on the last message (ADR 0014: r, a, f).

@@ -191,7 +191,7 @@ void main() {
     expect(await db.select(db.syncCursors).get(), isEmpty);
   });
 
-  test('v16 keeps the Impostazioni di Postino, newer than any copy elsewhere and to upload', () async {
+  test('v16 keeps the Impostazioni di Postino to upload, but older than any copy elsewhere', () async {
     final raw = sqlite3.openInMemory();
     // A current database taken back to the v15 shape: the voci with only key and value.
     final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
@@ -202,13 +202,13 @@ void main() {
       ..execute('CREATE TABLE postino_settings (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
       ..execute("INSERT INTO postino_settings VALUES ('auto_labels/a1', '{}')")
       ..execute('PRAGMA user_version = 15');
-    final before = DateTime.now().millisecondsSinceEpoch;
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
     expect(await db.postinoSettingsDao.read('auto_labels/a1'), '{}');
     final row = await db.select(db.postinoSettings).getSingle();
-    expect((row.dirty, row.deleted, row.updatedAt >= before), (true, false, true));
+    // updatedAt 0: a second device migrating later never overwrites what another device already synced.
+    expect((row.dirty, row.deleted, row.updatedAt), (true, false, 0));
     expect(raw.select('PRAGMA user_version').first.values.first, 16);
   });
 

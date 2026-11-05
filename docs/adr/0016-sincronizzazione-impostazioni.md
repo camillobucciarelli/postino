@@ -13,7 +13,7 @@ Le Impostazioni di Postino si sincronizzano in un solo file, `postino-settings.j
 - Un file con `schemaVersion` maggiore di quella supportata si legge (le voci che si decodificano) ma non si sovrascrive mai: le voci locali restano da caricare finché l'app non si aggiorna.
 - Un file che non si riesce a leggere non si sovrascrive.
 
-**Unione.** Per ogni chiave vince `updatedAt` maggiore, a parità il `deviceId` maggiore (un id casuale stabile del dispositivo, in `device_settings`). I tombstone partecipano come le altre voci: scrivere null non cancella la riga ma lascia un tombstone, così una copia più vecchia non resuscita la voce. Una scrittura locale non va mai indietro nel tempo rispetto alla copia che sostituisce.
+**Unione.** Per ogni chiave vince `updatedAt` maggiore, a parità il `deviceId` maggiore (un id casuale stabile del dispositivo, in `device_settings`). I tombstone partecipano come le altre voci: scrivere null non cancella la riga ma lascia un tombstone, così una copia più vecchia non resuscita la voce. Una scrittura locale non va mai indietro nel tempo rispetto alla copia che sostituisce. Le voci scritte prima della sincronizzazione (migrazione allo schema 16 del database) hanno `updatedAt` 0 e restano da caricare: entrano nel file solo se manca la voce, e non sovrascrivono mai una copia già sincronizzata da un altro dispositivo.
 
 **Elenco chiuso.** Entrano nel file solo le voci con un prefisso dell'elenco (oggi `auto_labels/`); le Impostazioni del dispositivo mai. Le voci fuori elenco scritte da un Postino più nuovo restano nel file ma non si applicano in locale.
 

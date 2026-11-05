@@ -174,7 +174,8 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       if (from < 15) await m.createTable(postinoSettings);
       // From v14 the table was just created above, already with them.
       if (from == 15) {
-        // The voci written before the sync are newer than any copy elsewhere, and still to upload.
+        // The voci written before the sync are still to upload, but older than any copy elsewhere (updatedAt 0):
+        // a device migrating later must never overwrite what another device already synced.
         // ponytail: no device id for them yet; the next write of the voce stamps it.
         await m.alterTable(
           TableMigration(
@@ -186,7 +187,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
               postinoSettings.dirty,
             ],
             columnTransformer: {
-              postinoSettings.updatedAt: Constant(DateTime.now().millisecondsSinceEpoch),
+              postinoSettings.updatedAt: const Constant(0),
               postinoSettings.deviceId: const Constant(''),
               postinoSettings.dirty: const Constant(true),
             },

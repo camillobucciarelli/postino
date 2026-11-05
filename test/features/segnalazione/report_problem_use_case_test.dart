@@ -48,7 +48,8 @@ void main() {
     await h.addAccount('a1');
     final draft = await getIt<ReportProblemUseCase>().start(subject: 'S', intro: 'I');
     final m = await _saved(draft!);
-    expect(m.body, contains('…'));
+    // Cut at a line start: the first line left starts an entry (its timestamp).
+    expect(m.body, contains('<pre>…2026-'));
     expect(m.body, endsWith('FINE</pre>'));
     expect(m.body.length, lessThan(ReportProblemUseCase.maxBodyChars + 200));
   });

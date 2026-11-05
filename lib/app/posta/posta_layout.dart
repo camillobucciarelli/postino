@@ -48,7 +48,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
   @override
   void initState() {
     super.initState();
-    _cursor.reportProblem = () => unawaited(reportProblem());
+    _cursor.reportProblem = reportProblem;
   }
 
   @override
@@ -85,8 +85,9 @@ class _PostaLayoutState() extends State<PostaLayout> {
 
     // One shell above the content: only the content is replaced on navigation.
     final shell = CrashReportPrompt(
-      onReport: () => unawaited(reportProblem()),
+      onReport: reportProblem,
       child: OnboardingGate(
+        onReportProblem: reportProblem,
         child: ModelReadyNotifier(
           child: FutureBuilder<(bool?, double?)>(
             future: _saved,

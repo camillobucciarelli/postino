@@ -18,6 +18,7 @@ import 'fake_google_consent.dart';
 import 'fake_mail_provider.dart';
 import 'fake_notifications.dart';
 import 'fake_platform.dart';
+import 'fake_report_sharer.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, keychain, clock, network,
 /// links, Save As, report sharing, background sender, avvio al login, notifications and file system; the error log is the real

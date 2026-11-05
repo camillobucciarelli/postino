@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/app/report_problem.dart';
 import 'package:postino/features/segnalazione/domain/problem_report_config.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -24,6 +25,21 @@ void main() {
     expect(text, contains('boom'));
     expect(name, problemReportFileName);
     expect(subject, 'Problema in Postino');
+  });
+
+  testWidgets('the onboarding has the action too, for who has no Account', (tester) async {
+    await start(tester, account: false);
+    await tester.tap(find.text('Segnala un problema'));
+    await tester.runAsync(pumpEventQueue);
+    expect(h.sharer.shared, hasLength(1));
+  });
+
+  testWidgets('a key held down starts one report, not one per repeat', (tester) async {
+    await start(tester, account: false);
+    reportProblem();
+    reportProblem();
+    await tester.runAsync(pumpEventQueue);
+    expect(h.sharer.shared, hasLength(1));
   });
 
   testWidgets('the drawer has the action too', (tester) async {

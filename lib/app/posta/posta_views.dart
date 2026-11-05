@@ -169,7 +169,7 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
   onOpenSent: (id) =>
       _openFromPosta(routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': id, 'labelId': sentLabelId})),
   onOpenSettings: () => unawaited(Routefly.push<void>(routePaths.impostazioni.path)),
-  onReportProblem: () => unawaited(reportProblem()),
+  onReportProblem: reportProblem,
 );
 
 void _openFromPosta(String path) => Routefly.navigate(path);

@@ -28,7 +28,7 @@ import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
-import 'package:postino/core/data/report_sharer.dart' as _i220;
+import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/simulated_model_download.dart' as _i29;
 import 'package:postino/core/data/simulated_network_type.dart' as _i614;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
@@ -75,10 +75,10 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
-    final reportSharerModule = _$ReportSharerModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final modelModule = _$ModelModule();
     final errorLogModule = _$ErrorLogModule();
+    final reportSharerModule = _$ReportSharerModule();
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
@@ -99,11 +99,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
-    await gh.singletonAsync<_i325.ReportSharer>(
-      () => reportSharerModule.reportSharer(),
-      registerFor: {_prod},
-      preResolve: true,
-    );
     gh.lazySingleton<_i462.LaunchAtLogin>(
       () => launchAtLoginModule.launchAtLogin(),
       registerFor: {_prod},
@@ -149,6 +144,11 @@ extension GetItInjectableX on _i174.GetIt {
     );
     await gh.singletonAsync<_i346.ErrorLog>(
       () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
+      registerFor: {_prod},
+      preResolve: true,
+    );
+    await gh.singletonAsync<_i325.ReportSharer>(
+      () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
       registerFor: {_prod},
       preResolve: true,
     );
@@ -258,13 +258,13 @@ class _$AttachmentModule extends _i524.AttachmentModule {}
 
 class _$HttpModule extends _i524.HttpModule {}
 
-class _$ReportSharerModule extends _i220.ReportSharerModule {}
-
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 
 class _$ModelModule extends _i260.ModelModule {}
 
 class _$ErrorLogModule extends _i907.ErrorLogModule {}
+
+class _$ReportSharerModule extends _i439.ReportSharerModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
 

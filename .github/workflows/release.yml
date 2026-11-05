@@ -206,12 +206,15 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+        run: |
+          # versionCode grows with the version (build_number.sh), as the macOS build number; pubspec's "+1" is fixed.
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
       - name: Delete the upload keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/upload-keystore.p12"
-      - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256"
+      - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256" "$(tool/release/build_number.sh "$VERSION")" "$VERSION"
       - name: Upload the APK to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

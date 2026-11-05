@@ -49,3 +49,6 @@ app.*.map.json
 
 # Local agent memory (never commit)
 .remember/
+
+# Firma locale macOS (#76)
+macos/Runner/Configs/Local.xcconfig

@@ -35,6 +35,24 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
         }
       });
 
+  /// True when the message has an Etichetta dell'utente: one of the Account's labels (system ones are not there).
+  Future<bool> hasUserLabel(String accountId, String messageId) async =>
+      await customSelect(
+        'SELECT 1 FROM message_labels ml JOIN labels l ON l.account_id = ml.account_id AND l.id = ml.label_id '
+        'WHERE ml.account_id = ?1 AND ml.message_id = ?2 LIMIT 1',
+        variables: [Variable(accountId), Variable(messageId)],
+      ).getSingleOrNull() !=
+      null;
+
+  /// The Etichettatura automatica (#109) puts [labelId] on the message as [queueLabels] does, unless the message
+  /// has an Etichetta dell'utente or is gone: checked in the same transaction, so one the user put on after the
+  /// classification wins. False when skipped.
+  Future<bool> queueAutoLabel(String accountId, String messageId, String labelId) => transaction(() async {
+    if (await hasUserLabel(accountId, messageId) || await _messageMissing(accountId, messageId)) return false;
+    await queueLabels(accountId, [messageId], labelId, add: true);
+    return true;
+  });
+
   /// The intent reached the Provider as [added]; one changed meanwhile stays.
   Future<int> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
       (delete(labelIntents)..where(

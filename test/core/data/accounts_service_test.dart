@@ -240,6 +240,20 @@ void _driveTests() {
       expect((await getIt<MailStore>().accounts()).single.status, AccountStatus.attivo);
     });
 
+    test('an Account removed during the Drive consent is not found and gets no credentials', () async {
+      final h = await connected();
+      final gate = Completer<void>();
+      h.consent.gate = gate.future;
+      final grant = getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com');
+      await pumpEventQueue();
+      await h.keychain.delete('oauth:gmail:ada@gmail.com');
+      await getIt<PostinoDatabase>().accountsDao.remove('gmail:ada@gmail.com');
+      gate.complete();
+
+      expect(((await grant) as Err).failure, isA<NotFoundFailure>());
+      expect(h.keychain.values.keys, isNot(contains('oauth:gmail:ada@gmail.com')));
+    });
+
     test('an unknown Account is not found, and Drive is not asked', () async {
       final h = await connected();
       final r = await getIt<AccountsRepository>().grantDriveAccess('gmail:nobody@gmail.com');

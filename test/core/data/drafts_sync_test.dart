@@ -1,5 +1,7 @@
 // Bozze (#35): local save on every edit, the Provider hears it after the debounce or at once on leaving,
 // nothing is lost offline or while Da ricollegare, and what was sent or deleted elsewhere is dropped in silence.
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -214,6 +216,23 @@ void main() {
     await pumpEventQueue();
     expect(a.draftCalls, [(id, true)]);
   });
+
+  test(
+    'openDraft of a Bozza whose Account is removed during the body download is not found, and keeps nothing',
+    () async {
+      a.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));
+      await engine.syncAll();
+      final hold = a.holdBody = Completer<void>();
+      final opening = engine.openDraft('a', '<y@example.com>');
+      await pumpEventQueue();
+      await GetIt.I<PostinoDatabase>().accountsDao.remove('a');
+      a.holdBody = null;
+      hold.complete();
+
+      expect((await opening as Err).failure, isA<NotFoundFailure>());
+      expect(await GetIt.I<PostinoDatabase>().select(GetIt.I<PostinoDatabase>().drafts).get(), isEmpty);
+    },
+  );
 
   test('openDraft of a plain-text Bozza keeps its line breaks and paragraphs, escaped', () async {
     a.deliverDraft(_draft('<y@example.com>'));

@@ -107,7 +107,11 @@ class AccountsSettingsMirror(
         final id = row.key.substring(accountsSettingPrefix.length);
         final local = here[id];
         if (row.deleted) {
-          if (local == null) continue;
+          if (local == null) {
+            // Removed here already (or never here): the sync cannot run on it.
+            if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
+            continue;
+          }
           // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the
           // other devices never see the removal. The markClean of the upload changes the row, and the pass comes again.
           // ponytail: a file this Postino cannot write (a newer one) holds the removal until Postino is updated.

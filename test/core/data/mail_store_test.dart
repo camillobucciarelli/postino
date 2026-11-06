@@ -39,6 +39,12 @@ void main() {
     }
   });
 
+  test('the outbox of a removed Account is empty, not an error', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    expect(await MailStore(db).watchOutbox('a').first, isEmpty);
+  });
+
   test('sender name, To, Cc and labels are stored and read back in the Conversazione', () async {
     final store = await _store();
     await store.applySync(

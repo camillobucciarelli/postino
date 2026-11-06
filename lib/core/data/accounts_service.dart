@@ -92,8 +92,12 @@ class AccountsService(
         return Err(failure);
       case Ok(:final value):
         if (normalizedAddress(value.address) != account.address) return Err(WrongAccountFailure(account.address));
-        await GmailTokens.of(value).write(_keychain, account.id);
-        return const Ok(null);
+        // Under the lock, the Account checked again: one removed during the consent gets no credentials.
+        return _lock.run(() async {
+          if (!await _db.accountsDao.exists(account.id)) return const Err(NotFoundFailure());
+          await GmailTokens.of(value).write(_keychain, account.id);
+          return const Ok(null);
+        });
     }
   }
 }

@@ -113,6 +113,13 @@ void main() {
     expect(await settings.settingsSyncAccount(), isNull);
   });
 
+  test('a tombstone for the sync Account already gone here turns the sync off', () async {
+    await settings.setSettingsSyncAccount(_ada.id);
+    await db.postinoSettingsDao.tombstoneAccount(_ada.id, at: _t);
+    await mirror.reconcile();
+    expect(await settings.settingsSyncAccount(), isNull);
+  });
+
   test('removing another Account leaves the sync on', () async {
     await db.accountsDao.upsert(_bob);
     await settings.setSettingsSyncAccount('gmail:other@gmail.com');

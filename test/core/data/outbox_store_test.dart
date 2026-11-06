@@ -23,6 +23,13 @@ Future<OutboxStore> _store() async {
 }
 
 void main() {
+  test('the local Bozza of an Account removed meanwhile reads as none', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    await db.draftsDao.save('a', _msg, updatedAt: 5);
+    expect(await OutboxStore(db).localDraft('a', 'm1'), isNull);
+  });
+
   test('a Bozza adopted after its Account was removed is not kept', () async {
     final db = PostinoDatabase.inMemory();
     addTearDown(db.close);

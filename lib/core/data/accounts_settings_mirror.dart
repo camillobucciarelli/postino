@@ -34,14 +34,23 @@ class AccountsSettingsMirror(
   Future<void>? _running;
   var _again = false;
 
-  /// Aligns the Accounts now, then at each change of their voci or of the Account the sync runs on.
+  /// Aligns the Accounts now, then at each change of their voci, of the Account the sync runs on or of a status.
   void start() {
     if (_subs.isNotEmpty) return;
     _subs
       ..add(_db.postinoSettingsDao.watchPrefixWithTombstones(accountsSettingPrefix).listen((_) => _kick()))
       // A removal held for the sync Account goes on once another one, or none, is chosen. Its first value is the
       // choice at start, which the first pass of the voci already reads.
-      ..add(_settings.watchSettingsSyncAccount().distinct().skip(1).listen((_) => _kick()));
+      ..add(_settings.watchSettingsSyncAccount().distinct().skip(1).listen((_) => _kick()))
+      // A held removal goes on too once the sync Account turns da ricollegare (it can no longer upload).
+      ..add(
+        _db.accountsDao
+            .watchByPosition()
+            .map((rows) => [for (final r in rows) '${r.id} ${r.status.name}'].join('\n'))
+            .distinct()
+            .skip(1)
+            .listen((_) => _kick()),
+      );
   }
 
   /// Stops the triggers and the retry, and waits for the pass in flight.

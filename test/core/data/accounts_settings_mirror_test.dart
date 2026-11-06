@@ -152,6 +152,21 @@ void main() {
     expect(await accounts(), isEmpty);
   });
 
+  test('the held removal of the sync Account goes on when it turns da ricollegare', () async {
+    mirror.start();
+    await db.accountsDao.upsert(_ada);
+    await settings.setSettingsSyncAccount(_ada.id);
+    await db.postinoSettingsDao.tombstoneAccount(_ada.id, at: _t);
+    await pumpEventQueue();
+    expect(await accounts(), [_ada]);
+
+    // A mail sync met an AuthFailure.
+    await db.accountsDao.setStatus(_ada.id, AccountStatus.daRicollegare);
+    await pumpEventQueue();
+    expect(await accounts(), isEmpty);
+    expect(await settings.settingsSyncAccount(), isNull);
+  });
+
   test('a sync Account da ricollegare, which cannot upload, goes at once; its tombstone stays to upload', () async {
     const ada = Account(
       id: 'gmail:ada@gmail.com',

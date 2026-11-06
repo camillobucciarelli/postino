@@ -18,13 +18,16 @@
   "etichette": "Etichette",
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",
-    "connectGmail": "Collega Gmail"
+    "connectGmail": "Collega Gmail",
+    "connectIcloud": "Collega iCloud",
+    "connectImap": "Altro IMAP"
   },
   "daRicollegare": {
     "title": "$name è da ricollegare",
     "message": "Google non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.",
     "signIn": "Accedi",
-    "status": "Da ricollegare"
+    "status": "Da ricollegare",
+    "passwordMessage": "Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi."
   },
   "connect": {
     "title": "Collegamento non riuscito",
@@ -32,7 +35,8 @@
     "offline": "Nessuna connessione: riprova quando sei online.",
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
     "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
-    "failed": "Qualcosa è andato storto: riprova."
+    "failed": "Qualcosa è andato storto: riprova.",
+    "alreadyConnected": "Questo indirizzo è già collegato come un altro Account."
   },
   "offline": {
     "title": "Sei offline",
@@ -303,5 +307,42 @@
     "right": "Scorrimento a destra",
     "markRead": "Segna come letto/non letto",
     "star": "Stella"
+  },
+  "passwordForm": {
+    "icloudTitle": "Collega iCloud",
+    "imapTitle": "Collega un Account IMAP",
+    "reconnectTitle": "Ricollega l'Account",
+    "address": "Indirizzo email",
+    "password": "Password",
+    "appPassword": "Password per app",
+    "icloudHelp": "iCloud chiede una password per app, non la password del tuo Apple Account.",
+    "appleLink": "Come creare una password per app",
+    "manual": "Impostazione manuale dei server",
+    "imapServer": "Server IMAP (posta in arrivo)",
+    "smtpServer": "Server SMTP (posta in uscita)",
+    "host": "Host",
+    "port": "Porta",
+    "ssl": "SSL/TLS",
+    "starttls": "STARTTLS",
+    "connect": "Collega",
+    "cancel": "Annulla",
+    "connecting": "Verifica della connessione in corso",
+    "invalidAddress": "Scrivi un indirizzo email completo.",
+    "emptyPassword": "Scrivi la password.",
+    "invalidHost": "Scrivi l'host del server.",
+    "invalidPort": "Scrivi una porta tra 1 e 65535.",
+    "authRejected": "Il server ha rifiutato indirizzo o password.",
+    "serverNotFound": "Non ho trovato i server di questo indirizzo: inseriscili qui sotto.",
+    "unreachable": "Server non raggiungibile: controlla la connessione, l'host e la porta.",
+    "alreadyConnected": "Questo Account è già collegato.",
+    "useGmail": "Per un indirizzo Gmail usa «Collega Gmail»."
+  },
+  "accounts": {
+    "section": "Account",
+    "add": "Aggiungi Account",
+    "gmail": "Gmail",
+    "icloud": "iCloud",
+    "imap": "IMAP",
+    "microsoft": "Microsoft"
   }
 }

@@ -84,6 +84,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
 	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 	late final Translations$scorrimento$it scorrimento = Translations$scorrimento$it.internal(_root);
+	late final Translations$passwordForm$it passwordForm = Translations$passwordForm$it.internal(_root);
+	late final Translations$accounts$it accounts = Translations$accounts$it.internal(_root);
 }
 
 // Path: sidebar
@@ -129,6 +131,12 @@ class Translations$onboarding$it {
 
 	/// it: 'Collega Gmail'
 	String get connectGmail => 'Collega Gmail';
+
+	/// it: 'Collega iCloud'
+	String get connectIcloud => 'Collega iCloud';
+
+	/// it: 'Altro IMAP'
+	String get connectImap => 'Altro IMAP';
 }
 
 // Path: daRicollegare
@@ -150,6 +158,9 @@ class Translations$daRicollegare$it {
 
 	/// it: 'Da ricollegare'
 	String get status => 'Da ricollegare';
+
+	/// it: 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.'
+	String get passwordMessage => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.';
 }
 
 // Path: connect
@@ -177,6 +188,9 @@ class Translations$connect$it {
 
 	/// it: 'Qualcosa è andato storto: riprova.'
 	String get failed => 'Qualcosa è andato storto: riprova.';
+
+	/// it: 'Questo indirizzo è già collegato come un altro Account.'
+	String get alreadyConnected => 'Questo indirizzo è già collegato come un altro Account.';
 }
 
 // Path: offline
@@ -925,6 +939,123 @@ class Translations$scorrimento$it {
 	String get star => 'Stella';
 }
 
+// Path: passwordForm
+class Translations$passwordForm$it {
+	Translations$passwordForm$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Collega iCloud'
+	String get icloudTitle => 'Collega iCloud';
+
+	/// it: 'Collega un Account IMAP'
+	String get imapTitle => 'Collega un Account IMAP';
+
+	/// it: 'Ricollega l'Account'
+	String get reconnectTitle => 'Ricollega l\'Account';
+
+	/// it: 'Indirizzo email'
+	String get address => 'Indirizzo email';
+
+	/// it: 'Password'
+	String get password => 'Password';
+
+	/// it: 'Password per app'
+	String get appPassword => 'Password per app';
+
+	/// it: 'iCloud chiede una password per app, non la password del tuo Apple Account.'
+	String get icloudHelp => 'iCloud chiede una password per app, non la password del tuo Apple Account.';
+
+	/// it: 'Come creare una password per app'
+	String get appleLink => 'Come creare una password per app';
+
+	/// it: 'Impostazione manuale dei server'
+	String get manual => 'Impostazione manuale dei server';
+
+	/// it: 'Server IMAP (posta in arrivo)'
+	String get imapServer => 'Server IMAP (posta in arrivo)';
+
+	/// it: 'Server SMTP (posta in uscita)'
+	String get smtpServer => 'Server SMTP (posta in uscita)';
+
+	/// it: 'Host'
+	String get host => 'Host';
+
+	/// it: 'Porta'
+	String get port => 'Porta';
+
+	/// it: 'SSL/TLS'
+	String get ssl => 'SSL/TLS';
+
+	/// it: 'STARTTLS'
+	String get starttls => 'STARTTLS';
+
+	/// it: 'Collega'
+	String get connect => 'Collega';
+
+	/// it: 'Annulla'
+	String get cancel => 'Annulla';
+
+	/// it: 'Verifica della connessione in corso'
+	String get connecting => 'Verifica della connessione in corso';
+
+	/// it: 'Scrivi un indirizzo email completo.'
+	String get invalidAddress => 'Scrivi un indirizzo email completo.';
+
+	/// it: 'Scrivi la password.'
+	String get emptyPassword => 'Scrivi la password.';
+
+	/// it: 'Scrivi l'host del server.'
+	String get invalidHost => 'Scrivi l\'host del server.';
+
+	/// it: 'Scrivi una porta tra 1 e 65535.'
+	String get invalidPort => 'Scrivi una porta tra 1 e 65535.';
+
+	/// it: 'Il server ha rifiutato indirizzo o password.'
+	String get authRejected => 'Il server ha rifiutato indirizzo o password.';
+
+	/// it: 'Non ho trovato i server di questo indirizzo: inseriscili qui sotto.'
+	String get serverNotFound => 'Non ho trovato i server di questo indirizzo: inseriscili qui sotto.';
+
+	/// it: 'Server non raggiungibile: controlla la connessione, l'host e la porta.'
+	String get unreachable => 'Server non raggiungibile: controlla la connessione, l\'host e la porta.';
+
+	/// it: 'Questo Account è già collegato.'
+	String get alreadyConnected => 'Questo Account è già collegato.';
+
+	/// it: 'Per un indirizzo Gmail usa «Collega Gmail».'
+	String get useGmail => 'Per un indirizzo Gmail usa «Collega Gmail».';
+}
+
+// Path: accounts
+class Translations$accounts$it {
+	Translations$accounts$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Account'
+	String get section => 'Account';
+
+	/// it: 'Aggiungi Account'
+	String get add => 'Aggiungi Account';
+
+	/// it: 'Gmail'
+	String get gmail => 'Gmail';
+
+	/// it: 'iCloud'
+	String get icloud => 'iCloud';
+
+	/// it: 'IMAP'
+	String get imap => 'IMAP';
+
+	/// it: 'Microsoft'
+	String get microsoft => 'Microsoft';
+}
+
 // Path: etichetteAutomatiche.model
 class Translations$etichetteAutomatiche$model$it {
 	Translations$etichetteAutomatiche$model$it.internal(this._root);
@@ -1038,16 +1169,20 @@ extension on Translations {
 			'etichette' => 'Etichette',
 			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',
+			'onboarding.connectIcloud' => 'Collega iCloud',
+			'onboarding.connectImap' => 'Altro IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} è da ricollegare',
 			'daRicollegare.message' => 'Google non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'daRicollegare.signIn' => 'Accedi',
 			'daRicollegare.status' => 'Da ricollegare',
+			'daRicollegare.passwordMessage' => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'connect.title' => 'Collegamento non riuscito',
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
+			'connect.alreadyConnected' => 'Questo indirizzo è già collegato come un altro Account.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
 			'list.loading' => 'Caricamento dei messaggi',
@@ -1271,6 +1406,39 @@ extension on Translations {
 			'scorrimento.right' => 'Scorrimento a destra',
 			'scorrimento.markRead' => 'Segna come letto/non letto',
 			'scorrimento.star' => 'Stella',
+			'passwordForm.icloudTitle' => 'Collega iCloud',
+			'passwordForm.imapTitle' => 'Collega un Account IMAP',
+			'passwordForm.reconnectTitle' => 'Ricollega l\'Account',
+			'passwordForm.address' => 'Indirizzo email',
+			'passwordForm.password' => 'Password',
+			'passwordForm.appPassword' => 'Password per app',
+			'passwordForm.icloudHelp' => 'iCloud chiede una password per app, non la password del tuo Apple Account.',
+			'passwordForm.appleLink' => 'Come creare una password per app',
+			'passwordForm.manual' => 'Impostazione manuale dei server',
+			'passwordForm.imapServer' => 'Server IMAP (posta in arrivo)',
+			'passwordForm.smtpServer' => 'Server SMTP (posta in uscita)',
+			'passwordForm.host' => 'Host',
+			'passwordForm.port' => 'Porta',
+			'passwordForm.ssl' => 'SSL/TLS',
+			'passwordForm.starttls' => 'STARTTLS',
+			'passwordForm.connect' => 'Collega',
+			'passwordForm.cancel' => 'Annulla',
+			'passwordForm.connecting' => 'Verifica della connessione in corso',
+			'passwordForm.invalidAddress' => 'Scrivi un indirizzo email completo.',
+			'passwordForm.emptyPassword' => 'Scrivi la password.',
+			'passwordForm.invalidHost' => 'Scrivi l\'host del server.',
+			'passwordForm.invalidPort' => 'Scrivi una porta tra 1 e 65535.',
+			'passwordForm.authRejected' => 'Il server ha rifiutato indirizzo o password.',
+			'passwordForm.serverNotFound' => 'Non ho trovato i server di questo indirizzo: inseriscili qui sotto.',
+			'passwordForm.unreachable' => 'Server non raggiungibile: controlla la connessione, l\'host e la porta.',
+			'passwordForm.alreadyConnected' => 'Questo Account è già collegato.',
+			'passwordForm.useGmail' => 'Per un indirizzo Gmail usa «Collega Gmail».',
+			'accounts.section' => 'Account',
+			'accounts.add' => 'Aggiungi Account',
+			'accounts.gmail' => 'Gmail',
+			'accounts.icloud' => 'iCloud',
+			'accounts.imap' => 'IMAP',
+			'accounts.microsoft' => 'Microsoft',
 			_ => null,
 		};
 	}

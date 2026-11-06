@@ -119,7 +119,8 @@ void main() {
   testWidgets('from the keyboard: Enter opens, the ticked row has the focus, Enter picks, Esc closes', (tester) async {
     final h = await _start(tester);
     h.consent.address = 'a1@example.com';
-    // Focus order of the screen: the back arrow, then the entry.
+    // Focus order of the screen: the back arrow, «Aggiungi Account», then the entry.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();

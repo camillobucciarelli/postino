@@ -1,0 +1,4 @@
+tags:
+  # Test contro il server GreenMail locale (test/support/greenmail_server.dart): avviano un processo Java.
+  imap:
+    timeout: 2x

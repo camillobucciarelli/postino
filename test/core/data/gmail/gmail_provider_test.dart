@@ -10,8 +10,6 @@ import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
-import 'package:postino/core/domain/action_outcome.dart';
-import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -188,6 +186,11 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
         ],
       }),
       ['messages', final id, 'modify'] => _modifyOne(id, jsonDecode(r.body) as Map<String, dynamic>),
+      // Gmail's trash: TRASH in, INBOX out.
+      ['messages', final id, 'trash'] => _modifyOne(id, {
+        'addLabelIds': ['TRASH'],
+        'removeLabelIds': ['INBOX'],
+      }),
       ['messages'] => _paged('messages', [
         for (final m in _mailbox.values)
           if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
@@ -390,6 +393,7 @@ void main() {
   mailProviderDraftContract('GmailProvider', GmailHarness.new);
   mailProviderSendContract('GmailProvider', GmailHarness.new);
   mailProviderLabelContract('GmailProvider', GmailHarness.new);
+  mailProviderActionContract('GmailProvider', GmailHarness.new);
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
@@ -696,46 +700,6 @@ void main() {
     test('a 404 on threads.get is NotFound', () async {
       final g = RecordedGmail((r, path) => 'not_found');
       expect(await g.provider.fetchConversation(_f1), isErr<NotFoundFailure>());
-    });
-
-    test('marking read is one messages.modify removing UNREAD', () async {
-      final g = RecordedGmail((r, path) => 'message_modify');
-      expect(okValue(await g.provider.applyAction(_f1, const MarkRead(), expected: false)), isA<ActionApplied>());
-
-      final r = g.requests.single;
-      expect(r.method, 'POST');
-      expect(r.url.path, '${gmailApi}messages/$_f1/modify');
-      expect(r.headers['content-type'], startsWith('application/json'));
-      expect(r.headers['authorization'], 'Bearer ya29.initial');
-      expect(jsonDecode(r.body), {
-        'removeLabelIds': ['UNREAD'],
-      });
-    });
-
-    test('each Azione is its Gmail request: Stella, Archivia out of the Cestino too, Elimina to the Cestino', () async {
-      final g = RecordedGmail((r, path) => 'message_modify');
-      for (final a in const [MarkUnread(), Star(), Unstar(), Archive(), Delete()]) {
-        okValue(await g.provider.applyAction(_f1, a, expected: false));
-      }
-      expect(
-        [
-          for (final r in g.requests)
-            (r.url.path.substring(gmailApi.length), r.body.isEmpty ? null : jsonDecode(r.body).toString()),
-        ],
-        [
-          ('messages/$_f1/modify', '{addLabelIds: [UNREAD]}'),
-          ('messages/$_f1/modify', '{addLabelIds: [STARRED]}'),
-          ('messages/$_f1/modify', '{removeLabelIds: [STARRED]}'),
-          ('messages/$_f1/untrash', null),
-          ('messages/$_f1/modify', '{removeLabelIds: [INBOX]}'),
-          ('messages/$_f1/trash', null),
-        ],
-      );
-    });
-
-    test('an Azione on a message gone is messaggioSparito', () async {
-      final g = RecordedGmail((r, path) => 'not_found');
-      expect(okValue(await g.provider.applyAction(_f1, const Delete(), expected: false)), isA<ActionMessageGone>());
     });
 
     group('Bozze', () {

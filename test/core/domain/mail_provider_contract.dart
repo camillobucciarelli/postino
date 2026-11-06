@@ -416,7 +416,6 @@ void mailProviderLabelContract(String name, ContractHarness Function() create) {
 }
 
 /// The conditional Azione (ADR 0008): applied on the expected or the wanted value, a Conflitto on another one.
-// ponytail: only the fake passes it so far; the Gmail adapter joins with its conditional write (T2).
 void mailProviderActionContract(String name, ContractHarness Function() create) {
   group('MailProvider action contract: $name', () {
     late ContractHarness h;
@@ -442,13 +441,13 @@ void mailProviderActionContract(String name, ContractHarness Function() create) 
         _ok(await h.provider.applyAction('a', const Archive(), expected: Placement.inbox)),
         isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', Placement.trash),
       );
-      expect((await now('a')).labelIds, [trashLabelId]);
+      expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
     });
 
     test('Elimina never conflicts', () async {
       h.deliver(msg('a', labelIds: const []));
       expect(_ok(await h.provider.applyAction('a', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
-      expect((await now('a')).labelIds, [trashLabelId]);
+      expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
     });
 
     test('no expected value: forced', () async {

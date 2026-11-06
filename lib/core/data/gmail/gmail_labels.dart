@@ -33,6 +33,10 @@ class GmailLabels(final GmailHttp _gmail) {
   Future<Label?> _named(String name) async =>
       (await list()).where((l) => l.name.toLowerCase() == name.toLowerCase()).firstOrNull;
 
+  /// Removes all of [labelIds] in one `messages.modify`.
+  Future<void> remove(String messageId, List<String> labelIds) =>
+      _gmail.send('POST', 'messages/$messageId/modify', body: {'removeLabelIds': labelIds});
+
   /// Idempotent on Gmail: adding a label the message has, or removing one it lacks, changes nothing.
   Future<void> set(String messageId, String labelId, {required bool add}) => _gmail.send(
     'POST',

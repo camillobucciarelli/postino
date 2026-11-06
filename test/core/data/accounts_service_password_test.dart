@@ -105,6 +105,18 @@ void main() {
     expect(_failure(again), isA<AlreadyConnectedFailure>());
   });
 
+  test('a mailbox already connected with Gmail is not added again over IMAP', () async {
+    h.providerFor('gmail:ada@company.com');
+    h.consent.address = 'ada@company.com';
+    await accounts.connectGmail();
+    h.discovery.servers['ada@company.com'] = _fastmail;
+
+    final r = await accounts.connectWithPassword('ada@company.com', 'app-password-1');
+
+    expect(_failure(r), isA<AlreadyConnectedFailure>());
+    expect(h.connection.tested, isEmpty);
+  });
+
   test('reconnecting a Da ricollegare Account keeps its servers and brings it back to attivo', () async {
     h.connection.password = 'old';
     await accounts.connectWithPassword('ada@example.org', 'old', servers: _fastmail);

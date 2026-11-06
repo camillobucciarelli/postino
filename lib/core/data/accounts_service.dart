@@ -54,8 +54,12 @@ class AccountsService(
     final provider = passwordProviderFor(normalized);
     if (provider == null) return const Err(UseGmailFailure());
     final id = '${provider.kind.name}:$normalized';
-    final known = (await _store.accounts()).where((a) => a.id == id).firstOrNull;
-    if (known?.status == AccountStatus.attivo) return const Err(AlreadyConnectedFailure());
+    final all = await _store.accounts();
+    // By address, not id: a Google Workspace mailbox already connected with Gmail is the same mailbox over IMAP.
+    if (all.any((a) => a.address == normalized && (a.id != id || a.status == AccountStatus.attivo))) {
+      return const Err(AlreadyConnectedFailure());
+    }
+    final known = all.where((a) => a.id == id).firstOrNull;
     // A reconnection keeps the servers the Account was saved with.
     final saved = known == null ? null : (await PasswordCredentials.read(_keychain, id))?.servers;
     final chosen = servers ?? saved ?? provider.preset ?? await _discovery.discover(normalized);

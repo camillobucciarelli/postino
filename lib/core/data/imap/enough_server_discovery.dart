@@ -1,4 +1,5 @@
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/mail_servers.dart';
@@ -9,17 +10,23 @@ import '../../domain/server_discovery.dart';
 class EnoughServerDiscovery() implements ServerDiscovery {
   @override
   Future<ServerSettings?> discover(String address) async {
-    final ClientConfig? config;
     try {
-      config = await Discover.discover(address);
+      return discoveredServers(await Discover.discover(address));
     } on Object {
       return null;
     }
-    final imap = _server(config?.preferredIncomingImapServer);
-    final smtp = _server(config?.preferredOutgoingSmtpServer);
-    if (imap == null || smtp == null) return null;
-    return ServerSettings(imap: imap, smtp: smtp);
   }
+}
+
+/// The servers of a discovered [config]; null when it lacks one, or came over plain HTTP: whoever answered there
+/// could point the password to their own host, so the user enters the servers by hand.
+@visibleForTesting
+ServerSettings? discoveredServers(ClientConfig? config) {
+  if (config == null || config.isFromInsecureSource) return null;
+  final imap = _server(config.preferredIncomingImapServer);
+  final smtp = _server(config.preferredOutgoingSmtpServer);
+  if (imap == null || smtp == null) return null;
+  return ServerSettings(imap: imap, smtp: smtp);
 }
 
 /// A discovered server; a plain-text one is asked to upgrade with STARTTLS, since Postino never sends the password

@@ -29,8 +29,10 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
   @override
   Future<LocalDraft?> localDraft(String accountId, String messageId) async {
     final r = await _db.draftsDao.byId(accountId, messageId);
-    if (r == null) return null;
-    return (draft: _draft(r, await addressOf(_db, accountId)), pending: r.pending, updatedAt: r.updatedAt);
+    final from = await addressOf(_db, accountId);
+    // The Account removed meanwhile: no Bozza.
+    if (r == null || from == null) return null;
+    return (draft: _draft(r, from), pending: r.pending, updatedAt: r.updatedAt);
   }
 
   @override
@@ -47,6 +49,8 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
   @override
   Future<List<PendingDraft>> pendingDrafts(String accountId) async {
     final from = await addressOf(_db, accountId);
+    // The Account removed meanwhile: nothing to upload.
+    if (from == null) return [];
     return [
       for (final r in await _db.draftsDao.pending(accountId))
         (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt, expected: r.expected),
@@ -177,6 +181,8 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
     // A sync may have cached the sent message already (a foreground sync beside the worker's send): that copy is
     // the Provider's, labels included, and the local one must not replace it.
     if (await _db.messagesDao.exists(accountId, providerId)) return;
+    final from = await addressOf(_db, accountId);
+    if (from == null) return;
     // Stored as a page: the cursor stays as it is.
     await _db.messagesDao.applySync(
       accountId,
@@ -190,7 +196,7 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
             labelIds: const [sentLabelId],
             isRead: true,
             isStarred: false,
-            from: await addressOf(_db, accountId),
+            from: from,
             to: lines(r.recipients),
             cc: lines(r.cc),
             bcc: lines(r.bcc),

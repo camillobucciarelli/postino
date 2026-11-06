@@ -225,26 +225,29 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   @override
   Stream<List<OutgoingEntry>> watchOutbox(String accountId) => Stream.fromFuture(addressOf(_db, accountId)).asyncExpand(
-    (from) => _db.outboxDao
-        .watch(accountId)
-        .map(
-          (rows) => [
-            for (final r in rows)
-              OutgoingEntry(
-                message: OutgoingMessage(
-                  messageId: r.messageId,
-                  from: from,
-                  to: lines(r.recipients),
-                  cc: lines(r.cc),
-                  bcc: lines(r.bcc),
-                  subject: r.subject,
-                  body: r.body,
-                ),
-                sendAfter: r.sendAfter,
-                failed: r.failed,
+    // The Account removed meanwhile: an empty outbox.
+    (from) => from == null
+        ? Stream.value(const <OutgoingEntry>[])
+        : _db.outboxDao
+              .watch(accountId)
+              .map(
+                (rows) => [
+                  for (final r in rows)
+                    OutgoingEntry(
+                      message: OutgoingMessage(
+                        messageId: r.messageId,
+                        from: from,
+                        to: lines(r.recipients),
+                        cc: lines(r.cc),
+                        bcc: lines(r.bcc),
+                        subject: r.subject,
+                        body: r.body,
+                      ),
+                      sendAfter: r.sendAfter,
+                      failed: r.failed,
+                    ),
+                ],
               ),
-          ],
-        ),
   );
 
   @override

@@ -820,6 +820,9 @@ class Translations$azioni$it {
 
 	/// it: 'Annulla'
 	String get undo => 'Annulla';
+
+	/// it: 'Altre azioni'
+	String get more => 'Altre azioni';
 }
 
 // Path: etichetteAutomatiche.model
@@ -1097,6 +1100,7 @@ extension on Translations {
 			'azioni.deleted' => 'Conversazione spostata nel Cestino',
 			'azioni.labelApplied' => ({required Object name}) => 'Etichetta «${name}» applicata',
 			'azioni.undo' => 'Annulla',
+			'azioni.more' => 'Altre azioni',
 			_ => null,
 		};
 	}

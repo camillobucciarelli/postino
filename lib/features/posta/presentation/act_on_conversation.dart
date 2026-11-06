@@ -35,6 +35,18 @@ UndoOffer? actOnConversation(BuildContext context, String accountId, List<String
   return offerUndo(context, accountId, messageIds, action, message: message, queued: queued);
 }
 
+/// The latest letto/non letto chosen per Conversazione (accountId, conversationId), by token: a non letto waiting
+/// for an opening gives way to a choice made since.
+// ponytail: one small entry per Conversazione ever marked, for the app's life.
+final _readChoices = <(String, String), Object>{};
+
+/// Notes a letto/non letto on the Conversazione; the token tells later whether it is still the latest.
+Object chooseRead(String accountId, String conversationId) => _readChoices[(accountId, conversationId)] = Object();
+
+/// Whether [choice] is still the latest letto/non letto on the Conversazione.
+bool isLatestRead(String accountId, String conversationId, Object choice) =>
+    identical(_readChoices[(accountId, conversationId)], choice);
+
 /// [actOnConversation] from the list, where the Conversazione may never have been opened: on its messages here at
 /// once, then on the older ones the sync window left out once they are fetched, unless Annulla came first.
 Future<void> actOnStoredConversation(
@@ -43,6 +55,7 @@ Future<void> actOnStoredConversation(
   String conversationId,
   MailAction action,
 ) async {
+  if (action is MarkRead || action is MarkUnread) chooseRead(accountId, conversationId);
   final ids = await idsHere(accountId, conversationId);
   if (!context.mounted) return;
   final offer = actOnConversation(context, accountId, ids, action);

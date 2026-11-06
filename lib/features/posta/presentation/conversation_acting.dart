@@ -54,10 +54,18 @@ mixin ConversationActing on State<ConversationView> {
     final ids = [for (final m in messages) m.message.id];
     final (accountId, conversationId) = (widget.accountId, widget.conversationId);
     if (action is MarkUnread) {
-      // After the opening, on what it brought too: its read of the messages it fetched would undo this otherwise.
       final sync = GetIt.I<MailSync>();
-      unawaited(opening.then((_) async => sync.act(accountId, await idsHere(accountId, conversationId), action)));
+      final choice = chooseRead(accountId, conversationId);
+      unawaited(sync.act(accountId, ids, action));
+      // The opening reads what it fetches: after it, non letto again on all of them, unless letto came since.
+      unawaited(
+        opening.then((_) async {
+          if (!isLatestRead(accountId, conversationId, choice)) return;
+          await sync.act(accountId, await idsHere(accountId, conversationId), action);
+        }),
+      );
     } else {
+      if (action is MarkRead) chooseRead(accountId, conversationId);
       final offer = actOnConversation(context, accountId, ids, action);
       // An opening still running brings older messages: they get it too, under the same Annulla.
       unawaited(opening.then((_) => reachOlder(accountId, conversationId, ids, action, offer)));
@@ -70,13 +78,13 @@ mixin ConversationActing on State<ConversationView> {
     }
   }
 
-  /// The header buttons of the Azioni.
-  List<Widget> actionButtons(BuildContext context) => [
+  /// The Azioni as commands of the header: icon buttons while they fit, the rest in its «more» menu.
+  List<PostinoMenuItem> actionCommands(BuildContext context) => [
     for (final a in conversationActions(
       context,
       starred: _starred,
       read: shownMessages?.every((m) => m.message.isRead) ?? true,
     ))
-      PostinoIconButton(icon: a.icon, label: a.label, onPressed: () => applyAction(a.action)),
+      PostinoMenuItem(icon: a.icon, label: a.label, onPressed: () => applyAction(a.action)),
   ];
 }

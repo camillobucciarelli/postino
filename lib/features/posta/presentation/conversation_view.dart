@@ -241,8 +241,9 @@ class _ConversationViewState()
       appBar: PostinoAppBar(
         title: '',
         onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
+        commands: ready ? actionCommands(context) : const [],
+        moreLabel: context.t.azioni.more,
         actions: [
-          if (ready) ...actionButtons(context),
           if (ready)
             PostinoIconButton(
               key: _labelsKey,

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton;
+import 'package:flutter/material.dart' show MenuItemButton, Text;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/model_download.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -33,9 +35,11 @@ Future<void> _start(
   WidgetTester tester, {
   ProviderKind provider = ProviderKind.gmail,
   bool olderStarred = false,
+  double width = 1600,
+  bool? sidebarExpanded,
 }) async {
   tester.view
-    ..physicalSize = const Size(1600, 900)
+    ..physicalSize = Size(width, 900)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   h = await Harness.create();
@@ -58,6 +62,9 @@ Future<void> _start(
     ..deliver(msg('m2', conversationId: 't', subject: 'Re: Cena', date: _day(2), isRead: true))
     ..deliver(msg('o1', conversationId: 'o', subject: 'Altro', date: _day(3), isRead: true))
     ..deliver(msg('x1', conversationId: 'x', subject: 'Ultimo', date: _day(4), isRead: true));
+  if (sidebarExpanded case final expanded?) {
+    await getIt<SettingsRepository>().setSidebarExpanded(expanded: expanded);
+  }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   unawaited(Routefly.navigate(routePaths.posta.path));
@@ -335,6 +342,51 @@ void main() {
     await _expire(tester);
     expect(gmail.labelCalls.where((c) => c.$2 == 'Label_13'), isEmpty);
   });
+
+  _onMac('non letto during a slow opening, then letto on the row: the Conversazione stays read when the fetch ends', (
+    tester,
+  ) async {
+    await openSlowly(tester);
+    await _tap(tester, find.byTooltip('Segna come non letto'));
+    expect(_open('o'), findsNothing);
+    expect(_tile(tester, 'o1').unread, isTrue);
+
+    _tile(tester, 'o1').focusNode!.requestFocus();
+    await _settle(tester);
+    await _key(tester, LogicalKeyboardKey.keyI, shift: true);
+    expect(_tile(tester, 'o1').unread, isFalse);
+
+    await endFetch(tester);
+    expect(_tile(tester, 'o1').unread, isFalse);
+    final reads = [
+      for (final (id, a) in _sent)
+        if (id == 'o1' && a.attribute == readAttribute) a,
+    ];
+    expect(reads.last, const MarkRead());
+  });
+
+  _onMac(
+    'at 900 with the sidebar expanded the header keeps its room: the Azioni that do not fit are in «Altre azioni»',
+    (tester) async {
+      await _start(tester, width: 900, sidebarExpanded: true);
+      await _tap(tester, _row('o1'));
+      expect(tester.takeException(), isNull);
+      expect(find.byTooltip('Etichette'), findsOneWidget);
+
+      // Archivia keeps its button; the others wait in the menu, in order, keyboard first.
+      expect(find.byTooltip('Archivia'), findsOneWidget);
+      await _tap(tester, find.byTooltip('Altre azioni'));
+      expect(
+        [for (final e in find.byType(MenuItemButton).evaluate()) ((e.widget as MenuItemButton).child! as Text).data],
+        ['Elimina', 'Aggiungi stella', 'Segna come non letto'],
+      );
+      // The first item has the focus: Invio picks it.
+      await _key(tester, LogicalKeyboardKey.enter);
+      expect(_row('o1'), findsNothing);
+      expect(find.text('Conversazione spostata nel Cestino'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   _onMac('in Inviati Archivia never moves to a queued send: none left, the Conversazione closes and the send stays', (
     tester,

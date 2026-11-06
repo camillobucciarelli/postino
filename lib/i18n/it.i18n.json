@@ -258,6 +258,7 @@
     "archived": "Conversazione archiviata",
     "deleted": "Conversazione spostata nel Cestino",
     "labelApplied": "Etichetta «$name» applicata",
-    "undo": "Annulla"
+    "undo": "Annulla",
+    "more": "Altre azioni"
   }
 }

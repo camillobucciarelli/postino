@@ -427,6 +427,7 @@ class _Translations$azioni$en extends Translations$azioni$it {
 	@override String get deleted => 'Conversation moved to Trash';
 	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
 	@override String get undo => 'Undo';
+	@override String get more => 'More actions';
 }
 
 // Path: etichetteAutomatiche.model
@@ -672,6 +673,7 @@ extension on TranslationsEn {
 			'azioni.deleted' => 'Conversation moved to Trash',
 			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
 			'azioni.undo' => 'Undo',
+			'azioni.more' => 'More actions',
 			_ => null,
 		};
 	}

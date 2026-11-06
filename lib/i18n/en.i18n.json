@@ -258,6 +258,7 @@
     "archived": "Conversation archived",
     "deleted": "Conversation moved to Trash",
     "labelApplied": "Label “$name” applied",
-    "undo": "Undo"
+    "undo": "Undo",
+    "more": "More actions"
   }
 }

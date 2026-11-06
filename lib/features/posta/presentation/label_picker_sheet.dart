@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/label_name.dart';
+import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_notification.dart' show ConversationKey;
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
@@ -12,11 +14,13 @@ import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/conversation_label_intents.dart';
+import 'conversation_actions.dart';
 import 'conversation_labels.dart';
 
 /// The content of the picker of the Etichette of a Conversazione, read from the database: the user Etichette of
 /// the Account, ticked when on at least one of its messages. A tick applies at once to every message; a new name
-/// is created on the Provider and put on them. Removals show their snackbar under [snackbarContext].
+/// is created on the Provider and put on them. Removals show their snackbar under [snackbarContext], and so do
+/// additions on a folder Provider (#146): there applying one moves the messages.
 class const LabelPickerSheet({
   super.key,
   required final String accountId,
@@ -35,6 +39,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   late final ConversationKey _key = (accountId: widget.accountId, conversationId: widget.conversationId);
   final _intents = GetIt.I<ConversationLabelIntents>();
 
+  /// Whether the Account's Etichette are folders (#146): an addition offers Annulla there.
+  bool _folders = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +50,11 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     // leaves its older messages out. The ticks taken meanwhile reach them when it ends, the picker closed or not.
     unawaited(
       _intents.fetch(_key, () => GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId)),
+    );
+    unawaited(
+      GetIt.I<AccountsRepository>().watchAccounts().first.then(
+        (all) => _folders = all.any((a) => a.id == widget.accountId && a.provider.labelsAreFolders),
+      ),
     );
     _subs
       ..add(
@@ -68,8 +80,17 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (_selected.contains(id)) {
       removeConversationLabel(widget.snackbarContext, _key, _messages, label);
     } else {
-      _intents.add(_key, _messages, id);
+      _add(_messages, label);
     }
+  }
+
+  void _add(List<Message> messages, Label label) {
+    final folders = _folders;
+    final (:ids, :queued) = _intents.add(_key, messages, label.id, hold: folders ? PostinoMotion.undoWindow : null);
+    final at = widget.snackbarContext;
+    if (!folders || ids.isEmpty || !at.mounted) return;
+    final message = at.t.azioni.labelApplied(name: label.name);
+    offerUndo(at, widget.accountId, ids, ApplyLabel(label.id), message: message, queued: queued);
   }
 
   // ponytail: a creation refused (offline, Da ricollegare) leaves no trace; say it when the picker gets an error slot.
@@ -78,7 +99,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (r case Ok(:final value)) {
       // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
       final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
-      _intents.add(_key, [for (final m in all) m.message], value.id);
+      _add([for (final m in all) m.message], value);
     }
   }
 

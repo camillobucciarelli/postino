@@ -494,7 +494,7 @@ void main() {
   });
 
   test('the registry has no two actions on the same key', () {
-    final keys = postaShortcuts.map((s) => (s.key, s.command)).toList();
+    final keys = postaShortcuts.map((s) => s.chord).toList();
     expect(keys.toSet().length, keys.length);
     expect(postaShortcuts.map((s) => s.action).toSet(), containsAll(PostaAction.values));
   });

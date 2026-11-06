@@ -5,14 +5,16 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'conversation_actions.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
-import 'row_labels_menu.dart';
+import 'row_menu.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
@@ -88,7 +90,9 @@ class _MessageListState() extends State<MessageList> {
     _cursor = widget.selected;
     widget.cursor
       ?..move = _move
-      ..listFocused = _listFocused;
+      ..listFocused = _listFocused
+      ..leave = _leave
+      ..actOnRow = _actOnRow;
   }
 
   @override
@@ -115,7 +119,9 @@ class _MessageListState() extends State<MessageList> {
     if (cursor?.move == _move) {
       cursor!
         ..move = null
-        ..listFocused = null;
+        ..listFocused = null
+        ..leave = null
+        ..actOnRow = null;
     }
     for (final n in _nodes.values) {
       n.dispose();
@@ -199,6 +205,39 @@ class _MessageListState() extends State<MessageList> {
     }
   }
 
+  /// The open Conversazione [key] leaves the list (Archivia, Elimina): the next row opens, else the previous,
+  /// with the focus; false when there is none, or [key] is not here.
+  bool _leave((String, String) key) {
+    final next = _step(key);
+    if (next != null) widget.onOpen(next.$1, next.$2);
+    return next != null;
+  }
+
+  /// Cursor and focus from the row [key] to the next one, else the previous; null when there is none.
+  (String, String)? _step((String, String) key) {
+    final list = _list ?? const <InboxEntry>[];
+    final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
+    final to = at + 1 < list.length ? at + 1 : at - 1;
+    if (at < 0 || to < 0) return null;
+    final e = list[to];
+    final next = (e.account.id, e.message.conversationId);
+    setState(() => _cursor = next);
+    _reveal(next, to - at);
+    return next;
+  }
+
+  /// A shortcut's Azione on the focused row (no Conversazione open); Archivia and Elimina move the focus on.
+  void _actOnRow(PostaAction shortcut) {
+    final key = _cursor;
+    final e = _list?.where((e) => (e.account.id, e.message.conversationId) == key).firstOrNull;
+    // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione.
+    if (key == null || e == null || !_listFocused() || key.$2.startsWith('<')) return;
+    final action = mailActionFor(shortcut, starred: e.message.isStarred);
+    if (action == null) return;
+    unawaited(actOnStoredConversation(context, key.$1, key.$2, action));
+    if (action is Archive || action is Delete) _step(key);
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -261,11 +300,15 @@ class _MessageListState() extends State<MessageList> {
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')
                 ? tile
-                : RowLabelsMenu(
+                : RowMenu(
                     accountId: a.id,
                     messageId: m.id,
                     conversationId: m.conversationId,
                     focusNode: node,
+                    read: !unread,
+                    starred: m.isStarred,
+                    // ponytail: the last row open beside the list stays open once archived; close it if it matters.
+                    onLeave: widget.selected == key ? () => _leave(key) : null,
                     child: tile,
                   ),
           );

@@ -143,4 +143,22 @@ abstract final class PostinoIcons() {
 
   /// Chevron verso destra.
   static const chevronRight = PostinoIconData(['M9.5 6l6 6-6 6']);
+
+  /// Archivia: una scatola.
+  static const archive = PostinoIconData(['M3.5 4.5h17v4h-17z', 'M5 8.5v11h14v-11', 'M10 12.5h4']);
+
+  /// Elimina: un cestino.
+  static const trash = PostinoIconData([
+    'M4 6.5h16',
+    'M9.5 6.5V4h5v2.5',
+    'M6 6.5l1 13.5h10l1-13.5',
+    'M10 10.5v6',
+    'M14 10.5v6',
+  ]);
+
+  /// Segna come non letto: una busta chiusa.
+  static const mail = PostinoIconData(['M3.5 5.5h17v13h-17z', 'M3.5 6l8.5 7 8.5-7']);
+
+  /// Segna come letto: una busta aperta.
+  static const mailOpen = PostinoIconData(['M3.5 10l8.5-6 8.5 6v9.5h-17z', 'M3.5 10l8.5 6 8.5-6']);
 }

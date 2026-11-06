@@ -81,6 +81,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
+	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 }
 
 // Path: sidebar
@@ -782,6 +783,45 @@ class Translations$notifiche$it {
 	String get permissionLater => 'Non ora';
 }
 
+// Path: azioni
+class Translations$azioni$it {
+	Translations$azioni$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Archivia'
+	String get archive => 'Archivia';
+
+	/// it: 'Elimina'
+	String get delete => 'Elimina';
+
+	/// it: 'Aggiungi stella'
+	String get star => 'Aggiungi stella';
+
+	/// it: 'Togli stella'
+	String get unstar => 'Togli stella';
+
+	/// it: 'Segna come letto'
+	String get markRead => 'Segna come letto';
+
+	/// it: 'Segna come non letto'
+	String get markUnread => 'Segna come non letto';
+
+	/// it: 'Conversazione archiviata'
+	String get archived => 'Conversazione archiviata';
+
+	/// it: 'Conversazione spostata nel Cestino'
+	String get deleted => 'Conversazione spostata nel Cestino';
+
+	/// it: 'Etichetta «$name» applicata'
+	String labelApplied({required Object name}) => 'Etichetta «${name}» applicata';
+
+	/// it: 'Annulla'
+	String get undo => 'Annulla';
+}
+
 // Path: etichetteAutomatiche.model
 class Translations$etichetteAutomatiche$model$it {
 	Translations$etichetteAutomatiche$model$it.internal(this._root);
@@ -1047,6 +1087,16 @@ extension on Translations {
 			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
+			'azioni.archive' => 'Archivia',
+			'azioni.delete' => 'Elimina',
+			'azioni.star' => 'Aggiungi stella',
+			'azioni.unstar' => 'Togli stella',
+			'azioni.markRead' => 'Segna come letto',
+			'azioni.markUnread' => 'Segna come non letto',
+			'azioni.archived' => 'Conversazione archiviata',
+			'azioni.deleted' => 'Conversazione spostata nel Cestino',
+			'azioni.labelApplied' => ({required Object name}) => 'Etichetta «${name}» applicata',
+			'azioni.undo' => 'Annulla',
 			_ => null,
 		};
 	}

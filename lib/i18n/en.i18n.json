@@ -247,5 +247,17 @@
     "permissionBody": "Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.",
     "permissionAllow": "Continue",
     "permissionLater": "Not now"
+  },
+  "azioni": {
+    "archive": "Archive",
+    "delete": "Delete",
+    "star": "Star",
+    "unstar": "Remove star",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "archived": "Conversation archived",
+    "deleted": "Conversation moved to Trash",
+    "labelApplied": "Label “$name” applied",
+    "undo": "Undo"
   }
 }

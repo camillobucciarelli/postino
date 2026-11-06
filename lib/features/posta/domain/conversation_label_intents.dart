@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:injectable/injectable.dart';
 
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_notification.dart' show ConversationKey;
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
@@ -42,7 +43,8 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
               if (r.key == key && r.labelId == labelId) r.had.addAll(targets);
             }
           }
-          _apply(key.accountId, targets, labelId, add: add);
+          // ponytail: the older messages get it unheld, outside an Annulla still offered on a folder Provider.
+          unawaited(_apply(key.accountId, targets, labelId, add: add));
         }
       }
       return r;
@@ -56,8 +58,21 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
     }
   }
 
-  /// Puts [labelId] on the [messages] of [key] that lack it.
-  void add(ConversationKey key, Iterable<Message> messages, String labelId) => _set(key, messages, labelId, add: true);
+  /// Puts [labelId] on the [messages] of [key] that lack it; with [hold] (Annulla, a folder Provider) the Azione
+  /// waits that long before leaving the device. Returns the messages it went on and when it is queued.
+  ({List<String> ids, Future<void> queued}) add(
+    ConversationKey key,
+    Iterable<Message> messages,
+    String labelId, {
+    Duration? hold,
+  }) {
+    _fetches[key]?.desired[labelId] = true;
+    final targets = _lacking(messages, labelId, add: true);
+    return (
+      ids: [for (final m in targets) m.id],
+      queued: _apply(key.accountId, targets, labelId, add: true, hold: hold),
+    );
+  }
 
   /// Takes [labelId] off the [messages] of [key] that have it; returns the token of its Annulla ([undoRemoval]),
   /// to [forget] when that Annulla is no longer offered.
@@ -84,7 +99,7 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
       }
     }
     final targets = r.before == true ? _lacking(await _all(r.key), r.labelId, add: true) : r.had;
-    _apply(r.key.accountId, targets, r.labelId, add: true);
+    unawaited(_apply(r.key.accountId, targets, r.labelId, add: true));
   }
 
   /// The Annulla of the removal [token] is gone (expired, replaced, dismissed): the removal stands, nothing kept.
@@ -97,14 +112,24 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   List<Message> _set(ConversationKey key, Iterable<Message> messages, String labelId, {required bool add}) {
     _fetches[key]?.desired[labelId] = add;
     final targets = _lacking(messages, labelId, add: add);
-    _apply(key.accountId, targets, labelId, add: add);
+    unawaited(_apply(key.accountId, targets, labelId, add: add));
     return targets;
   }
 
   static List<Message> _lacking(Iterable<Message> messages, String labelId, {required bool add}) =>
       messages.where((m) => m.labelIds.contains(labelId) != add).toList();
 
-  /// Here at once, on the Provider through the offline queue (#105), with a single replay for all of them.
-  void _apply(String accountId, Iterable<Message> messages, String labelId, {required bool add}) =>
-      unawaited(_sync.setConversationLabel(accountId, [for (final m in messages) m.id], labelId, add: add));
+  /// Here at once, on the Provider through the offline queue (ADR 0008), with a single replay for all of them.
+  Future<void> _apply(
+    String accountId,
+    Iterable<Message> messages,
+    String labelId, {
+    required bool add,
+    Duration? hold,
+  }) => _sync.act(
+    accountId,
+    [for (final m in messages) m.id],
+    add ? ApplyLabel(labelId) : RemoveLabel(labelId),
+    hold: hold,
+  );
 }

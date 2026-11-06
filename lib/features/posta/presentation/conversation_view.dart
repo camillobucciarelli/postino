@@ -6,6 +6,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_notification.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
@@ -19,6 +20,7 @@ import '../domain/conversation_label_intents.dart';
 import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
+import 'conversation_actions.dart';
 import 'conversation_body.dart';
 import 'conversation_labels.dart';
 import 'conversation_on_screen.dart';
@@ -92,6 +94,29 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     );
   }
 
+  bool get _starred => _messages?.any((m) => m.message.isStarred) ?? false;
+
+  /// Set once non letto closes it: the messages turning unread meanwhile must not read it again.
+  bool _closing = false;
+
+  void _onShortcut(PostaAction shortcut) {
+    if (mailActionFor(shortcut, starred: _starred) case final action?) _do(action);
+  }
+
+  /// An Azione on the whole Conversazione (#146). Archivia and Elimina take it out of the list: the next one opens;
+  /// non letto closes it, or the opening would read it again.
+  void _do(MailAction action) {
+    final messages = _messages;
+    if (messages == null || messages.isEmpty) return;
+    actOnConversation(context, widget.accountId, [for (final m in messages) m.message.id], action);
+    final leaving = action is Archive || action is Delete;
+    if (leaving && (widget.cursor?.leave?.call((widget.accountId, widget.conversationId)) ?? false)) return;
+    if (leaving || action is MarkUnread) {
+      _closing = true;
+      widget.onBack();
+    }
+  }
+
   @override
   late final ConversationKey conversationKey = (accountId: widget.accountId, conversationId: widget.conversationId);
 
@@ -102,7 +127,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
       ?..reply = _reply
       ..replyAll = _replyAll
       ..forward = _forward
-      ..labels = _openLabels;
+      ..labels = _openLabels
+      ..act = _onShortcut;
     _subs
       ..add(GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).listen(_onMessages))
       ..add(GetIt.I<InboxRepository>().watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)))
@@ -130,7 +156,7 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     });
     // Only now: the expansion above saw which messages were unread. An unread one shown expanded
     // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones.
-    if (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!)) {
+    if (!_closing && (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!))) {
       _open();
     }
     for (final (:message, :body) in messages) {
@@ -210,6 +236,7 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
       if (cursor.replyAll == _replyAll) cursor.replyAll = null;
       if (cursor.forward == _forward) cursor.forward = null;
       if (cursor.labels == _openLabels) cursor.labels = null;
+      if (cursor.act == _onShortcut) cursor.act = null;
     }
     for (final s in _subs) {
       unawaited(s.cancel());
@@ -233,6 +260,13 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
         title: '',
         onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
         actions: [
+          if (ready)
+            for (final a in conversationActions(
+              context,
+              starred: _starred,
+              read: messages.every((m) => m.message.isRead),
+            ))
+              PostinoIconButton(icon: a.icon, label: a.label, onPressed: () => _do(a.action)),
           if (ready)
             PostinoIconButton(
               key: _labelsKey,

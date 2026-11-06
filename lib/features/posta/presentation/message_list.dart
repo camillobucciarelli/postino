@@ -214,12 +214,16 @@ class _MessageListState() extends State<MessageList> {
     return next != null;
   }
 
-  /// Cursor and focus from the row [key] to the next one, else the previous; null when there is none.
+  /// Cursor and focus from the row [key] to the next Conversazione, else the previous; null when there is none.
+  /// A queued Inviati row (its Conversazione is its Message-ID) is skipped: opening it cancels the send.
   (String, String)? _step((String, String) key) {
     final list = _list ?? const <InboxEntry>[];
     final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
-    final to = at + 1 < list.length ? at + 1 : at - 1;
-    if (at < 0 || to < 0) return null;
+    if (at < 0) return null;
+    bool conversation(int i) => !list[i].message.conversationId.startsWith('<');
+    final after = [for (var i = at + 1; i < list.length; i++) i].where(conversation).firstOrNull;
+    final to = after ?? [for (var i = at - 1; i >= 0; i--) i].where(conversation).firstOrNull;
+    if (to == null) return null;
     final e = list[to];
     final next = (e.account.id, e.message.conversationId);
     setState(() => _cursor = next);

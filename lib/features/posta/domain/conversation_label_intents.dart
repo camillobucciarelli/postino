@@ -7,6 +7,7 @@ import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_notification.dart' show ConversationKey;
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
+import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/result.dart';
 
 /// The actions on the Etichette of a Conversazione (#107), whoever takes them (the picker, the × of a chip) and
@@ -15,7 +16,7 @@ import '../../../core/domain/result.dart';
 /// the messages given, and when the fetch ends the desired state reaches the older messages it brought.
 /// Offline or failed, the local ones stand.
 @lazySingleton
-class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbox) {
+class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbox, final Clock _clock) {
   /// Per Conversazione being fetched: the fetches running and the desired state per Etichetta (true: on).
   final _fetches = <ConversationKey, ({int running, Map<String, bool> desired})>{};
 
@@ -23,6 +24,10 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   /// (`before`, null: none) and what it took the Etichetta off (`had`: the local messages, then the older ones the
   /// end of a fetch reached). [forget] drops one when its Annulla goes away.
   final _removals = <Object, ({ConversationKey key, String labelId, bool? before, List<Message> had})>{};
+
+  /// The held additions (a folder Provider) whose Annulla may still be offered: when it ends and the ids it takes
+  /// back, which the end of a fetch extends with the older messages it reached.
+  final _heldAdds = <(ConversationKey, String), ({DateTime until, List<String> ids})>{};
 
   /// How many removals still offer Annulla (for the tests: none is kept once its snackbar closes).
   int get openRemovals => _removals.length;
@@ -37,14 +42,22 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
       if (r is Ok<void> && desired.isNotEmpty) {
         final all = await _all(key);
         for (final MapEntry(key: labelId, value: add) in desired.entries) {
-          final targets = _lacking(all, labelId, add: add);
+          // A held addition still in its window: the older messages wait with it, under its Annulla; once each,
+          // as a second held voce over the first would survive that Annulla (two fetches ending together).
+          final held = add ? _heldAdds[(key, labelId)] : null;
+          final left = held?.until.difference(_clock.now());
+          final hold = left != null && left > Duration.zero ? left : null;
+          final targets = [
+            for (final m in _lacking(all, labelId, add: add))
+              if (hold == null || !held!.ids.contains(m.id)) m,
+          ];
           if (!add) {
             for (final r in _removals.values) {
               if (r.key == key && r.labelId == labelId) r.had.addAll(targets);
             }
           }
-          // ponytail: the older messages get it unheld, outside an Annulla still offered on a folder Provider.
-          unawaited(_apply(key.accountId, targets, labelId, add: add));
+          if (hold != null) held!.ids.addAll([for (final m in targets) m.id]);
+          unawaited(_apply(key.accountId, targets, labelId, add: add, hold: hold));
         }
       }
       return r;
@@ -67,11 +80,15 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
     Duration? hold,
   }) {
     final (:targets, :queued) = _set(key, messages, labelId, add: true, hold: hold);
-    return (ids: [for (final m in targets) m.id], queued: queued);
+    final ids = [for (final m in targets) m.id];
+    // ponytail: an entry stays until replaced or undone; it is dead once its window ends.
+    if (hold != null) _heldAdds[(key, labelId)] = (until: _clock.now().add(hold), ids: ids);
+    return (ids: ids, queued: queued);
   }
 
   /// Annulla of a held [add] (a folder Provider): a fetch still running no longer brings it to the older messages.
   void forgetAdd(ConversationKey key, String labelId) {
+    _heldAdds.remove((key, labelId));
     final desired = _fetches[key]?.desired;
     if (desired?[labelId] == true) desired!.remove(labelId);
   }

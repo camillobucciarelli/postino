@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_action.dart';
+import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/model_download.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -276,6 +277,99 @@ void main() {
     await _tap(tester, _undo);
     await _expire(tester);
     expect(_sent.where((s) => s.$1 == 'x0' || s.$1 == 'x1'), isEmpty);
+  });
+
+  // An opening held behind a slow fetch: the older message o0 arrives only when it ends.
+  Future<void> openSlowly(WidgetTester tester, {ProviderKind provider = ProviderKind.gmail}) async {
+    await _start(tester, provider: provider);
+    gmail
+      ..deliverOutsideWindow(msg('o0', conversationId: 'o', subject: 'Altro', date: _day(1), isRead: true))
+      ..holdConversation = Completer<void>();
+    await _tap(tester, _row('o1'));
+  }
+
+  Future<void> endFetch(WidgetTester tester) async {
+    gmail.holdConversation!.complete();
+    await _settle(tester);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await _settle(tester);
+  }
+
+  _onMac('Archivia while the opening is still fetching reaches the older messages it brings, held with the rest', (
+    tester,
+  ) async {
+    await openSlowly(tester);
+    await _tap(tester, find.byTooltip('Archivia'));
+    await endFetch(tester);
+    expect(_sent.where((s) => s.$2 is Archive), isEmpty);
+    await _expire(tester);
+    expect(_sent, containsAll([('o1', const Archive()), ('o0', const Archive())]));
+  });
+
+  _onMac('Annulla of an Archivia taken during the opening keeps the older messages here too', (tester) async {
+    await openSlowly(tester);
+    await _tap(tester, find.byTooltip('Archivia'));
+    await endFetch(tester);
+    await _tap(tester, _undo);
+    await _expire(tester);
+    expect(_sent.where((s) => s.$2 is Archive), isEmpty);
+  });
+
+  _onMac('non letto during the opening reaches the older messages it brings', (tester) async {
+    await openSlowly(tester);
+    await _tap(tester, find.byTooltip('Segna come non letto'));
+    await endFetch(tester);
+    expect(_sent, containsAll([('o1', const MarkUnread()), ('o0', const MarkUnread())]));
+  });
+
+  _onMac('on a folder Provider an Etichetta applied during a fetch holds the older messages too, under its Annulla', (
+    tester,
+  ) async {
+    await openSlowly(tester, provider: ProviderKind.imap);
+    await _tap(tester, find.byTooltip('Etichette'));
+    await _tap(tester, find.widgetWithText(PostinoCheckboxTile, 'Fatture'));
+    await _escape(tester);
+    await endFetch(tester);
+    expect(gmail.labelCalls.where((c) => c.$2 == 'Label_13'), isEmpty);
+    await _tap(tester, _undo);
+    await _expire(tester);
+    expect(gmail.labelCalls.where((c) => c.$2 == 'Label_13'), isEmpty);
+  });
+
+  _onMac('in Inviati Archivia never moves to a queued send: none left, the Conversazione closes and the send stays', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.deliver(msg('s1', conversationId: 's', subject: 'Inviato', date: _day(5), labelIds: const [sentLabelId]));
+    await _settle(tester);
+    h.connectivity.online = false;
+    gmail.goOffline();
+    unawaited(
+      getIt<MailSync>().send(
+        'a1',
+        const OutgoingMessage(
+          messageId: '<q1@example.com>',
+          from: 'a1@example.com',
+          to: ["ada@example.com"],
+          subject: 'In coda',
+          body: 'Ciao',
+        ),
+      ),
+    );
+    await _settle(tester);
+    unawaited(
+      Routefly.navigate(
+        routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': 'a1', 'labelId': sentLabelId}),
+      ),
+    );
+    await _settle(tester);
+    await _tap(tester, _row('s1'));
+    expect(_open('s'), findsOneWidget);
+
+    await _tap(tester, find.byTooltip('Archivia'));
+    expect(_open('s'), findsNothing);
+    expect(find.byType(PostinoComposerField), findsNothing);
+    expect(find.descendant(of: find.byType(PostinoMessageTile), matching: find.text('In coda')), findsOneWidget);
   });
 
   _onMac('a Stella on an older message stands for the Conversazione: the row offers to take it off, s takes it off', (

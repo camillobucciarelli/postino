@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/inbox_repository.dart' show ConversationMessage;
 import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../design_system/design_system.dart';
@@ -52,12 +52,15 @@ mixin ConversationActing on State<ConversationView> {
     final messages = shownMessages;
     if (messages == null || messages.isEmpty) return;
     final ids = [for (final m in messages) m.message.id];
+    final (accountId, conversationId) = (widget.accountId, widget.conversationId);
     if (action is MarkUnread) {
-      // After the opening: its read of the messages it fetched would undo this otherwise.
-      final (sync, accountId) = (GetIt.I<MailSync>(), widget.accountId);
-      unawaited(opening.then((_) => sync.act(accountId, ids, action)));
+      // After the opening, on what it brought too: its read of the messages it fetched would undo this otherwise.
+      final sync = GetIt.I<MailSync>();
+      unawaited(opening.then((_) async => sync.act(accountId, await idsHere(accountId, conversationId), action)));
     } else {
-      actOnConversation(context, widget.accountId, ids, action);
+      final offer = actOnConversation(context, accountId, ids, action);
+      // An opening still running brings older messages: they get it too, under the same Annulla.
+      unawaited(opening.then((_) => reachOlder(accountId, conversationId, ids, action, offer)));
     }
     final leaving = leavesList(action);
     if (leaving && (widget.cursor?.leave?.call((widget.accountId, widget.conversationId)) ?? false)) return;

@@ -43,17 +43,30 @@ Future<void> actOnStoredConversation(
   String conversationId,
   MailAction action,
 ) async {
-  final repo = GetIt.I<InboxRepository>();
-  final sync = GetIt.I<MailSync>();
-  Future<List<String>> here() async => [
-    for (final m in await repo.watchConversation(accountId, conversationId).first) m.message.id,
-  ];
-  final ids = await here();
+  final ids = await idsHere(accountId, conversationId);
   if (!context.mounted) return;
   final offer = actOnConversation(context, accountId, ids, action);
-  if (await sync.completeConversation(accountId, conversationId) is! Ok) return;
+  if (await GetIt.I<MailSync>().completeConversation(accountId, conversationId) is! Ok) return;
+  await reachOlder(accountId, conversationId, ids, action, offer);
+}
+
+/// The ids of the messages of the Conversazione here.
+Future<List<String>> idsHere(String accountId, String conversationId) async => [
+  for (final m in await GetIt.I<InboxRepository>().watchConversation(accountId, conversationId).first) m.message.id,
+];
+
+/// Once the whole Conversazione is here (a fetch ended): [action] on the messages [ids] lacked, unless [offer]'s
+/// Annulla came first, within what is left of its window; [ids] grows with them, so that Annulla covers them too.
+Future<void> reachOlder(
+  String accountId,
+  String conversationId,
+  List<String> ids,
+  MailAction action,
+  UndoOffer? offer,
+) async {
+  final sync = GetIt.I<MailSync>();
   final older = [
-    for (final id in await here())
+    for (final id in await idsHere(accountId, conversationId))
       if (!ids.contains(id)) id,
   ];
   if (older.isEmpty || (offer?.taken ?? false)) return;

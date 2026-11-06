@@ -45,6 +45,13 @@ void main() {
     expect((a!.color, a.position), (1, 4));
   });
 
+  test('the voci of iCloud and IMAP Accounts decode, with their accountIdOf', () {
+    for (final p in [ProviderKind.icloud, ProviderKind.imap]) {
+      final a = Account(id: accountIdOf(p, 'ada@x.org'), address: 'ada@x.org', provider: p, color: 1, position: 3);
+      expect(sameAccountSettings(decodeAccountSettings(a.id, encodeAccountSettings(a))!, a), isTrue, reason: p.name);
+    }
+  });
+
   test('a voce whose id is not provider:address is ignored; the address is normalized as connecting does', () {
     const json = '{"address":" A@B.c ","provider":"gmail","color":1,"position":0}';
     expect(decodeAccountSettings('gmail:a@b.c', json)?.address, 'a@b.c');

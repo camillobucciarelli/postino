@@ -8,9 +8,9 @@ import '../domain/account.dart';
 import '../domain/platform_services.dart';
 import '../domain/settings_repository.dart';
 import '../domain/synced_settings.dart';
+import 'account_credentials.dart';
 import 'account_settings_json.dart';
 import 'accounts_lock.dart';
-import 'gmail/gmail_tokens.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
 
@@ -121,7 +121,7 @@ class AccountsSettingsMirror(
           // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
           // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
           // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
-          await GmailTokens.delete(_keychain, id);
+          await deleteCredentials(_keychain, id);
           await _db.accountsDao.remove(id);
           // The sync ran on it: off, instead of failing in silence on an Account without credentials.
           if (id == syncAccount) await _settings.setSettingsSyncAccount(null);

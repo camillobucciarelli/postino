@@ -1,8 +1,10 @@
 // Password Accounts (#162): iCloud preset, IMAP autodiscovery or manual servers, test connection, keychain only.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/account_settings_json.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -13,6 +15,7 @@ import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/password_provider.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
@@ -62,6 +65,31 @@ void main() {
       final r = await accounts.connectWithPassword(a, 'app-password-1');
       expect((r as Ok<Account>).value.provider, ProviderKind.icloud);
     }
+  });
+
+  group('the synced voce (ADR 0016), as connectGmail writes it', () {
+    Future<PostinoSettingRow?> voce(String id) => getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/$id');
+
+    test('iCloud, with the sync off: before the sync, without servers nor password', () async {
+      await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+
+      final v = (await voce('icloud:ada@icloud.com'))!;
+      expect(jsonDecode(v.value!), {'address': 'ada@icloud.com', 'provider': 'icloud', 'color': 0, 'position': 0});
+      expect((v.updatedAt, v.deviceId, v.dirty), (0, '', true));
+      expect(decodeAccountSettings('icloud:ada@icloud.com', v.value), isNotNull);
+    });
+
+    test('IMAP, with the sync on: stamped now', () async {
+      await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:x@gmail.com');
+      h.discovery.servers['ada@fastmail.com'] = _fastmail;
+      await accounts.connectWithPassword('ada@fastmail.com', 'app-password-1');
+
+      final v = (await voce('imap:ada@fastmail.com'))!;
+      expect(jsonDecode(v.value!), {'address': 'ada@fastmail.com', 'provider': 'imap', 'color': 0, 'position': 0});
+      expect((v.updatedAt, v.dirty), (h.clock.now().millisecondsSinceEpoch, true));
+      expect(v.value, isNot(contains('imap.fastmail.com')), reason: 'no server in the voce');
+      expect(decodeAccountSettings('imap:ada@fastmail.com', v.value), isNotNull);
+    });
   });
 
   test('another address is IMAP with the discovered servers', () async {

@@ -82,6 +82,22 @@ void main() {
     expect((a.color, a.position, a.status), (6, 0, AccountStatus.attivo));
   });
 
+  test('a tombstone of an IMAP Account removes it with its password', () async {
+    const imap = Account(
+      id: 'imap:ada@example.org',
+      address: 'ada@example.org',
+      provider: ProviderKind.imap,
+      color: 0,
+      position: 0,
+    );
+    await db.accountsDao.upsert(imap);
+    await keychain.write('password:${imap.id}', '{"password":"x"}');
+    await db.postinoSettingsDao.tombstoneAccount(imap.id, at: _t);
+    await mirror.reconcile();
+    expect(await accounts(), isEmpty);
+    expect(keychain.values, isEmpty);
+  });
+
   test('a tombstone removes the Account here with its mail and its credentials', () async {
     await db.accountsDao.upsert(_ada);
     await db.customStatement("INSERT INTO labels VALUES ('${_ada.id}', 'L1', 'L1', 'etichetta')");

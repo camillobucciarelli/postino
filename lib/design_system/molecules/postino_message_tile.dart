@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_avatar.dart';
@@ -57,6 +58,9 @@ class const PostinoMessageTile({
 
   /// Open Conflitto: the row shows the local version with the `alert` sign (icon, not only color); [semanticLabel] should say it.
   final bool conflict = false,
+
+  /// Azioni semantiche personalizzate della riga (VoiceOver «azioni»): le stesse dello scorrimento.
+  final Map<CustomSemanticsAction, VoidCallback>? customSemanticsActions,
 }) extends StatelessWidget {
   /// Crea la riga di una Conversazione.
   this;
@@ -84,6 +88,7 @@ class const PostinoMessageTile({
       button: onTap != null,
       selected: selected,
       onTap: onTap,
+      customSemanticsActions: customSemanticsActions,
       excludeSemantics: true,
       child: Material(
         color: selected ? c.listItemBgSelected : c.listItemBg,

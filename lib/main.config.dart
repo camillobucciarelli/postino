@@ -31,6 +31,7 @@ import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
+import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i26;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
@@ -56,6 +57,7 @@ import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
     as _i114;
+import 'package:postino/core/domain/swipe_actions_repository.dart' as _i401;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/text_embedder.dart' as _i374;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
@@ -193,6 +195,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i401.SwipeActionsRepository>(
+      () => _i588.SwipeActionsStore(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+      ),
     );
     gh.lazySingleton<_i205.AutoLabelsRepository>(
       () => _i452.AutoLabelsStore(

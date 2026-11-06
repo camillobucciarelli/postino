@@ -290,6 +290,15 @@
     "deleted": "Conversazione spostata nel Cestino",
     "labelApplied": "Etichetta «$name» applicata",
     "undo": "Annulla",
-    "more": "Altre azioni"
+    "more": "Altre azioni",
+    "applyLabel": "Applica Etichetta"
+  },
+  "scorrimento": {
+    "title": "Azioni per scorrimento",
+    "intro": "Scorrendo una riga della lista si esegue un'Azione. La scelta vale per tutti gli Account.",
+    "left": "Scorrimento a sinistra",
+    "right": "Scorrimento a destra",
+    "markRead": "Segna come letto/non letto",
+    "star": "Stella"
   }
 }

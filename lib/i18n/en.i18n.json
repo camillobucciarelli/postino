@@ -290,6 +290,15 @@
     "deleted": "Conversation moved to Trash",
     "labelApplied": "Label “$name” applied",
     "undo": "Undo",
-    "more": "More actions"
+    "more": "More actions",
+    "applyLabel": "Apply Label"
+  },
+  "scorrimento": {
+    "title": "Swipe actions",
+    "intro": "Swiping a row of the list runs an Action. The choice applies to all Accounts.",
+    "left": "Swipe left",
+    "right": "Swipe right",
+    "markRead": "Mark as read/unread",
+    "star": "Star"
   }
 }

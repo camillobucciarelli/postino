@@ -83,6 +83,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
 	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
 	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
+	late final Translations$scorrimento$it scorrimento = Translations$scorrimento$it.internal(_root);
 }
 
 // Path: sidebar
@@ -883,6 +884,36 @@ class Translations$azioni$it {
 
 	/// it: 'Altre azioni'
 	String get more => 'Altre azioni';
+
+	/// it: 'Applica Etichetta'
+	String get applyLabel => 'Applica Etichetta';
+}
+
+// Path: scorrimento
+class Translations$scorrimento$it {
+	Translations$scorrimento$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Azioni per scorrimento'
+	String get title => 'Azioni per scorrimento';
+
+	/// it: 'Scorrendo una riga della lista si esegue un'Azione. La scelta vale per tutti gli Account.'
+	String get intro => 'Scorrendo una riga della lista si esegue un\'Azione. La scelta vale per tutti gli Account.';
+
+	/// it: 'Scorrimento a sinistra'
+	String get left => 'Scorrimento a sinistra';
+
+	/// it: 'Scorrimento a destra'
+	String get right => 'Scorrimento a destra';
+
+	/// it: 'Segna come letto/non letto'
+	String get markRead => 'Segna come letto/non letto';
+
+	/// it: 'Stella'
+	String get star => 'Stella';
 }
 
 // Path: etichetteAutomatiche.model
@@ -1221,6 +1252,13 @@ extension on Translations {
 			'azioni.labelApplied' => ({required Object name}) => 'Etichetta «${name}» applicata',
 			'azioni.undo' => 'Annulla',
 			'azioni.more' => 'Altre azioni',
+			'azioni.applyLabel' => 'Applica Etichetta',
+			'scorrimento.title' => 'Azioni per scorrimento',
+			'scorrimento.intro' => 'Scorrendo una riga della lista si esegue un\'Azione. La scelta vale per tutti gli Account.',
+			'scorrimento.left' => 'Scorrimento a sinistra',
+			'scorrimento.right' => 'Scorrimento a destra',
+			'scorrimento.markRead' => 'Segna come letto/non letto',
+			'scorrimento.star' => 'Stella',
 			_ => null,
 		};
 	}

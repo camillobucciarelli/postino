@@ -67,6 +67,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
 	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
 	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
+	@override late final _Translations$scorrimento$en scorrimento = _Translations$scorrimento$en._(_root);
 }
 
 // Path: sidebar
@@ -457,6 +458,22 @@ class _Translations$azioni$en extends Translations$azioni$it {
 	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
 	@override String get undo => 'Undo';
 	@override String get more => 'More actions';
+	@override String get applyLabel => 'Apply Label';
+}
+
+// Path: scorrimento
+class _Translations$scorrimento$en extends Translations$scorrimento$it {
+	_Translations$scorrimento$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Swipe actions';
+	@override String get intro => 'Swiping a row of the list runs an Action. The choice applies to all Accounts.';
+	@override String get left => 'Swipe left';
+	@override String get right => 'Swipe right';
+	@override String get markRead => 'Mark as read/unread';
+	@override String get star => 'Star';
 }
 
 // Path: etichetteAutomatiche.model
@@ -745,6 +762,13 @@ extension on TranslationsEn {
 			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
 			'azioni.undo' => 'Undo',
 			'azioni.more' => 'More actions',
+			'azioni.applyLabel' => 'Apply Label',
+			'scorrimento.title' => 'Swipe actions',
+			'scorrimento.intro' => 'Swiping a row of the list runs an Action. The choice applies to all Accounts.',
+			'scorrimento.left' => 'Swipe left',
+			'scorrimento.right' => 'Swipe right',
+			'scorrimento.markRead' => 'Mark as read/unread',
+			'scorrimento.star' => 'Star',
 			_ => null,
 		};
 	}

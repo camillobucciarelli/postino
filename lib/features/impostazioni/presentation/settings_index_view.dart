@@ -11,7 +11,8 @@ import '../../../i18n/strings.g.dart';
 import 'escape_to_go_back.dart';
 import 'sync_account_section.dart';
 
-/// The Impostazioni (the drawer's last entry): those of the device, then one group per Account.
+/// The Impostazioni (the drawer's last entry): those of the device, the «Account» list with «Aggiungi Account»
+/// ([onAddAccount]), then one group per Account.
 /// Routing is the caller's: Esc and the back arrow call [onBack].
 class const SettingsIndexView({
   super.key,
@@ -20,6 +21,7 @@ class const SettingsIndexView({
   required final void Function(String accountId) onOpenAutoLabels,
   required final VoidCallback onOpenSwipe,
   required final VoidCallback onReportProblem,
+  required final VoidCallback onAddAccount,
 }) extends StatefulWidget {
   @override
   State<SettingsIndexView> createState() => _SettingsIndexViewState();
@@ -46,6 +48,27 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
                 ),
               ],
             ),
+          PostinoSettingsSection(
+            title: context.t.accounts.section,
+            children: [
+              for (final a in accounts.value.value ?? const <Account>[])
+                // ponytail: listed only; color, order and Rimozione arrive with user stories 8/12/96 of #28.
+                PostinoSettingsItem(
+                  key: ValueKey('settings-account-${a.id}'),
+                  title: a.name,
+                  subtitle: [
+                    _providerName(context, a.provider),
+                    if (a.status == AccountStatus.daRicollegare) context.t.daRicollegare.status,
+                  ].join(' · '),
+                  onTap: null,
+                ),
+              PostinoSettingsItem(
+                key: const ValueKey('settings-add-account'),
+                title: context.t.accounts.add,
+                onTap: widget.onAddAccount,
+              ),
+            ],
+          ),
           const SyncAccountSection(),
           for (final a in accounts.value.value ?? const <Account>[])
             PostinoSettingsSection(
@@ -78,3 +101,10 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
     ),
   );
 }
+
+String _providerName(BuildContext context, ProviderKind p) => switch (p) {
+  ProviderKind.gmail => context.t.accounts.gmail,
+  ProviderKind.microsoft => context.t.accounts.microsoft,
+  ProviderKind.icloud => context.t.accounts.icloud,
+  ProviderKind.imap => context.t.accounts.imap,
+};

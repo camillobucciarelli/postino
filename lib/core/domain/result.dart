@@ -160,3 +160,21 @@ final class const DriveScopeFailure() extends Failure {
   /// Crea il fallimento.
   this;
 }
+
+/// Autodiscovery found no servers for the address of a password Account: the user enters them by hand.
+final class const ServerNotFoundFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// The address is already an attivo Account: connecting it again would change nothing.
+final class const AlreadyConnectedFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// A Gmail address given to the password form: it connects with «Collega Gmail» (OAuth), never with a password.
+final class const UseGmailFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}

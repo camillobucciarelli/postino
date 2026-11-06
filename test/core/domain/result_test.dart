@@ -18,6 +18,9 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: RejectedFailure(:final reason)) => 'rejected $reason',
   Err(failure: IntegrityFailure()) => 'integrity',
   Err(failure: DriveScopeFailure()) => 'drive-scope',
+  Err(failure: ServerNotFoundFailure()) => 'server-not-found',
+  Err(failure: AlreadyConnectedFailure()) => 'already-connected',
+  Err(failure: UseGmailFailure()) => 'use-gmail',
 };
 
 void main() {
@@ -38,5 +41,8 @@ void main() {
     expect(describe(const Err(SizeLimitFailure(7))), 'size 7');
     expect(describe(const Err(RejectedFailure('x'))), 'rejected x');
     expect(describe(const Err(IntegrityFailure())), 'integrity');
+    expect(describe(const Err(ServerNotFoundFailure())), 'server-not-found');
+    expect(describe(const Err(AlreadyConnectedFailure())), 'already-connected');
+    expect(describe(const Err(UseGmailFailure())), 'use-gmail');
   });
 }

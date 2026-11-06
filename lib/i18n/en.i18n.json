@@ -18,13 +18,16 @@
   "etichette": "Labels",
   "onboarding": {
     "body": "All your mailboxes in one place.",
-    "connectGmail": "Connect Gmail"
+    "connectGmail": "Connect Gmail",
+    "connectIcloud": "Connect iCloud",
+    "connectImap": "Other IMAP"
   },
   "daRicollegare": {
     "title": "$name needs signing in again",
     "message": "Google no longer accepts the sign-in. Mail stays readable but won't update until you sign in.",
     "signIn": "Sign in",
-    "status": "Needs signing in"
+    "status": "Needs signing in",
+    "passwordMessage": "The server no longer accepts the password. Your mail stays readable but won't update until you sign in."
   },
   "connect": {
     "title": "Couldn't connect",
@@ -32,7 +35,8 @@
     "offline": "No connection: try again when you are online.",
     "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
     "wrongAccount": "You picked a different Google account: to reconnect $address, pick that account.",
-    "failed": "Something went wrong: try again."
+    "failed": "Something went wrong: try again.",
+    "alreadyConnected": "This address is already connected as another Account."
   },
   "offline": {
     "title": "You're offline",
@@ -303,5 +307,42 @@
     "right": "Swipe right",
     "markRead": "Mark as read/unread",
     "star": "Star"
+  },
+  "passwordForm": {
+    "icloudTitle": "Connect iCloud",
+    "imapTitle": "Connect an IMAP Account",
+    "reconnectTitle": "Reconnect the Account",
+    "address": "Email address",
+    "password": "Password",
+    "appPassword": "App-specific password",
+    "icloudHelp": "iCloud needs an app-specific password, not your Apple Account password.",
+    "appleLink": "How to create an app-specific password",
+    "manual": "Set up the servers manually",
+    "imapServer": "IMAP server (incoming mail)",
+    "smtpServer": "SMTP server (outgoing mail)",
+    "host": "Host",
+    "port": "Port",
+    "ssl": "SSL/TLS",
+    "starttls": "STARTTLS",
+    "connect": "Connect",
+    "cancel": "Cancel",
+    "connecting": "Checking the connection",
+    "invalidAddress": "Enter a full email address.",
+    "emptyPassword": "Enter the password.",
+    "invalidHost": "Enter the server host.",
+    "invalidPort": "Enter a port between 1 and 65535.",
+    "authRejected": "The server refused the address or the password.",
+    "serverNotFound": "Couldn't find the servers for this address: enter them below.",
+    "unreachable": "Server unreachable: check the connection, the host and the port.",
+    "alreadyConnected": "This Account is already connected.",
+    "useGmail": "For a Gmail address use «Connect Gmail»."
+  },
+  "accounts": {
+    "section": "Accounts",
+    "add": "Add Account",
+    "gmail": "Gmail",
+    "icloud": "iCloud",
+    "imap": "IMAP",
+    "microsoft": "Microsoft"
   }
 }

@@ -7,7 +7,8 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// A row of the Impostazioni that opens a page: [title] (a UI label, not selectable), an optional [subtitle],
-/// `chevron-right` at the end. The whole row is one control, one Tab stop, read as a button.
+/// `chevron-right` at the end. The whole row is one control, one Tab stop, read as a button. Without [onTap] it only
+/// shows something (for example an Account): no chevron, no button.
 /// For a setting that is on or off use PostinoSwitchRow.
 class const PostinoSettingsItem({
   super.key,
@@ -15,8 +16,8 @@ class const PostinoSettingsItem({
   /// Nome della voce.
   required final String title,
 
-  /// Chiamata al tocco: apre la pagina della voce.
-  required final VoidCallback onTap,
+  /// Chiamata al tocco: apre la pagina della voce; null per una voce che mostra soltanto.
+  required final VoidCallback? onTap,
 
   /// Dettaglio sotto il titolo, per esempio lo stato attuale.
   final String? subtitle,
@@ -29,7 +30,7 @@ class const PostinoSettingsItem({
     final c = context.pc;
     return MergeSemantics(
       child: Semantics(
-        button: true,
+        button: onTap != null,
         child: Material(
           color: c.surface,
           child: InkWell(
@@ -56,7 +57,7 @@ class const PostinoSettingsItem({
                           ],
                         ),
                       ),
-                      PostinoIcon(PostinoIcons.chevronRight, color: c.inkMuted),
+                      if (onTap != null) PostinoIcon(PostinoIcons.chevronRight, color: c.inkMuted),
                     ],
                   ),
                 ),

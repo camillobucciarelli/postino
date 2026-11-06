@@ -4,6 +4,7 @@ import '../../domain/message.dart';
 import '../../domain/result.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
+import 'gmail_message_parser.dart';
 import 'google_failure.dart';
 
 /// The Azioni on Gmail (ADR 0008): Gmail has no conditional write, so the message is read once
@@ -36,8 +37,7 @@ class GmailActions(final GmailHttp _gmail, final GmailLabels _labels) {
 
   Future<Set<String>> _read(String messageId) async {
     final j = await _gmail.get('messages/$messageId', query: {'format': 'minimal'});
-    // A message with no label at all comes without the field.
-    return {for (final l in j['labelIds'] as List? ?? const []) l as String};
+    return gmailLabelIds(j).toSet();
   }
 
   /// The value of the attribute of [action] given the message's [labels].

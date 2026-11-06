@@ -56,6 +56,9 @@ class const PostinoMessageTile({
   /// height. Read only through [semanticLabel], which should name them.
   final List<String> labels = const [],
 
+  /// Open Conflitto: the row shows the local version with the `alert` sign (icon, not only color); [semanticLabel] should say it.
+  final bool conflict = false,
+
   /// Azioni semantiche personalizzate della riga (VoiceOver «azioni»): le stesse dello scorrimento.
   final Map<CustomSemanticsAction, VoidCallback>? customSemanticsActions,
 }) extends StatelessWidget {
@@ -178,6 +181,13 @@ class const PostinoMessageTile({
                                       ),
                                     ),
                                   ),
+                                  if (conflict)
+                                    PostinoIcon(
+                                      PostinoIcons.alert,
+                                      key: const ValueKey('conflict'),
+                                      size: PostinoSize.iconSm,
+                                      color: c.warning,
+                                    ),
                                   if (starred)
                                     PostinoIcon(
                                       PostinoIcons.star,

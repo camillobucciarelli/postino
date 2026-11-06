@@ -81,6 +81,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
+	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
 	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 	late final Translations$scorrimento$it scorrimento = Translations$scorrimento$it.internal(_root);
 }
@@ -784,6 +785,65 @@ class Translations$notifiche$it {
 	String get permissionLater => 'Non ora';
 }
 
+// Path: conflitti
+class Translations$conflitti$it {
+	Translations$conflitti$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: '(one) {$n conflitto} (other) {$n conflitti}'
+	String bannerTitle({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} conflitto',
+		other: '${n} conflitti',
+	);
+
+	/// it: 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.'
+	String get bannerMessage => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.';
+
+	/// it: 'Vedi'
+	String get open => 'Vedi';
+
+	/// it: 'Conflitti'
+	String get title => 'Conflitti';
+
+	/// it: 'Nessun conflitto'
+	String get emptyTitle => 'Nessun conflitto';
+
+	/// it: 'Quando un messaggio cambia in due posti, lo trovi qui.'
+	String get emptyBody => 'Quando un messaggio cambia in due posti, lo trovi qui.';
+
+	/// it: 'La tua'
+	String get keepMine => 'La tua';
+
+	/// it: 'Del Provider'
+	String get keepProvider => 'Del Provider';
+
+	/// it: 'La tua: $value'
+	String mine({required Object value}) => 'La tua: ${value}';
+
+	/// it: 'Provider: $value'
+	String provider({required Object value}) => 'Provider: ${value}';
+
+	/// it: 'In conflitto'
+	String get sign => 'In conflitto';
+
+	/// it: 'In conflitto: $sender, $time'
+	String signFor({required Object sender, required Object time}) => 'In conflitto: ${sender}, ${time}';
+
+	/// it: 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.'
+	String get signMessage => 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.';
+
+	/// it: 'account $name'
+	String account({required Object name}) => 'account ${name}';
+
+	/// it: '(senza oggetto)'
+	String get noSubject => '(senza oggetto)';
+
+	late final Translations$conflitti$values$it values = Translations$conflitti$values$it.internal(_root);
+}
+
 // Path: azioni
 class Translations$azioni$it {
 	Translations$azioni$it.internal(this._root);
@@ -911,6 +971,42 @@ class Translations$etichetteAutomatiche$model$it {
 
 	/// it: 'Aspetta il Wi-Fi'
 	String get confirmWait => 'Aspetta il Wi-Fi';
+}
+
+// Path: conflitti.values
+class Translations$conflitti$values$it {
+	Translations$conflitti$values$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'letto'
+	String get read => 'letto';
+
+	/// it: 'da leggere'
+	String get unread => 'da leggere';
+
+	/// it: 'con Stella'
+	String get starred => 'con Stella';
+
+	/// it: 'senza Stella'
+	String get unstarred => 'senza Stella';
+
+	/// it: 'in posta in arrivo'
+	String get inbox => 'in posta in arrivo';
+
+	/// it: 'archiviato'
+	String get archive => 'archiviato';
+
+	/// it: 'nel Cestino'
+	String get trash => 'nel Cestino';
+
+	/// it: 'con l'etichetta $name'
+	String labeled({required Object name}) => 'con l\'etichetta ${name}';
+
+	/// it: 'senza l'etichetta $name'
+	String unlabeled({required Object name}) => 'senza l\'etichetta ${name}';
 }
 
 /// The flat map containing all translations for locale <it>.
@@ -1121,6 +1217,30 @@ extension on Translations {
 			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
+			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
+			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
+			'conflitti.open' => 'Vedi',
+			'conflitti.title' => 'Conflitti',
+			'conflitti.emptyTitle' => 'Nessun conflitto',
+			'conflitti.emptyBody' => 'Quando un messaggio cambia in due posti, lo trovi qui.',
+			'conflitti.keepMine' => 'La tua',
+			'conflitti.keepProvider' => 'Del Provider',
+			'conflitti.mine' => ({required Object value}) => 'La tua: ${value}',
+			'conflitti.provider' => ({required Object value}) => 'Provider: ${value}',
+			'conflitti.sign' => 'In conflitto',
+			'conflitti.signFor' => ({required Object sender, required Object time}) => 'In conflitto: ${sender}, ${time}',
+			'conflitti.signMessage' => 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.',
+			'conflitti.account' => ({required Object name}) => 'account ${name}',
+			'conflitti.noSubject' => '(senza oggetto)',
+			'conflitti.values.read' => 'letto',
+			'conflitti.values.unread' => 'da leggere',
+			'conflitti.values.starred' => 'con Stella',
+			'conflitti.values.unstarred' => 'senza Stella',
+			'conflitti.values.inbox' => 'in posta in arrivo',
+			'conflitti.values.archive' => 'archiviato',
+			'conflitti.values.trash' => 'nel Cestino',
+			'conflitti.values.labeled' => ({required Object name}) => 'con l\'etichetta ${name}',
+			'conflitti.values.unlabeled' => ({required Object name}) => 'senza l\'etichetta ${name}',
 			'azioni.archive' => 'Archivia',
 			'azioni.delete' => 'Elimina',
 			'azioni.star' => 'Aggiungi stella',

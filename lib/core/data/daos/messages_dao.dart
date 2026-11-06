@@ -212,6 +212,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
   }
 
+  /// One stored message with its label ids; null while it is not stored (or gone).
+  Stream<(MessageRow, List<String>)?> watchOne(String accountId, String messageId) {
+    final m = messages;
+    final query = select(m).join([])
+      ..addColumns([_labelIds])
+      ..where(m.accountId.equals(accountId) & m.id.equals(messageId));
+    return query.watchSingleOrNull().map(
+      (r) => r == null ? null : (r.readTable(m), r.read(_labelIds)?.split('\n') ?? const <String>[]),
+    );
+  }
+
   /// The Conversazione's unread messages, by Provider-side id.
   Future<List<String>> unreadIn(String accountId, String conversationId) =>
       (selectOnly(messages)

@@ -21,6 +21,7 @@ import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_acting.dart';
 import 'conversation_body.dart';
+import 'conversation_conflicts.dart';
 import 'conversation_labels.dart';
 import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
@@ -259,6 +260,10 @@ class _ConversationViewState()
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                ConversationConflicts(
+                  accountId: widget.accountId,
+                  messages: {for (final m in messages) m.message.id: m.message},
+                ),
                 Expanded(
                   child: ConversationBody(
                     account: a,

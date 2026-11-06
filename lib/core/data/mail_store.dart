@@ -90,6 +90,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
         ],
       );
 
+  @override
+  Stream<Message?> watchMessage(String accountId, String messageId) =>
+      _db.messagesDao.watchOne(accountId, messageId).map((r) => r == null ? null : messageOf(r.$1, r.$2));
+
   Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
       _db.bodiesDao.saveBody(accountId, messageId, body);
 

@@ -10,6 +10,7 @@ import '../../core/presentation/model_download_banner.dart';
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
 import '../../features/composizione/presentation/composer_view.dart';
+import '../../features/posta/presentation/conflicts_banner.dart';
 import '../../features/posta/presentation/conversation_view.dart';
 import '../../features/posta/presentation/message_list.dart';
 import '../../features/posta/presentation/offline_banner.dart';
@@ -27,7 +28,7 @@ import 'posta_routes.dart';
 Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) => PostinoAdaptiveLayout(
   appBar: const UnifiedAppBar(),
   drawer: postaDrawer(),
-  banners: postaBanners,
+  banners: [...postaBanners, conflictsBanner()],
   fab: WriteFab(cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchUnifiedInbox(),
@@ -44,7 +45,10 @@ Widget postaAccountView(String id, {(String, String)? selected, ListCursor? curs
   key: ValueKey(id),
   appBar: AccountAppBar(accountId: id),
   drawer: postaDrawer(accountId: id),
-  banners: postaBanners,
+  banners: [
+    ...postaBanners,
+    conflictsBanner(accountId: id),
+  ],
   fab: WriteFab(accountId: id, cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(id, inboxLabelId),
@@ -154,6 +158,16 @@ Widget postaConversationView(
 
 /// On top of every list: offline, then the Accounts Da ricollegare.
 const postaBanners = <Widget>[OfflineBanner(), ReconnectBanners(), ModelDownloadBanner()];
+
+/// The «N conflitti» Banner of the Posta unificata, or of one Account's inbox: «Vedi» opens the Conflitti it counts.
+Widget conflictsBanner({String? accountId}) => ConflictsBanner(
+  accountId: accountId,
+  onOpen: () => unawaited(
+    Routefly.push<void>(
+      Uri(path: routePaths.conflitti, queryParameters: accountId == null ? null : {'accountId': accountId}).toString(),
+    ),
+  ),
+);
 
 /// The drawer of the Posta views, with the open Account ([accountId]) and Etichetta ([labelId]).
 Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(

@@ -12,6 +12,8 @@ mixin _$IntentsDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class IntentsDaoManager {
   final _$IntentsDaoMixin _db;
   IntentsDaoManager(this._db);
-  $$IntentsTableTableManager get intents => $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
-  $$ConflictsTableTableManager get conflicts => $$ConflictsTableTableManager(_db.attachedDatabase, _db.conflicts);
+  $$IntentsTableTableManager get intents =>
+      $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
+  $$ConflictsTableTableManager get conflicts =>
+      $$ConflictsTableTableManager(_db.attachedDatabase, _db.conflicts);
 }

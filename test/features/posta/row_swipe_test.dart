@@ -9,6 +9,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show SizedBox;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/model_download.dart';
@@ -193,6 +194,29 @@ void main() {
     await _expire(tester);
     expect(_sent, isEmpty);
     expect(gmail.labelCalls, isEmpty);
+  });
+
+  testWidgets('a list that changes under a swipe in progress: the Azione hits the row swiped, never the one that took '
+      'its place', (tester) async {
+    await _start(tester);
+    final drag = await tester.startGesture(tester.getCenter(_row('o1')));
+    await drag.moveBy(const Offset(-40, 0));
+    await drag.moveBy(const Offset(-200, 0));
+    await tester.pump();
+
+    // New mail arrives on top: every row below moves one place down.
+    gmail.deliver(msg('n1', conversationId: 'n', subject: 'Nuova', date: _day(5), isRead: true));
+    await getIt<SyncEngine>().syncAll();
+    await _settle(tester);
+    expect(_row('n1'), findsOneWidget);
+
+    await drag.up();
+    await _settle(tester);
+    // Either the swiped row goes or the gesture is cancelled: the others stay.
+    expect(_row('x1'), findsOneWidget);
+    expect(_row('n1'), findsOneWidget);
+    await _expire(tester);
+    expect(_sent.where((s) => s.$1 != 'o1'), isEmpty);
   });
 
   testWidgets('screen reader: the row exposes the two Azioni of the swipes as custom actions, and they act', (

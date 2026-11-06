@@ -313,6 +313,8 @@ class _MessageListState() extends State<MessageList> {
                 ].join(', '),
               );
           return RowKeepAlive(
+            // By Conversazione, not by index: a list that changes under a swipe in progress keeps it with its row.
+            key: ValueKey(key),
             keep: key == _cursor,
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')

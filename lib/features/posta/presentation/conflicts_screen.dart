@@ -36,7 +36,12 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
   Future<void> _resolve(Conflict c, {required bool keepMine}) async {
     _at = (conflicts.value.value ?? const <Conflict>[]).indexOf(c);
     _resolved = c;
-    await GetIt.I<MailSync>().resolveConflict(c, keepMine: keepMine);
+    try {
+      await GetIt.I<MailSync>().resolveConflict(c, keepMine: keepMine);
+    } on Object {
+      _resolved = null;
+      rethrow;
+    }
   }
 
   void _refocus(List<Conflict> rest) {

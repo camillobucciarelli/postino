@@ -30,25 +30,35 @@ class _ConversationConflictsState() extends State<ConversationConflicts> {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final t = context.t.conflitti;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final c in conflicts.value.value ?? const <Conflict>[])
-            if (widget.messageIds.contains(c.messageId))
-              ConflictWords(
-                key: ValueKey('conversation-conflict-${c.messageId}-${c.local.attribute}'),
-                conflict: c,
-                builder: (context, mine, provider) => PostinoBanner(
-                  tone: PostinoBannerTone.warning,
-                  title: t.sign,
-                  message: '${t.signMessage} $mine. $provider.',
-                  actionLabel: t.keepMine,
-                  onAction: () => GetIt.I<MailSync>().resolveConflict(c, keepMine: true),
-                  secondaryActionLabel: t.keepProvider,
-                  onSecondaryAction: () => GetIt.I<MailSync>().resolveConflict(c, keepMine: false),
+      final mine = [
+        for (final c in conflicts.value.value ?? const <Conflict>[])
+          if (widget.messageIds.contains(c.messageId)) c,
+      ];
+      if (mine.isEmpty) return const SizedBox.shrink();
+      // Bounded and scrollable: several notices at large text must not squeeze the thread out.
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .4),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final c in mine)
+                ConflictWords(
+                  key: ValueKey('conversation-conflict-${c.messageId}-${c.local.attribute}'),
+                  conflict: c,
+                  builder: (context, local, provider) => PostinoBanner(
+                    tone: PostinoBannerTone.warning,
+                    title: t.sign,
+                    message: '${t.signMessage} $local. $provider.',
+                    actionLabel: t.keepMine,
+                    onAction: () => GetIt.I<MailSync>().resolveConflict(c, keepMine: true),
+                    secondaryActionLabel: t.keepProvider,
+                    onSecondaryAction: () => GetIt.I<MailSync>().resolveConflict(c, keepMine: false),
+                  ),
                 ),
-              ),
-        ],
+            ],
+          ),
+        ),
       );
     },
   );

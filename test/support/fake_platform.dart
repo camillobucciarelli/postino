@@ -22,8 +22,12 @@ class FakeSecureStore() implements SecureStore {
   /// While set, every delete throws it.
   Exception? deleteFailure;
 
+  /// The deletes asked for, failed ones included.
+  var deletes = 0;
+
   @override
   Future<void> delete(String key) async {
+    deletes++;
     if (deleteFailure case final f?) throw f;
     values.remove(key);
   }

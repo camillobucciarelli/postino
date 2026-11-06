@@ -156,6 +156,8 @@ void main() {
       await a.syncNow();
       await b.syncNow();
       expect(await b.accounts(), hasLength(1));
+      // Connected on A: a sync Account da ricollegare could not upload, and would go at once.
+      await a.db.accountsDao.setStatus('gmail:ada@gmail.com', AccountStatus.attivo);
 
       tick();
       await a.db.postinoSettingsDao.tombstoneAccount('gmail:ada@gmail.com', at: clock.now());

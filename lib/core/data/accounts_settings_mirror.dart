@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
+import '../domain/account.dart';
 import '../domain/platform_services.dart';
 import '../domain/settings_repository.dart';
 import '../domain/synced_settings.dart';
@@ -38,8 +39,9 @@ class AccountsSettingsMirror(
     if (_subs.isNotEmpty) return;
     _subs
       ..add(_db.postinoSettingsDao.watchPrefix(accountsSettingPrefix).listen((_) => _kick()))
-      // A removal held for the sync Account goes on once another one, or none, is chosen.
-      ..add(_settings.watchSettingsSyncAccount().distinct().listen((_) => _kick()));
+      // A removal held for the sync Account goes on once another one, or none, is chosen. Its first value is the
+      // choice at start, which the first pass of the voci already reads.
+      ..add(_settings.watchSettingsSyncAccount().distinct().skip(1).listen((_) => _kick()));
   }
 
   /// Stops the triggers and the retry, and waits for the pass in flight.
@@ -95,7 +97,9 @@ class AccountsSettingsMirror(
         // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the
         // other devices never see the removal. The markClean of the upload changes the row, and the pass comes again.
         // ponytail: a file this Postino cannot write (a newer one) holds the removal until Postino is updated.
-        if (row.dirty && id == syncAccount) continue;
+        // An Account da ricollegare cannot upload: removed at once, its tombstone stays dirty and reaches the other
+        // devices once another Account is chosen for the sync.
+        if (row.dirty && id == syncAccount && local.status != AccountStatus.daRicollegare) continue;
         // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
         // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
         // the token never leaves the device. A per-Account lock with the refresh if it ever matters.

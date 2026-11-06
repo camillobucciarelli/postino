@@ -1,4 +1,7 @@
 // The Accounts table as the mirror of the voci accounts/<accountId> (#142, ADR 0016).
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/account_settings_json.dart';
 import 'package:postino/core/data/accounts_settings_mirror.dart';
@@ -25,7 +28,6 @@ const _bob = Account(
   position: 1,
 );
 final _t = DateTime.utc(2026, 11, 5);
-final _key = accountSettingsKey(_ada.id);
 
 void main() {
   late PostinoDatabase db;
@@ -137,22 +139,102 @@ void main() {
     expect(keychain.values, isEmpty);
   });
 
-  test('a pass that fails is tried again by itself, without another change of the voci', () async {
-    await mirror.stop();
-    mirror = AccountsSettingsMirror(db, keychain, settings, retryAfter: const Duration(milliseconds: 1))..start();
+  test('the held removal of the sync Account goes on when the sync is turned off', () async {
+    mirror.start();
     await db.accountsDao.upsert(_ada);
-    keychain.deleteFailure = Exception('keychain bloccato');
-    // A tombstone from another device: already clean, nothing here will write it again.
-    await db.postinoSettingsDao.applyRemote([
-      SettingsEntry(key: _key, value: null, updatedAt: 1, deviceId: 'z', deleted: true),
-    ]);
+    await settings.setSettingsSyncAccount(_ada.id);
+    await db.postinoSettingsDao.tombstoneAccount(_ada.id, at: _t);
     await pumpEventQueue();
     expect(await accounts(), [_ada]);
 
-    keychain.deleteFailure = null;
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await settings.setSettingsSyncAccount(null);
     await pumpEventQueue();
     expect(await accounts(), isEmpty);
+  });
+
+  test('a sync Account da ricollegare, which cannot upload, goes at once; its tombstone stays to upload', () async {
+    const ada = Account(
+      id: 'gmail:ada@gmail.com',
+      address: 'ada@gmail.com',
+      provider: ProviderKind.gmail,
+      color: 3,
+      position: 2,
+      status: AccountStatus.daRicollegare,
+    );
+    await db.accountsDao.upsert(ada);
+    await settings.setSettingsSyncAccount(ada.id);
+    await db.postinoSettingsDao.tombstoneAccount(ada.id, at: _t);
+    await mirror.reconcile();
+    expect(await accounts(), isEmpty);
+    expect(await settings.settingsSyncAccount(), isNull);
+    expect((await db.postinoSettingsDao.readPrefix('accounts/')).single.dirty, isTrue);
+  });
+
+  group('a pass that fails is tried again by itself, on fake time', () {
+    const base = Duration(seconds: 10);
+    const ms = Duration(milliseconds: 1);
+
+    /// Runs [body] in fake time on a fresh database and mirror, with the keychain failing and a tombstone for
+    /// [_ada] from another device: already clean, so nothing here writes it again.
+    void onFakeTime(void Function(FakeAsync time, PostinoDatabase db, AccountsSettingsMirror m) body) =>
+        fakeAsync((time) {
+          final db = PostinoDatabase.inMemory();
+          final m = AccountsSettingsMirror(db, keychain, DeviceSettingsStore(db), retryAfter: base);
+          keychain.deleteFailure = Exception('keychain bloccato');
+          _now(time, db.accountsDao.upsert(_ada));
+          _now(time, db.postinoSettingsDao.applyRemote([_remoteTombstone(_ada)]));
+          m.start();
+          time.elapse(Duration.zero);
+          body(time, db, m);
+          // ponytail: not awaited, the cancel of a drift stream never completes in fake time; stop cancels the retry
+          // before its first await, which is what these tests need.
+          unawaited(m.stop().then((_) => db.close()));
+          time.flushMicrotasks();
+        });
+
+    /// The attempts just before [d] and at [d].
+    (int, int) around(FakeAsync time, Duration d) {
+      time.elapse(d - ms);
+      final before = keychain.deletes;
+      time.elapse(ms);
+      return (before, keychain.deletes);
+    }
+
+    test('after 1, 2, 4, 8, 16 and then at most 32 times the base', () {
+      onFakeTime((time, db, m) {
+        var n = keychain.deletes;
+        expect(n, 1);
+        for (final k in [1, 2, 4, 8, 16, 32, 32, 32]) {
+          expect(around(time, base * k), (n, n + 1), reason: '×$k');
+          n++;
+        }
+      });
+    });
+
+    test('a pass that succeeds starts the delays again from the base', () {
+      onFakeTime((time, db, m) {
+        time.elapse(base);
+        expect(keychain.deletes, 2);
+        keychain.deleteFailure = null;
+        time.elapse(base * 2);
+        expect(_now(time, MailStore(db).accounts()), isEmpty);
+
+        keychain.deleteFailure = Exception('keychain bloccato');
+        _now(time, db.accountsDao.upsert(_bob));
+        _now(time, db.postinoSettingsDao.applyRemote([_remoteTombstone(_bob)]));
+        final n = keychain.deletes;
+        expect(around(time, base), (n, n + 1));
+      });
+    });
+
+    test('once stopped, the retry waiting does not fire', () {
+      onFakeTime((time, db, m) {
+        expect(keychain.deletes, 1);
+        unawaited(m.stop());
+        time.elapse(base * 64);
+        expect(keychain.deletes, 1);
+      });
+    });
   });
 
   test('an Account here without a voce, or with a malformed one, is left alone', () async {
@@ -162,4 +244,23 @@ void main() {
     await mirror.reconcile();
     expect(await accounts(), [_bob, _ada]);
   });
+}
+
+/// The tombstone of [a] as it comes from another device.
+SettingsEntry _remoteTombstone(Account a) =>
+    SettingsEntry(key: accountSettingsKey(a.id), value: null, updatedAt: 1, deviceId: 'z', deleted: true);
+
+/// [f], completed in fake time.
+T _now<T>(FakeAsync time, Future<T> f) {
+  late T value;
+  var done = false;
+  unawaited(
+    f.then((v) {
+      value = v;
+      done = true;
+    }),
+  );
+  time.elapse(Duration.zero);
+  expect(done, isTrue, reason: 'not completed in fake time');
+  return value;
 }

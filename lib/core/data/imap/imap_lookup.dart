@@ -91,20 +91,23 @@ String? _key(ThreadInput t, Set<String> known) {
   if (t.inReplyTo case final parent?) {
     return known.contains(parent) || !_ascii(parent) ? null : 'HEADER Message-ID ${_quoted(parent)}';
   }
-  final word = _searchWord(m.subject);
-  if (word == null) return null;
-  // By the Date header (SENT*), as the window of threadMessages.
-  return 'SENTSINCE ${imapDate(m.date.subtract(threadWindow))} '
-      'SENTBEFORE ${imapDate(m.date.add(const Duration(days: 1)))} SUBJECT ${_quoted(word)}';
+  if (!hasReplyPrefix(m.subject) || normalizedSubject(m.subject).isEmpty) return null;
+  // By the Date header (SENT*), as the window of threadMessages, which filters by subject and participant.
+  final dates =
+      'SENTSINCE ${imapDate(m.date.subtract(threadWindow))} '
+      'SENTBEFORE ${imapDate(m.date.add(const Duration(days: 1)))}';
+  // ponytail: a subject with no ASCII fragment (`Re: 会议`) brings every message of the window; CHARSET UTF-8 with a
+  // literal if such mailboxes get slow.
+  return switch (_searchWord(m.subject)) {
+    final word? => '$dates SUBJECT ${_quoted(word)}',
+    null => dates,
+  };
 }
 
-/// What to SEARCH SUBJECT for a reply without references: its normalized subject if plain ASCII (a quoted string
-/// may hold nothing else), else its longest ASCII word, filtered exactly afterwards; null when there is none to
-/// search or the subject is no reply.
+/// What to SEARCH SUBJECT for a reply: its normalized subject if plain ASCII (a quoted string may hold nothing
+/// else), else its longest ASCII word, filtered exactly afterwards; null when it has no ASCII fragment.
 String? _searchWord(String subject) {
-  if (!hasReplyPrefix(subject)) return null;
   final s = normalizedSubject(subject);
-  if (s.isEmpty) return null;
   if (_ascii(s)) return s;
   final words = RegExp(r'[\x21-\x7e]{3,}').allMatches(s).map((m) => m[0]!).toList()
     ..sort((a, b) => b.length - a.length);

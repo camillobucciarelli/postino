@@ -141,6 +141,16 @@ void main() {
     expect(byKey['<c@example.com>'], '<c@example.com>');
   });
 
+  test('a reply whose subject has no ASCII fragment still joins its Conversazione', () async {
+    await h.deliver(msg('a', subject: '会议', from: 'bob@example.com', to: [h.address]));
+    final first = okValue(await h.provider.initialSync());
+    await h.deliver(
+      msg('b', subject: 'Re: 会议', from: 'bob@example.com', to: [h.address], date: DateTime.utc(2026, 1, 2)),
+    );
+    final next = okValue(await h.provider.incrementalSync(first.cursor));
+    expect(next.messages.single.conversationId, '<a@example.com>');
+  });
+
   test('a Conversazione keeps its id when a message of a long In-Reply-To chain comes back changed', () async {
     String raw(String id, String header) =>
         'From: bob@example.com\r\nTo: ${h.address}\r\nSubject: Re: Gita\r\n'

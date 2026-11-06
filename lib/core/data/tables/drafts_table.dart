@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../../domain/draft_content.dart';
 import '../../domain/message.dart';
 import '../json_objects.dart';
 import 'bodies_table.dart';
@@ -10,7 +11,6 @@ import 'bodies_table.dart';
 /// (ADR 0008: it merges by nature, the last one wins). [pending]: content not yet on the Provider;
 /// [synced]: saved there at least once (the replay updates instead of creating);
 /// [remoteKnown]: a sync listed it as a DRAFT message (a later disappearance means deleted or sent elsewhere).
-// ponytail: no value-at-enqueue, Conflitti come at step 3.
 @DataClassName('DraftRow')
 class Drafts() extends Table {
   TextColumn get accountId => text()();
@@ -40,6 +40,13 @@ class Drafts() extends Table {
   BoolColumn get synced => boolean()();
   BoolColumn get remoteKnown => boolean()();
 
+  /// The expected value (#149, v19): the impronta (`DraftContent.fingerprint`) of the version the Provider had at the
+  /// last upload or sync; null before the first one, and the replay then writes regardless.
+  TextColumn get expected => text().nullable()();
+
+  /// The Provider's version while the Bozza is in Conflitto (#149): it is not replayed until the user chooses.
+  TextColumn get conflict => text().map(const DraftContentConverter()).nullable()();
+
   @override
   Set<Column> get primaryKey => {accountId, messageId};
 }
@@ -62,4 +69,24 @@ class const ForwardedAttachmentsConverter() extends TypeConverter<List<Forwarded
         ...(jsonDecode(_inner.toSql([a.attachment])) as List).single as Map,
       },
   ]);
+}
+
+/// A [DraftContent] as JSON.
+class const DraftContentConverter() extends TypeConverter<DraftContent, String> {
+  @override
+  DraftContent fromSql(String fromDb) {
+    final j = jsonDecode(fromDb) as Map<String, dynamic>;
+    List<String> list(String k) => [for (final a in j[k] as List) a as String];
+    return DraftContent(
+      to: list('to'),
+      cc: list('cc'),
+      bcc: list('bcc'),
+      subject: j['subject'] as String,
+      body: j['body'] as String,
+    );
+  }
+
+  @override
+  String toSql(DraftContent value) =>
+      jsonEncode({'to': value.to, 'cc': value.cc, 'bcc': value.bcc, 'subject': value.subject, 'body': value.body});
 }

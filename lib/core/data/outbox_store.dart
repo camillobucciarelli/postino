@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show BooleanExpressionOperators, Value, Variable;
 import 'package:injectable/injectable.dart';
 
+import '../domain/draft_content.dart';
 import '../domain/html_text.dart';
 import '../domain/inbox_repository.dart';
 import '../domain/mail_provider.dart';
@@ -44,7 +45,7 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
     final from = await addressOf(_db, accountId);
     return [
       for (final r in await _db.draftsDao.pending(accountId))
-        (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt),
+        (draft: _draft(r, from), isNew: !r.synced, updatedAt: r.updatedAt, expected: r.expected),
     ];
   }
 
@@ -53,8 +54,12 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
       await _db.outboxDao.byId(accountId, messageId) != null;
 
   @override
-  Future<void> draftSynced(String accountId, String messageId, int updatedAt) =>
-      _db.draftsDao.synced(accountId, messageId, updatedAt);
+  Future<void> draftSynced(String accountId, String messageId, int updatedAt, {required String fingerprint}) =>
+      _db.draftsDao.synced(accountId, messageId, updatedAt, fingerprint);
+
+  @override
+  Future<void> draftConflict(String accountId, String messageId, DraftContent provider) =>
+      _db.draftsDao.conflict(accountId, messageId, provider);
 
   @override
   Future<void> forgetRemoteDraft(String accountId, String messageId) =>

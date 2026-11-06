@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../domain/draft_content.dart';
+import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../json_objects.dart';
@@ -36,6 +38,23 @@ Message parseGmailMessage(Map<String, dynamic> j) {
     },
     references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))..removeWhere((r) => r.isEmpty),
     date: DateTime.fromMillisecondsSinceEpoch(int.parse(j['internalDate'] as String), isUtc: true),
+  );
+}
+
+/// A Bozza's message resource (`format=full`) with its [body] as [DraftContent] (#149): what the impronta compares.
+/// A plain text body is taken as HTML, as when the Bozza is opened here.
+DraftContent gmailDraftContent(Map<String, dynamic> j, MessageBody? body) {
+  final m = parseGmailMessage(j);
+  return DraftContent(
+    to: m.to,
+    cc: m.cc,
+    bcc: m.bcc,
+    subject: m.subject,
+    body: body == null
+        ? ''
+        : body.kind == BodyKind.html
+        ? body.content
+        : plainToHtml(body.content),
   );
 }
 

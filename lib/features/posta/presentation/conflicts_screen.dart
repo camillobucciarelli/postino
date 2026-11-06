@@ -6,14 +6,17 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
 import '../../../core/domain/conflict.dart';
+import '../../../core/domain/draft_conflict.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'conflict_row.dart';
+import 'draft_conflict_row.dart';
 
-/// The open Conflitti, of every Account or only of [accountId]: one [ConflictRow] each, resolved with a tap.
+/// The open Conflitti, of every Account or only of [accountId]: one [ConflictRow] each, then a [DraftConflictRow] for
+/// each Bozza (#149), resolved with a tap.
 /// The row leaves the list, the focus goes to the choices of the one now in its place, and the count, a live region,
 /// is announced. Routing is the caller's: Esc and the back arrow call [onBack].
 class const ConflictsScreen({super.key, required final VoidCallback onBack, final String? accountId})
@@ -24,27 +27,40 @@ class const ConflictsScreen({super.key, required final VoidCallback onBack, fina
 
 class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal {
   late final conflicts = streamSignal(() => GetIt.I<InboxRepository>().watchConflicts(accountId: widget.accountId));
+  late final drafts = streamSignal(() => GetIt.I<InboxRepository>().watchDraftConflicts(accountId: widget.accountId));
   final _emptyFocus = FocusNode(debugLabel: 'Nessun conflitto');
-  final _choices = <(String, String, String), FocusNode>{};
+  final _choices = <String, FocusNode>{};
 
-  FocusNode _choice(Conflict c) => _choices.putIfAbsent((c.accountId, c.messageId, c.local.attribute), FocusNode.new);
+  /// Every open Conflitto: a [Conflict], or a [DraftConflict].
+  List<Object> get _all => [...?conflicts.value.value, ...?drafts.value.value];
+
+  static String _key(Object c) => switch (c) {
+    Conflict() => '${c.accountId}/${c.messageId}/${c.local.attribute}',
+    DraftConflict() => '${c.accountId}/${c.messageId}/draft',
+    _ => throw ArgumentError(c),
+  };
+
+  FocusNode _choice(Object c) => _choices.putIfAbsent(_key(c), FocusNode.new);
 
   /// The Conflitto just resolved and where it sat: once it leaves the list, the focus goes to what took its place.
-  Conflict? _resolved;
+  Object? _resolved;
   int _at = 0;
 
-  Future<void> _resolve(Conflict c, {required bool keepMine}) async {
-    _at = (conflicts.value.value ?? const <Conflict>[]).indexOf(c);
+  Future<void> _resolve(Object c, {required bool keepMine}) async {
+    _at = _all.indexOf(c);
     _resolved = c;
     try {
-      await GetIt.I<MailSync>().resolveConflict(c, keepMine: keepMine);
+      await switch (c) {
+        DraftConflict() => GetIt.I<MailSync>().resolveDraftConflict(c, keepMine: keepMine),
+        _ => GetIt.I<MailSync>().resolveConflict(c as Conflict, keepMine: keepMine),
+      };
     } on Object {
       _resolved = null;
       rethrow;
     }
   }
 
-  void _refocus(List<Conflict> rest) {
+  void _refocus(List<Object> rest) {
     if (_resolved == null || rest.contains(_resolved)) return;
     _resolved = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,6 +72,7 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
   @override
   void dispose() {
     conflicts.dispose();
+    drafts.dispose();
     _emptyFocus.dispose();
     for (final n in _choices.values) {
       n.dispose();
@@ -68,12 +85,17 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
     builder: (context) {
       final t = context.t.conflitti;
       final c = context.pc;
-      final list = conflicts.value.value ?? const <Conflict>[];
+      final list = _all;
       _refocus(list);
       final byId = {for (final a in accounts.value.value ?? const <Account>[]) a.id: a};
       final rows = [
         for (final k in list)
-          if (byId[k.accountId] case final a?) (k, a),
+          if (byId[switch (k) {
+                Conflict(:final accountId) || DraftConflict(:final accountId) => accountId,
+                _ => null,
+              }]
+              case final a?)
+            (k, a),
       ];
       return PostinoDetailPage(
         title: t.title,
@@ -107,13 +129,22 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
                     child: ListView(
                       children: [
                         for (final (k, a) in rows)
-                          ConflictRow(
-                            key: ValueKey('${k.accountId}/${k.messageId}/${k.local.attribute}'),
-                            conflict: k,
-                            account: a,
-                            firstChoice: _choice(k),
-                            onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
-                          ),
+                          switch (k) {
+                            DraftConflict() => DraftConflictRow(
+                              key: ValueKey(_key(k)),
+                              conflict: k,
+                              account: a,
+                              firstChoice: _choice(k),
+                              onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
+                            ),
+                            _ => ConflictRow(
+                              key: ValueKey(_key(k)),
+                              conflict: k as Conflict,
+                              account: a,
+                              firstChoice: _choice(k),
+                              onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
+                            ),
+                          },
                       ],
                     ),
                   ),

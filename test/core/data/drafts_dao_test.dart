@@ -70,11 +70,11 @@ void main() {
   test('synced clears pending only if the Bozza was not edited meanwhile', () async {
     await db.draftsDao.save('a', _draft('<x>'), updatedAt: 10);
     await db.draftsDao.save('a', _draft('<x>', body: '<p>2</p>'), updatedAt: 20);
-    await db.draftsDao.synced('a', '<x>', 10);
+    await db.draftsDao.synced('a', '<x>', 10, 'f');
     // Edited while the creation was in flight: still pending, but already on the Provider (no second POST).
     final mid = (await db.draftsDao.byId('a', '<x>'))!;
     expect((mid.pending, mid.synced), (true, true));
-    await db.draftsDao.synced('a', '<x>', 20);
+    await db.draftsDao.synced('a', '<x>', 20, 'f');
     final r = (await db.draftsDao.byId('a', '<x>'))!;
     expect((r.pending, r.synced), (false, true));
     // A later edit keeps the synced mark: the next replay is an update, not a creation.
@@ -88,7 +88,7 @@ void main() {
     final first = (await db.draftsDao.byId('a', '<x>'))!.updatedAt;
     await db.draftsDao.save('a', _draft('<x>', body: '<p>2</p>'), updatedAt: 10);
     expect((await db.draftsDao.byId('a', '<x>'))!.updatedAt, greaterThan(first));
-    await db.draftsDao.synced('a', '<x>', first);
+    await db.draftsDao.synced('a', '<x>', first, 'f');
     expect((await db.draftsDao.byId('a', '<x>'))!.pending, isTrue);
   });
 
@@ -116,7 +116,7 @@ void main() {
 
     test('drops a synced, unedited Bozza gone from the Bozze folder', () async {
       await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
-      await db.draftsDao.synced('a', '<x@example.com>', 10);
+      await db.draftsDao.synced('a', '<x@example.com>', 10, 'f');
       await sync([
         msg('x', labelIds: const ['DRAFT']),
       ]);

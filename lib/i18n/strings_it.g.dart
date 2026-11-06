@@ -841,6 +841,15 @@ class Translations$conflitti$it {
 	/// it: '(senza oggetto)'
 	String get noSubject => '(senza oggetto)';
 
+	/// it: 'Bozza'
+	String get draft => 'Bozza';
+
+	/// it: 'La tua versione: oggetto $subject, testo $body'
+	String draftMine({required Object subject, required Object body}) => 'La tua versione: oggetto ${subject}, testo ${body}';
+
+	/// it: 'Versione del Provider: oggetto $subject, testo $body'
+	String draftProvider({required Object subject, required Object body}) => 'Versione del Provider: oggetto ${subject}, testo ${body}';
+
 	late final Translations$conflitti$values$it values = Translations$conflitti$values$it.internal(_root);
 }
 
@@ -1232,6 +1241,9 @@ extension on Translations {
 			'conflitti.signMessage' => 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.',
 			'conflitti.account' => ({required Object name}) => 'account ${name}',
 			'conflitti.noSubject' => '(senza oggetto)',
+			'conflitti.draft' => 'Bozza',
+			'conflitti.draftMine' => ({required Object subject, required Object body}) => 'La tua versione: oggetto ${subject}, testo ${body}',
+			'conflitti.draftProvider' => ({required Object subject, required Object body}) => 'Versione del Provider: oggetto ${subject}, testo ${body}',
 			'conflitti.values.read' => 'letto',
 			'conflitti.values.unread' => 'da leggere',
 			'conflitti.values.starred' => 'con Stella',

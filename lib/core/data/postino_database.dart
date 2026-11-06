@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3 show Database;
 
 // The generated part maps enum columns to these types.
 import '../domain/account.dart';
+import '../domain/draft_content.dart';
 import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
@@ -134,7 +135,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -223,6 +224,11 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
       if (from < 17) await m.createTable(messageEmbeddings);
       if (from < 18) await _queueOfAzioni(m);
+      // The expected value and the Conflitto of the Bozze (#149); before v10 the table was just created above, with them.
+      if (from >= 10 && from < 19) {
+        await m.addColumn(drafts, drafts.expected);
+        await m.addColumn(drafts, drafts.conflict);
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);

@@ -267,6 +267,9 @@
     "signMessage": "This message changed somewhere else too. You see your version here.",
     "account": "account $name",
     "noSubject": "(no subject)",
+    "draft": "Draft",
+    "draftMine": "Your version: subject $subject, text $body",
+    "draftProvider": "Provider's version: subject $subject, text $body",
     "values": {
       "read": "read",
       "unread": "unread",

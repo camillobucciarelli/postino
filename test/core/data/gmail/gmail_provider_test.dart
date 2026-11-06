@@ -10,6 +10,8 @@ import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/draft_content.dart';
+import 'package:postino/core/domain/draft_outcome.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -927,6 +929,61 @@ void main() {
         );
         expect(await g.provider.saveDraft(d, isNew: false), isErr<NotFoundFailure>());
         expect(g.requests, isEmpty);
+      });
+
+      group('with the expected impronta (#149)', () {
+        final expected = DraftContent.of(draft).fingerprint;
+        const edit = OutgoingMessage(
+          messageId: '<c1d2e3f4@postino.example.com>',
+          from: 'Ada Lovelace <ada@gmail.com>',
+          to: ['Bruno <bruno@example.com>'],
+          subject: 'Caffè è più buono',
+          body: '<p>Ciao Bruno, modificata qui.</p>',
+        );
+
+        /// [route], the Bozza on Gmail being the recorded [get].
+        String Function(http.Request, String) holding(String get) =>
+            (r, path) => r.method == 'GET' && path == 'drafts/$draftId' ? get : route(r, path);
+
+        test('the Bozza as uploaded (its MIME re-encoded): read, then written', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)), isA<DraftSaved>());
+          expect(
+            [for (final r in g.requests) '${r.method} ${r.url.path}'],
+            ['GET ${gmailApi}drafts', 'GET ${gmailApi}drafts/$draftId', 'PUT ${gmailApi}drafts/$draftId'],
+          );
+          expect(g.requests[1].url.queryParameters['format'], 'full');
+        });
+
+        test('edited in Gmail elsewhere: a Conflitto with the Provider\'s version, nothing written', () async {
+          final g = RecordedGmail(holding('draft_get_edited'));
+          expect(
+            okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)),
+            isA<DraftDiverged>().having(
+              (d) => d.provider,
+              'provider',
+              const DraftContent(
+                to: ['Bruno <bruno@example.com>'],
+                cc: ['carla@example.com'],
+                bcc: ['dario@example.com'],
+                subject: 'Caffè domani?',
+                body: '<div dir="ltr">Ciao Bruno, ci vediamo domani per il caffè?</div>\r\n',
+              ),
+            ),
+          );
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('sent or deleted elsewhere (a 404 on drafts.get): NotFound, nothing written', () async {
+          final g = RecordedGmail(holding('not_found'));
+          expect(await g.provider.saveDraft(edit, isNew: false, expected: expected), isErr<NotFoundFailure>());
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('already the wanted version elsewhere: written, no Conflitto', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(draft, isNew: false, expected: 'other')), isA<DraftSaved>());
+        });
       });
 
       test('offline is an OfflineFailure', () async {

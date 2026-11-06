@@ -1,4 +1,5 @@
 import 'conflict.dart';
+import 'draft_conflict.dart';
 import 'mail_action.dart';
 import 'message.dart';
 import 'result.dart';
@@ -70,6 +71,10 @@ abstract interface class MailSync() {
   /// Closes the Conflitto: [keepMine] («tieni la mia») applies its Azione on the Provider again, forced, now or when
   /// back online; otherwise («tieni quella del Provider») the message takes the Provider's value here.
   Future<void> resolveConflict(Conflict conflict, {required bool keepMine});
+
+  /// Closes the Conflitto of a Bozza (#149): [keepMine] («La tua») uploads the Bozza here, now or when back online;
+  /// otherwise («Del Provider») the Bozza here takes the Provider's version.
+  Future<void> resolveDraftConflict(DraftConflict conflict, {required bool keepMine});
 
   /// Puts the Etichetta [labelId] on the message (with [add] false, takes it off): [act] with [ApplyLabel] or
   /// [RemoveLabel].

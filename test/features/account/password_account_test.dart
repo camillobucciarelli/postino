@@ -1,5 +1,7 @@
 // «Collega iCloud» and «Altro IMAP» (#162): the form, autodiscovery or manual servers, each error, the reconnection.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -147,6 +149,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(_address, findsNothing);
     expect(find.text('Altro IMAP'), findsOneWidget);
+  });
+
+  testWidgets('Annulla while the connection is tested closes the form and saves nothing', (tester) async {
+    final h = await _start(tester);
+    h.connection.gate = Completer<void>();
+    await _open(tester, 'Collega iCloud');
+    await _fill(tester, 'ada@icloud.com', 'app-password-1');
+    await tester.ensureVisible(_connect);
+    await tester.tap(_connect);
+    await tester.pump();
+
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    h.connection.gate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(_address, findsNothing);
+    expect(find.text('Collega iCloud'), findsOneWidget);
+    expect(h.keychain.values, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
   testWidgets('a Da ricollegare password Account reconnects from its Banner with the address locked', (tester) async {

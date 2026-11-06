@@ -11,6 +11,7 @@ abstract interface class AccountsRepository() {
   Stream<List<Account>> watchAccounts();
 
   /// Google consent; creates the Gmail Account, or brings it back to attivo if Da ricollegare, then syncs.
+  /// The same address already connected through another Provider is [AlreadyConnectedFailure], nothing written.
   /// [loginHint] is the address of the Account being reconnected: it preselects it and the grant must match it
   /// (else [WrongAccountFailure], nothing written).
   Future<Result<Account>> connectGmail({String? loginHint});
@@ -20,8 +21,14 @@ abstract interface class AccountsRepository() {
   /// the servers are [servers] when given, else those already saved for the Account, the Provider's preset or
   /// autodiscovery. A test connection runs before anything is written: on any failure nothing is saved.
   /// Failures: [UseGmailFailure] (a Gmail address), [AlreadyConnectedFailure], [ServerNotFoundFailure] (enter the
-  /// servers by hand), [AuthFailure] (credentials refused), [OfflineFailure] (server unreachable).
-  Future<Result<Account>> connectWithPassword(String address, String password, {ServerSettings? servers});
+  /// servers by hand), [AuthFailure] (credentials refused), [OfflineFailure] (server unreachable), and
+  /// [CancelledFailure] when [cancel] completes before the save: then nothing is written either.
+  Future<Result<Account>> connectWithPassword(
+    String address,
+    String password, {
+    ServerSettings? servers,
+    Future<void>? cancel,
+  });
 
   /// Incremental consent for Drive (ADR 0016) on the Gmail Account [accountId], for the Impostazioni di Postino.
   /// On success the new tokens replace the Account's; otherwise nothing is written: [DriveScopeFailure] if the

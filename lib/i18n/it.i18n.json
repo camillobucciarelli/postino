@@ -35,7 +35,8 @@
     "offline": "Nessuna connessione: riprova quando sei online.",
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
     "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
-    "failed": "Qualcosa è andato storto: riprova."
+    "failed": "Qualcosa è andato storto: riprova.",
+    "alreadyConnected": "Questo indirizzo è già collegato come un altro Account."
   },
   "offline": {
     "title": "Sei offline",

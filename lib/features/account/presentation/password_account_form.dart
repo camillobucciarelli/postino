@@ -49,8 +49,12 @@ class _PasswordAccountFormState() extends State<_PasswordAccountForm> {
   /// A failure that belongs to no field.
   String? _error;
 
+  /// Completed when the form closes (Annulla, Esc, a tap outside) during a connection: the Account is not saved.
+  final _closed = Completer<void>();
+
   @override
   void dispose() {
+    _closed.complete();
     _address.dispose();
     _password.dispose();
     _imap.dispose();
@@ -80,7 +84,12 @@ class _PasswordAccountFormState() extends State<_PasswordAccountForm> {
     if (!valid) return setState(() {});
     final navigator = Navigator.of(context);
     setState(() => _busy = true);
-    final result = await GetIt.I<AccountsRepository>().connectWithPassword(address, _password.text, servers: servers);
+    final result = await GetIt.I<AccountsRepository>().connectWithPassword(
+      address,
+      _password.text,
+      servers: servers,
+      cancel: _closed.future,
+    );
     if (!mounted) return;
     setState(() {
       _busy = false;

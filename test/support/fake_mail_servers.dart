@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:postino/core/domain/connection_tester.dart';
 import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/result.dart';
@@ -16,14 +18,17 @@ class FakeServerDiscovery() implements ServerDiscovery {
 }
 
 /// The test connection without sockets: accepts [password] only, unless [failure] is set; records each test.
+/// While [gate] is set each test waits for it, like a slow server.
 class FakeConnectionTester() implements ConnectionTester {
   String password = 'app-password-1';
   Failure? failure;
+  Completer<void>? gate;
   final tested = <(ServerSettings servers, String user)>[];
 
   @override
   Future<Result<void>> test(ServerSettings servers, {required String user, required String password}) async {
     tested.add((servers, user));
+    await gate?.future;
     if (failure case final f?) return Err(f);
     return password == this.password ? const Ok(null) : const Err(AuthFailure());
   }

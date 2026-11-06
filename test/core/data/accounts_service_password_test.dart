@@ -1,5 +1,7 @@
 // Password Accounts (#162): iCloud preset, IMAP autodiscovery or manual servers, test connection, keychain only.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -115,6 +117,33 @@ void main() {
 
     expect(_failure(r), isA<AlreadyConnectedFailure>());
     expect(h.connection.tested, isEmpty);
+  });
+
+  test('a mailbox already connected over IMAP is not added again with Gmail; no token is written', () async {
+    h.discovery.servers['ada@company.com'] = _fastmail;
+    await accounts.connectWithPassword('ada@company.com', 'app-password-1');
+    h.consent.address = 'ada@company.com';
+    final keychainBefore = Map.of(h.keychain.values);
+
+    final r = await accounts.connectGmail();
+
+    expect(_failure(r), isA<AlreadyConnectedFailure>());
+    expect(h.keychain.values, keychainBefore);
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com']);
+  });
+
+  test('cancelled while the servers answer, nothing is written', () async {
+    final cancel = Completer<void>();
+    h.connection.gate = Completer<void>();
+    final pending = accounts.connectWithPassword('ada@icloud.com', 'app-password-1', cancel: cancel.future);
+    await Future<void>.delayed(Duration.zero);
+
+    cancel.complete();
+    h.connection.gate!.complete();
+
+    expect(_failure(await pending), isA<CancelledFailure>());
+    expect(h.keychain.values, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
   test('reconnecting a Da ricollegare Account keeps its servers and brings it back to attivo', () async {

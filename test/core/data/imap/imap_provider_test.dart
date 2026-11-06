@@ -43,13 +43,15 @@ void main() {
       final byId = {for (final m in next.messages) m.id: m};
       expect(byId.keys, unorderedEquals([h.idOf('a'), h.idOf('b'), h.idOf('d')]));
       expect(byId[h.idOf('a')]!.isRead, isTrue);
+      // Read elsewhere, it keeps its preview.
+      expect(byId[h.idOf('a')]!.snippet, 'Ciao');
       expect(h.idOf('b'), startsWith('Viaggi/'));
       expect(byId[h.idOf('b')]!.labelIds, ['Viaggi', starredLabelId]);
       expect(
         next.removedMessageIds,
         unorderedEquals([movedFrom, first.messages.singleWhere((m) => m.messageId == '<c@example.com>').id]),
       );
-      expect(next.bodies.keys, [h.idOf('d')]);
+      expect(next.bodies.keys, unorderedEquals([h.idOf('a'), h.idOf('d')]));
     });
 
     test('no change: the same cursor, still valid', () async {
@@ -137,6 +139,20 @@ void main() {
     expect(byKey['<r@example.com>'], '<root@example.com>');
     expect(byKey['<b@example.com>'], '<a@example.com>');
     expect(byKey['<c@example.com>'], '<c@example.com>');
+  });
+
+  test('a Conversazione keeps its id when a message of a long In-Reply-To chain comes back changed', () async {
+    String raw(String id, String header) =>
+        'From: bob@example.com\r\nTo: ${h.address}\r\nSubject: Re: Gita\r\n'
+        'Date: Fri, 02 Jan 2026 10:00:00 +0000\r\nMessage-ID: <$id@example.com>\r\n$header\r\n\r\nOk\r\n';
+    await h.append('INBOX', raw('a', 'References: <root@example.com>'));
+    await h.append('INBOX', raw('b', 'In-Reply-To: <a@example.com>'));
+    await h.append('INBOX', raw('c', 'In-Reply-To: <b@example.com>'));
+    final first = okValue(await h.provider.initialSync());
+    expect(first.messages.map((m) => m.conversationId).toSet(), {'<root@example.com>'});
+    await h.deliver(msg('c', isRead: true));
+    final next = okValue(await h.provider.incrementalSync(first.cursor));
+    expect(next.messages.single.conversationId, '<root@example.com>');
   });
 
   test('IDLE with a password: up, then changed when a message arrives', () async {

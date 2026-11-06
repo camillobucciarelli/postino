@@ -47,6 +47,10 @@ class _Mailbox() {
     if (upper.startsWith('UID SEARCH SINCE')) return ['* SEARCH 1 2'];
     if (upper.startsWith('UID SEARCH UID 3:*')) return ['* SEARCH 3'];
     if (upper.startsWith('UID SEARCH UID 1:2')) return ['* SEARCH 2'];
+    // The third round: nothing changed since 105.
+    if (upper.startsWith('UID SEARCH UID 2:3')) return ['* SEARCH 2 3'];
+    if (upper.startsWith('UID SEARCH UID 4:*')) return ['* SEARCH 3'];
+    if (upper.contains('CHANGEDSINCE 105')) return <String>[];
     if (upper.contains('CHANGEDSINCE 100 VANISHED')) {
       return ['* VANISHED (EARLIER) 1', r'* 1 FETCH (UID 2 FLAGS (\Seen \Flagged) MODSEQ (104))'];
     }
@@ -57,7 +61,9 @@ class _Mailbox() {
         _fetch(2, 2, '', 'BODY[]', '${_header(2)}Due\r\n', 95),
       ];
     }
-    if (upper.startsWith('UID FETCH 2 ')) return [_fetch(1, 2, r'\Seen \Flagged', 'BODY[HEADER]', _header(2), 104)];
+    if (upper.startsWith('UID FETCH 2 ')) {
+      return [_fetch(1, 2, r'\Seen \Flagged', 'BODY[]', '${_header(2)}Due\r\n', 104)];
+    }
     if (upper.startsWith('UID FETCH 3 ')) return [_fetch(2, 3, '', 'BODY[]', '${_header(3)}Tre\r\n', 105)];
     return ['BAD unexpected $command'];
   }
@@ -98,7 +104,9 @@ void main() {
       expect(byId.keys, ['INBOX/7/2', 'INBOX/7/3']);
       expect((byId['INBOX/7/2']!.isRead, byId['INBOX/7/2']!.isStarred), (true, true));
       expect(byId['INBOX/7/2']!.labelIds, [inboxLabelId, starredLabelId]);
-      expect(next.bodies.keys, ['INBOX/7/3']);
+      // The changed one comes whole too, as on Gmail: its snippet stays.
+      expect(next.bodies.keys, ['INBOX/7/2', 'INBOX/7/3']);
+      expect(byId['INBOX/7/2']!.snippet, 'Due');
       expect(
         server.commands,
         contains(
@@ -113,9 +121,39 @@ void main() {
       expect(again.messages, isEmpty);
       expect(again.removedMessageIds, isEmpty);
       expect(again.cursor, next.cursor);
-      expect(server.commands.where((c) => c.startsWith('UID ')), isEmpty);
+      // QRESYNC: HIGHESTMODSEQ and UIDNEXT as they were, nothing else asked. CONDSTORE alone may expunge without
+      // raising HIGHESTMODSEQ: the UIDs are checked again, no message fetched.
+      expect(
+        server.commands.where((c) => c.startsWith('UID ')),
+        qresync ? isEmpty : everyElement(isNot(contains('BODY'))),
+      );
     });
   }
+
+  test('a folder LIST shows but SELECT refuses is skipped, as it was: not an expired cursor', () async {
+    final mailbox = _Mailbox();
+    final server = await RecordedImapServer.start((c) {
+      final folders = [('', 'INBOX'), ('', 'Privata')];
+      if (c.toUpperCase().startsWith('LIST')) return basics(c, capabilities: '', folders: folders)!;
+      if (c.contains('"Privata"')) return ['NO [NOPERM] not allowed'];
+      return mailbox.answer(c, qresync: true);
+    });
+    addTearDown(server.stop);
+    final keychain = FakeSecureStore();
+    await server.remember(keychain, _account);
+    final p = ImapProvider(
+      _account,
+      'ada@icloud.com',
+      keychain,
+      FakeClock(DateTime.utc(2026, 11, 6)),
+      connect: plainConnector,
+    );
+    addTearDown(p.close);
+    final first = okValue(await p.initialSync());
+    expect(first.messages, hasLength(2));
+    final next = okValue(await p.incrementalSync(first.cursor));
+    expect(next.removedMessageIds, isEmpty);
+  });
 
   test('a refused login after the greeting is an AuthFailure; a server without IDLE leaves the signal down', () async {
     final server = await RecordedImapServer.start(

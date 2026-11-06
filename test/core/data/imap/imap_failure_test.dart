@@ -14,6 +14,11 @@ void main() {
 
   test('a NO at the login on a live connection is a refusal of the credentials', () {
     expect(imapFailure(ImapException(imap, 'NO'), atLogin: true, connected: true), isA<AuthFailure>());
+    // RFC 5530: the server is down for now, the password may be right.
+    expect(
+      imapFailure(ImapException(imap, 'NO [UNAVAILABLE] try later'), atLogin: true, connected: true),
+      isA<OfflineFailure>(),
+    );
     expect(imapFailure(SmtpException.message(smtp, '535'), atLogin: true, connected: true), isA<AuthFailure>());
   });
 

@@ -107,12 +107,13 @@ class ImapSession(
   }
 }
 
-/// Selects [path]: a folder that is not there (any refusal on a live connection) is [NotFoundFailure].
+/// Selects [path]: a folder the server refuses (gone, or not readable) is [NotFoundFailure]; a timeout or a lost
+/// connection goes on to [imapFailure] (offline).
 Future<Mailbox> selectFolder(ImapClient c, String path, {bool condstore = false}) async {
   try {
     return await c.selectMailboxByPath(path, enableCondStore: condstore);
-  } on ImapException {
-    if (!c.isConnected) rethrow;
+  } on ImapException catch (e) {
+    if (!c.isConnected || e.message == 'timeout') rethrow;
     throw const ImapFailed(NotFoundFailure());
   }
 }

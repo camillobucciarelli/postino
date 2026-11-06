@@ -61,19 +61,22 @@ class ImapProvider(
       final all = <ImapParsed>[];
       final states = <String, FolderState>{};
       for (final f in folders) {
-        final delta = await _folders.window(
-          c,
-          f,
-          since,
-          onPage: onPage == null ? null : (page) => onPage(_thread(page, [...all, ...page]), _bodies(page)),
+        final delta = await _unlessGone(
+          () => _folders.window(
+            c,
+            f,
+            since,
+            onPage: onPage == null ? null : (page) => onPage(_thread(page, [...all, ...page]), _bodies(page)),
+          ),
         );
+        if (delta == null) continue;
         all.addAll(delta.messages);
         states[f.path] = delta.state;
       }
       return SyncBatch(
         cursor: ImapCursor(states).encode(),
         labels: _labels(folders),
-        messages: _thread(all, all),
+        messages: _thread(all, all, await _related(c, folders, all)),
         bodies: _bodies(all),
       );
     }),
@@ -90,10 +93,15 @@ class ImapProvider(
       final removed = <String>[];
       final states = <String, FolderState>{};
       for (final f in folders) {
-        final delta = switch (was.folders[f.path]) {
-          final state? => await _folders.changes(c, f, state, since),
-          null => await _folders.window(c, f, since),
-        };
+        final state = was.folders[f.path];
+        final delta = await _unlessGone(
+          () => state == null ? _folders.window(c, f, since) : _folders.changes(c, f, state, since),
+        );
+        if (delta == null) {
+          // Listed but refused (gone since the LIST, or not readable): as it was, until the next sync.
+          if (state != null) states[f.path] = state;
+          continue;
+        }
         messages.addAll(delta.messages);
         removed.addAll(delta.removed);
         states[f.path] = delta.state;
@@ -103,16 +111,10 @@ class ImapProvider(
         if (states.containsKey(path)) continue;
         removed.addAll([for (final u in s.uids) imapMessageId(path, s.uidValidity, u)]);
       }
-      final related = await _lookup.related(c, folders, messages);
-      final next = ImapCursor(states).encode();
       return SyncBatch(
-        cursor: next,
+        cursor: ImapCursor(states).encode(),
         labels: _labels(folders),
-        messages: threadMessages(
-          [for (final p in messages) (message: p.message, inReplyTo: p.inReplyTo)],
-          known: [for (final p in messages) (message: p.message, inReplyTo: p.inReplyTo), ...related],
-          address: _address,
-        ),
+        messages: _thread(messages, messages, await _related(c, folders, messages)),
         removedMessageIds: removed,
         bodies: _bodies(messages),
       );
@@ -205,11 +207,30 @@ class ImapProvider(
 
   static List<Label> _labels(List<ImapFolder> folders) => [for (final f in folders) ?f.label];
 
-  List<Message> _thread(List<ImapParsed> messages, List<ImapParsed> known) => threadMessages(
-    [for (final p in messages) (message: p.message, inReplyTo: p.inReplyTo)],
-    known: [for (final p in known) (message: p.message, inReplyTo: p.inReplyTo)],
-    address: _address,
-  );
+  /// [messages] threaded over [known] and the [related] headers looked up on the server.
+  List<Message> _thread(List<ImapParsed> messages, List<ImapParsed> known, [List<ThreadInput> related = const []]) =>
+      threadMessages(
+        [for (final p in messages) _input(p)],
+        known: [for (final p in known) _input(p), ...related],
+        address: _address,
+      );
+
+  Future<List<ThreadInput>> _related(ImapClient c, List<ImapFolder> folders, List<ImapParsed> messages) {
+    final inputs = [for (final p in messages) _input(p)];
+    return _lookup.related(c, folders, inputs, inputs);
+  }
+
+  static ThreadInput _input(ImapParsed p) => (message: p.message, inReplyTo: p.inReplyTo);
+
+  /// [sync] of one folder; null when the server refuses the folder ([NotFoundFailure]).
+  static Future<FolderDelta?> _unlessGone(Future<FolderDelta> Function() sync) async {
+    try {
+      return await sync();
+    } on ImapFailed catch (e) {
+      if (e.failure is NotFoundFailure) return null;
+      rethrow;
+    }
+  }
 
   static Map<String, MessageBody> _bodies(List<ImapParsed> messages) => {
     for (final p in messages) p.message.id: ?p.body,

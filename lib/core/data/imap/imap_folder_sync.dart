@@ -75,7 +75,9 @@ class ImapFolderSync(final ImapSession _session) {
     }
     final modSeq = _session.condstore ? box.highestModSequence : null;
     final uidNext = box.uidNext ?? was.uidNext;
-    if (modSeq != null && modSeq == was.modSeq && uidNext == was.uidNext) {
+    // Only QRESYNC makes an EXPUNGE raise HIGHESTMODSEQ (RFC 7162 §3.2.10): with CONDSTORE alone a deletion may
+    // leave it as it was.
+    if (_session.qresync && modSeq != null && modSeq == was.modSeq && uidNext == was.uidNext) {
       return (messages: const <ImapParsed>[], removed: const <String>[], state: was);
     }
 
@@ -94,7 +96,9 @@ class ImapFolderSync(final ImapSession _session) {
         if (u >= was.uidNext) u,
     ];
     final messages = [
-      ...await _fetch(c, folder, uidValidity, changed, bodies: false),
+      // Whole, as Gmail's changed messages: a header-only one would come without its snippet.
+      // ponytail: a read elsewhere downloads the inbox message again; keep the stored snippet if that costs too much.
+      ...await _fetch(c, folder, uidValidity, changed, bodies: true),
       ...await _fetch(c, folder, uidValidity, fresh, bodies: true),
     ];
     final added = {for (final m in messages) _uid(m)}.where(fresh.contains);
@@ -135,57 +139,74 @@ class ImapFolderSync(final ImapSession _session) {
         if (m.uid case final uid? when was.uids.contains(uid)) uid: (m.isSeen, m.isFlagged),
     };
     if (condstore && _session.qresync) {
-      final r = await c.uidFetchMessagesByCriteria('$known (FLAGS) (CHANGEDSINCE ${was.modSeq} VANISHED)');
+      final r = await c.uidFetchMessagesByCriteria(
+        '$known (FLAGS) (CHANGEDSINCE ${was.modSeq} VANISHED)',
+        responseTimeout: ImapSession.timeout,
+      );
       final vanished = r.vanishedMessagesUidSequence?.toList() ?? const <int>[];
       return (flags: flagsOf(r.messages), gone: was.uids.intersection(vanished.toSet()));
     }
     if (condstore) {
-      final r = await c.uidFetchMessages(known, '(FLAGS)', changedSinceModSequence: was.modSeq);
+      final r = await c.uidFetchMessages(
+        known,
+        '(FLAGS)',
+        changedSinceModSequence: was.modSeq,
+        responseTimeout: ImapSession.timeout,
+      );
       return (flags: flagsOf(r.messages), gone: was.uids.difference((await search(c, 'UID $known')).toSet()));
     }
     // ponytail: every known UID's flags on every poll; fine for a 90-day window, CONDSTORE spares it where announced.
-    final r = await c.uidFetchMessages(known, '(UID FLAGS)');
+    final r = await c.uidFetchMessages(known, '(UID FLAGS)', responseTimeout: ImapSession.timeout);
     final flags = flagsOf(r.messages);
     return (flags: flags, gone: was.uids.difference(flags.keys.toSet()));
   }
 
-  /// The [uids] of [folder] in that order (the server answers in its own), headers only or (the inbox, with
-  /// [bodies]) whole.
-  Future<List<ImapParsed>> _fetch(
+  /// [fetchMessages] whole only for the inbox (ADR 0003).
+  static Future<List<ImapParsed>> _fetch(
     ImapClient c,
     ImapFolder folder,
     int uidValidity,
     List<int> uids, {
     required bool bodies,
-  }) async {
-    final withBody = bodies && folder.role == FolderRole.inbox;
-    final byUid = <int, MimeMessage>{};
-    // A page at a time: short commands, and a body page that fits the timeout.
-    for (var i = 0; i < uids.length; i += _page) {
-      final r = await c.uidFetchMessages(
-        MessageSequence.fromIds(uids.skip(i).take(_page).toList(), isUid: true),
-        withBody ? '(UID FLAGS INTERNALDATE BODY.PEEK[])' : '(UID FLAGS INTERNALDATE BODY.PEEK[HEADER])',
-      );
-      byUid.addAll({for (final m in r.messages) ?m.uid: m});
-    }
-    return [
-      for (final uid in uids)
-        if (byUid[uid] case final m?)
-          parseImapMessage(
-            m,
-            id: imapMessageId(folder.path, uidValidity, uid),
-            labelId: folder.labelId,
-            withBody: withBody,
-          ),
-    ];
-  }
+  }) => fetchMessages(c, folder, uidValidity, uids, withBody: bodies && folder.role == FolderRole.inbox);
 
   static int _uid(ImapParsed m) => parseImapMessageId(m.message.id)!.uid;
 }
 
+/// The [uids] of the selected [folder] in that order (the server answers in its own), headers only or, [withBody],
+/// whole; a page at a time: short commands, and a body page that fits the timeout.
+Future<List<ImapParsed>> fetchMessages(
+  ImapClient c,
+  ImapFolder folder,
+  int uidValidity,
+  List<int> uids, {
+  bool withBody = false,
+}) async {
+  const page = 50;
+  final byUid = <int, MimeMessage>{};
+  for (var i = 0; i < uids.length; i += page) {
+    final r = await c.uidFetchMessages(
+      MessageSequence.fromIds(uids.skip(i).take(page).toList(), isUid: true),
+      withBody ? '(UID FLAGS INTERNALDATE BODY.PEEK[])' : '(UID FLAGS INTERNALDATE BODY.PEEK[HEADER])',
+      responseTimeout: ImapSession.timeout,
+    );
+    byUid.addAll({for (final m in r.messages) ?m.uid: m});
+  }
+  return [
+    for (final uid in uids)
+      if (byUid[uid] case final m?)
+        parseImapMessage(
+          m,
+          id: imapMessageId(folder.path, uidValidity, uid),
+          labelId: folder.labelId,
+          withBody: withBody,
+        ),
+  ];
+}
+
 /// The UIDs of the selected folder matching [criteria] (an IMAP SEARCH key).
 Future<List<int>> search(ImapClient c, String criteria) async {
-  final r = await c.uidSearchMessages(searchCriteria: criteria);
+  final r = await c.uidSearchMessages(searchCriteria: criteria, responseTimeout: ImapSession.timeout);
   final found = r.matchingSequence;
   return found == null || found.isEmpty ? <int>[] : found.toList();
 }

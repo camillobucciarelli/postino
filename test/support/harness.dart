@@ -1,7 +1,10 @@
+import 'dart:io' show SocketException;
+
 import 'package:file/memory.dart';
 import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
+import 'package:postino/core/data/imap/imap_session.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/managed_model_download.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -31,7 +34,8 @@ import 'fake_platform.dart';
 import 'fake_report_sharer.dart';
 import 'fake_text_embedder.dart';
 
-/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers, consent, autodiscovery, test connection, keychain, clock, network,
+/// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers (an IMAP Account
+/// without one is offline), consent, autodiscovery, test connection, keychain, clock, network,
 /// links, Save As, report sharing, background sender, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
 /// one on that file system.
 class Harness._() {
@@ -81,6 +85,8 @@ class Harness._() {
       ..registerSingleton<ModelManager>(h.models)
       ..registerSingleton<ServerDiscovery>(h.discovery)
       ..registerSingleton<ConnectionTester>(h.connection)
+      // An IMAP Account without a fake Provider gets the real adapter, offline: never a real server.
+      ..registerSingleton<ImapConnector>((_, s) async => throw const SocketException('no network in tests'))
       ..registerSingleton<ModelDownload>(ManagedModelDownload(h.models, embeddingGemmaGguf))
       ..registerSingleton<AttachmentStorage>(
         await AttachmentStorage.open(

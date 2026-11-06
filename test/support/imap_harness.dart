@@ -2,49 +2,86 @@ import 'dart:convert' show base64Url;
 import 'dart:math' show Random;
 
 import 'package:enough_mail/enough_mail.dart';
+import 'package:postino/core/data/imap/imap_message_parser.dart' show imapMessageId;
+import 'package:postino/core/data/imap/imap_provider.dart';
+import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mime.dart';
-import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mail_servers.dart';
+import 'package:postino/core/domain/mailbox.dart' show parseMailboxes;
 import 'package:postino/core/domain/message.dart' as domain show Message, OutgoingMessage;
-import 'package:postino/core/domain/message.dart' show inboxLabelId, sentLabelId;
+import 'package:postino/core/domain/message.dart' show LabelKind, draftLabelId, inboxLabelId, sentLabelId, trashLabelId;
 
 import '../core/domain/mail_provider_contract.dart';
+import 'fake_platform.dart';
 import 'greenmail_server.dart';
 
-/// Il lato "altrove" del contratto IMAP: un utente su un server GreenMail, mosso da un altro client IMAP.
-/// I metodi sono asincroni (un'`ImapHarness` riscrive un `void` con un `Future<void>`); i gruppi del contratto
-/// li attenderanno quando T3 aggancia l'adapter (`provider`).
-class ImapHarness._(final GreenmailServer server) implements ContractHarness {
-  static const login = 'ada';
+/// The "elsewhere" side of the IMAP contract: a user of a GreenMail server, moved by another IMAP client, and the
+/// [ImapProvider] logged in as that user. One server for the whole test file ([stopServer] in `tearDownAll`), a new
+/// user (a fresh mailbox) for every harness.
+class ImapHarness._(final GreenmailServer server, final String login) extends ContractHarness {
+  static GreenmailServer? _server;
+  static var _users = 0;
 
-  /// La password con cui l'adapter entra; dopo [breakAuth] il server ne ha un'altra.
-  // Generate a ogni esecuzione: nessuna password nel sorgente.
-  static final password = _random();
-  static final _otherPassword = _random();
-  static const _folders = [('INBOX', inboxLabelId), ('Sent', sentLabelId), ('Drafts', 'DRAFT')];
+  /// The folder of each system Etichetta; any other Etichetta id is the folder's path.
+  static const _paths = {inboxLabelId: 'INBOX', sentLabelId: 'Sent', draftLabelId: 'Drafts', trashLabelId: 'Trash'};
 
-  /// Avvia il server e crea l'utente.
-  static Future<ImapHarness> start() async {
-    final server = await GreenmailServer.start();
-    try {
-      await server.createUser(login, password);
-    } catch (_) {
-      await server.stop();
-      rethrow;
-    }
-    return ImapHarness._(server);
+  /// The password the adapter logs in with; after [breakAuth] the server has another one.
+  // Generated on every run: no password in the source.
+  final password = _random();
+  final _otherPassword = _random();
+
+  /// The keychain the adapter reads its password from (`password:<id>`, #162).
+  final keychain = FakeSecureStore();
+
+  /// Provider ids by `msg` key, where each was last delivered.
+  final _ids = <String, String>{};
+
+  String get address => GreenmailServer.addressOf(login);
+  String get accountId => 'imap:$address';
+
+  /// A user with the folder `Viaggi` on the file's server (started on first use, or again after [goOffline]).
+  static Future<ImapHarness> create() async {
+    final server = _server ??= await GreenmailServer.start();
+    final h = ImapHarness._(server, 'ada${++_users}');
+    await server.createUser(h.login, h.password);
+    await PasswordCredentials(
+      password: h.password,
+      servers: ServerSettings(
+        imap: MailServer(host: GreenmailServer.host, port: server.imapsPort, security: ServerSecurity.ssl),
+        smtp: MailServer(host: GreenmailServer.host, port: server.smtpsPort, security: ServerSecurity.ssl),
+      ),
+    ).write(h.keychain, h.accountId);
+    await h.withClient((c) => _create(c, 'Viaggi'));
+    return h;
   }
 
-  Future<void> stop() => server.stop();
+  /// Stops the file's server.
+  static Future<void> stopServer() async {
+    await _server?.stop();
+    _server = null;
+  }
 
-  /// Un client IMAP con login come l'utente. Il certificato è autofirmato.
+  @override
+  late final ImapProvider provider = ImapProvider(
+    accountId,
+    address,
+    keychain,
+    FakeClock(DateTime.now().toUtc()),
+    onBadCertificate: (_) => true,
+  );
+
+  @override
+  Future<void> dispose() => provider.close();
+
+  /// An IMAP client logged in as the user; the certificate is self-signed.
   Future<ImapClient> connect() async {
     final c = ImapClient(onBadCertificate: (_) => true);
     await c.connectToServer(GreenmailServer.host, server.imapsPort);
-    await c.login(login, password);
+    await c.login(address, password);
     return c;
   }
 
-  /// Esegue [body] con un client connesso e lo chiude (un server con connessioni aperte rallenta l'eliminazione dell'utente).
+  /// Runs [body] with a connected client and closes it (open connections slow the user's deletion down).
   Future<T> withClient<T>(Future<T> Function(ImapClient c) body) async {
     final c = await connect();
     try {
@@ -55,55 +92,77 @@ class ImapHarness._(final GreenmailServer server) implements ContractHarness {
     }
   }
 
-  /// Le cartelle che l'utente non ha ancora (GreenMail ha solo INBOX): create alla prima consegna.
-  Future<void> _append(ImapClient c, String path, String raw, List<String> flags) async {
-    if (path != 'INBOX' && !(await c.listMailboxes()).any((m) => m.path == path)) {
-      try {
-        await c.createMailbox(path);
-      } on ImapException {
-        // enough_mail non ritrova la cartella appena creata (LIST con il suo pattern): esiste lo stesso.
-      }
-    }
-    await c.appendMessageText(raw, targetMailboxPath: path, flags: flags);
-  }
+  @override
+  String idOf(String key) => _ids[key] ?? key;
 
   @override
-  MailProvider get provider => throw UnimplementedError('L\'adapter IMAP arriva con T3');
+  String conversationOf(String key) => '<$key@example.com>';
 
-  /// APPEND nella cartella che dice `labelIds` (posta in arrivo se non ne dice nessuna).
+  @override
+  String get viaggiId => 'Viaggi';
+
+  @override
+  LabelKind get createdKind => LabelKind.cartella;
+
+  @override
+  bool get rebuildsExpiredCursor => true;
+
+  /// The folder [m] goes to: the first of its `labelIds` with one, else the inbox.
+  static String _pathOf(domain.Message m) =>
+      m.labelIds.map((l) => _paths[l] ?? (l == 'STARRED' ? null : l)).nonNulls.firstOrNull ?? 'INBOX';
+
+  /// APPEND in the folder `labelIds` says. A message already in the mailbox (same Message-ID) is moved there and
+  /// gets the flags of [m] instead: changed elsewhere.
   @override
   Future<void> deliver(domain.Message m) => withClient((c) async {
-    final path = _folders.firstWhere((f) => m.labelIds.contains(f.$2), orElse: () => _folders.first).$1;
-    final builder = MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
-      ..from = [MailAddress(m.fromName, m.from)]
-      ..to = m.to.map((a) => MailAddress(null, a)).toList()
-      ..subject = m.subject
-      ..messageId = m.messageId
-      ..date = m.date;
-    await _append(c, path, builder.buildMimeMessage().renderMessage(), [
-      if (m.isRead) MessageFlags.seen,
-      if (m.isStarred) MessageFlags.flagged,
-    ]);
+    final path = _pathOf(m);
+    final key = m.messageId.substring(1, m.messageId.indexOf('@'));
+    final flags = [if (m.isRead) MessageFlags.seen, if (m.isStarred) MessageFlags.flagged];
+    final found = await _find(c, m.messageId);
+    if (found == null) {
+      await _create(c, path);
+      final builder = MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
+        ..from = [MailAddress(m.fromName, m.from)]
+        ..to = m.to.map((a) => MailAddress(null, a)).toList()
+        ..cc = [for (final a in m.cc) _address(a)]
+        ..subject = m.subject
+        ..messageId = m.messageId
+        ..date = m.date;
+      if (m.references.isNotEmpty) builder.addHeader('References', m.references.join(' '));
+      await c.appendMessageText(builder.buildMimeMessage().renderMessage(), targetMailboxPath: path, flags: flags);
+    } else {
+      if (found.$1 != path) {
+        await _create(c, path);
+        await c.selectMailboxByPath(found.$1);
+        await c.uidMove(MessageSequence.fromId(found.$2, isUid: true), targetMailboxPath: path);
+      }
+      await c.selectMailboxByPath(path);
+      final uid = (await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "${m.messageId}"')).matchingSequence!;
+      await c.uidStore(uid, flags, action: StoreAction.replace);
+    }
+    final box = await c.selectMailboxByPath(path);
+    final uids = (await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "${m.messageId}"')).matchingSequence;
+    _ids[key] = imapMessageId(path, box.uidValidity!, uids!.toList().last);
   });
 
-  /// `\Deleted` + EXPUNGE del messaggio con Message-ID `<id@example.com>`, ovunque sia.
+  /// APPEND of the RFC 5322 text [raw] in [path], as another client.
+  Future<void> append(String path, String raw) => withClient((c) async {
+    await _create(c, path);
+    await c.appendMessageText(raw, targetMailboxPath: path);
+  });
+
+  /// `\Deleted` + EXPUNGE of the message with Message-ID `<id@example.com>`, wherever it is.
   @override
   Future<void> removeRemotely(String id) => withClient((c) async {
-    for (final (path, _) in _folders) {
-      try {
-        await c.selectMailboxByPath(path);
-      } on ImapException {
-        continue;
-      }
-      final found = await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID <$id@example.com>');
-      final uids = found.matchingSequence;
-      if (uids == null || uids.isEmpty) continue;
-      await c.uidMarkDeleted(uids);
+    for (var found = await _find(c, '<$id@example.com>'); found != null; found = await _find(c, '<$id@example.com>')) {
+      final (path, uid) = found;
+      await c.selectMailboxByPath(path);
+      await c.uidMarkDeleted(MessageSequence.fromId(uid, isUid: true));
       await c.expunge();
     }
   });
 
-  /// Casella ricreata: UIDVALIDITY nuovo, la posta di prima non c'è più.
+  /// The mailbox created again: a new UIDVALIDITY, nothing of the mail before.
   @override
   Future<void> expireCursors() async {
     await server.deleteUser(login);
@@ -111,23 +170,58 @@ class ImapHarness._(final GreenmailServer server) implements ContractHarness {
   }
 
   @override
-  Future<void> goOffline() => server.stop();
+  Future<void> goOffline() async {
+    await server.stop();
+    if (identical(_server, server)) _server = null;
+  }
 
-  /// Cambio password: il login con quella vecchia è rifiutato.
+  /// A new password: the login with the old one is refused.
   @override
   Future<void> breakAuth() async {
     await server.deleteUser(login);
     await server.createUser(login, _otherPassword);
   }
 
-  /// APPEND `\Draft` in Drafts, come un altro client.
+  /// APPEND `\Draft` in Drafts, as another client.
   @override
-  Future<void> deliverDraft(domain.OutgoingMessage d) =>
-      withClient((c) => _append(c, 'Drafts', renderMime(d, DateTime.utc(2026)), [MessageFlags.draft]));
+  Future<void> deliverDraft(domain.OutgoingMessage d) => withClient((c) async {
+    await _create(c, 'Drafts');
+    await c.appendMessageText(
+      renderMime(d, DateTime.utc(2026)),
+      targetMailboxPath: 'Drafts',
+      flags: [MessageFlags.draft],
+    );
+  });
 
   @override
   Future<void> attach(String messageId, String name, List<int> bytes) =>
-      throw UnimplementedError('Gli allegati arrivano con T5');
+      throw UnimplementedError('Gli allegati arrivano con T4');
+
+  /// The folder and UID of the message with [messageId], in any folder.
+  static Future<(String, int)?> _find(ImapClient c, String messageId) async {
+    for (final box in await c.listMailboxes(recursive: true)) {
+      if (box.isNotSelectable) continue;
+      await c.selectMailbox(box);
+      final uids = (await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "$messageId"')).matchingSequence;
+      if (uids != null && uids.isNotEmpty) return (box.path, uids.toList().first);
+    }
+    return null;
+  }
+
+  /// Folders other than the inbox are created on first use (GreenMail has only INBOX).
+  static Future<void> _create(ImapClient c, String path) async {
+    if (path == 'INBOX' || (await c.listMailboxes(recursive: true)).any((m) => m.path == path)) return;
+    try {
+      await c.createMailbox(path);
+    } on ImapException {
+      // enough_mail does not find the folder it just created (LIST with its pattern): it is there all the same.
+    }
+  }
+}
+
+MailAddress _address(String formatted) {
+  final m = parseMailboxes(formatted).single;
+  return MailAddress(m.name, m.address);
 }
 
 String _random() => base64Url.encode([for (var i = 0; i < 12; i++) Random.secure().nextInt(256)]);

@@ -43,7 +43,12 @@ jobs:
             | grep -vE '\.(g|freezed|config|route)\.dart$' \
             | xargs dart format --output=none --set-exit-if-changed
       - run: flutter analyze --fatal-infos
-      - run: flutter test
+      # I test `imap` avviano da soli GreenMail (jar fissato e verificato, scaricato in .dart_tool/greenmail): con
+      # POSTINO_REQUIRE_IMAP_SERVER=1 un Java mancante fa fallire il job invece di saltare i test.
+      - name: flutter test
+        env:
+          POSTINO_REQUIRE_IMAP_SERVER: '1'
+        run: flutter test
       - run: tool/release/version_test.sh
       - run: tool/release/verify_apk_test.sh
       - run: tool/release/build_number_test.sh

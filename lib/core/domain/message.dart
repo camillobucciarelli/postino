@@ -157,6 +157,12 @@ const draftLabelId = 'DRAFT';
 /// Provider-side id of the Inviati label.
 const sentLabelId = 'SENT';
 
+/// Provider-side id of the label of the messages with the Stella.
+const starredLabelId = 'STARRED';
+
+/// Provider-side id of the Cestino label: where Elimina puts a message.
+const trashLabelId = 'TRASH';
+
 /// Intestazioni di un messaggio ricevuto o sincronizzato; il corpo sta in [MessageBody].
 class const Message({
   /// Provider-side id.

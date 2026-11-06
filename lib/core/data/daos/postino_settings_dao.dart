@@ -24,6 +24,10 @@ class PostinoSettingsDao(super.attachedDatabase)
   /// The row of [key]; null when missing or removed.
   Future<PostinoSettingRow?> readRow(String key) => _live(key).getSingleOrNull();
 
+  /// The live voci whose key starts with [prefix], now and after each change.
+  Stream<List<PostinoSettingRow>> watchPrefix(String prefix) =>
+      (select(postinoSettings)..where((t) => t.key.like('$prefix%') & t.deleted.not())).watch();
+
   /// Writes the voce here, to upload; a null [value] writes a tombstone instead of deleting the row.
   /// Stamped [at], or just after the copy it replaces if that is later (a clock behind, a remote copy ahead):
   /// a local write always wins over what it replaces.
@@ -60,10 +64,10 @@ class PostinoSettingsDao(super.attachedDatabase)
   });
 
   /// The rows whose key starts with [prefix], tombstones included, now and after each change.
-  Stream<List<PostinoSettingRow>> watchPrefix(String prefix) => _prefix(prefix).watch();
+  Stream<List<PostinoSettingRow>> watchPrefixWithTombstones(String prefix) => _prefix(prefix).watch();
 
   /// The rows whose key starts with [prefix], tombstones included.
-  Future<List<PostinoSettingRow>> readPrefix(String prefix) => _prefix(prefix).get();
+  Future<List<PostinoSettingRow>> readPrefixWithTombstones(String prefix) => _prefix(prefix).get();
 
   /// Every voce, tombstones included.
   Future<List<SettingsEntry>> entries() async => [for (final r in await select(postinoSettings).get()) _entry(r)];

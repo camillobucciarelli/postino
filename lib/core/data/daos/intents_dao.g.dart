@@ -5,8 +5,7 @@ part of 'intents_dao.dart';
 // ignore_for_file: type=lint
 mixin _$IntentsDaoMixin on DatabaseAccessor<PostinoDatabase> {
   $IntentsTable get intents => attachedDatabase.intents;
-  $LabelIntentsTable get labelIntents => attachedDatabase.labelIntents;
-  $MessageLabelsTable get messageLabels => attachedDatabase.messageLabels;
+  $ConflictsTable get conflicts => attachedDatabase.conflicts;
   IntentsDaoManager get managers => IntentsDaoManager(this);
 }
 
@@ -15,8 +14,6 @@ class IntentsDaoManager {
   IntentsDaoManager(this._db);
   $$IntentsTableTableManager get intents =>
       $$IntentsTableTableManager(_db.attachedDatabase, _db.intents);
-  $$LabelIntentsTableTableManager get labelIntents =>
-      $$LabelIntentsTableTableManager(_db.attachedDatabase, _db.labelIntents);
-  $$MessageLabelsTableTableManager get messageLabels =>
-      $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
+  $$ConflictsTableTableManager get conflicts =>
+      $$ConflictsTableTableManager(_db.attachedDatabase, _db.conflicts);
 }

@@ -1,3 +1,6 @@
+import 'conflict.dart';
+import 'draft_conflict.dart';
+import 'mail_action.dart';
 import 'message.dart';
 import 'result.dart';
 
@@ -56,8 +59,25 @@ abstract interface class MailSync() {
   /// Idempotent on the name: an existing Etichetta is returned.
   Future<Result<Label>> createLabel(String accountId, String name);
 
-  /// Puts the Etichetta [labelId] on the message (with [add] false, takes it off): here at once, on the Provider
-  /// now or when back online (ADR 0008). Completes offline too, the intent stays queued.
+  /// Applies [action] to [messageIds] here at once, and on the Provider now or when back online (ADR 0008); completes
+  /// offline or Da ricollegare too, the Azione stays queued. With [hold] (the Annulla window, `undoWindow`) the voci
+  /// are «trattenute»: they go to the Provider only once it ends, unless [cancelAction] takes them back first.
+  Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold});
+
+  /// Annulla of an [act] with `hold` still running: the voci leave the queue and the messages are as before here.
+  /// False when nothing was still held (the window ended, or a later Azione replaced it).
+  Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action);
+
+  /// Closes the Conflitto: [keepMine] («tieni la mia») applies its Azione on the Provider again, forced, now or when
+  /// back online; otherwise («tieni quella del Provider») the message takes the Provider's value here.
+  Future<void> resolveConflict(Conflict conflict, {required bool keepMine});
+
+  /// Closes the Conflitto of a Bozza (#149): [keepMine] («La tua») uploads the Bozza here, now or when back online;
+  /// otherwise («Del Provider») the Bozza here takes the Provider's version.
+  Future<void> resolveDraftConflict(DraftConflict conflict, {required bool keepMine});
+
+  /// Puts the Etichetta [labelId] on the message (with [add] false, takes it off): [act] with [ApplyLabel] or
+  /// [RemoveLabel].
   Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add});
 
   /// [setLabel] on every message of a Conversazione: all queued, then a single replay.

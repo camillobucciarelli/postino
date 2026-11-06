@@ -4,6 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../domain/action_outcome.dart';
+import '../../domain/draft_content.dart';
+import '../../domain/draft_outcome.dart';
+import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
@@ -11,6 +15,7 @@ import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
+import 'gmail_actions.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
@@ -35,6 +40,7 @@ class GmailProvider(
 
   final GmailHttp _gmail;
   late final _labels = GmailLabels(_gmail);
+  late final _actions = GmailActions(_gmail, _labels);
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.
   /// Gmail allows 250 units per second per user and a message GET costs 5, so about 50.
@@ -146,21 +152,9 @@ class GmailProvider(
     return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
   });
 
-  /// One batchModify call per 1000 ids, Gmail's cap.
   @override
-  Future<Result<void>> setRead(List<String> messageIds, {required bool read}) => googleGuard(() async {
-    for (var i = 0; i < messageIds.length; i += 1000) {
-      await _gmail.send(
-        'POST',
-        'messages/batchModify',
-        body: {
-          'ids': messageIds.skip(i).take(1000).toList(),
-          read ? 'removeLabelIds' : 'addLabelIds': ['UNREAD'],
-        },
-      );
-    }
-    return const Ok(null);
-  });
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) =>
+      googleGuard(() async => Ok(await _actions.apply(messageId, action, expected)));
 
   /// [attachmentId] is the part id ([gmailAttachments]): the message comes first, then the part's data,
   /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.
@@ -226,7 +220,8 @@ class GmailProvider(
   @override
   Future<Result<Label>> createLabel(String name) => googleGuard(() async => Ok(await _labels.create(name)));
 
-  @override
+  /// Adds the label [labelId] to message [messageId] (with [add] false, removes it); idempotent.
+  /// [NotFoundFailure] when the message is gone.
   Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => googleGuard(() async {
     await _labels.set(messageId, labelId, add: add);
     return const Ok(null);
@@ -237,35 +232,52 @@ class GmailProvider(
   // first (one GET more), which keeps it idempotent when a reply was lost (the queue's intent is «this Bozza exists», ADR 0008).
   final _draftIds = <String, String>{};
 
+  /// With [expected], the Bozza on Gmail is read first (`drafts.get`, `format=full`) and compared by impronta: Gmail
+  /// has no conditional write (#149). One gone (a 404: deleted, or sent, elsewhere) is [NotFoundFailure].
   @override
-  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) => googleGuard(() async {
-    final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
-      Ok(:final value) => value,
-      // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-      Err(failure: NotFoundFailure()) => throw const GoogleFailed(UnexpectedFailure('forwarded attachment gone')),
-      Err(:final failure) => throw GoogleFailed(failure),
-    };
-    final message = {
-      'raw': base64Url.encode(utf8.encode(raw)),
-      // Gmail threads a Bozza by threadId, besides the headers.
-      'threadId': ?draft.conversationId,
-    };
-    Future<void> create() async {
-      final r = await _gmail.send('POST', 'drafts', body: {'message': message});
-      _draftIds[draft.messageId] = r['id'] as String;
-    }
+  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) =>
+      googleGuard(() async {
+        final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
+          Ok(:final value) => value,
+          // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+          Err(failure: NotFoundFailure()) => throw const GoogleFailed(UnexpectedFailure('forwarded attachment gone')),
+          Err(:final failure) => throw GoogleFailed(failure),
+        };
+        final message = {
+          'raw': base64Url.encode(utf8.encode(raw)),
+          // Gmail threads a Bozza by threadId, besides the headers.
+          'threadId': ?draft.conversationId,
+        };
+        Future<void> create() async {
+          final r = await _gmail.send('POST', 'drafts', body: {'message': message});
+          _draftIds[draft.messageId] = r['id'] as String;
+        }
 
-    final String id;
-    try {
-      id = await _draftId(draft.messageId);
-    } on GoogleFailed catch (e) {
-      if (!isNew || e.failure is! NotFoundFailure) rethrow;
-      await create();
-      return const Ok(null);
-    }
-    await _gmail.send('PUT', 'drafts/$id', body: {'id': id, 'message': message});
-    return const Ok(null);
-  });
+        final String id;
+        try {
+          id = await _draftId(draft.messageId);
+        } on GoogleFailed catch (e) {
+          if (!isNew || e.failure is! NotFoundFailure) rethrow;
+          await create();
+          return const Ok(DraftSaved());
+        }
+        if (!isNew && expected != null) {
+          final current = await _remoteDraft(id);
+          final fingerprint = current.fingerprint;
+          if (fingerprint != expected && fingerprint != DraftContent.of(draft).fingerprint) {
+            return Ok(DraftDiverged(current));
+          }
+        }
+        await _gmail.send('PUT', 'drafts/$id', body: {'id': id, 'message': message});
+        return const Ok(DraftSaved());
+      });
+
+  /// The Bozza [id] as Gmail has it now.
+  Future<DraftContent> _remoteDraft(String id) async {
+    final j = await _gmail.get('drafts/$id', query: {'format': 'full'});
+    final m = j['message'] as Map<String, dynamic>;
+    return gmailDraftContent(m, await _body(m['id'] as String, m['payload'] as Map<String, dynamic>? ?? const {}));
+  }
 
   @override
   Future<Result<void>> deleteDraft(String messageId) => googleGuard(() async {

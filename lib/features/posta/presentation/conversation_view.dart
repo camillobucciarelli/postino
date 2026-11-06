@@ -19,7 +19,9 @@ import '../domain/conversation_label_intents.dart';
 import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
+import 'conversation_acting.dart';
 import 'conversation_body.dart';
+import 'conversation_conflicts.dart';
 import 'conversation_labels.dart';
 import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
@@ -45,7 +47,9 @@ class const ConversationView({
   State<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationViewState() extends State<ConversationView> with AccountsSignal, ConversationOnScreen {
+class _ConversationViewState()
+    extends State<ConversationView>
+    with AccountsSignal, ConversationOnScreen, ConversationActing {
   final _sync = GetIt.I<MailSync>();
   final _replyDraft = GetIt.I<ReplyDraftUseCase>();
   final _subs = <StreamSubscription<Object?>>[];
@@ -87,10 +91,17 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
         anchor,
         accountId: widget.accountId,
         conversationId: widget.conversationId,
+        labelsAreFolders: _account?.provider.labelsAreFolders ?? false,
         returnFocus: _labelsFocus,
       ),
     );
   }
+
+  @override
+  List<ConversationMessage>? get shownMessages => _messages;
+
+  @override
+  Future<void> opening = Future.value();
 
   @override
   late final ConversationKey conversationKey = (accountId: widget.accountId, conversationId: widget.conversationId);
@@ -130,7 +141,7 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
     });
     // Only now: the expansion above saw which messages were unread. An unread one shown expanded
     // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones.
-    if (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!)) {
+    if (!closing && (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!))) {
       _open();
     }
     for (final (:message, :body) in messages) {
@@ -143,14 +154,13 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
 
   void _open() {
     _hydrationFailed = false;
-    unawaited(
-      // The opening brings the older messages: an Etichetta action taken meanwhile reaches them too.
-      GetIt.I<ConversationLabelIntents>()
-          .fetch(conversationKey, () => _sync.openConversation(widget.accountId, widget.conversationId))
-          .then((r) {
-            if (r is Err) _hydrationFailed = true;
-          }),
-    );
+    // The opening brings the older messages: an Etichetta action taken meanwhile reaches them too.
+    opening = GetIt.I<ConversationLabelIntents>()
+        .fetch(conversationKey, () => _sync.openConversation(widget.accountId, widget.conversationId))
+        .then((r) {
+          if (r is Err) _hydrationFailed = true;
+        });
+    unawaited(opening);
   }
 
   void _fetchBody(String id) {
@@ -232,6 +242,8 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
       appBar: PostinoAppBar(
         title: '',
         onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
+        commands: ready ? actionCommands(context) : const [],
+        moreLabel: context.t.azioni.more,
         actions: [
           if (ready)
             PostinoIconButton(
@@ -248,6 +260,10 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                ConversationConflicts(
+                  accountId: widget.accountId,
+                  messages: {for (final m in messages) m.message.id: m.message},
+                ),
                 Expanded(
                   child: ConversationBody(
                     account: a,

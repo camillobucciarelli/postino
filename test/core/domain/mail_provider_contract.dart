@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/action_outcome.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
@@ -70,9 +72,9 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.refreshAuth(),
         await h.provider.initialSync(),
         await h.provider.incrementalSync('0'),
-        await h.provider.setRead(['a'], read: true),
+        await h.provider.applyAction('a', const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        await h.provider.setLabel('a', 'Label_12', add: true),
+        await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
@@ -84,9 +86,9 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
         await h.provider.initialSync(),
         await h.provider.fetchBody('a'),
         await h.provider.fetchConversation('t-a'),
-        await h.provider.setRead(['a'], read: true),
+        await h.provider.applyAction('a', const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        await h.provider.setLabel('a', 'Label_12', add: true),
+        await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
@@ -226,10 +228,10 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     test('a message marked read comes back read with the next sync', () async {
       h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      _ok(await h.provider.setRead(['a'], read: true));
+      _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(next.messages.single.isRead, isTrue);
-      _ok(await h.provider.setRead(['a'], read: true));
+      _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
     });
   });
 }
@@ -394,18 +396,71 @@ void mailProviderLabelContract(String name, ContractHarness Function() create) {
     test('an Etichetta added twice is on the message once; removed twice, it is gone', () async {
       h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      _ok(await h.provider.setLabel('a', 'Label_12', add: true));
-      _ok(await h.provider.setLabel('a', 'Label_12', add: true));
+      _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
+      _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
       final added = await labelsOf(first.cursor, 'a');
       expect(added.where((l) => l == 'Label_12'), hasLength(1));
       expect(added, contains(inboxLabelId));
-      _ok(await h.provider.setLabel('a', 'Label_12', add: false));
-      _ok(await h.provider.setLabel('a', 'Label_12', add: false));
+      _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
+      _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
       expect(await labelsOf(first.cursor, 'a'), isNot(contains('Label_12')));
     });
 
-    test('an Etichetta on a message gone from the Provider is NotFound', () async {
-      expect(await h.provider.setLabel('zzz', 'Label_12', add: true), _err<NotFoundFailure>());
+    test('an Etichetta on a message gone from the Provider is messaggioSparito', () async {
+      expect(
+        _ok(await h.provider.applyAction('zzz', const ApplyLabel('Label_12'), expected: false)),
+        isA<ActionMessageGone>(),
+      );
+    });
+  });
+}
+
+/// The conditional Azione (ADR 0008): applied on the expected or the wanted value, a Conflitto on another one.
+void mailProviderActionContract(String name, ContractHarness Function() create) {
+  group('MailProvider action contract: $name', () {
+    late ContractHarness h;
+    setUp(() => h = create());
+
+    Future<Message> now(String id) async => _ok(await h.provider.initialSync()).messages.singleWhere((m) => m.id == id);
+
+    test('the expected value: applied', () async {
+      h.deliver(msg('a'));
+      expect(_ok(await h.provider.applyAction('a', const Star(), expected: false)), isA<ActionApplied>());
+      expect((await now('a')).isStarred, isTrue);
+    });
+
+    test('the wanted value already, changed elsewhere the same way: applied', () async {
+      h.deliver(msg('a', isRead: true));
+      expect(_ok(await h.provider.applyAction('a', const MarkRead(), expected: false)), isA<ActionApplied>());
+      expect((await now('a')).isRead, isTrue);
+    });
+
+    test('another value, changed elsewhere: a Conflitto with it, nothing written', () async {
+      h.deliver(msg('a', labelIds: const [trashLabelId]));
+      expect(
+        _ok(await h.provider.applyAction('a', const Archive(), expected: Placement.inbox)),
+        isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', Placement.trash),
+      );
+      expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
+    });
+
+    test('Elimina never conflicts', () async {
+      h.deliver(msg('a', labelIds: const []));
+      expect(_ok(await h.provider.applyAction('a', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
+      expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
+    });
+
+    test('no expected value: forced', () async {
+      h.deliver(msg('a', isRead: true));
+      expect(_ok(await h.provider.applyAction('a', const MarkUnread())), isA<ActionApplied>());
+      expect((await now('a')).isRead, isFalse);
+    });
+
+    test('a message gone: messaggioSparito', () async {
+      expect(
+        _ok(await h.provider.applyAction('zzz', const Delete(), expected: Placement.inbox)),
+        isA<ActionMessageGone>(),
+      );
     });
   });
 }

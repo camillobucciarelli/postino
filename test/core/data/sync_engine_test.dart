@@ -217,7 +217,7 @@ void main() {
       await (first, second).wait;
 
       expect(a.readCalls.map((c) => c.$1.join()), ['1', '2']);
-      expect(await GetIt.I<MailStore>().pendingIntents('a'), isEmpty);
+      expect(await GetIt.I<MailStore>().pendingActions('a', h.clock.now()), isEmpty);
     },
   );
 

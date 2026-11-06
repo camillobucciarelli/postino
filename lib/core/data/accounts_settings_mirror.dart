@@ -38,7 +38,7 @@ class AccountsSettingsMirror(
   void start() {
     if (_subs.isNotEmpty) return;
     _subs
-      ..add(_db.postinoSettingsDao.watchPrefix(accountsSettingPrefix).listen((_) => _kick()))
+      ..add(_db.postinoSettingsDao.watchPrefixWithTombstones(accountsSettingPrefix).listen((_) => _kick()))
       // A removal held for the sync Account goes on once another one, or none, is chosen. Its first value is the
       // choice at start, which the first pass of the voci already reads.
       ..add(_settings.watchSettingsSyncAccount().distinct().skip(1).listen((_) => _kick()));
@@ -89,7 +89,7 @@ class AccountsSettingsMirror(
   Future<void> reconcile() => _db.transaction(() async {
     final syncAccount = await _settings.settingsSyncAccount();
     final here = {for (final r in await _db.accountsDao.byPosition()) r.id: accountOf(r)};
-    for (final row in await _db.postinoSettingsDao.readPrefix(accountsSettingPrefix)) {
+    for (final row in await _db.postinoSettingsDao.readPrefixWithTombstones(accountsSettingPrefix)) {
       final id = row.key.substring(accountsSettingPrefix.length);
       final local = here[id];
       if (row.deleted) {

@@ -7,9 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
+import 'package:postino/core/data/gmail/gmail_message_parser.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/draft_content.dart';
+import 'package:postino/core/domain/draft_outcome.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -186,6 +189,11 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
         ],
       }),
       ['messages', final id, 'modify'] => _modifyOne(id, jsonDecode(r.body) as Map<String, dynamic>),
+      // Gmail's trash: TRASH in, INBOX out.
+      ['messages', final id, 'trash'] => _modifyOne(id, {
+        'addLabelIds': ['TRASH'],
+        'removeLabelIds': ['INBOX'],
+      }),
       ['messages'] => _paged('messages', [
         for (final m in _mailbox.values)
           if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
@@ -287,7 +295,14 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
     if (m == null) return gmailFixture('not_found');
     final add = [for (final l in body['addLabelIds'] as List? ?? const []) l as String];
     final remove = [for (final l in body['removeLabelIds'] as List? ?? const []) l as String];
-    _mailbox[id] = copyOf(m, labelIds: {...m.labelIds.where((l) => !remove.contains(l)), ...add}.toList());
+    // UNREAD and STARRED are the message's read and Stella fields, as [_labels] shows them.
+    const fields = {'UNREAD', 'STARRED'};
+    _mailbox[id] = copyOf(
+      m,
+      labelIds: {...m.labelIds.where((l) => !remove.contains(l)), ...add.where((l) => !fields.contains(l))}.toList(),
+      isRead: add.contains('UNREAD') ? false : (remove.contains('UNREAD') ? true : m.isRead),
+      isStarred: add.contains('STARRED') ? true : (remove.contains('STARRED') ? false : m.isStarred),
+    );
     _history.add((++_historyId, add.isEmpty ? 'labelsRemoved' : 'labelsAdded', id));
     return gmailJson(_resource(_mailbox[id]!, full: false));
   }
@@ -381,6 +396,7 @@ void main() {
   mailProviderDraftContract('GmailProvider', GmailHarness.new);
   mailProviderSendContract('GmailProvider', GmailHarness.new);
   mailProviderLabelContract('GmailProvider', GmailHarness.new);
+  mailProviderActionContract('GmailProvider', GmailHarness.new);
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');
@@ -689,30 +705,6 @@ void main() {
       expect(await g.provider.fetchConversation(_f1), isErr<NotFoundFailure>());
     });
 
-    test('marking read is one batchModify removing UNREAD', () async {
-      final g = RecordedGmail((r, path) => 'batch_modify');
-      okValue(await g.provider.setRead([_f1, _f2], read: true));
-
-      final r = g.requests.single;
-      expect(r.method, 'POST');
-      expect(r.url.path, '${gmailApi}messages/batchModify');
-      expect(r.headers['content-type'], startsWith('application/json'));
-      expect(r.headers['authorization'], 'Bearer ya29.initial');
-      expect(jsonDecode(r.body), {
-        'ids': [_f1, _f2],
-        'removeLabelIds': ['UNREAD'],
-      });
-    });
-
-    test('marking unread adds UNREAD back', () async {
-      final g = RecordedGmail((r, path) => 'batch_modify');
-      okValue(await g.provider.setRead([_f1], read: false));
-      expect(jsonDecode(g.requests.single.body), {
-        'ids': [_f1],
-        'addLabelIds': ['UNREAD'],
-      });
-    });
-
     group('Bozze', () {
       const draftId = 'r-4410200000000000001';
       const draft = OutgoingMessage(
@@ -938,6 +930,97 @@ void main() {
         );
         expect(await g.provider.saveDraft(d, isNew: false), isErr<NotFoundFailure>());
         expect(g.requests, isEmpty);
+      });
+
+      group('with the expected impronta (#149)', () {
+        final expected = DraftContent.of(draft).fingerprint;
+        const edit = OutgoingMessage(
+          messageId: '<c1d2e3f4@postino.example.com>',
+          from: 'Ada Lovelace <ada@gmail.com>',
+          to: ['Bruno <bruno@example.com>'],
+          subject: 'Caffè è più buono',
+          body: '<p>Ciao Bruno, modificata qui.</p>',
+        );
+
+        /// [route], the Bozza on Gmail being the recorded [get].
+        String Function(http.Request, String) holding(String get) =>
+            (r, path) => r.method == 'GET' && path == 'drafts/$draftId' ? get : route(r, path);
+
+        test('the Bozza as uploaded (its MIME re-encoded): read, then written', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)), isA<DraftSaved>());
+          expect(
+            [for (final r in g.requests) '${r.method} ${r.url.path}'],
+            ['GET ${gmailApi}drafts', 'GET ${gmailApi}drafts/$draftId', 'PUT ${gmailApi}drafts/$draftId'],
+          );
+          expect(g.requests[1].url.queryParameters['format'], 'full');
+        });
+
+        test('edited in Gmail elsewhere: a Conflitto with the Provider\'s version, nothing written', () async {
+          final g = RecordedGmail(holding('draft_get_edited'));
+          expect(
+            okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)),
+            isA<DraftDiverged>().having(
+              (d) => d.provider,
+              'provider',
+              const DraftContent(
+                to: ['Bruno <bruno@example.com>'],
+                cc: ['carla@example.com'],
+                bcc: ['dario@example.com'],
+                subject: 'Caffè domani?',
+                body: '<div dir="ltr">Ciao Bruno, ci vediamo domani per il caffè?</div>\r\n',
+              ),
+            ),
+          );
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('sent or deleted elsewhere (a 404 on drafts.get): NotFound, nothing written', () async {
+          final g = RecordedGmail(holding('not_found'));
+          expect(await g.provider.saveDraft(edit, isNew: false, expected: expected), isErr<NotFoundFailure>());
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('already the wanted version elsewhere: written, no Conflitto', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(draft, isNew: false, expected: 'other')), isA<DraftSaved>());
+          expect(g.requests.last.method, 'PUT');
+        });
+
+        test('the Bozza read back exactly as rendered here has the impronta it was uploaded with', () async {
+          final parsed = MimeMessage.parseFromText(renderMime(draft, gmailNow));
+          String data(String? s) => base64Url.encode(utf8.encode(s!));
+          final Map<String, dynamic> message = {
+            'id': 'm1',
+            'threadId': 't1',
+            'labelIds': ['DRAFT'],
+            'internalDate': '0',
+            'payload': {
+              'mimeType': 'multipart/alternative',
+              'headers': [
+                for (final h in ['From', 'To', 'Cc', 'Bcc', 'Subject', 'Message-Id'])
+                  {'name': h, 'value': parsed.getHeaderValue(h)!},
+              ],
+              'parts': [
+                {
+                  'partId': '0',
+                  'mimeType': 'text/plain',
+                  'body': {'data': data(parsed.decodeTextPlainPart())},
+                },
+                {
+                  'partId': '1',
+                  'mimeType': 'text/html',
+                  'body': {'data': data(parsed.decodeTextHtmlPart())},
+                },
+              ],
+            },
+          };
+          // What the parser gets back from Gmail for this MIME: the headers as written, the parts decoded.
+          final payload = message['payload']! as Map<String, dynamic>;
+          final html = (payload['parts'] as List)[1] as Map<String, dynamic>;
+          final content = gmailDraftContent(message, gmailBody(payload, html, (html['body'] as Map)['data'] as String));
+          expect(content.fingerprint, expected);
+        });
       });
 
       test('offline is an OfflineFailure', () async {

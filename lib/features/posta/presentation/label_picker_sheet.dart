@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/label_name.dart';
+import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_notification.dart' show ConversationKey;
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
@@ -12,16 +13,21 @@ import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/conversation_label_intents.dart';
+import 'act_on_conversation.dart';
 import 'conversation_labels.dart';
 
 /// The content of the picker of the Etichette of a Conversazione, read from the database: the user Etichette of
 /// the Account, ticked when on at least one of its messages. A tick applies at once to every message; a new name
-/// is created on the Provider and put on them. Removals show their snackbar under [snackbarContext].
+/// is created on the Provider and put on them. Removals show their snackbar under [snackbarContext], and so do
+/// additions on a folder Provider (#146): there applying one moves the messages.
 class const LabelPickerSheet({
   super.key,
   required final String accountId,
   required final String conversationId,
   required final BuildContext snackbarContext,
+
+  /// Whether the Account's Etichette are folders (#146): an addition offers Annulla there.
+  required final bool labelsAreFolders,
 }) extends StatefulWidget {
   @override
   State<LabelPickerSheet> createState() => _LabelPickerSheetState();
@@ -68,8 +74,25 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (_selected.contains(id)) {
       removeConversationLabel(widget.snackbarContext, _key, _messages, label);
     } else {
-      _intents.add(_key, _messages, id);
+      _add(_messages, label);
     }
+  }
+
+  void _add(List<Message> messages, Label label) {
+    final folders = widget.labelsAreFolders;
+    final (:ids, :queued) = _intents.add(_key, messages, label.id, hold: folders ? PostinoMotion.undoWindow : null);
+    final at = widget.snackbarContext;
+    if (!folders || ids.isEmpty || !at.mounted) return;
+    final message = at.t.azioni.labelApplied(name: label.name);
+    offerUndo(
+      at,
+      widget.accountId,
+      ids,
+      ApplyLabel(label.id),
+      message: message,
+      queued: queued,
+      onUndo: () => _intents.forgetAdd(_key, label.id),
+    );
   }
 
   // ponytail: a creation refused (offline, Da ricollegare) leaves no trace; say it when the picker gets an error slot.
@@ -78,7 +101,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     if (r case Ok(:final value)) {
       // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
       final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
-      _intents.add(_key, [for (final m in all) m.message], value.id);
+      _add([for (final m in all) m.message], value);
     }
   }
 

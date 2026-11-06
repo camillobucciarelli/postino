@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/conflict.dart';
+import '../domain/draft_conflict.dart';
 import '../domain/error_log.dart';
+import '../domain/mail_action.dart';
 import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
 import '../domain/message.dart';
@@ -72,6 +75,9 @@ class SyncEngine(
   /// Per Account, the ticker that sends its Bozze once the edits pause.
   final _draftTimers = <String, StreamSubscription<void>>{};
 
+  /// The tickers that replay the «trattenute» Azioni once their Annulla window ends.
+  final _holdTimers = <StreamSubscription<void>>{};
+
   /// Starts listening to change signals, the poll and the network, then syncs everything.
   void start() {
     _subs
@@ -87,12 +93,13 @@ class SyncEngine(
 
   Future<void> stop() async {
     await Future.wait([
-      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values]) s.cancel(),
+      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values, ..._holdTimers]) s.cancel(),
       _outbox.stop(),
     ]);
     _subs.clear();
     _signals.clear();
     _draftTimers.clear();
+    _holdTimers.clear();
   }
 
   @override
@@ -215,6 +222,41 @@ class SyncEngine(
   }
 
   @override
+  Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold}) async {
+    if (hold == null) {
+      await _store.queue(accountId, messageIds, action);
+      // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
+      return _replayIfActive(accountId);
+    }
+    await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
+    late final StreamSubscription<void> timer;
+    timer = _clock.every(hold).listen((_) {
+      _holdTimers.remove(timer);
+      unawaited(timer.cancel());
+      unawaited(_replayIfActive(accountId));
+    });
+    _holdTimers.add(timer);
+  }
+
+  @override
+  Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>
+      _store.cancelHeld(accountId, messageIds, action, _clock.now());
+
+  @override
+  Future<void> resolveConflict(Conflict conflict, {required bool keepMine}) async {
+    if (await _store.resolveConflict(conflict, keepMine: keepMine) && keepMine) {
+      await _replayIfActive(conflict.accountId);
+    }
+  }
+
+  @override
+  Future<void> resolveDraftConflict(DraftConflict conflict, {required bool keepMine}) async {
+    if (await _store.resolveDraftConflict(conflict, keepMine: keepMine) && keepMine) {
+      await flushDrafts(conflict.accountId);
+    }
+  }
+
+  @override
   Future<void> setLabel(String accountId, String messageId, String labelId, {required bool add}) =>
       setConversationLabel(accountId, [messageId], labelId, add: add);
 
@@ -224,11 +266,7 @@ class SyncEngine(
     Iterable<String> messageIds,
     String labelId, {
     required bool add,
-  }) async {
-    await _store.queueLabels(accountId, messageIds, labelId, add: add);
-    // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
-    await _replayIfActive(accountId);
-  }
+  }) => act(accountId, messageIds, add ? ApplyLabel(labelId) : RemoveLabel(labelId));
 
   @override
   Future<Result<void>> completeConversation(String accountId, String conversationId) async {

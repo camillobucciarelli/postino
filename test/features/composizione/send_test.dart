@@ -11,7 +11,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/conflict.dart';
+import 'package:postino/core/domain/draft_conflict.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
@@ -454,6 +457,16 @@ class _TooBig(
   }) => real.fetchAttachment(a, m, id, onProgress: onProgress, cancel: cancel);
   @override
   Future<Result<Label>> createLabel(String a, String name) => real.createLabel(a, name);
+  @override
+  Future<void> act(String a, Iterable<String> m, MailAction action, {Duration? hold}) =>
+      real.act(a, m, action, hold: hold);
+  @override
+  Future<bool> cancelAction(String a, Iterable<String> m, MailAction action) => real.cancelAction(a, m, action);
+  @override
+  Future<void> resolveConflict(Conflict c, {required bool keepMine}) => real.resolveConflict(c, keepMine: keepMine);
+  @override
+  Future<void> resolveDraftConflict(DraftConflict c, {required bool keepMine}) =>
+      real.resolveDraftConflict(c, keepMine: keepMine);
   @override
   Future<void> setLabel(String a, String m, String l, {required bool add}) => real.setLabel(a, m, l, add: add);
   @override

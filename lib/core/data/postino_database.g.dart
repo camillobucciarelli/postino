@@ -2527,20 +2527,79 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isReadMeta = const VerificationMeta('isRead');
-  @override
-  late final GeneratedColumn<bool> isRead = GeneratedColumn<bool>(
-    'is_read',
-    aliasedName,
-    true,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_read" IN (0, 1))',
-    ),
+  static const VerificationMeta _attributeMeta = const VerificationMeta(
+    'attribute',
   );
   @override
-  List<GeneratedColumn> get $columns => [accountId, messageId, isRead];
+  late final GeneratedColumn<String> attribute = GeneratedColumn<String>(
+    'attribute',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _wantedMeta = const VerificationMeta('wanted');
+  @override
+  late final GeneratedColumn<String> wanted = GeneratedColumn<String>(
+    'wanted',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expectedMeta = const VerificationMeta(
+    'expected',
+  );
+  @override
+  late final GeneratedColumn<String> expected = GeneratedColumn<String>(
+    'expected',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heldUntilMeta = const VerificationMeta(
+    'heldUntil',
+  );
+  @override
+  late final GeneratedColumn<int> heldUntil = GeneratedColumn<int>(
+    'held_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _previousMeta = const VerificationMeta(
+    'previous',
+  );
+  @override
+  late final GeneratedColumn<String> previous = GeneratedColumn<String>(
+    'previous',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<String> synced = GeneratedColumn<String>(
+    'synced',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    accountId,
+    messageId,
+    attribute,
+    wanted,
+    expected,
+    heldUntil,
+    previous,
+    synced,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2569,17 +2628,51 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
-    if (data.containsKey('is_read')) {
+    if (data.containsKey('attribute')) {
       context.handle(
-        _isReadMeta,
-        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
+        _attributeMeta,
+        attribute.isAcceptableOrUnknown(data['attribute']!, _attributeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attributeMeta);
+    }
+    if (data.containsKey('wanted')) {
+      context.handle(
+        _wantedMeta,
+        wanted.isAcceptableOrUnknown(data['wanted']!, _wantedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wantedMeta);
+    }
+    if (data.containsKey('expected')) {
+      context.handle(
+        _expectedMeta,
+        expected.isAcceptableOrUnknown(data['expected']!, _expectedMeta),
+      );
+    }
+    if (data.containsKey('held_until')) {
+      context.handle(
+        _heldUntilMeta,
+        heldUntil.isAcceptableOrUnknown(data['held_until']!, _heldUntilMeta),
+      );
+    }
+    if (data.containsKey('previous')) {
+      context.handle(
+        _previousMeta,
+        previous.isAcceptableOrUnknown(data['previous']!, _previousMeta),
+      );
+    }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
       );
     }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {accountId, messageId};
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId, attribute};
   @override
   IntentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -2592,9 +2685,29 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         DriftSqlType.string,
         data['${effectivePrefix}message_id'],
       )!,
-      isRead: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_read'],
+      attribute: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attribute'],
+      )!,
+      wanted: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wanted'],
+      )!,
+      expected: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expected'],
+      ),
+      heldUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}held_until'],
+      ),
+      previous: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}previous'],
+      ),
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced'],
       ),
     );
   }
@@ -2607,20 +2720,55 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
 
 class IntentRow extends DataClass implements Insertable<IntentRow> {
   final String accountId;
+
+  /// Provider-side id of the message.
   final String messageId;
-  final bool? isRead;
+
+  /// `read`, `starred`, `placement` or `label:<id>` (`MailAction.attribute`).
+  final String attribute;
+  final String wanted;
+
+  /// Null: the replay forces the write («tieni la mia» of a Conflitto).
+  final String? expected;
+
+  /// Milliseconds since epoch: the voce is «trattenuta» (its Annulla is still offered) and waits until then.
+  final int? heldUntil;
+
+  /// What [wanted] was before the held Azione merged into this voce: its Annulla puts it back.
+  final String? previous;
+
+  /// The Provider's value the last sync brought while the voce waited (null: none since the enqueue). Taking the
+  /// voce back (Annulla, a refusal) shows it instead of the stale [expected]; the replay still expects [expected],
+  /// so a change elsewhere is a Conflitto (ADR 0008).
+  final String? synced;
   const IntentRow({
     required this.accountId,
     required this.messageId,
-    this.isRead,
+    required this.attribute,
+    required this.wanted,
+    this.expected,
+    this.heldUntil,
+    this.previous,
+    this.synced,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['account_id'] = Variable<String>(accountId);
     map['message_id'] = Variable<String>(messageId);
-    if (!nullToAbsent || isRead != null) {
-      map['is_read'] = Variable<bool>(isRead);
+    map['attribute'] = Variable<String>(attribute);
+    map['wanted'] = Variable<String>(wanted);
+    if (!nullToAbsent || expected != null) {
+      map['expected'] = Variable<String>(expected);
+    }
+    if (!nullToAbsent || heldUntil != null) {
+      map['held_until'] = Variable<int>(heldUntil);
+    }
+    if (!nullToAbsent || previous != null) {
+      map['previous'] = Variable<String>(previous);
+    }
+    if (!nullToAbsent || synced != null) {
+      map['synced'] = Variable<String>(synced);
     }
     return map;
   }
@@ -2629,9 +2777,20 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     return IntentsCompanion(
       accountId: Value(accountId),
       messageId: Value(messageId),
-      isRead: isRead == null && nullToAbsent
+      attribute: Value(attribute),
+      wanted: Value(wanted),
+      expected: expected == null && nullToAbsent
           ? const Value.absent()
-          : Value(isRead),
+          : Value(expected),
+      heldUntil: heldUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heldUntil),
+      previous: previous == null && nullToAbsent
+          ? const Value.absent()
+          : Value(previous),
+      synced: synced == null && nullToAbsent
+          ? const Value.absent()
+          : Value(synced),
     );
   }
 
@@ -2643,7 +2802,12 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     return IntentRow(
       accountId: serializer.fromJson<String>(json['accountId']),
       messageId: serializer.fromJson<String>(json['messageId']),
-      isRead: serializer.fromJson<bool?>(json['isRead']),
+      attribute: serializer.fromJson<String>(json['attribute']),
+      wanted: serializer.fromJson<String>(json['wanted']),
+      expected: serializer.fromJson<String?>(json['expected']),
+      heldUntil: serializer.fromJson<int?>(json['heldUntil']),
+      previous: serializer.fromJson<String?>(json['previous']),
+      synced: serializer.fromJson<String?>(json['synced']),
     );
   }
   @override
@@ -2652,24 +2816,44 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     return <String, dynamic>{
       'accountId': serializer.toJson<String>(accountId),
       'messageId': serializer.toJson<String>(messageId),
-      'isRead': serializer.toJson<bool?>(isRead),
+      'attribute': serializer.toJson<String>(attribute),
+      'wanted': serializer.toJson<String>(wanted),
+      'expected': serializer.toJson<String?>(expected),
+      'heldUntil': serializer.toJson<int?>(heldUntil),
+      'previous': serializer.toJson<String?>(previous),
+      'synced': serializer.toJson<String?>(synced),
     };
   }
 
   IntentRow copyWith({
     String? accountId,
     String? messageId,
-    Value<bool?> isRead = const Value.absent(),
+    String? attribute,
+    String? wanted,
+    Value<String?> expected = const Value.absent(),
+    Value<int?> heldUntil = const Value.absent(),
+    Value<String?> previous = const Value.absent(),
+    Value<String?> synced = const Value.absent(),
   }) => IntentRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
-    isRead: isRead.present ? isRead.value : this.isRead,
+    attribute: attribute ?? this.attribute,
+    wanted: wanted ?? this.wanted,
+    expected: expected.present ? expected.value : this.expected,
+    heldUntil: heldUntil.present ? heldUntil.value : this.heldUntil,
+    previous: previous.present ? previous.value : this.previous,
+    synced: synced.present ? synced.value : this.synced,
   );
   IntentRow copyWithCompanion(IntentsCompanion data) {
     return IntentRow(
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
-      isRead: data.isRead.present ? data.isRead.value : this.isRead,
+      attribute: data.attribute.present ? data.attribute.value : this.attribute,
+      wanted: data.wanted.present ? data.wanted.value : this.wanted,
+      expected: data.expected.present ? data.expected.value : this.expected,
+      heldUntil: data.heldUntil.present ? data.heldUntil.value : this.heldUntil,
+      previous: data.previous.present ? data.previous.value : this.previous,
+      synced: data.synced.present ? data.synced.value : this.synced,
     );
   }
 
@@ -2678,50 +2862,96 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     return (StringBuffer('IntentRow(')
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
-          ..write('isRead: $isRead')
+          ..write('attribute: $attribute, ')
+          ..write('wanted: $wanted, ')
+          ..write('expected: $expected, ')
+          ..write('heldUntil: $heldUntil, ')
+          ..write('previous: $previous, ')
+          ..write('synced: $synced')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(accountId, messageId, isRead);
+  int get hashCode => Object.hash(
+    accountId,
+    messageId,
+    attribute,
+    wanted,
+    expected,
+    heldUntil,
+    previous,
+    synced,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IntentRow &&
           other.accountId == this.accountId &&
           other.messageId == this.messageId &&
-          other.isRead == this.isRead);
+          other.attribute == this.attribute &&
+          other.wanted == this.wanted &&
+          other.expected == this.expected &&
+          other.heldUntil == this.heldUntil &&
+          other.previous == this.previous &&
+          other.synced == this.synced);
 }
 
 class IntentsCompanion extends UpdateCompanion<IntentRow> {
   final Value<String> accountId;
   final Value<String> messageId;
-  final Value<bool?> isRead;
+  final Value<String> attribute;
+  final Value<String> wanted;
+  final Value<String?> expected;
+  final Value<int?> heldUntil;
+  final Value<String?> previous;
+  final Value<String?> synced;
   final Value<int> rowid;
   const IntentsCompanion({
     this.accountId = const Value.absent(),
     this.messageId = const Value.absent(),
-    this.isRead = const Value.absent(),
+    this.attribute = const Value.absent(),
+    this.wanted = const Value.absent(),
+    this.expected = const Value.absent(),
+    this.heldUntil = const Value.absent(),
+    this.previous = const Value.absent(),
+    this.synced = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IntentsCompanion.insert({
     required String accountId,
     required String messageId,
-    this.isRead = const Value.absent(),
+    required String attribute,
+    required String wanted,
+    this.expected = const Value.absent(),
+    this.heldUntil = const Value.absent(),
+    this.previous = const Value.absent(),
+    this.synced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
-       messageId = Value(messageId);
+       messageId = Value(messageId),
+       attribute = Value(attribute),
+       wanted = Value(wanted);
   static Insertable<IntentRow> custom({
     Expression<String>? accountId,
     Expression<String>? messageId,
-    Expression<bool>? isRead,
+    Expression<String>? attribute,
+    Expression<String>? wanted,
+    Expression<String>? expected,
+    Expression<int>? heldUntil,
+    Expression<String>? previous,
+    Expression<String>? synced,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (accountId != null) 'account_id': accountId,
       if (messageId != null) 'message_id': messageId,
-      if (isRead != null) 'is_read': isRead,
+      if (attribute != null) 'attribute': attribute,
+      if (wanted != null) 'wanted': wanted,
+      if (expected != null) 'expected': expected,
+      if (heldUntil != null) 'held_until': heldUntil,
+      if (previous != null) 'previous': previous,
+      if (synced != null) 'synced': synced,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2729,13 +2959,23 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   IntentsCompanion copyWith({
     Value<String>? accountId,
     Value<String>? messageId,
-    Value<bool?>? isRead,
+    Value<String>? attribute,
+    Value<String>? wanted,
+    Value<String?>? expected,
+    Value<int?>? heldUntil,
+    Value<String?>? previous,
+    Value<String?>? synced,
     Value<int>? rowid,
   }) {
     return IntentsCompanion(
       accountId: accountId ?? this.accountId,
       messageId: messageId ?? this.messageId,
-      isRead: isRead ?? this.isRead,
+      attribute: attribute ?? this.attribute,
+      wanted: wanted ?? this.wanted,
+      expected: expected ?? this.expected,
+      heldUntil: heldUntil ?? this.heldUntil,
+      previous: previous ?? this.previous,
+      synced: synced ?? this.synced,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2749,8 +2989,23 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     if (messageId.present) {
       map['message_id'] = Variable<String>(messageId.value);
     }
-    if (isRead.present) {
-      map['is_read'] = Variable<bool>(isRead.value);
+    if (attribute.present) {
+      map['attribute'] = Variable<String>(attribute.value);
+    }
+    if (wanted.present) {
+      map['wanted'] = Variable<String>(wanted.value);
+    }
+    if (expected.present) {
+      map['expected'] = Variable<String>(expected.value);
+    }
+    if (heldUntil.present) {
+      map['held_until'] = Variable<int>(heldUntil.value);
+    }
+    if (previous.present) {
+      map['previous'] = Variable<String>(previous.value);
+    }
+    if (synced.present) {
+      map['synced'] = Variable<String>(synced.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2763,19 +3018,24 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     return (StringBuffer('IntentsCompanion(')
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
-          ..write('isRead: $isRead, ')
+          ..write('attribute: $attribute, ')
+          ..write('wanted: $wanted, ')
+          ..write('expected: $expected, ')
+          ..write('heldUntil: $heldUntil, ')
+          ..write('previous: $previous, ')
+          ..write('synced: $synced, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
 }
 
-class $LabelIntentsTable extends LabelIntents
-    with TableInfo<$LabelIntentsTable, LabelIntentRow> {
+class $ConflictsTable extends Conflicts
+    with TableInfo<$ConflictsTable, ConflictRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $LabelIntentsTable(this.attachedDatabase, [this._alias]);
+  $ConflictsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _accountIdMeta = const VerificationMeta(
     'accountId',
   );
@@ -2798,39 +3058,53 @@ class $LabelIntentsTable extends LabelIntents
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _labelIdMeta = const VerificationMeta(
-    'labelId',
+  static const VerificationMeta _attributeMeta = const VerificationMeta(
+    'attribute',
   );
   @override
-  late final GeneratedColumn<String> labelId = GeneratedColumn<String>(
-    'label_id',
+  late final GeneratedColumn<String> attribute = GeneratedColumn<String>(
+    'attribute',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _addedMeta = const VerificationMeta('added');
+  static const VerificationMeta _localMeta = const VerificationMeta('local');
   @override
-  late final GeneratedColumn<bool> added = GeneratedColumn<bool>(
-    'added',
+  late final GeneratedColumn<String> local = GeneratedColumn<String>(
+    'local',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("added" IN (0, 1))',
-    ),
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
   );
   @override
-  List<GeneratedColumn> get $columns => [accountId, messageId, labelId, added];
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    accountId,
+    messageId,
+    attribute,
+    local,
+    provider,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'label_intents';
+  static const String $name = 'conflicts';
   @override
   VerificationContext validateIntegrity(
-    Insertable<LabelIntentRow> instance, {
+    Insertable<ConflictRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2851,31 +3125,39 @@ class $LabelIntentsTable extends LabelIntents
     } else if (isInserting) {
       context.missing(_messageIdMeta);
     }
-    if (data.containsKey('label_id')) {
+    if (data.containsKey('attribute')) {
       context.handle(
-        _labelIdMeta,
-        labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta),
+        _attributeMeta,
+        attribute.isAcceptableOrUnknown(data['attribute']!, _attributeMeta),
       );
     } else if (isInserting) {
-      context.missing(_labelIdMeta);
+      context.missing(_attributeMeta);
     }
-    if (data.containsKey('added')) {
+    if (data.containsKey('local')) {
       context.handle(
-        _addedMeta,
-        added.isAcceptableOrUnknown(data['added']!, _addedMeta),
+        _localMeta,
+        local.isAcceptableOrUnknown(data['local']!, _localMeta),
       );
     } else if (isInserting) {
-      context.missing(_addedMeta);
+      context.missing(_localMeta);
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerMeta);
     }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {accountId, messageId, labelId};
+  Set<GeneratedColumn> get $primaryKey => {accountId, messageId, attribute};
   @override
-  LabelIntentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ConflictRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return LabelIntentRow(
+    return ConflictRow(
       accountId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}account_id'],
@@ -2884,63 +3166,74 @@ class $LabelIntentsTable extends LabelIntents
         DriftSqlType.string,
         data['${effectivePrefix}message_id'],
       )!,
-      labelId: attachedDatabase.typeMapping.read(
+      attribute: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}label_id'],
+        data['${effectivePrefix}attribute'],
       )!,
-      added: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}added'],
+      local: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local'],
+      )!,
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
       )!,
     );
   }
 
   @override
-  $LabelIntentsTable createAlias(String alias) {
-    return $LabelIntentsTable(attachedDatabase, alias);
+  $ConflictsTable createAlias(String alias) {
+    return $ConflictsTable(attachedDatabase, alias);
   }
 }
 
-class LabelIntentRow extends DataClass implements Insertable<LabelIntentRow> {
+class ConflictRow extends DataClass implements Insertable<ConflictRow> {
   final String accountId;
+
+  /// Provider-side id of the message.
   final String messageId;
-  final String labelId;
-  final bool added;
-  const LabelIntentRow({
+  final String attribute;
+  final String local;
+  final String provider;
+  const ConflictRow({
     required this.accountId,
     required this.messageId,
-    required this.labelId,
-    required this.added,
+    required this.attribute,
+    required this.local,
+    required this.provider,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['account_id'] = Variable<String>(accountId);
     map['message_id'] = Variable<String>(messageId);
-    map['label_id'] = Variable<String>(labelId);
-    map['added'] = Variable<bool>(added);
+    map['attribute'] = Variable<String>(attribute);
+    map['local'] = Variable<String>(local);
+    map['provider'] = Variable<String>(provider);
     return map;
   }
 
-  LabelIntentsCompanion toCompanion(bool nullToAbsent) {
-    return LabelIntentsCompanion(
+  ConflictsCompanion toCompanion(bool nullToAbsent) {
+    return ConflictsCompanion(
       accountId: Value(accountId),
       messageId: Value(messageId),
-      labelId: Value(labelId),
-      added: Value(added),
+      attribute: Value(attribute),
+      local: Value(local),
+      provider: Value(provider),
     );
   }
 
-  factory LabelIntentRow.fromJson(
+  factory ConflictRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return LabelIntentRow(
+    return ConflictRow(
       accountId: serializer.fromJson<String>(json['accountId']),
       messageId: serializer.fromJson<String>(json['messageId']),
-      labelId: serializer.fromJson<String>(json['labelId']),
-      added: serializer.fromJson<bool>(json['added']),
+      attribute: serializer.fromJson<String>(json['attribute']),
+      local: serializer.fromJson<String>(json['local']),
+      provider: serializer.fromJson<String>(json['provider']),
     );
   }
   @override
@@ -2949,105 +3242,120 @@ class LabelIntentRow extends DataClass implements Insertable<LabelIntentRow> {
     return <String, dynamic>{
       'accountId': serializer.toJson<String>(accountId),
       'messageId': serializer.toJson<String>(messageId),
-      'labelId': serializer.toJson<String>(labelId),
-      'added': serializer.toJson<bool>(added),
+      'attribute': serializer.toJson<String>(attribute),
+      'local': serializer.toJson<String>(local),
+      'provider': serializer.toJson<String>(provider),
     };
   }
 
-  LabelIntentRow copyWith({
+  ConflictRow copyWith({
     String? accountId,
     String? messageId,
-    String? labelId,
-    bool? added,
-  }) => LabelIntentRow(
+    String? attribute,
+    String? local,
+    String? provider,
+  }) => ConflictRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
-    labelId: labelId ?? this.labelId,
-    added: added ?? this.added,
+    attribute: attribute ?? this.attribute,
+    local: local ?? this.local,
+    provider: provider ?? this.provider,
   );
-  LabelIntentRow copyWithCompanion(LabelIntentsCompanion data) {
-    return LabelIntentRow(
+  ConflictRow copyWithCompanion(ConflictsCompanion data) {
+    return ConflictRow(
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
-      labelId: data.labelId.present ? data.labelId.value : this.labelId,
-      added: data.added.present ? data.added.value : this.added,
+      attribute: data.attribute.present ? data.attribute.value : this.attribute,
+      local: data.local.present ? data.local.value : this.local,
+      provider: data.provider.present ? data.provider.value : this.provider,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('LabelIntentRow(')
+    return (StringBuffer('ConflictRow(')
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
-          ..write('labelId: $labelId, ')
-          ..write('added: $added')
+          ..write('attribute: $attribute, ')
+          ..write('local: $local, ')
+          ..write('provider: $provider')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(accountId, messageId, labelId, added);
+  int get hashCode =>
+      Object.hash(accountId, messageId, attribute, local, provider);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is LabelIntentRow &&
+      (other is ConflictRow &&
           other.accountId == this.accountId &&
           other.messageId == this.messageId &&
-          other.labelId == this.labelId &&
-          other.added == this.added);
+          other.attribute == this.attribute &&
+          other.local == this.local &&
+          other.provider == this.provider);
 }
 
-class LabelIntentsCompanion extends UpdateCompanion<LabelIntentRow> {
+class ConflictsCompanion extends UpdateCompanion<ConflictRow> {
   final Value<String> accountId;
   final Value<String> messageId;
-  final Value<String> labelId;
-  final Value<bool> added;
+  final Value<String> attribute;
+  final Value<String> local;
+  final Value<String> provider;
   final Value<int> rowid;
-  const LabelIntentsCompanion({
+  const ConflictsCompanion({
     this.accountId = const Value.absent(),
     this.messageId = const Value.absent(),
-    this.labelId = const Value.absent(),
-    this.added = const Value.absent(),
+    this.attribute = const Value.absent(),
+    this.local = const Value.absent(),
+    this.provider = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  LabelIntentsCompanion.insert({
+  ConflictsCompanion.insert({
     required String accountId,
     required String messageId,
-    required String labelId,
-    required bool added,
+    required String attribute,
+    required String local,
+    required String provider,
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
-       labelId = Value(labelId),
-       added = Value(added);
-  static Insertable<LabelIntentRow> custom({
+       attribute = Value(attribute),
+       local = Value(local),
+       provider = Value(provider);
+  static Insertable<ConflictRow> custom({
     Expression<String>? accountId,
     Expression<String>? messageId,
-    Expression<String>? labelId,
-    Expression<bool>? added,
+    Expression<String>? attribute,
+    Expression<String>? local,
+    Expression<String>? provider,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (accountId != null) 'account_id': accountId,
       if (messageId != null) 'message_id': messageId,
-      if (labelId != null) 'label_id': labelId,
-      if (added != null) 'added': added,
+      if (attribute != null) 'attribute': attribute,
+      if (local != null) 'local': local,
+      if (provider != null) 'provider': provider,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  LabelIntentsCompanion copyWith({
+  ConflictsCompanion copyWith({
     Value<String>? accountId,
     Value<String>? messageId,
-    Value<String>? labelId,
-    Value<bool>? added,
+    Value<String>? attribute,
+    Value<String>? local,
+    Value<String>? provider,
     Value<int>? rowid,
   }) {
-    return LabelIntentsCompanion(
+    return ConflictsCompanion(
       accountId: accountId ?? this.accountId,
       messageId: messageId ?? this.messageId,
-      labelId: labelId ?? this.labelId,
-      added: added ?? this.added,
+      attribute: attribute ?? this.attribute,
+      local: local ?? this.local,
+      provider: provider ?? this.provider,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3061,11 +3369,14 @@ class LabelIntentsCompanion extends UpdateCompanion<LabelIntentRow> {
     if (messageId.present) {
       map['message_id'] = Variable<String>(messageId.value);
     }
-    if (labelId.present) {
-      map['label_id'] = Variable<String>(labelId.value);
+    if (attribute.present) {
+      map['attribute'] = Variable<String>(attribute.value);
     }
-    if (added.present) {
-      map['added'] = Variable<bool>(added.value);
+    if (local.present) {
+      map['local'] = Variable<String>(local.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -3075,11 +3386,12 @@ class LabelIntentsCompanion extends UpdateCompanion<LabelIntentRow> {
 
   @override
   String toString() {
-    return (StringBuffer('LabelIntentsCompanion(')
+    return (StringBuffer('ConflictsCompanion(')
           ..write('accountId: $accountId, ')
           ..write('messageId: $messageId, ')
-          ..write('labelId: $labelId, ')
-          ..write('added: $added, ')
+          ..write('attribute: $attribute, ')
+          ..write('local: $local, ')
+          ..write('provider: $provider, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3638,6 +3950,26 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
       'CHECK ("remote_known" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _expectedMeta = const VerificationMeta(
+    'expected',
+  );
+  @override
+  late final GeneratedColumn<String> expected = GeneratedColumn<String>(
+    'expected',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DraftContent?, String> conflict =
+      GeneratedColumn<String>(
+        'conflict',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<DraftContent?>($DraftsTable.$converterconflictn);
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -3655,6 +3987,8 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     pending,
     synced,
     remoteKnown,
+    expected,
+    conflict,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3777,6 +4111,12 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     } else if (isInserting) {
       context.missing(_remoteKnownMeta);
     }
+    if (data.containsKey('expected')) {
+      context.handle(
+        _expectedMeta,
+        expected.isAcceptableOrUnknown(data['expected']!, _expectedMeta),
+      );
+    }
     return context;
   }
 
@@ -3848,6 +4188,16 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}remote_known'],
       )!,
+      expected: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expected'],
+      ),
+      conflict: $DraftsTable.$converterconflictn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}conflict'],
+        ),
+      ),
     );
   }
 
@@ -3860,6 +4210,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   $converterattachments = const ForwardedAttachmentsConverter();
   static TypeConverter<List<ForwardedAttachment>?, String?>
   $converterattachmentsn = NullAwareTypeConverter.wrap($converterattachments);
+  static TypeConverter<DraftContent, String> $converterconflict =
+      const DraftContentConverter();
+  static TypeConverter<DraftContent?, String?> $converterconflictn =
+      NullAwareTypeConverter.wrap($converterconflict);
 }
 
 class DraftRow extends DataClass implements Insertable<DraftRow> {
@@ -3889,6 +4243,13 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
   final bool pending;
   final bool synced;
   final bool remoteKnown;
+
+  /// The expected value (#149, v19): the impronta (`DraftContent.fingerprint`) of the version the Provider had at the
+  /// last upload or sync; null before the first one, and the replay then writes regardless.
+  final String? expected;
+
+  /// The Provider's version while the Bozza is in Conflitto (#149): it is not replayed until the user chooses.
+  final DraftContent? conflict;
   const DraftRow({
     required this.accountId,
     required this.messageId,
@@ -3905,6 +4266,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.pending,
     required this.synced,
     required this.remoteKnown,
+    this.expected,
+    this.conflict,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3934,6 +4297,14 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     map['pending'] = Variable<bool>(pending);
     map['synced'] = Variable<bool>(synced);
     map['remote_known'] = Variable<bool>(remoteKnown);
+    if (!nullToAbsent || expected != null) {
+      map['expected'] = Variable<String>(expected);
+    }
+    if (!nullToAbsent || conflict != null) {
+      map['conflict'] = Variable<String>(
+        $DraftsTable.$converterconflictn.toSql(conflict),
+      );
+    }
     return map;
   }
 
@@ -3962,6 +4333,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       pending: Value(pending),
       synced: Value(synced),
       remoteKnown: Value(remoteKnown),
+      expected: expected == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expected),
+      conflict: conflict == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conflict),
     );
   }
 
@@ -3988,6 +4365,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       pending: serializer.fromJson<bool>(json['pending']),
       synced: serializer.fromJson<bool>(json['synced']),
       remoteKnown: serializer.fromJson<bool>(json['remoteKnown']),
+      expected: serializer.fromJson<String?>(json['expected']),
+      conflict: serializer.fromJson<DraftContent?>(json['conflict']),
     );
   }
   @override
@@ -4009,6 +4388,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'pending': serializer.toJson<bool>(pending),
       'synced': serializer.toJson<bool>(synced),
       'remoteKnown': serializer.toJson<bool>(remoteKnown),
+      'expected': serializer.toJson<String?>(expected),
+      'conflict': serializer.toJson<DraftContent?>(conflict),
     };
   }
 
@@ -4028,6 +4409,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     bool? pending,
     bool? synced,
     bool? remoteKnown,
+    Value<String?> expected = const Value.absent(),
+    Value<DraftContent?> conflict = const Value.absent(),
   }) => DraftRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -4046,6 +4429,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     pending: pending ?? this.pending,
     synced: synced ?? this.synced,
     remoteKnown: remoteKnown ?? this.remoteKnown,
+    expected: expected.present ? expected.value : this.expected,
+    conflict: conflict.present ? conflict.value : this.conflict,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
     return DraftRow(
@@ -4074,6 +4459,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       remoteKnown: data.remoteKnown.present
           ? data.remoteKnown.value
           : this.remoteKnown,
+      expected: data.expected.present ? data.expected.value : this.expected,
+      conflict: data.conflict.present ? data.conflict.value : this.conflict,
     );
   }
 
@@ -4094,7 +4481,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
-          ..write('remoteKnown: $remoteKnown')
+          ..write('remoteKnown: $remoteKnown, ')
+          ..write('expected: $expected, ')
+          ..write('conflict: $conflict')
           ..write(')'))
         .toString();
   }
@@ -4116,6 +4505,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     pending,
     synced,
     remoteKnown,
+    expected,
+    conflict,
   );
   @override
   bool operator ==(Object other) =>
@@ -4135,7 +4526,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.updatedAt == this.updatedAt &&
           other.pending == this.pending &&
           other.synced == this.synced &&
-          other.remoteKnown == this.remoteKnown);
+          other.remoteKnown == this.remoteKnown &&
+          other.expected == this.expected &&
+          other.conflict == this.conflict);
 }
 
 class DraftsCompanion extends UpdateCompanion<DraftRow> {
@@ -4154,6 +4547,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<bool> pending;
   final Value<bool> synced;
   final Value<bool> remoteKnown;
+  final Value<String?> expected;
+  final Value<DraftContent?> conflict;
   final Value<int> rowid;
   const DraftsCompanion({
     this.accountId = const Value.absent(),
@@ -4171,6 +4566,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.pending = const Value.absent(),
     this.synced = const Value.absent(),
     this.remoteKnown = const Value.absent(),
+    this.expected = const Value.absent(),
+    this.conflict = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DraftsCompanion.insert({
@@ -4189,6 +4586,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required bool pending,
     required bool synced,
     required bool remoteKnown,
+    this.expected = const Value.absent(),
+    this.conflict = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -4217,6 +4616,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<bool>? pending,
     Expression<bool>? synced,
     Expression<bool>? remoteKnown,
+    Expression<String>? expected,
+    Expression<String>? conflict,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4235,6 +4636,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (pending != null) 'pending': pending,
       if (synced != null) 'synced': synced,
       if (remoteKnown != null) 'remote_known': remoteKnown,
+      if (expected != null) 'expected': expected,
+      if (conflict != null) 'conflict': conflict,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4255,6 +4658,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<bool>? pending,
     Value<bool>? synced,
     Value<bool>? remoteKnown,
+    Value<String?>? expected,
+    Value<DraftContent?>? conflict,
     Value<int>? rowid,
   }) {
     return DraftsCompanion(
@@ -4273,6 +4678,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       pending: pending ?? this.pending,
       synced: synced ?? this.synced,
       remoteKnown: remoteKnown ?? this.remoteKnown,
+      expected: expected ?? this.expected,
+      conflict: conflict ?? this.conflict,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4327,6 +4734,14 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     if (remoteKnown.present) {
       map['remote_known'] = Variable<bool>(remoteKnown.value);
     }
+    if (expected.present) {
+      map['expected'] = Variable<String>(expected.value);
+    }
+    if (conflict.present) {
+      map['conflict'] = Variable<String>(
+        $DraftsTable.$converterconflictn.toSql(conflict.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4351,6 +4766,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
           ..write('remoteKnown: $remoteKnown, ')
+          ..write('expected: $expected, ')
+          ..write('conflict: $conflict, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5943,7 +6360,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final $BodiesTable bodies = $BodiesTable(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final $IntentsTable intents = $IntentsTable(this);
-  late final $LabelIntentsTable labelIntents = $LabelIntentsTable(this);
+  late final $ConflictsTable conflicts = $ConflictsTable(this);
   late final $TrustedSendersTable trustedSenders = $TrustedSendersTable(this);
   late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
@@ -5962,6 +6379,10 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final LabelsDao labelsDao = LabelsDao(this as PostinoDatabase);
   late final BodiesDao bodiesDao = BodiesDao(this as PostinoDatabase);
   late final IntentsDao intentsDao = IntentsDao(this as PostinoDatabase);
+  late final AttributesDao attributesDao = AttributesDao(
+    this as PostinoDatabase,
+  );
+  late final ConflictsDao conflictsDao = ConflictsDao(this as PostinoDatabase);
   late final TrustedSendersDao trustedSendersDao = TrustedSendersDao(
     this as PostinoDatabase,
   );
@@ -5988,7 +6409,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     bodies,
     syncCursors,
     intents,
-    labelIntents,
+    conflicts,
     trustedSenders,
     deviceSettings,
     drafts,
@@ -7372,13 +7793,23 @@ typedef $$SyncCursorsTableProcessedTableManager =
 typedef $$IntentsTableCreateCompanionBuilder = IntentsCompanion Function({
   required String accountId,
   required String messageId,
-  Value<bool?> isRead,
+  required String attribute,
+  required String wanted,
+  Value<String?> expected,
+  Value<int?> heldUntil,
+  Value<String?> previous,
+  Value<String?> synced,
   Value<int> rowid,
 });
 typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
   Value<String> accountId,
   Value<String> messageId,
-  Value<bool?> isRead,
+  Value<String> attribute,
+  Value<String> wanted,
+  Value<String?> expected,
+  Value<int?> heldUntil,
+  Value<String?> previous,
+  Value<String?> synced,
   Value<int> rowid,
 });
 
@@ -7401,8 +7832,33 @@ class $$IntentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
+  ColumnFilters<String> get attribute => $composableBuilder(
+    column: $table.attribute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wanted => $composableBuilder(
+    column: $table.wanted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get heldUntil => $composableBuilder(
+    column: $table.heldUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get previous => $composableBuilder(
+    column: $table.previous,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get synced => $composableBuilder(
+    column: $table.synced,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7426,8 +7882,33 @@ class $$IntentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isRead => $composableBuilder(
-    column: $table.isRead,
+  ColumnOrderings<String> get attribute => $composableBuilder(
+    column: $table.attribute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wanted => $composableBuilder(
+    column: $table.wanted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get heldUntil => $composableBuilder(
+    column: $table.heldUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get previous => $composableBuilder(
+    column: $table.previous,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get synced => $composableBuilder(
+    column: $table.synced,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -7447,8 +7928,23 @@ class $$IntentsTableAnnotationComposer
   GeneratedColumn<String> get messageId =>
       $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<bool> get isRead =>
-      $composableBuilder(column: $table.isRead, builder: (column) => column);
+  GeneratedColumn<String> get attribute =>
+      $composableBuilder(column: $table.attribute, builder: (column) => column);
+
+  GeneratedColumn<String> get wanted =>
+      $composableBuilder(column: $table.wanted, builder: (column) => column);
+
+  GeneratedColumn<String> get expected =>
+      $composableBuilder(column: $table.expected, builder: (column) => column);
+
+  GeneratedColumn<int> get heldUntil =>
+      $composableBuilder(column: $table.heldUntil, builder: (column) => column);
+
+  GeneratedColumn<String> get previous =>
+      $composableBuilder(column: $table.previous, builder: (column) => column);
+
+  GeneratedColumn<String> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
 }
 
 class $$IntentsTableTableManager
@@ -7484,24 +7980,44 @@ class $$IntentsTableTableManager
               ({
                 Value<String> accountId = const Value.absent(),
                 Value<String> messageId = const Value.absent(),
-                Value<bool?> isRead = const Value.absent(),
+                Value<String> attribute = const Value.absent(),
+                Value<String> wanted = const Value.absent(),
+                Value<String?> expected = const Value.absent(),
+                Value<int?> heldUntil = const Value.absent(),
+                Value<String?> previous = const Value.absent(),
+                Value<String?> synced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion(
                 accountId: accountId,
                 messageId: messageId,
-                isRead: isRead,
+                attribute: attribute,
+                wanted: wanted,
+                expected: expected,
+                heldUntil: heldUntil,
+                previous: previous,
+                synced: synced,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String accountId,
                 required String messageId,
-                Value<bool?> isRead = const Value.absent(),
+                required String attribute,
+                required String wanted,
+                Value<String?> expected = const Value.absent(),
+                Value<int?> heldUntil = const Value.absent(),
+                Value<String?> previous = const Value.absent(),
+                Value<String?> synced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion.insert(
                 accountId: accountId,
                 messageId: messageId,
-                isRead: isRead,
+                attribute: attribute,
+                wanted: wanted,
+                expected: expected,
+                heldUntil: heldUntil,
+                previous: previous,
+                synced: synced,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7535,26 +8051,26 @@ typedef $$IntentsTableProcessedTableManager =
       IntentRow,
       PrefetchHooks Function()
     >;
-typedef $$LabelIntentsTableCreateCompanionBuilder =
-    LabelIntentsCompanion Function({
-      required String accountId,
-      required String messageId,
-      required String labelId,
-      required bool added,
-      Value<int> rowid,
-    });
-typedef $$LabelIntentsTableUpdateCompanionBuilder =
-    LabelIntentsCompanion Function({
-      Value<String> accountId,
-      Value<String> messageId,
-      Value<String> labelId,
-      Value<bool> added,
-      Value<int> rowid,
-    });
+typedef $$ConflictsTableCreateCompanionBuilder = ConflictsCompanion Function({
+  required String accountId,
+  required String messageId,
+  required String attribute,
+  required String local,
+  required String provider,
+  Value<int> rowid,
+});
+typedef $$ConflictsTableUpdateCompanionBuilder = ConflictsCompanion Function({
+  Value<String> accountId,
+  Value<String> messageId,
+  Value<String> attribute,
+  Value<String> local,
+  Value<String> provider,
+  Value<int> rowid,
+});
 
-class $$LabelIntentsTableFilterComposer
-    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
-  $$LabelIntentsTableFilterComposer({
+class $$ConflictsTableFilterComposer
+    extends Composer<_$PostinoDatabase, $ConflictsTable> {
+  $$ConflictsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7571,20 +8087,25 @@ class $$LabelIntentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get labelId => $composableBuilder(
-    column: $table.labelId,
+  ColumnFilters<String> get attribute => $composableBuilder(
+    column: $table.attribute,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get added => $composableBuilder(
-    column: $table.added,
+  ColumnFilters<String> get local => $composableBuilder(
+    column: $table.local,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
     builder: (column) => ColumnFilters(column),
   );
 }
 
-class $$LabelIntentsTableOrderingComposer
-    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
-  $$LabelIntentsTableOrderingComposer({
+class $$ConflictsTableOrderingComposer
+    extends Composer<_$PostinoDatabase, $ConflictsTable> {
+  $$ConflictsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7601,20 +8122,25 @@ class $$LabelIntentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get labelId => $composableBuilder(
-    column: $table.labelId,
+  ColumnOrderings<String> get attribute => $composableBuilder(
+    column: $table.attribute,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get added => $composableBuilder(
-    column: $table.added,
+  ColumnOrderings<String> get local => $composableBuilder(
+    column: $table.local,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
     builder: (column) => ColumnOrderings(column),
   );
 }
 
-class $$LabelIntentsTableAnnotationComposer
-    extends Composer<_$PostinoDatabase, $LabelIntentsTable> {
-  $$LabelIntentsTableAnnotationComposer({
+class $$ConflictsTableAnnotationComposer
+    extends Composer<_$PostinoDatabase, $ConflictsTable> {
+  $$ConflictsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7627,84 +8153,85 @@ class $$LabelIntentsTableAnnotationComposer
   GeneratedColumn<String> get messageId =>
       $composableBuilder(column: $table.messageId, builder: (column) => column);
 
-  GeneratedColumn<String> get labelId =>
-      $composableBuilder(column: $table.labelId, builder: (column) => column);
+  GeneratedColumn<String> get attribute =>
+      $composableBuilder(column: $table.attribute, builder: (column) => column);
 
-  GeneratedColumn<bool> get added =>
-      $composableBuilder(column: $table.added, builder: (column) => column);
+  GeneratedColumn<String> get local =>
+      $composableBuilder(column: $table.local, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
 }
 
-class $$LabelIntentsTableTableManager
+class $$ConflictsTableTableManager
     extends
         RootTableManager<
           _$PostinoDatabase,
-          $LabelIntentsTable,
-          LabelIntentRow,
-          $$LabelIntentsTableFilterComposer,
-          $$LabelIntentsTableOrderingComposer,
-          $$LabelIntentsTableAnnotationComposer,
-          $$LabelIntentsTableCreateCompanionBuilder,
-          $$LabelIntentsTableUpdateCompanionBuilder,
+          $ConflictsTable,
+          ConflictRow,
+          $$ConflictsTableFilterComposer,
+          $$ConflictsTableOrderingComposer,
+          $$ConflictsTableAnnotationComposer,
+          $$ConflictsTableCreateCompanionBuilder,
+          $$ConflictsTableUpdateCompanionBuilder,
           (
-            LabelIntentRow,
-            BaseReferences<
-              _$PostinoDatabase,
-              $LabelIntentsTable,
-              LabelIntentRow
-            >,
+            ConflictRow,
+            BaseReferences<_$PostinoDatabase, $ConflictsTable, ConflictRow>,
           ),
-          LabelIntentRow,
+          ConflictRow,
           PrefetchHooks Function()
         > {
-  $$LabelIntentsTableTableManager(
-    _$PostinoDatabase db,
-    $LabelIntentsTable table,
-  ) : super(
+  $$ConflictsTableTableManager(_$PostinoDatabase db, $ConflictsTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$LabelIntentsTableFilterComposer($db: db, $table: table),
+              $$ConflictsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$LabelIntentsTableOrderingComposer($db: db, $table: table),
+              $$ConflictsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$LabelIntentsTableAnnotationComposer($db: db, $table: table),
+              $$ConflictsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> accountId = const Value.absent(),
                 Value<String> messageId = const Value.absent(),
-                Value<String> labelId = const Value.absent(),
-                Value<bool> added = const Value.absent(),
+                Value<String> attribute = const Value.absent(),
+                Value<String> local = const Value.absent(),
+                Value<String> provider = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => LabelIntentsCompanion(
+              }) => ConflictsCompanion(
                 accountId: accountId,
                 messageId: messageId,
-                labelId: labelId,
-                added: added,
+                attribute: attribute,
+                local: local,
+                provider: provider,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String accountId,
                 required String messageId,
-                required String labelId,
-                required bool added,
+                required String attribute,
+                required String local,
+                required String provider,
                 Value<int> rowid = const Value.absent(),
-              }) => LabelIntentsCompanion.insert(
+              }) => ConflictsCompanion.insert(
                 accountId: accountId,
                 messageId: messageId,
-                labelId: labelId,
-                added: added,
+                attribute: attribute,
+                local: local,
+                provider: provider,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$LabelIntentsTable, LabelIntentRow>(table),
+                  e.readTable<$ConflictsTable, ConflictRow>(table),
                   BaseReferences<
                     _$PostinoDatabase,
-                    $LabelIntentsTable,
-                    LabelIntentRow
+                    $ConflictsTable,
+                    ConflictRow
                   >(db, table, e),
                 ),
               )
@@ -7714,21 +8241,21 @@ class $$LabelIntentsTableTableManager
       );
 }
 
-typedef $$LabelIntentsTableProcessedTableManager =
+typedef $$ConflictsTableProcessedTableManager =
     ProcessedTableManager<
       _$PostinoDatabase,
-      $LabelIntentsTable,
-      LabelIntentRow,
-      $$LabelIntentsTableFilterComposer,
-      $$LabelIntentsTableOrderingComposer,
-      $$LabelIntentsTableAnnotationComposer,
-      $$LabelIntentsTableCreateCompanionBuilder,
-      $$LabelIntentsTableUpdateCompanionBuilder,
+      $ConflictsTable,
+      ConflictRow,
+      $$ConflictsTableFilterComposer,
+      $$ConflictsTableOrderingComposer,
+      $$ConflictsTableAnnotationComposer,
+      $$ConflictsTableCreateCompanionBuilder,
+      $$ConflictsTableUpdateCompanionBuilder,
       (
-        LabelIntentRow,
-        BaseReferences<_$PostinoDatabase, $LabelIntentsTable, LabelIntentRow>,
+        ConflictRow,
+        BaseReferences<_$PostinoDatabase, $ConflictsTable, ConflictRow>,
       ),
-      LabelIntentRow,
+      ConflictRow,
       PrefetchHooks Function()
     >;
 typedef $$TrustedSendersTableCreateCompanionBuilder =
@@ -8036,6 +8563,8 @@ typedef $$DraftsTableCreateCompanionBuilder = DraftsCompanion Function({
   required bool pending,
   required bool synced,
   required bool remoteKnown,
+  Value<String?> expected,
+  Value<DraftContent?> conflict,
   Value<int> rowid,
 });
 typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
@@ -8054,6 +8583,8 @@ typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
   Value<bool> pending,
   Value<bool> synced,
   Value<bool> remoteKnown,
+  Value<String?> expected,
+  Value<DraftContent?> conflict,
   Value<int> rowid,
 });
 
@@ -8145,6 +8676,17 @@ class $$DraftsTableFilterComposer
     column: $table.remoteKnown,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<DraftContent?, DraftContent, String>
+  get conflict => $composableBuilder(
+    column: $table.conflict,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$DraftsTableOrderingComposer
@@ -8230,6 +8772,16 @@ class $$DraftsTableOrderingComposer
     column: $table.remoteKnown,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conflict => $composableBuilder(
+    column: $table.conflict,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DraftsTableAnnotationComposer
@@ -8296,6 +8848,12 @@ class $$DraftsTableAnnotationComposer
     column: $table.remoteKnown,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get expected =>
+      $composableBuilder(column: $table.expected, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DraftContent?, String> get conflict =>
+      $composableBuilder(column: $table.conflict, builder: (column) => column);
 }
 
 class $$DraftsTableTableManager
@@ -8342,6 +8900,8 @@ class $$DraftsTableTableManager
                 Value<bool> pending = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
                 Value<bool> remoteKnown = const Value.absent(),
+                Value<String?> expected = const Value.absent(),
+                Value<DraftContent?> conflict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
                 accountId: accountId,
@@ -8359,6 +8919,8 @@ class $$DraftsTableTableManager
                 pending: pending,
                 synced: synced,
                 remoteKnown: remoteKnown,
+                expected: expected,
+                conflict: conflict,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8379,6 +8941,8 @@ class $$DraftsTableTableManager
                 required bool pending,
                 required bool synced,
                 required bool remoteKnown,
+                Value<String?> expected = const Value.absent(),
+                Value<DraftContent?> conflict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
                 accountId: accountId,
@@ -8396,6 +8960,8 @@ class $$DraftsTableTableManager
                 pending: pending,
                 synced: synced,
                 remoteKnown: remoteKnown,
+                expected: expected,
+                conflict: conflict,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9271,8 +9837,8 @@ class $PostinoDatabaseManager {
       $$SyncCursorsTableTableManager(_db, _db.syncCursors);
   $$IntentsTableTableManager get intents =>
       $$IntentsTableTableManager(_db, _db.intents);
-  $$LabelIntentsTableTableManager get labelIntents =>
-      $$LabelIntentsTableTableManager(_db, _db.labelIntents);
+  $$ConflictsTableTableManager get conflicts =>
+      $$ConflictsTableTableManager(_db, _db.conflicts);
   $$TrustedSendersTableTableManager get trustedSenders =>
       $$TrustedSendersTableTableManager(_db, _db.trustedSenders);
   $$DeviceSettingsTableTableManager get deviceSettings =>

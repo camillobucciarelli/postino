@@ -65,6 +65,9 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
+	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
+	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
+	@override late final _Translations$scorrimento$en scorrimento = _Translations$scorrimento$en._(_root);
 }
 
 // Path: sidebar
@@ -409,6 +412,73 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String get permissionLater => 'Not now';
 }
 
+// Path: conflitti
+class _Translations$conflitti$en extends Translations$conflitti$it {
+	_Translations$conflitti$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String bannerTitle({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} conflict',
+		other: '${n} conflicts',
+	);
+	@override String get bannerMessage => 'You changed some messages offline, and they changed somewhere else too.';
+	@override String get open => 'Review';
+	@override String get title => 'Conflicts';
+	@override String get emptyTitle => 'No conflicts';
+	@override String get emptyBody => 'When a message changes in two places, you\'ll find it here.';
+	@override String get keepMine => 'Yours';
+	@override String get keepProvider => 'Provider\'s';
+	@override String mine({required Object value}) => 'Yours: ${value}';
+	@override String provider({required Object value}) => 'Provider: ${value}';
+	@override String get sign => 'Conflict';
+	@override String signFor({required Object sender, required Object time}) => 'Conflict: ${sender}, ${time}';
+	@override String get signMessage => 'This message changed somewhere else too. You see your version here.';
+	@override String account({required Object name}) => 'account ${name}';
+	@override String get noSubject => '(no subject)';
+	@override String get draft => 'Draft';
+	@override String draftMine({required Object subject, required Object body}) => 'Your version: subject ${subject}, text ${body}';
+	@override String draftProvider({required Object subject, required Object body}) => 'Provider\'s version: subject ${subject}, text ${body}';
+	@override late final _Translations$conflitti$values$en values = _Translations$conflitti$values$en._(_root);
+}
+
+// Path: azioni
+class _Translations$azioni$en extends Translations$azioni$it {
+	_Translations$azioni$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get archive => 'Archive';
+	@override String get delete => 'Delete';
+	@override String get star => 'Star';
+	@override String get unstar => 'Remove star';
+	@override String get markRead => 'Mark as read';
+	@override String get markUnread => 'Mark as unread';
+	@override String get archived => 'Conversation archived';
+	@override String get deleted => 'Conversation moved to Trash';
+	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
+	@override String get undo => 'Undo';
+	@override String get more => 'More actions';
+	@override String get applyLabel => 'Apply Label';
+}
+
+// Path: scorrimento
+class _Translations$scorrimento$en extends Translations$scorrimento$it {
+	_Translations$scorrimento$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Swipe actions';
+	@override String get intro => 'Swiping a row of the list runs an Action. The choice applies to all Accounts.';
+	@override String get left => 'Swipe left';
+	@override String get right => 'Swipe right';
+	@override String get markRead => 'Mark as read/unread';
+	@override String get star => 'Star';
+}
+
 // Path: etichetteAutomatiche.model
 class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
 	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -432,6 +502,24 @@ class _Translations$etichetteAutomatiche$model$en extends Translations$etichette
 	@override String get dismiss => 'OK';
 	@override String confirmTitle({required Object size}) => 'Download ${size} over cellular?';
 	@override String get confirmWait => 'Wait for Wi-Fi';
+}
+
+// Path: conflitti.values
+class _Translations$conflitti$values$en extends Translations$conflitti$values$it {
+	_Translations$conflitti$values$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get read => 'read';
+	@override String get unread => 'unread';
+	@override String get starred => 'starred';
+	@override String get unstarred => 'not starred';
+	@override String get inbox => 'in the inbox';
+	@override String get archive => 'archived';
+	@override String get trash => 'in the Trash';
+	@override String labeled({required Object name}) => 'labelled ${name}';
+	@override String unlabeled({required Object name}) => 'not labelled ${name}';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -642,6 +730,51 @@ extension on TranslationsEn {
 			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
+			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} conflict', other: '${n} conflicts', ), 
+			'conflitti.bannerMessage' => 'You changed some messages offline, and they changed somewhere else too.',
+			'conflitti.open' => 'Review',
+			'conflitti.title' => 'Conflicts',
+			'conflitti.emptyTitle' => 'No conflicts',
+			'conflitti.emptyBody' => 'When a message changes in two places, you\'ll find it here.',
+			'conflitti.keepMine' => 'Yours',
+			'conflitti.keepProvider' => 'Provider\'s',
+			'conflitti.mine' => ({required Object value}) => 'Yours: ${value}',
+			'conflitti.provider' => ({required Object value}) => 'Provider: ${value}',
+			'conflitti.sign' => 'Conflict',
+			'conflitti.signFor' => ({required Object sender, required Object time}) => 'Conflict: ${sender}, ${time}',
+			'conflitti.signMessage' => 'This message changed somewhere else too. You see your version here.',
+			'conflitti.account' => ({required Object name}) => 'account ${name}',
+			'conflitti.noSubject' => '(no subject)',
+			'conflitti.draft' => 'Draft',
+			'conflitti.draftMine' => ({required Object subject, required Object body}) => 'Your version: subject ${subject}, text ${body}',
+			'conflitti.draftProvider' => ({required Object subject, required Object body}) => 'Provider\'s version: subject ${subject}, text ${body}',
+			'conflitti.values.read' => 'read',
+			'conflitti.values.unread' => 'unread',
+			'conflitti.values.starred' => 'starred',
+			'conflitti.values.unstarred' => 'not starred',
+			'conflitti.values.inbox' => 'in the inbox',
+			'conflitti.values.archive' => 'archived',
+			'conflitti.values.trash' => 'in the Trash',
+			'conflitti.values.labeled' => ({required Object name}) => 'labelled ${name}',
+			'conflitti.values.unlabeled' => ({required Object name}) => 'not labelled ${name}',
+			'azioni.archive' => 'Archive',
+			'azioni.delete' => 'Delete',
+			'azioni.star' => 'Star',
+			'azioni.unstar' => 'Remove star',
+			'azioni.markRead' => 'Mark as read',
+			'azioni.markUnread' => 'Mark as unread',
+			'azioni.archived' => 'Conversation archived',
+			'azioni.deleted' => 'Conversation moved to Trash',
+			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
+			'azioni.undo' => 'Undo',
+			'azioni.more' => 'More actions',
+			'azioni.applyLabel' => 'Apply Label',
+			'scorrimento.title' => 'Swipe actions',
+			'scorrimento.intro' => 'Swiping a row of the list runs an Action. The choice applies to all Accounts.',
+			'scorrimento.left' => 'Swipe left',
+			'scorrimento.right' => 'Swipe right',
+			'scorrimento.markRead' => 'Mark as read/unread',
+			'scorrimento.star' => 'Star',
 			_ => null,
 		};
 	}

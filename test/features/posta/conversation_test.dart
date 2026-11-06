@@ -503,7 +503,7 @@ void main() {
 
       expect(_tile(tester, 'm3').unread, isFalse);
       expect(_readCalls, isEmpty);
-      expect([for (final i in await queue()) (i.messageId, i.isRead)], [('m3', true)]);
+      expect([for (final i in await queue()) (i.messageId, i.attribute, i.wanted)], [('m3', 'read', 'true')]);
 
       gmail.goOnline();
       h.connectivity.online = true;

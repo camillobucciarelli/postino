@@ -167,7 +167,7 @@ void main() {
     await mirror.reconcile();
     expect(await accounts(), isEmpty);
     expect(await settings.settingsSyncAccount(), isNull);
-    expect((await db.postinoSettingsDao.readPrefix('accounts/')).single.dirty, isTrue);
+    expect((await db.postinoSettingsDao.readPrefixWithTombstones('accounts/')).single.dirty, isTrue);
   });
 
   group('a pass that fails is tried again by itself, on fake time', () {

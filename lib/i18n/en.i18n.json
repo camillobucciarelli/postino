@@ -247,5 +247,61 @@
     "permissionBody": "Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.",
     "permissionAllow": "Continue",
     "permissionLater": "Not now"
+  },
+  "conflitti": {
+    "bannerTitle": {
+      "one": "$n conflict",
+      "other": "$n conflicts"
+    },
+    "bannerMessage": "You changed some messages offline, and they changed somewhere else too.",
+    "open": "Review",
+    "title": "Conflicts",
+    "emptyTitle": "No conflicts",
+    "emptyBody": "When a message changes in two places, you'll find it here.",
+    "keepMine": "Yours",
+    "keepProvider": "Provider's",
+    "mine": "Yours: $value",
+    "provider": "Provider: $value",
+    "sign": "Conflict",
+    "signFor": "Conflict: $sender, $time",
+    "signMessage": "This message changed somewhere else too. You see your version here.",
+    "account": "account $name",
+    "noSubject": "(no subject)",
+    "draft": "Draft",
+    "draftMine": "Your version: subject $subject, text $body",
+    "draftProvider": "Provider's version: subject $subject, text $body",
+    "values": {
+      "read": "read",
+      "unread": "unread",
+      "starred": "starred",
+      "unstarred": "not starred",
+      "inbox": "in the inbox",
+      "archive": "archived",
+      "trash": "in the Trash",
+      "labeled": "labelled $name",
+      "unlabeled": "not labelled $name"
+    }
+  },
+  "azioni": {
+    "archive": "Archive",
+    "delete": "Delete",
+    "star": "Star",
+    "unstar": "Remove star",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "archived": "Conversation archived",
+    "deleted": "Conversation moved to Trash",
+    "labelApplied": "Label “$name” applied",
+    "undo": "Undo",
+    "more": "More actions",
+    "applyLabel": "Apply Label"
+  },
+  "scorrimento": {
+    "title": "Swipe actions",
+    "intro": "Swiping a row of the list runs an Action. The choice applies to all Accounts.",
+    "left": "Swipe left",
+    "right": "Swipe right",
+    "markRead": "Mark as read/unread",
+    "star": "Star"
   }
 }

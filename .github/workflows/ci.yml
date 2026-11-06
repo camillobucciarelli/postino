@@ -49,6 +49,8 @@ jobs:
       - run: tool/release/build_number_test.sh
       - run: tool/release/appcast_test.sh
       - run: tool/release/r2_unreleased_test.sh
+      - run: tool/release/ios_export_options_test.sh
+      - run: tool/release/guide_check_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.

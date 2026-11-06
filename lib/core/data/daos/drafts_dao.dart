@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/draft_content.dart';
 import '../../domain/message.dart';
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
@@ -59,7 +60,7 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   });
 
   /// A Bozza taken over from the Provider (another client's, or a newer version of one here with nothing
-  /// pending): already synced, nothing pending; it replaces the local row.
+  /// pending): already synced, nothing pending, its content the expected one (#149); it replaces the local row.
   Future<void> adopt(String accountId, OutgoingMessage draft, {required int updatedAt}) => into(drafts).insert(
     DraftsCompanion.insert(
       accountId: accountId,
@@ -77,6 +78,7 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       pending: false,
       synced: true,
       remoteKnown: true,
+      expected: Value(DraftContent.of(draft).fingerprint),
     ),
     mode: InsertMode.insertOrReplace,
   );
@@ -147,16 +149,20 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     return r.isNotEmpty;
   }
 
-  Future<List<DraftRow>> pending(String accountId) =>
-      (select(drafts)..where((t) => t.accountId.equals(accountId) & t.pending.equals(true))).get();
+  /// The Bozze to upload; one in Conflitto waits for the user's choice (#149).
+  Future<List<DraftRow>> pending(String accountId) => (select(
+    drafts,
+  )..where((t) => t.accountId.equals(accountId) & t.pending.equals(true) & t.conflict.isNull())).get();
 
   /// The content of [updatedAt] reached the Provider: the Bozza exists there from now on (the next save is an
   /// update, also when it was edited meanwhile), and is no longer pending unless edited meanwhile.
   /// The ack proves the Provider has it, so it is remoteKnown too: if it is sent or deleted elsewhere before
-  /// a sync lists it, the next [reconcile] still drops it.
-  Future<void> synced(String accountId, String messageId, int updatedAt) => transaction(() async {
+  /// a sync lists it, the next [reconcile] still drops it. Its [fingerprint] is the next expected value (#149).
+  Future<void> synced(String accountId, String messageId, int updatedAt, String fingerprint) => transaction(() async {
     Expression<bool> row(Drafts t) => t.accountId.equals(accountId) & t.messageId.equals(messageId);
-    await (update(drafts)..where(row)).write(const DraftsCompanion(synced: Value(true), remoteKnown: Value(true)));
+    await (update(drafts)..where(row)).write(
+      DraftsCompanion(synced: const Value(true), remoteKnown: const Value(true), expected: Value(fingerprint)),
+    );
     await (update(
       drafts,
     )..where((t) => row(t) & t.updatedAt.equals(updatedAt))).write(const DraftsCompanion(pending: Value(false)));
@@ -168,20 +174,75 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   /// The remote copy is gone: the Bozza goes back to new and pending, so the next upload creates it.
   Future<void> forgetRemote(String accountId, String messageId) =>
       (update(drafts)..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).write(
-        const DraftsCompanion(pending: Value(true), synced: Value(false), remoteKnown: Value(false)),
+        const DraftsCompanion(
+          pending: Value(true),
+          synced: Value(false),
+          remoteKnown: Value(false),
+          expected: Value(null),
+          conflict: Value(null),
+        ),
       );
+
+  /// The Provider has [provider], changed elsewhere (#149): the Bozza is in Conflitto, its content here kept.
+  Future<void> conflict(String accountId, String messageId, DraftContent provider) =>
+      (update(drafts)..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).write(
+        DraftsCompanion(conflict: Value(provider)),
+      );
+
+  /// The Bozze in Conflitto (#149), of every Account or only of [accountId].
+  Stream<List<DraftRow>> watchConflicts({String? accountId}) =>
+      (select(drafts)..where(
+            (t) => t.conflict.isNotNull() & (accountId == null ? const Constant(true) : t.accountId.equals(accountId)),
+          ))
+          .watch();
+
+  /// Closes the Conflitto of the Bozza (#149). [keepMine]: the Provider's version becomes the expected one, so the
+  /// replay overwrites it (and a further change elsewhere is a new Conflitto); otherwise the Bozza takes it, synced.
+  /// False when it was no longer open.
+  Future<bool> resolve(String accountId, String messageId, {required bool keepMine}) => transaction(() async {
+    final d = await byId(accountId, messageId);
+    final provider = d?.conflict;
+    if (provider == null) return false;
+    Expression<bool> row(Drafts t) => t.accountId.equals(accountId) & t.messageId.equals(messageId);
+    final expected = Value(provider.fingerprint);
+    await (update(drafts)..where(row)).write(
+      keepMine
+          ? DraftsCompanion(conflict: const Value(null), expected: expected, pending: const Value(true))
+          : DraftsCompanion(
+              conflict: const Value(null),
+              expected: expected,
+              pending: const Value(false),
+              recipients: Value(provider.to.join('\n')),
+              cc: Value(provider.cc.join('\n')),
+              bcc: Value(provider.bcc.join('\n')),
+              subject: Value(provider.subject),
+              body: Value(provider.body),
+            ),
+    );
+    return true;
+  });
 
   /// Moves the local Bozza to [to], as new on the Provider; false when there is none.
   Future<bool> rekey(String accountId, String from, String to) => transaction(() async {
     final d = await byId(accountId, from);
     if (d == null) return false;
-    await into(drafts).insert(d.copyWith(messageId: to, pending: true, synced: false, remoteKnown: false));
+    await into(drafts).insert(
+      d.copyWith(
+        messageId: to,
+        pending: true,
+        synced: false,
+        remoteKnown: false,
+        expected: const Value(null),
+        conflict: const Value(null),
+      ),
+    );
     await remove(accountId, from);
     return true;
   });
 
   /// After a sync: a Bozza the Provider lists as DRAFT is remoteKnown; one it listed before and no longer
-  /// does, with nothing pending here and not queued to send, was deleted or sent elsewhere, so it goes.
+  /// does, with nothing pending here (or in Conflitto, #149: its edit here is dropped as well) and not queued to
+  /// send, was deleted or sent elsewhere, so it goes.
   // ponytail: a small window if the Gmail history brings the deletion and the new version in different batches.
   Future<void> reconcile(String accountId) => transaction(() async {
     const inFolder =
@@ -193,7 +254,7 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       updates: {drafts},
     );
     await customUpdate(
-      'DELETE FROM drafts WHERE account_id = ?1 AND pending = 0 AND remote_known = 1 '
+      'DELETE FROM drafts WHERE account_id = ?1 AND (pending = 0 OR conflict IS NOT NULL) AND remote_known = 1 '
       'AND NOT $inFolder '
       'AND message_id NOT IN (SELECT message_id FROM outbox WHERE account_id = ?1)',
       variables: [Variable(accountId)],

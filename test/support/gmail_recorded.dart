@@ -54,6 +54,8 @@ class RecordedGmail(String Function(http.Request r, String path) route) {
       gmailKeychain(),
       MockClient((r) async {
         requests.add(r);
+        // The token refresh a 401 triggers.
+        if (r.url.host == 'oauth2.googleapis.com') return gmailFixture('token_refresh');
         return gmailFixture(route(r, r.url.path.substring(gmailApi.length)));
       }),
       FakeClock(gmailNow),

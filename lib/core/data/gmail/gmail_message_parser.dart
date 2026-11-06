@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../domain/draft_content.dart';
+import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../json_objects.dart';
+
+/// The `labelIds` of a message resource; a message with no label comes without the field.
+List<String> gmailLabelIds(Map<String, dynamic> j) => [for (final l in j['labelIds'] as List? ?? const []) l as String];
 
 /// A Gmail message resource (`full` or `metadata`) as a [Message].
 Message parseGmailMessage(Map<String, dynamic> j) {
@@ -11,7 +16,7 @@ Message parseGmailMessage(Map<String, dynamic> j) {
   final headers = {
     for (final h in jsonObjects(payload['headers'])) (h['name'] as String).toLowerCase(): h['value'] as String,
   };
-  final labels = [for (final l in j['labelIds'] as List? ?? const []) l as String];
+  final labels = gmailLabelIds(j);
   final from = parseMailbox(headers['from'] ?? '');
   return Message(
     id: j['id'] as String,
@@ -33,6 +38,23 @@ Message parseGmailMessage(Map<String, dynamic> j) {
     },
     references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))..removeWhere((r) => r.isEmpty),
     date: DateTime.fromMillisecondsSinceEpoch(int.parse(j['internalDate'] as String), isUtc: true),
+  );
+}
+
+/// A Bozza's message resource (`format=full`) with its [body] as [DraftContent] (#149): what the impronta compares.
+/// A plain text body is taken as HTML, as when the Bozza is opened here.
+DraftContent gmailDraftContent(Map<String, dynamic> j, MessageBody? body) {
+  final m = parseGmailMessage(j);
+  return DraftContent(
+    to: m.to,
+    cc: m.cc,
+    bcc: m.bcc,
+    subject: m.subject,
+    body: body == null
+        ? ''
+        : body.kind == BodyKind.html
+        ? body.content
+        : plainToHtml(body.content),
   );
 }
 

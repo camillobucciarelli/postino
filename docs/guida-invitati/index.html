@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!-- Gemella di docs/guida-invitati.md: tool/release/guide_check.sh verifica che titoli e link coincidano. -->
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postino: guida per gli invitati</title>
+<style>
+  :root { color-scheme: light dark; --testo: #1a1a1a; --sfondo: #ffffff; --link: #0b57d0; --codice: #f1f1f1; }
+  @media (prefers-color-scheme: dark) {
+    :root { --testo: #ececec; --sfondo: #141414; --link: #8ab4f8; --codice: #2a2a2a; }
+  }
+  html { font-size: 100%; }
+  body { margin: 0 auto; padding: 1rem; max-width: 40rem; background: var(--sfondo); color: var(--testo);
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1.0625rem; line-height: 1.6; }
+  h1 { font-size: 1.75em; line-height: 1.25; }
+  h2 { font-size: 1.4em; margin-top: 2em; }
+  h3 { font-size: 1.15em; }
+  a { color: var(--link); text-decoration: underline; overflow-wrap: anywhere; }
+  a:focus-visible { outline: 0.2em solid var(--link); outline-offset: 0.15em; }
+  code { background: var(--codice); padding: 0 0.25em; border-radius: 0.2em; font-size: 0.95em; }
+  li { margin-bottom: 0.5em; }
+</style>
+</head>
+<body>
+<main>
+<h1>Postino: guida per gli invitati</h1>
+
+<p>Postino è un client di posta che riunisce in un unico posto i tuoi Account email. Questa guida spiega come installarlo, come aggiornarlo e cosa aspettarti quando colleghi un Account Gmail.</p>
+
+<p>La versione aggiornata di questa guida è sempre a <a href="https://postino.camillobucciarelli.dev/guida/index.html">postino.camillobucciarelli.dev/guida/index.html</a>.</p>
+
+<h2>macOS</h2>
+
+<h3>Installare Postino su macOS</h3>
+<ol>
+  <li>Scarica <a href="https://postino.camillobucciarelli.dev/macos/latest/Postino.dmg">Postino per macOS (file DMG, ultima versione)</a>.</li>
+  <li>Apri il file DMG e trascina Postino nella cartella Applicazioni.</li>
+  <li>Avvia Postino da Applicazioni. Al primo avvio macOS chiede se vuoi aprire un'app scaricata da Internet: scegli «Apri». L'app è firmata dallo sviluppatore e notarizzata da Apple, quindi non vedrai altri avvisi.</li>
+</ol>
+
+<h3>Aggiornare Postino su macOS</h3>
+<p>Postino si aggiorna da solo. Al secondo avvio ti chiede il permesso di cercare gli aggiornamenti in automatico: rispondi di sì. Puoi anche cercarli quando vuoi con «Cerca aggiornamenti…» nel menu Postino o con «Cerca aggiornamenti» in Impostazioni › Impostazioni del dispositivo.</p>
+
+<h2>Android</h2>
+
+<h3>Installare Postino su Android</h3>
+<ol>
+  <li>Apri questa pagina in Chrome o in un altro browser del telefono. <strong>Importante:</strong> non usare il browser interno di un'altra app. Se hai aperto il link da WhatsApp, Telegram o Gmail il download resta bloccato: dal menu scegli «Apri nel browser» (o «Apri in Chrome») e riprova da lì.</li>
+  <li>Scarica <a href="https://postino.camillobucciarelli.dev/android/latest/Postino.apk">Postino per Android (file APK, ultima versione)</a>.</li>
+  <li>Apri il file scaricato. Se non si apre da solo, tocca la notifica del download oppure trovalo nell'app Files, nella cartella Download.</li>
+  <li>Android ti chiede di consentire l'installazione da origini sconosciute per il browser o per Files: consentila, poi torna indietro e completa l'installazione.</li>
+</ol>
+
+<h3>Aggiornare Postino su Android</h3>
+<p>Su Android Postino non si aggiorna da solo. Per passare a una versione nuova scarica di nuovo l'APK dal link qui sopra e installalo sopra quello che hai: Account e posta restano.</p>
+
+<h3>Verifica dello sviluppatore Android dal 2027</h3>
+<p>Dal 2027 Google richiede che le app installate fuori da Google Play vengano da uno sviluppatore registrato. L'autore registrerà Postino prima di allora; se dovrai fare qualcosa sul tuo telefono lo troverai in questa guida.</p>
+
+<h2>iOS</h2>
+<h3>Installare Postino su iOS</h3>
+<p>Postino su iPhone e iPad passa da TestFlight, l'app di Apple per provare le app in anteprima. Serve il tuo indirizzo email: l'autore ti aggiunge al gruppo «Invitati».</p>
+<ol>
+  <li>Aspetta l'email di invito di TestFlight (mittente Apple) e aprila sull'iPhone o sull'iPad.</li>
+  <li>Tocca «Visualizza in TestFlight» o «Inizia a testare». Se l'app TestFlight non è installata, l'App Store ti propone di scaricarla: installala, poi torna all'invito.</li>
+  <li>In TestFlight tocca «Accetta», poi «Installa».</li>
+  <li>Apri Postino dalla Schermata Home.</li>
+</ol>
+
+<h3>Aggiornare Postino su iOS</h3>
+<p>Le versioni nuove arrivano da sole: TestFlight ti manda una notifica. Puoi anche aprire TestFlight e toccare «Aggiorna» accanto a Postino. Account e posta restano.</p>
+
+<h3>I build di TestFlight scadono dopo 90 giorni</h3>
+<p>Ogni versione di Postino in TestFlight smette di aprirsi dopo 90 giorni. L'autore ne carica una nuova prima della scadenza: aggiornala da TestFlight. Se una versione è già scaduta, apri TestFlight e installa quella nuova.</p>
+
+<h2>Collegare un Account Gmail</h2>
+
+<h3>La schermata «Google non ha verificato questa app»</h3>
+<p>Quando colleghi un Account Gmail, Google mostra la schermata «Google non ha verificato questa app». È previsto: Postino è distribuito solo agli invitati e non è passato dalla verifica di Google. Per proseguire:</p>
+<ol>
+  <li>Tocca o fai clic su «Avanzate».</li>
+  <li>Scegli «Vai a Postino (non sicuro)».</li>
+  <li>Concedi i permessi richiesti.</li>
+</ol>
+<p>Postino non ha un server suo: la tua posta passa solo tra il tuo dispositivo e Google.</p>
+
+<h3>Il limite di 100 Account Google</h3>
+<p>Finché Google non verifica Postino, possono collegarsi al massimo 100 Account Google in tutto. Il limite si conta per Account Google, non per persona: ogni Gmail che colleghi occupa un posto, anche se è la seconda o la terza della stessa persona. Collega solo gli Account Gmail che usi davvero. Gli Account di altri Provider non contano.</p>
+
+<h2>Segnalare un problema</h2>
+<p>Se qualcosa non va, manda una Segnalazione di un problema:</p>
+<ul>
+  <li>nell'app scegli «Segnala un problema» nelle Impostazioni, oppure premi il tasto <code>p</code> su desktop;</li>
+  <li>Postino prepara una Bozza per camillo@bucciarelli.dev con il log degli errori nel testo: rileggila e decidi tu se inviarla;</li>
+  <li>se non hai ancora collegato un Account, Postino ti fa condividere il file del log: mandalo a camillo@bucciarelli.dev come preferisci.</li>
+</ul>
+<p>Se l'app non si apre, scrivi direttamente a <a href="mailto:camillo@bucciarelli.dev">camillo@bucciarelli.dev</a>.</p>
+</main>
+</body>
+</html>

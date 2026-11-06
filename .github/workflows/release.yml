@@ -1,7 +1,8 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: `macos` (DMG) and `android` (sideloaded APK); TestFlight (#120) plugs in as a sibling.
+# `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `guide` publishes the
+# invitees' guide (#123) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -35,6 +36,38 @@ jobs:
         run: |
           tag=$(git ls-remote --tags origin "refs/tags/v$VERSION")
           test -z "$tag" || { echo "::error::v$VERSION is already released: bump the version in pubspec.yaml"; exit 1; }
+
+  # The invitees' guide (#123), hand-written HTML twin of docs/guida-invitati.md, at a stable URL. R2's custom domain
+  # serves no directory index, so the stable link is guida/index.html. A tag moves it only when it is the highest
+  # version, like the "latest" downloads; a manual run (from main) always publishes it. No `needs: version`: a manual
+  # run of an already released version stops there (and so do the platform jobs), while the guide still goes out, so
+  # a fix to the guide alone needs no new version.
+  guide:
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: tool/release/guide_check.sh
+      - name: Upload the guide to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+        run: |
+          # version.sh refuses a mismatched tag or a manual run off main. Own assignments, so a failing
+          # version.sh or is_latest.sh fails the step instead of skipping the check.
+          version=$(tool/release/version.sh)
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            latest=$(tool/release/is_latest.sh "$version")
+            if [ "$latest" != yes ]; then
+              echo "v$version is not the highest version: guide left as it is"
+              exit 0
+            fi
+          fi
+          tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
+          echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
 
   macos:
     needs: version
@@ -206,12 +239,15 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+        run: |
+          # versionCode grows with the version (build_number.sh), as the macOS build number; pubspec's "+1" is fixed.
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
       - name: Delete the upload keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/upload-keystore.p12"
-      - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256"
+      - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256" "$(tool/release/build_number.sh "$VERSION")" "$VERSION"
       - name: Upload the APK to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -235,3 +271,59 @@ jobs:
           else
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
           fi
+
+  # TestFlight (#120): internal testers only (no Beta App Review). Signing is Xcode's own, cloud-managed through the
+  # App Store Connect API key (tool/release/ios_ipa.sh): no certificate, profile or keychain secret exists. The build
+  # number is the same as the other platforms'; App Store Connect refuses one it already has, so a rerun of a released
+  # version fails at the upload (bump pubspec.yaml). Builds expire after 90 days: run this workflow by hand (with a
+  # version bumped in pubspec.yaml) at least every ~80 days to keep testers on a live build.
+  ios:
+    needs: version
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Required secrets are set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID APPLE_TEAM_ID APP_STORE_CONNECT_API_KEY_BASE64 APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # Generated code is committed (checked by ci.yml), so no codegen here. --config-only writes version, build number
+      # and dart-defines for the archive of ios_ipa.sh; iOS uses the iOS-type client: ID only (README).
+      - name: Configure the iOS build
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: |
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+      - name: Archive and export the IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: tool/release/ios_ipa.sh build/release
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          tool/release/testflight_upload.sh build/release/Postino.ipa
+          echo "- iOS: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to TestFlight (internal testers)" >> "$GITHUB_STEP_SUMMARY"

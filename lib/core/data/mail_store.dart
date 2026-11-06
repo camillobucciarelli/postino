@@ -1,14 +1,22 @@
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
+import '../domain/conflict.dart';
+import '../domain/draft_conflict.dart';
+import '../domain/draft_content.dart';
 import '../domain/html_text.dart';
 import '../domain/inbox_repository.dart';
+import '../domain/mail_action.dart';
 import '../domain/mail_provider.dart';
 import '../domain/message.dart';
 import '../domain/outbox_repository.dart';
+import 'action_codec.dart';
 import 'outbox_store.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
+
+/// A voce of the offline queue, decoded: `expected` null forces the write.
+typedef QueuedAction = ({String messageId, MailAction action, Object? expected});
 
 @lazySingleton
 class MailStore(final PostinoDatabase _db) implements InboxRepository {
@@ -89,32 +97,113 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
         ],
       );
 
+  @override
+  Stream<Message?> watchMessage(String accountId, String messageId) =>
+      _db.messagesDao.watchOne(accountId, messageId).map((r) => r == null ? null : messageOf(r.$1, r.$2));
+
   /// Nothing, as in [applySync], for an Account removed meanwhile.
   Future<void> saveBody(String accountId, String messageId, MessageBody body) => _db.transaction(() async {
     if (await _db.accountsDao.exists(accountId)) await _db.bodiesDao.saveBody(accountId, messageId, body);
   });
 
-  Future<void> markConversationRead(String accountId, String conversationId) =>
-      _db.messagesDao.markConversationRead(accountId, conversationId);
+  /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008).
+  Future<void> markConversationRead(String accountId, String conversationId) async =>
+      queue(accountId, await _db.messagesDao.unreadIn(accountId, conversationId), const MarkRead());
 
-  Future<List<IntentRow>> pendingIntents(String accountId) => _db.intentsDao.pending(accountId);
+  /// Applies [action] to the messages here at once and queues it (ADR 0008), in one transaction;
+  /// [heldUntil] keeps the voci «trattenute» until then (their Annulla is still offered).
+  Future<void> queue(String accountId, Iterable<String> messageIds, MailAction action, {DateTime? heldUntil}) =>
+      _db.intentsDao.queue(accountId, messageIds, action, heldUntil: heldUntil?.millisecondsSinceEpoch);
 
-  Future<void> readDone(String accountId, List<String> messageIds, {required bool isRead}) =>
-      _db.intentsDao.readDone(accountId, messageIds, isRead: isRead);
+  /// Annulla of a «trattenuta» Azione: out of the queue, the messages back as they were. False when none was held.
+  Future<bool> cancelHeld(String accountId, Iterable<String> messageIds, MailAction action, DateTime now) =>
+      _db.intentsDao.cancelHeld(accountId, messageIds, action, now: now.millisecondsSinceEpoch);
 
-  /// Puts the Etichetta on the messages here at once (or takes it off) and queues the intents (ADR 0008),
-  /// in one transaction.
-  Future<void> queueLabels(String accountId, Iterable<String> messageIds, String labelId, {required bool add}) =>
-      _db.intentsDao.queueLabels(accountId, messageIds, labelId, add: add);
+  /// The Account's voci to replay at [now], decoded; the «trattenute» ones wait for their deadline.
+  Future<List<QueuedAction>> pendingActions(String accountId, DateTime now) async => [
+    for (final r in await _db.intentsDao.pending(accountId, now: now.millisecondsSinceEpoch)) _queuedOf(r),
+  ];
 
-  Future<List<LabelIntentRow>> pendingLabelIntents(String accountId) => _db.intentsDao.pendingLabels(accountId);
+  /// The voce of [q] as it is now, about to be sent: null when it left the queue meanwhile (a Conflitto resolved,
+  /// an Annulla) or is held again.
+  Future<QueuedAction?> currentAction(String accountId, QueuedAction q) async =>
+      switch (await _db.intentsDao.voce(accountId, q.messageId, q.action.attribute)) {
+        final r? when r.heldUntil == null => _queuedOf(r),
+        _ => null,
+      };
 
-  Future<void> labelDone(String accountId, String messageId, String labelId, {required bool added}) =>
-      _db.intentsDao.labelDone(accountId, messageId, labelId, added: added);
+  static QueuedAction _queuedOf(IntentRow r) => (
+    messageId: r.messageId,
+    action: actionOf(r.attribute, r.wanted),
+    expected: switch (r.expected) {
+      final e? => decodeValue(r.attribute, e),
+      null => null,
+    },
+  );
 
-  /// The Provider refused the intent: it leaves the queue and the change is undone here.
-  Future<void> labelRejected(String accountId, String messageId, String labelId, {required bool added}) =>
-      _db.intentsDao.labelRejected(accountId, messageId, labelId, added: added);
+  /// The voce reached the Provider, or its message is gone: it leaves the queue unless changed meanwhile.
+  Future<void> actionDone(String accountId, QueuedAction q) =>
+      _db.intentsDao.done(accountId, q.messageId, q.action.attribute, encodeValue(q.action.wanted));
+
+  /// The Provider has [provider], changed elsewhere: the voce becomes a Conflitto, the local version stays.
+  Future<void> actionConflict(String accountId, QueuedAction q, Object provider) => _db.intentsDao.conflict(
+    accountId,
+    q.messageId,
+    q.action.attribute,
+    encodeValue(q.action.wanted),
+    encodeValue(provider),
+  );
+
+  /// The Provider refused the voce: it leaves the queue and the change is undone here.
+  Future<void> actionRejected(String accountId, QueuedAction q) =>
+      _db.intentsDao.rejected(accountId, q.messageId, q.action.attribute, encodeValue(q.action.wanted));
+
+  @override
+  Stream<List<Conflict>> watchConflicts({String? accountId}) => _db.conflictsDao
+      .watch(accountId: accountId)
+      .map(
+        (rows) => [
+          for (final r in rows)
+            Conflict(
+              accountId: r.accountId,
+              messageId: r.messageId,
+              local: actionOf(r.attribute, r.local),
+              provider: decodeValue(r.attribute, r.provider),
+            ),
+        ],
+      );
+
+  /// Closes [c]: «tieni la mia» ([keepMine]) queues its Azione again, forced; otherwise the message takes the
+  /// Provider's value here. False when it was no longer open.
+  Future<bool> resolveConflict(Conflict c, {required bool keepMine}) => keepMine
+      ? _db.conflictsDao.keepMine(c.accountId, c.messageId, c.local.attribute)
+      : _db.conflictsDao.keepProvider(c.accountId, c.messageId, c.local.attribute);
+
+  @override
+  Stream<List<DraftConflict>> watchDraftConflicts({String? accountId}) => _db.draftsDao
+      .watchConflicts(accountId: accountId)
+      .map(
+        (rows) => [
+          for (final r in rows)
+            DraftConflict(
+              accountId: r.accountId,
+              messageId: r.messageId,
+              mine: DraftContent(
+                to: lines(r.recipients),
+                cc: lines(r.cc),
+                bcc: lines(r.bcc),
+                subject: r.subject,
+                body: r.body,
+              ),
+              provider: r.conflict!,
+            ),
+        ],
+      );
+
+  /// Closes the Conflitto of a Bozza (#149): «La tua» ([keepMine]) queues it again, over the Provider's version;
+  /// otherwise the Bozza takes the Provider's. False when it was no longer open.
+  Future<bool> resolveDraftConflict(DraftConflict c, {required bool keepMine}) =>
+      _db.draftsDao.resolve(c.accountId, c.messageId, keepMine: keepMine);
 
   /// An Etichetta just created on the Provider, listed before the next sync brings it.
   /// Nothing, as in [applySync], for an Account removed meanwhile.

@@ -213,12 +213,34 @@ void main() {
 
       unawaited(Routefly.navigate('/posta/a/conversazione/t-1'));
       await tester.pumpAndSettle();
-      expect(find.text('In conflitto'), findsOneWidget);
+      expect(find.textContaining('In conflitto: Ada'), findsOneWidget);
       expect(find.textContaining('La tua: archiviato'), findsOneWidget);
 
       await tester.tap(find.text('La tua'));
       await tester.pumpAndSettle();
-      expect(find.text('In conflitto'), findsNothing);
+      expect(find.textContaining('In conflitto'), findsNothing);
+    });
+
+    testWidgets('two Conflitti in one Conversazione: each notice names its message by sender and date', (tester) async {
+      await start(tester);
+      a.deliver(
+        msg('3', conversationId: 't-1', from: 'bob@example.com', fromName: 'Bob', date: DateTime.utc(2025, 12)),
+      );
+      await getIt<SyncEngine>().syncAll();
+      a.goOffline();
+      await getIt<SyncEngine>().act('a', ['1', '3'], const Archive());
+      a
+        ..changeElsewhere('1', placementAttribute, Placement.trash)
+        ..changeElsewhere('3', placementAttribute, Placement.trash)
+        ..goOnline();
+      await getIt<SyncEngine>().syncAll();
+      await tester.pumpAndSettle();
+
+      unawaited(Routefly.navigate('/posta/a/conversazione/t-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('In conflitto: Ada, 1 gen'), findsOneWidget);
+      expect(find.text('In conflitto: Bob, 1 dic 2025'), findsOneWidget);
     });
   });
 

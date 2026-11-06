@@ -251,7 +251,7 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
               children: [
                 ConversationConflicts(
                   accountId: widget.accountId,
-                  messageIds: {for (final m in messages) m.message.id},
+                  messages: {for (final m in messages) m.message.id: m.message},
                 ),
                 Expanded(
                   child: ConversationBody(

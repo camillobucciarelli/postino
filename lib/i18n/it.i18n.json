@@ -263,6 +263,7 @@
     "mine": "La tua: $value",
     "provider": "Provider: $value",
     "sign": "In conflitto",
+    "signFor": "In conflitto: $sender, $time",
     "signMessage": "Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.",
     "account": "account $name",
     "noSubject": "(senza oggetto)",

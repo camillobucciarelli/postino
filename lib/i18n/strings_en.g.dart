@@ -431,6 +431,7 @@ class _Translations$conflitti$en extends Translations$conflitti$it {
 	@override String mine({required Object value}) => 'Yours: ${value}';
 	@override String provider({required Object value}) => 'Provider: ${value}';
 	@override String get sign => 'Conflict';
+	@override String signFor({required Object sender, required Object time}) => 'Conflict: ${sender}, ${time}';
 	@override String get signMessage => 'This message changed somewhere else too. You see your version here.';
 	@override String account({required Object name}) => 'account ${name}';
 	@override String get noSubject => '(no subject)';
@@ -699,6 +700,7 @@ extension on TranslationsEn {
 			'conflitti.mine' => ({required Object value}) => 'Yours: ${value}',
 			'conflitti.provider' => ({required Object value}) => 'Provider: ${value}',
 			'conflitti.sign' => 'Conflict',
+			'conflitti.signFor' => ({required Object sender, required Object time}) => 'Conflict: ${sender}, ${time}',
 			'conflitti.signMessage' => 'This message changed somewhere else too. You see your version here.',
 			'conflitti.account' => ({required Object name}) => 'account ${name}',
 			'conflitti.noSubject' => '(no subject)',

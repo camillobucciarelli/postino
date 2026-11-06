@@ -827,6 +827,9 @@ class Translations$conflitti$it {
 	/// it: 'In conflitto'
 	String get sign => 'In conflitto';
 
+	/// it: 'In conflitto: $sender, $time'
+	String signFor({required Object sender, required Object time}) => 'In conflitto: ${sender}, ${time}';
+
 	/// it: 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.'
 	String get signMessage => 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.';
 
@@ -1151,6 +1154,7 @@ extension on Translations {
 			'conflitti.mine' => ({required Object value}) => 'La tua: ${value}',
 			'conflitti.provider' => ({required Object value}) => 'Provider: ${value}',
 			'conflitti.sign' => 'In conflitto',
+			'conflitti.signFor' => ({required Object sender, required Object time}) => 'In conflitto: ${sender}, ${time}',
 			'conflitti.signMessage' => 'Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.',
 			'conflitti.account' => ({required Object name}) => 'account ${name}',
 			'conflitti.noSubject' => '(senza oggetto)',

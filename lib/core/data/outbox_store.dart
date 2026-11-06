@@ -19,8 +19,12 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
       _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
 
   @override
-  Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
-      _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
+  Future<bool> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
+      _db.transaction(() async {
+        if (!await _db.accountsDao.exists(accountId)) return false;
+        await _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
+        return true;
+      });
 
   @override
   Future<LocalDraft?> localDraft(String accountId, String messageId) async {

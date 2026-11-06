@@ -10,6 +10,7 @@ import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/settings_repository.dart';
 import 'account_settings_json.dart';
+import 'accounts_lock.dart';
 import 'gmail/gmail_tokens.dart';
 import 'mail_store.dart';
 import 'postino_database.dart';
@@ -24,6 +25,7 @@ class AccountsService(
   final PostinoDatabase _db,
   final Clock _clock,
   final SettingsRepository _settings,
+  final AccountsLock _lock,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -43,8 +45,11 @@ class AccountsService(
     // Gmail addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
     final address = normalizedAddress(grant.address);
     final id = accountIdOf(ProviderKind.gmail, address);
-    await GmailTokens.of(grant).write(_keychain, id);
-    final account = await _save(id, address);
+    // Under the lock: a removal of the same Account in flight never deletes these credentials.
+    final account = await _lock.run(() async {
+      await GmailTokens.of(grant).write(_keychain, id);
+      return _save(id, address);
+    });
     unawaited(_sync.syncAll());
     return Ok(account);
   }

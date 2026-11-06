@@ -23,6 +23,18 @@ Future<OutboxStore> _store() async {
 }
 
 void main() {
+  test('a Bozza adopted after its Account was removed is not kept', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    await MailStore(
+      db,
+    ).addAccount(const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0));
+    await db.accountsDao.remove('a');
+
+    expect(await OutboxStore(db).adoptDraft('a', _msg, updatedAt: 5), isFalse);
+    expect(await db.select(db.drafts).get(), isEmpty);
+  });
+
   test('an enqueued message is read back and counts as outgoing', () async {
     final s = await _store();
     expect(await s.hasOutgoing('a'), isFalse);

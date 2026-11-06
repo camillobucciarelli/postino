@@ -9,6 +9,7 @@ import '../domain/platform_services.dart';
 import '../domain/settings_repository.dart';
 import '../domain/synced_settings.dart';
 import 'account_settings_json.dart';
+import 'accounts_lock.dart';
 import 'gmail/gmail_tokens.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
@@ -25,7 +26,8 @@ import 'row_mappers.dart';
 class AccountsSettingsMirror(
   final PostinoDatabase _db,
   final SecureStore _keychain,
-  final SettingsRepository _settings, {
+  final SettingsRepository _settings,
+  final AccountsLock _lock, {
   @ignoreParam final Duration _retryAfter = const Duration(seconds: 30),
 }) {
   final _subs = <StreamSubscription<Object?>>[];
@@ -95,36 +97,40 @@ class AccountsSettingsMirror(
   /// One pass, in a transaction that reads the voci again: a connection writing the Account and its voce together
   /// is seen whole or not at all, so its Account is never taken for a removed one.
   @visibleForTesting
-  Future<void> reconcile() => _db.transaction(() async {
-    final syncAccount = await _settings.settingsSyncAccount();
-    final here = {for (final r in await _db.accountsDao.byPosition()) r.id: accountOf(r)};
-    for (final row in await _db.postinoSettingsDao.readPrefixWithTombstones(accountsSettingPrefix)) {
-      final id = row.key.substring(accountsSettingPrefix.length);
-      final local = here[id];
-      if (row.deleted) {
-        if (local == null) continue;
-        // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the
-        // other devices never see the removal. The markClean of the upload changes the row, and the pass comes again.
-        // ponytail: a file this Postino cannot write (a newer one) holds the removal until Postino is updated.
-        // An Account da ricollegare cannot upload: removed at once, its tombstone stays dirty and reaches the other
-        // devices once another Account is chosen for the sync.
-        if (row.dirty && id == syncAccount && local.status != AccountStatus.daRicollegare) continue;
-        // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
-        // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
-        // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
-        await GmailTokens.delete(_keychain, id);
-        await _db.accountsDao.remove(id);
-        // The sync ran on it: off, instead of failing in silence on an Account without credentials.
-        if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
-        continue;
+  /// Under the AccountsLock, taken before the transaction as connectGmail does: a reconnection in flight is never
+  /// left without the credentials it just wrote.
+  Future<void> reconcile() => _lock.run(
+    () => _db.transaction(() async {
+      final syncAccount = await _settings.settingsSyncAccount();
+      final here = {for (final r in await _db.accountsDao.byPosition()) r.id: accountOf(r)};
+      for (final row in await _db.postinoSettingsDao.readPrefixWithTombstones(accountsSettingPrefix)) {
+        final id = row.key.substring(accountsSettingPrefix.length);
+        final local = here[id];
+        if (row.deleted) {
+          if (local == null) continue;
+          // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the
+          // other devices never see the removal. The markClean of the upload changes the row, and the pass comes again.
+          // ponytail: a file this Postino cannot write (a newer one) holds the removal until Postino is updated.
+          // An Account da ricollegare cannot upload: removed at once, its tombstone stays dirty and reaches the other
+          // devices once another Account is chosen for the sync.
+          if (row.dirty && id == syncAccount && local.status != AccountStatus.daRicollegare) continue;
+          // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
+          // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
+          // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
+          await GmailTokens.delete(_keychain, id);
+          await _db.accountsDao.remove(id);
+          // The sync ran on it: off, instead of failing in silence on an Account without credentials.
+          if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
+          continue;
+        }
+        final synced = decodeAccountSettings(id, row.value);
+        if (synced == null) continue;
+        if (local == null) {
+          await _db.accountsDao.upsert(synced);
+        } else if (!sameAccountSettings(local, synced)) {
+          await _db.accountsDao.updateSettings(synced);
+        }
       }
-      final synced = decodeAccountSettings(id, row.value);
-      if (synced == null) continue;
-      if (local == null) {
-        await _db.accountsDao.upsert(synced);
-      } else if (!sameAccountSettings(local, synced)) {
-        await _db.accountsDao.updateSettings(synced);
-      }
-    }
-  });
+    }),
+  );
 }

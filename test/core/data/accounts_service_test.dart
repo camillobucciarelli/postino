@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/accounts_settings_mirror.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_entry.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
@@ -134,6 +137,40 @@ void main() {
     expect((jsonDecode(after.value!) as Map<String, dynamic>)['color'], 5);
     expect(after.updatedAt, greaterThan(before.updatedAt));
     expect(after.dirty, isTrue);
+  });
+
+  test('a reconnection while the same Account is being removed ends with Account and tokens, or neither', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    await getIt<AccountsRepository>().connectGmail();
+    // Its first mail sync over.
+    await pumpEventQueue();
+    final db = getIt<PostinoDatabase>();
+    // A tombstone from another device, newer than the voce here.
+    await db.postinoSettingsDao.applyRemote([
+      SettingsEntry(
+        key: 'accounts/gmail:ada@gmail.com',
+        value: null,
+        updatedAt: h.clock.now().millisecondsSinceEpoch + 1000,
+        deviceId: 'z',
+        deleted: true,
+      ),
+    ]);
+
+    // The mirror is deleting the credentials when the OAuth of a reconnection comes back.
+    final gate = h.keychain.deleteGate = Completer<void>();
+    final removal = getIt<AccountsSettingsMirror>().reconcile();
+    await pumpEventQueue();
+    final reconnection = getIt<AccountsRepository>().connectGmail(loginHint: 'ada@gmail.com');
+    await pumpEventQueue();
+    gate.complete();
+    await removal;
+    await reconnection;
+
+    final accounts = await getIt<MailStore>().accounts();
+    final tokens = h.keychain.values.containsKey('oauth:gmail:ada@gmail.com');
+    expect(accounts.isNotEmpty, tokens, reason: 'never an Account without its tokens');
+    expect(accounts.single.status, AccountStatus.attivo);
   });
 
   test('reconnecting with nothing changed leaves the synced voce as it was', () async {

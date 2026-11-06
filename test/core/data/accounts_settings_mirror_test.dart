@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/account_settings_json.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/accounts_settings_mirror.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -38,7 +39,7 @@ void main() {
     db = PostinoDatabase.inMemory();
     keychain = FakeSecureStore();
     settings = DeviceSettingsStore(db);
-    mirror = AccountsSettingsMirror(db, keychain, settings);
+    mirror = AccountsSettingsMirror(db, keychain, settings, AccountsLock());
   });
   tearDown(() async {
     await mirror.stop();
@@ -194,7 +195,7 @@ void main() {
     void onFakeTime(void Function(FakeAsync time, PostinoDatabase db, AccountsSettingsMirror m) body) =>
         fakeAsync((time) {
           final db = PostinoDatabase.inMemory();
-          final m = AccountsSettingsMirror(db, keychain, DeviceSettingsStore(db), retryAfter: base);
+          final m = AccountsSettingsMirror(db, keychain, DeviceSettingsStore(db), AccountsLock(), retryAfter: base);
           keychain.deleteFailure = Exception('keychain bloccato');
           _now(time, db.accountsDao.upsert(_ada));
           _now(time, db.postinoSettingsDao.applyRemote([_remoteTombstone(_ada)]));

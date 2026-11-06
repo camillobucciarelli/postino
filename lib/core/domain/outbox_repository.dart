@@ -32,7 +32,8 @@ abstract interface class OutboxRepository() {
   Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// A Bozza as the Provider has it (another client's, or edited elsewhere), kept here as already synced.
-  Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
+  /// False, and nothing kept, when its Account was removed meanwhile.
+  Future<bool> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// La copia locale della Bozza, se c'è.
   Future<LocalDraft?> localDraft(String accountId, String messageId);

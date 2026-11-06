@@ -13,6 +13,7 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:http/http.dart' as _i519;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:postino/core/data/accounts_lock.dart' as _i681;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/accounts_settings_mirror.dart' as _i400;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
@@ -90,6 +91,7 @@ extension GetItInjectableX on _i174.GetIt {
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
+    gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
     gh.lazySingleton<_i398.BackgroundSender>(
@@ -209,13 +211,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
-    gh.lazySingleton<_i400.AccountsSettingsMirror>(
-      () => _i400.AccountsSettingsMirror(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.SecureStore>(),
-        gh<_i307.SettingsRepository>(),
-      ),
-    );
     gh.lazySingleton<_i95.AutoLabeler>(
       () => _i95.AutoLabeler(
         gh<_i1028.PostinoDatabase>(),
@@ -249,17 +244,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i346.ErrorLog>(),
       ),
     );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.Clock>(),
-        gh<_i307.SettingsRepository>(),
-      ),
-    );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
@@ -271,10 +255,30 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Connectivity>(),
       ),
     );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
+      ),
+    );
     gh.factory<_i166.LaunchAtLoginUseCase>(
       () => _i166.LaunchAtLoginUseCase(
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
+      ),
+    );
+    gh.lazySingleton<_i400.AccountsSettingsMirror>(
+      () => _i400.AccountsSettingsMirror(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.SecureStore>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
       ),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(

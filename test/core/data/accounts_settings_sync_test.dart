@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/account_settings_json.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/accounts_settings_mirror.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -24,7 +25,7 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
   final keychain = FakeSecureStore();
   late final settings = DeviceSettingsStore(db);
   late final sync = SettingsSync(db, settings, clock, FakeConnectivity(), backendFor: (_) => backend);
-  late final mirror = AccountsSettingsMirror(db, keychain, settings);
+  late final mirror = AccountsSettingsMirror(db, keychain, settings, AccountsLock());
 
   Future<void> start() async {
     await settings.setSettingsSyncAccount('a1');

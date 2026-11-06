@@ -62,7 +62,10 @@ class DraftOpener(final MailStore _store, final OutboxRepository _outbox) {
         BodyKind.testo => plainToHtml(body.content),
       },
     );
-    await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch);
+    // The Account removed while the body was downloading: no Bozza to open.
+    if (!await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch)) {
+      return const Err(NotFoundFailure());
+    }
     return Ok(draft);
   }
 }

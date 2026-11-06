@@ -25,10 +25,14 @@ class FakeSecureStore() implements SecureStore {
   /// The deletes asked for, failed ones included.
   var deletes = 0;
 
+  /// While set, every delete waits for it before removing.
+  Completer<void>? deleteGate;
+
   @override
   Future<void> delete(String key) async {
     deletes++;
     if (deleteFailure case final f?) throw f;
+    await deleteGate?.future;
     values.remove(key);
   }
 }

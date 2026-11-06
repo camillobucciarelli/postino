@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import '../../domain/action_outcome.dart';
+import '../../domain/draft_content.dart';
+import '../../domain/draft_outcome.dart';
 import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/outbox_repository.dart';
@@ -71,13 +73,19 @@ class IntentReplayer(
   }
 
   Future<void> _replayDrafts(String accountId, MailProvider provider, {required bool flush}) async {
-    for (final (:draft, :isNew, :updatedAt) in await _outbox.pendingDrafts(accountId)) {
+    for (final (:draft, :isNew, :updatedAt, :expected) in await _outbox.pendingDrafts(accountId)) {
       if (!flush && _clock.now().millisecondsSinceEpoch - updatedAt < draftDebounce.inMilliseconds) {
         continue;
       }
       // Queued while an earlier upload was in flight: it goes with its own MIME.
       if (await _outbox.isQueued(accountId, draft.messageId)) continue;
-      switch (await provider.saveDraft(draft, isNew: isNew)) {
+      switch (await provider.saveDraft(draft, isNew: isNew, expected: expected)) {
+        // Edited elsewhere too (#149): the Bozza waits for the user's choice, its content here kept.
+        case Ok(value: DraftDiverged(:final provider)):
+          // Queued meanwhile: the send carries the version here, nothing to choose.
+          if (await _outbox.isQueued(accountId, draft.messageId)) continue;
+          debugPrint('[sync] $accountId: Conflitto on draft ${draft.messageId}');
+          await _outbox.draftConflict(accountId, draft.messageId, provider);
         case Ok():
           // The message was queued or sent while the upload ran: the late remote Bozza must not survive.
           if (await _outbox.isQueued(accountId, draft.messageId) ||
@@ -89,7 +97,12 @@ class IntentReplayer(
             await _outbox.forgetRemoteDraft(accountId, draft.messageId);
             continue;
           }
-          await _outbox.draftSynced(accountId, draft.messageId, updatedAt);
+          await _outbox.draftSynced(
+            accountId,
+            draft.messageId,
+            updatedAt,
+            fingerprint: DraftContent.of(draft).fingerprint,
+          );
           debugPrint('[sync] $accountId: draft synced ${draft.messageId}');
         // Sent or deleted elsewhere: the local edit is dropped in silence (ADR 0008).
         case Err(failure: NotFoundFailure()):

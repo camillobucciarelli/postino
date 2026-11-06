@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'action_outcome.dart';
+import 'draft_outcome.dart';
 import 'mail_action.dart';
 import 'message.dart';
 import 'result.dart';
@@ -95,8 +96,10 @@ abstract interface class MailProvider() {
   Future<Result<String>> send(String messageId, String raw, {String? threadId});
 
   /// [isNew]: creates the Bozza on the Provider; otherwise updates the one with [OutgoingMessage.messageId],
-  /// [NotFoundFailure] if it is gone (deleted or sent elsewhere).
-  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew});
+  /// [NotFoundFailure] if it is gone (deleted or sent elsewhere). With [expected] (the `DraftContent.fingerprint` of
+  /// the version the Provider had at the last upload or sync, #149) the update is conditional: written only if the
+  /// Provider still has that version or already [draft]'s, otherwise nothing is written and it is [DraftDiverged].
+  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected});
 
   /// Elimina dal Provider la Bozza con Message-ID `messageId`.
   Future<Result<void>> deleteDraft(String messageId);

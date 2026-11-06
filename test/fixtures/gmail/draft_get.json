@@ -1,0 +1,89 @@
+{
+  "status": 200,
+  "body": {
+    "id": "r-4410200000000000001",
+    "message": {
+      "id": "18f3a2b4c5d6e802",
+      "threadId": "18f3a2b4c5d6e801",
+      "labelIds": [
+        "DRAFT"
+      ],
+      "snippet": "Ciao Bruno, è tutto più semplice.",
+      "internalDate": "1793188800000",
+      "payload": {
+        "partId": "",
+        "mimeType": "multipart/alternative",
+        "filename": "",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Ada Lovelace <ada@gmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Bruno <bruno@example.com>"
+          },
+          {
+            "name": "Cc",
+            "value": "carla@example.com"
+          },
+          {
+            "name": "Bcc",
+            "value": "dario@example.com"
+          },
+          {
+            "name": "Subject",
+            "value": "=?utf-8?Q?Caff=C3=A8_=C3=A8_pi=C3=B9_buono?="
+          },
+          {
+            "name": "Message-Id",
+            "value": "<c1d2e3f4@postino.example.com>"
+          },
+          {
+            "name": "MIME-Version",
+            "value": "1.0"
+          },
+          {
+            "name": "Content-Type",
+            "value": "multipart/alternative; boundary=\"b1\""
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "partId": "0",
+            "mimeType": "text/plain",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ],
+            "body": {
+              "size": 37,
+              "data": "Q2lhbyBCcnVubywgw6ggdHV0dG8gcGnDuSBzZW1wbGljZS4NCg"
+            }
+          },
+          {
+            "partId": "1",
+            "mimeType": "text/html",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ],
+            "body": {
+              "size": 51,
+              "data": "PHA-Q2lhbyA8Yj5CcnVubzwvYj4sIMOoIHR1dHRvIHBpw7kgc2VtcGxpY2UuPC9wPg0K"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

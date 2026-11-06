@@ -8,7 +8,7 @@ import '../../../i18n/strings.g.dart';
 
 /// The «N conflitti» Banner on top of an inbox: all the Accounts' in the Posta unificata, only [accountId]'s in an
 /// Account's; nothing at 0. It is a live region, so a screen reader announces it when N changes; «Vedi» ([onOpen])
-/// opens the list of the Conflitti it counts.
+/// opens the list of the Conflitti it counts, those of the Bozze too (#149).
 class const ConflictsBanner({super.key, required final VoidCallback onOpen, final String? accountId})
     extends StatefulWidget {
   @override
@@ -19,17 +19,21 @@ class _ConflictsBannerState() extends State<ConflictsBanner> {
   late final count = streamSignal(
     () => GetIt.I<InboxRepository>().watchConflicts(accountId: widget.accountId).map((l) => l.length),
   );
+  late final drafts = streamSignal(
+    () => GetIt.I<InboxRepository>().watchDraftConflicts(accountId: widget.accountId).map((l) => l.length),
+  );
 
   @override
   void dispose() {
     count.dispose();
+    drafts.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
-      final n = count.value.value ?? 0;
+      final n = (count.value.value ?? 0) + (drafts.value.value ?? 0);
       if (n == 0) return const SizedBox.shrink();
       final t = context.t.conflitti;
       return PostinoBanner(

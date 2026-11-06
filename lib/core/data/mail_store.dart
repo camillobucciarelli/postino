@@ -2,6 +2,8 @@ import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/conflict.dart';
+import '../domain/draft_conflict.dart';
+import '../domain/draft_content.dart';
 import '../domain/html_text.dart';
 import '../domain/inbox_repository.dart';
 import '../domain/mail_action.dart';
@@ -169,6 +171,32 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<bool> resolveConflict(Conflict c, {required bool keepMine}) => keepMine
       ? _db.conflictsDao.keepMine(c.accountId, c.messageId, c.local.attribute)
       : _db.conflictsDao.keepProvider(c.accountId, c.messageId, c.local.attribute);
+
+  @override
+  Stream<List<DraftConflict>> watchDraftConflicts({String? accountId}) => _db.draftsDao
+      .watchConflicts(accountId: accountId)
+      .map(
+        (rows) => [
+          for (final r in rows)
+            DraftConflict(
+              accountId: r.accountId,
+              messageId: r.messageId,
+              mine: DraftContent(
+                to: lines(r.recipients),
+                cc: lines(r.cc),
+                bcc: lines(r.bcc),
+                subject: r.subject,
+                body: r.body,
+              ),
+              provider: r.conflict!,
+            ),
+        ],
+      );
+
+  /// Closes the Conflitto of a Bozza (#149): «La tua» ([keepMine]) queues it again, over the Provider's version;
+  /// otherwise the Bozza takes the Provider's. False when it was no longer open.
+  Future<bool> resolveDraftConflict(DraftConflict c, {required bool keepMine}) =>
+      _db.draftsDao.resolve(c.accountId, c.messageId, keepMine: keepMine);
 
   /// An Etichetta just created on the Provider, listed before the next sync brings it.
   Future<void> saveLabel(String accountId, Label label) => _db.labelsDao.upsert(accountId, label);

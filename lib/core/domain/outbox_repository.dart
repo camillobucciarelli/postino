@@ -1,3 +1,4 @@
+import 'draft_content.dart';
 import 'inbox_repository.dart';
 import 'message.dart';
 
@@ -16,8 +17,9 @@ typedef OutboxItem = ({
 /// The local copy of a Bozza: `pending` while it has edits not on the Provider yet.
 typedef LocalDraft = ({OutgoingMessage draft, bool pending, int updatedAt});
 
-/// A Bozza whose content is not on the Provider yet; `isNew` when it never was.
-typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt});
+/// A Bozza whose content is not on the Provider yet; `isNew` when it never was; `expected` the impronta of the
+/// version the Provider had at the last upload or sync (#149), null to write regardless.
+typedef PendingDraft = ({OutgoingMessage draft, bool isNew, int updatedAt, String? expected});
 
 /// The offline queue of what leaves the device (ADR 0008): the Bozze (#35) and the outbox (#36).
 /// Only the sync engine writes here; the UI reads through [InboxRepository].
@@ -47,8 +49,11 @@ abstract interface class OutboxRepository() {
   /// True while [messageId] waits in the outbox: a Bozza PUT then would only delay its send in the Account's queue.
   Future<bool> isQueued(String accountId, String messageId);
 
-  /// The content of [updatedAt] reached the Provider.
-  Future<void> draftSynced(String accountId, String messageId, int updatedAt);
+  /// The content of [updatedAt], whose impronta is [fingerprint], reached the Provider.
+  Future<void> draftSynced(String accountId, String messageId, int updatedAt, {required String fingerprint});
+
+  /// The Provider has [provider], changed elsewhere (#149): the Bozza waits for the user's choice, its content here kept.
+  Future<void> draftConflict(String accountId, String messageId, DraftContent provider);
 
   /// The remote copy was deleted: the local Bozza is new again.
   Future<void> forgetRemoteDraft(String accountId, String messageId);

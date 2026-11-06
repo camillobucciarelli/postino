@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/conflict.dart';
+import '../domain/draft_conflict.dart';
 import '../domain/error_log.dart';
 import '../domain/mail_action.dart';
 import '../domain/mail_provider.dart';
@@ -245,6 +246,13 @@ class SyncEngine(
   Future<void> resolveConflict(Conflict conflict, {required bool keepMine}) async {
     if (await _store.resolveConflict(conflict, keepMine: keepMine) && keepMine) {
       await _replayIfActive(conflict.accountId);
+    }
+  }
+
+  @override
+  Future<void> resolveDraftConflict(DraftConflict conflict, {required bool keepMine}) async {
+    if (await _store.resolveDraftConflict(conflict, keepMine: keepMine) && keepMine) {
+      await flushDrafts(conflict.accountId);
     }
   }
 

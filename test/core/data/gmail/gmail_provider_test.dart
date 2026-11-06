@@ -7,9 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
+import 'package:postino/core/data/gmail/gmail_message_parser.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/draft_content.dart';
+import 'package:postino/core/domain/draft_outcome.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
@@ -927,6 +930,97 @@ void main() {
         );
         expect(await g.provider.saveDraft(d, isNew: false), isErr<NotFoundFailure>());
         expect(g.requests, isEmpty);
+      });
+
+      group('with the expected impronta (#149)', () {
+        final expected = DraftContent.of(draft).fingerprint;
+        const edit = OutgoingMessage(
+          messageId: '<c1d2e3f4@postino.example.com>',
+          from: 'Ada Lovelace <ada@gmail.com>',
+          to: ['Bruno <bruno@example.com>'],
+          subject: 'Caffè è più buono',
+          body: '<p>Ciao Bruno, modificata qui.</p>',
+        );
+
+        /// [route], the Bozza on Gmail being the recorded [get].
+        String Function(http.Request, String) holding(String get) =>
+            (r, path) => r.method == 'GET' && path == 'drafts/$draftId' ? get : route(r, path);
+
+        test('the Bozza as uploaded (its MIME re-encoded): read, then written', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)), isA<DraftSaved>());
+          expect(
+            [for (final r in g.requests) '${r.method} ${r.url.path}'],
+            ['GET ${gmailApi}drafts', 'GET ${gmailApi}drafts/$draftId', 'PUT ${gmailApi}drafts/$draftId'],
+          );
+          expect(g.requests[1].url.queryParameters['format'], 'full');
+        });
+
+        test('edited in Gmail elsewhere: a Conflitto with the Provider\'s version, nothing written', () async {
+          final g = RecordedGmail(holding('draft_get_edited'));
+          expect(
+            okValue(await g.provider.saveDraft(edit, isNew: false, expected: expected)),
+            isA<DraftDiverged>().having(
+              (d) => d.provider,
+              'provider',
+              const DraftContent(
+                to: ['Bruno <bruno@example.com>'],
+                cc: ['carla@example.com'],
+                bcc: ['dario@example.com'],
+                subject: 'Caffè domani?',
+                body: '<div dir="ltr">Ciao Bruno, ci vediamo domani per il caffè?</div>\r\n',
+              ),
+            ),
+          );
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('sent or deleted elsewhere (a 404 on drafts.get): NotFound, nothing written', () async {
+          final g = RecordedGmail(holding('not_found'));
+          expect(await g.provider.saveDraft(edit, isNew: false, expected: expected), isErr<NotFoundFailure>());
+          expect(g.requests.map((r) => r.method), isNot(contains('PUT')));
+        });
+
+        test('already the wanted version elsewhere: written, no Conflitto', () async {
+          final g = RecordedGmail(holding('draft_get'));
+          expect(okValue(await g.provider.saveDraft(draft, isNew: false, expected: 'other')), isA<DraftSaved>());
+          expect(g.requests.last.method, 'PUT');
+        });
+
+        test('the Bozza read back exactly as rendered here has the impronta it was uploaded with', () async {
+          final parsed = MimeMessage.parseFromText(renderMime(draft, gmailNow));
+          String data(String? s) => base64Url.encode(utf8.encode(s!));
+          final Map<String, dynamic> message = {
+            'id': 'm1',
+            'threadId': 't1',
+            'labelIds': ['DRAFT'],
+            'internalDate': '0',
+            'payload': {
+              'mimeType': 'multipart/alternative',
+              'headers': [
+                for (final h in ['From', 'To', 'Cc', 'Bcc', 'Subject', 'Message-Id'])
+                  {'name': h, 'value': parsed.getHeaderValue(h)!},
+              ],
+              'parts': [
+                {
+                  'partId': '0',
+                  'mimeType': 'text/plain',
+                  'body': {'data': data(parsed.decodeTextPlainPart())},
+                },
+                {
+                  'partId': '1',
+                  'mimeType': 'text/html',
+                  'body': {'data': data(parsed.decodeTextHtmlPart())},
+                },
+              ],
+            },
+          };
+          // What the parser gets back from Gmail for this MIME: the headers as written, the parts decoded.
+          final payload = message['payload']! as Map<String, dynamic>;
+          final html = (payload['parts'] as List)[1] as Map<String, dynamic>;
+          final content = gmailDraftContent(message, gmailBody(payload, html, (html['body'] as Map)['data'] as String));
+          expect(content.fingerprint, expected);
+        });
       });
 
       test('offline is an OfflineFailure', () async {

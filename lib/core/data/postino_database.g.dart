@@ -3950,6 +3950,26 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
       'CHECK ("remote_known" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _expectedMeta = const VerificationMeta(
+    'expected',
+  );
+  @override
+  late final GeneratedColumn<String> expected = GeneratedColumn<String>(
+    'expected',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DraftContent?, String> conflict =
+      GeneratedColumn<String>(
+        'conflict',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<DraftContent?>($DraftsTable.$converterconflictn);
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -3967,6 +3987,8 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     pending,
     synced,
     remoteKnown,
+    expected,
+    conflict,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4089,6 +4111,12 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     } else if (isInserting) {
       context.missing(_remoteKnownMeta);
     }
+    if (data.containsKey('expected')) {
+      context.handle(
+        _expectedMeta,
+        expected.isAcceptableOrUnknown(data['expected']!, _expectedMeta),
+      );
+    }
     return context;
   }
 
@@ -4160,6 +4188,16 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}remote_known'],
       )!,
+      expected: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expected'],
+      ),
+      conflict: $DraftsTable.$converterconflictn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}conflict'],
+        ),
+      ),
     );
   }
 
@@ -4172,6 +4210,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
   $converterattachments = const ForwardedAttachmentsConverter();
   static TypeConverter<List<ForwardedAttachment>?, String?>
   $converterattachmentsn = NullAwareTypeConverter.wrap($converterattachments);
+  static TypeConverter<DraftContent, String> $converterconflict =
+      const DraftContentConverter();
+  static TypeConverter<DraftContent?, String?> $converterconflictn =
+      NullAwareTypeConverter.wrap($converterconflict);
 }
 
 class DraftRow extends DataClass implements Insertable<DraftRow> {
@@ -4201,6 +4243,13 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
   final bool pending;
   final bool synced;
   final bool remoteKnown;
+
+  /// The expected value (#149, v19): the impronta (`DraftContent.fingerprint`) of the version the Provider had at the
+  /// last upload or sync; null before the first one, and the replay then writes regardless.
+  final String? expected;
+
+  /// The Provider's version while the Bozza is in Conflitto (#149): it is not replayed until the user chooses.
+  final DraftContent? conflict;
   const DraftRow({
     required this.accountId,
     required this.messageId,
@@ -4217,6 +4266,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.pending,
     required this.synced,
     required this.remoteKnown,
+    this.expected,
+    this.conflict,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4246,6 +4297,14 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     map['pending'] = Variable<bool>(pending);
     map['synced'] = Variable<bool>(synced);
     map['remote_known'] = Variable<bool>(remoteKnown);
+    if (!nullToAbsent || expected != null) {
+      map['expected'] = Variable<String>(expected);
+    }
+    if (!nullToAbsent || conflict != null) {
+      map['conflict'] = Variable<String>(
+        $DraftsTable.$converterconflictn.toSql(conflict),
+      );
+    }
     return map;
   }
 
@@ -4274,6 +4333,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       pending: Value(pending),
       synced: Value(synced),
       remoteKnown: Value(remoteKnown),
+      expected: expected == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expected),
+      conflict: conflict == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conflict),
     );
   }
 
@@ -4300,6 +4365,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       pending: serializer.fromJson<bool>(json['pending']),
       synced: serializer.fromJson<bool>(json['synced']),
       remoteKnown: serializer.fromJson<bool>(json['remoteKnown']),
+      expected: serializer.fromJson<String?>(json['expected']),
+      conflict: serializer.fromJson<DraftContent?>(json['conflict']),
     );
   }
   @override
@@ -4321,6 +4388,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'pending': serializer.toJson<bool>(pending),
       'synced': serializer.toJson<bool>(synced),
       'remoteKnown': serializer.toJson<bool>(remoteKnown),
+      'expected': serializer.toJson<String?>(expected),
+      'conflict': serializer.toJson<DraftContent?>(conflict),
     };
   }
 
@@ -4340,6 +4409,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     bool? pending,
     bool? synced,
     bool? remoteKnown,
+    Value<String?> expected = const Value.absent(),
+    Value<DraftContent?> conflict = const Value.absent(),
   }) => DraftRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -4358,6 +4429,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     pending: pending ?? this.pending,
     synced: synced ?? this.synced,
     remoteKnown: remoteKnown ?? this.remoteKnown,
+    expected: expected.present ? expected.value : this.expected,
+    conflict: conflict.present ? conflict.value : this.conflict,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
     return DraftRow(
@@ -4386,6 +4459,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       remoteKnown: data.remoteKnown.present
           ? data.remoteKnown.value
           : this.remoteKnown,
+      expected: data.expected.present ? data.expected.value : this.expected,
+      conflict: data.conflict.present ? data.conflict.value : this.conflict,
     );
   }
 
@@ -4406,7 +4481,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
-          ..write('remoteKnown: $remoteKnown')
+          ..write('remoteKnown: $remoteKnown, ')
+          ..write('expected: $expected, ')
+          ..write('conflict: $conflict')
           ..write(')'))
         .toString();
   }
@@ -4428,6 +4505,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     pending,
     synced,
     remoteKnown,
+    expected,
+    conflict,
   );
   @override
   bool operator ==(Object other) =>
@@ -4447,7 +4526,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.updatedAt == this.updatedAt &&
           other.pending == this.pending &&
           other.synced == this.synced &&
-          other.remoteKnown == this.remoteKnown);
+          other.remoteKnown == this.remoteKnown &&
+          other.expected == this.expected &&
+          other.conflict == this.conflict);
 }
 
 class DraftsCompanion extends UpdateCompanion<DraftRow> {
@@ -4466,6 +4547,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<bool> pending;
   final Value<bool> synced;
   final Value<bool> remoteKnown;
+  final Value<String?> expected;
+  final Value<DraftContent?> conflict;
   final Value<int> rowid;
   const DraftsCompanion({
     this.accountId = const Value.absent(),
@@ -4483,6 +4566,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.pending = const Value.absent(),
     this.synced = const Value.absent(),
     this.remoteKnown = const Value.absent(),
+    this.expected = const Value.absent(),
+    this.conflict = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DraftsCompanion.insert({
@@ -4501,6 +4586,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required bool pending,
     required bool synced,
     required bool remoteKnown,
+    this.expected = const Value.absent(),
+    this.conflict = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -4529,6 +4616,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<bool>? pending,
     Expression<bool>? synced,
     Expression<bool>? remoteKnown,
+    Expression<String>? expected,
+    Expression<String>? conflict,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4547,6 +4636,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (pending != null) 'pending': pending,
       if (synced != null) 'synced': synced,
       if (remoteKnown != null) 'remote_known': remoteKnown,
+      if (expected != null) 'expected': expected,
+      if (conflict != null) 'conflict': conflict,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4567,6 +4658,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<bool>? pending,
     Value<bool>? synced,
     Value<bool>? remoteKnown,
+    Value<String?>? expected,
+    Value<DraftContent?>? conflict,
     Value<int>? rowid,
   }) {
     return DraftsCompanion(
@@ -4585,6 +4678,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       pending: pending ?? this.pending,
       synced: synced ?? this.synced,
       remoteKnown: remoteKnown ?? this.remoteKnown,
+      expected: expected ?? this.expected,
+      conflict: conflict ?? this.conflict,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4639,6 +4734,14 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     if (remoteKnown.present) {
       map['remote_known'] = Variable<bool>(remoteKnown.value);
     }
+    if (expected.present) {
+      map['expected'] = Variable<String>(expected.value);
+    }
+    if (conflict.present) {
+      map['conflict'] = Variable<String>(
+        $DraftsTable.$converterconflictn.toSql(conflict.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4663,6 +4766,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('pending: $pending, ')
           ..write('synced: $synced, ')
           ..write('remoteKnown: $remoteKnown, ')
+          ..write('expected: $expected, ')
+          ..write('conflict: $conflict, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8458,6 +8563,8 @@ typedef $$DraftsTableCreateCompanionBuilder = DraftsCompanion Function({
   required bool pending,
   required bool synced,
   required bool remoteKnown,
+  Value<String?> expected,
+  Value<DraftContent?> conflict,
   Value<int> rowid,
 });
 typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
@@ -8476,6 +8583,8 @@ typedef $$DraftsTableUpdateCompanionBuilder = DraftsCompanion Function({
   Value<bool> pending,
   Value<bool> synced,
   Value<bool> remoteKnown,
+  Value<String?> expected,
+  Value<DraftContent?> conflict,
   Value<int> rowid,
 });
 
@@ -8567,6 +8676,17 @@ class $$DraftsTableFilterComposer
     column: $table.remoteKnown,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<DraftContent?, DraftContent, String>
+  get conflict => $composableBuilder(
+    column: $table.conflict,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$DraftsTableOrderingComposer
@@ -8652,6 +8772,16 @@ class $$DraftsTableOrderingComposer
     column: $table.remoteKnown,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conflict => $composableBuilder(
+    column: $table.conflict,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DraftsTableAnnotationComposer
@@ -8718,6 +8848,12 @@ class $$DraftsTableAnnotationComposer
     column: $table.remoteKnown,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get expected =>
+      $composableBuilder(column: $table.expected, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DraftContent?, String> get conflict =>
+      $composableBuilder(column: $table.conflict, builder: (column) => column);
 }
 
 class $$DraftsTableTableManager
@@ -8764,6 +8900,8 @@ class $$DraftsTableTableManager
                 Value<bool> pending = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
                 Value<bool> remoteKnown = const Value.absent(),
+                Value<String?> expected = const Value.absent(),
+                Value<DraftContent?> conflict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
                 accountId: accountId,
@@ -8781,6 +8919,8 @@ class $$DraftsTableTableManager
                 pending: pending,
                 synced: synced,
                 remoteKnown: remoteKnown,
+                expected: expected,
+                conflict: conflict,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8801,6 +8941,8 @@ class $$DraftsTableTableManager
                 required bool pending,
                 required bool synced,
                 required bool remoteKnown,
+                Value<String?> expected = const Value.absent(),
+                Value<DraftContent?> conflict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
                 accountId: accountId,
@@ -8818,6 +8960,8 @@ class $$DraftsTableTableManager
                 pending: pending,
                 synced: synced,
                 remoteKnown: remoteKnown,
+                expected: expected,
+                conflict: conflict,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

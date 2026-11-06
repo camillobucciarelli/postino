@@ -437,6 +437,9 @@ class _Translations$conflitti$en extends Translations$conflitti$it {
 	@override String get signMessage => 'This message changed somewhere else too. You see your version here.';
 	@override String account({required Object name}) => 'account ${name}';
 	@override String get noSubject => '(no subject)';
+	@override String get draft => 'Draft';
+	@override String draftMine({required Object subject, required Object body}) => 'Your version: subject ${subject}, text ${body}';
+	@override String draftProvider({required Object subject, required Object body}) => 'Provider\'s version: subject ${subject}, text ${body}';
 	@override late final _Translations$conflitti$values$en values = _Translations$conflitti$values$en._(_root);
 }
 
@@ -742,6 +745,9 @@ extension on TranslationsEn {
 			'conflitti.signMessage' => 'This message changed somewhere else too. You see your version here.',
 			'conflitti.account' => ({required Object name}) => 'account ${name}',
 			'conflitti.noSubject' => '(no subject)',
+			'conflitti.draft' => 'Draft',
+			'conflitti.draftMine' => ({required Object subject, required Object body}) => 'Your version: subject ${subject}, text ${body}',
+			'conflitti.draftProvider' => ({required Object subject, required Object body}) => 'Provider\'s version: subject ${subject}, text ${body}',
 			'conflitti.values.read' => 'read',
 			'conflitti.values.unread' => 'unread',
 			'conflitti.values.starred' => 'starred',

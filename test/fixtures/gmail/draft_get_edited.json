@@ -1,0 +1,89 @@
+{
+  "status": 200,
+  "body": {
+    "id": "r-4410200000000000001",
+    "message": {
+      "id": "18f3a2b4c5d6e803",
+      "threadId": "18f3a2b4c5d6e801",
+      "labelIds": [
+        "DRAFT"
+      ],
+      "snippet": "Ciao Bruno, ci vediamo domani per il caffè?",
+      "internalDate": "1793188800000",
+      "payload": {
+        "partId": "",
+        "mimeType": "multipart/alternative",
+        "filename": "",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Ada Lovelace <ada@gmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Bruno <bruno@example.com>"
+          },
+          {
+            "name": "Cc",
+            "value": "carla@example.com"
+          },
+          {
+            "name": "Bcc",
+            "value": "dario@example.com"
+          },
+          {
+            "name": "Subject",
+            "value": "Caffè domani?"
+          },
+          {
+            "name": "Message-Id",
+            "value": "<c1d2e3f4@postino.example.com>"
+          },
+          {
+            "name": "MIME-Version",
+            "value": "1.0"
+          },
+          {
+            "name": "Content-Type",
+            "value": "multipart/alternative; boundary=\"b1\""
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "partId": "0",
+            "mimeType": "text/plain",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ],
+            "body": {
+              "size": 46,
+              "data": "Q2lhbyBCcnVubywgY2kgdmVkaWFtbyBkb21hbmkgcGVyIGlsIGNhZmbDqD8NCg"
+            }
+          },
+          {
+            "partId": "1",
+            "mimeType": "text/html",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ],
+            "body": {
+              "size": 67,
+              "data": "PGRpdiBkaXI9Imx0ciI-Q2lhbyBCcnVubywgY2kgdmVkaWFtbyBkb21hbmkgcGVyIGlsIGNhZmbDqD88L2Rpdj4NCg"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

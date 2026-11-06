@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart' show MimeMessage;
 import 'package:postino/core/domain/action_outcome.dart';
+import 'package:postino/core/domain/draft_content.dart';
+import 'package:postino/core/domain/draft_outcome.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
@@ -414,19 +416,28 @@ class FakeMailProvider() implements MailProvider {
     return Ok(id);
   }
 
+  /// Conditional on [expected] as Gmail's (#149): a Bozza changed elsewhere ([deliverDraft]) to neither the
+  /// expected nor the wanted version is [DraftDiverged], and nothing is written.
   @override
-  Future<Result<void>> saveDraft(OutgoingMessage draft, {required bool isNew}) async {
+  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) async {
     draftHeld = draft.messageId;
     await holdDraft?.future;
     final f = _failure;
     if (f != null) return Err(f);
     if (saveDraftFailure case final failure?) return Err(failure);
     draftCalls.add((draft.messageId, isNew));
-    if (!isNew && !drafts.containsKey(draft.messageId)) {
+    final current = drafts[draft.messageId];
+    if (!isNew && current == null) {
       return const Err(NotFoundFailure());
     }
+    if (!isNew && expected != null) {
+      final now = DraftContent.of(current!);
+      if (now.fingerprint != expected && now.fingerprint != DraftContent.of(draft).fingerprint) {
+        return Ok(DraftDiverged(now));
+      }
+    }
     deliverDraft(draft);
-    return const Ok(null);
+    return const Ok(DraftSaved());
   }
 
   @override

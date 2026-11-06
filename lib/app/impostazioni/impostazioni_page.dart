@@ -17,6 +17,7 @@ class ImpostazioniPage extends StatelessWidget {
     // Opened by a link with nothing under it: back to the Posta unificata.
     onBack: () => goBackOrToPosta(context),
     onOpenDevice: () => unawaited(Routefly.push<void>(routePaths.impostazioni.dispositivo)),
+    onOpenSwipe: () => unawaited(Routefly.push<void>(routePaths.impostazioni.scorrimento)),
     onReportProblem: reportProblem,
     onOpenAutoLabels: (accountId) =>
         unawaited(Routefly.push<void>(routePaths.impostazioni.$accountId.etichette.changes({'accountId': accountId}))),

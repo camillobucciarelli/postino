@@ -74,6 +74,12 @@ abstract final class PostinoSize() {
   /// Area minima di tocco su Android (M3). Flutter: kMinInteractiveDimension.
   static const double touchTargetAndroid = 48;
 
+  /// Scorrimento di una riga: spostamento oltre il quale il rilascio arma l'Azione (sotto, la riga torna al suo posto).
+  static const double swipeThreshold = 96;
+
+  /// Scorrimento di una riga: oltre la soglia la riga segue il dito per questa frazione (resistenza).
+  static const double swipeResistance = 0.4;
+
   /// Icone dentro chip, righe e meta.
   static const double iconSm = 16;
 

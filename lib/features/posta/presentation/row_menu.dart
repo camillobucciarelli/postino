@@ -30,10 +30,8 @@ class const RowMenu({
   final void Function(MailAction action)? onOpenAct,
   required final Widget child,
 }) extends StatelessWidget {
-  void _act(BuildContext context, MailAction action) {
-    if (onOpenAct case final open?) return open(action);
-    unawaited(actOnStoredConversation(context, accountId, conversationId, action));
-  }
+  void _act(BuildContext context, MailAction action) =>
+      actOnRow(context, accountId, conversationId, action, onOpenAct: onOpenAct);
 
   @override
   Widget build(BuildContext context) => Builder(

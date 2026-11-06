@@ -10,30 +10,31 @@ List<RouteEntity> get routes => [
     routeBuilder: b1Builder,
   ),
   RouteEntity(key: '/impostazioni/dispositivo', uri: Uri.parse('/impostazioni/dispositivo'), routeBuilder: b2Builder),
-  RouteEntity(key: '/posta', uri: Uri.parse('/posta'), routeBuilder: b3Builder),
+  RouteEntity(key: '/impostazioni/scorrimento', uri: Uri.parse('/impostazioni/scorrimento'), routeBuilder: b3Builder),
+  RouteEntity(key: '/posta', uri: Uri.parse('/posta'), routeBuilder: b4Builder),
   RouteEntity(
     key: '/posta/[accountId]/bozza/[messageId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/bozza/[messageId]'),
-    routeBuilder: b4Builder,
+    routeBuilder: b5Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]/conversazione/[conversationId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/conversazione/[conversationId]'),
-    routeBuilder: b5Builder,
+    routeBuilder: b6Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]/etichetta/[labelId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]/etichetta/[labelId]'),
-    routeBuilder: b6Builder,
+    routeBuilder: b7Builder,
   ),
   RouteEntity(
     key: '/posta/[accountId]',
     parent: '/posta',
     uri: Uri.parse('/posta/[accountId]'),
-    routeBuilder: b7Builder,
+    routeBuilder: b8Builder,
   ),
 ];
 
@@ -43,6 +44,7 @@ const routePaths = (
     path: '/impostazioni',
     $accountId: (path: '/impostazioni/[accountId]', etichette: '/impostazioni/[accountId]/etichette'),
     dispositivo: '/impostazioni/dispositivo',
+    scorrimento: '/impostazioni/scorrimento',
   ),
   posta: (
     path: '/posta',

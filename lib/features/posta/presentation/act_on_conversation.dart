@@ -35,6 +35,19 @@ UndoOffer? actOnConversation(BuildContext context, String accountId, List<String
   return offerUndo(context, accountId, messageIds, action, message: message, queued: queued);
 }
 
+/// [action] on the row's Conversazione from the list (menu, swipe): through [onOpenAct] when the Conversazione is open
+/// beside the list, which moves the selection on or closes it; else [actOnStoredConversation].
+void actOnRow(
+  BuildContext context,
+  String accountId,
+  String conversationId,
+  MailAction action, {
+  void Function(MailAction action)? onOpenAct,
+}) {
+  if (onOpenAct case final open?) return open(action);
+  unawaited(actOnStoredConversation(context, accountId, conversationId, action));
+}
+
 /// The latest letto/non letto chosen per Conversazione (accountId, conversationId), by token: a non letto waiting
 /// for an opening gives way to a choice made since.
 // ponytail: one small entry per Conversazione ever marked, for the app's life.

@@ -1,0 +1,95 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
+
+import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/mail_action.dart';
+import '../../../core/domain/mail_sync.dart';
+import '../../../core/domain/platform_services.dart';
+import '../../../core/domain/result.dart';
+import '../../../design_system/design_system.dart';
+import '../../../i18n/strings.g.dart';
+
+/// An «Annulla» on screen: when it ends, and whether the user took it.
+class UndoOffer(final DateTime until) {
+  bool taken = false;
+}
+
+/// Applies [action] to [messageIds] (a whole Conversazione) here at once. Archivia and Elimina are held for
+/// `undoWindow` behind «Annulla» under [context]'s messenger: within it nothing leaves the device. Annulla takes back
+/// the ids [messageIds] holds then, so a caller may add the ones it acts on later.
+UndoOffer? actOnConversation(BuildContext context, String accountId, List<String> messageIds, MailAction action) {
+  final t = context.t.azioni;
+  final message = switch (action) {
+    Archive() => t.archived,
+    Delete() => t.deleted,
+    _ => null,
+  };
+  final sync = GetIt.I<MailSync>();
+  if (message == null) {
+    unawaited(sync.act(accountId, messageIds, action));
+    return null;
+  }
+  final queued = sync.act(accountId, messageIds, action, hold: PostinoMotion.undoWindow);
+  return offerUndo(context, accountId, messageIds, action, message: message, queued: queued);
+}
+
+/// [actOnConversation] from the list, where the Conversazione may never have been opened: on its messages here at
+/// once, then on the older ones the sync window left out once they are fetched, unless Annulla came first.
+Future<void> actOnStoredConversation(
+  BuildContext context,
+  String accountId,
+  String conversationId,
+  MailAction action,
+) async {
+  final repo = GetIt.I<InboxRepository>();
+  final sync = GetIt.I<MailSync>();
+  Future<List<String>> here() async => [
+    for (final m in await repo.watchConversation(accountId, conversationId).first) m.message.id,
+  ];
+  final ids = await here();
+  if (!context.mounted) return;
+  final offer = actOnConversation(context, accountId, ids, action);
+  if (await sync.completeConversation(accountId, conversationId) is! Ok) return;
+  final older = [
+    for (final id in await here())
+      if (!ids.contains(id)) id,
+  ];
+  if (older.isEmpty || (offer?.taken ?? false)) return;
+  // The rest of the same window: one Annulla for all of them.
+  final left = offer?.until.difference(GetIt.I<Clock>().now());
+  await sync.act(accountId, older, action, hold: left == null || left.isNegative ? null : left);
+  ids.addAll(older);
+  // Annulla taken while they were queued: it did not see them.
+  if (offer?.taken ?? false) await sync.cancelAction(accountId, older, action);
+}
+
+/// «Annulla» under [context]'s messenger for `undoWindow`, for [action] on [messageIds] [queued] with that hold:
+/// it takes the voci back ([MailSync.cancelAction]) and the Provider never hears of them; then [onUndo].
+UndoOffer offerUndo(
+  BuildContext context,
+  String accountId,
+  List<String> messageIds,
+  MailAction action, {
+  required String message,
+  required Future<void> queued,
+  VoidCallback? onUndo,
+}) {
+  final clock = GetIt.I<Clock>();
+  final offer = UndoOffer(clock.now().add(PostinoMotion.undoWindow));
+  PostinoSnackbar.show(
+    context,
+    message: message,
+    actionLabel: context.t.azioni.undo,
+    until: offer.until,
+    now: clock.now,
+    onAction: () {
+      offer.taken = true;
+      onUndo?.call();
+      // After the queueing: an Annulla quicker than the database finds nothing to take back otherwise.
+      unawaited(queued.then((_) => GetIt.I<MailSync>().cancelAction(accountId, messageIds, action)));
+    },
+  );
+  return offer;
+}

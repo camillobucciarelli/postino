@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../../core/domain/mail_action.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'act_on_conversation.dart';
 import 'conversation_actions.dart';
 import 'conversation_labels.dart';
 
@@ -17,17 +18,21 @@ class const RowMenu({
   required final String conversationId,
   required final FocusNode focusNode,
 
+  /// Whether the Account's Etichette are folders: the picker offers Annulla on an addition.
+  required final bool labelsAreFolders,
+
   /// Whether every message of the Conversazione is read, and whether one has the Stella.
   required final bool read,
   required final bool starred,
 
-  /// Archivia or Elimina of the row open beside the list: the selection moves on first.
-  final VoidCallback? onLeave,
+  /// The Azioni of the Conversazione open beside the list, when it is this row's: they go through it, which moves
+  /// the selection on or closes it.
+  final void Function(MailAction action)? onOpenAct,
   required final Widget child,
 }) extends StatelessWidget {
-  Future<void> _act(BuildContext context, MailAction action) {
-    if (action is Archive || action is Delete) onLeave?.call();
-    return actOnStoredConversation(context, accountId, conversationId, action);
+  void _act(BuildContext context, MailAction action) {
+    if (onOpenAct case final open?) return open(action);
+    unawaited(actOnStoredConversation(context, accountId, conversationId, action));
   }
 
   @override
@@ -35,13 +40,19 @@ class const RowMenu({
     builder: (row) => PostinoContextMenu(
       items: [
         for (final a in conversationActions(context, starred: starred, read: read))
-          PostinoMenuItem(label: a.label, icon: a.icon, onPressed: () => unawaited(_act(context, a.action))),
+          PostinoMenuItem(label: a.label, icon: a.icon, onPressed: () => _act(context, a.action)),
         PostinoMenuItem(
           key: ValueKey('row-labels-$accountId-$messageId'),
           label: context.t.selettoreEtichette.menuItem,
           icon: PostinoIcons.tag,
           onPressed: () => unawaited(
-            openLabelPicker(row, accountId: accountId, conversationId: conversationId, returnFocus: focusNode),
+            openLabelPicker(
+              row,
+              accountId: accountId,
+              conversationId: conversationId,
+              labelsAreFolders: labelsAreFolders,
+              returnFocus: focusNode,
+            ),
           ),
         ),
       ],

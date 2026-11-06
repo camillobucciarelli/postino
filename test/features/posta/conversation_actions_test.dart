@@ -27,7 +27,12 @@ late FakeMailProvider gmail;
 DateTime _day(int d) => DateTime.utc(2026, 10, d, 9);
 
 /// The list, newest first: x (x1), o (o1), t (m1, m2).
-Future<void> _start(WidgetTester tester, {ProviderKind provider = ProviderKind.gmail}) async {
+/// [olderStarred]: m1, not the latest, has the Stella.
+Future<void> _start(
+  WidgetTester tester, {
+  ProviderKind provider = ProviderKind.gmail,
+  bool olderStarred = false,
+}) async {
   tester.view
     ..physicalSize = const Size(1600, 900)
     ..devicePixelRatio = 1;
@@ -38,7 +43,17 @@ Future<void> _start(WidgetTester tester, {ProviderKind provider = ProviderKind.g
   gmail = await h.addAccount('a1', provider: provider);
   gmail.labels.add(const Label(id: 'Label_13', name: 'Fatture', kind: LabelKind.etichetta));
   gmail
-    ..deliver(msg('m1', conversationId: 't', subject: 'Cena', date: _day(1), isRead: true))
+    ..deliver(
+      msg(
+        'm1',
+        conversationId: 't',
+        subject: 'Cena',
+        date: _day(1),
+        isRead: true,
+        isStarred: olderStarred,
+        labelIds: [inboxLabelId, if (olderStarred) starredLabelId],
+      ),
+    )
     ..deliver(msg('m2', conversationId: 't', subject: 'Re: Cena', date: _day(2), isRead: true))
     ..deliver(msg('o1', conversationId: 'o', subject: 'Altro', date: _day(3), isRead: true))
     ..deliver(msg('x1', conversationId: 'x', subject: 'Ultimo', date: _day(4), isRead: true));
@@ -204,11 +219,76 @@ void main() {
     await _tap(tester, find.byKey(const ValueKey('label-search')));
     await _key(tester, LogicalKeyboardKey.keyE, character: 'e');
     await _key(tester, LogicalKeyboardKey.keyS, character: 's');
+    await _key(tester, LogicalKeyboardKey.digit3, shift: true, character: '#');
     expect(_row('x1'), findsOneWidget);
     expect(_tile(tester, 'x1').starred, isFalse);
 
     await _expire(tester);
     expect(_sent, containsAll([('o1', const Archive()), ('m1', const Delete()), ('m2', const Delete())]));
+
+    // The last Conversazione of the list: none to move to, it closes.
+    await _escape(tester);
+    await _key(tester, LogicalKeyboardKey.keyE);
+    expect(_row('x1'), findsNothing);
+    expect(_open('x'), findsNothing);
+  });
+
+  _onMac('# is the character, whatever the layout puts it on: Option+à on the Italian Mac one', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('o1'));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3, character: '#');
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+    await _settle(tester);
+    expect(_row('o1'), findsNothing);
+    expect(find.text('Conversazione spostata nel Cestino'), findsOneWidget);
+  });
+
+  _onMac('the row menu of the open Conversazione goes through it: Archivia opens the next, non letto closes it '
+      'and it stays unread', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('o1'));
+    await _menu(tester, 'o1', 'Archivia');
+    expect(_row('o1'), findsNothing);
+    expect(_open('t'), findsOneWidget);
+
+    await _menu(tester, 'm2', 'Segna come non letto');
+    expect(_open('t'), findsNothing);
+    expect(_tile(tester, 'm2').unread, isTrue);
+    await _settle(tester);
+    expect(_tile(tester, 'm2').unread, isTrue);
+  });
+
+  _onMac('from the list the whole Conversazione is reached, older messages too, under the same Annulla', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.deliverOutsideWindow(msg('o0', conversationId: 'o', subject: 'Altro', date: _day(1), isRead: true));
+    await _menu(tester, 'o1', 'Elimina');
+    await _settle(tester);
+    expect(_sent.where((s) => s.$2 is Delete), isEmpty);
+    await _expire(tester);
+    expect(_sent, containsAll([('o1', const Delete()), ('o0', const Delete())]));
+
+    gmail.deliverOutsideWindow(msg('x0', conversationId: 'x', subject: 'Ultimo', date: _day(1), isRead: true));
+    await _menu(tester, 'x1', 'Archivia');
+    await _settle(tester);
+    await _tap(tester, _undo);
+    await _expire(tester);
+    expect(_sent.where((s) => s.$1 == 'x0' || s.$1 == 'x1'), isEmpty);
+  });
+
+  _onMac('a Stella on an older message stands for the Conversazione: the row offers to take it off, s takes it off', (
+    tester,
+  ) async {
+    await _start(tester, olderStarred: true);
+    _tile(tester, 'm2').focusNode!.requestFocus();
+    await _settle(tester);
+    await _key(tester, LogicalKeyboardKey.keyS);
+    expect(_sent, contains(('m1', const Unstar())));
+    await tester.tap(_row('m2'), buttons: kSecondaryButton);
+    await _settle(tester);
+    expect(find.text('Aggiungi stella'), findsOneWidget);
   });
 
   _onMac('with no Conversazione open the shortcuts act on the focused row; Archivia moves the focus on', (

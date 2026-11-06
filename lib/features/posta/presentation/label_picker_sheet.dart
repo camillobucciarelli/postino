@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/label_name.dart';
 import '../../../core/domain/mail_action.dart';
@@ -14,7 +13,7 @@ import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/conversation_label_intents.dart';
-import 'conversation_actions.dart';
+import 'act_on_conversation.dart';
 import 'conversation_labels.dart';
 
 /// The content of the picker of the Etichette of a Conversazione, read from the database: the user Etichette of
@@ -26,6 +25,9 @@ class const LabelPickerSheet({
   required final String accountId,
   required final String conversationId,
   required final BuildContext snackbarContext,
+
+  /// Whether the Account's Etichette are folders (#146): an addition offers Annulla there.
+  required final bool labelsAreFolders,
 }) extends StatefulWidget {
   @override
   State<LabelPickerSheet> createState() => _LabelPickerSheetState();
@@ -39,9 +41,6 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   late final ConversationKey _key = (accountId: widget.accountId, conversationId: widget.conversationId);
   final _intents = GetIt.I<ConversationLabelIntents>();
 
-  /// Whether the Account's Etichette are folders (#146): an addition offers Annulla there.
-  bool _folders = false;
-
   @override
   void initState() {
     super.initState();
@@ -50,11 +49,6 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     // leaves its older messages out. The ticks taken meanwhile reach them when it ends, the picker closed or not.
     unawaited(
       _intents.fetch(_key, () => GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId)),
-    );
-    unawaited(
-      GetIt.I<AccountsRepository>().watchAccounts().first.then(
-        (all) => _folders = all.any((a) => a.id == widget.accountId && a.provider.labelsAreFolders),
-      ),
     );
     _subs
       ..add(
@@ -85,12 +79,20 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   }
 
   void _add(List<Message> messages, Label label) {
-    final folders = _folders;
+    final folders = widget.labelsAreFolders;
     final (:ids, :queued) = _intents.add(_key, messages, label.id, hold: folders ? PostinoMotion.undoWindow : null);
     final at = widget.snackbarContext;
     if (!folders || ids.isEmpty || !at.mounted) return;
     final message = at.t.azioni.labelApplied(name: label.name);
-    offerUndo(at, widget.accountId, ids, ApplyLabel(label.id), message: message, queued: queued);
+    offerUndo(
+      at,
+      widget.accountId,
+      ids,
+      ApplyLabel(label.id),
+      message: message,
+      queued: queued,
+      onUndo: () => _intents.forgetAdd(_key, label.id),
+    );
   }
 
   // ponytail: a creation refused (offline, Da ricollegare) leaves no trace; say it when the picker gets an error slot.

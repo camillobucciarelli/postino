@@ -5,15 +5,16 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
-import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'act_on_conversation.dart';
 import 'conversation_actions.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
+import 'row_keep_alive.dart';
 import 'row_menu.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
@@ -226,16 +227,18 @@ class _MessageListState() extends State<MessageList> {
     return next;
   }
 
-  /// A shortcut's Azione on the focused row (no Conversazione open); Archivia and Elimina move the focus on.
+  /// A shortcut's Azione on the focused row; Archivia and Elimina move the focus on. The open Conversazione's row
+  /// goes through it, which moves the selection on or closes it.
   void _actOnRow(PostaAction shortcut) {
     final key = _cursor;
     final e = _list?.where((e) => (e.account.id, e.message.conversationId) == key).firstOrNull;
     // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione.
     if (key == null || e == null || !_listFocused() || key.$2.startsWith('<')) return;
-    final action = mailActionFor(shortcut, starred: e.message.isStarred);
+    if (key == widget.selected && widget.cursor?.act != null) return widget.cursor!.act!(shortcut);
+    final action = mailActionFor(shortcut, starred: _starred(e));
     if (action == null) return;
     unawaited(actOnStoredConversation(context, key.$1, key.$2, action));
-    if (action is Archive || action is Delete) _step(key);
+    if (leavesList(action)) _step(key);
   }
 
   @override
@@ -295,7 +298,7 @@ class _MessageListState() extends State<MessageList> {
               time,
             ].join(', '),
           );
-          return _KeepAlive(
+          return RowKeepAlive(
             keep: key == _cursor,
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')
@@ -305,10 +308,10 @@ class _MessageListState() extends State<MessageList> {
                     messageId: m.id,
                     conversationId: m.conversationId,
                     focusNode: node,
+                    labelsAreFolders: a.provider.labelsAreFolders,
                     read: !unread,
-                    starred: m.isStarred,
-                    // ponytail: the last row open beside the list stays open once archived; close it if it matters.
-                    onLeave: widget.selected == key ? () => _leave(key) : null,
+                    starred: _starred(list[i]),
+                    onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
                     child: tile,
                   ),
           );
@@ -318,27 +321,7 @@ class _MessageListState() extends State<MessageList> {
   );
 }
 
+/// A message of the Conversazione has the Stella: the row's labels are those of all of them.
+bool _starred(InboxEntry e) => e.message.labelIds.contains(starredLabelId);
+
 (String, String) _firstKey(List<InboxEntry> list) => (list.first.account.id, list.first.message.conversationId);
-
-/// Keeps the cursor row built when it scrolls out of sight, so Tab still finds it.
-class const _KeepAlive({required final bool keep, required final Widget child}) extends StatefulWidget {
-  @override
-  State<_KeepAlive> createState() => _KeepAliveState();
-}
-
-class _KeepAliveState() extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => widget.keep;
-
-  @override
-  void didUpdateWidget(_KeepAlive old) {
-    super.didUpdateWidget(old);
-    if (old.keep != widget.keep) updateKeepAlive();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}

@@ -1,12 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
-import 'package:get_it/get_it.dart';
 
-import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_action.dart';
-import '../../../core/domain/mail_sync.dart';
-import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'posta_shortcuts.dart';
@@ -40,54 +34,5 @@ MailAction? mailActionFor(PostaAction action, {required bool starred}) => switch
   _ => null,
 };
 
-/// [actOnConversation] on the messages of the Conversazione here (from the list: it may never have been opened).
-Future<void> actOnStoredConversation(
-  BuildContext context,
-  String accountId,
-  String conversationId,
-  MailAction action,
-) async {
-  final messages = await GetIt.I<InboxRepository>().watchConversation(accountId, conversationId).first;
-  if (!context.mounted) return;
-  actOnConversation(context, accountId, [for (final m in messages) m.message.id], action);
-}
-
-/// Applies [action] to [messageIds] (a whole Conversazione) here at once. Archivia and Elimina are held for
-/// `undoWindow` behind «Annulla» under [context]'s messenger: within it nothing leaves the device.
-void actOnConversation(BuildContext context, String accountId, List<String> messageIds, MailAction action) {
-  final t = context.t.azioni;
-  final message = switch (action) {
-    Archive() => t.archived,
-    Delete() => t.deleted,
-    _ => null,
-  };
-  final sync = GetIt.I<MailSync>();
-  if (message == null) {
-    unawaited(sync.act(accountId, messageIds, action));
-    return;
-  }
-  final queued = sync.act(accountId, messageIds, action, hold: PostinoMotion.undoWindow);
-  offerUndo(context, accountId, messageIds, action, message: message, queued: queued);
-}
-
-/// «Annulla» under [context]'s messenger for `undoWindow`, for [action] on [messageIds] [queued] with that hold:
-/// it takes the voci back ([MailSync.cancelAction]) and the Provider never hears of them.
-void offerUndo(
-  BuildContext context,
-  String accountId,
-  List<String> messageIds,
-  MailAction action, {
-  required String message,
-  required Future<void> queued,
-}) {
-  final clock = GetIt.I<Clock>();
-  PostinoSnackbar.show(
-    context,
-    message: message,
-    actionLabel: context.t.azioni.undo,
-    until: clock.now().add(PostinoMotion.undoWindow),
-    now: clock.now,
-    // After the queueing: an Annulla quicker than the database finds nothing to take back otherwise.
-    onAction: () => unawaited(queued.then((_) => GetIt.I<MailSync>().cancelAction(accountId, messageIds, action))),
-  );
-}
+/// Archivia and Elimina take the Conversazione out of the list: the selection moves on.
+bool leavesList(MailAction action) => action is Archive || action is Delete;

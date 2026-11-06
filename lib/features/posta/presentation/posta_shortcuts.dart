@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../core/domain/mail_action.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
@@ -88,8 +89,11 @@ class ListCursor() {
   /// An Azione (#146: `e`, `#`, `s`, Maiusc+I, Maiusc+U) on the open Conversazione: the Conversazione plugs it in.
   void Function(PostaAction action)? act;
 
-  /// The same on the focused row of the list while no Conversazione is open: the list plugs it in.
+  /// The same on the focused row of the list (the open Conversazione's row goes through [act]): the list plugs it in.
   void Function(PostaAction action)? actOnRow;
+
+  /// An Azione from elsewhere (the row menu) on the open Conversazione: the Conversazione plugs it in.
+  void Function(MailAction action)? apply;
 
   /// The open Conversazione (accountId, conversationId) leaves the list (Archivia, Elimina): the selection passes
   /// to the next row, else the previous; false when there is none. The list plugs it in.
@@ -109,22 +113,31 @@ class const PostaShortcuts({super.key, required final ListCursor cursor, require
     return Shortcuts(
       shortcuts: {
         for (final s in postaShortcuts)
-          s.character == null
-              ? SingleActivator(
-                  s.key!,
-                  meta: s.command && mac,
-                  control: s.command && !mac,
-                  shift: s.shift,
-                  includeRepeats: s.repeats,
-                )
-              : CharacterActivator(s.character!, includeRepeats: s.repeats): PostaIntent(
-            s,
-          ),
+          for (final a in _activators(s, mac: mac)) a: PostaIntent(s),
       },
       child: Actions(actions: {PostaIntent: _PostaAction(cursor)}, child: child),
     );
   }
 }
+
+/// A character also comes with Option (macOS) or AltGr (Ctrl+Alt, Windows) on some layouts: `#` is Option+à on the
+/// Italian one.
+List<ShortcutActivator> _activators(PostaShortcut s, {required bool mac}) => switch (s.character) {
+  null => [
+    SingleActivator(
+      s.key!,
+      meta: s.command && mac,
+      control: s.command && !mac,
+      shift: s.shift,
+      includeRepeats: s.repeats,
+    ),
+  ],
+  final c => [
+    CharacterActivator(c, includeRepeats: s.repeats),
+    CharacterActivator(c, alt: true, includeRepeats: s.repeats),
+    CharacterActivator(c, alt: true, control: true, includeRepeats: s.repeats),
+  ],
+};
 
 class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
   @override
@@ -174,7 +187,9 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
           PostaAction.star ||
           PostaAction.markRead ||
           PostaAction.markUnread:
-        (cursor.act ?? cursor.actOnRow)?.call(intent.shortcut.action);
+        // The focused row of the list first: it may not be the open Conversazione.
+        final onList = cursor.listFocused?.call() ?? false;
+        (onList ? cursor.actOnRow : cursor.act ?? cursor.actOnRow)?.call(intent.shortcut.action);
     }
     return null;
   }

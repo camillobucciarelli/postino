@@ -66,12 +66,14 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
     String labelId, {
     Duration? hold,
   }) {
-    _fetches[key]?.desired[labelId] = true;
-    final targets = _lacking(messages, labelId, add: true);
-    return (
-      ids: [for (final m in targets) m.id],
-      queued: _apply(key.accountId, targets, labelId, add: true, hold: hold),
-    );
+    final (:targets, :queued) = _set(key, messages, labelId, add: true, hold: hold);
+    return (ids: [for (final m in targets) m.id], queued: queued);
+  }
+
+  /// Annulla of a held [add] (a folder Provider): a fetch still running no longer brings it to the older messages.
+  void forgetAdd(ConversationKey key, String labelId) {
+    final desired = _fetches[key]?.desired;
+    if (desired?[labelId] == true) desired!.remove(labelId);
   }
 
   /// Takes [labelId] off the [messages] of [key] that have it; returns the token of its Annulla ([undoRemoval]),
@@ -79,7 +81,12 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   Object remove(ConversationKey key, Iterable<Message> messages, String labelId) {
     final token = Object();
     final before = _fetches[key]?.desired[labelId];
-    _removals[token] = (key: key, labelId: labelId, before: before, had: _set(key, messages, labelId, add: false));
+    _removals[token] = (
+      key: key,
+      labelId: labelId,
+      before: before,
+      had: _set(key, messages, labelId, add: false).targets,
+    );
     return token;
   }
 
@@ -109,11 +116,16 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
     for (final m in await _inbox.watchConversation(key.accountId, key.conversationId).first) m.message,
   ];
 
-  List<Message> _set(ConversationKey key, Iterable<Message> messages, String labelId, {required bool add}) {
+  ({List<Message> targets, Future<void> queued}) _set(
+    ConversationKey key,
+    Iterable<Message> messages,
+    String labelId, {
+    required bool add,
+    Duration? hold,
+  }) {
     _fetches[key]?.desired[labelId] = add;
     final targets = _lacking(messages, labelId, add: add);
-    unawaited(_apply(key.accountId, targets, labelId, add: add));
-    return targets;
+    return (targets: targets, queued: _apply(key.accountId, targets, labelId, add: add, hold: hold));
   }
 
   static List<Message> _lacking(Iterable<Message> messages, String labelId, {required bool add}) =>

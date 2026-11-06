@@ -6,6 +6,7 @@ import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/settings_entry.dart';
 
 import '../../support/fake_platform.dart';
 
@@ -24,6 +25,7 @@ const _bob = Account(
   position: 1,
 );
 final _t = DateTime.utc(2026, 11, 5);
+final _key = accountSettingsKey(_ada.id);
 
 void main() {
   late PostinoDatabase db;
@@ -89,13 +91,26 @@ void main() {
     expect(keychain.values.keys, ['database_key']);
   });
 
-  test('removing the Account the sync runs on turns the sync off; another one leaves it on', () async {
+  test('the Account the sync runs on goes once its tombstone is uploaded, then the sync goes off', () async {
+    mirror.start();
     await db.accountsDao.upsert(_ada);
+    await keychain.write('oauth:${_ada.id}', '{}');
     await settings.setSettingsSyncAccount(_ada.id);
     await db.postinoSettingsDao.tombstoneAccount(_ada.id, at: _t);
-    await mirror.reconcile();
-    expect(await settings.settingsSyncAccount(), isNull);
+    await pumpEventQueue();
+    // Still to upload: its credentials are what uploads it.
+    expect(await accounts(), [_ada]);
+    expect(keychain.values.keys, ['oauth:${_ada.id}']);
+    expect(await settings.settingsSyncAccount(), _ada.id);
 
+    await db.postinoSettingsDao.markClean(await db.postinoSettingsDao.entries());
+    await pumpEventQueue();
+    expect(await accounts(), isEmpty);
+    expect(keychain.values, isEmpty);
+    expect(await settings.settingsSyncAccount(), isNull);
+  });
+
+  test('removing another Account leaves the sync on', () async {
     await db.accountsDao.upsert(_bob);
     await settings.setSettingsSyncAccount('gmail:other@gmail.com');
     await db.postinoSettingsDao.tombstoneAccount(_bob.id, at: _t);
@@ -120,6 +135,24 @@ void main() {
     expect((await accounts()).map((a) => a.id), [_bob.id]);
     expect(await db.select(db.labels).get(), isEmpty);
     expect(keychain.values, isEmpty);
+  });
+
+  test('a pass that fails is tried again by itself, without another change of the voci', () async {
+    await mirror.stop();
+    mirror = AccountsSettingsMirror(db, keychain, settings, retryAfter: const Duration(milliseconds: 1))..start();
+    await db.accountsDao.upsert(_ada);
+    keychain.deleteFailure = Exception('keychain bloccato');
+    // A tombstone from another device: already clean, nothing here will write it again.
+    await db.postinoSettingsDao.applyRemote([
+      SettingsEntry(key: _key, value: null, updatedAt: 1, deviceId: 'z', deleted: true),
+    ]);
+    await pumpEventQueue();
+    expect(await accounts(), [_ada]);
+
+    keychain.deleteFailure = null;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await pumpEventQueue();
+    expect(await accounts(), isEmpty);
   });
 
   test('an Account here without a voce, or with a malformed one, is left alone', () async {

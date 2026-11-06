@@ -149,6 +149,27 @@ void main() {
       },
     );
 
+    test('removing the sync Account reaches the other device before its credentials go', () async {
+      await a.settings.setSettingsSyncAccount('gmail:ada@gmail.com');
+      await a.put(_account('ada'));
+      await a.keychain.write('oauth:gmail:ada@gmail.com', '{}');
+      await a.syncNow();
+      await b.syncNow();
+      expect(await b.accounts(), hasLength(1));
+
+      tick();
+      await a.db.postinoSettingsDao.tombstoneAccount('gmail:ada@gmail.com', at: clock.now());
+      await pumpEventQueue();
+      await a.syncNow();
+      await b.syncNow();
+
+      expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
+      expect(await b.accounts(), isEmpty);
+      expect(await a.accounts(), isEmpty);
+      expect(a.keychain.values, isEmpty);
+      expect(await a.settings.settingsSyncAccount(), isNull);
+    });
+
     test('voci from a newer Postino under a prefix unknown here stay in the file', () async {
       file.file = jsonEncode({
         'schemaVersion': 2,

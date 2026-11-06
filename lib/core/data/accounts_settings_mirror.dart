@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -15,47 +16,93 @@ import 'row_mappers.dart';
 /// (ADR 0016), the source of truth for address, Provider, color and position; the status stays local.
 /// - a live voce for an Account missing here adds it da ricollegare: no credentials, the SyncEngine skips it;
 /// - a live voce for an Account here updates address, color and position, keeping its status;
-/// - a tombstone removes the Account here, its local mail and its credentials, and turns the sync off if the
-///   Account was the one it ran on;
+/// - a tombstone removes the Account here, its local mail and its credentials; for the Account the sync runs on,
+///   only once the tombstone is uploaded (clean), as uploading needs its credentials, then the sync goes off;
 /// - an Account here without a voce is left alone.
+/// A pass that fails (a locked keychain) is tried again after [_retryAfter], doubling up to 32 times it.
 @lazySingleton
 class AccountsSettingsMirror(
   final PostinoDatabase _db,
   final SecureStore _keychain,
-  final SettingsRepository _settings,
-) {
-  StreamSubscription<void>? _sub;
+  final SettingsRepository _settings, {
+  @ignoreParam final Duration _retryAfter = const Duration(seconds: 30),
+}) {
+  final _subs = <StreamSubscription<Object?>>[];
+  Timer? _retry;
+  var _failures = 0;
+  Future<void>? _running;
+  var _again = false;
 
-  /// Aligns the Accounts now, then at each change of their voci.
+  /// Aligns the Accounts now, then at each change of their voci or of the Account the sync runs on.
   void start() {
-    _sub ??= _db.postinoSettingsDao
-        .watchPrefix(accountsSettingPrefix)
-        .asyncMap((_) => reconcile().catchError((Object e) => debugPrint('[accounts] mirror: $e')))
-        .listen(null);
+    if (_subs.isNotEmpty) return;
+    _subs
+      ..add(_db.postinoSettingsDao.watchPrefix(accountsSettingPrefix).listen((_) => _kick()))
+      // A removal held for the sync Account goes on once another one, or none, is chosen.
+      ..add(_settings.watchSettingsSyncAccount().distinct().listen((_) => _kick()));
   }
 
+  /// Stops the triggers and the retry, and waits for the pass in flight.
   Future<void> stop() async {
-    await _sub?.cancel();
-    _sub = null;
+    _retry?.cancel();
+    _retry = null;
+    final subs = [..._subs];
+    _subs.clear();
+    await Future.wait([for (final s in subs) s.cancel()]);
+    await _running;
+  }
+
+  /// A pass now; while one runs, one more after it. Never two at once.
+  void _kick() {
+    if (_running != null) {
+      _again = true;
+      return;
+    }
+    _running = _run();
+  }
+
+  Future<void> _run() async {
+    try {
+      do {
+        _again = false;
+        _retry?.cancel();
+        try {
+          await reconcile();
+          _failures = 0;
+        } on Object catch (e) {
+          debugPrint('[accounts] mirror: $e');
+          // ponytail: retried while the app runs, at most every 32 × _retryAfter; nothing persists across a restart,
+          // where the first pass tries again anyway.
+          if (_subs.isNotEmpty) _retry = Timer(_retryAfter * (1 << min(_failures++, 5)), _kick);
+        }
+      } while (_again);
+    } finally {
+      _running = null;
+    }
   }
 
   /// One pass, in a transaction that reads the voci again: a connection writing the Account and its voce together
   /// is seen whole or not at all, so its Account is never taken for a removed one.
   @visibleForTesting
   Future<void> reconcile() => _db.transaction(() async {
+    final syncAccount = await _settings.settingsSyncAccount();
     final here = {for (final r in await _db.accountsDao.byPosition()) r.id: accountOf(r)};
     for (final row in await _db.postinoSettingsDao.readPrefix(accountsSettingPrefix)) {
       final id = row.key.substring(accountsSettingPrefix.length);
       final local = here[id];
       if (row.deleted) {
         if (local == null) continue;
+        // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the
+        // other devices never see the removal. The markClean of the upload changes the row, and the pass comes again.
+        // ponytail: a file this Postino cannot write (a newer one) holds the removal until Postino is updated.
+        if (row.dirty && id == syncAccount) continue;
         // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
         // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
         // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
         await GmailTokens.delete(_keychain, id);
         await _db.accountsDao.remove(id);
         // The sync ran on it: off, instead of failing in silence on an Account without credentials.
-        if (await _settings.settingsSyncAccount() == id) await _settings.setSettingsSyncAccount(null);
+        if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
         continue;
       }
       final synced = decodeAccountSettings(id, row.value);

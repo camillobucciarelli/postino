@@ -45,6 +45,9 @@ class const PostinoButton({
 
   /// Takes the focus when it first appears: the safe answer of a dialog, so Enter picks it.
   final bool autofocus = false,
+
+  /// Lets the caller move the focus here, e.g. to the next row after a resolution.
+  final FocusNode? focusNode,
 }) extends StatelessWidget {
   /// Crea un pulsante.
   this;
@@ -79,10 +82,17 @@ class const PostinoButton({
       PostinoButtonVariant.primary => FilledButton(
         onPressed: onPressed,
         autofocus: autofocus,
+        focusNode: focusNode,
         style: style,
         child: child,
       ),
-      PostinoButtonVariant.ghost => TextButton(onPressed: onPressed, autofocus: autofocus, style: style, child: child),
+      PostinoButtonVariant.ghost => TextButton(
+        onPressed: onPressed,
+        autofocus: autofocus,
+        focusNode: focusNode,
+        style: style,
+        child: child,
+      ),
     };
   }
 }

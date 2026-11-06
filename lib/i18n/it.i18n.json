@@ -247,5 +247,35 @@
     "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
     "permissionAllow": "Continua",
     "permissionLater": "Non ora"
+  },
+  "conflitti": {
+    "bannerTitle": {
+      "one": "$n conflitto",
+      "other": "$n conflitti"
+    },
+    "bannerMessage": "Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.",
+    "open": "Vedi",
+    "title": "Conflitti",
+    "emptyTitle": "Nessun conflitto",
+    "emptyBody": "Quando un messaggio cambia in due posti, lo trovi qui.",
+    "keepMine": "La tua",
+    "keepProvider": "Del Provider",
+    "mine": "La tua: $value",
+    "provider": "Provider: $value",
+    "sign": "In conflitto",
+    "signMessage": "Questo messaggio è cambiato anche altrove. Qui vedi la tua versione.",
+    "account": "account $name",
+    "noSubject": "(senza oggetto)",
+    "values": {
+      "read": "letto",
+      "unread": "da leggere",
+      "starred": "con Stella",
+      "unstarred": "senza Stella",
+      "inbox": "in posta in arrivo",
+      "archive": "archiviato",
+      "trash": "nel Cestino",
+      "labeled": "con l'etichetta $name",
+      "unlabeled": "senza l'etichetta $name"
+    }
   }
 }

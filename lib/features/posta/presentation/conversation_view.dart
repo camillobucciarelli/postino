@@ -20,6 +20,7 @@ import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_body.dart';
+import 'conversation_conflicts.dart';
 import 'conversation_labels.dart';
 import 'conversation_on_screen.dart';
 import 'posta_shortcuts.dart';
@@ -248,6 +249,10 @@ class _ConversationViewState() extends State<ConversationView> with AccountsSign
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                ConversationConflicts(
+                  accountId: widget.accountId,
+                  messageIds: {for (final m in messages) m.message.id},
+                ),
                 Expanded(
                   child: ConversationBody(
                     account: a,

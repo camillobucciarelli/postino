@@ -43,6 +43,10 @@ class const MessageList({
 
 class _MessageListState() extends State<MessageList> {
   late final entries = streamSignal(() => widget.watch(GetIt.I<InboxRepository>()));
+  // ponytail: a row is flagged when its latest message is in Conflitto; a Conflitto on an older one shows in the Conversazione.
+  late final conflicts = streamSignal(
+    () => GetIt.I<InboxRepository>().watchConflicts().map((l) => {for (final c in l) (c.accountId, c.messageId)}),
+  );
   final _scroll = ScrollController();
 
   /// One focus per row; only the cursor row is a Tab stop, so the list is one stop.
@@ -125,6 +129,7 @@ class _MessageListState() extends State<MessageList> {
     }
     _scroll.dispose();
     entries.dispose();
+    conflicts.dispose();
     super.dispose();
   }
 
@@ -207,6 +212,7 @@ class _MessageListState() extends State<MessageList> {
       _list = list;
       final t = context.t.list;
       final now = GetIt.I<Clock>().now();
+      final inConflict = conflicts.value.value ?? const <(String, String)>{};
       final locale = Localizations.localeOf(context).languageCode;
       return PostinoMessageList(
         controller: _scroll,
@@ -224,6 +230,7 @@ class _MessageListState() extends State<MessageList> {
           ];
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
+          final conflict = inConflict.contains((a.id, m.id));
           final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list));
           final tile = PostinoMessageTile(
             key: ValueKey('row-${a.id}-${m.id}'),
@@ -236,6 +243,7 @@ class _MessageListState() extends State<MessageList> {
             starred: m.isStarred,
             count: count,
             labels: labels,
+            conflict: conflict,
             selected: widget.selected == key,
             onTap: () {
               setState(() => _cursor = key);
@@ -250,6 +258,7 @@ class _MessageListState() extends State<MessageList> {
               if (count > 1) t.messages(n: count),
               if (m.snippet.isNotEmpty) m.snippet,
               ?status,
+              if (conflict) context.t.conflitti.sign,
               if (m.isStarred) t.starred,
               if (widget.showAccount) t.account(name: a.name),
               ...labels,

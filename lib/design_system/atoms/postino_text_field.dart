@@ -8,7 +8,8 @@ import 'postino_icon.dart';
 /// A text field on the theme's `inputDecorationTheme` (`input-bg`, `input-border*`). [label] sits above it,
 /// wrapping at large text, and names it with [helper] for the screen reader; [error] replaces the helper,
 /// in `danger` with `input-border-error`, as a live region so it is announced. [multiline] grows from three lines.
-/// With [onSubmitted] Enter keeps the focus in the field (a search that ticks or creates).
+/// With [onSubmitted] Enter keeps the focus in the field (a search that ticks or creates). [obscure] hides the text
+/// (a password: read as an obscured field, no suggestions); [readOnly] shows a value the user cannot change.
 class const PostinoTextField({
   super.key,
 
@@ -35,6 +36,15 @@ class const PostinoTextField({
 
   /// Prende il focus quando compare.
   final bool autofocus = false,
+
+  /// Campo oscurato, per una password.
+  final bool obscure = false,
+
+  /// Valore mostrato ma non modificabile.
+  final bool readOnly = false,
+
+  /// Tastiera a schermo; di base testo.
+  final TextInputType? keyboardType,
 
   /// Chiamata a ogni modifica del testo.
   final ValueChanged<String>? onChanged,
@@ -74,13 +84,17 @@ class const PostinoTextField({
                 controller: controller,
                 focusNode: focusNode,
                 autofocus: autofocus,
+                obscureText: obscure,
+                enableSuggestions: !obscure,
+                autocorrect: !obscure,
+                readOnly: readOnly,
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
                 // Without it Enter (done) would also drop the focus.
                 onEditingComplete: onSubmitted == null ? null : () {},
                 minLines: multiline ? 3 : 1,
                 maxLines: multiline ? null : 1,
-                keyboardType: multiline ? TextInputType.multiline : TextInputType.text,
+                keyboardType: multiline ? TextInputType.multiline : keyboardType ?? TextInputType.text,
                 textInputAction: multiline ? TextInputAction.newline : TextInputAction.done,
                 style: PostinoText.preview.copyWith(color: c.ink),
                 decoration: InputDecoration(

@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../core/domain/accounts_repository.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-import 'connect_error.dart';
+import 'account_choices.dart';
 import 'notification_permission.dart';
 
 /// Shows the onboarding while there is no Account (with [onReportProblem] on it), [child] afterwards, offering the notifications once per device.
@@ -43,37 +41,18 @@ class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
   }
 }
 
-class const _Onboarding({required final VoidCallback onReportProblem}) extends StatefulWidget {
-  @override
-  State<_Onboarding> createState() => _OnboardingState();
-}
-
-class _OnboardingState() extends State<_Onboarding> {
-  String? error;
-
-  Future<void> _connect() async {
-    final r = await GetIt.I<AccountsRepository>().connectGmail();
-    if (mounted) setState(() => error = connectError(context, r));
-  }
-
+class const _Onboarding({required final VoidCallback onReportProblem}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PostinoOnboardingLayout(
     title: context.t.appTitle,
     message: context.t.onboarding.body,
-    error: switch (error) {
-      final e? => PostinoBanner(tone: PostinoBannerTone.danger, title: context.t.connect.title, message: e),
-      null => null,
-    },
-    primaryAction: PostinoButton(
-      label: context.t.onboarding.connectGmail,
-      onPressed: _connect,
-      size: PostinoButtonSize.lg,
-    ),
+    // Once the Account exists the gate shows the Posta: nothing to do on connection.
+    primaryAction: const AccountChoices(),
     // Without an Account the Impostazioni and the drawer are out of reach: this is the way to report (#117).
     secondaryAction: PostinoButton(
       label: context.t.segnalazione.action,
       variant: PostinoButtonVariant.ghost,
-      onPressed: widget.onReportProblem,
+      onPressed: onReportProblem,
     ),
   );
 }

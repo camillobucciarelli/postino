@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../features/account/presentation/account_choices.dart';
 import '../../features/impostazioni/presentation/settings_index_view.dart';
 import '../../main.dart' show routePaths;
 import '../report_problem.dart';
@@ -19,6 +20,7 @@ class ImpostazioniPage extends StatelessWidget {
     onOpenDevice: () => unawaited(Routefly.push<void>(routePaths.impostazioni.dispositivo)),
     onOpenSwipe: () => unawaited(Routefly.push<void>(routePaths.impostazioni.scorrimento)),
     onReportProblem: reportProblem,
+    onAddAccount: () => unawaited(showAddAccountDialog(context)),
     onOpenAutoLabels: (accountId) =>
         unawaited(Routefly.push<void>(routePaths.impostazioni.$accountId.etichette.changes({'accountId': accountId}))),
   );

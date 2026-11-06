@@ -68,6 +68,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
 	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
 	@override late final _Translations$scorrimento$en scorrimento = _Translations$scorrimento$en._(_root);
+	@override late final _Translations$passwordForm$en passwordForm = _Translations$passwordForm$en._(_root);
+	@override late final _Translations$accounts$en accounts = _Translations$accounts$en._(_root);
 }
 
 // Path: sidebar
@@ -101,6 +103,8 @@ class _Translations$onboarding$en extends Translations$onboarding$it {
 	// Translations
 	@override String get body => 'All your mailboxes in one place.';
 	@override String get connectGmail => 'Connect Gmail';
+	@override String get connectIcloud => 'Connect iCloud';
+	@override String get connectImap => 'Other IMAP';
 }
 
 // Path: daRicollegare
@@ -114,6 +118,7 @@ class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
 	@override String get message => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
 	@override String get signIn => 'Sign in';
 	@override String get status => 'Needs signing in';
+	@override String get passwordMessage => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.';
 }
 
 // Path: connect
@@ -479,6 +484,57 @@ class _Translations$scorrimento$en extends Translations$scorrimento$it {
 	@override String get star => 'Star';
 }
 
+// Path: passwordForm
+class _Translations$passwordForm$en extends Translations$passwordForm$it {
+	_Translations$passwordForm$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get icloudTitle => 'Connect iCloud';
+	@override String get imapTitle => 'Connect an IMAP Account';
+	@override String get reconnectTitle => 'Reconnect the Account';
+	@override String get address => 'Email address';
+	@override String get password => 'Password';
+	@override String get appPassword => 'App-specific password';
+	@override String get icloudHelp => 'iCloud needs an app-specific password, not your Apple Account password.';
+	@override String get appleLink => 'How to create an app-specific password';
+	@override String get manual => 'Set up the servers manually';
+	@override String get imapServer => 'IMAP server (incoming mail)';
+	@override String get smtpServer => 'SMTP server (outgoing mail)';
+	@override String get host => 'Host';
+	@override String get port => 'Port';
+	@override String get ssl => 'SSL/TLS';
+	@override String get starttls => 'STARTTLS';
+	@override String get connect => 'Connect';
+	@override String get cancel => 'Cancel';
+	@override String get connecting => 'Checking the connection';
+	@override String get invalidAddress => 'Enter a full email address.';
+	@override String get emptyPassword => 'Enter the password.';
+	@override String get invalidHost => 'Enter the server host.';
+	@override String get invalidPort => 'Enter a port between 1 and 65535.';
+	@override String get authRejected => 'The server refused the address or the password.';
+	@override String get serverNotFound => 'Couldn\'t find the servers for this address: enter them below.';
+	@override String get unreachable => 'Server unreachable: check the connection, the host and the port.';
+	@override String get alreadyConnected => 'This Account is already connected.';
+	@override String get useGmail => 'For a Gmail address use «Connect Gmail».';
+}
+
+// Path: accounts
+class _Translations$accounts$en extends Translations$accounts$it {
+	_Translations$accounts$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get section => 'Accounts';
+	@override String get add => 'Add Account';
+	@override String get gmail => 'Gmail';
+	@override String get icloud => 'iCloud';
+	@override String get imap => 'IMAP';
+	@override String get microsoft => 'Microsoft';
+}
+
 // Path: etichetteAutomatiche.model
 class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
 	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -542,10 +598,13 @@ extension on TranslationsEn {
 			'etichette' => 'Labels',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',
+			'onboarding.connectIcloud' => 'Connect iCloud',
+			'onboarding.connectImap' => 'Other IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} needs signing in again',
 			'daRicollegare.message' => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
 			'daRicollegare.signIn' => 'Sign in',
 			'daRicollegare.status' => 'Needs signing in',
+			'daRicollegare.passwordMessage' => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.',
 			'connect.title' => 'Couldn\'t connect',
 			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
 			'connect.offline' => 'No connection: try again when you are online.',
@@ -775,6 +834,39 @@ extension on TranslationsEn {
 			'scorrimento.right' => 'Swipe right',
 			'scorrimento.markRead' => 'Mark as read/unread',
 			'scorrimento.star' => 'Star',
+			'passwordForm.icloudTitle' => 'Connect iCloud',
+			'passwordForm.imapTitle' => 'Connect an IMAP Account',
+			'passwordForm.reconnectTitle' => 'Reconnect the Account',
+			'passwordForm.address' => 'Email address',
+			'passwordForm.password' => 'Password',
+			'passwordForm.appPassword' => 'App-specific password',
+			'passwordForm.icloudHelp' => 'iCloud needs an app-specific password, not your Apple Account password.',
+			'passwordForm.appleLink' => 'How to create an app-specific password',
+			'passwordForm.manual' => 'Set up the servers manually',
+			'passwordForm.imapServer' => 'IMAP server (incoming mail)',
+			'passwordForm.smtpServer' => 'SMTP server (outgoing mail)',
+			'passwordForm.host' => 'Host',
+			'passwordForm.port' => 'Port',
+			'passwordForm.ssl' => 'SSL/TLS',
+			'passwordForm.starttls' => 'STARTTLS',
+			'passwordForm.connect' => 'Connect',
+			'passwordForm.cancel' => 'Cancel',
+			'passwordForm.connecting' => 'Checking the connection',
+			'passwordForm.invalidAddress' => 'Enter a full email address.',
+			'passwordForm.emptyPassword' => 'Enter the password.',
+			'passwordForm.invalidHost' => 'Enter the server host.',
+			'passwordForm.invalidPort' => 'Enter a port between 1 and 65535.',
+			'passwordForm.authRejected' => 'The server refused the address or the password.',
+			'passwordForm.serverNotFound' => 'Couldn\'t find the servers for this address: enter them below.',
+			'passwordForm.unreachable' => 'Server unreachable: check the connection, the host and the port.',
+			'passwordForm.alreadyConnected' => 'This Account is already connected.',
+			'passwordForm.useGmail' => 'For a Gmail address use «Connect Gmail».',
+			'accounts.section' => 'Accounts',
+			'accounts.add' => 'Add Account',
+			'accounts.gmail' => 'Gmail',
+			'accounts.icloud' => 'iCloud',
+			'accounts.imap' => 'IMAP',
+			'accounts.microsoft' => 'Microsoft',
 			_ => null,
 		};
 	}

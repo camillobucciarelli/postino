@@ -99,6 +99,22 @@ void main() {
     expect((await row())!.pending, isFalse);
   });
 
+  test('a Bozza in Conflitto then sent or deleted elsewhere goes at the next sync, its edit here dropped', () async {
+    await editedTwice();
+    expect(await conflicts(), hasLength(1));
+    a.removeDraftRemotely(_id);
+    await engine.syncAll();
+    expect(await row(), isNull);
+    expect(await conflicts(), isEmpty);
+  });
+
+  test('the Conflitti of one Account only', () async {
+    await editedTwice();
+    final repo = GetIt.I<InboxRepository>();
+    expect(await repo.watchDraftConflicts(accountId: 'a').first, hasLength(1));
+    expect(await repo.watchDraftConflicts(accountId: 'b').first, isEmpty);
+  });
+
   test('sent or deleted elsewhere: the edit here is dropped in silence, no Conflitto', () async {
     a.removeDraftRemotely(_id);
     await engine.saveDraft('a', _draft('<p>mia</p>'));

@@ -82,6 +82,8 @@ class IntentReplayer(
       switch (await provider.saveDraft(draft, isNew: isNew, expected: expected)) {
         // Edited elsewhere too (#149): the Bozza waits for the user's choice, its content here kept.
         case Ok(value: DraftDiverged(:final provider)):
+          // Queued meanwhile: the send carries the version here, nothing to choose.
+          if (await _outbox.isQueued(accountId, draft.messageId)) continue;
           debugPrint('[sync] $accountId: Conflitto on draft ${draft.messageId}');
           await _outbox.draftConflict(accountId, draft.messageId, provider);
         case Ok():

@@ -415,7 +415,7 @@ void main() {
   });
 
   test('the registry has no two actions on the same key and modifiers', () {
-    final pairs = postaShortcuts.map((s) => (s.key, s.command)).toList();
+    final pairs = postaShortcuts.map((s) => s.chord).toList();
     expect(pairs.toSet().length, pairs.length);
     expect(
       postaShortcuts.where((s) => s.action == PostaAction.toggleSidebar).single,

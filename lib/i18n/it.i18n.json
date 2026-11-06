@@ -247,5 +247,18 @@
     "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
     "permissionAllow": "Continua",
     "permissionLater": "Non ora"
+  },
+  "azioni": {
+    "archive": "Archivia",
+    "delete": "Elimina",
+    "star": "Aggiungi stella",
+    "unstar": "Togli stella",
+    "markRead": "Segna come letto",
+    "markUnread": "Segna come non letto",
+    "archived": "Conversazione archiviata",
+    "deleted": "Conversazione spostata nel Cestino",
+    "labelApplied": "Etichetta «$name» applicata",
+    "undo": "Annulla",
+    "more": "Altre azioni"
   }
 }

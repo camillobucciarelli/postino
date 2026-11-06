@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_icon_button.dart';
+import '../molecules/postino_menu.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
 /// The bar on top of a list: `menu` opening the drawer, title and a `meta` subtitle saying where you are.
 /// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead;
-/// [actions] sit at the end («Chiudi» of the composer).
+/// [actions] sit at the end («Chiudi» of the composer). [commands] sit before them as icon buttons while they fit;
+/// those that do not go, in order, into a «more» menu ([moreLabel]), so a narrow pane never squeezes the title
+/// below nothing.
 class const PostinoAppBar({
   super.key,
 
@@ -26,6 +29,12 @@ class const PostinoAppBar({
 
   /// Widget posti a fine barra, per esempio il pulsante «Chiudi» del compositore.
   final List<Widget> actions = const [],
+
+  /// Comandi con icona prima di [actions]: quelli che non ci stanno finiscono nel menu [moreLabel].
+  final List<PostinoMenuItem> commands = const [],
+
+  /// Nome del menu che raccoglie i [commands] che non ci stanno («Altre azioni»).
+  final String moreLabel = '',
 }) extends StatelessWidget implements PreferredSizeWidget {
   /// Barra superiore di una lista o di un dettaglio.
   this;
@@ -54,12 +63,22 @@ class const PostinoAppBar({
       builder: (context, box) {
         // The title's room in the NavigationToolbar: no leading square, no trailing actions, spacing on both sides.
         // ponytail: actions counted as icon buttons (one tap target each); a wider action needs measuring.
-        final room =
+        final free =
             box.maxWidth -
             MediaQuery.paddingOf(context).horizontal -
             (leading ? kToolbarHeight : 0) -
             actions.length * kMinInteractiveDimension -
             2 * spacing;
+        // The commands that fit beside a title of at least [_minTitle]; one slot goes to the menu of the others.
+        final slots = ((free - _minTitle) / kMinInteractiveDimension).floor().clamp(0, commands.length);
+        final shown = slots >= commands.length ? commands.length : (slots - 1).clamp(0, commands.length);
+        final trailing = [
+          for (final c in commands.take(shown))
+            PostinoIconButton(icon: c.icon!, label: c.label, onPressed: c.onPressed, key: c.key),
+          if (shown < commands.length) PostinoMenu(label: moreLabel, items: commands.skip(shown).toList()),
+          ...actions,
+        ];
+        final room = (free - (trailing.length - actions.length) * kMinInteractiveDimension).clamp(0.0, double.infinity);
         double height(String text, TextStyle style, double width) {
           final p = TextPainter(
             text: TextSpan(text: text, style: style),
@@ -93,7 +112,7 @@ class const PostinoAppBar({
                   onPressed: scaffold.openDrawer,
                 )
               : null,
-          actions: actions,
+          actions: trailing,
           titleSpacing: spacing,
           // The AppBar clamps its title to 1.34 and sets `softWrap: false`: undo both, the text is at the user's size.
           title: MediaQuery(
@@ -135,3 +154,6 @@ class const PostinoAppBar({
 }
 
 const double _markSize = 22;
+
+/// The title's room kept before a command goes into the «more» menu.
+const double _minTitle = 48;

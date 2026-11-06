@@ -10,9 +10,12 @@ import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'act_on_conversation.dart';
+import 'conversation_actions.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
-import 'row_labels_menu.dart';
+import 'row_keep_alive.dart';
+import 'row_menu.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
@@ -88,7 +91,9 @@ class _MessageListState() extends State<MessageList> {
     _cursor = widget.selected;
     widget.cursor
       ?..move = _move
-      ..listFocused = _listFocused;
+      ..listFocused = _listFocused
+      ..leave = _leave
+      ..actOnRow = _actOnRow;
   }
 
   @override
@@ -115,7 +120,9 @@ class _MessageListState() extends State<MessageList> {
     if (cursor?.move == _move) {
       cursor!
         ..move = null
-        ..listFocused = null;
+        ..listFocused = null
+        ..leave = null
+        ..actOnRow = null;
     }
     for (final n in _nodes.values) {
       n.dispose();
@@ -199,6 +206,45 @@ class _MessageListState() extends State<MessageList> {
     }
   }
 
+  /// The open Conversazione [key] leaves the list (Archivia, Elimina): the next row opens, else the previous,
+  /// with the focus; false when there is none, or [key] is not here.
+  bool _leave((String, String) key) {
+    final next = _step(key);
+    if (next != null) widget.onOpen(next.$1, next.$2);
+    return next != null;
+  }
+
+  /// Cursor and focus from the row [key] to the next Conversazione, else the previous; null when there is none.
+  /// A queued Inviati row (its Conversazione is its Message-ID) is skipped: opening it cancels the send.
+  (String, String)? _step((String, String) key) {
+    final list = _list ?? const <InboxEntry>[];
+    final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
+    if (at < 0) return null;
+    bool conversation(int i) => !list[i].message.conversationId.startsWith('<');
+    final after = [for (var i = at + 1; i < list.length; i++) i].where(conversation).firstOrNull;
+    final to = after ?? [for (var i = at - 1; i >= 0; i--) i].where(conversation).firstOrNull;
+    if (to == null) return null;
+    final e = list[to];
+    final next = (e.account.id, e.message.conversationId);
+    setState(() => _cursor = next);
+    _reveal(next, to - at);
+    return next;
+  }
+
+  /// A shortcut's Azione on the focused row; Archivia and Elimina move the focus on. The open Conversazione's row
+  /// goes through it, which moves the selection on or closes it.
+  void _actOnRow(PostaAction shortcut) {
+    final key = _cursor;
+    final e = _list?.where((e) => (e.account.id, e.message.conversationId) == key).firstOrNull;
+    // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione.
+    if (key == null || e == null || !_listFocused() || key.$2.startsWith('<')) return;
+    if (key == widget.selected && widget.cursor?.act != null) return widget.cursor!.act!(shortcut);
+    final action = mailActionFor(shortcut, starred: _starred(e));
+    if (action == null) return;
+    unawaited(actOnStoredConversation(context, key.$1, key.$2, action));
+    if (leavesList(action)) _step(key);
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -256,16 +302,20 @@ class _MessageListState() extends State<MessageList> {
               time,
             ].join(', '),
           );
-          return _KeepAlive(
+          return RowKeepAlive(
             keep: key == _cursor,
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')
                 ? tile
-                : RowLabelsMenu(
+                : RowMenu(
                     accountId: a.id,
                     messageId: m.id,
                     conversationId: m.conversationId,
                     focusNode: node,
+                    labelsAreFolders: a.provider.labelsAreFolders,
+                    read: !unread,
+                    starred: _starred(list[i]),
+                    onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
                     child: tile,
                   ),
           );
@@ -275,27 +325,7 @@ class _MessageListState() extends State<MessageList> {
   );
 }
 
+/// A message of the Conversazione has the Stella: the row's labels are those of all of them.
+bool _starred(InboxEntry e) => e.message.labelIds.contains(starredLabelId);
+
 (String, String) _firstKey(List<InboxEntry> list) => (list.first.account.id, list.first.message.conversationId);
-
-/// Keeps the cursor row built when it scrolls out of sight, so Tab still finds it.
-class const _KeepAlive({required final bool keep, required final Widget child}) extends StatefulWidget {
-  @override
-  State<_KeepAlive> createState() => _KeepAliveState();
-}
-
-class _KeepAliveState() extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => widget.keep;
-
-  @override
-  void didUpdateWidget(_KeepAlive old) {
-    super.didUpdateWidget(old);
-    if (old.keep != widget.keep) updateKeepAlive();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}

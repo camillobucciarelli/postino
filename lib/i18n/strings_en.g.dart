@@ -65,6 +65,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
+	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
 }
 
 // Path: sidebar
@@ -409,6 +410,26 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String get permissionLater => 'Not now';
 }
 
+// Path: azioni
+class _Translations$azioni$en extends Translations$azioni$it {
+	_Translations$azioni$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get archive => 'Archive';
+	@override String get delete => 'Delete';
+	@override String get star => 'Star';
+	@override String get unstar => 'Remove star';
+	@override String get markRead => 'Mark as read';
+	@override String get markUnread => 'Mark as unread';
+	@override String get archived => 'Conversation archived';
+	@override String get deleted => 'Conversation moved to Trash';
+	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
+	@override String get undo => 'Undo';
+	@override String get more => 'More actions';
+}
+
 // Path: etichetteAutomatiche.model
 class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
 	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -642,6 +663,17 @@ extension on TranslationsEn {
 			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
+			'azioni.archive' => 'Archive',
+			'azioni.delete' => 'Delete',
+			'azioni.star' => 'Star',
+			'azioni.unstar' => 'Remove star',
+			'azioni.markRead' => 'Mark as read',
+			'azioni.markUnread' => 'Mark as unread',
+			'azioni.archived' => 'Conversation archived',
+			'azioni.deleted' => 'Conversation moved to Trash',
+			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
+			'azioni.undo' => 'Undo',
+			'azioni.more' => 'More actions',
 			_ => null,
 		};
 	}

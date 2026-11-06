@@ -254,6 +254,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i812.ConversationLabelIntents(
         gh<_i705.MailSync>(),
         gh<_i845.InboxRepository>(),
+        gh<_i398.Clock>(),
       ),
     );
     gh.factory<_i510.ReplyDraftUseCase>(

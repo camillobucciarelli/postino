@@ -278,8 +278,12 @@ void main() {
     // The focus back on the row.
     expect(tester.widget<PostinoMessageTile>(_row('o1')).focusNode!.hasPrimaryFocus, isTrue);
 
-    // From the keyboard: the menu key, then Enter on «Etichette…».
+    // From the keyboard: the menu key, down past the four Azioni (#146), then Enter on «Etichette…».
     await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await _settle(tester);
+    for (var i = 0; i < 4; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    }
     await _settle(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await _settle(tester);

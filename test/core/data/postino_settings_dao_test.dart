@@ -70,4 +70,13 @@ void main() {
       {'auto_labels/a1': true, 'accounts/a1': true, 'auto_labels/a2': true, 'accounts/a2': true},
     );
   });
+
+  test('a prefix is literal, a _ or % in it matches only itself; tombstones only where asked', () async {
+    for (final k in ['a_b/1', 'axb/1', 'a%b/1']) {
+      await db.postinoSettingsDao.write(k, '1', at: _t);
+    }
+    await db.postinoSettingsDao.write('a_b/2', null, at: _t);
+    expect((await db.postinoSettingsDao.watchPrefix('a_b/').first).map((r) => r.key), ['a_b/1']);
+    expect((await db.postinoSettingsDao.readPrefixWithTombstones('a_b/')).map((r) => r.key), ['a_b/1', 'a_b/2']);
+  });
 }

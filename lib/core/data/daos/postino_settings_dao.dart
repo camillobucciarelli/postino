@@ -26,7 +26,7 @@ class PostinoSettingsDao(super.attachedDatabase)
 
   /// The live voci whose key starts with [prefix], now and after each change.
   Stream<List<PostinoSettingRow>> watchPrefix(String prefix) =>
-      (select(postinoSettings)..where((t) => t.key.like('$prefix%') & t.deleted.not())).watch();
+      (_prefix(prefix)..where((t) => t.deleted.not())).watch();
 
   /// Writes the voce here, to upload; a null [value] writes a tombstone instead of deleting the row.
   /// Stamped [at], or just after the copy it replaces if that is later (a clock behind, a remote copy ahead):

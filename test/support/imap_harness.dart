@@ -1,3 +1,6 @@
+import 'dart:convert' show base64Url;
+import 'dart:math' show Random;
+
 import 'package:enough_mail/enough_mail.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_provider.dart';
@@ -14,8 +17,9 @@ class ImapHarness._(final GreenmailServer server) implements ContractHarness {
   static const login = 'ada';
 
   /// La password con cui l'adapter entra; dopo [breakAuth] il server ne ha un'altra.
-  static const password = 'pw-1';
-  static const _otherPassword = 'pw-2';
+  // Generate a ogni esecuzione: nessuna password nel sorgente.
+  static final password = _random();
+  static final _otherPassword = _random();
   static const _folders = [('INBOX', inboxLabelId), ('Sent', sentLabelId), ('Drafts', 'DRAFT')];
 
   /// Avvia il server e crea l'utente.
@@ -125,3 +129,5 @@ class ImapHarness._(final GreenmailServer server) implements ContractHarness {
   Future<void> attach(String messageId, String name, List<int> bytes) =>
       throw UnimplementedError('Gli allegati arrivano con T5');
 }
+
+String _random() => base64Url.encode([for (var i = 0; i < 12; i++) Random.secure().nextInt(256)]);

@@ -278,5 +278,18 @@
       "labeled": "con l'etichetta $name",
       "unlabeled": "senza l'etichetta $name"
     }
+  },
+  "azioni": {
+    "archive": "Archivia",
+    "delete": "Elimina",
+    "star": "Aggiungi stella",
+    "unstar": "Togli stella",
+    "markRead": "Segna come letto",
+    "markUnread": "Segna come non letto",
+    "archived": "Conversazione archiviata",
+    "deleted": "Conversazione spostata nel Cestino",
+    "labelApplied": "Etichetta «$name» applicata",
+    "undo": "Annulla",
+    "more": "Altre azioni"
   }
 }

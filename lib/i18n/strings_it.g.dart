@@ -82,6 +82,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
 	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
+	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 }
 
 // Path: sidebar
@@ -842,6 +843,48 @@ class Translations$conflitti$it {
 	late final Translations$conflitti$values$it values = Translations$conflitti$values$it.internal(_root);
 }
 
+// Path: azioni
+class Translations$azioni$it {
+	Translations$azioni$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Archivia'
+	String get archive => 'Archivia';
+
+	/// it: 'Elimina'
+	String get delete => 'Elimina';
+
+	/// it: 'Aggiungi stella'
+	String get star => 'Aggiungi stella';
+
+	/// it: 'Togli stella'
+	String get unstar => 'Togli stella';
+
+	/// it: 'Segna come letto'
+	String get markRead => 'Segna come letto';
+
+	/// it: 'Segna come non letto'
+	String get markUnread => 'Segna come non letto';
+
+	/// it: 'Conversazione archiviata'
+	String get archived => 'Conversazione archiviata';
+
+	/// it: 'Conversazione spostata nel Cestino'
+	String get deleted => 'Conversazione spostata nel Cestino';
+
+	/// it: 'Etichetta «$name» applicata'
+	String labelApplied({required Object name}) => 'Etichetta «${name}» applicata';
+
+	/// it: 'Annulla'
+	String get undo => 'Annulla';
+
+	/// it: 'Altre azioni'
+	String get more => 'Altre azioni';
+}
+
 // Path: etichetteAutomatiche.model
 class Translations$etichetteAutomatiche$model$it {
 	Translations$etichetteAutomatiche$model$it.internal(this._root);
@@ -1167,6 +1210,17 @@ extension on Translations {
 			'conflitti.values.trash' => 'nel Cestino',
 			'conflitti.values.labeled' => ({required Object name}) => 'con l\'etichetta ${name}',
 			'conflitti.values.unlabeled' => ({required Object name}) => 'senza l\'etichetta ${name}',
+			'azioni.archive' => 'Archivia',
+			'azioni.delete' => 'Elimina',
+			'azioni.star' => 'Aggiungi stella',
+			'azioni.unstar' => 'Togli stella',
+			'azioni.markRead' => 'Segna come letto',
+			'azioni.markUnread' => 'Segna come non letto',
+			'azioni.archived' => 'Conversazione archiviata',
+			'azioni.deleted' => 'Conversazione spostata nel Cestino',
+			'azioni.labelApplied' => ({required Object name}) => 'Etichetta «${name}» applicata',
+			'azioni.undo' => 'Annulla',
+			'azioni.more' => 'Altre azioni',
 			_ => null,
 		};
 	}

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../core/domain/mail_action.dart';
 import '../../../design_system/design_system.dart' show ToggleSidebarIntent;
 
 /// What a shortcut of the Posta views does. #37 and the action tickets add their values here.
@@ -15,20 +16,31 @@ enum PostaAction() {
   forward,
   labels,
   reportProblem,
+  archive,
+  delete,
+  star,
+  markRead,
+  markUnread,
 }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
 /// elsewhere — in a Conversazione — they belong to scrolling.
 /// [command]: with the platform's command key, Cmd on macOS and Ctrl elsewhere; without it, the key bare.
+/// [character]: the typed character instead of [key] (null then), on whatever key the layout puts it (`#`).
 class const PostaShortcut(
-  final LogicalKeyboardKey key,
+  final LogicalKeyboardKey? key,
   final PostaAction action, {
   final bool listOnly = false,
   final bool command = false,
+  final bool shift = false,
+  final String? character,
 
   /// Whether holding the key repeats the action: false for one that starts something (a report), true for moving.
   final bool repeats = true,
-}) {}
+}) {
+  /// What the registry compares: no two shortcuts may share it.
+  Object get chord => (key, character, shift, command);
+}
 
 /// The one table key + modifiers -> action of the Posta views (ADR 0014); a test checks that no pair appears twice.
 /// Enter and Esc are not here: they are the focused row's activation and the layout's way back.
@@ -44,6 +56,11 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyF, PostaAction.forward),
   PostaShortcut(LogicalKeyboardKey.keyL, PostaAction.labels),
   PostaShortcut(LogicalKeyboardKey.keyP, PostaAction.reportProblem, repeats: false),
+  PostaShortcut(LogicalKeyboardKey.keyE, PostaAction.archive, repeats: false),
+  PostaShortcut(null, PostaAction.delete, character: '#', repeats: false),
+  PostaShortcut(LogicalKeyboardKey.keyS, PostaAction.star, repeats: false),
+  PostaShortcut(LogicalKeyboardKey.keyI, PostaAction.markRead, shift: true, repeats: false),
+  PostaShortcut(LogicalKeyboardKey.keyU, PostaAction.markUnread, shift: true, repeats: false),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -68,6 +85,19 @@ class ListCursor() {
 
   /// Starts the Segnalazione di un problema (`p`, #117): the Posta layout plugs it in.
   VoidCallback? reportProblem;
+
+  /// An Azione (#146: `e`, `#`, `s`, Maiusc+I, Maiusc+U) on the open Conversazione: the Conversazione plugs it in.
+  void Function(PostaAction action)? act;
+
+  /// The same on the focused row of the list (the open Conversazione's row goes through [act]): the list plugs it in.
+  void Function(PostaAction action)? actOnRow;
+
+  /// An Azione from elsewhere (the row menu) on the open Conversazione: the Conversazione plugs it in.
+  void Function(MailAction action)? apply;
+
+  /// The open Conversazione (accountId, conversationId) leaves the list (Archivia, Elimina): the selection passes
+  /// to the next row, else the previous; false when there is none. The list plugs it in.
+  bool Function((String, String) conversation)? leave;
 }
 
 class const PostaIntent(final PostaShortcut shortcut) extends Intent {}
@@ -83,13 +113,31 @@ class const PostaShortcuts({super.key, required final ListCursor cursor, require
     return Shortcuts(
       shortcuts: {
         for (final s in postaShortcuts)
-          SingleActivator(s.key, meta: s.command && mac, control: s.command && !mac, includeRepeats: s.repeats):
-              PostaIntent(s),
+          for (final a in _activators(s, mac: mac)) a: PostaIntent(s),
       },
       child: Actions(actions: {PostaIntent: _PostaAction(cursor)}, child: child),
     );
   }
 }
+
+/// A character also comes with Option (macOS) or AltGr (Ctrl+Alt, Windows) on some layouts: `#` is Option+à on the
+/// Italian one.
+List<ShortcutActivator> _activators(PostaShortcut s, {required bool mac}) => switch (s.character) {
+  null => [
+    SingleActivator(
+      s.key!,
+      meta: s.command && mac,
+      control: s.command && !mac,
+      shift: s.shift,
+      includeRepeats: s.repeats,
+    ),
+  ],
+  final c => [
+    CharacterActivator(c, includeRepeats: s.repeats),
+    CharacterActivator(c, alt: true, includeRepeats: s.repeats),
+    CharacterActivator(c, alt: true, control: true, includeRepeats: s.repeats),
+  ],
+};
 
 class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
   @override
@@ -134,6 +182,14 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
         cursor.labels?.call();
       case PostaAction.reportProblem:
         cursor.reportProblem?.call();
+      case PostaAction.archive ||
+          PostaAction.delete ||
+          PostaAction.star ||
+          PostaAction.markRead ||
+          PostaAction.markUnread:
+        // The focused row of the list first: it may not be the open Conversazione.
+        final onList = cursor.listFocused?.call() ?? false;
+        (onList ? cursor.actOnRow : cursor.act ?? cursor.actOnRow)?.call(intent.shortcut.action);
     }
     return null;
   }

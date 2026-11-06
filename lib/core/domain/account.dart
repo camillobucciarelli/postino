@@ -12,7 +12,10 @@ enum ProviderKind() {
   icloud,
 
   /// Server IMAP generico.
-  imap,
+  imap;
+
+  /// Whether an Etichetta is a folder: applying one moves the message, so it offers Annulla like Archivia (#146).
+  bool get labelsAreFolders => this != gmail;
 }
 
 /// Stato di collegamento di un Account.

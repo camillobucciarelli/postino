@@ -66,6 +66,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
 	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
+	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
 }
 
 // Path: sidebar
@@ -438,6 +439,26 @@ class _Translations$conflitti$en extends Translations$conflitti$it {
 	@override late final _Translations$conflitti$values$en values = _Translations$conflitti$values$en._(_root);
 }
 
+// Path: azioni
+class _Translations$azioni$en extends Translations$azioni$it {
+	_Translations$azioni$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get archive => 'Archive';
+	@override String get delete => 'Delete';
+	@override String get star => 'Star';
+	@override String get unstar => 'Remove star';
+	@override String get markRead => 'Mark as read';
+	@override String get markUnread => 'Mark as unread';
+	@override String get archived => 'Conversation archived';
+	@override String get deleted => 'Conversation moved to Trash';
+	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
+	@override String get undo => 'Undo';
+	@override String get more => 'More actions';
+}
+
 // Path: etichetteAutomatiche.model
 class _Translations$etichetteAutomatiche$model$en extends Translations$etichetteAutomatiche$model$it {
 	_Translations$etichetteAutomatiche$model$en._(TranslationsEn root) : this._root = root, super.internal(root);
@@ -713,6 +734,17 @@ extension on TranslationsEn {
 			'conflitti.values.trash' => 'in the Trash',
 			'conflitti.values.labeled' => ({required Object name}) => 'labelled ${name}',
 			'conflitti.values.unlabeled' => ({required Object name}) => 'not labelled ${name}',
+			'azioni.archive' => 'Archive',
+			'azioni.delete' => 'Delete',
+			'azioni.star' => 'Star',
+			'azioni.unstar' => 'Remove star',
+			'azioni.markRead' => 'Mark as read',
+			'azioni.markUnread' => 'Mark as unread',
+			'azioni.archived' => 'Conversation archived',
+			'azioni.deleted' => 'Conversation moved to Trash',
+			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
+			'azioni.undo' => 'Undo',
+			'azioni.more' => 'More actions',
 			_ => null,
 		};
 	}

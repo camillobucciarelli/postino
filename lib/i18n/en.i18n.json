@@ -278,5 +278,18 @@
       "labeled": "labelled $name",
       "unlabeled": "not labelled $name"
     }
+  },
+  "azioni": {
+    "archive": "Archive",
+    "delete": "Delete",
+    "star": "Star",
+    "unstar": "Remove star",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "archived": "Conversation archived",
+    "deleted": "Conversation moved to Trash",
+    "labelApplied": "Label “$name” applied",
+    "undo": "Undo",
+    "more": "More actions"
   }
 }

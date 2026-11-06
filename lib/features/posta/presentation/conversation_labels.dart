@@ -17,6 +17,7 @@ Future<void> openLabelPicker(
   BuildContext anchor, {
   required String accountId,
   required String conversationId,
+  required bool labelsAreFolders,
   FocusNode? returnFocus,
 }) {
   final t = anchor.t.selettoreEtichette;
@@ -25,7 +26,12 @@ Future<void> openLabelPicker(
     label: t.button,
     barrierLabel: t.close,
     returnFocus: returnFocus,
-    builder: (_) => LabelPickerSheet(accountId: accountId, conversationId: conversationId, snackbarContext: anchor),
+    builder: (_) => LabelPickerSheet(
+      accountId: accountId,
+      conversationId: conversationId,
+      snackbarContext: anchor,
+      labelsAreFolders: labelsAreFolders,
+    ),
   );
 }
 

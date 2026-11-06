@@ -5,7 +5,9 @@ import 'package:postino/core/domain/synced_settings.dart';
 void main() {
   test('only the closed list syncs', () {
     expect(isSyncedSetting('auto_labels/a1'), isTrue);
+    expect(isSyncedSetting('swipe/left'), isTrue);
     expect(isSyncedSetting('sidebar_expanded'), isFalse);
+    // swipe/ is not per Account: removing an Account writes no tombstone for it.
     expect(accountSettingKeys('a1'), ['auto_labels/a1']);
   });
 }

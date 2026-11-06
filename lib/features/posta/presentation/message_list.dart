@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -8,6 +9,8 @@ import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
+import '../../../core/domain/swipe_actions.dart';
+import '../../../core/domain/swipe_actions_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'act_on_conversation.dart';
@@ -16,6 +19,7 @@ import 'message_time.dart';
 import 'posta_shortcuts.dart';
 import 'row_keep_alive.dart';
 import 'row_menu.dart';
+import 'row_swipe.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
 /// through [InboxRepository]. Pull-to-refresh asks for a sync; the rows update when it writes the database.
@@ -46,6 +50,7 @@ class const MessageList({
 
 class _MessageListState() extends State<MessageList> {
   late final entries = streamSignal(() => widget.watch(GetIt.I<InboxRepository>()));
+  late final swipes = streamSignal(() => GetIt.I<SwipeActionsRepository>().watch());
   final _scroll = ScrollController();
 
   /// One focus per row; only the cursor row is a Tab stop, so the list is one stop.
@@ -132,6 +137,7 @@ class _MessageListState() extends State<MessageList> {
     }
     _scroll.dispose();
     entries.dispose();
+    swipes.dispose();
     super.dispose();
   }
 
@@ -249,6 +255,8 @@ class _MessageListState() extends State<MessageList> {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final list = entries.value.value;
+      // Read here, not in itemBuilder (which runs at layout, outside the tracking): a change rebuilds the rows.
+      final swipeActions = swipes.value.value ?? swipeActionsDefault;
       _realign(list);
       _list = list;
       final t = context.t.list;
@@ -271,52 +279,66 @@ class _MessageListState() extends State<MessageList> {
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
           final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list));
-          final tile = PostinoMessageTile(
-            key: ValueKey('row-${a.id}-${m.id}'),
-            focusNode: node,
-            sender: m.fromName ?? m.from,
-            subject: m.subject,
-            preview: m.snippet,
-            time: time,
-            unread: unread,
-            starred: m.isStarred,
-            count: count,
-            labels: labels,
-            selected: widget.selected == key,
-            onTap: () {
-              setState(() => _cursor = key);
-              node.requestFocus();
-              widget.onOpen(a.id, m.conversationId);
-            },
-            account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
-            semanticLabel: [
-              if (unread) t.unread,
-              m.fromName ?? m.from,
-              m.subject,
-              if (count > 1) t.messages(n: count),
-              if (m.snippet.isNotEmpty) m.snippet,
-              ?status,
-              if (m.isStarred) t.starred,
-              if (widget.showAccount) t.account(name: a.name),
-              ...labels,
-              time,
-            ].join(', '),
-          );
+          PostinoMessageTile tileWith([Map<CustomSemanticsAction, VoidCallback>? semanticActions]) =>
+              PostinoMessageTile(
+                key: ValueKey('row-${a.id}-${m.id}'),
+                focusNode: node,
+                customSemanticsActions: semanticActions,
+                sender: m.fromName ?? m.from,
+                subject: m.subject,
+                preview: m.snippet,
+                time: time,
+                unread: unread,
+                starred: m.isStarred,
+                count: count,
+                labels: labels,
+                selected: widget.selected == key,
+                onTap: () {
+                  setState(() => _cursor = key);
+                  node.requestFocus();
+                  widget.onOpen(a.id, m.conversationId);
+                },
+                account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
+                semanticLabel: [
+                  if (unread) t.unread,
+                  m.fromName ?? m.from,
+                  m.subject,
+                  if (count > 1) t.messages(n: count),
+                  if (m.snippet.isNotEmpty) m.snippet,
+                  ?status,
+                  if (m.isStarred) t.starred,
+                  if (widget.showAccount) t.account(name: a.name),
+                  ...labels,
+                  time,
+                ].join(', '),
+              );
           return RowKeepAlive(
+            // By Conversazione, not by index: a list that changes under a swipe in progress keeps it with its row.
+            key: ValueKey(key),
             keep: key == _cursor,
             // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
             child: m.conversationId.startsWith('<')
-                ? tile
-                : RowMenu(
+                ? tileWith()
+                : RowSwipe(
                     accountId: a.id,
-                    messageId: m.id,
                     conversationId: m.conversationId,
-                    focusNode: node,
                     labelsAreFolders: a.provider.labelsAreFolders,
                     read: !unread,
                     starred: _starred(list[i]),
+                    focusNode: node,
+                    actions: swipeActions,
                     onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
-                    child: tile,
+                    builder: (semanticActions) => RowMenu(
+                      accountId: a.id,
+                      messageId: m.id,
+                      conversationId: m.conversationId,
+                      focusNode: node,
+                      labelsAreFolders: a.provider.labelsAreFolders,
+                      read: !unread,
+                      starred: _starred(list[i]),
+                      onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
+                      child: tileWith(semanticActions),
+                    ),
                   ),
           );
         },

@@ -9,8 +9,10 @@ import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/settings_sync.dart';
+import 'package:postino/core/data/swipe_actions_store.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_document.dart';
+import 'package:postino/core/domain/swipe_actions.dart';
 
 import '../../support/fake_platform.dart';
 import '../../support/fake_settings_backend.dart';
@@ -25,6 +27,7 @@ class _Device(
   final connectivity = FakeConnectivity();
   late final settings = DeviceSettingsStore(db);
   late final labels = AutoLabelsStore(db, clock);
+  late final swipes = SwipeActionsStore(db, clock);
   late final sync = SettingsSync(db, settings, clock, connectivity, backendFor: (_) => backend, stopWait: stopWait);
 
   Future<int> dirty() => db.postinoSettingsDao.watchDirty().first;
@@ -69,6 +72,20 @@ void main() {
     });
     expect(await a.dirty(), 0);
     expect(await b.dirty(), 0);
+  });
+
+  test('the Azioni of the swipes sync under the closed list prefix, the same for every Account', () async {
+    await a.swipes.set(SwipeDirection.left, SwipeAction.delete);
+    await a.sync.syncNow();
+    expect(_entries(file.file).keys, ['swipe/left']);
+    await b.sync.syncNow();
+    expect(await b.swipes.watch().first, (left: SwipeAction.delete, right: SwipeAction.markRead));
+    // Removing an Account leaves them alone.
+    tick();
+    await b.db.postinoSettingsDao.tombstoneAccount('a1', at: clock.now());
+    await b.sync.syncNow();
+    await a.sync.syncNow();
+    expect(await a.swipes.watch().first, (left: SwipeAction.delete, right: SwipeAction.markRead));
   });
 
   test('concurrent edits: on the same voce the last wins, on different voci both stay', () async {

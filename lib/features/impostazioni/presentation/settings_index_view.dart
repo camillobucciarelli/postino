@@ -18,6 +18,7 @@ class const SettingsIndexView({
   required final VoidCallback onBack,
   required final VoidCallback onOpenDevice,
   required final void Function(String accountId) onOpenAutoLabels,
+  required final VoidCallback onOpenSwipe,
   required final VoidCallback onReportProblem,
 }) extends StatefulWidget {
   @override
@@ -60,6 +61,11 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
           PostinoSettingsSection(
             title: context.t.appTitle,
             children: [
+              PostinoSettingsItem(
+                key: const ValueKey('settings-swipe'),
+                title: context.t.scorrimento.title,
+                onTap: widget.onOpenSwipe,
+              ),
               PostinoSettingsItem(
                 key: const ValueKey('settings-report-problem'),
                 title: context.t.segnalazione.action,

@@ -6,11 +6,12 @@ import 'package:routefly/routefly.dart';
 import 'app/impostazioni/[accountId]/etichette_page.dart' as a1;
 import 'app/impostazioni/dispositivo_page.dart' as a2;
 import 'app/impostazioni/impostazioni_page.dart' as a0;
-import 'app/posta/[accountId]/bozza/[messageId]_page.dart' as a4;
-import 'app/posta/[accountId]/conversazione/[conversationId]_page.dart' as a5;
-import 'app/posta/[accountId]/etichetta/[labelId]_page.dart' as a6;
-import 'app/posta/[accountId]_page.dart' as a7;
-import 'app/posta/posta_layout.dart' as a3;
+import 'app/impostazioni/scorrimento_page.dart' as a3;
+import 'app/posta/[accountId]/bozza/[messageId]_page.dart' as a5;
+import 'app/posta/[accountId]/conversazione/[conversationId]_page.dart' as a6;
+import 'app/posta/[accountId]/etichetta/[labelId]_page.dart' as a7;
+import 'app/posta/[accountId]_page.dart' as a8;
+import 'app/posta/posta_layout.dart' as a4;
 
 Route b0Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a0.ImpostazioniPage());
@@ -19,12 +20,14 @@ Route b1Builder(BuildContext ctx, RouteSettings settings) =>
 Route b2Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a2.DevicePage());
 Route b3Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a3.PostaLayout());
+    Routefly.defaultRouteBuilder(ctx, settings, const a3.SwipePage());
 Route b4Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a4.DraftPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a4.PostaLayout());
 Route b5Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a5.ConversationPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a5.DraftPage());
 Route b6Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a6.LabelPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a6.ConversationPage());
 Route b7Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a7.AccountPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a7.LabelPage());
+Route b8Builder(BuildContext ctx, RouteSettings settings) =>
+    Routefly.defaultRouteBuilder(ctx, settings, const a8.AccountPage());

@@ -42,6 +42,9 @@ class ImapSession(
   bool condstore = false;
   bool qresync = false;
 
+  /// SPECIAL-USE (RFC 6154): the folder roles come only when LIST asks for them.
+  bool specialUse = false;
+
   /// Runs [body] on the connection, after the commands queued before it. A connection that dropped while unused
   /// is opened again once; any error is thrown as [ImapFailed].
   Future<T> run<T>(Future<T> Function(ImapClient c) body) {
@@ -88,6 +91,7 @@ class ImapSession(
       final capabilities = {for (final x in await c.capability()) x.name.toUpperCase()};
       qresync = capabilities.contains('QRESYNC');
       condstore = qresync || capabilities.contains('CONDSTORE');
+      specialUse = capabilities.contains('SPECIAL-USE');
       if (qresync) await c.enable(['QRESYNC']);
       return _client = c;
     } on Object catch (e) {

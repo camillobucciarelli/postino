@@ -145,12 +145,15 @@ void main() {
     String raw(String id, String header) =>
         'From: bob@example.com\r\nTo: ${h.address}\r\nSubject: Re: Gita\r\n'
         'Date: Fri, 02 Jan 2026 10:00:00 +0000\r\nMessage-ID: <$id@example.com>\r\n$header\r\n\r\nOk\r\n';
-    await h.append('INBOX', raw('a', 'References: <root@example.com>'));
-    await h.append('INBOX', raw('b', 'In-Reply-To: <a@example.com>'));
-    await h.append('INBOX', raw('c', 'In-Reply-To: <b@example.com>'));
+    // m0 with References, then m1..m7 each answering the one before with only In-Reply-To.
+    await h.append('INBOX', raw('m0', 'References: <root@example.com>'));
+    for (var i = 1; i < 8; i++) {
+      await h.append('INBOX', raw('m$i', 'In-Reply-To: <m${i - 1}@example.com>'));
+    }
     final first = okValue(await h.provider.initialSync());
     expect(first.messages.map((m) => m.conversationId).toSet(), {'<root@example.com>'});
-    await h.deliver(msg('c', isRead: true));
+    // Only the last one changes: its whole chain is looked up again, back to the same root.
+    await h.deliver(msg('m7', isRead: true));
     final next = okValue(await h.provider.incrementalSync(first.cursor));
     expect(next.messages.single.conversationId, '<root@example.com>');
   });

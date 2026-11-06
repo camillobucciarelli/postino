@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io' show X509Certificate;
 
-import 'package:enough_mail/enough_mail.dart' show ImapClient, ImapException;
+import 'package:enough_mail/enough_mail.dart' show ImapClient, ImapException, Mailbox, ReturnOption;
 
 import '../../domain/action_outcome.dart';
 import '../../domain/draft_outcome.dart';
@@ -150,9 +150,7 @@ class ImapProvider(
   Future<Result<Label>> createLabel(String name) => imapGuard(
     () => _session.run((c) async {
       Future<ImapFolder?> find() async =>
-          imapFolders(await c.listMailboxes(recursive: true))
-              .where((f) => f.path == name || f.labelId == name)
-              .firstOrNull;
+          imapFolders(await _boxes(c)).where((f) => f.path == name || f.labelId == name).firstOrNull;
       if (await find() case final f?) return _labelOf(f);
       try {
         await c.createMailbox(name);
@@ -199,9 +197,13 @@ class ImapProvider(
 
   /// The synced folders, the inbox first: its page is the first the user sees.
   Future<List<ImapFolder>> _list(ImapClient c) async {
-    final folders = imapFolders(await c.listMailboxes(recursive: true)).where((f) => f.synced).toList();
+    final folders = imapFolders(await _boxes(c)).where((f) => f.synced).toList();
     return [...folders.where((f) => f.role == FolderRole.inbox), ...folders.where((f) => f.role != FolderRole.inbox)];
   }
+
+  /// Every folder, with `RETURN (SPECIAL-USE)` where announced: a plain LIST may leave the roles out (RFC 6154 §2).
+  Future<List<Mailbox>> _boxes(ImapClient c) =>
+      c.listMailboxes(recursive: true, returnOptions: _session.specialUse ? [ReturnOption.specialUse()] : null);
 
   static Label _labelOf(ImapFolder f) => f.label ?? Label(id: f.labelId, name: f.path, kind: LabelKind.cartella);
 

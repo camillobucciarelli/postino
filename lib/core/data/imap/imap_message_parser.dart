@@ -1,4 +1,4 @@
-import 'package:enough_mail/enough_mail.dart' show DateCodec, MimeMessage;
+import 'package:enough_mail/enough_mail.dart' show ContentDisposition, DateCodec, MediaSubtype, MimeMessage, MimePart;
 
 import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
@@ -69,8 +69,23 @@ MessageBody _body(MimeMessage mime) {
     for (final info in mime.findContentInfo())
       Attachment(id: info.fetchId, name: info.fileName ?? '', size: info.size ?? 0, mimeType: info.mediaType?.text),
   ];
-  if (mime.decodeTextHtmlPart() case final html?) {
+  if (_textPart(mime, MediaSubtype.textHtml)?.decodeContentText() case final html?) {
     return MessageBody(html, BodyKind.html, attachments: attachments);
   }
-  return MessageBody(mime.decodeTextPlainPart() ?? '', BodyKind.testo, attachments: attachments);
+  return MessageBody(
+    _textPart(mime, MediaSubtype.textPlain)?.decodeContentText() ?? '',
+    BodyKind.testo,
+    attachments: attachments,
+  );
+}
+
+/// The first [type] part of [p], depth first, outside the attachments: an attached `report.html` is not the text.
+MimePart? _textPart(MimePart p, MediaSubtype type) {
+  if (p.getHeaderContentDisposition()?.disposition == ContentDisposition.attachment) return null;
+  final parts = p.parts;
+  if (parts == null || parts.isEmpty) return p.mediaType.sub == type ? p : null;
+  for (final c in parts) {
+    if (_textPart(c, type) case final found?) return found;
+  }
+  return null;
 }

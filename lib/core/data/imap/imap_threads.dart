@@ -4,6 +4,9 @@ import '../../domain/message.dart';
 /// A reply without references joins a message with its subject only if that came at most this long before it.
 const threadWindow = Duration(days: 30);
 
+/// How many parents (or subject predecessors) a message's root is looked for through; a loop ends there.
+const maxThreadDepth = 50;
+
 /// Reply and forward prefixes, repeated or numbered (`Re: R: Fwd:`, `Re[2]:`): English, Italian (R, I), German (AW).
 final _prefixes = RegExp(r'^\s*((re|fwd?|r|i|aw)\s*(\[\d+\])?\s*:\s*)+', caseSensitive: false);
 
@@ -45,10 +48,10 @@ List<Message> threadMessages(
     final id = switch ((m.references, t.inReplyTo)) {
       ([final first, ...], _) => first,
       (_, final parent?) => switch (byId[parent]) {
-        final p? when depth < 50 && p != t => root(p, depth + 1),
+        final p? when depth < maxThreadDepth && p != t => root(p, depth + 1),
         _ => parent,
       },
-      _ when hasReplyPrefix(m.subject) && depth < 50 => switch (_earliestSibling(t, known, participants)) {
+      _ when hasReplyPrefix(m.subject) && depth < maxThreadDepth => switch (_earliestSibling(t, known, participants)) {
         final s? => root(s, depth + 1),
         null => own(),
       },

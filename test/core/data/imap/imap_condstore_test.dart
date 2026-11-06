@@ -130,6 +130,36 @@ void main() {
     });
   }
 
+  test('with SPECIAL-USE announced, LIST asks for the roles: a localized Sent is SENT, not an Etichetta', () async {
+    final mailbox = _Mailbox();
+    final server = await RecordedImapServer.start((c) {
+      const caps = 'IMAP4rev1 SPECIAL-USE';
+      if (c.toUpperCase().startsWith('LIST')) {
+        // A plain LIST without the roles, as RFC 6154 §2 allows.
+        final sent = c.contains('RETURN (SPECIAL-USE)') ? r'\HasNoChildren \Sent' : r'\HasNoChildren';
+        return basics(c, capabilities: caps, folders: [('', 'INBOX'), (sent, 'Elementi inviati')])!;
+      }
+      return basics(c, capabilities: caps) ?? mailbox.answer(c, qresync: false);
+    });
+    addTearDown(server.stop);
+    final keychain = FakeSecureStore();
+    await server.remember(keychain, _account);
+    final p = ImapProvider(
+      _account,
+      'ada@icloud.com',
+      keychain,
+      FakeClock(DateTime.utc(2026, 11, 6)),
+      connect: plainConnector,
+    );
+    addTearDown(p.close);
+    final batch = okValue(await p.initialSync());
+    expect(server.commands, contains(contains('RETURN (SPECIAL-USE)')));
+    expect(batch.labels, isEmpty);
+    expect(batch.messages.where((m) => m.id.startsWith('Elementi inviati/')).map((m) => m.labelIds.first).toSet(), {
+      sentLabelId,
+    });
+  });
+
   test('a folder LIST shows but SELECT refuses is skipped, as it was: not an expired cursor', () async {
     final mailbox = _Mailbox();
     final server = await RecordedImapServer.start((c) {

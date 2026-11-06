@@ -50,6 +50,21 @@ void main() {
     expect((p.body!.content.trim(), p.body!.kind), ('<p>Ciao <b>Marco</b></p>', BodyKind.html));
   });
 
+  test('an attached HTML document is neither the body nor the snippet', () {
+    final mime = MimeMessage.parseFromText(
+      'From: ada@example.com\r\nSubject: Report\r\nMessage-ID: <r@example.com>\r\nMIME-Version: 1.0\r\n'
+      'Content-Type: multipart/mixed; boundary="b"\r\n\r\n'
+      '--b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nEcco il report\r\n'
+      '--b\r\nContent-Type: text/html; charset=utf-8\r\nContent-Disposition: attachment; filename="report.html"\r\n\r\n'
+      '<p>Dati riservati</p>\r\n'
+      '--b--\r\n',
+    )..flags = [];
+    final p = parseImapMessage(mime, id: 'INBOX/7/3', labelId: inboxLabelId, withBody: true);
+    expect((p.body!.content.trim(), p.body!.kind), ('Ecco il report', BodyKind.testo));
+    expect(p.message.snippet, 'Ecco il report');
+    expect(p.body!.attachments!.map((a) => a.name), ['report.html']);
+  });
+
   test('headers only: no body, no snippet; unread without the Stella', () {
     final mime = MimeMessage.parseFromText(_raw)..flags = [];
     final p = parseImapMessage(mime, id: 'Sent/7/1', labelId: sentLabelId);

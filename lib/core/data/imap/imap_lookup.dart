@@ -11,8 +11,9 @@ import 'imap_threads.dart';
 /// Searches on the server across the synced folders: a message by Message-ID, and the messages a reply needs to
 /// find its Conversazione when they are not in the batch.
 class ImapLookup(final ImapSession _session) {
-  /// Parents and subject predecessors followed at most this far back.
-  static const _depth = 5;
+  /// Parents and subject predecessors followed at most this far back: as far as [threadMessages] follows them, so
+  /// an incremental batch reaches the same root as the initial sync, which knew the whole chain.
+  static const _depth = maxThreadDepth;
 
   /// The Provider id of the message with [messageId] in the first of [folders] that holds it; null if none does.
   Future<String?> byMessageId(ImapClient c, List<ImapFolder> folders, String messageId) async {

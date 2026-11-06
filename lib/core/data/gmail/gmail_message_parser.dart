@@ -5,13 +5,16 @@ import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
 import '../json_objects.dart';
 
+/// The `labelIds` of a message resource; a message with no label comes without the field.
+List<String> gmailLabelIds(Map<String, dynamic> j) => [for (final l in j['labelIds'] as List? ?? const []) l as String];
+
 /// A Gmail message resource (`full` or `metadata`) as a [Message].
 Message parseGmailMessage(Map<String, dynamic> j) {
   final payload = j['payload'] as Map<String, dynamic>? ?? const {};
   final headers = {
     for (final h in jsonObjects(payload['headers'])) (h['name'] as String).toLowerCase(): h['value'] as String,
   };
-  final labels = [for (final l in j['labelIds'] as List? ?? const []) l as String];
+  final labels = gmailLabelIds(j);
   final from = parseMailbox(headers['from'] ?? '');
   return Message(
     id: j['id'] as String,

@@ -13,6 +13,7 @@ import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
+import 'gmail_actions.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
@@ -37,6 +38,7 @@ class GmailProvider(
 
   final GmailHttp _gmail;
   late final _labels = GmailLabels(_gmail);
+  late final _actions = GmailActions(_gmail, _labels);
 
   /// Parallel message GETs, one chunk per [_pace]: at most 40 per second.
   /// Gmail allows 250 units per second per user and a message GET costs 5, so about 50.
@@ -148,33 +150,9 @@ class GmailProvider(
     return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
   });
 
-  // ponytail: no read-and-compare yet, every Azione is written as forced (as the replay did before #144); the
-  // conditional write on the system labels comes with the Gmail adapter of the Azioni (T2).
   @override
-  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async {
-    final written = switch (action) {
-      // One messages.modify (5 quota units), not a batchModify (50) per message.
-      MarkRead() || MarkUnread() => setLabel(messageId, 'UNREAD', add: action.wanted == false),
-      Star() || Unstar() => setLabel(messageId, starredLabelId, add: action.wanted == true),
-      // Out of the Cestino too, as here. ponytail: always untrash first (one call more); T2 reads first.
-      Archive() => googleGuard(() async {
-        await _gmail.send('POST', 'messages/$messageId/untrash');
-        await _labels.set(messageId, inboxLabelId, add: false);
-        return const Ok(null);
-      }),
-      Delete() => googleGuard(() async {
-        await _gmail.send('POST', 'messages/$messageId/trash');
-        return const Ok(null);
-      }),
-      ApplyLabel(:final labelId) => setLabel(messageId, labelId, add: true),
-      RemoveLabel(:final labelId) => setLabel(messageId, labelId, add: false),
-    };
-    return switch (await written) {
-      Ok() => const Ok(ActionApplied()),
-      Err(failure: NotFoundFailure()) => const Ok(ActionMessageGone()),
-      Err(:final failure) => Err(failure),
-    };
-  }
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) =>
+      googleGuard(() async => Ok(await _actions.apply(messageId, action, expected)));
 
   /// [attachmentId] is the part id ([gmailAttachments]): the message comes first, then the part's data,
   /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.

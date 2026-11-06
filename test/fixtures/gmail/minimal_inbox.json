@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "id": "18f3a2b4c5d6e7f1",
+    "threadId": "18f3a2b4c5d6e7f1",
+    "snippet": "Ciao Ada",
+    "sizeEstimate": 4100,
+    "historyId": "4001",
+    "labelIds": [
+      "INBOX"
+    ]
+  }
+}

@@ -6,14 +6,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
 final _add = find.byKey(const ValueKey('settings-add-account'));
-final _remove = find.byKey(const ValueKey('settings-remove-account-a1'));
 
 Future<Harness> _start(WidgetTester tester) async {
   tester.view
@@ -47,10 +49,19 @@ Future<void> _connectIcloud(WidgetTester tester, String address) async {
 }
 
 /// «Rimuovi» on the Account a1, then «Rimuovi» in the dialog.
-Future<void> _confirmRemoval(WidgetTester tester) async {
-  await tester.tap(_remove);
+Future<void> _confirmRemoval(WidgetTester tester, [String id = 'a1']) async {
+  await tester.tap(find.byKey(ValueKey('settings-remove-account-$id')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Rimuovi'));
+  await _settle(tester);
+}
+
+/// Lets a removal end: it reads the Accounts left from a database stream, which answers outside the fake time.
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 5; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.pump();
+  }
   await tester.pumpAndSettle();
 }
 
@@ -154,5 +165,22 @@ void main() {
 
     expect(find.text('Tutte le tue caselle in un posto solo.'), findsOneWidget);
     expect(find.text('Collega Gmail'), findsOneWidget);
+  });
+
+  testWidgets('two removals at once: the one that leaves no Account goes back to the onboarding', (tester) async {
+    final h = await _start(tester);
+    await h.addAccount('a2');
+    await tester.pumpAndSettle();
+    // a1's queue is busy with a sync: its removal waits behind it while a2 is removed.
+    final a1 = getIt<MailProvider>(instanceName: 'a1') as FakeMailProvider..hold = Completer<void>();
+    unawaited(getIt<MailSync>().syncAll());
+    await tester.pump();
+
+    await _confirmRemoval(tester);
+    await _confirmRemoval(tester, 'a2');
+    a1.hold!.complete();
+    await _settle(tester);
+
+    expect(find.text('Tutte le tue caselle in un posto solo.'), findsOneWidget);
   });
 }

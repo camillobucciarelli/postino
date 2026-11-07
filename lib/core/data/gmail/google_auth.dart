@@ -55,7 +55,9 @@ class GoogleAuth(
         refresh: body['refresh_token'] as String? ?? old.refresh,
         expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
       );
-      await fresh.write(_keychain, _accountId);
+      // The Account removed during the refresh (#174) has no tokens any more: they are not written back.
+      // ponytail: a removal between this read and the write still races it; a per-Account lock if that ever shows.
+      if (await tokens() != null) await fresh.write(_keychain, _accountId);
       return fresh;
     }
     if (r.statusCode == 401 || body['error'] == 'invalid_grant') {

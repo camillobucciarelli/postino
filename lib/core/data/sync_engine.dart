@@ -39,7 +39,18 @@ class SyncEngine(
   final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
+  late final _intents = IntentReplayer(
+    _store,
+    _outboxStore,
+    _clock,
+    _log,
+    pause: _pauseAccount,
+    removed: _removing.containsKey,
+  );
+
+  /// Accounts whose removal started (#174), true once their data is deleted: their queue sends nothing more. The
+  /// entry goes when the same Account is connected again.
+  final _removing = <String, bool>{};
   late final _drafts = DraftOpener(_store, _outboxStore);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
@@ -290,12 +301,14 @@ class SyncEngine(
   /// Rimozione dell'Account (#174): stops its change signal (IDLE) and Bozze ticker, runs [delete] in its queue
   /// after whatever already runs there, then drops its adapter. A sync queued meanwhile finds no Account and stops.
   Future<void> removeAccount(String accountId, Future<void> Function() delete) async {
+    _removing[accountId] = false;
     // Not awaited, as in _watchSignals: ending IDLE may wait on the network.
     unawaited(_signals.remove(accountId)?.cancel());
     await _draftTimers.remove(accountId)?.cancel();
     // Not behind the queue: a replay running or queued there must not send the Azioni the user gave up.
     await _store.dropQueue(accountId);
     await _serial(accountId, delete);
+    _removing[accountId] = true;
     _pausedUntil.remove(accountId);
     // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
     unawaited(forgetProvider(accountId));
@@ -349,6 +362,9 @@ class SyncEngine(
       }
     }
     for (final a in attivi.values) {
+      // Still listed while its removal runs; listed again after it: connected anew.
+      if (_removing[a.id] == false) continue;
+      _removing.remove(a.id);
       if (_signals.containsKey(a.id)) continue;
       _signals[a.id] = providerFor(a).changes.listen((signal) {
         switch (signal) {

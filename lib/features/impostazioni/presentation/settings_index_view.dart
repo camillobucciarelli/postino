@@ -33,8 +33,7 @@ class const SettingsIndexView({
 
 class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSignal {
   Future<void> _remove(Account account) async {
-    final last = (accounts.value.value?.length ?? 0) <= 1;
-    if (await confirmRemoveAccount(context, account) && last && mounted) widget.onBack();
+    if (await confirmRemoveAccount(context, account) && mounted) widget.onBack();
   }
 
   @override

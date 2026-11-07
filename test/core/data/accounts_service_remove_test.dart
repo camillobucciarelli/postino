@@ -10,6 +10,7 @@ import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
@@ -100,6 +101,26 @@ void main() {
     await Future.wait([running, acting, removing]);
 
     expect(provider.readCalls, isEmpty);
+  });
+
+  test('a Bozza upload in flight when the removal starts deletes nothing on the Provider', () async {
+    final sync = getIt<MailSync>();
+    for (final id in ['<d1@x>', '<d2@x>']) {
+      await sync.saveDraft(
+        _ada,
+        OutgoingMessage(messageId: id, from: 'ada@gmail.com', to: const ['b@example.com'], subject: 's', body: 'b'),
+      );
+    }
+    provider.holdDraft = Completer<void>();
+    final flushing = sync.flushDrafts(_ada);
+    await pumpEventQueue();
+    expect(provider.draftHeld, isNotNull, reason: 'one upload is in flight');
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    provider.holdDraft!.complete();
+    await Future.wait([flushing, removing]);
+
+    expect(provider.drafts.keys, [provider.draftHeld], reason: 'the uploaded Bozza stays, the next one never goes');
   });
 
   test('a failed revocation or a keychain that refuses never stops the removal', () async {

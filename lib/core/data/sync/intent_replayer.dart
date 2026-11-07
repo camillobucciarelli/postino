@@ -24,6 +24,9 @@ class IntentReplayer(
 
   /// The Provider rate-limited the Account: no sync nor send before the deadline.
   required final void Function(String accountId, DateTime until) _pause,
+
+  /// The Account is being removed (#174): nothing more goes to its Provider.
+  required final bool Function(String accountId) _removed,
 }) {
   /// `pause` tells the engine the Provider rate-limited the Account.
   this;
@@ -44,6 +47,7 @@ class IntentReplayer(
       // Read again just before sending: what the user did during the earlier calls (resolved the Conflitto, merged
       // another Azione) wins over the list taken at the start.
       // ponytail: a change during this very call still races it; a per-voce lock if that ever shows.
+      if (_removed(accountId)) return false;
       final q = await _store.currentAction(accountId, captured);
       if (q == null) continue;
       switch (await provider.applyAction(q.messageId, q.action, expected: q.expected)) {
@@ -79,7 +83,11 @@ class IntentReplayer(
       }
       // Queued while an earlier upload was in flight: it goes with its own MIME.
       if (await _outbox.isQueued(accountId, draft.messageId)) continue;
-      switch (await provider.saveDraft(draft, isNew: isNew, expected: expected)) {
+      if (_removed(accountId)) return;
+      final saved = await provider.saveDraft(draft, isNew: isNew, expected: expected);
+      // Removed during the upload: its Bozza here is gone, which must not read as «delete it on the Provider».
+      if (_removed(accountId)) return;
+      switch (saved) {
         // Edited elsewhere too (#149): the Bozza waits for the user's choice, its content here kept.
         case Ok(value: DraftDiverged(:final provider)):
           // Queued meanwhile: the send carries the version here, nothing to choose.

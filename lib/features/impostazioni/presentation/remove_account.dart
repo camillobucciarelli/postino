@@ -7,7 +7,7 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// «Rimuovi» on an Account (#174): asks first, the focus on «Annulla» (Esc answers no too), then removes it.
-/// True when it was removed.
+/// True when the removal left no Account (read once it is done: another removal may have run meanwhile).
 Future<bool> confirmRemoveAccount(BuildContext context, Account account) async {
   final t = context.t.accounts;
   final confirmed = await showPostinoConfirmDialog(
@@ -19,6 +19,7 @@ Future<bool> confirmRemoveAccount(BuildContext context, Account account) async {
     cancelLabel: t.removeCancel,
   );
   if (!confirmed) return false;
-  await GetIt.I<AccountsRepository>().remove(account.id);
-  return true;
+  final accounts = GetIt.I<AccountsRepository>();
+  await accounts.remove(account.id);
+  return (await accounts.watchAccounts().first).isEmpty;
 }

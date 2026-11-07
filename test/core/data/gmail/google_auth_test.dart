@@ -48,6 +48,17 @@ void main() {
     expect(saved.expiresAt, gmailNow.add(const Duration(seconds: 3599)));
   });
 
+  test('a refresh that ends after the Account was removed does not write its tokens back (#174)', () async {
+    final keychain = gmailKeychain();
+    final t = _auth(keychain);
+    final old = await t.auth.tokens();
+    await GmailTokens.delete(keychain, gmailAccount);
+
+    await t.auth.refresh(old);
+
+    expect(keychain.values, isEmpty);
+  });
+
   test('validTokens keeps a valid access token and refreshes an expired one', () async {
     final valid = _auth(gmailKeychain());
     expect((await valid.auth.validTokens()).access, 'ya29.initial');

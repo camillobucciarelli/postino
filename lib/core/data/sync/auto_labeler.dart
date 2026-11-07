@@ -46,8 +46,6 @@ class AutoLabeler(
           final vector = await _embedder.embed(emailEmbeddingText(m, bodies[m.id]));
           // The model is not ready: the next sync's mail will be classified once it is.
           if (vector == null) break;
-          // Gone while the model ran (its Account removed, #174, or the message moved): nothing written for it.
-          if (!await _db.messagesDao.exists(accountId, m.id)) continue;
           // Saved before the check: a mail the user labels is an example of that Etichetta.
           await _db.messageEmbeddingsDao.save(accountId, m.id, _embedder.modelId, vector);
           if (await _db.intentsDao.hasUserLabel(accountId, m.id)) continue;

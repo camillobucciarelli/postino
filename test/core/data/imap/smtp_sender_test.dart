@@ -46,6 +46,21 @@ void main() {
 
   tearDown(() => server.stop());
 
+  test('onAccepted runs after the message is accepted and before QUIT (#175)', () async {
+    await start();
+    List<String>? seen;
+    await sender.send(_raw, onAccepted: () async => seen = List.of(server.commands));
+    expect(seen!.map((c) => c.split(' ').first), contains('DATA'));
+    expect(seen!.map((c) => c.split(' ').first), isNot(contains('QUIT')));
+  });
+
+  test('onAccepted does not run when the server refuses the message (#175)', () async {
+    await start(answer: (c) => c.startsWith('RCPT') ? '550 no' : null);
+    var ran = false;
+    await expectLater(sender.send(_raw, onAccepted: () async => ran = true), _fails<RejectedFailure>());
+    expect(ran, isFalse);
+  });
+
   test('submits to To, Cc and Bcc, without the Bcc header, after AUTH', () async {
     await start();
     await sender.send(_raw);

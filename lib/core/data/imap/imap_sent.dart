@@ -36,14 +36,19 @@ class ImapSent(
     var id = await _session.run((c) => _find(c, messageId));
     if (id == null) {
       if (!submitted && !_submitted.contains(messageId)) {
-        await _smtp.send(raw);
-        _submitted.add(messageId);
-        try {
-          await onSubmitted?.call();
-        } on Object catch (e) {
-          // The message went: the APPEND goes on; this adapter's memory still stops a second submission.
-          debugPrint('[imap] submission of $messageId not recorded, $e');
-        }
+        // Recorded the moment SMTP accepts it, before the connection is closed: a stop in that wait must not resend.
+        await _smtp.send(
+          raw,
+          onAccepted: () async {
+            _submitted.add(messageId);
+            try {
+              await onSubmitted?.call();
+            } on Object catch (e) {
+              // The message went: the APPEND goes on; this adapter's memory still stops a second submission.
+              debugPrint('[imap] submission of $messageId not recorded, $e');
+            }
+          },
+        );
       }
       id = appendToSent
           ? await _session.run<String>((c) => _append(c, messageId, raw))

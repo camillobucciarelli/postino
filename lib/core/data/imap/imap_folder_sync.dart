@@ -97,17 +97,18 @@ class ImapFolderSync(final ImapSession _session) {
     final uidNext = box.uidNext ?? was.uidNext;
     // Only QRESYNC makes an EXPUNGE raise HIGHESTMODSEQ (RFC 7162 §3.2.10): with CONDSTORE alone a deletion may
     // leave it as it was.
-    if (_session.qresync && modSeq != null && modSeq == was.modSeq && uidNext == was.uidNext) {
+    final newcomers = was.uids.difference(known.uids);
+    if (_session.qresync && modSeq != null && modSeq == was.modSeq && uidNext == was.uidNext && newcomers.isEmpty) {
       return (messages: const <ImapParsed>[], removed: const <String>[], state: known);
     }
 
-    final (:flags, :gone) = await _knownFlags(c, was, condstore: modSeq != null && was.modSeq != null);
+    final (:flags, :gone) = await _knownFlags(c, was, newcomers, condstore: modSeq != null && was.modSeq != null);
     final seen = {...was.seen};
     final flagged = {...was.flagged};
     final changed = <int>[];
     for (final MapEntry(key: uid, value: (isSeen, isFlagged)) in flags.entries) {
       if (gone.contains(uid) || !was.uids.contains(uid)) continue;
-      // A stored message seen here for the first time comes again: its flags here are not known.
+      // A stored message followed for the first time comes again: its flags here are not known.
       if (!known.uids.contains(uid) || isSeen != seen.contains(uid) || isFlagged != flagged.contains(uid)) {
         changed.add(uid);
       }
@@ -149,11 +150,13 @@ class ImapFolderSync(final ImapSession _session) {
   /// expunged, or `\Deleted` and not expunged yet (as another client's Elimina means it). With CONDSTORE asked
   /// for the range from the lowest known UID to the highest (what else it holds is left out); without it for the
   /// known UIDs a block at a time: a sparse set in one command would be longer than servers take (RFC 7162 §4
-  /// suggests 8192 octets).
+  /// suggests 8192 octets). The [newcomers] (stored messages followed from now on) always get their flags, a block
+  /// at a time: CHANGEDSINCE leaves out a change older than the last HIGHESTMODSEQ, which the cache may not have.
   // ponytail: `\Answered`, `$Forwarded` and the keywords are not read: no indicator shows them, nor an Etichetta.
   Future<({Map<int, (bool, bool)> flags, Set<int> gone})> _knownFlags(
     ImapClient c,
-    FolderState was, {
+    FolderState was,
+    Set<int> newcomers, {
     required bool condstore,
   }) async {
     if (was.uids.isEmpty) return (flags: const <int, (bool, bool)>{}, gone: const <int>{});
@@ -171,6 +174,13 @@ class ImapFolderSync(final ImapSession _session) {
       }
     }
 
+    Future<void> readAll(List<int> uids) async {
+      for (var i = 0; i < uids.length; i += _flagsBlock) {
+        final block = MessageSequence.fromIds(uids.skip(i).take(_flagsBlock).toList(), isUid: true);
+        read((await c.uidFetchMessages(block, '(UID FLAGS)', responseTimeout: ImapSession.timeout)).messages);
+      }
+    }
+
     if (condstore && _session.qresync) {
       final r = await c.uidFetchMessagesByCriteria(
         '$known (FLAGS) (CHANGEDSINCE ${was.modSeq} VANISHED)',
@@ -178,7 +188,10 @@ class ImapFolderSync(final ImapSession _session) {
       );
       read(r.messages);
       final vanished = r.vanishedMessagesUidSequence?.toList() ?? const <int>[];
-      return (flags: flags, gone: {...was.uids.intersection(vanished.toSet()), ...deleted});
+      await readAll(newcomers.toList()..sort());
+      // A newcomer not returned at all is gone (VANISHED tells only what went since HIGHESTMODSEQ).
+      final missing = newcomers.difference(flags.keys.toSet());
+      return (flags: flags, gone: {...was.uids.intersection(vanished.toSet()), ...deleted, ...missing});
     }
     if (condstore) {
       final r = await c.uidFetchMessages(
@@ -188,13 +201,11 @@ class ImapFolderSync(final ImapSession _session) {
         responseTimeout: ImapSession.timeout,
       );
       read(r.messages);
+      await readAll(newcomers.toList()..sort());
       return (flags: flags, gone: was.uids.difference((await search(c, 'UID $known')).toSet()));
     }
     // ponytail: every known UID's flags on every poll; fine for a 90-day window, CONDSTORE spares it where announced.
-    for (var i = 0; i < sorted.length; i += _flagsBlock) {
-      final block = MessageSequence.fromIds(sorted.skip(i).take(_flagsBlock).toList(), isUid: true);
-      read((await c.uidFetchMessages(block, '(UID FLAGS)', responseTimeout: ImapSession.timeout)).messages);
-    }
+    await readAll(sorted);
     return (flags: flags, gone: was.uids.difference(flags.keys.toSet()));
   }
 

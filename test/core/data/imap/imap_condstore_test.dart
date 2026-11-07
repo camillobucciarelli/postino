@@ -130,6 +130,67 @@ void main() {
     });
   }
 
+  for (final qresync in [true, false]) {
+    final name = qresync ? 'QRESYNC' : 'CONDSTORE without QRESYNC';
+
+    test('$name: a stored message older than the window gets its flags, though CHANGEDSINCE leaves it out '
+        '(#185)', () async {
+      // UID 1, read before HIGHESTMODSEQ 100, out of the window: in the cache from a Conversazione opened.
+      var modSeq = 100;
+      var flags = r'\Seen';
+      final server = await RecordedImapServer.start((c) {
+        final caps = 'IMAP4rev1 IDLE ENABLE CONDSTORE${qresync ? ' QRESYNC' : ''}';
+        if (basics(c, capabilities: caps) case final b?) return b;
+        final upper = c.toUpperCase();
+        if (upper.startsWith('SELECT')) {
+          return [
+            r'* FLAGS (\Seen \Flagged \Deleted)',
+            '* 1 EXISTS',
+            '* OK [UIDVALIDITY 7] UIDs valid',
+            '* OK [UIDNEXT 2] next',
+            '* OK [HIGHESTMODSEQ $modSeq] highest',
+            'OK [READ-WRITE] SELECT completed',
+          ];
+        }
+        if (upper.startsWith('UID SEARCH SINCE') || upper.startsWith('UID SEARCH UID 2:*')) return ['* SEARCH'];
+        if (upper.startsWith('UID SEARCH UID 1')) return ['* SEARCH 1'];
+        // Only what changed after the cursor's HIGHESTMODSEQ: nothing in round two.
+        if (upper.contains('CHANGEDSINCE')) {
+          return modSeq > 100 && upper.contains('CHANGEDSINCE 100')
+              ? ['* 1 FETCH (UID 1 FLAGS ($flags) MODSEQ ($modSeq))']
+              : [];
+        }
+        if (upper.startsWith('UID FETCH 1 (UID FLAGS)')) return ['* 1 FETCH (UID 1 FLAGS ($flags))'];
+        if (upper.startsWith('UID FETCH 1 ')) return [_fetch(1, 1, flags, 'BODY[]', '${_header(1)}Uno\r\n', modSeq)];
+        return ['BAD unexpected $c'];
+      });
+      addTearDown(server.stop);
+      final keychain = FakeSecureStore();
+      await server.remember(keychain, _account);
+      final p = ImapProvider(
+        _account,
+        'ada@icloud.com',
+        keychain,
+        FakeClock(DateTime.utc(2026, 11, 6)),
+        connect: plainConnector,
+        storedIds: () async => ['INBOX/7/1'],
+      );
+      addTearDown(p.close);
+
+      final first = okValue(await p.initialSync());
+      expect(first.messages, isEmpty);
+      final next = okValue(await p.incrementalSync(first.cursor));
+      expect(next.messages.map((m) => (m.id, m.isRead)), [('INBOX/7/1', true)]);
+      expect(server.commands, contains('UID FETCH 1 (UID FLAGS)'));
+
+      // Unread elsewhere: CHANGEDSINCE brings it, against the read state the cursor now holds.
+      modSeq = 101;
+      flags = '';
+      final last = okValue(await p.incrementalSync(next.cursor));
+      expect(last.messages.map((m) => (m.id, m.isRead)), [('INBOX/7/1', false)]);
+    });
+  }
+
   test('with SPECIAL-USE announced, LIST asks for the roles: a localized Sent is SENT, not an Etichetta', () async {
     final mailbox = _Mailbox();
     final server = await RecordedImapServer.start((c) {

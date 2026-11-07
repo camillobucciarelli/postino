@@ -244,6 +244,8 @@ class SyncEngine(
     if (account == null) return const Err(NotFoundFailure());
     // In the Account's queue: a sync that read the list before the creation cannot drop it afterwards.
     return _serial(accountId, () async {
+      // Its removal started while this waited in the queue (#174): nothing is created on the Provider.
+      if (_removing.containsKey(accountId)) return const Err(NotFoundFailure());
       final created = await providerFor(account).createLabel(name);
       if (created case Ok(:final value) when !_removing.containsKey(accountId)) {
         await _store.saveLabel(accountId, value);

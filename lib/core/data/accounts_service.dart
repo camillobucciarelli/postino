@@ -29,6 +29,7 @@ class AccountsService(
   final ConnectionTester _tester,
   final GoogleRevoke _revoke,
   final SettingsRepository _settings,
+  final Clock _clock,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -142,7 +143,7 @@ class AccountsService(
   Future<void> _remove(String accountId) async {
     // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
     final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
-    await _sync.removeAccount(accountId, () => _store.removeAccount(accountId));
+    await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
     // The Impostazioni di Postino no longer have a Drive to sync on.
     if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
     if (tokens != null) await _revoke.revoke(tokens.refresh);

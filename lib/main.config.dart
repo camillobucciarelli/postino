@@ -281,18 +281,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-        gh<_i221.ServerDiscovery>(),
-        gh<_i967.ConnectionTester>(),
-        gh<_i960.GoogleRevoke>(),
-        gh<_i307.SettingsRepository>(),
-      ),
-    );
     gh.factory<_i510.ReplyDraftUseCase>(
       () => _i510.ReplyDraftUseCase(
         gh<_i705.MailSync>(),
@@ -305,6 +293,19 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.SecureStore>(),
         gh<_i398.Clock>(),
         gh<_i696.AttachmentStorage>(),
+      ),
+    );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+        gh<_i221.ServerDiscovery>(),
+        gh<_i967.ConnectionTester>(),
+        gh<_i960.GoogleRevoke>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
       ),
     );
     gh.factory<_i802.ReportProblemUseCase>(

@@ -27,8 +27,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Future<void> setStatus(String accountId, AccountStatus status) => _db.accountsDao.setStatus(accountId, status);
 
   /// Deletes the Account and everything of it here, in one transaction (#174): messages, bodies, Etichette, Bozze,
-  /// queued Azioni and Conflitti, outbox, embeddings. Nothing reaches the Provider.
-  Future<void> removeAccount(String accountId) => _db.transaction(() async {
+  /// queued Azioni and Conflitti, outbox, embeddings. Nothing reaches the Provider. Its synced Impostazioni di Postino
+  /// (the Etichette automatiche) become tombstones dated [at] (ADR 0016): the removal reaches every device.
+  Future<void> removeAccount(String accountId, {required DateTime at}) => _db.transaction(() async {
+    await _db.postinoSettingsDao.tombstoneAccount(accountId, at: at);
     for (final delete in [
       _db.messagesDao.deleteByAccount,
       _db.bodiesDao.deleteByAccount,

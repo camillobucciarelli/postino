@@ -67,11 +67,30 @@ void main() {
       }
     }
 
-    await MailStore(db).removeAccount('gmail:ada@gmail.com');
+    await MailStore(db).removeAccount('gmail:ada@gmail.com', at: DateTime.utc(2026, 11, 7));
 
     for (final MapEntry(key: table, value: column) in tables.entries) {
       expect(await _count(db, table, column, 'gmail:ada@gmail.com'), 0, reason: '$table of the removed Account');
       expect(await _count(db, table, column, 'gmail:bob@gmail.com'), 1, reason: '$table of the other Account');
     }
+  });
+
+  test('its synced Impostazioni di Postino become tombstones to upload; the other Account keeps its own', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    final before = DateTime.utc(2026, 11, 6);
+    for (final account in ['gmail:ada@gmail.com', 'gmail:bob@gmail.com']) {
+      await db.postinoSettingsDao.write('auto_labels/$account', '{}', at: before);
+    }
+    final uploaded = await db.postinoSettingsDao.entries();
+    await db.postinoSettingsDao.markClean(uploaded);
+
+    await MailStore(db).removeAccount('gmail:ada@gmail.com', at: DateTime.utc(2026, 11, 7));
+
+    final rows = {for (final r in await db.select(db.postinoSettings).get()) r.key: r};
+    expect(rows['auto_labels/gmail:ada@gmail.com']?.deleted, isTrue);
+    expect(rows['auto_labels/gmail:ada@gmail.com']?.dirty, isTrue, reason: 'the tombstone goes to the other devices');
+    expect(rows['auto_labels/gmail:bob@gmail.com']?.value, '{}');
+    expect(rows['auto_labels/gmail:bob@gmail.com']?.dirty, isFalse);
   });
 }

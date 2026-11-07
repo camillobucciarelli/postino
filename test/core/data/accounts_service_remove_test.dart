@@ -11,6 +11,7 @@ import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
@@ -176,6 +177,21 @@ void main() {
     for (final table in ['messages', 'message_labels', 'intents']) {
       expect(await count(table), 0, reason: table);
     }
+  });
+
+  test('an Etichetta created while the removal waits in the queue is not created on the Provider', () async {
+    provider.hold = Completer<void>();
+    final running = getIt<MailSync>().syncAll();
+    await pumpEventQueue();
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    final creating = getIt<MailSync>().createLabel(_ada, 'Lavoro');
+    await pumpEventQueue();
+    provider.hold!.complete();
+    await Future.wait([running, removing]);
+
+    expect(await creating, isA<Err<Object>>());
+    expect(provider.labels.map((l) => l.name), isNot(contains('Lavoro')));
   });
 
   test('connecting the same Account again while its removal still runs keeps the new credentials', () async {

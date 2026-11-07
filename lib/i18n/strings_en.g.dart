@@ -534,6 +534,12 @@ class _Translations$accounts$en extends Translations$accounts$it {
 	@override String get icloud => 'iCloud';
 	@override String get imap => 'IMAP';
 	@override String get microsoft => 'Microsoft';
+	@override String remove({required Object address}) => 'Remove the Account ${address}';
+	@override String removeTitle({required Object name}) => 'Remove the Account ${name}?';
+	@override String get removeMessage => 'The emails downloaded on this device are deleted; nothing changes on the server.';
+	@override String get removeNote => 'Changes not yet sent to the server are lost.';
+	@override String get removeConfirm => 'Remove';
+	@override String get removeCancel => 'Cancel';
 }
 
 // Path: etichetteAutomatiche.model
@@ -869,6 +875,12 @@ extension on TranslationsEn {
 			'accounts.icloud' => 'iCloud',
 			'accounts.imap' => 'IMAP',
 			'accounts.microsoft' => 'Microsoft',
+			'accounts.remove' => ({required Object address}) => 'Remove the Account ${address}',
+			'accounts.removeTitle' => ({required Object name}) => 'Remove the Account ${name}?',
+			'accounts.removeMessage' => 'The emails downloaded on this device are deleted; nothing changes on the server.',
+			'accounts.removeNote' => 'Changes not yet sent to the server are lost.',
+			'accounts.removeConfirm' => 'Remove',
+			'accounts.removeCancel' => 'Cancel',
 			_ => null,
 		};
 	}

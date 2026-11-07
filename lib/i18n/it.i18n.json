@@ -343,6 +343,12 @@
     "gmail": "Gmail",
     "icloud": "iCloud",
     "imap": "IMAP",
-    "microsoft": "Microsoft"
+    "microsoft": "Microsoft",
+    "remove": "Rimuovi l'Account $address",
+    "removeTitle": "Rimuovere l'Account $name?",
+    "removeMessage": "Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.",
+    "removeNote": "Le modifiche non ancora inviate al server vanno perse.",
+    "removeConfirm": "Rimuovi",
+    "removeCancel": "Annulla"
   }
 }

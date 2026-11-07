@@ -8,7 +8,8 @@ import '../tokens/postino_tokens.dart';
 
 /// A row of the Impostazioni that opens a page: [title] (a UI label, not selectable), an optional [subtitle],
 /// `chevron-right` at the end. The whole row is one control, one Tab stop, read as a button. Without [onTap] it only
-/// shows something (for example an Account): no chevron, no button.
+/// shows something (for example an Account): no chevron, no button. [trailing] is a control of its own at the end
+/// (for example «Rimuovi» on an Account): its own Tab stop and accessible name, outside the row's.
 /// For a setting that is on or off use PostinoSwitchRow.
 class const PostinoSettingsItem({
   super.key,
@@ -21,6 +22,9 @@ class const PostinoSettingsItem({
 
   /// Dettaglio sotto il titolo, per esempio lo stato attuale.
   final String? subtitle,
+
+  /// Comando a parte in fondo alla voce, per esempio un PostinoIconButton.
+  final Widget? trailing,
 }) extends StatelessWidget {
   /// Crea la voce.
   this;
@@ -28,7 +32,7 @@ class const PostinoSettingsItem({
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
-    return MergeSemantics(
+    final item = MergeSemantics(
       child: Semantics(
         button: onTap != null,
         child: Material(
@@ -65,6 +69,23 @@ class const PostinoSettingsItem({
             ),
           ),
         ),
+      ),
+    );
+    if (trailing == null) return item;
+    // Same surface and divider as the row, so the control sits inside it.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(bottom: BorderSide(color: c.listItemDivider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: item),
+          Padding(
+            padding: const EdgeInsets.only(right: PostinoSpacing.s2),
+            child: trailing,
+          ),
+        ],
       ),
     );
   }

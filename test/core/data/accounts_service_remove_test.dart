@@ -1,0 +1,116 @@
+// Rimozione di un Account (#174): sync stopped, local data and keychain cleared, Gmail token revoked best effort.
+
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mail_sync.dart';
+import 'package:postino/core/domain/settings_repository.dart';
+import 'package:postino/main.dart';
+
+import '../../support/fake_mail_provider.dart';
+import '../../support/harness.dart';
+
+const _ada = 'gmail:ada@gmail.com';
+
+void main() {
+  late Harness h;
+  late AccountsRepository accounts;
+  late FakeMailProvider provider;
+  setUp(() async {
+    h = await Harness.create();
+    accounts = getIt<AccountsRepository>();
+    provider = h.providerFor(_ada);
+    await accounts.connectGmail();
+    await getIt<MailSync>().syncAll();
+  });
+
+  test('a removed Gmail Account is gone for good: no row, no keychain entry, no further sync', () async {
+    final bob = await h.addAccount('gmail:bob@gmail.com');
+    provider.deliver(msg('m1'), signal: false);
+    await getIt<MailSync>().syncAll();
+    final syncs = provider.syncCalls;
+
+    await accounts.remove(_ada);
+
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['gmail:bob@gmail.com']);
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+    expect(await h.keychain.read('password:$_ada'), isNull);
+    expect(getIt.isRegistered<MailProvider>(instanceName: _ada), isFalse, reason: 'its adapter is dropped');
+    // A restart reads the same database: the Account is not there and does not sync.
+    getIt<SyncEngine>().start();
+    await getIt<MailSync>().syncAll();
+    expect(provider.syncCalls, syncs);
+    expect(bob.syncCalls, greaterThan(0), reason: 'the other Account still syncs');
+    await getIt<SyncEngine>().stop();
+  });
+
+  test('a sync running when the removal starts writes nothing of the Account afterwards', () async {
+    provider
+      ..deliver(msg('m1'), signal: false)
+      ..hold = Completer<void>();
+    final syncing = getIt<MailSync>().syncAll();
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    provider.hold!.complete();
+    await Future.wait([syncing, removing]);
+
+    final db = getIt<PostinoDatabase>();
+    final left = await db.customSelect('SELECT count(*) AS n FROM messages').getSingle();
+    expect(left.read<int>('n'), 0);
+  });
+
+  test('online, the refresh token is revoked at Google', () async {
+    await accounts.remove(_ada);
+
+    final r = h.httpRequests.single;
+    expect(r.url, Uri.parse('https://oauth2.googleapis.com/revoke'));
+    expect(r.bodyFields, {'token': 'refresh-token-1'});
+  });
+
+  test('offline, nothing is sent and the Account is removed anyway', () async {
+    h.connectivity.online = false;
+
+    await accounts.remove(_ada);
+
+    expect(h.httpRequests, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+  });
+
+  test('the Impostazioni di Postino stop syncing on the removed Account', () async {
+    final settings = getIt<SettingsRepository>();
+    await settings.setSettingsSyncAccount(_ada);
+
+    await accounts.remove(_ada);
+
+    expect(await settings.settingsSyncAccount(), isNull);
+  });
+
+  test('an IMAP Account loses its password in the keychain; no revocation', () async {
+    await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    expect(await h.keychain.read('password:icloud:ada@icloud.com'), isNotNull);
+
+    await accounts.remove('icloud:ada@icloud.com');
+
+    expect(await h.keychain.read('password:icloud:ada@icloud.com'), isNull);
+    expect(h.httpRequests, isEmpty);
+  });
+
+  test('a new Account after a removal takes the position after the last one', () async {
+    await h.addAccount('gmail:bob@gmail.com');
+    await accounts.remove(_ada);
+    h
+      ..providerFor('gmail:carl@gmail.com')
+      ..consent.address = 'carl@gmail.com';
+
+    await accounts.connectGmail();
+
+    final positions = [for (final a in await getIt<MailStore>().accounts()) a.position];
+    expect(positions.toSet(), hasLength(2));
+  });
+}

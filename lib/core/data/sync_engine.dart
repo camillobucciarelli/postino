@@ -285,6 +285,18 @@ class SyncEngine(
     };
   }
 
+  /// Rimozione dell'Account (#174): stops its change signal (IDLE) and Bozze ticker, runs [delete] in its queue
+  /// after whatever already runs there, then drops its adapter. A sync queued meanwhile finds no Account and stops.
+  Future<void> removeAccount(String accountId, Future<void> Function() delete) async {
+    // Not awaited, as in _watchSignals: ending IDLE may wait on the network.
+    unawaited(_signals.remove(accountId)?.cancel());
+    await _draftTimers.remove(accountId)?.cancel();
+    await _serial(accountId, delete);
+    _pausedUntil.remove(accountId);
+    // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
+    unawaited(forgetProvider(accountId));
+  }
+
   Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
   /// The Account if its queue may go to the Provider now: not paused, not Da ricollegare (it waits for the reconnection).
@@ -381,6 +393,8 @@ class SyncEngine(
   }
 
   Future<void> _syncOnce(String accountId, MailProvider provider) async {
+    // Removed while this sync waited in the queue (#174): nothing of it is written again.
+    if (await _account(accountId) == null) return;
     // The queue first, so the sync brings back what the user did offline.
     await _replay(accountId, provider);
     if (_paused(accountId)) return;

@@ -18,6 +18,9 @@ class FakeSecureStore() implements SecureStore {
 
   @override
   Future<void> write(String key, String value) async => values[key] = value;
+
+  @override
+  Future<void> delete(String key) async => values.remove(key);
 }
 
 /// Time moves only with [advance], which also fires the [every] tickers that came due.

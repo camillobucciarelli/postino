@@ -26,6 +26,24 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   Future<void> setStatus(String accountId, AccountStatus status) => _db.accountsDao.setStatus(accountId, status);
 
+  /// Deletes the Account and everything of it here, in one transaction (#174): messages, bodies, Etichette, Bozze,
+  /// queued Azioni and Conflitti, outbox, embeddings. Nothing reaches the Provider.
+  Future<void> removeAccount(String accountId) => _db.transaction(() async {
+    for (final delete in [
+      _db.messagesDao.deleteByAccount,
+      _db.bodiesDao.deleteByAccount,
+      _db.labelsDao.deleteByAccount,
+      _db.intentsDao.deleteByAccount,
+      _db.conflictsDao.deleteByAccount,
+      _db.draftsDao.deleteByAccount,
+      _db.outboxDao.deleteByAccount,
+      _db.messageEmbeddingsDao.deleteByAccount,
+      _db.accountsDao.deleteByAccount,
+    ]) {
+      await delete(accountId);
+    }
+  });
+
   Stream<List<Account>> watchAccounts() =>
       _db.accountsDao.watchByPosition().map((rows) => [for (final r in rows) accountOf(r)]);
 

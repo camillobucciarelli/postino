@@ -1,6 +1,8 @@
 import 'dart:io' show SocketException;
 
 import 'package:file/memory.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:postino/core/data/attachment_cache.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
@@ -35,7 +37,7 @@ import 'fake_report_sharer.dart';
 import 'fake_text_embedder.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers (an IMAP Account
-/// without one is offline), consent, autodiscovery, test connection, keychain, clock, network,
+/// without one is offline), consent, autodiscovery, test connection, HTTP client, keychain, clock, network,
 /// links, Save As, report sharing, background sender, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
 /// one on that file system.
 class Harness._() {
@@ -54,6 +56,9 @@ class Harness._() {
   final models = FakeModelManager();
   final discovery = FakeServerDiscovery();
   final connection = FakeConnectionTester();
+
+  /// Every HTTP request the app sends outside the Providers (the Google token revocation); each gets a 200.
+  final httpRequests = <http.Request>[];
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
@@ -85,6 +90,12 @@ class Harness._() {
       ..registerSingleton<ModelManager>(h.models)
       ..registerSingleton<ServerDiscovery>(h.discovery)
       ..registerSingleton<ConnectionTester>(h.connection)
+      ..registerSingleton<http.Client>(
+        MockClient((r) async {
+          h.httpRequests.add(r);
+          return http.Response('', 200);
+        }),
+      )
       // An IMAP Account without a fake Provider gets the real adapter, offline: never a real server.
       ..registerSingleton<ImapConnector>((_, s) async => throw const SocketException('no network in tests'))
       ..registerSingleton<ModelDownload>(ManagedModelDownload(h.models, embeddingGemmaGguf))

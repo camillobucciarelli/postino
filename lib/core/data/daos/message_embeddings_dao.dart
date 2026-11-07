@@ -93,4 +93,8 @@ class MessageEmbeddingsDao(super.attachedDatabase)
     final data = ByteData.sublistView(bytes);
     return [for (var i = 0; i < bytes.length ~/ 4; i++) data.getFloat32(i * 4, Endian.little)];
   }
+
+  /// Removes the Account's message embeddings (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) =>
+      (delete(messageEmbeddings)..where((t) => t.accountId.equals(accountId))).go();
 }

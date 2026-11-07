@@ -264,4 +264,11 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
           ..where(existsQuery(unreadInConversation));
     return query.watch().map((rows) => {for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!)});
   }
+
+  /// Removes the Account's messages, their labels and sync cursor (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) async {
+    await (delete(messages)..where((t) => t.accountId.equals(accountId))).go();
+    await (delete(messageLabels)..where((t) => t.accountId.equals(accountId))).go();
+    await (delete(syncCursors)..where((t) => t.accountId.equals(accountId))).go();
+  }
 }

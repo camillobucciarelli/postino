@@ -23,6 +23,7 @@ import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
+import 'package:postino/core/data/gmail/google_revoke.dart' as _i960;
 import 'package:postino/core/data/imap/enough_connection_tester.dart' as _i782;
 import 'package:postino/core/data/imap/enough_server_discovery.dart' as _i26;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
@@ -141,6 +142,9 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i634.NativeAppWindow(),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i960.GoogleRevoke>(
+      () => _i960.GoogleRevoke(gh<_i519.Client>(), gh<_i398.Connectivity>()),
+    );
     gh.singleton<_i902.GoogleConsent>(
       () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
@@ -253,16 +257,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i346.ErrorLog>(),
       ),
     );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-        gh<_i221.ServerDiscovery>(),
-        gh<_i967.ConnectionTester>(),
-      ),
-    );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
@@ -285,6 +279,18 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i705.MailSync>(),
         gh<_i845.InboxRepository>(),
         gh<_i398.Clock>(),
+      ),
+    );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+        gh<_i221.ServerDiscovery>(),
+        gh<_i967.ConnectionTester>(),
+        gh<_i960.GoogleRevoke>(),
+        gh<_i307.SettingsRepository>(),
       ),
     );
     gh.factory<_i510.ReplyDraftUseCase>(

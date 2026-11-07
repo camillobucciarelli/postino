@@ -86,4 +86,7 @@ class OutboxDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
 
   static Expression<bool> _row(Outbox t, String accountId, String messageId) =>
       t.accountId.equals(accountId) & t.messageId.equals(messageId);
+
+  /// Removes the Account's outbox entries (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(outbox)..where((t) => t.accountId.equals(accountId))).go();
 }

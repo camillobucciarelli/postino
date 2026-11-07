@@ -40,7 +40,16 @@ MailProvider providerFor(Account account) {
         ProviderKind.microsoft => const UnsyncedProvider(),
       },
       instanceName: account.id,
+      // An IMAP adapter holds a connection (and IDLE): logged out when the Account is removed.
+      dispose: (p) => p is ImapProvider ? p.close() : null,
     );
   }
   return g<MailProvider>(instanceName: account.id);
+}
+
+/// Drops the adapter of the removed Account [accountId] (#174), closing its connection; the same Account connected
+/// again gets a new one.
+Future<void> forgetProvider(String accountId) async {
+  final g = GetIt.I;
+  if (g.isRegistered<MailProvider>(instanceName: accountId)) await g.unregister<MailProvider>(instanceName: accountId);
 }

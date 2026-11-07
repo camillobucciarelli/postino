@@ -29,4 +29,7 @@ class AccountsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Future<List<AccountRow>> byPosition() => _byPosition().get();
 
   Stream<List<AccountRow>> watchByPosition() => _byPosition().watch();
+
+  /// Removes the Account's Account (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(accounts)..where((t) => t.id.equals(accountId))).go();
 }

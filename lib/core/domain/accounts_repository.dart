@@ -35,4 +35,9 @@ abstract interface class AccountsRepository() {
   /// user did not grant Drive, [WrongAccountFailure] if they picked another Google identity. Never makes the
   /// Account Da ricollegare.
   Future<Result<void>> grantDriveAccess(String accountId);
+
+  /// Rimozione dell'Account [accountId] (#174): its sync and IDLE stop, everything of it is deleted here (messages,
+  /// Etichette, Bozze, queued Azioni, which are never sent, and Conflitti) with its credentials in the keychain; a
+  /// Gmail refresh token is revoked when online. Nothing changes on the server. Nothing if there is no such Account.
+  Future<void> remove(String accountId);
 }

@@ -11,7 +11,9 @@ import '../domain/password_provider.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/server_discovery.dart';
+import '../domain/settings_repository.dart';
 import 'gmail/gmail_tokens.dart';
+import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'sync_engine.dart';
@@ -24,6 +26,8 @@ class AccountsService(
   final SyncEngine _sync,
   final ServerDiscovery _discovery,
   final ConnectionTester _tester,
+  final GoogleRevoke _revoke,
+  final SettingsRepository _settings,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -95,8 +99,8 @@ class AccountsService(
       address: address,
       provider: provider,
       color: known?.color ?? all.length % accountColorCount,
-      // ponytail: no Account removal yet, so the count is the next free position.
-      position: known?.position ?? all.length,
+      // After the last one: a removal leaves a gap, never a duplicate.
+      position: known?.position ?? all.fold<int>(-1, (m, a) => a.position > m ? a.position : m) + 1,
     );
     await _store.addAccount(account);
     unawaited(_sync.syncAll());
@@ -115,5 +119,18 @@ class AccountsService(
         await GmailTokens.of(value).write(_keychain, account.id);
         return const Ok(null);
     }
+  }
+
+  @override
+  Future<void> remove(String accountId) async {
+    if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
+    // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
+    final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
+    await _sync.removeAccount(accountId, () => _store.removeAccount(accountId));
+    await GmailTokens.delete(_keychain, accountId);
+    await PasswordCredentials.delete(_keychain, accountId);
+    // The Impostazioni di Postino no longer have a Drive to sync on.
+    if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    if (tokens != null) await _revoke.revoke(tokens.refresh);
   }
 }

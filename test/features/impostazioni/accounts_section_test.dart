@@ -1,4 +1,5 @@
-// Impostazioni → «Account» (#162): the list of Accounts and «Aggiungi Account» with the onboarding's choice.
+// Impostazioni → «Account» (#162): the list of Accounts and «Aggiungi Account» with the onboarding's choice;
+// «Rimuovi» on each Account (#174).
 
 import 'dart:async';
 
@@ -12,6 +13,7 @@ import 'package:routefly/routefly.dart';
 import '../../support/harness.dart';
 
 final _add = find.byKey(const ValueKey('settings-add-account'));
+final _remove = find.byKey(const ValueKey('settings-remove-account-a1'));
 
 Future<Harness> _start(WidgetTester tester) async {
   tester.view
@@ -41,6 +43,14 @@ Future<void> _connectIcloud(WidgetTester tester, String address) async {
   await tester.enterText(_field('password-form-address'), address);
   await tester.enterText(_field('password-form-password'), 'app-password-1');
   await tester.tap(find.byKey(const ValueKey('password-form-connect')));
+  await tester.pumpAndSettle();
+}
+
+/// «Rimuovi» on the Account a1, then «Rimuovi» in the dialog.
+Future<void> _confirmRemoval(WidgetTester tester) async {
+  await tester.tap(_remove);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Rimuovi'));
   await tester.pumpAndSettle();
 }
 
@@ -83,7 +93,8 @@ void main() {
     tester,
   ) async {
     await _start(tester);
-    // The back arrow, then «Aggiungi Account»: the Accounts listed are not stops.
+    // The back arrow, «Rimuovi» of the Account, then «Aggiungi Account»: the Accounts listed are not stops.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
@@ -94,5 +105,54 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.text('Altro IMAP'), findsNothing);
+  });
+
+  testWidgets('«Rimuovi» is named after the Account; the dialog starts on «Annulla»; confirmed, it goes', (
+    tester,
+  ) async {
+    final h = await _start(tester);
+    await h.addAccount('a2');
+    await tester.pumpAndSettle();
+    // Its accessible name is the tooltip, read by VoiceOver.
+    const name = "Rimuovi l'Account a1@example.com";
+    expect(
+      tester.getSemantics(find.byTooltip(name)),
+      isSemantics(tooltip: name, isButton: true, isFocusable: true, hasTapAction: true),
+    );
+
+    // From the keyboard: back arrow, then «Rimuovi» of the first Account.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text("Rimuovere l'Account a1@example.com?"), findsOneWidget);
+    expect(
+      find.text('Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.'),
+      findsOneWidget,
+    );
+    final focused = FocusManager.instance.primaryFocus!.context!;
+    expect(
+      find.ancestor(of: find.text('Annulla'), matching: find.byElementPredicate((e) => identical(e, focused))),
+      findsOneWidget,
+      reason: 'the focus starts on «Annulla»',
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text("Rimuovere l'Account a1@example.com?"), findsNothing);
+    expect(find.byKey(const ValueKey('settings-account-a1')), findsOneWidget);
+
+    await _confirmRemoval(tester);
+    expect(find.byKey(const ValueKey('settings-account-a1')), findsNothing);
+    expect(find.byKey(const ValueKey('settings-account-a2')), findsOneWidget);
+  });
+
+  testWidgets('removing the last Account goes back to the onboarding', (tester) async {
+    await _start(tester);
+
+    await _confirmRemoval(tester);
+
+    expect(find.text('Tutte le tue caselle in un posto solo.'), findsOneWidget);
+    expect(find.text('Collega Gmail'), findsOneWidget);
   });
 }

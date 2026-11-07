@@ -530,6 +530,9 @@ void main() {
     await engine.stop(); // no timer: the replay is the sync's own
     h.clock.advance(sendWindow);
     a.sendFailure = RateLimitFailure(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    // The outbox goes after the sync phase: this sync is made, the next ones wait for the deadline.
+    await engine.syncAll();
+    expect(a.sendCalls, 1);
     final before = a.syncCalls;
     await engine.syncAll();
     expect(a.sendCalls, 1);

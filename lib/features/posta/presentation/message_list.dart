@@ -272,7 +272,7 @@ class _MessageListState() extends State<MessageList> {
         controller: _scroll,
         loading: list == null,
         itemCount: list?.length ?? 0,
-        onRefresh: GetIt.I<MailSync>().syncAll,
+        onRefresh: GetIt.I<MailSync>().refresh,
         loadingLabel: t.loading,
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,

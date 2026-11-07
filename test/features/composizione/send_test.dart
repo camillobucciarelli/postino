@@ -445,6 +445,8 @@ class _TooBig(
   @override
   Future<void> syncAll() => real.syncAll();
   @override
+  Future<void> refresh() => real.refresh();
+  @override
   Future<Result<void>> openConversation(String a, String c) => real.openConversation(a, c);
   @override
   Future<Result<void>> fetchBody(String a, String m) => real.fetchBody(a, m);

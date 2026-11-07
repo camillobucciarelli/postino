@@ -9,8 +9,12 @@ abstract interface class MailSync() {
   /// Interfaccia: nessuno stato da costruire.
   this;
 
-  /// Syncs every attivo Account now (pull-to-refresh); completes when done.
+  /// Syncs every attivo Account now (start, resume, network back); completes when the sync and the offline queue are done.
   Future<void> syncAll();
+
+  /// Pull-to-refresh: joins the sync each attivo Account is already running (or has queued) instead of queuing
+  /// another, and completes at the end of its sync phase; the Bozze and the outbox keep going in the background.
+  Future<void> refresh();
 
   /// Marks the Conversazione read (locally at once, on the Provider now or when back online)
   /// and downloads its messages missing from the database (Inviati, older than 90 days);

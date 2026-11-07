@@ -29,9 +29,10 @@ class IntentReplayer(
   this;
 
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
-  Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
+  /// With [actions] false only the Bozze go (the Azioni went just before, see [replayActions]).
+  Future<void> replay(String accountId, MailProvider provider, {bool flush = false, bool actions = true}) async {
     // Rate limited: the Bozze wait for the deadline too.
-    if (await _replayActions(accountId, provider)) return;
+    if (actions && await replayActions(accountId, provider)) return;
     await _replayDrafts(accountId, provider, flush: flush);
   }
 
@@ -39,7 +40,7 @@ class IntentReplayer(
   /// open and never retried. A passing failure (offline, quota, auth) stops at once: each call would wait out the
   /// transport's backoff, holding the Account's queue for minutes; the rest stays queued for the next replay.
   /// True when it paused the Account.
-  Future<bool> _replayActions(String accountId, MailProvider provider) async {
+  Future<bool> replayActions(String accountId, MailProvider provider) async {
     for (final captured in await _store.pendingActions(accountId, _clock.now())) {
       // Read again just before sending: what the user did during the earlier calls (resolved the Conflitto, merged
       // another Azione) wins over the list taken at the start.

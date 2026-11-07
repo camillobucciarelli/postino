@@ -3,6 +3,7 @@ import 'package:enough_mail/enough_mail.dart' show ContentDisposition, DateCodec
 import '../../domain/html_text.dart';
 import '../../domain/mailbox.dart';
 import '../../domain/message.dart';
+import 'imap_body_structure.dart';
 
 /// The Provider-side id of a message: `cartella/UIDVALIDITY/UID` (the folder's decoded path may hold `/` itself).
 String imapMessageId(String path, int uidValidity, int uid) => '$path/$uidValidity/$uid';
@@ -39,11 +40,7 @@ ImapParsed parseImapMessage(MimeMessage mime, {required String id, required Stri
     cc: addresses('cc'),
     bcc: addresses('bcc'),
     subject: decodeWords(header('subject')),
-    snippet: switch (body) {
-      MessageBody(kind: BodyKind.html, :final content) => listSnippet(content),
-      MessageBody(:final content) => listSnippet(plainToHtml(content)),
-      null => '',
-    },
+    snippet: imapSnippet(body),
     date: (mime.decodeDate() ?? _internalDate(mime) ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc(),
     replyTo: switch (parseMailboxes(header('reply-to'))) {
       [final m, ...] => formatMailbox(m),
@@ -54,6 +51,13 @@ ImapParsed parseImapMessage(MimeMessage mime, {required String id, required Stri
   return (message: message, inReplyTo: _ids(header('in-reply-to')).firstOrNull, body: body);
 }
 
+/// The list preview of [body]; empty when the message has none.
+String imapSnippet(MessageBody? body) => switch (body) {
+  MessageBody(kind: BodyKind.html, :final content) => listSnippet(content),
+  MessageBody(:final content) => listSnippet(plainToHtml(content)),
+  null => '',
+};
+
 /// The Message-IDs of a `References` or `In-Reply-To` header, in order.
 List<String> _ids(String header) => [for (final m in RegExp('<[^<>]+>').allMatches(header)) m[0]!];
 
@@ -63,12 +67,9 @@ DateTime? _internalDate(MimeMessage mime) => switch (mime.internalDate) {
 };
 
 /// The HTML part if there is one, else the plain text one, with the attachments (ids are the MIME part numbers).
-// ponytail: whatever the sync fetched in full; on-demand bodies and attachment downloads come with T4 (#164).
+/// The attachments are those of [imapAttachments], as for a body fetched on request.
 MessageBody _body(MimeMessage mime) {
-  final attachments = [
-    for (final info in mime.findContentInfo())
-      Attachment(id: info.fetchId, name: info.fileName ?? '', size: info.size ?? 0, mimeType: info.mediaType?.text),
-  ];
+  final attachments = imapAttachments(mimeParts(mime));
   if (_textPart(mime, MediaSubtype.textHtml)?.decodeContentText() case final html?) {
     return MessageBody(html, BodyKind.html, attachments: attachments);
   }

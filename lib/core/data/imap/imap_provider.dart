@@ -11,6 +11,8 @@ import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../mime.dart';
+import 'imap_bodies.dart';
+import 'imap_conversations.dart';
 import 'imap_cursor.dart';
 import 'imap_drafts.dart';
 import 'imap_failure.dart';
@@ -53,10 +55,12 @@ class ImapProvider(
   final SmtpSender _smtp;
   late final _folders = ImapFolderSync(_session);
   late final _lookup = ImapLookup(_session);
+  late final _fetched = ImapBodies(_session);
+  late final _conversations = ImapConversations(_session, _address);
   late final _drafts = ImapDrafts(_session);
   late final _sent = ImapSent(_session, _smtp, _drafts, appendToSent: appendToSent);
 
-  // ponytail: until T4 (#164, bodies on request and Conversazioni) and T5 (#165, Azioni).
+  // ponytail: until T5 (#165, Azioni).
   static Err<Never> _later(String ticket) => Err(UnexpectedFailure('IMAP: arrives with $ticket'));
 
   /// Logs out; the next call logs in again.
@@ -178,10 +182,11 @@ class ImapProvider(
   );
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) async => _later('T4');
+  Future<Result<MessageBody>> fetchBody(String messageId) => imapGuard(() => _fetched.body(messageId));
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) async => _later('T4');
+  Future<Result<List<Message>>> fetchConversation(String conversationId) =>
+      imapGuard(() => _session.run((c) async => _conversations.fetch(c, await _list(c), conversationId)));
 
   @override
   Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async =>
@@ -193,7 +198,7 @@ class ImapProvider(
     String attachmentId, {
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) async => _later('T4');
+  }) => imapGuard(() => _fetched.attachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel));
 
   /// [threadId] is not needed: on IMAP the Conversazione comes from `References`, already in [raw].
   @override

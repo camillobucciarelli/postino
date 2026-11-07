@@ -22,8 +22,8 @@ class ImapSent(
   required final bool appendToSent,
 }) {
   /// Message-IDs submitted by SMTP whose copy in Inviati is not there yet: their retry only appends.
-  // ponytail: in memory, so a restart between the submission and the APPEND submits again (a second delivery);
-  // persist it with the outbox row if that ever bites.
+  // ponytail: in memory, per isolate: a restart, or the background isolate replaying the row, between the
+  // submission and the APPEND submits again (a second delivery); persist it on the outbox row if that ever bites.
   final _submitted = <String>{};
 
   /// Sends [raw], whose Message-ID is [messageId]; the id of its copy in Inviati.
@@ -51,14 +51,15 @@ class ImapSent(
 
   /// The id of the message with [messageId] in Inviati, null if it is not there.
   Future<String?> _find(ImapClient c, String messageId) async {
-    final folder = await specialFolder(c, _session, FolderRole.sent, 'Sent');
-    final box = await selectFolder(c, folder.path, condstore: _session.condstore);
-    final uids = await uidsOfMessageId(c, messageId);
-    return uids.isEmpty ? null : imapMessageId(folder.path, box.uidValidity ?? 0, uids.first);
+    final (:folder, :uidValidity, :uids) = await selectSpecial(c, _session, FolderRole.sent, 'Sent', messageId);
+    return uids.isEmpty ? null : imapMessageId(folder.path, uidValidity, uids.first);
   }
 
+  /// Searched first, at every attempt: an APPEND whose answer was lost (the session runs it again on a new
+  /// connection), or a Provider filing the submission itself, already put the copy there.
   Future<String> _append(ImapClient c, String messageId, String raw) async {
-    final folder = await specialFolder(c, _session, FolderRole.sent, 'Sent');
+    final (:folder, :uidValidity, :uids) = await selectSpecial(c, _session, FolderRole.sent, 'Sent', messageId);
+    if (uids.isNotEmpty) return imapMessageId(folder.path, uidValidity, uids.first);
     await c.appendMessageText(
       raw,
       targetMailboxPath: folder.path,

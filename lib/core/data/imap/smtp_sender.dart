@@ -60,7 +60,8 @@ class SmtpSender(
       await c.authenticate(_user, credentials.password, mechanism).timeout(ImapSession.timeout);
       atLogin = false;
       await c.sendMessageText(text, from, recipients).timeout(ImapSession.timeout);
-      await _quietly(c.quit);
+      // Sent: a server slow to answer QUIT must not hold the Account's queue.
+      await _quietly(() => c.quit().timeout(const Duration(seconds: 10)));
     } on ImapFailed {
       rethrow;
     } on SmtpException catch (e) {

@@ -88,10 +88,7 @@ void main() {
     await expectLater(sender.send(_raw), _fails<RejectedFailure>());
     await server.stop();
     await start(answer: (c) => c.startsWith('MAIL') ? '451 4.3.0 try later' : null);
-    await expectLater(
-      sender.send(_raw),
-      throwsA(isA<ImapFailed>().having((e) => e.failure, 'failure', isNot(isA<RejectedFailure>()))),
-    );
+    await expectLater(sender.send(_raw), _fails<UnexpectedFailure>());
   });
 
   test('a refused AUTH is AuthFailure', () async {

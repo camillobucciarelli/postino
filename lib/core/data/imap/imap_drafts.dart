@@ -20,12 +20,10 @@ class ImapDrafts(final ImapSession _session) {
   /// [DraftDiverged], and nothing is written.
   Future<DraftOutcome> save(OutgoingMessage draft, String raw, {required bool isNew, String? expected}) =>
       _session.run((c) async {
-        final folder = await specialFolder(c, _session, FolderRole.drafts, 'Drafts');
-        final box = await selectFolder(c, folder.path, condstore: _session.condstore);
-        final old = await uidsOfMessageId(c, draft.messageId);
+        final (:folder, :uidValidity, uids: old) = await _select(c, draft.messageId);
         if (old.isEmpty && !isNew) throw const ImapFailed(NotFoundFailure());
         if (old.isNotEmpty && !isNew && expected != null) {
-          final current = await _content(c, folder, box.uidValidity ?? 0, old.last);
+          final current = await _content(c, folder, uidValidity, old.last);
           final fingerprint = current.fingerprint;
           if (fingerprint != expected && fingerprint != DraftContent.of(draft).fingerprint) {
             return DraftDiverged(current);
@@ -44,12 +42,13 @@ class ImapDrafts(final ImapSession _session) {
 
   /// Removes the Bozza with [messageId]; [NotFoundFailure] when there is none (already deleted, or sent).
   Future<void> delete(String messageId) => _session.run((c) async {
-    final folder = await specialFolder(c, _session, FolderRole.drafts, 'Drafts');
-    await selectFolder(c, folder.path, condstore: _session.condstore);
-    final uids = await uidsOfMessageId(c, messageId);
+    final uids = (await _select(c, messageId)).uids;
     if (uids.isEmpty) throw const ImapFailed(NotFoundFailure());
     await _expunge(c, uids);
   });
+
+  Future<SpecialSelection> _select(ImapClient c, String messageId) =>
+      selectSpecial(c, _session, FolderRole.drafts, 'Drafts', messageId);
 
   /// `\Deleted` and `UID EXPUNGE` of [uids] in the selected folder.
   Future<void> _expunge(ImapClient c, List<int> uids) async {

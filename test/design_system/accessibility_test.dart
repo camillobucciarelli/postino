@@ -232,6 +232,36 @@ void main() {
     expect(bottom().width, PostinoBorder.borderWidthFocus);
   });
 
+  group('message tile at moderate text scales', () {
+    for (final scale in [1.0, 1.15, 1.3]) {
+      testWidgets('keeps one line per field at $scale', (tester) async {
+        await tester.pumpWidget(
+          _app(
+            const Scaffold(
+              body: PostinoMessageTile(
+                sender: 'Bruno Bianchi della Valle Superiore e Associati',
+                subject: _long,
+                preview: '$_long. $_long',
+                time: '09:42',
+                unread: false,
+                starred: false,
+                semanticLabel: 'Bruno',
+              ),
+            ),
+            scale: scale,
+          ),
+        );
+        for (final text in ['Bruno Bianchi', _long]) {
+          final p = tester.renderObject<RenderParagraph>(find.textContaining(text, findRichText: true).first);
+          expect(p.maxLines, 1, reason: text);
+        }
+        final preview = tester.renderObject<RenderParagraph>(find.textContaining('$_long. ').first);
+        expect(preview.maxLines, PostinoDensity.comfortable.previewLines);
+        expect(preview.overflow, TextOverflow.ellipsis);
+      });
+    }
+  });
+
   group('text at 200%', () {
     final screens = <String, Widget>{
       'message list': ListView(
@@ -297,9 +327,11 @@ void main() {
           final cut = tester.allRenderObjects
               .whereType<RenderParagraph>()
               .where(
-                // Avatar and AccountMark initials are decorative, at a fixed size.
+                // Avatar and AccountMark initials are decorative, at a fixed size. The row preview is an excerpt:
+                // capped at two lines even at 200%.
                 (p) =>
                     p.textScaler != TextScaler.noScaling &&
+                    p.maxLines != PostinoDensity.comfortable.previewLines * 2 &&
                     (p.didExceedMaxLines || p.overflow == TextOverflow.ellipsis),
               )
               .map((p) => p.text.toPlainText());

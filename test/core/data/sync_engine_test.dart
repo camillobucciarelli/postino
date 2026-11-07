@@ -287,5 +287,53 @@ void main() {
       await (first, second).wait;
       expect(a.syncCalls, before + 2);
     });
+
+    Future<void> pendingDraft(SyncEngine engine) async {
+      await engine.saveDraft(
+        'a',
+        const OutgoingMessage(messageId: '<d@example.com>', from: 'a@example.com', to: [], subject: 's', body: ''),
+      );
+      await engine.stop(); // no debounce timer: the upload is the sync's own
+      h.clock.advance(draftDebounce);
+    }
+
+    test('during the Bozze upload of a running sync it ends at once, with no other sync', () async {
+      final engine = GetIt.I<SyncEngine>();
+      await pendingDraft(engine);
+      final uploading = a.holdDraft = Completer<void>();
+      final before = a.syncCalls;
+      final sync = engine.syncAll();
+      while (a.draftHeld == null) {
+        await pumpEventQueue();
+      }
+
+      await engine.refresh();
+      expect(a.syncCalls, before + 1);
+      uploading.complete();
+      await sync;
+      expect(a.syncCalls, before + 1);
+    });
+
+    test('it joins a sync queued behind a Conversazione opening', () async {
+      final engine = GetIt.I<SyncEngine>();
+      final fetching = a.holdConversation = Completer<void>();
+      final open = engine.openConversation('a', 't-1');
+      await pumpEventQueue();
+      final before = a.syncCalls;
+      final queued = engine.syncAll();
+      final refresh = engine.refresh();
+      a.holdConversation = null;
+      fetching.complete();
+      await (open, queued, refresh).wait;
+      expect(a.syncCalls, before + 1);
+    });
+
+    test('a sync that makes the Account Da ricollegare uploads no Bozza after it', () async {
+      final engine = GetIt.I<SyncEngine>();
+      await pendingDraft(engine);
+      a.breakAuth();
+      await engine.syncAll();
+      expect(a.draftHeld, isNull);
+    });
   });
 }

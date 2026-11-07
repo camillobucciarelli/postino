@@ -29,11 +29,10 @@ class IntentReplayer(
   this;
 
   /// A Bozza edited within [draftDebounce] waits for its timer, unless [flush] (leaving the composer, reconnection).
-  /// With [actions] false only the Bozze go (the Azioni went just before, see [replayActions]).
-  Future<void> replay(String accountId, MailProvider provider, {bool flush = false, bool actions = true}) async {
+  Future<void> replay(String accountId, MailProvider provider, {bool flush = false}) async {
     // Rate limited: the Bozze wait for the deadline too.
-    if (actions && await replayActions(accountId, provider)) return;
-    await _replayDrafts(accountId, provider, flush: flush);
+    if (await replayActions(accountId, provider)) return;
+    await replayDrafts(accountId, provider, flush: flush);
   }
 
   /// One conditional call per voce (ADR 0008): applied or message gone, it leaves the queue; a Conflitto is kept
@@ -73,7 +72,8 @@ class IntentReplayer(
     return false;
   }
 
-  Future<void> _replayDrafts(String accountId, MailProvider provider, {required bool flush}) async {
+  /// The Bozze not on the Provider yet; one edited within [draftDebounce] waits for its timer, unless [flush].
+  Future<void> replayDrafts(String accountId, MailProvider provider, {bool flush = false}) async {
     for (final (:draft, :isNew, :updatedAt, :expected) in await _outbox.pendingDrafts(accountId)) {
       if (!flush && _clock.now().millisecondsSinceEpoch - updatedAt < draftDebounce.inMilliseconds) {
         continue;

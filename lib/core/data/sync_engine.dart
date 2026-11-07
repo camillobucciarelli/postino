@@ -67,9 +67,10 @@ class SyncEngine(
 
   /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
   /// `synced` completes at the end of its sync phase, before the Bozze and outbox go.
-  final _queuedSync = <String, ({Future<void> done, Future<void> synced})>{};
+  final _queuedSync = <String, _QueuedSync>{};
 
-  /// Per Account, the sync phase of the sync running now: a pull-to-refresh waits for it instead of queuing another.
+  /// Per Account, the sync phase of the sync running now (finished once it reaches the Bozze and the outbox):
+  /// a pull-to-refresh waits for it instead of queuing another.
   final _runningSync = <String, Future<void>>{};
 
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
@@ -319,17 +320,10 @@ class SyncEngine(
   /// With [outboxOnly] only the outbox goes (the 10 s timer and the WorkManager isolate): Bozze uploads
   /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
   /// Called only from inside the Account's serial queue.
-  /// With [actions] false the Azioni are skipped (the sync replayed them before its sync phase).
-  Future<void> _replay(
-    String accountId,
-    MailProvider provider, {
-    bool flush = false,
-    bool outboxOnly = false,
-    bool actions = true,
-  }) async {
+  Future<void> _replay(String accountId, MailProvider provider, {bool flush = false, bool outboxOnly = false}) async {
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
-    if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush, actions: actions);
+    if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
     // The replay may have just paused it (a rate-limited Etichetta): no send before the deadline.
     if (_paused(accountId)) return;
     await _outbox.sendDue(accountId, provider);
@@ -368,11 +362,13 @@ class SyncEngine(
 
   /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
   /// Null while the Provider's pause holds.
-  ({Future<void> done, Future<void> synced})? _sync(Account account) {
+  _QueuedSync? _sync(Account account) {
     final id = account.id;
     if (_paused(id)) return null;
     if (_queuedSync[id] case final queued?) return queued;
     final synced = Completer<void>();
+    // A failure reaches the callers through `done` too: with no pull listening it is not reported twice.
+    synced.future.ignore();
     final done = _serial(id, () {
       _queuedSync.remove(id);
       _runningSync[id] = synced.future;
@@ -408,18 +404,29 @@ class SyncEngine(
   /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two.
   Future<void> _syncOnce(Account account, Completer<void> synced) async {
     final accountId = account.id;
-    final MailProvider provider;
     try {
-      provider = providerFor(account);
-      // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
-      if (!_paused(accountId)) await _intents.replayActions(accountId, provider);
-      if (!_paused(accountId)) await _syncPhase(accountId, provider);
+      final provider = providerFor(account);
+      try {
+        // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
+        if (!_paused(accountId)) await _intents.replayActions(accountId, provider);
+        if (!_paused(accountId)) await _syncPhase(accountId, provider);
+        synced.complete();
+      } catch (e, s) {
+        synced.completeError(e, s);
+        rethrow;
+      } finally {
+        // After the sync phase, failed too: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox
+        // attachments. Not once the sync made the Account Da ricollegare: its queue waits (ADR 0008).
+        if (await _activeAccount(accountId) != null) {
+          await _intents.replayDrafts(accountId, provider);
+          if (!_paused(accountId)) await _outbox.sendDue(accountId, provider);
+        }
+      }
     } finally {
+      // Only now: a pull during the replay joins this finished sync phase instead of queuing one behind the uploads.
       unawaited(_runningSync.remove(accountId));
-      synced.complete();
+      if (!synced.isCompleted) synced.complete();
     }
-    // After the sync phase: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox attachments.
-    await _replay(accountId, provider, actions: false);
   }
 
   Future<void> _syncPhase(String accountId, MailProvider provider) async {
@@ -469,6 +476,9 @@ class SyncEngine(
     }
   }
 }
+
+/// A queued sync: `done` when its whole slot ends, `synced` at the end of its sync phase.
+typedef _QueuedSync = ({Future<void> done, Future<void> synced});
 
 @module
 abstract class SyncModule() {

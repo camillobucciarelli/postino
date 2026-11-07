@@ -19,11 +19,28 @@ class ImapConversations(final ImapSession _session, final String _address) {
   /// is none.
   // ponytail: a reply threaded by its subject alone (no header citing the Conversazione) is not found; the sync has it.
   Future<List<Message>> fetch(ImapClient c, List<ImapFolder> folders, String conversationId) async {
-    if (!_ascii(conversationId)) throw const ImapFailed(NotFoundFailure());
-    final q = _quoted(conversationId);
+    // A message without Message-ID is its own Conversazione, named by its Provider id: fetched by UID.
+    final own = parseImapMessageId(conversationId);
+    if (own == null && !_ascii(conversationId)) throw const ImapFailed(NotFoundFailure());
     final found = <String, ImapParsed>{};
     final snippets = <String, String>{};
-    var criteria = ['OR HEADER Message-ID $q OR HEADER References $q HEADER In-Reply-To $q'];
+    var criteria = <String>[];
+    if (own == null) {
+      final q = _quoted(conversationId);
+      criteria = ['OR HEADER Message-ID $q OR HEADER References $q HEADER In-Reply-To $q'];
+    } else if (folders.where((f) => f.path == own.path).firstOrNull case final f?) {
+      try {
+        final box = await selectFolder(c, f.path, condstore: _session.condstore);
+        if ((box.uidValidity ?? 0) == own.uidValidity) {
+          for (final p in await fetchMessages(c, f, own.uidValidity, [own.uid])) {
+            found[p.message.id] = p;
+            snippets[p.message.id] = await _snippet(c, p);
+          }
+        }
+      } on ImapFailed catch (e) {
+        if (e.failure is! NotFoundFailure) rethrow;
+      }
+    }
     for (var level = 0; level < maxThreadDepth && criteria.isNotEmpty; level++) {
       final fresh = <ImapParsed>[];
       for (final f in folders) {

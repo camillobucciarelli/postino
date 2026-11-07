@@ -72,6 +72,14 @@ void main() {
     );
   });
 
+  test('a message without Message-ID is its own Conversazione, fetched by its Provider id', () async {
+    await h.append('INBOX', 'From: ada@example.com\r\nTo: ${h.address}\r\nSubject: Senza id\r\n\r\nCiao\r\n');
+    final m = okValue(await h.provider.initialSync()).messages.single;
+    expect(m.messageId, isEmpty);
+    final messages = okValue(await h.provider.fetchConversation(m.conversationId));
+    expect(messages.map((x) => x.id), [m.id]);
+  });
+
   test('a Conversazione with no message is NotFound', () async {
     expect(await h.provider.fetchConversation('<nessuno@example.com>'), isErr<NotFoundFailure>());
   });

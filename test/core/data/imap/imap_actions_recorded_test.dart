@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/domain/action_outcome.dart';
 import 'package:postino/core/domain/mail_action.dart';
+import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
 import '../../../support/gmail_recorded.dart' show okValue;
@@ -16,6 +17,10 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
   String flags = '';
   var modSeq = 100;
   var stores = 0;
+  var copies = 0;
+
+  /// Whether the destination holds the message already (a COPY was done).
+  var copied = false;
 
   List<String> answer(String command) {
     if (basics(command, capabilities: capabilities, folders: _folders) case final b?) return b;
@@ -30,8 +35,21 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
         'OK [READ-WRITE] SELECT completed',
       ];
     }
-    if (upper.startsWith('UID FETCH 5 ')) return ['* 1 FETCH (UID 5 FLAGS ($flags) MODSEQ ($modSeq))'];
+    if (upper.startsWith('UID FETCH 5 (UID FLAGS')) return ['* 1 FETCH (UID 5 FLAGS ($flags) MODSEQ ($modSeq))'];
+    if (upper.startsWith('UID FETCH 5 (UID BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])')) {
+      return ['* 1 FETCH (UID 5 BODY[HEADER.FIELDS (MESSAGE-ID)] ${literal('Message-ID: <m5@example.com>\r\n\r\n')})'];
+    }
+    if (upper.startsWith('UID COPY')) {
+      copies++;
+      copied = true;
+      return ['OK COPY completed'];
+    }
+    if (upper.startsWith('UID SEARCH HEADER MESSAGE-ID')) return copied ? ['* SEARCH 9'] : <String>[];
     if (upper.startsWith('UID STORE')) {
+      // RFC 7162 §3.1.3: the modifier follows the sequence set.
+      if (upper.contains('UNCHANGEDSINCE') && !RegExp(r'^UID STORE \d+ \(UNCHANGEDSINCE \d+\) ').hasMatch(upper)) {
+        return ['BAD Could not parse command'];
+      }
       stores++;
       return onStore?.call(stores) ?? ['OK STORE completed'];
     }
@@ -75,7 +93,7 @@ void main() {
   test('CONDSTORE: the flag is written UNCHANGEDSINCE the MODSEQ read', () async {
     final (p, server) = await _setUp(_Mailbox('IMAP4rev1 CONDSTORE'));
     okValue(await p.applyAction('INBOX/7/5', const MarkRead(), expected: false));
-    expect(_writes(server), [r'UID STORE (UNCHANGEDSINCE 100) 5 +FLAGS (\Seen)']);
+    expect(_writes(server), [r'UID STORE 5 (UNCHANGEDSINCE 100) +FLAGS (\Seen)']);
   });
 
   test('CONDSTORE: MODIFIED reads and compares again, then writes with the new MODSEQ', () async {
@@ -91,8 +109,8 @@ void main() {
     final (p, server) = await _setUp(mailbox);
     expect(okValue(await p.applyAction('INBOX/7/5', const MarkRead(), expected: false)), isA<ActionApplied>());
     expect(_writes(server), [
-      r'UID STORE (UNCHANGEDSINCE 100) 5 +FLAGS (\Seen)',
-      r'UID STORE (UNCHANGEDSINCE 101) 5 +FLAGS (\Seen)',
+      r'UID STORE 5 (UNCHANGEDSINCE 100) +FLAGS (\Seen)',
+      r'UID STORE 5 (UNCHANGEDSINCE 101) +FLAGS (\Seen)',
     ]);
   });
 
@@ -130,5 +148,15 @@ void main() {
     final r = okValue(await p.applyAction('INBOX/7/5', const Unstar(), expected: false));
     expect(r, isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', true));
     expect(_writes(server), isEmpty);
+  });
+
+  test('without MOVE a retry after a failed STORE does not COPY again: no duplicate in the destination', () async {
+    late _Mailbox mailbox;
+    mailbox = _Mailbox('IMAP4rev1 UIDPLUS', onStore: (n) => n == 1 ? ['NO store failed'] : ['OK STORE completed']);
+    final (p, server) = await _setUp(mailbox);
+    expect(await p.applyAction('INBOX/7/5', const Delete(), expected: Placement.inbox), isA<Err<ActionOutcome>>());
+    expect(okValue(await p.applyAction('INBOX/7/5', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
+    expect(mailbox.copies, 1);
+    expect(_writes(server).where((c) => c.startsWith('UID EXPUNGE')), ['UID EXPUNGE 5']);
   });
 }

@@ -17,10 +17,11 @@ class ImapLookup(final ImapSession _session) {
 
   /// The Provider id of the message with [messageId] in the first of [folders] that holds it; null if none does.
   Future<String?> byMessageId(ImapClient c, List<ImapFolder> folders, String messageId) async {
-    if (!_ascii(messageId)) return null;
+    final criteria = messageIdCriteria(messageId);
+    if (criteria == null) return null;
     for (final f in folders) {
       final box = await selectFolder(c, f.path, condstore: _session.condstore);
-      final uids = await search(c, 'HEADER Message-ID ${_quoted(messageId)}');
+      final uids = await search(c, criteria);
       if (uids.isNotEmpty) return imapMessageId(f.path, box.uidValidity ?? 0, uids.first);
     }
     return null;
@@ -84,6 +85,9 @@ class ImapLookup(final ImapSession _session) {
     }
   }
 }
+
+/// The SEARCH key for the message with [messageId]; null when it is not ASCII (a quoted string holds only that).
+String? messageIdCriteria(String messageId) => _ascii(messageId) ? 'HEADER Message-ID ${_quoted(messageId)}' : null;
 
 /// The SEARCH key for what [t] answers, null when it needs none: its parent already in [known] or a plain subject.
 String? _key(ThreadInput t, Set<String> known) {

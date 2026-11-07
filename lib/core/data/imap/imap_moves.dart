@@ -4,7 +4,9 @@ import '../../domain/mail_action.dart';
 import '../../domain/result.dart';
 import 'imap_failure.dart';
 import 'imap_flags.dart';
+import 'imap_folder_sync.dart' show search;
 import 'imap_folders.dart';
+import 'imap_lookup.dart' show messageIdCriteria;
 import 'imap_session.dart';
 
 /// Moves a message between folders and finds the folder a [Placement] means; the folders Archivia and Elimina need
@@ -31,7 +33,8 @@ class ImapMoves(final ImapSession _session, final Future<ImapFolder> Function(Im
         await c.uidMove(uid, targetMailboxPath: target.path);
         return;
       }
-      await c.uidCopy(uid, targetMailboxPath: target.path);
+      // A COPY done by an earlier try that failed before the EXPUNGE must not be repeated.
+      if (!await _copied(c, at, target)) await c.uidCopy(uid, targetMailboxPath: target.path);
       await c.uidMarkDeleted(uid);
       // ponytail: without UIDPLUS a plain EXPUNGE also takes the other messages marked \Deleted; UIDPLUS is
       // everywhere in practice.
@@ -40,5 +43,27 @@ class ImapMoves(final ImapSession _session, final Future<ImapFolder> Function(Im
       if (!c.isConnected || e.message == 'timeout') rethrow;
       throw ImapFailed(RejectedFailure('the server refused the move to ${target.path}'));
     }
+  }
+
+  /// Whether [target] already holds the message of [at] (by Message-ID); [at]'s folder is selected again after.
+  Future<bool> _copied(ImapClient c, ImapPlace at, ImapFolder target) async {
+    final r = await c.uidFetchMessages(
+      MessageSequence.fromId(at.uid, isUid: true),
+      '(UID BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])',
+      responseTimeout: ImapSession.timeout,
+    );
+    final criteria = switch (r.messages
+        .where((m) => m.uid == at.uid)
+        .firstOrNull
+        ?.getHeaderValue('message-id')
+        ?.trim()) {
+      final id? => messageIdCriteria(id),
+      null => null,
+    };
+    if (criteria == null) return false;
+    await selectFolder(c, target.path, condstore: _session.condstore);
+    final found = (await search(c, criteria)).isNotEmpty;
+    await selectFolder(c, at.folder.path, condstore: _session.condstore);
+    return found;
   }
 }

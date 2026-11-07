@@ -42,10 +42,20 @@ Future<ImapPlace?> readPlace(
 /// changed since the read (`MODIFIED`), and the caller reads and compares again.
 Future<bool> storeFlag(ImapClient c, ImapPlace at, String flag, {required bool add}) async {
   final r = await c.uidStore(
-    MessageSequence.fromId(at.uid, isUid: true),
+    at.modSeq == null ? MessageSequence.fromId(at.uid, isUid: true) : _Unchanged(at.uid, at.modSeq!),
     [flag],
     action: add ? StoreAction.add : StoreAction.remove,
-    unchangedSinceModSequence: at.modSeq,
   );
   return r.modifiedMessageSequence?.isEmpty ?? true;
+}
+
+/// A UID that renders with its modifier: `5 (UNCHANGEDSINCE 100)`. RFC 7162 §3.1.3 puts the modifier after the
+/// sequence set, but enough_mail 3.0.0 writes `UID STORE (UNCHANGEDSINCE 100) 5` for `unchangedSinceModSequence`,
+/// which servers refuse.
+// ponytail: through the sequence set's rendering, the one hook the library leaves; drop it if enough_mail fixes the order.
+class _Unchanged(final int _uid, final int _modSeq) extends MessageSequence {
+  this : super(isUidSequence: true);
+
+  @override
+  void render(StringBuffer buffer) => buffer.write('$_uid (UNCHANGEDSINCE $_modSeq)');
 }

@@ -6,11 +6,12 @@ import '../auto_labels_json.dart';
 import '../postino_database.dart';
 import '../tables/conflicts_table.dart';
 import '../tables/intents_table.dart';
+import '../tables/messages_table.dart';
 
 part 'intents_dao.g.dart';
 
 /// The offline queue of the Azioni (ADR 0008): applied here at once, then replayed on the Provider.
-@DriftAccessor(tables: [Intents, Conflicts])
+@DriftAccessor(tables: [Intents, Conflicts, Messages])
 class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$IntentsDaoMixin {
   /// The Account's voci to replay at [now]: a «trattenuta» one waits for its deadline, which then lapses.
   Future<List<IntentRow>> pending(String accountId, {required int now}) => transaction(() async {
@@ -24,6 +25,16 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
   /// The voce of the message on [attribute], if queued.
   Future<IntentRow?> voce(String accountId, String messageId, String attribute) =>
       (select(intents)..where(_key(accountId, messageId, attribute))).getSingleOrNull();
+
+  /// The Message-ID (RFC 5322) of the message with Provider id [messageId], as a voce kept it when queued; null if none did.
+  Future<String?> rfcMessageId(String accountId, String messageId) async =>
+      (await (select(intents)
+                ..where(
+                  (t) => t.accountId.equals(accountId) & t.messageId.equals(messageId) & t.rfcMessageId.isNotNull(),
+                )
+                ..limit(1))
+              .getSingleOrNull())
+          ?.rfcMessageId;
 
   /// Applies [action] to [messageIds] here at once and queues it, merging with the voce already on the same
   /// attribute: the last wanted value stays, with the first expected one. One transaction, so the messages of a
@@ -54,6 +65,11 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
               ),
             );
           } else if (conflict != null || local != wanted) {
+            final row =
+                await (select(messages)
+                      ..where((t) => t.accountId.equals(accountId) & t.id.equals(messageId))
+                      ..limit(1))
+                    .getSingleOrNull();
             await into(intents).insert(
               IntentsCompanion.insert(
                 accountId: accountId,
@@ -62,6 +78,7 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
                 wanted: wanted,
                 expected: Value(conflict?.provider ?? local),
                 heldUntil: Value(heldUntil),
+                rfcMessageId: Value(row?.messageId),
               ),
             );
           } else {

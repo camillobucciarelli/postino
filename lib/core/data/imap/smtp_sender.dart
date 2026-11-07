@@ -40,7 +40,9 @@ class SmtpSender(
 }) {
   /// Submits [raw] (rendered by `renderMime`) to its To, Cc and Bcc, without the Bcc header.
   /// Over the server's `SIZE` it is [SizeLimitFailure] before anything is sent; a 5xx answer is [RejectedFailure].
-  Future<void> send(String raw) async {
+  /// [onAccepted] runs as soon as the server accepted the message, before QUIT (which may take seconds) and the
+  /// disconnection: it must not throw.
+  Future<void> send(String raw, {Future<void> Function()? onAccepted}) async {
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
     if (credentials == null) throw const ImapFailed(AuthFailure());
     final mime = MimeMessage.parseFromText(raw);
@@ -60,6 +62,7 @@ class SmtpSender(
       await c.authenticate(_user, credentials.password, mechanism).timeout(ImapSession.timeout);
       atLogin = false;
       await c.sendMessageText(text, from, recipients).timeout(ImapSession.timeout);
+      await onAccepted?.call();
       // Sent: a server slow to answer QUIT must not hold the Account's queue.
       await _quietly(() => c.quit().timeout(const Duration(seconds: 10)));
     } on ImapFailed {

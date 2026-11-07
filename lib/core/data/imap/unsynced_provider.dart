@@ -42,7 +42,13 @@ class const UnsyncedProvider() implements MailProvider {
   }) async => _unsupported;
 
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) async => _unsupported;
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  }) async => _unsupported;
 
   @override
   Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) async =>

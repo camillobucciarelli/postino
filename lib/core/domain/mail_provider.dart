@@ -93,7 +93,15 @@ abstract interface class MailProvider() {
   /// Idempotent on the Message-ID: a message already in Inviati is not sent again.
   /// [threadId] ([OutgoingMessage.conversationId]) keeps a reply in its Conversazione.
   /// [Ok] carries the Provider's id of the sent message.
-  Future<Result<String>> send(String messageId, String raw, {String? threadId});
+  /// [submitted] (#175): the Provider already accepted the submission in an earlier attempt, only what follows it
+  /// is left; [onSubmitted] tells the caller the moment it does, so it can remember it across a restart.
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  });
 
   /// [isNew]: creates the Bozza on the Provider; otherwise updates the one with [OutgoingMessage.messageId],
   /// [NotFoundFailure] if it is gone (deleted or sent elsewhere). With [expected] (the `DraftContent.fingerprint` of

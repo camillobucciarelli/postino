@@ -5,22 +5,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scarica Postino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&amp;family=Figtree:wght@400;600;700&amp;display=swap">
 <style>
-  :root { color-scheme: light dark; --testo: #1a1a1a; --sfondo: #ffffff; --link: #0b57d0; --pulsante: #0b57d0; --su-pulsante: #ffffff; }
+  /* Token di lib/design_system/tokens (postino_colors.dart, postino_palette.dart, postino_metrics.dart, postino_text.dart). */
+  :root {
+    color-scheme: light dark;
+    --sfondo: #F4F2EC;          /* surfaceGround = pNeutral100 */
+    --superficie: #FFFFFF;      /* surfaceRaised = pNeutral0 */
+    --testo: #1C1C1A;           /* ink = pNeutral900 */
+    --testo-attenuato: #625E55; /* inkMuted = pNeutral600 */
+    --primario: #0E6456;        /* brand */
+    --primario-hover: #0B5649;  /* brandHover = pVerdigris800 */
+    --su-primario: #FFFFFF;     /* onBrand */
+    --bordo: #E2DED4;           /* borderSubtle = pNeutral200 */
+    --focus: #B0500A;           /* focusRing = pOrange700 */
+    --oro: #F0C419;             /* starFill = pGold400, solo decorativo */
+    --raggio-md: 0.75rem;       /* PostinoRadius.md 12 */
+    --raggio-lg: 1rem;          /* PostinoRadius.lg 16 */
+    --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s6: 1.5rem; --s8: 2rem;
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --testo: #ececec; --sfondo: #141414; --link: #8ab4f8; --pulsante: #8ab4f8; --su-pulsante: #101010; }
+    :root {
+      --sfondo: #131312;          /* pNeutral950 */
+      --superficie: #242422;      /* pNeutral850 */
+      --testo: #F4F2EC;           /* pNeutral100 */
+      --testo-attenuato: #A6A093; /* pNeutral400 */
+      --primario: #79C9B3;        /* pVerdigris300 */
+      --primario-hover: #A9D9CB;  /* pVerdigris200 */
+      --su-primario: #0B231E;     /* pVerdigris950 */
+      --bordo: #2D2C29;           /* pNeutral800 */
+      --focus: #F2A65E;           /* pOrange300 */
+      --oro: #FFE02E;             /* pGold300 */
+    }
   }
   html { font-size: 100%; }
-  body { margin: 0 auto; padding: 1rem; max-width: 40rem; background: var(--sfondo); color: var(--testo);
-         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1.0625rem; line-height: 1.6; }
-  h1 { font-size: 1.75em; line-height: 1.25; }
-  a { color: var(--link); text-decoration: underline; overflow-wrap: anywhere; }
-  a:focus-visible { outline: 0.2em solid var(--link); outline-offset: 0.15em; }
-  .pulsanti { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
-  a.pulsante { display: inline-block; padding: 0.75em 1.25em; border-radius: 0.5em; background: var(--pulsante);
-               color: var(--su-pulsante); font-weight: 600; text-decoration: none; border: 0.15em solid var(--pulsante); }
-  a.pulsante:focus-visible { outline: 0.2em solid var(--testo); outline-offset: 0.2em; }
-  li { margin-bottom: 0.5em; }
+  body { margin: 0 auto; padding: var(--s4); max-width: 40rem; background: var(--sfondo); color: var(--testo);
+         font-family: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; line-height: 1.625; }
+  h1 { font-family: Caprasimo, Georgia, serif; font-weight: 400; font-size: 2.125em; line-height: 1.2; margin: var(--s6) 0 var(--s3);
+       padding-bottom: var(--s3); border-bottom: 0.25rem solid var(--oro); overflow-wrap: anywhere; }
+  main { background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio-lg); padding: var(--s4) var(--s6) var(--s6); }
+  a { color: var(--primario); text-decoration: underline; overflow-wrap: anywhere; }
+  a:focus-visible { outline: 0.2em solid var(--focus); outline-offset: 0.2em; }
+  .versione { color: var(--testo-attenuato); font-weight: 600; }
+  .pulsanti { display: flex; flex-wrap: wrap; gap: var(--s3); margin: var(--s6) 0; }
+  a.pulsante { display: inline-block; box-sizing: border-box; min-height: 3rem; padding: 0.7em 1.25em; border-radius: var(--raggio-md);
+               background: var(--primario); color: var(--su-primario); font-weight: 700; text-decoration: none; }
+  a.pulsante:hover { background: var(--primario-hover); }
+  li { margin-bottom: var(--s2); }
 </style>
 </head>
 <body>
@@ -29,7 +62,7 @@
 
 <p>Postino è un client di posta che riunisce in un unico posto i tuoi Account email.</p>
 
-<p>Versione __VERSION__</p>
+<p class="versione">Versione __VERSION__</p>
 
 <p class="pulsanti">
   <a class="pulsante" href="macos/latest/Postino.dmg" download>Scarica per macOS (DMG)</a>

@@ -291,6 +291,21 @@ void main() {
     await _afterWindow(tester);
   });
 
+  _onMac('a message over the SMTP server\'s SIZE, refused by the Provider, is listed as «Invio non riuscito»', (
+    tester,
+  ) async {
+    await _start(tester);
+    // What the IMAP adapter answers when the text exceeds the SIZE of the EHLO (#166): nothing was sent.
+    gmail.sendFailure = const SizeLimitFailure(1024);
+    await _write(tester);
+    await _send(tester);
+    await _afterWindow(tester);
+    expect(gmail.sendCalls, 1);
+    expect(gmail.sent, isEmpty);
+    await _openSent(tester);
+    expect(_inTile('Invio non riuscito'), findsOneWidget);
+  });
+
   _onMac('Invia from a composer opened under Account A, sending as B, still closes it', (tester) async {
     await _start(tester);
     await h.addAccount('b2');
@@ -429,6 +444,8 @@ class _TooBig(
 
   @override
   Future<void> syncAll() => real.syncAll();
+  @override
+  Future<void> refresh() => real.refresh();
   @override
   Future<Result<void>> openConversation(String a, String c) => real.openConversation(a, c);
   @override

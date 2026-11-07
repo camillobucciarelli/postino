@@ -27,6 +27,14 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
               .get())
           .isNotEmpty;
 
+  /// The Message-ID (RFC 5322) of the message with Provider id [id]; null if the Account has no such message.
+  Future<String?> rfcMessageId(String accountId, String id) async =>
+      (await (select(messages)
+                ..where((t) => t.accountId.equals(accountId) & t.id.equals(id))
+                ..limit(1))
+              .getSingleOrNull())
+          ?.messageId;
+
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   /// The batch's cursor is saved in the same transaction, so data and cursor never disagree;
   /// [saveCursor] false stores a partial page of the initial sync, whose cursor must wait for the end.

@@ -355,12 +355,15 @@ class const ForwardedAttachment(
 
 const _alphanumerics = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-/// A fresh RFC 5322 Message-ID: `<24 random alphanumerics@domain of [address]>` (`postino.local` without one).
+/// A fresh RFC 5322 Message-ID: `<24 random alphanumerics@domain of [address]>` (`postino.local` without one, or
+/// with a domain that is not ASCII).
 String newMessageId(String address) {
   final random = Random.secure();
   final local = [for (var i = 0; i < 24; i++) _alphanumerics[random.nextInt(_alphanumerics.length)]].join();
   final at = address.lastIndexOf('@');
-  final domain = at < 0 ? 'postino.local' : address.substring(at + 1);
+  final domain = at < 0 ? '' : address.substring(at + 1);
+  // ASCII only (RFC 5322 msg-id): an IMAP SEARCH must find it again; an IDN domain is not punycoded here.
+  if (!RegExp(r'^[\x21-\x7e]+$').hasMatch(domain)) return '<$local@postino.local>';
   return '<$local@$domain>';
 }
 

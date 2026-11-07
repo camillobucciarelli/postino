@@ -69,11 +69,9 @@ class const PostinoMessageTile({
   Widget build(BuildContext context) {
     final c = context.pc;
     final d = context.density;
-    // At large text sizes the time moves under the sender and the subject may wrap.
     final scale = MediaQuery.textScalerOf(context).scale(1);
+    // Above 150% sender and subject wrap without ellipsis (#53) and the time moves under the sender; below, one line.
     final large = scale > 1.5;
-    // Enlarged text wraps instead of being cut: no line limit, no ellipsis.
-    final wrap = scale > 1;
     final fg = unread ? c.listItemFgUnread : c.listItemFgRead;
     final timeText = Text(
       time,
@@ -143,8 +141,8 @@ class const PostinoMessageTile({
                                   Expanded(
                                     child: Text(
                                       sender,
-                                      maxLines: wrap ? null : 1,
-                                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                      maxLines: large ? null : 1,
+                                      overflow: large ? TextOverflow.visible : TextOverflow.ellipsis,
                                       style: (unread ? PostinoText.sender : PostinoText.senderRead).copyWith(color: fg),
                                     ),
                                   ),
@@ -174,8 +172,8 @@ class const PostinoMessageTile({
                                   Expanded(
                                     child: Text(
                                       subject,
-                                      maxLines: wrap ? null : 1,
-                                      overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                      maxLines: large ? null : 1,
+                                      overflow: large ? TextOverflow.visible : TextOverflow.ellipsis,
                                       style: (unread ? PostinoText.subject : PostinoText.subjectRead).copyWith(
                                         color: fg,
                                       ),
@@ -200,8 +198,9 @@ class const PostinoMessageTile({
                               if (d.previewLines > 0)
                                 Text(
                                   preview,
-                                  maxLines: wrap ? null : d.previewLines,
-                                  overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                                  // The preview is an excerpt: capped even when large.
+                                  maxLines: large ? d.previewLines * 2 : d.previewLines,
+                                  overflow: TextOverflow.ellipsis,
                                   style: PostinoText.preview.copyWith(color: c.listItemFgRead),
                                 ),
                               if (labels.isNotEmpty)

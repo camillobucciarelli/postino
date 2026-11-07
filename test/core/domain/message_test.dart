@@ -14,6 +14,10 @@ void main() {
     expect(newMessageId('ada'), endsWith('@postino.local>'));
   });
 
+  test('newMessageId falls back to postino.local with a domain that is not ASCII', () {
+    expect(newMessageId('info@müller.de'), matches(r'^<[A-Za-z0-9]{24}@postino\.local>$'));
+  });
+
   test('newMessageId never repeats', () {
     final ids = {for (var i = 0; i < 1000; i++) newMessageId('a@b.it')};
     expect(ids, hasLength(1000));

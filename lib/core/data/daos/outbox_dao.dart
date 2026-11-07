@@ -69,6 +69,10 @@ class OutboxDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
           .write(OutboxCompanion(claimedUntil: Value(untilMs), attempted: const Value(true))) >
       0;
 
+  /// SMTP accepted the message at [nowMs] (#175).
+  Future<void> markSubmitted(String accountId, String messageId, int nowMs) =>
+      (update(outbox)..where((t) => _row(t, accountId, messageId))).write(OutboxCompanion(smtpSentAt: Value(nowMs)));
+
   /// Gives the row back after a send that failed but may be retried.
   Future<void> unclaim(String accountId, String messageId) => (update(
     outbox,

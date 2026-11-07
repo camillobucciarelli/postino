@@ -137,7 +137,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -231,7 +231,15 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         await m.addColumn(drafts, drafts.expected);
         await m.addColumn(drafts, drafts.conflict);
       }
-      if (from < 20) {
+      // Before v18 the queue was just created above, with it; a database taken back to v18 or v19 may hold it already.
+      if (from >= 18 && from < 20 && !await _hasColumn('intents', 'rfc_message_id')) {
+        await m.addColumn(intents, intents.rfcMessageId);
+      }
+      // Before v13 the outbox was just created above, with it.
+      if (from >= 13 && from < 21 && !await _hasColumn('outbox', 'smtp_sent_at')) {
+        await m.addColumn(outbox, outbox.smtpSentAt);
+      }
+      if (from < 22) {
         // The Accounts already here join the synced voci (ADR 0016) as the voci written before the sync did:
         // to upload, but older than any copy elsewhere (updatedAt 0), so they never overwrite a synced one.
         for (final r in await select(accounts).get()) {
@@ -269,6 +277,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
     },
   );
+
+  Future<bool> _hasColumn(String table, String column) async =>
+      (await customSelect('PRAGMA table_info($table)').get()).any((r) => r.read<String>('name') == column);
 
   /// v18: one queue of Azioni with the expected value, and the Conflitti (#144). The read intents (v5) and the
   /// Etichette ones (v14) move into it; their value at enqueue was not kept, so the expected one is the opposite of

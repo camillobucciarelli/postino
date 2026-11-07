@@ -2589,6 +2589,17 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _rfcMessageIdMeta = const VerificationMeta(
+    'rfcMessageId',
+  );
+  @override
+  late final GeneratedColumn<String> rfcMessageId = GeneratedColumn<String>(
+    'rfc_message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -2599,6 +2610,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     heldUntil,
     previous,
     synced,
+    rfcMessageId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2668,6 +2680,15 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
       );
     }
+    if (data.containsKey('rfc_message_id')) {
+      context.handle(
+        _rfcMessageIdMeta,
+        rfcMessageId.isAcceptableOrUnknown(
+          data['rfc_message_id']!,
+          _rfcMessageIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2709,6 +2730,10 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         DriftSqlType.string,
         data['${effectivePrefix}synced'],
       ),
+      rfcMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rfc_message_id'],
+      ),
     );
   }
 
@@ -2741,6 +2766,11 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
   /// voce back (Annulla, a refusal) shows it instead of the stale [expected]; the replay still expects [expected],
   /// so a change elsewhere is a Conflitto (ADR 0008).
   final String? synced;
+
+  /// The Message-ID (RFC 5322) of the message when the voce was queued, v20: an adapter whose Provider ids change
+  /// when a message moves (IMAP) finds it again by it, though a sync has removed the old id from here. Null for the
+  /// voci queued before, and for a message the Account no longer had.
+  final String? rfcMessageId;
   const IntentRow({
     required this.accountId,
     required this.messageId,
@@ -2750,6 +2780,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     this.heldUntil,
     this.previous,
     this.synced,
+    this.rfcMessageId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2769,6 +2800,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     }
     if (!nullToAbsent || synced != null) {
       map['synced'] = Variable<String>(synced);
+    }
+    if (!nullToAbsent || rfcMessageId != null) {
+      map['rfc_message_id'] = Variable<String>(rfcMessageId);
     }
     return map;
   }
@@ -2791,6 +2825,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       synced: synced == null && nullToAbsent
           ? const Value.absent()
           : Value(synced),
+      rfcMessageId: rfcMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rfcMessageId),
     );
   }
 
@@ -2808,6 +2845,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       heldUntil: serializer.fromJson<int?>(json['heldUntil']),
       previous: serializer.fromJson<String?>(json['previous']),
       synced: serializer.fromJson<String?>(json['synced']),
+      rfcMessageId: serializer.fromJson<String?>(json['rfcMessageId']),
     );
   }
   @override
@@ -2822,6 +2860,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       'heldUntil': serializer.toJson<int?>(heldUntil),
       'previous': serializer.toJson<String?>(previous),
       'synced': serializer.toJson<String?>(synced),
+      'rfcMessageId': serializer.toJson<String?>(rfcMessageId),
     };
   }
 
@@ -2834,6 +2873,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     Value<int?> heldUntil = const Value.absent(),
     Value<String?> previous = const Value.absent(),
     Value<String?> synced = const Value.absent(),
+    Value<String?> rfcMessageId = const Value.absent(),
   }) => IntentRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -2843,6 +2883,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     heldUntil: heldUntil.present ? heldUntil.value : this.heldUntil,
     previous: previous.present ? previous.value : this.previous,
     synced: synced.present ? synced.value : this.synced,
+    rfcMessageId: rfcMessageId.present ? rfcMessageId.value : this.rfcMessageId,
   );
   IntentRow copyWithCompanion(IntentsCompanion data) {
     return IntentRow(
@@ -2854,6 +2895,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       heldUntil: data.heldUntil.present ? data.heldUntil.value : this.heldUntil,
       previous: data.previous.present ? data.previous.value : this.previous,
       synced: data.synced.present ? data.synced.value : this.synced,
+      rfcMessageId: data.rfcMessageId.present
+          ? data.rfcMessageId.value
+          : this.rfcMessageId,
     );
   }
 
@@ -2867,7 +2911,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           ..write('expected: $expected, ')
           ..write('heldUntil: $heldUntil, ')
           ..write('previous: $previous, ')
-          ..write('synced: $synced')
+          ..write('synced: $synced, ')
+          ..write('rfcMessageId: $rfcMessageId')
           ..write(')'))
         .toString();
   }
@@ -2882,6 +2927,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     heldUntil,
     previous,
     synced,
+    rfcMessageId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2894,7 +2940,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           other.expected == this.expected &&
           other.heldUntil == this.heldUntil &&
           other.previous == this.previous &&
-          other.synced == this.synced);
+          other.synced == this.synced &&
+          other.rfcMessageId == this.rfcMessageId);
 }
 
 class IntentsCompanion extends UpdateCompanion<IntentRow> {
@@ -2906,6 +2953,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   final Value<int?> heldUntil;
   final Value<String?> previous;
   final Value<String?> synced;
+  final Value<String?> rfcMessageId;
   final Value<int> rowid;
   const IntentsCompanion({
     this.accountId = const Value.absent(),
@@ -2916,6 +2964,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
     this.synced = const Value.absent(),
+    this.rfcMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IntentsCompanion.insert({
@@ -2927,6 +2976,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
     this.synced = const Value.absent(),
+    this.rfcMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -2941,6 +2991,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Expression<int>? heldUntil,
     Expression<String>? previous,
     Expression<String>? synced,
+    Expression<String>? rfcMessageId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2952,6 +3003,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       if (heldUntil != null) 'held_until': heldUntil,
       if (previous != null) 'previous': previous,
       if (synced != null) 'synced': synced,
+      if (rfcMessageId != null) 'rfc_message_id': rfcMessageId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2965,6 +3017,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Value<int?>? heldUntil,
     Value<String?>? previous,
     Value<String?>? synced,
+    Value<String?>? rfcMessageId,
     Value<int>? rowid,
   }) {
     return IntentsCompanion(
@@ -2976,6 +3029,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       heldUntil: heldUntil ?? this.heldUntil,
       previous: previous ?? this.previous,
       synced: synced ?? this.synced,
+      rfcMessageId: rfcMessageId ?? this.rfcMessageId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3007,6 +3061,9 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     if (synced.present) {
       map['synced'] = Variable<String>(synced.value);
     }
+    if (rfcMessageId.present) {
+      map['rfc_message_id'] = Variable<String>(rfcMessageId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3024,6 +3081,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
           ..write('heldUntil: $heldUntil, ')
           ..write('previous: $previous, ')
           ..write('synced: $synced, ')
+          ..write('rfcMessageId: $rfcMessageId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4931,6 +4989,17 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _smtpSentAtMeta = const VerificationMeta(
+    'smtpSentAt',
+  );
+  @override
+  late final GeneratedColumn<int> smtpSentAt = GeneratedColumn<int>(
+    'smtp_sent_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -4947,6 +5016,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
     claimedUntil,
     failed,
     attempted,
+    smtpSentAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5067,6 +5137,15 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         attempted.isAcceptableOrUnknown(data['attempted']!, _attemptedMeta),
       );
     }
+    if (data.containsKey('smtp_sent_at')) {
+      context.handle(
+        _smtpSentAtMeta,
+        smtpSentAt.isAcceptableOrUnknown(
+          data['smtp_sent_at']!,
+          _smtpSentAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -5132,6 +5211,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}attempted'],
       )!,
+      smtpSentAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}smtp_sent_at'],
+      ),
     );
   }
 
@@ -5177,6 +5260,10 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
   /// A send of this row reached the Provider's door (set when a sender claims it): its delivery may be uncertain, so a
   /// cancel reopens the Bozza under a new Message-ID.
   final bool attempted;
+
+  /// Milliseconds since epoch, UTC: SMTP accepted the message (#175) and only the copy in Inviati is left to do, so a
+  /// replay by any isolate, or after a restart, never submits it again. Null until then.
+  final int? smtpSentAt;
   const OutboxRow({
     required this.accountId,
     required this.messageId,
@@ -5192,6 +5279,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     this.claimedUntil,
     required this.failed,
     required this.attempted,
+    this.smtpSentAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5214,6 +5302,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     }
     map['failed'] = Variable<bool>(failed);
     map['attempted'] = Variable<bool>(attempted);
+    if (!nullToAbsent || smtpSentAt != null) {
+      map['smtp_sent_at'] = Variable<int>(smtpSentAt);
+    }
     return map;
   }
 
@@ -5237,6 +5328,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           : Value(claimedUntil),
       failed: Value(failed),
       attempted: Value(attempted),
+      smtpSentAt: smtpSentAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(smtpSentAt),
     );
   }
 
@@ -5260,6 +5354,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       claimedUntil: serializer.fromJson<int?>(json['claimedUntil']),
       failed: serializer.fromJson<bool>(json['failed']),
       attempted: serializer.fromJson<bool>(json['attempted']),
+      smtpSentAt: serializer.fromJson<int?>(json['smtpSentAt']),
     );
   }
   @override
@@ -5280,6 +5375,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
       'claimedUntil': serializer.toJson<int?>(claimedUntil),
       'failed': serializer.toJson<bool>(failed),
       'attempted': serializer.toJson<bool>(attempted),
+      'smtpSentAt': serializer.toJson<int?>(smtpSentAt),
     };
   }
 
@@ -5298,6 +5394,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     Value<int?> claimedUntil = const Value.absent(),
     bool? failed,
     bool? attempted,
+    Value<int?> smtpSentAt = const Value.absent(),
   }) => OutboxRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -5315,6 +5412,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     claimedUntil: claimedUntil.present ? claimedUntil.value : this.claimedUntil,
     failed: failed ?? this.failed,
     attempted: attempted ?? this.attempted,
+    smtpSentAt: smtpSentAt.present ? smtpSentAt.value : this.smtpSentAt,
   );
   OutboxRow copyWithCompanion(OutboxCompanion data) {
     return OutboxRow(
@@ -5338,6 +5436,9 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           : this.claimedUntil,
       failed: data.failed.present ? data.failed.value : this.failed,
       attempted: data.attempted.present ? data.attempted.value : this.attempted,
+      smtpSentAt: data.smtpSentAt.present
+          ? data.smtpSentAt.value
+          : this.smtpSentAt,
     );
   }
 
@@ -5357,7 +5458,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           ..write('sendAfter: $sendAfter, ')
           ..write('claimedUntil: $claimedUntil, ')
           ..write('failed: $failed, ')
-          ..write('attempted: $attempted')
+          ..write('attempted: $attempted, ')
+          ..write('smtpSentAt: $smtpSentAt')
           ..write(')'))
         .toString();
   }
@@ -5378,6 +5480,7 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
     claimedUntil,
     failed,
     attempted,
+    smtpSentAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -5396,7 +5499,8 @@ class OutboxRow extends DataClass implements Insertable<OutboxRow> {
           other.sendAfter == this.sendAfter &&
           other.claimedUntil == this.claimedUntil &&
           other.failed == this.failed &&
-          other.attempted == this.attempted);
+          other.attempted == this.attempted &&
+          other.smtpSentAt == this.smtpSentAt);
 }
 
 class OutboxCompanion extends UpdateCompanion<OutboxRow> {
@@ -5414,6 +5518,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
   final Value<int?> claimedUntil;
   final Value<bool> failed;
   final Value<bool> attempted;
+  final Value<int?> smtpSentAt;
   final Value<int> rowid;
   const OutboxCompanion({
     this.accountId = const Value.absent(),
@@ -5430,6 +5535,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
     this.attempted = const Value.absent(),
+    this.smtpSentAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OutboxCompanion.insert({
@@ -5447,6 +5553,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     this.claimedUntil = const Value.absent(),
     this.failed = const Value.absent(),
     this.attempted = const Value.absent(),
+    this.smtpSentAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -5473,6 +5580,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Expression<int>? claimedUntil,
     Expression<bool>? failed,
     Expression<bool>? attempted,
+    Expression<int>? smtpSentAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5490,6 +5598,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       if (claimedUntil != null) 'claimed_until': claimedUntil,
       if (failed != null) 'failed': failed,
       if (attempted != null) 'attempted': attempted,
+      if (smtpSentAt != null) 'smtp_sent_at': smtpSentAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5509,6 +5618,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     Value<int?>? claimedUntil,
     Value<bool>? failed,
     Value<bool>? attempted,
+    Value<int?>? smtpSentAt,
     Value<int>? rowid,
   }) {
     return OutboxCompanion(
@@ -5526,6 +5636,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
       claimedUntil: claimedUntil ?? this.claimedUntil,
       failed: failed ?? this.failed,
       attempted: attempted ?? this.attempted,
+      smtpSentAt: smtpSentAt ?? this.smtpSentAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5575,6 +5686,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
     if (attempted.present) {
       map['attempted'] = Variable<bool>(attempted.value);
     }
+    if (smtpSentAt.present) {
+      map['smtp_sent_at'] = Variable<int>(smtpSentAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5598,6 +5712,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxRow> {
           ..write('claimedUntil: $claimedUntil, ')
           ..write('failed: $failed, ')
           ..write('attempted: $attempted, ')
+          ..write('smtpSentAt: $smtpSentAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7799,6 +7914,7 @@ typedef $$IntentsTableCreateCompanionBuilder = IntentsCompanion Function({
   Value<int?> heldUntil,
   Value<String?> previous,
   Value<String?> synced,
+  Value<String?> rfcMessageId,
   Value<int> rowid,
 });
 typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
@@ -7810,6 +7926,7 @@ typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
   Value<int?> heldUntil,
   Value<String?> previous,
   Value<String?> synced,
+  Value<String?> rfcMessageId,
   Value<int> rowid,
 });
 
@@ -7859,6 +7976,11 @@ class $$IntentsTableFilterComposer
 
   ColumnFilters<String> get synced => $composableBuilder(
     column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7911,6 +8033,11 @@ class $$IntentsTableOrderingComposer
     column: $table.synced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$IntentsTableAnnotationComposer
@@ -7945,6 +8072,11 @@ class $$IntentsTableAnnotationComposer
 
   GeneratedColumn<String> get synced =>
       $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
+    builder: (column) => column,
+  );
 }
 
 class $$IntentsTableTableManager
@@ -7986,6 +8118,7 @@ class $$IntentsTableTableManager
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
                 Value<String?> synced = const Value.absent(),
+                Value<String?> rfcMessageId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion(
                 accountId: accountId,
@@ -7996,6 +8129,7 @@ class $$IntentsTableTableManager
                 heldUntil: heldUntil,
                 previous: previous,
                 synced: synced,
+                rfcMessageId: rfcMessageId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8008,6 +8142,7 @@ class $$IntentsTableTableManager
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
                 Value<String?> synced = const Value.absent(),
+                Value<String?> rfcMessageId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion.insert(
                 accountId: accountId,
@@ -8018,6 +8153,7 @@ class $$IntentsTableTableManager
                 heldUntil: heldUntil,
                 previous: previous,
                 synced: synced,
+                rfcMessageId: rfcMessageId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9010,6 +9146,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<int?> claimedUntil,
   Value<bool> failed,
   Value<bool> attempted,
+  Value<int?> smtpSentAt,
   Value<int> rowid,
 });
 typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
@@ -9027,6 +9164,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<int?> claimedUntil,
   Value<bool> failed,
   Value<bool> attempted,
+  Value<int?> smtpSentAt,
   Value<int> rowid,
 });
 
@@ -9106,6 +9244,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<bool> get attempted => $composableBuilder(
     column: $table.attempted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get smtpSentAt => $composableBuilder(
+    column: $table.smtpSentAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9188,6 +9331,11 @@ class $$OutboxTableOrderingComposer
     column: $table.attempted,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get smtpSentAt => $composableBuilder(
+    column: $table.smtpSentAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OutboxTableAnnotationComposer
@@ -9246,6 +9394,11 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<bool> get attempted =>
       $composableBuilder(column: $table.attempted, builder: (column) => column);
+
+  GeneratedColumn<int> get smtpSentAt => $composableBuilder(
+    column: $table.smtpSentAt,
+    builder: (column) => column,
+  );
 }
 
 class $$OutboxTableTableManager
@@ -9293,6 +9446,7 @@ class $$OutboxTableTableManager
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
                 Value<bool> attempted = const Value.absent(),
+                Value<int?> smtpSentAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion(
                 accountId: accountId,
@@ -9309,6 +9463,7 @@ class $$OutboxTableTableManager
                 claimedUntil: claimedUntil,
                 failed: failed,
                 attempted: attempted,
+                smtpSentAt: smtpSentAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9327,6 +9482,7 @@ class $$OutboxTableTableManager
                 Value<int?> claimedUntil = const Value.absent(),
                 Value<bool> failed = const Value.absent(),
                 Value<bool> attempted = const Value.absent(),
+                Value<int?> smtpSentAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion.insert(
                 accountId: accountId,
@@ -9343,6 +9499,7 @@ class $$OutboxTableTableManager
                 claimedUntil: claimedUntil,
                 failed: failed,
                 attempted: attempted,
+                smtpSentAt: smtpSentAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

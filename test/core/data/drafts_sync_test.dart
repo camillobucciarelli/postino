@@ -234,6 +234,15 @@ void main() {
     },
   );
 
+  test('a save for an Account removed meanwhile keeps nothing and sends nothing', () async {
+    await GetIt.I<PostinoDatabase>().accountsDao.remove('a');
+    await engine.saveDraft('a', _draft(id));
+    h.clock.advance(draftDebounce * 2);
+    await pumpEventQueue();
+    expect(a.draftCalls, isEmpty);
+    expect(await row(), isNull);
+  });
+
   test('openDraft of a plain-text Bozza keeps its line breaks and paragraphs, escaped', () async {
     a.deliverDraft(_draft('<y@example.com>'));
     a.bodies['d-1'] = const MessageBody('Prima\nSeconda\n\nTerza <b> & co', BodyKind.testo);

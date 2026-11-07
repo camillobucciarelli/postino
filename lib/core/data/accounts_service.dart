@@ -92,17 +92,18 @@ class AccountsService(
     // The user closed the form while the servers answered: nothing is written.
     if (cancelled) return const Err(CancelledFailure());
     final account = await _lock.run(() async {
+      // Closed while waiting for the lock too: still nothing written.
+      if (cancelled) return null;
       await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
       return _save(id, normalized, provider.kind);
     });
+    if (account == null) return const Err(CancelledFailure());
     unawaited(_sync.syncAll());
     return Ok(account);
   }
 
-  /// True when another Account than [id] has [address]: the same mailbox (a Google Workspace one, say) through
-  /// another Provider would be a second Account.
   Future<bool> _connectedElsewhere(String id, String address) async =>
-      (await _store.accounts()).any((a) => a.address == address && a.id != id);
+      connectedElsewhere(await _store.accounts(), id, address);
 
   /// The Account here, attivo, and its synced voce (ADR 0016), in one transaction: the AccountsSettingsMirror sees
   /// both or neither. A known Account (da ricollegare, maybe from another device) keeps color and position, and its

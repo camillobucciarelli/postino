@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/account_settings_json.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -67,7 +68,7 @@ void main() {
     }
   });
 
-  group('the synced voce (ADR 0016), as connectGmail writes it', () {
+  group('the synced voce (ADR 0016), as connectWithPassword writes it', () {
     Future<PostinoSettingRow?> voce(String id) => getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/$id');
 
     test('iCloud, with the sync off: before the sync, without servers nor password', () async {
@@ -158,6 +159,23 @@ void main() {
     expect(_failure(r), isA<AlreadyConnectedFailure>());
     expect(h.keychain.values, keychainBefore);
     expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com']);
+  });
+
+  test('cancelled while waiting for the Accounts lock, nothing is written', () async {
+    final busy = Completer<void>();
+    final held = getIt<AccountsLock>().run(() => busy.future);
+    final cancel = Completer<void>();
+    final pending = accounts.connectWithPassword('ada@icloud.com', 'app-password-1', cancel: cancel.future);
+    await pumpEventQueue();
+
+    cancel.complete();
+    await pumpEventQueue();
+    busy.complete();
+    await held;
+
+    expect(_failure(await pending), isA<CancelledFailure>());
+    expect(h.keychain.values, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
   test('cancelled while the servers answer, nothing is written', () async {

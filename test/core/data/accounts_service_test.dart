@@ -165,6 +165,8 @@ void main() {
     await pumpEventQueue();
     gate.complete();
     await removal;
+    // The removal forgot the Account's adapter: the fake again, before the reconnection's sync asks for it.
+    h.providerFor('gmail:ada@gmail.com');
     await reconnection;
 
     final accounts = await getIt<MailStore>().accounts();

@@ -276,6 +276,28 @@ void main() {
     });
   });
 
+  test('a voce for a mailbox already here through another Provider adds no second Account', () async {
+    const gmail = Account(
+      id: 'gmail:ada@acme.com',
+      address: 'ada@acme.com',
+      provider: ProviderKind.gmail,
+      color: 0,
+      position: 0,
+    );
+    await db.accountsDao.upsert(gmail);
+    await put(
+      const Account(
+        id: 'imap:ada@acme.com',
+        address: 'ada@acme.com',
+        provider: ProviderKind.imap,
+        color: 1,
+        position: 1,
+      ),
+    );
+    await mirror.reconcile();
+    expect(await accounts(), [gmail]);
+  });
+
   test('an Account here without a voce, or with a malformed one, is left alone', () async {
     await db.accountsDao.upsert(_ada);
     await db.accountsDao.upsert(_bob);

@@ -13,6 +13,7 @@ import 'account_settings_json.dart';
 import 'accounts_lock.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
+import 'sync/provider_factory.dart';
 
 /// Keeps the `accounts` table a mirror of the voci `accounts/<accountId>` of the Impostazioni di Postino
 /// (ADR 0016), the source of truth for address, Provider, color and position; the status stays local.
@@ -123,6 +124,7 @@ class AccountsSettingsMirror(
           // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
           await deleteCredentials(_keychain, id);
           await _db.accountsDao.remove(id);
+          await releaseProvider(id);
           // The sync ran on it: off, instead of failing in silence on an Account without credentials.
           if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
           continue;
@@ -130,7 +132,10 @@ class AccountsSettingsMirror(
         final synced = decodeAccountSettings(id, row.value);
         if (synced == null) continue;
         if (local == null) {
+          // The same mailbox is here through another Provider: this one stays out until one of the two is removed.
+          if (connectedElsewhere(here.values, id, synced.address)) continue;
           await _db.accountsDao.upsert(synced);
+          here[id] = synced;
         } else if (!sameAccountSettings(local, synced)) {
           await _db.accountsDao.updateSettings(synced);
         }

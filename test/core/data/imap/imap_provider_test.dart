@@ -141,6 +141,18 @@ void main() {
     expect(byKey['<c@example.com>'], '<c@example.com>');
   });
 
+  test('without Message-IDs, a reply arriving later still joins the original by subject', () async {
+    String raw(String subject, String date) =>
+        'From: bob@example.com\r\nTo: ${h.address}\r\nSubject: $subject\r\nDate: $date\r\n\r\nOk\r\n';
+    await h.append('INBOX', raw('Gita', 'Thu, 01 Jan 2026 10:00:00 +0000'));
+    final first = okValue(await h.provider.initialSync());
+    final original = first.messages.single;
+    expect((original.messageId, original.conversationId), ('', original.id));
+    await h.append('INBOX', raw('Re: Gita', 'Fri, 02 Jan 2026 10:00:00 +0000'));
+    final next = okValue(await h.provider.incrementalSync(first.cursor));
+    expect(next.messages.single.conversationId, original.id);
+  });
+
   test('a reply joins an original spaced otherwise', () async {
     await h.deliver(msg('a', subject: 'Project  update', from: 'bob@example.com', to: [h.address]));
     final first = okValue(await h.provider.initialSync());

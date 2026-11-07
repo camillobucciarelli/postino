@@ -39,7 +39,7 @@ class ImapLookup(final ImapSession _session) {
     List<ThreadInput> messages,
     Iterable<ThreadInput> known,
   ) async {
-    final ids = {for (final k in known) k.message.messageId};
+    final ids = {for (final k in known) _identity(k)};
     final searched = <String>{};
     final out = <ThreadInput>[];
     var pending = messages;
@@ -56,7 +56,7 @@ class ImapLookup(final ImapSession _session) {
       }
       pending = [
         for (final t in found)
-          if (ids.add(t.message.messageId)) t,
+          if (ids.add(_identity(t))) t,
       ];
       out.addAll(pending);
     }
@@ -113,6 +113,10 @@ String? _searchWord(String subject) {
     ..sort((a, b) => b.length - a.length);
   return words.firstOrNull;
 }
+
+/// What tells two messages apart here: the Message-ID, else (none in the header) the Provider id, as
+/// [threadMessages] does.
+String _identity(ThreadInput t) => t.message.messageId.isEmpty ? t.message.id : t.message.messageId;
 
 bool _ascii(String s) => RegExp(r'^[\x20-\x7e]+$').hasMatch(s);
 

@@ -27,6 +27,8 @@ typedef PartInfo = ({
   String? charset,
 });
 
+// ponytail: a multipart that is itself an attachment is descended (enough_mail does not read the disposition of a
+// multipart from a BODYSTRUCTURE); its text could pass for the message's. Rare; skip it by name if it shows up.
 /// The leaves of a BODYSTRUCTURE, numbered as IMAP does; a nested message (`message/rfc822`) is a leaf, not descended.
 List<PartInfo> structureParts(BodyPart root) {
   final out = <PartInfo>[];

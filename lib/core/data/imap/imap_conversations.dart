@@ -14,30 +14,42 @@ import 'imap_threads.dart';
 /// sync window have messages the database may not hold.
 class ImapConversations(final ImapSession _session, final String _address) {
   /// Every message of [folders] that is [conversationId] (a Message-ID, the root's: `imap_threads.dart`) or cites it
-  /// in `References` or `In-Reply-To`, threaded as the syncs do and with the preview the list shows. [NotFoundFailure]
-  /// when there is none.
-  // ponytail: a reply threaded by its subject alone (no headers citing the root) is not found; the sync has it.
+  /// in `References` or `In-Reply-To`, and the replies to those in turn (a chain with only `In-Reply-To`), up to
+  /// [maxThreadDepth] levels; threaded as the syncs do, with the preview the list shows. [NotFoundFailure] when there
+  /// is none.
+  // ponytail: a reply threaded by its subject alone (no header citing the Conversazione) is not found; the sync has it.
   Future<List<Message>> fetch(ImapClient c, List<ImapFolder> folders, String conversationId) async {
     if (!_ascii(conversationId)) throw const ImapFailed(NotFoundFailure());
     final q = _quoted(conversationId);
-    final criteria = 'OR HEADER Message-ID $q OR HEADER References $q HEADER In-Reply-To $q';
-    final found = <ImapParsed>[];
+    final found = <String, ImapParsed>{};
     final snippets = <String, String>{};
-    for (final f in folders) {
-      try {
-        final box = await selectFolder(c, f.path, condstore: _session.condstore);
-        final parsed = await fetchMessages(c, f, box.uidValidity ?? 0, await search(c, criteria));
-        for (final p in parsed) {
-          snippets[p.message.id] = await _snippet(c, p);
+    var criteria = ['OR HEADER Message-ID $q OR HEADER References $q HEADER In-Reply-To $q'];
+    for (var level = 0; level < maxThreadDepth && criteria.isNotEmpty; level++) {
+      final fresh = <ImapParsed>[];
+      for (final f in folders) {
+        try {
+          final box = await selectFolder(c, f.path, condstore: _session.condstore);
+          final uids = {for (final k in criteria) ...await search(c, k)};
+          final parsed = await fetchMessages(c, f, box.uidValidity ?? 0, uids.toList());
+          for (final p in parsed) {
+            if (found.containsKey(p.message.id)) continue;
+            found[p.message.id] = p;
+            snippets[p.message.id] = await _snippet(c, p);
+            fresh.add(p);
+          }
+        } on ImapFailed catch (e) {
+          if (e.failure is! NotFoundFailure) rethrow;
+        } on ImapException catch (e) {
+          if (!c.isConnected || e.message == 'timeout') rethrow;
         }
-        found.addAll(parsed);
-      } on ImapFailed catch (e) {
-        if (e.failure is! NotFoundFailure) rethrow;
-      } on ImapException catch (e) {
-        if (!c.isConnected || e.message == 'timeout') rethrow;
       }
+      // The next level: the replies to what this one brought.
+      criteria = [
+        for (final id in {for (final p in fresh) p.message.messageId})
+          if (_ascii(id)) 'HEADER In-Reply-To ${_quoted(id)}',
+      ];
     }
-    final inputs = [for (final p in found) (message: p.message, inReplyTo: p.inReplyTo)];
+    final inputs = [for (final p in found.values) (message: p.message, inReplyTo: p.inReplyTo)];
     final messages = [
       for (final m in threadMessages(inputs, known: inputs, address: _address))
         if (m.conversationId == conversationId) withConversation(m, m.conversationId, snippet: snippets[m.id]),

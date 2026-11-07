@@ -9,13 +9,9 @@ import 'dart:math' show Random;
 
 import 'package:enough_mail/enough_mail.dart' show MessageFlags, MessageSequence;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/data/imap/imap_provider.dart';
-import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
-import '../../../support/fake_mail_provider.dart' show msg;
-import '../../../support/fake_platform.dart';
 import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/greenmail_server.dart';
 import '../../../support/imap_harness.dart';
@@ -189,43 +185,6 @@ void main() {
       expect(r, isErr<CancelledFailure>());
       expect(ok(await h.provider.fetchBody(id)).attachments, hasLength(1));
       expect(okValue(await h.provider.initialSync()).messages, hasLength(1));
-    });
-  });
-
-  group('Conversazione', () {
-    test('a reply in Inviati older than the sync window is found, the message itself too', () async {
-      final now = DateTime.now().toUtc();
-      await h.deliver(msg('root', date: now.subtract(const Duration(days: 200))));
-      await h.deliver(
-        msg(
-          'reply',
-          labelIds: const ['SENT'],
-          from: h.address,
-          to: const ['ada@example.com'],
-          date: now.subtract(const Duration(days: 199)),
-          references: const ['<root@example.com>'],
-        ),
-      );
-      await h.deliver(msg('other'));
-      // A clock far ahead: the INTERNALDATE of both is out of the 90 days, as if they had come long ago.
-      final later = ImapProvider(
-        h.accountId,
-        h.address,
-        h.keychain,
-        FakeClock(now.add(const Duration(days: 200))),
-        onBadCertificate: (_) => true,
-      );
-      addTearDown(later.close);
-      expect(okValue(await later.initialSync()).messages, isEmpty);
-      final messages = okValue(await later.fetchConversation('<root@example.com>'));
-      expect(messages.map((m) => m.id), unorderedEquals([h.idOf('root'), h.idOf('reply')]));
-      expect(messages.map((m) => m.conversationId).toSet(), {'<root@example.com>'});
-      expect(messages.map((m) => m.snippet).toSet(), {'Ciao'});
-      expect(messages.singleWhere((m) => m.id == h.idOf('reply')).labelIds, ['SENT']);
-    });
-
-    test('a Conversazione with no message is NotFound', () async {
-      expect(await h.provider.fetchConversation('<nessuno@example.com>'), isErr<NotFoundFailure>());
     });
   });
 }

@@ -88,7 +88,7 @@ Future<MessageBody> readBody(ImapClient c, int uid) async {
   final text = html ?? textPartOf(parts, 'text/plain');
   if (text == null) return MessageBody('', BodyKind.testo, attachments: attachments);
   final r = await c.uidFetchMessage(uid, '(UID BODY.PEEK[${text.id}])', responseTimeout: ImapSession.timeout);
-  final raw = _raw(r.messages.firstOrNull?.getPart(text.id));
+  final raw = _raw((r.messages.firstOrNull ?? (throw const ImapFailed(NotFoundFailure()))).getPart(text.id));
   return MessageBody(
     MailCodec.decodeAsText(raw, text.encoding, text.charset),
     html == null ? BodyKind.testo : BodyKind.html,

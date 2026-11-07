@@ -45,6 +45,10 @@ class ImapSession(
   /// SPECIAL-USE (RFC 6154): the folder roles come only when LIST asks for them.
   bool specialUse = false;
 
+  /// MOVE (RFC 6851) and UIDPLUS (`UID EXPUNGE`, RFC 4315): without MOVE a move is COPY, `\Deleted` and EXPUNGE.
+  bool move = false;
+  bool uidPlus = false;
+
   /// Runs [body] on the connection, after the commands queued before it. A connection that dropped while unused
   /// is opened again once; any error is thrown as [ImapFailed].
   Future<T> run<T>(Future<T> Function(ImapClient c) body) {
@@ -92,6 +96,8 @@ class ImapSession(
       qresync = capabilities.contains('QRESYNC');
       condstore = qresync || capabilities.contains('CONDSTORE');
       specialUse = capabilities.contains('SPECIAL-USE');
+      move = capabilities.contains('MOVE');
+      uidPlus = capabilities.contains('UIDPLUS');
       if (qresync) await c.enable(['QRESYNC']);
       return _client = c;
     } on Object catch (e) {

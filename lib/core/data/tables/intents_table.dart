@@ -29,6 +29,11 @@ class Intents() extends Table {
   /// so a change elsewhere is a Conflitto (ADR 0008).
   TextColumn get synced => text().nullable()();
 
+  /// The Message-ID (RFC 5322) of the message when the voce was queued, v20: an adapter whose Provider ids change
+  /// when a message moves (IMAP) finds it again by it, though a sync has removed the old id from here. Null for the
+  /// voci queued before, and for a message the Account no longer had.
+  TextColumn get rfcMessageId => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {accountId, messageId, attribute};
 }

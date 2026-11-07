@@ -135,7 +135,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -229,6 +229,10 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         await m.addColumn(drafts, drafts.expected);
         await m.addColumn(drafts, drafts.conflict);
       }
+      // Before v18 the queue was just created above, with it; a database taken back to v18 or v19 may hold it already.
+      if (from >= 18 && from < 20 && !await _hasColumn('intents', 'rfc_message_id')) {
+        await m.addColumn(intents, intents.rfcMessageId);
+      }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
         await m.addColumn(messages, messages.cc);
@@ -251,6 +255,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
     },
   );
+
+  Future<bool> _hasColumn(String table, String column) async =>
+      (await customSelect('PRAGMA table_info($table)').get()).any((r) => r.read<String>('name') == column);
 
   /// v18: one queue of Azioni with the expected value, and the Conflitti (#144). The read intents (v5) and the
   /// Etichette ones (v14) move into it; their value at enqueue was not kept, so the expected one is the opposite of

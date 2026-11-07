@@ -8,7 +8,6 @@ import '../domain/conflict.dart';
 import '../domain/draft_conflict.dart';
 import '../domain/error_log.dart';
 import '../domain/mail_action.dart';
-import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
 import '../domain/message.dart';
 import '../domain/outbox_repository.dart';
@@ -21,6 +20,7 @@ import 'sync/auto_labeler.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
 import 'sync/new_mail_notifier.dart';
+import 'sync/on_demand_fetcher.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
 import 'sync/queue_replay.dart';
@@ -63,6 +63,7 @@ class SyncEngine(
     _gate,
     _queue,
   );
+  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay);
   late final _phase = SyncPhase(_store, _newMail, _labeler, _log, _gate, _replay);
   late final _triggers = SyncTriggers(
     _store,
@@ -129,47 +130,24 @@ class SyncEngine(
       _gate.paused(account.id) ? null : _queue.sync(account.id, (synced) => _phase.run(account, synced));
 
   @override
-  Future<Result<void>> openConversation(String accountId, String conversationId) async {
-    final account = await _gate.find(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    final provider = providerFor(account);
-    // Read here at once, offline too; the Provider hears it from the queue.
-    await _store.markConversationRead(accountId, conversationId);
-    // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
-    // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
-    final fetched = await _queue.run(accountId, () async {
-      // Inviati and messages older than the sync window are not in the database yet.
-      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      final fetched = await _fetchConversation(accountId, provider, conversationId);
-      if (fetched case Ok(:final value)) {
-        await _store.applyPage(accountId, value, const {});
-        await _store.markConversationRead(accountId, conversationId);
-      }
-      // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
-      await _replay.run(accountId, provider);
-      return fetched;
-    });
-    return switch (fetched) {
-      Ok() => const Ok(null),
-      Err(:final failure) => Err(failure),
-    };
-  }
+  Future<Result<void>> openConversation(String accountId, String conversationId) =>
+      _fetcher.openConversation(accountId, conversationId);
 
   @override
-  Future<Result<void>> fetchBody(String accountId, String messageId) async {
-    final account = await _gate.find(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    switch (await providerFor(account).fetchBody(messageId)) {
-      case Ok(:final value):
-        // Removed while the body downloaded (#174): nothing of it is written again.
-        if (_gate.removed(accountId)) return const Err(NotFoundFailure());
-        await _store.saveBody(accountId, messageId, value);
-        return const Ok(null);
-      case Err(:final failure):
-        debugPrint('[sync] $accountId: body $messageId failed, $failure');
-        return Err(failure);
-    }
-  }
+  Future<Result<void>> completeConversation(String accountId, String conversationId) =>
+      _fetcher.completeConversation(accountId, conversationId);
+
+  @override
+  Future<Result<void>> fetchBody(String accountId, String messageId) => _fetcher.fetchBody(accountId, messageId);
+
+  @override
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String accountId,
+    String messageId,
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) => _fetcher.fetchAttachment(accountId, messageId, attachmentId, onProgress: onProgress, cancel: cancel);
 
   @override
   Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
@@ -210,22 +188,6 @@ class SyncEngine(
     final account = await _gate.find(accountId);
     if (account == null) return const Err(NotFoundFailure());
     return _drafts.open(account, messageId, providerFor(account));
-  }
-
-  @override
-  Future<Result<AttachmentBytes>> fetchAttachment(
-    String accountId,
-    String messageId,
-    String attachmentId, {
-    void Function(double done)? onProgress,
-    Future<void>? cancel,
-  }) async {
-    final account = await _gate.find(accountId);
-    if (account == null || _gate.removed(accountId)) return const Err(NotFoundFailure());
-    final fetched = await providerFor(account)
-        .fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
-    // Removed during the download (#174): the cache does not keep it.
-    return _gate.removed(accountId) ? const Err(NotFoundFailure()) : fetched;
   }
 
   @override
@@ -291,23 +253,6 @@ class SyncEngine(
     required bool add,
   }) => act(accountId, messageIds, add ? ApplyLabel(labelId) : RemoveLabel(labelId));
 
-  @override
-  Future<Result<void>> completeConversation(String accountId, String conversationId) async {
-    final account = await _gate.find(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    final provider = providerFor(account);
-    // Unlike openConversation it does not mark the Conversazione read.
-    final fetched = await _queue.run(accountId, () async {
-      final fetched = await _fetchConversation(accountId, provider, conversationId);
-      if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
-      return fetched;
-    });
-    return switch (fetched) {
-      Ok() => const Ok(null),
-      Err(:final failure) => Err(failure),
-    };
-  }
-
   /// Rimozione dell'Account (#174): stops its change signal (IDLE) and Bozze ticker, runs [delete] in its queue
   /// after whatever already runs there, then drops its adapter. A sync queued meanwhile finds no Account and stops.
   Future<void> removeAccount(String accountId, Future<void> Function() delete) async {
@@ -326,18 +271,6 @@ class SyncEngine(
     _gate.removalDone(accountId);
     // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
     unawaited(forgetProvider(accountId));
-  }
-
-  /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
-  /// [NotFoundFailure] once the Account's removal started (#174), also when it starts during the fetch: the caller
-  /// writes nothing then.
-  Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
-    if (_gate.removed(id)) return const Err(NotFoundFailure());
-    if (_gate.paused(id)) return Err(RateLimitFailure(retryAfter: _gate.pausedUntil(id)));
-    final fetched = await provider.fetchConversation(conversationId);
-    if (_gate.removed(id)) return const Err(NotFoundFailure());
-    if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _gate.pause(id, retryAfter);
-    return fetched;
   }
 }
 

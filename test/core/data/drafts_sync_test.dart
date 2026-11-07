@@ -236,7 +236,10 @@ void main() {
 
   test('a save for an Account removed meanwhile keeps nothing and sends nothing', () async {
     await GetIt.I<PostinoDatabase>().accountsDao.remove('a');
+    final tickers = h.clock.everyCalls;
     await engine.saveDraft('a', _draft(id));
+    // No debounce armed for a Bozza that was not kept.
+    expect(h.clock.everyCalls, tickers);
     h.clock.advance(draftDebounce * 2);
     await pumpEventQueue();
     expect(a.draftCalls, isEmpty);

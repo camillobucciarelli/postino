@@ -44,8 +44,12 @@ class FakeClock(var DateTime current) implements Clock {
   @override
   DateTime now() => current;
 
+  /// How many tickers were asked for: a debounce armed, a poll started.
+  var everyCalls = 0;
+
   @override
   Stream<void> every(Duration period) {
+    everyCalls++;
     // ignore: close_sinks, the listener's cancel removes the ticker.
     late final StreamController<void> c;
     final elapsed = [Duration.zero];

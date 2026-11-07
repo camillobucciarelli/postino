@@ -113,6 +113,17 @@ void main() {
         Account(id: '${p.name}:ada@acme.com', address: 'ada@acme.com', provider: p, color: i, position: i),
       );
     }
+    // A third Account, with an address of its own.
+    h.providerFor('gmail:bob@acme.com');
+    await store.addAccount(
+      const Account(
+        id: 'gmail:bob@acme.com',
+        address: 'bob@acme.com',
+        provider: ProviderKind.gmail,
+        color: 2,
+        position: 2,
+      ),
+    );
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     unawaited(Routefly.navigate(routePaths.posta.path));
@@ -126,5 +137,8 @@ void main() {
     // The sections of each Account read apart too.
     expect(find.text('ADA@ACME.COM · GMAIL'), findsOneWidget);
     expect(find.text('ADA@ACME.COM · IMAP'), findsOneWidget);
+    // An address of its own needs no Provider in its section's title.
+    expect(find.text('BOB@ACME.COM'), findsOneWidget);
+    expect(find.textContaining('BOB@ACME.COM ·'), findsNothing);
   });
 }

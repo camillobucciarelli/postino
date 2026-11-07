@@ -36,7 +36,7 @@ void main() {
       final first = okValue(await h.provider.initialSync());
       final movedFrom = h.idOf('b');
       await h.deliver(msg('a', isRead: true));
-      await h.deliver(msg('b', labelIds: const ['Viaggi'], isStarred: true));
+      await h.deliver(msg('b', labelIds: const ['cartella:Viaggi'], isStarred: true));
       await h.removeRemotely('c');
       await h.deliver(msg('d'));
       final next = okValue(await h.provider.incrementalSync(first.cursor));
@@ -46,7 +46,7 @@ void main() {
       // Read elsewhere, it keeps its preview.
       expect(byId[h.idOf('a')]!.snippet, 'Ciao');
       expect(h.idOf('b'), startsWith('Viaggi/'));
-      expect(byId[h.idOf('b')]!.labelIds, ['Viaggi', starredLabelId]);
+      expect(byId[h.idOf('b')]!.labelIds, ['cartella:Viaggi', starredLabelId]);
       expect(
         next.removedMessageIds,
         unorderedEquals([movedFrom, first.messages.singleWhere((m) => m.messageId == '<c@example.com>').id]),
@@ -97,22 +97,22 @@ void main() {
   test('folders are cartelle: Sent by its name, nested ones by their full path', () async {
     await h.provider.createLabel('Viaggi/2026');
     await h.deliver(msg('s', labelIds: const [sentLabelId]));
-    await h.deliver(msg('v', labelIds: const ['Viaggi/2026']));
+    await h.deliver(msg('v', labelIds: const ['cartella:Viaggi/2026']));
     final batch = okValue(await h.provider.initialSync());
     expect(
       batch.labels,
       unorderedEquals([
-        const Label(id: 'Viaggi', name: 'Viaggi', kind: LabelKind.cartella),
-        const Label(id: 'Viaggi/2026', name: 'Viaggi/2026', kind: LabelKind.cartella),
+        const Label(id: 'cartella:Viaggi', name: 'Viaggi', kind: LabelKind.cartella),
+        const Label(id: 'cartella:Viaggi/2026', name: 'Viaggi/2026', kind: LabelKind.cartella),
       ]),
     );
     final byKey = {for (final m in batch.messages) m.messageId: m.labelIds};
     expect(byKey['<s@example.com>'], [sentLabelId]);
-    expect(byKey['<v@example.com>'], ['Viaggi/2026']);
+    expect(byKey['<v@example.com>'], ['cartella:Viaggi/2026']);
   });
 
   test('a message is found by its Message-ID in any synced folder', () async {
-    await h.deliver(msg('v', labelIds: const ['Viaggi']));
+    await h.deliver(msg('v', labelIds: const ['cartella:Viaggi']));
     expect(okValue(await h.provider.findByMessageId('<v@example.com>')), h.idOf('v'));
     expect(okValue(await h.provider.findByMessageId('<nope@example.com>')), isNull);
   });
@@ -139,6 +139,16 @@ void main() {
     expect(byKey['<r@example.com>'], '<root@example.com>');
     expect(byKey['<b@example.com>'], '<a@example.com>');
     expect(byKey['<c@example.com>'], '<c@example.com>');
+  });
+
+  test('a reply joins an original spaced otherwise', () async {
+    await h.deliver(msg('a', subject: 'Project  update', from: 'bob@example.com', to: [h.address]));
+    final first = okValue(await h.provider.initialSync());
+    await h.deliver(
+      msg('b', subject: 'Re: Project update', from: 'bob@example.com', to: [h.address], date: DateTime.utc(2026, 1, 2)),
+    );
+    final next = okValue(await h.provider.incrementalSync(first.cursor));
+    expect(next.messages.single.conversationId, '<a@example.com>');
   });
 
   test('a reply whose subject has no ASCII fragment still joins its Conversazione', () async {

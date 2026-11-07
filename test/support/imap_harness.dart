@@ -2,6 +2,7 @@ import 'dart:convert' show base64Url;
 import 'dart:math' show Random;
 
 import 'package:enough_mail/enough_mail.dart';
+import 'package:postino/core/data/imap/imap_folders.dart' show folderLabelId, folderPathOf;
 import 'package:postino/core/data/imap/imap_message_parser.dart' show imapMessageId;
 import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
@@ -99,7 +100,7 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   String conversationOf(String key) => '<$key@example.com>';
 
   @override
-  String get viaggiId => 'Viaggi';
+  String get viaggiId => folderLabelId('Viaggi');
 
   @override
   LabelKind get createdKind => LabelKind.cartella;
@@ -109,7 +110,7 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
 
   /// The folder [m] goes to: the first of its `labelIds` with one, else the inbox.
   static String _pathOf(domain.Message m) =>
-      m.labelIds.map((l) => _paths[l] ?? (l == 'STARRED' ? null : l)).nonNulls.firstOrNull ?? 'INBOX';
+      m.labelIds.map((l) => _paths[l] ?? folderPathOf(l)).nonNulls.firstOrNull ?? 'INBOX';
 
   /// APPEND in the folder `labelIds` says. A message already in the mailbox (same Message-ID) is moved there and
   /// gets the flags of [m] instead: changed elsewhere.

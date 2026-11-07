@@ -30,18 +30,18 @@ void main() {
         'Posta inviata': sentLabelId,
         'Bozze': draftLabelId,
         'Cestino': trashLabelId,
-        'Spam': 'Spam',
-        'Archivio': 'Archivio',
-        'Viaggi': 'Viaggi',
-        'Viaggi/2026/Estate': 'Viaggi/2026/Estate',
+        'Spam': 'cartella:Spam',
+        'Archivio': 'cartella:Archivio',
+        'Viaggi': 'cartella:Viaggi',
+        'Viaggi/2026/Estate': 'cartella:Viaggi/2026/Estate',
       },
     );
     expect(
       [for (final f in folders) ?f.label],
       [
-        const Label(id: 'Archivio', name: 'Archivio', kind: LabelKind.cartella),
-        const Label(id: 'Viaggi', name: 'Viaggi', kind: LabelKind.cartella),
-        const Label(id: 'Viaggi/2026/Estate', name: 'Viaggi/2026/Estate', kind: LabelKind.cartella),
+        const Label(id: 'cartella:Archivio', name: 'Archivio', kind: LabelKind.cartella),
+        const Label(id: 'cartella:Viaggi', name: 'Viaggi', kind: LabelKind.cartella),
+        const Label(id: 'cartella:Viaggi/2026/Estate', name: 'Viaggi/2026/Estate', kind: LabelKind.cartella),
       ],
     );
     expect(folders.where((f) => !f.synced).map((f) => f.path), ['Spam']);
@@ -63,9 +63,9 @@ void main() {
         'Sent Messages': (sentLabelId, true),
         'Deleted Messages': (trashLabelId, true),
         'Drafts': (draftLabelId, true),
-        'Junk': ('Junk', false),
-        'Archive': ('Archive', true),
-        'Notes': ('Notes', true),
+        'Junk': ('cartella:Junk', false),
+        'Archive': ('cartella:Archive', true),
+        'Notes': ('cartella:Notes', true),
       },
     );
   });
@@ -77,8 +77,29 @@ void main() {
         _box('Inviati', [MailboxFlag.sent]),
         _box('Sent'),
       ])['Sent'],
-      ('Sent', true),
+      ('cartella:Sent', true),
     );
+  });
+
+  test('a folder named like a system label stays apart from it', () {
+    expect(
+      _ids([
+        _box('INBOX'),
+        _box('Inviati', [MailboxFlag.sent]),
+        _box('SENT'),
+        _box('DRAFT'),
+        _box('STARRED'),
+      ]),
+      {
+        'INBOX': (inboxLabelId, true),
+        'Inviati': (sentLabelId, true),
+        'SENT': ('cartella:SENT', true),
+        'DRAFT': ('cartella:DRAFT', true),
+        'STARRED': ('cartella:STARRED', true),
+      },
+    );
+    expect(folderPathOf('cartella:Viaggi/2026'), 'Viaggi/2026');
+    expect(folderPathOf(starredLabelId), isNull);
   });
 
   test('unselectable folders and the virtual ones holding copies are left out', () {

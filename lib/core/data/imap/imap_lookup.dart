@@ -104,11 +104,11 @@ String? _key(ThreadInput t, Set<String> known) {
   };
 }
 
-/// What to SEARCH SUBJECT for a reply: its normalized subject if plain ASCII (a quoted string may hold nothing
-/// else), else its longest ASCII word, filtered exactly afterwards; null when it has no ASCII fragment.
+/// What to SEARCH SUBJECT for a reply: the longest ASCII word of its normalized subject, without spaces (the
+/// original may space it otherwise, `Project  update`) and in a quoted string (ASCII only); the exact subject is
+/// filtered afterwards. Null when it has no ASCII word.
 String? _searchWord(String subject) {
   final s = normalizedSubject(subject);
-  if (_ascii(s)) return s;
   final words = RegExp(r'[\x21-\x7e]{3,}').allMatches(s).map((m) => m[0]!).toList()
     ..sort((a, b) => b.length - a.length);
   return words.firstOrNull;

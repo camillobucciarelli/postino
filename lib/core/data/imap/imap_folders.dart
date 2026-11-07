@@ -13,15 +13,25 @@ enum FolderRole() {
   user,
 }
 
+/// The Etichetta id of the user's folder [path]: in a namespace of its own, so a folder named `DRAFT` or
+/// `STARRED` is not taken for a system label.
+String folderLabelId(String path) => '$_folderPrefix$path';
+
+/// The folder path of an Etichetta id made by [folderLabelId]; null for any other id.
+String? folderPathOf(String labelId) =>
+    labelId.startsWith(_folderPrefix) ? labelId.substring(_folderPrefix.length) : null;
+
+const _folderPrefix = 'cartella:';
+
 /// A folder of the Account: its [path] on the server (decoded), its [role], and the Etichetta id its messages carry:
-/// the system id (`INBOX`, `SENT`, `DRAFT`, `TRASH`) for the special ones, else the path.
+/// the system id (`INBOX`, `SENT`, `DRAFT`, `TRASH`) for the special ones, else [folderLabelId].
 class const ImapFolder(final String path, final FolderRole role) {
   String get labelId => switch (role) {
     FolderRole.inbox => inboxLabelId,
     FolderRole.sent => sentLabelId,
     FolderRole.drafts => draftLabelId,
     FolderRole.trash => trashLabelId,
-    _ => path,
+    _ => folderLabelId(path),
   };
 
   /// Junk is neither synced nor shown.
@@ -31,7 +41,7 @@ class const ImapFolder(final String path, final FolderRole role) {
   /// An Etichetta of the user (Archive too: it has no system id): a [LabelKind.cartella] named by its full path,
   /// so a folder nested deeper than the first level shows where it sits.
   Label? get label => role == FolderRole.user || role == FolderRole.archive
-      ? Label(id: path, name: path, kind: LabelKind.cartella)
+      ? Label(id: labelId, name: path, kind: LabelKind.cartella)
       : null;
 }
 

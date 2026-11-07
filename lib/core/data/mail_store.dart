@@ -44,6 +44,14 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
     }
   });
 
+  /// Drops what the Account would still send to the Provider (queued Azioni, Bozze, outbox) at once, ahead of the
+  /// removal (#174): a replay already running finds its next voce gone and sends nothing more.
+  Future<void> dropQueue(String accountId) => _db.transaction(() async {
+    await _db.intentsDao.deleteByAccount(accountId);
+    await _db.draftsDao.deleteByAccount(accountId);
+    await _db.outboxDao.deleteByAccount(accountId);
+  });
+
   Stream<List<Account>> watchAccounts() =>
       _db.accountsDao.watchByPosition().map((rows) => [for (final r in rows) accountOf(r)]);
 

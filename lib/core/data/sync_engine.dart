@@ -147,6 +147,8 @@ class SyncEngine(
     if (account == null) return const Err(NotFoundFailure());
     switch (await providerFor(account).fetchBody(messageId)) {
       case Ok(:final value):
+        // Removed while the body downloaded (#174): nothing of it is written again.
+        if (await _account(accountId) == null) return const Err(NotFoundFailure());
         await _store.saveBody(accountId, messageId, value);
         return const Ok(null);
       case Err(:final failure):
@@ -291,6 +293,8 @@ class SyncEngine(
     // Not awaited, as in _watchSignals: ending IDLE may wait on the network.
     unawaited(_signals.remove(accountId)?.cancel());
     await _draftTimers.remove(accountId)?.cancel();
+    // Not behind the queue: a replay running or queued there must not send the Azioni the user gave up.
+    await _store.dropQueue(accountId);
     await _serial(accountId, delete);
     _pausedUntil.remove(accountId);
     // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
@@ -364,7 +368,7 @@ class SyncEngine(
     return _queuedSync[id] ??= _serial(id, () {
       // Only drops the map entry: the queued future is the one returned to the caller.
       unawaited(_queuedSync.remove(id));
-      return _syncOnce(id, providerFor(account));
+      return _syncOnce(account);
     });
   }
 
@@ -392,9 +396,12 @@ class SyncEngine(
     }
   }
 
-  Future<void> _syncOnce(String accountId, MailProvider provider) async {
-    // Removed while this sync waited in the queue (#174): nothing of it is written again.
+  Future<void> _syncOnce(Account account) async {
+    final accountId = account.id;
+    // Removed while this sync waited in the queue (#174): nothing of it is written again, and its adapter, already
+    // dropped, is not created again.
     if (await _account(accountId) == null) return;
+    final provider = providerFor(account);
     // The queue first, so the sync brings back what the user did offline.
     await _replay(accountId, provider);
     if (_paused(accountId)) return;

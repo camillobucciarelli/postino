@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
@@ -127,10 +128,17 @@ class AccountsService(
     // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
     final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId));
-    await GmailTokens.delete(_keychain, accountId);
-    await PasswordCredentials.delete(_keychain, accountId);
     // The Impostazioni di Postino no longer have a Drive to sync on.
     if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
     if (tokens != null) await _revoke.revoke(tokens.refresh);
+    // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
+    // that refuses one never leaves the other.
+    for (final delete in [GmailTokens.delete, PasswordCredentials.delete]) {
+      try {
+        await delete(_keychain, accountId);
+      } on Object catch (e) {
+        debugPrint('[accounts] $accountId: keychain delete failed, ${e.runtimeType}');
+      }
+    }
   }
 }

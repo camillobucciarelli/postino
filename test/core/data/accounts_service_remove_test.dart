@@ -7,6 +7,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/settings_repository.dart';
@@ -62,6 +63,64 @@ void main() {
     final db = getIt<PostinoDatabase>();
     final left = await db.customSelect('SELECT count(*) AS n FROM messages').getSingle();
     expect(left.read<int>('n'), 0);
+  });
+
+  test('a sync queued behind the removal neither reaches the Provider nor writes anything', () async {
+    provider
+      ..deliver(msg('m1'), signal: false)
+      ..hold = Completer<void>();
+    final running = getIt<MailSync>().syncAll();
+    await pumpEventQueue();
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    // Read the Accounts before the delete ran: this sync waits in the queue behind it.
+    final queued = getIt<MailSync>().syncAll();
+    await pumpEventQueue();
+    final calls = provider.syncCalls;
+    provider.hold!.complete();
+    await Future.wait([running, removing, queued]);
+
+    expect(provider.syncCalls, calls);
+    final left = await getIt<PostinoDatabase>().customSelect('SELECT count(*) AS n FROM messages').getSingle();
+    expect(left.read<int>('n'), 0);
+  });
+
+  test('the Azioni queued when the removal is confirmed are never sent', () async {
+    provider.deliver(msg('m1'), signal: false);
+    await getIt<MailSync>().syncAll();
+    provider.hold = Completer<void>();
+    final running = getIt<MailSync>().syncAll();
+    await pumpEventQueue();
+    // Its replay waits in the queue behind the running sync.
+    final acting = getIt<MailSync>().act(_ada, ['m1'], const MarkRead());
+    await pumpEventQueue();
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    provider.hold!.complete();
+    await Future.wait([running, acting, removing]);
+
+    expect(provider.readCalls, isEmpty);
+  });
+
+  test('a failed revocation or a keychain that refuses never stops the removal', () async {
+    h
+      ..httpFailure = Exception('no network')
+      ..keychain.failure = Exception('locked');
+
+    await accounts.remove(_ada);
+
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+    h.keychain
+      ..failure = null
+      ..deleteFailure = Exception('denied');
+    await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    final settings = getIt<SettingsRepository>();
+    await settings.setSettingsSyncAccount('icloud:ada@icloud.com');
+
+    await accounts.remove('icloud:ada@icloud.com');
+
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+    expect(await settings.settingsSyncAccount(), isNull);
   });
 
   test('online, the refresh token is revoked at Google', () async {

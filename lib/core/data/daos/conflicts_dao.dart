@@ -20,7 +20,13 @@ class ConflictsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatab
     final c = await _take(accountId, messageId, attribute);
     if (c == null) return false;
     await into(intents).insert(
-      IntentsCompanion.insert(accountId: accountId, messageId: messageId, attribute: attribute, wanted: c.local),
+      IntentsCompanion.insert(
+        accountId: accountId,
+        messageId: messageId,
+        attribute: attribute,
+        wanted: c.local,
+        rfcMessageId: Value(await attachedDatabase.messagesDao.rfcMessageId(accountId, messageId)),
+      ),
       mode: InsertMode.insertOrIgnore,
     );
     return true;

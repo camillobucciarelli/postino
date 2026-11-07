@@ -41,6 +41,8 @@ class ImapMoves(final ImapSession _session, final Future<ImapFolder> Function(Im
       await (_session.uidPlus ? c.uidExpunge(uid) : c.expunge());
     } on ImapException catch (e) {
       if (!c.isConnected || e.message == 'timeout') rethrow;
+      // A refusal for now keeps the Azione queued; the rest (no such folder, BAD) is final.
+      if (_temporary.hasMatch(e.message ?? '')) throw const ImapFailed(OfflineFailure());
       throw ImapFailed(RejectedFailure('the server refused the move to ${target.path}'));
     }
   }
@@ -67,3 +69,6 @@ class ImapMoves(final ImapSession _session, final Future<ImapFolder> Function(Im
     return found;
   }
 }
+
+/// The response codes that say try again (RFC 5530): the server is unavailable, in trouble, or the mailbox in use.
+final _temporary = RegExp(r'\[(UNAVAILABLE|SERVERBUG|INUSE|LIMIT)\]', caseSensitive: false);

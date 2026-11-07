@@ -20,6 +20,9 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
   var stores = 0;
   var folders = _folders;
 
+  /// What UID MOVE answers.
+  var move = 'OK MOVE completed';
+
   /// Folders SELECT refuses.
   final unselectable = <String>{};
 
@@ -49,6 +52,7 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
     if (upper.startsWith('UID FETCH 5 (UID BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])')) {
       return ['* 1 FETCH (UID 5 BODY[HEADER.FIELDS (MESSAGE-ID)] ${literal('Message-ID: <m5@example.com>\r\n\r\n')})'];
     }
+    if (upper.startsWith('UID MOVE')) return [move];
     if (upper.startsWith('UID COPY')) {
       copies++;
       copied = true;
@@ -180,5 +184,19 @@ void main() {
     // UID 9 is gone from INBOX: found by Message-ID, past the folder SELECT refuses.
     expect(okValue(await p.applyAction('INBOX/7/9', const MarkRead(), expected: false)), isA<ActionApplied>());
     expect(_writes(server), [r'UID STORE 5 +FLAGS (\Seen)']);
+  });
+
+  test('a refusal for now of the MOVE keeps the Azione queued; a final one rejects it', () async {
+    final mailbox = _Mailbox('IMAP4rev1 MOVE')..move = 'NO [UNAVAILABLE] try again later';
+    final (p, _) = await _setUp(mailbox);
+    expect(
+      await p.applyAction('INBOX/7/5', const Delete(), expected: Placement.inbox),
+      isA<Err<ActionOutcome>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()),
+    );
+    mailbox.move = 'NO [TRYCREATE] no such mailbox';
+    expect(
+      await p.applyAction('INBOX/7/5', const Delete(), expected: Placement.inbox),
+      isA<Err<ActionOutcome>>().having((e) => e.failure, 'failure', isA<RejectedFailure>()),
+    );
   });
 }

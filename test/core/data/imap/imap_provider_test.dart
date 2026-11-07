@@ -8,6 +8,7 @@ import 'dart:convert' show utf8;
 
 import 'package:enough_mail/enough_mail.dart' show MessageSequence;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/imap/imap_message_parser.dart' show parseImapMessageId;
 import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -284,9 +285,9 @@ void main() {
   });
 }
 
-int _uid(String id) => int.parse(id.split('/').last);
+int _uid(String id) => parseImapMessageId(id)!.uid;
 
-/// An RFC 5322 message with Message-ID `<key@example.com>`, dated six months ago.
+/// An RFC 5322 message with Message-ID `<key@example.com>`; its INTERNALDATE is the one given to APPEND.
 List<int> _old(String key) => utf8.encode(
   'From: bob@example.com\r\nTo: ada@example.com\r\nSubject: Vecchio\r\n'
   'Date: Mon, 04 May 2026 10:00:00 +0000\r\nMessage-ID: <$key@example.com>\r\n\r\nOk\r\n',

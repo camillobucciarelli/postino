@@ -73,7 +73,6 @@ class ImapFolderSync(final ImapSession _session) {
   }) async {
     final box = await selectFolder(c, folder.path, condstore: _session.condstore);
     final uidValidity = box.uidValidity ?? 0;
-    // ponytail: a stored message not yet followed counts as unread and without Stella: one extra download if not.
     final was = FolderState(
       uidValidity: known.uidValidity,
       uidNext: known.uidNext,
@@ -108,7 +107,10 @@ class ImapFolderSync(final ImapSession _session) {
     final changed = <int>[];
     for (final MapEntry(key: uid, value: (isSeen, isFlagged)) in flags.entries) {
       if (gone.contains(uid) || !was.uids.contains(uid)) continue;
-      if (isSeen != seen.contains(uid) || isFlagged != flagged.contains(uid)) changed.add(uid);
+      // A stored message seen here for the first time comes again: its flags here are not known.
+      if (!known.uids.contains(uid) || isSeen != seen.contains(uid) || isFlagged != flagged.contains(uid)) {
+        changed.add(uid);
+      }
       isSeen ? seen.add(uid) : seen.remove(uid);
       isFlagged ? flagged.add(uid) : flagged.remove(uid);
     }
@@ -162,6 +164,8 @@ class ImapFolderSync(final ImapSession _session) {
     void read(List<MimeMessage> ms) {
       for (final m in ms) {
         if (m.uid case final uid? when was.uids.contains(uid)) {
+          // ponytail: `\Deleted` cleared again elsewhere does not bring the message back (its UID is left behind);
+          // keep the deleted UIDs in the state if a client that undoes deletions shows up.
           m.isDeleted ? deleted.add(uid) : flags[uid] = (m.isSeen, m.isFlagged);
         }
       }

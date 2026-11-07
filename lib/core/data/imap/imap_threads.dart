@@ -25,7 +25,8 @@ typedef ThreadInput = ({Message message, String? inReplyTo});
 /// the parent's Conversazione when [known] holds the parent, the parent's Message-ID otherwise; else, for a reply
 /// without references (a prefixed subject), the Conversazione of the earliest message of [known] with the same
 /// normalized subject in the [threadWindow] before it and a participant in common, the Account's own [address]
-/// apart (it is in every message); else its own Message-ID (its Provider id when it has none).
+/// apart (it is in every message); else its own Message-ID (its Provider id when it has none). A Spam message is
+/// a Conversazione of its own, by its Provider id: it never shows inside an inbox Conversazione (#185).
 /// [known] holds [messages] and whatever else the caller knows of the mailbox.
 List<Message> threadMessages(
   List<ThreadInput> messages, {
@@ -60,7 +61,10 @@ List<Message> threadMessages(
     return memo[t] = id;
   }
 
-  return [for (final t in messages) withConversation(t.message, root(t, 0))];
+  return [
+    for (final t in messages)
+      withConversation(t.message, t.message.labelIds.contains(spamLabelId) ? t.message.id : root(t, 0)),
+  ];
 }
 
 /// The earliest message of [known] that [t] may answer by subject: same normalized subject, sent before it

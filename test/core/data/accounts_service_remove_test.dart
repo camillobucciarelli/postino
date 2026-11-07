@@ -209,6 +209,29 @@ void main() {
     expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
   });
 
+  test('two «Rimuovi» of the same Account make one removal: a later connection keeps its credentials', () async {
+    provider.hold = Completer<void>();
+    final running = getIt<MailSync>().syncAll();
+    await pumpEventQueue();
+    h.httpHold = Completer<void>();
+    final first = accounts.remove(_ada);
+    final second = accounts.remove(_ada);
+    expect(identical(first, second), isTrue);
+    provider.hold!.complete();
+    while (h.httpRequests.isEmpty) {
+      await pumpEventQueue();
+    }
+    // The revocation is still out: a connection now waits for the removal to end.
+    h.providerFor(_ada);
+    final connecting = accounts.connectGmail();
+    await pumpEventQueue();
+    h.httpHold!.complete();
+    await Future.wait([running, first, second, connecting]);
+
+    expect(h.httpRequests, hasLength(1), reason: 'one revocation');
+    expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
+  });
+
   test('a failed revocation or a keychain that refuses never stops the removal', () async {
     h
       ..httpFailure = Exception('no network')

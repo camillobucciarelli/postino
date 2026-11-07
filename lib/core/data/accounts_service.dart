@@ -130,17 +130,18 @@ class AccountsService(
   final _removals = <String, Future<void>>{};
 
   @override
-  Future<void> remove(String accountId) async {
-    if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
+  Future<void> remove(String accountId) {
+    // A second «Rimuovi» of the same Account while the first runs joins it: one cleanup, one entry to wait for.
+    if (_removals[accountId] case final running?) return running;
     final run = _removals[accountId] = _remove(accountId);
-    try {
-      await run;
-    } finally {
-      _removals.remove(accountId)?.ignore();
-    }
+    run.whenComplete(() {
+      if (identical(_removals[accountId], run)) _removals.remove(accountId)?.ignore();
+    }).ignore();
+    return run;
   }
 
   Future<void> _remove(String accountId) async {
+    if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
     // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
     final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));

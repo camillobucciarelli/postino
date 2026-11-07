@@ -4,6 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+command -v sips >/dev/null || { echo "sips non trovato: serve per togliere l'alfa alle icone iOS (macOS)" >&2; exit 1; }
+
 B=assets/brand
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT

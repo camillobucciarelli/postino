@@ -5,11 +5,11 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/result.dart';
 
-/// The adapter of an iCloud or IMAP Account until the IMAP adapter exists (T3): every sync is empty, so the Account
+/// The adapter of a Microsoft Account until its adapter exists (v1 step 5): every sync is empty, so the Account
 /// stays attivo without mail instead of failing; everything else is refused.
-// ponytail: placeholder of v1 step 4; the IMAP adapter replaces it in provider_factory.dart.
+// ponytail: placeholder; the Microsoft adapter replaces it in provider_factory.dart.
 class const UnsyncedProvider() implements MailProvider {
-  static const _unsupported = Err<Never>(UnexpectedFailure('IMAP adapter not available yet'));
+  static const _unsupported = Err<Never>(UnexpectedFailure('adapter not available yet'));
 
   @override
   Future<Result<void>> refreshAuth() async => const Ok(null);

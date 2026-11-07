@@ -1,13 +1,10 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:enough_mail/enough_mail.dart';
-import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/connection_tester.dart';
 import '../../domain/mail_servers.dart';
 import '../../domain/result.dart';
+import 'imap_failure.dart';
 
 /// The test connection with enough_mail: IMAP login + LIST, then SMTP EHLO + AUTH, each closed at once.
 @LazySingleton(as: ConnectionTester, env: [Environment.prod])
@@ -35,7 +32,7 @@ class EnoughConnectionTester() implements ConnectionTester {
       await c.logout();
       return const Ok(null);
     } on Object catch (e) {
-      return Err(testConnectionFailure(e, atLogin: atLogin, connected: c.isConnected));
+      return Err(imapFailure(e, atLogin: atLogin, connected: c.isConnected));
     } finally {
       await _quietly(c.disconnect);
     }
@@ -57,25 +54,12 @@ class EnoughConnectionTester() implements ConnectionTester {
       await c.quit();
       return const Ok(null);
     } on Object catch (e) {
-      return Err(testConnectionFailure(e, atLogin: atLogin, connected: c.isConnected));
+      return Err(imapFailure(e, atLogin: atLogin, connected: c.isConnected));
     } finally {
       await _quietly(c.disconnect);
     }
   }
 }
-
-/// The Failure of [error], thrown by a test connection [atLogin] or not, with the connection still up
-/// ([connected]) or not. enough_mail reports a timeout and a lost connection with the same exception as a server's
-/// NO: only a protocol error at the login on a live connection is a refusal of the credentials. Never carries the
-/// password: the login command is not part of any exception enough_mail throws.
-@visibleForTesting
-Failure testConnectionFailure(Object error, {required bool atLogin, required bool connected}) => switch (error) {
-  SocketException() || TlsException() || TimeoutException() => const OfflineFailure(),
-  ImapException(message: 'timeout') => const OfflineFailure(),
-  ImapException() || SmtpException() when !connected => const OfflineFailure(),
-  ImapException() || SmtpException() when atLogin => const AuthFailure(),
-  _ => UnexpectedFailure(error),
-};
 
 Future<void> _quietly(Future<void> Function() close) async {
   try {

@@ -1,5 +1,4 @@
 // Spike: server GreenMail e porte su TLS funzionano; un client enough_mail entra, fa LIST e consegna via SMTP.
-// I gruppi del contratto IMAP si agganciano a `ImapHarness` in T3-T6.
 @Tags(['imap'])
 library;
 
@@ -12,8 +11,9 @@ import '../../../support/imap_harness.dart';
 
 void main() {
   late ImapHarness h;
-  setUp(() async => h = await ImapHarness.start());
-  tearDown(() => h.stop());
+  setUp(() async => h = await ImapHarness.create());
+  tearDown(() => h.dispose());
+  tearDownAll(ImapHarness.stopServer);
 
   final skip = imapSkipReason;
 
@@ -33,11 +33,11 @@ void main() {
     final smtp = SmtpClient('postino.test', onBadCertificate: (_) => true);
     await smtp.connectToServer(GreenmailServer.host, h.server.smtpsPort);
     await smtp.ehlo();
-    await smtp.authenticate(ImapHarness.login, ImapHarness.password);
+    await smtp.authenticate(h.address, h.password);
     final message =
         (MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
               ..from = [MailAddress(null, GreenmailServer.addressOf('bob'))]
-              ..to = [MailAddress(null, GreenmailServer.addressOf(ImapHarness.login))]
+              ..to = [MailAddress(null, GreenmailServer.addressOf(h.login))]
               ..subject = 'Via SMTP')
             .buildMimeMessage();
     final sent = await smtp.sendMessage(message);

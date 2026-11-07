@@ -161,7 +161,7 @@ void main() {
     expect((await PasswordCredentials.read(h.keychain, 'imap:ada@example.org'))?.password, 'new');
   });
 
-  test('without an IMAP adapter the Account syncs nothing and stays attivo; the password is never logged', () async {
+  test('a new Account that cannot reach its server stays attivo; the password is never logged', () async {
     await accounts.connectWithPassword('ada@icloud.com', 'wrong');
     await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
     await getIt<SyncEngine>().syncAll();

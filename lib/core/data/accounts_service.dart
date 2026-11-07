@@ -154,8 +154,13 @@ class AccountsService(
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
     // The Impostazioni di Postino no longer have a Drive to sync on.
     if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
-    // After the delete: a download already running for the Account finds it removed and writes nothing.
-    await _attachments.clear();
+    // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
+    // that cannot be emptied never stops the revocation nor the keychain cleanup.
+    try {
+      await _attachments.clear();
+    } on Object catch (e) {
+      debugPrint('[accounts] $accountId: attachment cache not cleared, ${e.runtimeType}');
+    }
     if (tokens != null) await _revoke.revoke(tokens.refresh);
     // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
     // that refuses one never leaves the other.

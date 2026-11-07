@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -291,6 +292,21 @@ void main() {
     expect(await connecting, isA<Err<Account>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
     expect(await h.keychain.read('password:$id'), isNull);
     expect((await getIt<MailStore>().accounts()).map((a) => a.id), isNot(contains(id)));
+  });
+
+  test('a cache that cannot be emptied still lets the credentials go', () async {
+    h.onFileOp = (path, op) {
+      if (op == FileSystemOp.delete) throw StateError('disk gone');
+    };
+    provider.deliver(msg('m1'), signal: false);
+    final a = provider.attach('m1', 'a.pdf', [1, 2, 3]);
+    await getIt<MailSync>().syncAll();
+    await getIt<AttachmentRepository>().file(_ada, 'm1', a);
+
+    await accounts.remove(_ada);
+
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+    expect(h.httpRequests, hasLength(1), reason: 'the revocation went');
   });
 
   test('a failed revocation or a keychain that refuses never stops the removal', () async {

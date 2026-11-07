@@ -180,16 +180,21 @@ class AttachmentCache(
   }
 
   // ponytail: svuota tutta la cache, per-Account se servirà (the file names are hashes: they do not say the Account).
+  /// Best effort, never throws: what is left (a copy another app holds open on Windows, a folder that cannot be
+  /// listed) goes with the next launch or the eviction.
   @override
   Future<void> clear() => _serially(() async {
     for (final dir in [_storage.cache, _storage.temp]) {
-      await for (final e in dir.list()) {
-        try {
-          await e.delete(recursive: true);
-        } on FileSystemException catch (err) {
-          // A copy another app holds open on Windows: the next launch clears the temporary folder.
-          debugPrint('[attachments] clear: ${e.basename} left, ${err.osError?.message}');
+      try {
+        await for (final e in dir.list()) {
+          try {
+            await e.delete(recursive: true);
+          } on Object catch (err) {
+            debugPrint('[attachments] clear: ${e.basename} left, ${err.runtimeType}');
+          }
         }
+      } on Object catch (err) {
+        debugPrint('[attachments] clear: ${dir.basename} not listed, ${err.runtimeType}');
       }
     }
   });

@@ -129,7 +129,10 @@ class OutboxSender(
 
   Future<String?> cancelSend(String accountId, String messageId) async {
     await _sendTimers.remove((accountId, messageId))?.cancel();
-    final attempted = (await _outbox.outgoing(accountId, messageId))?.attempted ?? false;
+    final item = await _outbox.outgoing(accountId, messageId);
+    // SMTP already delivered it (#175): only the copy in Inviati is left, which the replay finishes; no edit to resend.
+    if (item != null && item.submitted) return null;
+    final attempted = item?.attempted ?? false;
     // Not behind the Account's queue: a replay waiting on a slow upload would send the row first.
     // The claim in the database refuses the cancel of a row that is going now (false).
     final cancelled = await _outbox.cancelOutgoing(accountId, messageId, _clock.now().millisecondsSinceEpoch);
@@ -163,10 +166,34 @@ class OutboxSender(
       )) {
         continue;
       }
-      switch (await provider.send(row.messageId, row.raw, threadId: row.conversationId)) {
+      // Read after the claim: the batch snapshot may predate another isolate's submission of this row (#175).
+      final submitted = (await _outbox.outgoing(accountId, row.messageId))?.submitted ?? row.submitted;
+      final result = await provider.send(
+        row.messageId,
+        row.raw,
+        threadId: row.conversationId,
+        submitted: submitted,
+        onSubmitted: () =>
+            _outbox.outgoingSubmitted(accountId, row.messageId, nowMs: _clock.now().millisecondsSinceEpoch),
+      );
+      // Delivered by SMTP before or during this attempt (#175).
+      final delivered =
+          submitted || (result is Err && (await _outbox.outgoing(accountId, row.messageId))?.submitted == true);
+      switch (result) {
         case Ok(:final value):
           await _outbox.outgoingSent(accountId, row.messageId, providerId: value, date: now, sendAfter: row.sendAfter);
           debugPrint('[sync] $accountId: sent ${row.messageId}');
+        // SMTP delivered it and only the copy in Inviati is refused: not failed (a retry by the user would send it
+        // twice); the next sync shows the Provider's copy, if any.
+        case Err(failure: SizeLimitFailure() || NotFoundFailure() || RejectedFailure()) when delivered:
+          await _outbox.outgoingSent(
+            accountId,
+            row.messageId,
+            providerId: row.messageId,
+            date: now,
+            sendAfter: row.sendAfter,
+          );
+          debugPrint('[sync] $accountId: sent ${row.messageId}, copy in Inviati refused');
         // Refused for good (too big, Bozza gone): kept as failed for the UI, never retried (ADR 0008).
         case Err(failure: final f && (SizeLimitFailure() || NotFoundFailure() || RejectedFailure())):
           await _outbox.outgoingFailed(accountId, row.messageId);

@@ -192,7 +192,13 @@ class GmailProvider(
   /// Inviati is searched first: a message already there (a send whose answer was lost) is not sent twice.
   /// The Bozza holding the Message-ID is then deleted, best effort: Gmail does not drop it on its own.
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) => googleGuard(() async {
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  }) => googleGuard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
     String? id;
     if (bare.isNotEmpty) {

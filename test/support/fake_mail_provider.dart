@@ -87,6 +87,12 @@ class FakeMailProvider() implements MailProvider {
   /// While set, [send] refuses with it, as the Provider would for good (too big, Bozza gone).
   Failure? sendFailure;
 
+  /// While set, a [send] that submits reports it (onSubmitted) and then fails with it, as an APPEND that failed after SMTP (#175).
+  Failure? failAfterSubmit;
+
+  /// The `submitted` flag of every [send] call, in order.
+  final sendSubmitted = <bool>[];
+
   /// While set, the next [send] stores the message as sent but answers offline, once: a lost response.
   bool loseSendResponse = false;
   int _sentSeq = 0;
@@ -371,11 +377,22 @@ class FakeMailProvider() implements MailProvider {
 
   /// Idempotent on the Message-ID: a message already in Inviati is not stored twice.
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) async {
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  }) async {
     sendCalls++;
     await holdSend?.future;
     final f = _failure ?? sendFailure;
     if (f != null) return Err(f);
+    sendSubmitted.add(submitted);
+    if (!submitted && failAfterSubmit != null) {
+      await onSubmitted?.call();
+      return Err(failAfterSubmit!);
+    }
     final existing = _messages.values
         .where((m) => m.messageId == messageId && m.labelIds.contains(sentLabelId))
         .firstOrNull;

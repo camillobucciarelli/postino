@@ -41,6 +41,10 @@ class Outbox() extends Table {
   /// cancel reopens the Bozza under a new Message-ID.
   BoolColumn get attempted => boolean().withDefault(const Constant(false))();
 
+  /// Milliseconds since epoch, UTC: SMTP accepted the message (#175) and only the copy in Inviati is left to do, so a
+  /// replay by any isolate, or after a restart, never submits it again. Null until then.
+  IntColumn get smtpSentAt => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {accountId, messageId};
 }

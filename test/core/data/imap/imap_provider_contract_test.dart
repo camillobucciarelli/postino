@@ -20,4 +20,6 @@ void main() {
   mailProviderAuthContract('ImapProvider', ImapHarness.create, pending: _pending);
   mailProviderSyncContract('ImapProvider', ImapHarness.create, pending: _pending);
   mailProviderLabelContract('ImapProvider', ImapHarness.create, pending: _pending);
+  mailProviderDraftContract('ImapProvider', ImapHarness.create, pending: _pending);
+  mailProviderSendContract('ImapProvider', ImapHarness.create);
 }

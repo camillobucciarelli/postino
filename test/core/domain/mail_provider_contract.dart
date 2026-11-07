@@ -286,7 +286,8 @@ OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) => Outgo
 );
 
 /// The Bozze part of the contract (#35): create, update by Message-ID, delete, and Bozze written elsewhere.
-void mailProviderDraftContract(String name, CreateHarness create) {
+/// Without `body` the bodies are not checked.
+void mailProviderDraftContract(String name, CreateHarness create, {Pending pending = const {}}) {
   group('MailProvider draft contract: $name', () {
     late ContractHarness h;
     _harness(create, (x) => h = x);
@@ -297,7 +298,9 @@ void mailProviderDraftContract(String name, CreateHarness create) {
       _ok(await h.provider.saveDraft(_draft('<x@example.com>', body: '<p>Seconda</p>'), isNew: false));
       final m = _ok(await h.provider.initialSync()).messages.single;
       expect(m.messageId, '<x@example.com>');
-      expect(_ok(await h.provider.fetchBody(m.id)).content.trim(), '<p>Seconda</p>');
+      if (!pending.containsKey('body')) {
+        expect(_ok(await h.provider.fetchBody(m.id)).content.trim(), '<p>Seconda</p>');
+      }
     });
 
     test('updating a Bozza never saved is NotFound', () async {
@@ -327,7 +330,9 @@ void mailProviderDraftContract(String name, CreateHarness create) {
       expect(m.labelIds, ['DRAFT']);
       expect(m.messageId, '<y@example.com>');
       expect(m.bcc, ['dee@example.com']);
-      expect(_ok(await h.provider.fetchBody(m.id)).content, '<p>Da altrove</p>');
+      if (!pending.containsKey('body')) {
+        expect(_ok(await h.provider.fetchBody(m.id)).content, '<p>Da altrove</p>');
+      }
     });
   });
 }

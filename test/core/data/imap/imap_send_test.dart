@@ -1,0 +1,195 @@
+// Sending and Bozze on IMAP (#166) against GreenMail: SMTP delivers, Inviati keeps one copy across retries, a
+// failed APPEND is retried without a second submission, a Bozza is replaced at every save and its Conflitto (#149).
+@Tags(['imap'])
+library;
+
+import 'dart:io' show SocketException;
+
+import 'package:enough_mail/enough_mail.dart' show ImapClient, SmtpClient;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/imap/imap_provider.dart';
+import 'package:postino/core/data/imap/imap_session.dart';
+import 'package:postino/core/data/imap/smtp_sender.dart';
+import 'package:postino/core/data/mime.dart';
+import 'package:postino/core/domain/draft_content.dart';
+import 'package:postino/core/domain/draft_outcome.dart';
+import 'package:postino/core/domain/mail_servers.dart';
+import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/result.dart';
+
+import '../../../support/fake_platform.dart';
+import '../../../support/greenmail_server.dart';
+import '../../../support/imap_harness.dart';
+
+T _ok<T>(Result<T> r) => switch (r) {
+  Ok(:final value) => value,
+  Err(:final failure) => fail('expected Ok, got $failure'),
+};
+
+Matcher _err<F>() => isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<F>());
+
+OutgoingMessage _draft({String to = 'b@example.com', String subject = 's', String body = '<p>Ciao</p>'}) =>
+    OutgoingMessage(messageId: '<x@example.com>', from: 'me@example.com', to: [to], subject: subject, body: body);
+
+void main() {
+  if (imapSkipReason case final reason?) {
+    test('IMAP send and Bozze', () {}, skip: reason);
+    return;
+  }
+  tearDownAll(ImapHarness.stopServer);
+
+  late ImapHarness h;
+  setUp(() async => h = await ImapHarness.create());
+  tearDown(() => h.dispose());
+
+  /// Another adapter of the same Account (its memory empty, as after a restart), with the given connectors.
+  ImapProvider adapter({ImapConnector connect = connectImap, SmtpConnector smtp = connectSmtp}) => ImapProvider(
+    h.accountId,
+    h.address,
+    h.keychain,
+    FakeClock(DateTime.now().toUtc()),
+    connect: connect,
+    smtpConnect: smtp,
+    onBadCertificate: (_) => true,
+  );
+
+  /// How many messages with Message-ID `<x@example.com>` [path] holds (a missing folder holds none).
+  Future<int> copies(String path) => h.withClient((ImapClient c) async {
+    if (!(await c.listMailboxes(recursive: true)).any((b) => b.path == path)) return 0;
+    await c.selectMailboxByPath(path);
+    final r = await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "<x@example.com>"');
+    return r.matchingSequence?.length ?? 0;
+  });
+
+  /// GreenMail delivers right after the SMTP answer, not always before it.
+  Future<int> delivered() async {
+    for (var i = 0; i < 20 && await copies('INBOX') == 0; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return copies('INBOX');
+  }
+
+  group('send', () {
+    test('SMTP delivers it and Inviati holds one copy, read', () async {
+      final d = _draft(to: h.address);
+      final id = _ok(await h.provider.send(d.messageId, renderMime(d, DateTime.utc(2026))));
+      expect(await delivered(), 1);
+      expect(await copies('Sent'), 1);
+      final sent = _ok(await h.provider.initialSync()).messages.where((m) => m.id == id).single;
+      expect(sent.labelIds, [sentLabelId]);
+      expect(sent.isRead, isTrue);
+    });
+
+    test('a retry after a lost answer finds it in Inviati: no second submission', () async {
+      final d = _draft(to: h.address);
+      final raw = renderMime(d, DateTime.utc(2026));
+      final first = _ok(await h.provider.send(d.messageId, raw));
+      var submissions = 0;
+      final again = adapter(
+        smtp: (SmtpClient c, MailServer s) {
+          submissions++;
+          return connectSmtp(c, s);
+        },
+      );
+      addTearDown(again.close);
+      expect(_ok(await again.send(d.messageId, raw)), first);
+      expect(submissions, 0);
+      expect(await delivered(), 1);
+      expect(await copies('Sent'), 1);
+    });
+
+    test('a failed APPEND to Inviati is retried without a new SMTP submission', () async {
+      final d = _draft(to: h.address);
+      final raw = renderMime(d, DateTime.utc(2026));
+      var imapDown = false;
+      var submissions = 0;
+      late ImapProvider p;
+      p = adapter(
+        connect: (c, s) async {
+          if (imapDown) throw const SocketException('down');
+          await connectImap(c, s);
+        },
+        smtp: (c, s) async {
+          submissions++;
+          // The IMAP connection drops while SMTP submits: the APPEND after it fails.
+          await p.close();
+          imapDown = true;
+          await connectSmtp(c, s);
+        },
+      );
+      addTearDown(p.close);
+      expect(await p.send(d.messageId, raw), _err<OfflineFailure>());
+      expect(await copies('Sent'), 0);
+      imapDown = false;
+      _ok(await p.send(d.messageId, raw));
+      expect(submissions, 1);
+      expect(await delivered(), 1);
+      expect(await copies('Sent'), 1);
+    });
+  });
+
+  group('Bozze', () {
+    test('three saves leave one Bozza, with the same Message-ID and the last content', () async {
+      _ok(await h.provider.saveDraft(_draft(), isNew: true));
+      _ok(await h.provider.saveDraft(_draft(subject: 's2'), isNew: false));
+      _ok(await h.provider.saveDraft(_draft(subject: 's3'), isNew: false));
+      expect(await copies('Drafts'), 1);
+      final m = _ok(await h.provider.initialSync()).messages.single;
+      expect((m.messageId, m.subject), ('<x@example.com>', 's3'));
+      expect(m.labelIds, [draftLabelId]);
+    });
+
+    test('a save whose answer was lost, sent again as new, still leaves one Bozza', () async {
+      _ok(await h.provider.saveDraft(_draft(), isNew: true));
+      _ok(await h.provider.saveDraft(_draft(), isNew: true));
+      expect(await copies('Drafts'), 1);
+    });
+
+    test('deleted by another client: the next save is NotFound', () async {
+      _ok(await h.provider.saveDraft(_draft(), isNew: true));
+      await h.removeRemotely('x');
+      expect(await h.provider.saveDraft(_draft(subject: 's2'), isNew: false), _err<NotFoundFailure>());
+      expect(await copies('Drafts'), 0);
+    });
+
+    group('with the expected impronta (#149)', () {
+      final expected = DraftContent.of(_draft()).fingerprint;
+      final edit = _draft(body: '<p>Ciao, modificata qui</p>');
+
+      test('the Bozza as uploaded (read back from the server): written', () async {
+        _ok(await h.provider.saveDraft(_draft(), isNew: true));
+        expect(_ok(await h.provider.saveDraft(edit, isNew: false, expected: expected)), isA<DraftSaved>());
+        expect(await copies('Drafts'), 1);
+      });
+
+      test('edited elsewhere: a Conflitto with the server\'s version, nothing written', () async {
+        _ok(await h.provider.saveDraft(_draft(), isNew: true));
+        await h.removeRemotely('x');
+        await h.deliverDraft(_draft(to: 'carla@example.com', subject: 'Altrove', body: '<p>Da Mail.app</p>'));
+        expect(
+          _ok(await h.provider.saveDraft(edit, isNew: false, expected: expected)),
+          isA<DraftDiverged>().having(
+            (d) => d.provider.fingerprint,
+            'provider',
+            DraftContent.of(_draft(to: 'carla@example.com', subject: 'Altrove', body: '<p>Da Mail.app</p>'))
+                .fingerprint,
+          ),
+        );
+        final m = _ok(await h.provider.initialSync()).messages.single;
+        expect(m.subject, 'Altrove');
+      });
+
+      test('sent or deleted elsewhere: NotFound, nothing written', () async {
+        _ok(await h.provider.saveDraft(_draft(), isNew: true));
+        await h.removeRemotely('x');
+        expect(await h.provider.saveDraft(edit, isNew: false, expected: expected), _err<NotFoundFailure>());
+        expect(await copies('Drafts'), 0);
+      });
+
+      test('already the wanted version elsewhere: written, no Conflitto', () async {
+        _ok(await h.provider.saveDraft(edit, isNew: true));
+        expect(_ok(await h.provider.saveDraft(edit, isNew: false, expected: 'other')), isA<DraftSaved>());
+      });
+    });
+  });
+}

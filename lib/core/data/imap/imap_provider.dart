@@ -10,16 +10,20 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../mime.dart';
 import 'imap_cursor.dart';
+import 'imap_drafts.dart';
 import 'imap_failure.dart';
 import 'imap_folder_sync.dart';
 import 'imap_folders.dart';
 import 'imap_idle.dart';
 import 'imap_lookup.dart';
 import 'imap_message_parser.dart';
+import 'imap_sent.dart';
 import 'imap_session.dart';
 import 'imap_threads.dart';
 import 'password_credentials.dart';
+import 'smtp_sender.dart';
 
 /// Headers of the last [syncWindow] are synced (ADR 0003).
 const syncWindow = Duration(days: 90);
@@ -36,15 +40,23 @@ class ImapProvider(
   final ImapConnector _connect = connectImap,
   final bool Function(X509Certificate)? _onBadCertificate,
   final ImapIdle _idle = imapIdle,
+  SmtpConnector smtpConnect = connectSmtp,
+
+  /// Whether a sent message is APPENDed to Inviati: false for a Provider that files its SMTP submissions itself.
+  final bool appendToSent = true,
 }) implements MailProvider {
   this
-    : _session = ImapSession(_accountId, _address, _keychain, connect: _connect, onBadCertificate: _onBadCertificate);
+    : _session = ImapSession(_accountId, _address, _keychain, connect: _connect, onBadCertificate: _onBadCertificate),
+      _smtp = SmtpSender(_accountId, _address, _keychain, connect: smtpConnect, onBadCertificate: _onBadCertificate);
 
   final ImapSession _session;
+  final SmtpSender _smtp;
   late final _folders = ImapFolderSync(_session);
   late final _lookup = ImapLookup(_session);
+  late final _drafts = ImapDrafts(_session);
+  late final _sent = ImapSent(_session, _smtp, _drafts, appendToSent: appendToSent);
 
-  // ponytail: until T4 (#164, bodies on request and Conversazioni), T5 (#165, Azioni) and T6 (#166, send and Bozze).
+  // ponytail: until T4 (#164, bodies on request and Conversazioni) and T5 (#165, Azioni).
   static Err<Never> _later(String ticket) => Err(UnexpectedFailure('IMAP: arrives with $ticket'));
 
   /// Logs out; the next call logs in again.
@@ -183,15 +195,25 @@ class ImapProvider(
     Future<void>? cancel,
   }) async => _later('T4');
 
+  /// [threadId] is not needed: on IMAP the Conversazione comes from `References`, already in [raw].
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) async => _later('T6');
+  Future<Result<String>> send(String messageId, String raw, {String? threadId}) =>
+      imapGuard(() => _sent.send(messageId, raw));
 
   @override
-  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) async =>
-      _later('T6');
+  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) =>
+      imapGuard(() async {
+        final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
+          Ok(:final value) => value,
+          // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+          Err(failure: NotFoundFailure()) => throw const ImapFailed(UnexpectedFailure('forwarded attachment gone')),
+          Err(:final failure) => throw ImapFailed(failure),
+        };
+        return _drafts.save(draft, raw, isNew: isNew, expected: expected);
+      });
 
   @override
-  Future<Result<void>> deleteDraft(String messageId) async => _later('T6');
+  Future<Result<void>> deleteDraft(String messageId) => imapGuard(() => _drafts.delete(messageId));
 
   DateTime get _since => _clock.now().subtract(syncWindow);
 

@@ -121,6 +121,10 @@ class AccountsService(
         return Err(failure);
       case Ok(:final value):
         if (value.address.trim().toLowerCase() != account.address) return Err(WrongAccountFailure(account.address));
+        // Removed while the user was on Google's page (#174): no tokens for it, and nothing to choose.
+        if (_removals.containsKey(accountId) || !(await _store.accounts()).any((a) => a.id == accountId)) {
+          return const Err(NotFoundFailure());
+        }
         await GmailTokens.of(value).write(_keychain, account.id);
         return const Ok(null);
     }

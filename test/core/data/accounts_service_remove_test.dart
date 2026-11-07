@@ -13,6 +13,7 @@ import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
+import 'package:postino/core/domain/settings_sync_account_use_case.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
@@ -230,6 +231,20 @@ void main() {
 
     expect(h.httpRequests, hasLength(1), reason: 'one revocation');
     expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
+  });
+
+  test('a Drive consent that ends after the removal writes no tokens and chooses nothing', () async {
+    final page = Completer<void>();
+    h.consent.gate = page.future;
+    final choosing = getIt<SettingsSyncAccountUseCase>().choose(_ada);
+    await pumpEventQueue();
+
+    await accounts.remove(_ada);
+    page.complete();
+
+    expect(await choosing, isA<Err<void>>());
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+    expect(await getIt<SettingsRepository>().settingsSyncAccount(), isNull);
   });
 
   test('a failed revocation or a keychain that refuses never stops the removal', () async {

@@ -36,7 +36,7 @@
     "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
     "wrongAccount": "You picked a different Google account: to reconnect $address, pick that account.",
     "failed": "Something went wrong: try again.",
-    "alreadyConnected": "This address is already connected as another Account."
+    "alreadyConnected": "This Account is already connected."
   },
   "offline": {
     "title": "You're offline",

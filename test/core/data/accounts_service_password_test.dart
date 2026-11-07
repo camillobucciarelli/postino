@@ -136,7 +136,7 @@ void main() {
     expect(_failure(again), isA<AlreadyConnectedFailure>());
   });
 
-  test('a mailbox already connected with Gmail is not added again over IMAP', () async {
+  test('the same address with Gmail and over IMAP is two Accounts (ADR 0016)', () async {
     h.providerFor('gmail:ada@company.com');
     h.consent.address = 'ada@company.com';
     await accounts.connectGmail();
@@ -144,21 +144,25 @@ void main() {
 
     final r = await accounts.connectWithPassword('ada@company.com', 'app-password-1');
 
-    expect(_failure(r), isA<AlreadyConnectedFailure>());
-    expect(h.connection.tested, isEmpty);
+    expect((r as Ok<Account>).value.id, 'imap:ada@company.com');
+    expect((await getIt<MailStore>().accounts()).map((a) => (a.id, a.status)), [
+      ('gmail:ada@company.com', AccountStatus.attivo),
+      ('imap:ada@company.com', AccountStatus.attivo),
+    ]);
   });
 
-  test('a mailbox already connected over IMAP is not added again with Gmail; no token is written', () async {
+  test('the same address over IMAP and then with Gmail is two Accounts too', () async {
     h.discovery.servers['ada@company.com'] = _fastmail;
     await accounts.connectWithPassword('ada@company.com', 'app-password-1');
-    h.consent.address = 'ada@company.com';
-    final keychainBefore = Map.of(h.keychain.values);
+    h
+      ..providerFor('gmail:ada@company.com')
+      ..consent.address = 'ada@company.com';
 
     final r = await accounts.connectGmail();
 
-    expect(_failure(r), isA<AlreadyConnectedFailure>());
-    expect(h.keychain.values, keychainBefore);
-    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com']);
+    expect((r as Ok<Account>).value.id, 'gmail:ada@company.com');
+    expect(h.keychain.values.keys, containsAll(['password:imap:ada@company.com', 'oauth:gmail:ada@company.com']));
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com', 'gmail:ada@company.com']);
   });
 
   test('cancelled while waiting for the Accounts lock, nothing is written', () async {

@@ -189,8 +189,8 @@ class Translations$connect$it {
 	/// it: 'Qualcosa è andato storto: riprova.'
 	String get failed => 'Qualcosa è andato storto: riprova.';
 
-	/// it: 'Questo indirizzo è già collegato come un altro Account.'
-	String get alreadyConnected => 'Questo indirizzo è già collegato come un altro Account.';
+	/// it: 'Questo Account è già collegato.'
+	String get alreadyConnected => 'Questo Account è già collegato.';
 }
 
 // Path: offline
@@ -1182,7 +1182,7 @@ extension on Translations {
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
-			'connect.alreadyConnected' => 'Questo indirizzo è già collegato come un altro Account.',
+			'connect.alreadyConnected' => 'Questo Account è già collegato.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
 			'list.loading' => 'Caricamento dei messaggi',

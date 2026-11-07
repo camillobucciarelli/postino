@@ -68,10 +68,5 @@ String normalizedAddress(String address) => address.trim().toLowerCase();
 /// The id of the Account at [address] on [provider].
 String accountIdOf(ProviderKind provider, String address) => '${provider.name}:${normalizedAddress(address)}';
 
-/// Whether an Account other than [id] already has [address]: the same mailbox through another Provider (a Google
-/// Workspace one over IMAP, say) would be a second Account.
-bool connectedElsewhere(Iterable<Account> accounts, String id, String address) =>
-    accounts.any((a) => a.address == normalizedAddress(address) && a.id != id);
-
 /// Colors of the Account palette, assigned in turn to new Accounts.
 const accountColorCount = 8;

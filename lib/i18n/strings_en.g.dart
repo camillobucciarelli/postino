@@ -134,7 +134,7 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String get missingPermission => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.';
 	@override String wrongAccount({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.';
 	@override String get failed => 'Something went wrong: try again.';
-	@override String get alreadyConnected => 'This address is already connected as another Account.';
+	@override String get alreadyConnected => 'This Account is already connected.';
 }
 
 // Path: offline
@@ -612,7 +612,7 @@ extension on TranslationsEn {
 			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
 			'connect.wrongAccount' => ({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Something went wrong: try again.',
-			'connect.alreadyConnected' => 'This address is already connected as another Account.',
+			'connect.alreadyConnected' => 'This Account is already connected.',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',
 			'list.loading' => 'Loading messages',

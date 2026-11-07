@@ -52,7 +52,6 @@ class AccountsService(
     // Gmail addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
     final address = normalizedAddress(grant.address);
     final id = accountIdOf(ProviderKind.gmail, address);
-    if (await _connectedElsewhere(id, address)) return const Err(AlreadyConnectedFailure());
     // Under the lock: a removal of the same Account in flight never deletes these credentials.
     final account = await _lock.run(() async {
       await GmailTokens.of(grant).write(_keychain, id);
@@ -76,9 +75,8 @@ class AccountsService(
     if (provider == null) return const Err(UseGmailFailure());
     final id = accountIdOf(provider.kind, normalized);
     final known = (await _store.accounts()).where((a) => a.id == id).firstOrNull;
-    if (known?.status == AccountStatus.attivo || await _connectedElsewhere(id, normalized)) {
-      return const Err(AlreadyConnectedFailure());
-    }
+    // The same address through another Provider is another Account (ADR 0016): only this one, attivo, is refused.
+    if (known?.status == AccountStatus.attivo) return const Err(AlreadyConnectedFailure());
     // A reconnection keeps the servers the Account was saved with; one arrived from another device has none here
     // (they are not in the synced voce, ADR 0016), so the preset or the discovery finds them.
     final saved = known == null ? null : (await PasswordCredentials.read(_keychain, id))?.servers;
@@ -101,9 +99,6 @@ class AccountsService(
     unawaited(_sync.syncAll());
     return Ok(account);
   }
-
-  Future<bool> _connectedElsewhere(String id, String address) async =>
-      connectedElsewhere(await _store.accounts(), id, address);
 
   /// The Account here, attivo, and its synced voce (ADR 0016), in one transaction: the AccountsSettingsMirror sees
   /// both or neither. A known Account (da ricollegare, maybe from another device) keeps color and position, and its

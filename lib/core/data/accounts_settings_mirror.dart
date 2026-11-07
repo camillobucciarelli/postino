@@ -132,10 +132,8 @@ class AccountsSettingsMirror(
         final synced = decodeAccountSettings(id, row.value);
         if (synced == null) continue;
         if (local == null) {
-          // The same mailbox is here through another Provider: this one stays out until one of the two is removed.
-          if (connectedElsewhere(here.values, id, synced.address)) continue;
+          // The same address through another Provider is another Account (ADR 0016): it is added too.
           await _db.accountsDao.upsert(synced);
-          here[id] = synced;
         } else if (!sameAccountSettings(local, synced)) {
           await _db.accountsDao.updateSettings(synced);
         }

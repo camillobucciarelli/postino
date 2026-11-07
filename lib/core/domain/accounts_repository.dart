@@ -11,7 +11,7 @@ abstract interface class AccountsRepository() {
   Stream<List<Account>> watchAccounts();
 
   /// Google consent; creates the Gmail Account, or brings it back to attivo if Da ricollegare, then syncs.
-  /// The same address already connected through another Provider is [AlreadyConnectedFailure], nothing written.
+  /// The same address through another Provider is another Account (ADR 0016), connected beside it.
   /// [loginHint] is the address of the Account being reconnected: it preselects it and the grant must match it
   /// (else [WrongAccountFailure], nothing written).
   Future<Result<Account>> connectGmail({String? loginHint});

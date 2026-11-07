@@ -276,7 +276,7 @@ void main() {
     });
   });
 
-  test('a voce for a mailbox already here through another Provider adds no second Account', () async {
+  test('a voce for the same address through another Provider adds a second Account, da ricollegare', () async {
     const gmail = Account(
       id: 'gmail:ada@acme.com',
       address: 'ada@acme.com',
@@ -295,7 +295,10 @@ void main() {
       ),
     );
     await mirror.reconcile();
-    expect(await accounts(), [gmail]);
+    expect((await accounts()).map((a) => (a.id, a.status)), [
+      ('gmail:ada@acme.com', AccountStatus.attivo),
+      ('imap:ada@acme.com', AccountStatus.daRicollegare),
+    ]);
   });
 
   test('an Account here without a voce, or with a malformed one, is left alone', () async {

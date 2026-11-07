@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -94,5 +96,35 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.text('Altro IMAP'), findsNothing);
+  });
+
+  testWidgets('the same address with two Providers is two Accounts, each with its Provider for VoiceOver', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1200, 1600)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create();
+    final store = getIt<MailStore>();
+    for (final (i, p) in [ProviderKind.gmail, ProviderKind.imap].indexed) {
+      h.providerFor('${p.name}:ada@acme.com');
+      await store.addAccount(
+        Account(id: '${p.name}:ada@acme.com', address: 'ada@acme.com', provider: p, color: i, position: i),
+      );
+    }
+    LocaleSettings.setLocaleSync(AppLocale.it);
+    await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+    unawaited(Routefly.navigate(routePaths.posta.path));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('drawer-impostazioni')));
+    await tester.pumpAndSettle();
+
+    for (final (id, provider) in [('gmail:ada@acme.com', 'Gmail'), ('imap:ada@acme.com', 'IMAP')]) {
+      expect(tester.getSemantics(find.byKey(ValueKey('settings-account-$id'))).label, 'ada@acme.com\n$provider');
+    }
+    // The sections of each Account read apart too.
+    expect(find.text('ADA@ACME.COM · GMAIL'), findsOneWidget);
+    expect(find.text('ADA@ACME.COM · IMAP'), findsOneWidget);
   });
 }

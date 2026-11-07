@@ -28,10 +28,10 @@ class QueueReplay(
     await _outbox.sendDue(accountId, provider);
   }
 
-  /// Sends the Account's queue, in its turn, unless it may not go to the Provider now.
-  Future<void> ifActive(String accountId) async {
+  /// [run] in the Account's turn, unless its queue may not go to the Provider now.
+  Future<void> ifActive(String accountId, {bool flush = false, bool outboxOnly = false}) async {
     if (await _gate.active(accountId) case final account?) {
-      await _queue.run(accountId, () => run(accountId, providerFor(account)));
+      await _queue.run(accountId, () => run(accountId, providerFor(account), flush: flush, outboxOnly: outboxOnly));
     }
   }
 

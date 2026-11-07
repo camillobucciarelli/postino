@@ -163,9 +163,7 @@ class SyncEngine(
   @override
   Future<void> flushDrafts(String accountId) async {
     await _draftTimers.remove(accountId)?.cancel();
-    if (await _gate.active(accountId) case final account?) {
-      await _queue.run(accountId, () => _replay.run(accountId, providerFor(account), flush: true));
-    }
+    await _replay.ifActive(accountId, flush: true);
   }
 
   @override
@@ -178,9 +176,7 @@ class SyncEngine(
   /// and go with the first replay after it (the next poll or sync); so do those of a Da ricollegare Account.
   @override
   Future<void> flushOutbox(String accountId) async {
-    if (await _gate.active(accountId) case final account?) {
-      await _queue.run(accountId, () => _replay.run(accountId, providerFor(account), outboxOnly: true));
-    }
+    await _replay.ifActive(accountId, outboxOnly: true);
   }
 
   @override

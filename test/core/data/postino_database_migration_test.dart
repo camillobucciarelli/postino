@@ -237,6 +237,7 @@ void main() {
         "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
         "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
       )
+      ..execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')")
       ..execute('PRAGMA user_version = 9');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -429,6 +430,7 @@ void main() {
           "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
           "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
         )
+        ..execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')")
         // The v4 messages schema is the v6 one: from here v7, v10, v12 and v13 all run.
         ..execute('PRAGMA user_version = 6');
       final db = PostinoDatabase(NativeDatabase.opened(raw));

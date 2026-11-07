@@ -15,16 +15,12 @@ import 'row_mappers.dart';
 class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
   // --- Bozze (#35) ---
   @override
-  Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
+  Future<bool> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
       _db.draftsDao.save(accountId, draft, updatedAt: updatedAt);
 
   @override
   Future<bool> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt}) =>
-      _db.transaction(() async {
-        if (!await _db.accountsDao.exists(accountId)) return false;
-        await _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
-        return true;
-      });
+      _db.draftsDao.adopt(accountId, draft, updatedAt: updatedAt);
 
   @override
   Future<LocalDraft?> localDraft(String accountId, String messageId) async {

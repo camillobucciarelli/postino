@@ -26,7 +26,24 @@ void main() {
   test('the local Bozza of an Account removed meanwhile reads as none', () async {
     final db = PostinoDatabase.inMemory();
     addTearDown(db.close);
-    await db.draftsDao.save('a', _msg, updatedAt: 5);
+    // A row left by a writer that raced the removal.
+    await db
+        .into(db.drafts)
+        .insert(
+          DraftsCompanion.insert(
+            accountId: 'a',
+            messageId: 'm1',
+            recipients: '',
+            cc: '',
+            bcc: '',
+            subject: 's',
+            body: 'b',
+            updatedAt: 5,
+            pending: true,
+            synced: false,
+            remoteKnown: false,
+          ),
+        );
     expect(await OutboxStore(db).localDraft('a', 'm1'), isNull);
   });
 

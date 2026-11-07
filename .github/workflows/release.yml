@@ -1,8 +1,8 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `guide` publishes the
-# invitees' guide (#123) next to them.
+# `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `site` publishes the
+# invitees' guide (#123) and the download page (#173) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -42,13 +42,17 @@ jobs:
   # version, like the "latest" downloads; a manual run (from main) always publishes it. No `needs: version`: a manual
   # run of an already released version stops there (and so do the platform jobs), while the guide still goes out, so
   # a fix to the guide alone needs no new version.
-  guide:
+  # The download page (#173) goes up as index.html at the bucket root, with __VERSION__ replaced. The root `/` itself
+  # is served by a Cloudflare Transform Rule (Rewrite URL: path exactly `/` -> static `/index.html`), set by hand by the
+  # owner in the dashboard, outside this repo: without it only /index.html works.
+  site:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - run: tool/release/guide_check.sh
-      - name: Upload the guide to R2
+      - run: tool/release/download_check.sh
+      - name: Upload the guide and the download page to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -62,12 +66,16 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             latest=$(tool/release/is_latest.sh "$version")
             if [ "$latest" != yes ]; then
-              echo "v$version is not the highest version: guide left as it is"
+              echo "v$version is not the highest version: guide and download page left as they are"
               exit 0
             fi
           fi
           tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
           echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p build
+          sed "s/__VERSION__/$version/g" docs/download/index.html > build/download.html
+          tool/release/r2_upload.sh build/download.html index.html 'text/html; charset=utf-8' 'public, max-age=300'
+          echo "- Download: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}index.html" >> "$GITHUB_STEP_SUMMARY"
 
   macos:
     needs: version

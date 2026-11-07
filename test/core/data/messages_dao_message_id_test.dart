@@ -26,4 +26,22 @@ void main() {
     expect(await db.intentsDao.rfcMessageId('a1', 'm1'), '<m1@example.com>');
     expect(await db.intentsDao.rfcMessageId('a1', 'other'), isNull);
   });
+
+  test('a Conflitto found under the id the message moved to survives the next sync', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    await db.messagesDao.applySync('a1', SyncBatch(cursor: '1', messages: [msg('old')]));
+    await db.intentsDao.queue('a1', ['old'], const MarkRead());
+    // The sync sees the move: the old id goes, the new one comes.
+    await db.messagesDao.applySync(
+      'a1',
+      SyncBatch(cursor: '2', messages: [msg('new')], removedMessageIds: const ['old']),
+    );
+    await db.intentsDao.conflict('a1', 'old', 'read', 'true', 'false', movedTo: 'new');
+    await db.messagesDao.applySync('a1', const SyncBatch(cursor: '3'));
+    final c = await db.select(db.conflicts).getSingle();
+    expect((c.messageId, c.attribute, c.local), ('new', 'read', 'true'));
+    expect(await db.attributesDao.read('a1', 'new', 'read'), 'true');
+    expect(await db.select(db.intents).get(), isEmpty);
+  });
 }

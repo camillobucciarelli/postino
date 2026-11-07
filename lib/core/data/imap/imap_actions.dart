@@ -39,7 +39,11 @@ class ImapActions(
       // Already as wanted: nothing to write.
       if (current == action.wanted) return const ActionApplied();
       // Elimina never conflicts. Another folder or flag changed is another attribute: not a Conflitto.
-      if (expected != null && current != expected && action is! Delete) return ActionConflict(current);
+      if (expected != null && current != expected && action is! Delete) {
+        // Found under another id (moved elsewhere): the Conflitto is kept under it.
+        final id = imapMessageId(at.folder.path, at.uidValidity, at.uid);
+        return ActionConflict(current, movedTo: id == messageId ? null : id);
+      }
       if (await _write(c, folders, at, action)) return const ActionApplied();
     }
     throw const ImapFailed(UnexpectedFailure('the flags kept changing under the write'));

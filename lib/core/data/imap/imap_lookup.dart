@@ -20,9 +20,14 @@ class ImapLookup(final ImapSession _session) {
     final criteria = messageIdCriteria(messageId);
     if (criteria == null) return null;
     for (final f in folders) {
-      final box = await selectFolder(c, f.path, condstore: _session.condstore);
-      final uids = await search(c, criteria);
-      if (uids.isNotEmpty) return imapMessageId(f.path, box.uidValidity ?? 0, uids.first);
+      try {
+        final box = await selectFolder(c, f.path, condstore: _session.condstore);
+        final uids = await search(c, criteria);
+        if (uids.isNotEmpty) return imapMessageId(f.path, box.uidValidity ?? 0, uids.first);
+      } on ImapFailed catch (e) {
+        // A folder the server refuses (gone since the LIST, not readable) does not hide the message in the others.
+        if (e.failure is! NotFoundFailure) rethrow;
+      }
     }
     return null;
   }

@@ -13,8 +13,12 @@ final class const ActionApplied() extends ActionOutcome {
 /// Conflitto: the attribute was changed elsewhere to [providerValue]; nothing was written.
 final class const ActionConflict(
   /// The value the Provider has: a `bool`, or a `Placement`.
-  final Object providerValue,
-) extends ActionOutcome {
+  final Object providerValue, {
+
+  /// The id the message has now, when the Provider's ids change as a message moves (IMAP) and it was found under
+  /// another one than the Azione was queued with: the Conflitto is kept under it.
+  final String? movedTo,
+}) extends ActionOutcome {
   /// Crea l'esito.
   this;
 }

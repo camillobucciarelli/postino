@@ -1,5 +1,6 @@
 // The Azioni on servers GreenMail is not (2.1.15 announces MOVE and UIDPLUS, no CONDSTORE): recorded responses.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/imap/imap_actions.dart' show MessageIdOf;
 import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/domain/action_outcome.dart';
 import 'package:postino/core/domain/mail_action.dart';
@@ -17,15 +18,23 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
   String flags = '';
   var modSeq = 100;
   var stores = 0;
+  var folders = _folders;
+
+  /// Folders SELECT refuses.
+  final unselectable = <String>{};
+
+  /// What a SEARCH by Message-ID finds, when the destination holds no copy.
+  var found = <String>[];
   var copies = 0;
 
   /// Whether the destination holds the message already (a COPY was done).
   var copied = false;
 
   List<String> answer(String command) {
-    if (basics(command, capabilities: capabilities, folders: _folders) case final b?) return b;
+    if (basics(command, capabilities: capabilities, folders: folders) case final b?) return b;
     final upper = command.toUpperCase();
     if (upper.startsWith('SELECT')) {
+      if (unselectable.any((f) => upper.contains('"${f.toUpperCase()}"'))) return ['NO [NONEXISTENT] no such mailbox'];
       return [
         r'* FLAGS (\Seen \Flagged \Deleted)',
         '* 1 EXISTS',
@@ -35,6 +44,7 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
         'OK [READ-WRITE] SELECT completed',
       ];
     }
+    if (upper.startsWith('UID FETCH 9 ')) return <String>[];
     if (upper.startsWith('UID FETCH 5 (UID FLAGS')) return ['* 1 FETCH (UID 5 FLAGS ($flags) MODSEQ ($modSeq))'];
     if (upper.startsWith('UID FETCH 5 (UID BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])')) {
       return ['* 1 FETCH (UID 5 BODY[HEADER.FIELDS (MESSAGE-ID)] ${literal('Message-ID: <m5@example.com>\r\n\r\n')})'];
@@ -44,7 +54,7 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
       copied = true;
       return ['OK COPY completed'];
     }
-    if (upper.startsWith('UID SEARCH HEADER MESSAGE-ID')) return copied ? ['* SEARCH 9'] : <String>[];
+    if (upper.startsWith('UID SEARCH HEADER MESSAGE-ID')) return copied ? ['* SEARCH 9'] : found;
     if (upper.startsWith('UID STORE')) {
       // RFC 7162 §3.1.3: the modifier follows the sequence set.
       if (upper.contains('UNCHANGEDSINCE') && !RegExp(r'^UID STORE \d+ \(UNCHANGEDSINCE \d+\) ').hasMatch(upper)) {
@@ -57,7 +67,7 @@ class _Mailbox(final String capabilities, {final List<String> Function(int n)? o
   }
 }
 
-Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox) async {
+Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox, {MessageIdOf? messageIdOf}) async {
   final server = await RecordedImapServer.start(mailbox.answer);
   addTearDown(server.stop);
   final keychain = FakeSecureStore();
@@ -68,6 +78,7 @@ Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox) async {
     keychain,
     FakeClock(DateTime.utc(2026, 11, 6)),
     connect: plainConnector,
+    messageIdOf: messageIdOf,
   );
   addTearDown(p.close);
   return (p, server);
@@ -158,5 +169,16 @@ void main() {
     expect(okValue(await p.applyAction('INBOX/7/5', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
     expect(mailbox.copies, 1);
     expect(_writes(server).where((c) => c.startsWith('UID EXPUNGE')), ['UID EXPUNGE 5']);
+  });
+
+  test('a folder the server refuses does not hide the message in the next one', () async {
+    final mailbox = _Mailbox('IMAP4rev1 MOVE')
+      ..folders = const [('', 'Broken'), ('', 'INBOX')]
+      ..unselectable.add('Broken')
+      ..found = ['* SEARCH 5'];
+    final (p, server) = await _setUp(mailbox, messageIdOf: (_) async => '<m5@example.com>');
+    // UID 9 is gone from INBOX: found by Message-ID, past the folder SELECT refuses.
+    expect(okValue(await p.applyAction('INBOX/7/9', const MarkRead(), expected: false)), isA<ActionApplied>());
+    expect(_writes(server), [r'UID STORE 5 +FLAGS (\Seen)']);
   });
 }

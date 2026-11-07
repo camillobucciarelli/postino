@@ -7,7 +7,7 @@ import 'imap_session.dart';
 
 /// Where a message is and what the server has of it: its folder and UID, `\Seen` and `\Flagged`, and the MODSEQ
 /// when the server has CONDSTORE. Its folder is the selected one.
-typedef ImapPlace = ({ImapFolder folder, int uid, bool seen, bool flagged, int? modSeq});
+typedef ImapPlace = ({ImapFolder folder, int uidValidity, int uid, bool seen, bool flagged, int? modSeq});
 
 const seenFlag = r'\Seen';
 const flaggedFlag = r'\Flagged';
@@ -21,9 +21,11 @@ Future<ImapPlace?> readPlace(
   int? uidValidity,
   required bool condstore,
 }) async {
+  var validity = 0;
   try {
     final box = await selectFolder(c, folder.path, condstore: condstore);
     if (uidValidity != null && box.uidValidity != uidValidity) return null;
+    validity = box.uidValidity ?? 0;
   } on ImapFailed catch (e) {
     if (e.failure is NotFoundFailure) return null;
     rethrow;
@@ -35,7 +37,14 @@ Future<ImapPlace?> readPlace(
   );
   final m = r.messages.where((m) => m.uid == uid).firstOrNull;
   if (m == null) return null;
-  return (folder: folder, uid: uid, seen: m.isSeen, flagged: m.isFlagged, modSeq: condstore ? m.modSequence : null);
+  return (
+    folder: folder,
+    uidValidity: validity,
+    uid: uid,
+    seen: m.isSeen,
+    flagged: m.isFlagged,
+    modSeq: condstore ? m.modSequence : null,
+  );
 }
 
 /// Adds or removes [flag] on [at]. With a MODSEQ the write is conditional (`UNCHANGEDSINCE`): false when the flags

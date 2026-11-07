@@ -44,7 +44,10 @@ void main() {
     await h.deliver(msg('a', labelIds: const [trashLabelId]));
     expect(
       okValue(await h.provider.applyAction(queued, const Archive(), expected: Placement.inbox)),
-      isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', Placement.trash),
+      isA<ActionConflict>()
+          .having((c) => c.providerValue, 'providerValue', Placement.trash)
+          // Found under the id it has now: the Conflitto is kept under it.
+          .having((c) => c.movedTo, 'movedTo', h.idOf('a')),
     );
     expect((await now('a')).labelIds, contains(trashLabelId));
   });

@@ -145,19 +145,29 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
 
   /// The Provider has [provider], changed elsewhere: the voce becomes a Conflitto and the message keeps [wanted]
   /// here. One changed meanwhile stays queued instead.
-  Future<void> conflict(String accountId, String messageId, String attribute, String wanted, String provider) =>
-      transaction(() async {
-        if (await _drop(accountId, messageId, attribute, wanted) == 0) return;
-        await into(conflicts).insertOnConflictUpdate(
-          ConflictsCompanion.insert(
-            accountId: accountId,
-            messageId: messageId,
-            attribute: attribute,
-            local: wanted,
-            provider: provider,
-          ),
-        );
-      });
+  /// [movedTo]: the message has another id now (its old row is gone from here): the Conflitto is kept under it, or
+  /// the next sync would close it, and the message there keeps [wanted] too.
+  Future<void> conflict(
+    String accountId,
+    String messageId,
+    String attribute,
+    String wanted,
+    String provider, {
+    String? movedTo,
+  }) => transaction(() async {
+    if (await _drop(accountId, messageId, attribute, wanted) == 0) return;
+    final id = movedTo ?? messageId;
+    await into(conflicts).insertOnConflictUpdate(
+      ConflictsCompanion.insert(
+        accountId: accountId,
+        messageId: id,
+        attribute: attribute,
+        local: wanted,
+        provider: provider,
+      ),
+    );
+    if (movedTo != null) await attachedDatabase.attributesDao.write(accountId, movedTo, attribute, wanted);
+  });
 
   /// The Provider refused the voce: it leaves the queue and the message gets back the value it had without it.
   /// One changed meanwhile stays, with its local change.

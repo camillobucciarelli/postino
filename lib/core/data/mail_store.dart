@@ -144,13 +144,16 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.intentsDao.done(accountId, q.messageId, q.action.attribute, encodeValue(q.action.wanted));
 
   /// The Provider has [provider], changed elsewhere: the voce becomes a Conflitto, the local version stays.
-  Future<void> actionConflict(String accountId, QueuedAction q, Object provider) => _db.intentsDao.conflict(
-    accountId,
-    q.messageId,
-    q.action.attribute,
-    encodeValue(q.action.wanted),
-    encodeValue(provider),
-  );
+  /// [movedTo]: the id the message has now, when the voce was queued under an older one.
+  Future<void> actionConflict(String accountId, QueuedAction q, Object provider, {String? movedTo}) =>
+      _db.intentsDao.conflict(
+        accountId,
+        q.messageId,
+        q.action.attribute,
+        encodeValue(q.action.wanted),
+        encodeValue(provider),
+        movedTo: movedTo,
+      );
 
   /// The Provider refused the voce: it leaves the queue and the change is undone here.
   Future<void> actionRejected(String accountId, QueuedAction q) =>

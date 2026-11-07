@@ -3,7 +3,7 @@ import 'inbox_repository.dart';
 import 'message.dart';
 
 /// An outbox row as the sender reads it (#36): `version` tags its preparation, `sendAfter` (ms since epoch, UTC)
-/// is when Annulla invio ends, `attempted` once a send was tried, `failed` when the Provider refused it for good.
+/// is when Annulla invio ends, `submitted` once SMTP accepted it (#175), `attempted` once a send was tried, `failed` when the Provider refused it for good.
 typedef OutboxItem = ({
   String messageId,
   int version,
@@ -12,6 +12,7 @@ typedef OutboxItem = ({
   int sendAfter,
   bool attempted,
   bool failed,
+  bool submitted,
 });
 
 /// The local copy of a Bozza: `pending` while it has edits not on the Provider yet.
@@ -107,6 +108,9 @@ abstract interface class OutboxRepository() {
     required int untilMs,
     required int nowMs,
   });
+
+  /// SMTP accepted the message at [nowMs] (#175): a replay appends the copy in Inviati and does not submit again.
+  Future<void> outgoingSubmitted(String accountId, String messageId, {required int nowMs});
 
   /// A send failed and may be retried: the row is free again, for the next replay of either isolate.
   Future<void> unclaimOutgoing(String accountId, String messageId);

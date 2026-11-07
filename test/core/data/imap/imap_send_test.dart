@@ -125,6 +125,62 @@ void main() {
       expect(await copies('Sent'), 1);
     });
 
+    test('submitted: no SMTP connection, only the APPEND, then the Bozza goes (#175)', () async {
+      final d = _draft(to: h.address);
+      final raw = renderMime(d, DateTime.utc(2026));
+      var submissions = 0;
+      final p = adapter(
+        smtp: (c, s) {
+          submissions++;
+          return connectSmtp(c, s);
+        },
+      );
+      addTearDown(p.close);
+      _ok(await p.send(d.messageId, raw, submitted: true));
+      expect(submissions, 0);
+      expect(await copies('Sent'), 1);
+    });
+
+    test(
+      'a crash between SMTP and APPEND: a new adapter told submitted leaves one delivery and one copy (#175)',
+      () async {
+        final d = _draft(to: h.address);
+        final raw = renderMime(d, DateTime.utc(2026));
+        var recorded = false;
+        // IMAP drops while SMTP submits: the APPEND fails (as if the process died there), the row remembers the submission.
+        var imapDown = false;
+        late ImapProvider first;
+        first = adapter(
+          connect: (c, s) async {
+            if (imapDown) throw const SocketException('down');
+            await connectImap(c, s);
+          },
+          smtp: (c, s) async {
+            await first.close();
+            imapDown = true;
+            await connectSmtp(c, s);
+          },
+        );
+        addTearDown(first.close);
+        expect(await first.send(d.messageId, raw, onSubmitted: () async => recorded = true), _err<OfflineFailure>());
+        expect(recorded, isTrue);
+        expect(await copies('Sent'), 0);
+
+        var submissions = 0;
+        final second = adapter(
+          smtp: (c, s) {
+            submissions++;
+            return connectSmtp(c, s);
+          },
+        );
+        addTearDown(second.close);
+        _ok(await second.send(d.messageId, raw, submitted: recorded));
+        expect(submissions, 0);
+        expect(await delivered(), 1);
+        expect(await copies('Sent'), 1);
+      },
+    );
+
     test('a Provider filing the submission itself: no second copy in Inviati', () async {
       final d = _draft(to: h.address);
       final raw = renderMime(d, DateTime.utc(2026));

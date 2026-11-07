@@ -135,7 +135,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -232,6 +232,10 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       // Before v18 the queue was just created above, with it; a database taken back to v18 or v19 may hold it already.
       if (from >= 18 && from < 20 && !await _hasColumn('intents', 'rfc_message_id')) {
         await m.addColumn(intents, intents.rfcMessageId);
+      }
+      // Before v13 the outbox was just created above, with it.
+      if (from >= 13 && from < 21 && !await _hasColumn('outbox', 'smtp_sent_at')) {
+        await m.addColumn(outbox, outbox.smtpSentAt);
       }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);

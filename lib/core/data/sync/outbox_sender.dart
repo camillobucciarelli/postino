@@ -163,7 +163,14 @@ class OutboxSender(
       )) {
         continue;
       }
-      switch (await provider.send(row.messageId, row.raw, threadId: row.conversationId)) {
+      switch (await provider.send(
+        row.messageId,
+        row.raw,
+        threadId: row.conversationId,
+        submitted: row.submitted,
+        onSubmitted: () =>
+            _outbox.outgoingSubmitted(accountId, row.messageId, nowMs: _clock.now().millisecondsSinceEpoch),
+      )) {
         case Ok(:final value):
           await _outbox.outgoingSent(accountId, row.messageId, providerId: value, date: now, sendAfter: row.sendAfter);
           debugPrint('[sync] $accountId: sent ${row.messageId}');

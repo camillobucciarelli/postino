@@ -124,6 +124,10 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
   ];
 
   @override
+  Future<void> outgoingSubmitted(String accountId, String messageId, {required int nowMs}) =>
+      _db.outboxDao.markSubmitted(accountId, messageId, nowMs);
+
+  @override
   Future<bool> hasOutgoing(String accountId) => _db.outboxDao.any(accountId);
 
   @override
@@ -208,6 +212,7 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
     sendAfter: r.sendAfter,
     attempted: r.attempted,
     failed: r.failed,
+    submitted: r.smtpSentAt != null,
   );
 
   static OutgoingMessage _draft(DraftRow r, String from) => OutgoingMessage(

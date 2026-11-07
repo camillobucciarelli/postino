@@ -200,8 +200,13 @@ class ImapProvider(
 
   /// [threadId] is not needed: on IMAP the Conversazione comes from `References`, already in [raw].
   @override
-  Future<Result<String>> send(String messageId, String raw, {String? threadId}) =>
-      imapGuard(() => _sent.send(messageId, raw));
+  Future<Result<String>> send(
+    String messageId,
+    String raw, {
+    String? threadId,
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  }) => imapGuard(() => _sent.send(messageId, raw, submitted: submitted, onSubmitted: onSubmitted));
 
   @override
   Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) =>

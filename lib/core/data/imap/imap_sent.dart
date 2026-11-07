@@ -21,18 +21,29 @@ class ImapSent(
   /// Whether the client stores the sent copy: false for a Provider that keeps the SMTP submissions by itself.
   required final bool appendToSent,
 }) {
-  /// Message-IDs submitted by SMTP whose copy in Inviati is not there yet: their retry only appends.
-  // ponytail: in memory, per isolate: a restart, or the background isolate replaying the row, between the
-  // submission and the APPEND submits again (a second delivery); persist it on the outbox row if that ever bites.
+  /// Message-IDs submitted by SMTP whose copy in Inviati is not there yet: their retry only appends. Memory of this
+  /// adapter only; across a restart or the background isolate the outbox row remembers it (#175), via `submitted`.
   final _submitted = <String>{};
 
-  /// Sends [raw], whose Message-ID is [messageId]; the id of its copy in Inviati.
-  Future<String> send(String messageId, String raw) async {
+  /// Sends [raw], whose Message-ID is [messageId]; the id of its copy in Inviati. With [submitted] SMTP is skipped;
+  /// [onSubmitted] runs right after SMTP accepted the message, before the APPEND.
+  Future<String> send(
+    String messageId,
+    String raw, {
+    bool submitted = false,
+    Future<void> Function()? onSubmitted,
+  }) async {
     var id = await _session.run((c) => _find(c, messageId));
     if (id == null) {
-      if (!_submitted.contains(messageId)) {
+      if (!submitted && !_submitted.contains(messageId)) {
         await _smtp.send(raw);
         _submitted.add(messageId);
+        try {
+          await onSubmitted?.call();
+        } on Object catch (e) {
+          // The message went: the APPEND goes on; this adapter's memory still stops a second submission.
+          debugPrint('[imap] submission of $messageId not recorded, $e');
+        }
       }
       id = appendToSent
           ? await _session.run<String>((c) => _append(c, messageId, raw))

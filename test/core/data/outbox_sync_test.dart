@@ -158,6 +158,26 @@ void main() {
     expect((await inviati()).single.message.id, 's-1');
   });
 
+  test(
+    'SMTP accepted but the copy failed (#175): the row remembers it and the replay only completes the send',
+    () async {
+      engine.start();
+      addTearDown(engine.stop);
+      await pumpEventQueue();
+      a.failAfterSubmit = const OfflineFailure();
+      await engine.send('a', _message(id));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect((await outbox()).single.smtpSentAt, isNotNull);
+
+      a.failAfterSubmit = null;
+      h.clock.advance(pollEvery);
+      await pumpEventQueue();
+      expect(a.sendSubmitted, [false, true]);
+      expect(await outbox(), isEmpty);
+    },
+  );
+
   test('an entry still queued at restart goes at the next start', () async {
     await engine.send('a', _message(id));
     await engine.stop();
@@ -329,6 +349,7 @@ void main() {
     await pumpEventQueue();
     a.holdSend!.complete();
     expect(await cancel, isNull);
+    await pumpEventQueue(); // the send records its submission before it completes
     expect(await outbox(), isEmpty);
     expect((await inviati()).single.message.messageId, id);
   });

@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/accounts_repository.dart';
+import '../domain/attachment_repository.dart';
 import '../domain/connection_tester.dart';
 import '../domain/google_consent.dart';
 import '../domain/mail_servers.dart';
@@ -30,6 +31,7 @@ class AccountsService(
   final GoogleRevoke _revoke,
   final SettingsRepository _settings,
   final Clock _clock,
+  final AttachmentRepository _attachments,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -83,9 +85,10 @@ class AccountsService(
         return Err(failure);
       case Ok():
     }
-    // The user closed the form while the servers answered: nothing is written.
-    if (cancelled) return const Err(CancelledFailure());
     await _removals[id]?.catchError((Object _) {});
+    // The user closed the form while the servers answered, or while a removal of the same Account ended: nothing
+    // is written.
+    if (cancelled) return const Err(CancelledFailure());
     await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
     return Ok(await _save(id, normalized, provider.kind));
   }
@@ -151,6 +154,8 @@ class AccountsService(
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
     // The Impostazioni di Postino no longer have a Drive to sync on.
     if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    // After the delete: a download already running for the Account finds it removed and writes nothing.
+    await _attachments.clear();
     if (tokens != null) await _revoke.revoke(tokens.refresh);
     // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
     // that refuses one never leaves the other.

@@ -179,6 +179,21 @@ class AttachmentCache(
     return _sync.fetchAttachment(accountId, messageId, attachmentId);
   }
 
+  // ponytail: svuota tutta la cache, per-Account se servirà (the file names are hashes: they do not say the Account).
+  @override
+  Future<void> clear() => _serially(() async {
+    for (final dir in [_storage.cache, _storage.temp]) {
+      await for (final e in dir.list()) {
+        try {
+          await e.delete(recursive: true);
+        } on FileSystemException catch (err) {
+          // A copy another app holds open on Windows: the next launch clears the temporary folder.
+          debugPrint('[attachments] clear: ${e.basename} left, ${err.osError?.message}');
+        }
+      }
+    }
+  });
+
   File _cached(String accountId, String messageId, String attachmentId) =>
       _storage.cache.childFile(sha256.convert(utf8.encode('$accountId\n$messageId\n$attachmentId')).toString());
 

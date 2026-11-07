@@ -306,6 +306,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i960.GoogleRevoke>(),
         gh<_i307.SettingsRepository>(),
         gh<_i398.Clock>(),
+        gh<_i278.AttachmentRepository>(),
       ),
     );
     gh.factory<_i802.ReportProblemUseCase>(

@@ -21,4 +21,7 @@ abstract interface class AttachmentRepository() {
   /// The bytes of attachment [attachmentId] for a forward (#36): from the cache when there (offline too),
   /// else downloaded from the Provider, not stored.
   Future<Result<Uint8List>> bytes(String accountId, String messageId, String attachmentId);
+
+  /// Empties the cache and the decrypted copies (Rimozione di un Account, #174).
+  Future<void> clear();
 }

@@ -234,8 +234,11 @@ class SyncEngine(
     Future<void>? cancel,
   }) async {
     final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    return providerFor(account).fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
+    if (account == null || _removing.containsKey(accountId)) return const Err(NotFoundFailure());
+    final fetched = await providerFor(account)
+        .fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
+    // Removed during the download (#174): the cache does not keep it.
+    return _removing.containsKey(accountId) ? const Err(NotFoundFailure()) : fetched;
   }
 
   @override

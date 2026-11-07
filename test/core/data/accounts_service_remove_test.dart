@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
@@ -245,6 +247,50 @@ void main() {
     expect(await choosing, isA<Err<void>>());
     expect(await h.keychain.read('oauth:$_ada'), isNull);
     expect(await getIt<SettingsRepository>().settingsSyncAccount(), isNull);
+  });
+
+  test('the attachment cache and its copies are emptied; a download still running is not cached', () async {
+    final files = getIt<AttachmentRepository>();
+    provider.deliver(msg('m1'), signal: false);
+    final a = provider.attach('m1', 'a.pdf', [1, 2, 3]);
+    final b = provider.attach('m1', 'b.pdf', [4, 5, 6]);
+    await getIt<MailSync>().syncAll();
+    expect(await files.file(_ada, 'm1', a), isA<Ok<String>>());
+    provider.holdAttachment = Completer<void>();
+    final downloading = files.file(_ada, 'm1', b);
+    await pumpEventQueue();
+
+    await accounts.remove(_ada);
+    provider.holdAttachment!.complete();
+
+    expect(await downloading, isA<Err<String>>());
+    for (final dir in ['/support/attachments', '/tmp/postino-attachments']) {
+      expect(h.fs.directory(dir).listSync(), isEmpty, reason: dir);
+    }
+  });
+
+  test('a password connection closed while a removal of the same Account ends writes nothing', () async {
+    const id = 'icloud:ada@icloud.com';
+    h.providerFor(id);
+    await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
+    final removing = accounts.remove(id);
+    // The row is gone, the keychain cleanup waits: a connection now waits for it.
+    while ((await getIt<MailStore>().accounts()).any((a) => a.id == id)) {
+      await pumpEventQueue();
+    }
+    final closed = Completer<void>();
+    final connecting = accounts.connectWithPassword('ada@icloud.com', 'app-password-1', cancel: closed.future);
+    await pumpEventQueue();
+    closed.complete();
+    await pumpEventQueue();
+    gate.complete();
+    await removing;
+
+    expect(await connecting, isA<Err<Account>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
+    expect(await h.keychain.read('password:$id'), isNull);
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), isNot(contains(id)));
   });
 
   test('a failed revocation or a keychain that refuses never stops the removal', () async {

@@ -89,6 +89,24 @@ void main() {
     expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
+  test('a v20 of the #142 branch, with the Account voci but no Message-ID in the queue, gets the Message-ID', () async {
+    final raw = sqlite3.openInMemory();
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    raw
+      ..execute('ALTER TABLE intents DROP COLUMN rfc_message_id')
+      ..execute('ALTER TABLE outbox DROP COLUMN smtp_sent_at')
+      ..execute("INSERT INTO intents (account_id, message_id, attribute, wanted) VALUES ('a1', 'm1', 'read', 'true')")
+      ..execute('PRAGMA user_version = 20');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    // A plain select(intents) passes without the column: read it by name, as IntentsDao does.
+    expect(await db.intentsDao.rfcMessageId('a1', 'm1'), isNull);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
+  });
+
   test('v19 adds the expected value and the Conflitto of the Bozze, null for those stored before', () async {
     final raw = sqlite3.openInMemory();
     final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
@@ -309,7 +327,7 @@ void main() {
 
   test('v22 puts the Accounts already here in the synced voci, to upload but older than any copy elsewhere', () async {
     final raw = sqlite3.openInMemory();
-    // A current database taken back to the v19 shape: two Accounts, one of them with its voce already synced.
+    // A current database taken back to the v21 shape: two Accounts, one of them with its voce already synced.
     final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
     await first.customSelect('SELECT 1').get();
     await first.close();

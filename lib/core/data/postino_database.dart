@@ -232,7 +232,8 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         await m.addColumn(drafts, drafts.conflict);
       }
       // Before v18 the queue was just created above, with it; a database taken back to v18 or v19 may hold it already.
-      if (from >= 18 && from < 20 && !await _hasColumn('intents', 'rfc_message_id')) {
+      // Up to v21: a v20 of the #142 branch (the Account voci) came before this column, and lacks it.
+      if (from >= 18 && from < 22 && !await _hasColumn('intents', 'rfc_message_id')) {
         await m.addColumn(intents, intents.rfcMessageId);
       }
       // Before v13 the outbox was just created above, with it.

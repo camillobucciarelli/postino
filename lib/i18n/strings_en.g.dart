@@ -536,8 +536,9 @@ class _Translations$accounts$en extends Translations$accounts$it {
 	@override String get microsoft => 'Microsoft';
 	@override String remove({required Object address}) => 'Remove the Account ${address}';
 	@override String removeTitle({required Object name}) => 'Remove the Account ${name}?';
-	@override String get removeMessage => 'The emails downloaded on this device are deleted; nothing changes on the server.';
+	@override String get removeMessage => 'The emails downloaded on this device are deleted; on the server they stay as they are.';
 	@override String get removeNote => 'Changes not yet sent to the server are lost.';
+	@override String get removeGmailNote => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.';
 	@override String get removeConfirm => 'Remove';
 	@override String get removeCancel => 'Cancel';
 }
@@ -877,8 +878,9 @@ extension on TranslationsEn {
 			'accounts.microsoft' => 'Microsoft',
 			'accounts.remove' => ({required Object address}) => 'Remove the Account ${address}',
 			'accounts.removeTitle' => ({required Object name}) => 'Remove the Account ${name}?',
-			'accounts.removeMessage' => 'The emails downloaded on this device are deleted; nothing changes on the server.',
+			'accounts.removeMessage' => 'The emails downloaded on this device are deleted; on the server they stay as they are.',
 			'accounts.removeNote' => 'Changes not yet sent to the server are lost.',
+			'accounts.removeGmailNote' => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.',
 			'accounts.removeConfirm' => 'Remove',
 			'accounts.removeCancel' => 'Cancel',
 			_ => null,

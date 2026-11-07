@@ -10,8 +10,13 @@ class FakeSecureStore() implements SecureStore {
 
   /// While set, every read throws it: a locked keychain, access denied.
   Exception? failure;
+
+  /// While set, every read waits for it: a keychain prompt the user has not answered yet.
+  Future<void>? readGate;
+
   @override
   Future<String?> read(String key) async {
+    await readGate;
     if (failure case final f?) throw f;
     return values[key];
   }

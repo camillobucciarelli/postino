@@ -309,6 +309,84 @@ void main() {
     expect(h.httpRequests, hasLength(1), reason: 'the revocation went');
   });
 
+  test('a Gmail Account removed during its reconnection consent asks for the consent again', () async {
+    await getIt<MailStore>().setStatus(_ada, AccountStatus.daRicollegare);
+    final page = Completer<void>();
+    h.consent.gate = page.future;
+    final reconnecting = accounts.connectGmail(loginHint: 'ada@gmail.com');
+    await pumpEventQueue();
+    h.httpHold = Completer<void>();
+    final removing = accounts.remove(_ada);
+    while (h.httpRequests.isEmpty) {
+      await pumpEventQueue();
+    }
+    page.complete();
+    await pumpEventQueue();
+    h.httpHold!.complete();
+    await removing;
+
+    expect(await reconnecting, isA<Err<Account>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+  });
+
+  test('a removal whose delete fails leaves the Account working', () async {
+    provider.deliver(msg('m1'), signal: false);
+    await getIt<MailSync>().syncAll();
+    // The delete of the accounts row fails: the transaction rolls back.
+    await getIt<PostinoDatabase>().customStatement(
+      "CREATE TRIGGER no_delete BEFORE DELETE ON accounts BEGIN SELECT RAISE(ABORT, 'busy'); END",
+    );
+
+    await expectLater(accounts.remove(_ada), throwsA(anything));
+
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), [_ada]);
+    expect(await getIt<MailSync>().fetchBody(_ada, 'm1'), isA<Ok<void>>(), reason: 'not fenced off any more');
+  });
+
+  test('a revocation that fails still lets the credentials go', () async {
+    h.httpFailure = Exception('no network');
+
+    await accounts.remove(_ada);
+
+    expect(h.httpRequests, hasLength(1), reason: 'it was tried');
+    expect(await h.keychain.read('oauth:$_ada'), isNull);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+  });
+
+  test('an attachment whose download ends after the cache was cleared leaves no file', () async {
+    final files = getIt<AttachmentRepository>();
+    provider.deliver(msg('m1'), signal: false);
+    final a = provider.attach('m1', 'a.pdf', [1, 2, 3]);
+    await getIt<MailSync>().syncAll();
+    provider.holdAttachment = Completer<void>();
+    final downloading = files.file(_ada, 'm1', a);
+    await pumpEventQueue();
+
+    // The download already passed the removal's fence: only the cache's own clear can stop it.
+    await files.clear();
+    provider.holdAttachment!.complete();
+
+    expect(await downloading, isA<Err<String>>());
+    for (final dir in ['/support/attachments', '/tmp/postino-attachments']) {
+      expect(h.fs.directory(dir).listSync(), isEmpty, reason: dir);
+    }
+  });
+
+  test('an Azione given while the keychain is slow to answer the removal is never sent', () async {
+    provider.deliver(msg('m1'), signal: false);
+    await getIt<MailSync>().syncAll();
+    final prompt = Completer<void>();
+    h.keychain.readGate = prompt.future;
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+
+    await getIt<MailSync>().act(_ada, ['m1'], const MarkRead());
+    prompt.complete();
+    await removing;
+
+    expect(provider.readCalls, isEmpty);
+  });
+
   test('a failed revocation or a keychain that refuses never stops the removal', () async {
     h
       ..httpFailure = Exception('no network')

@@ -329,8 +329,14 @@ class SyncEngine(
     unawaited(_signals.remove(accountId)?.cancel());
     await _draftTimers.remove(accountId)?.cancel();
     // Not behind the queue: a replay running or queued there must not send the Azioni the user gave up.
-    await _store.dropQueue(accountId);
-    await _serial(accountId, delete);
+    try {
+      await _store.dropQueue(accountId);
+      await _serial(accountId, delete);
+    } catch (_) {
+      // Not removed after all: the Account works again (its dropped queue stays dropped).
+      _removing.remove(accountId);
+      rethrow;
+    }
     _removing[accountId] = true;
     _pausedUntil.remove(accountId);
     // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.

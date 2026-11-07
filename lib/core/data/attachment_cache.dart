@@ -70,8 +70,17 @@ class AttachmentCache(
   }) async {
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
+    // A [clear] during the download counts as Annulla: what this call wrote goes again (#174).
+    final generation = _generation;
     try {
-      return await _file(accountId, messageId, attachment, onProgress, cancel, () => cancelled);
+      return await _file(
+        accountId,
+        messageId,
+        attachment,
+        onProgress,
+        cancel,
+        () => cancelled || _generation != generation,
+      );
     } on Exception catch (e, s) {
       return Err(UnexpectedFailure(e, s));
     }
@@ -183,7 +192,15 @@ class AttachmentCache(
   /// Best effort, never throws: what is left (a copy another app holds open on Windows, a folder that cannot be
   /// listed) goes with the next launch or the eviction.
   @override
-  Future<void> clear() => _serially(() async {
+  Future<void> clear() {
+    _generation++;
+    return _clearing();
+  }
+
+  /// Bumped by each [clear]: a [file] call that started before it keeps nothing.
+  int _generation = 0;
+
+  Future<void> _clearing() => _serially(() async {
     for (final dir in [_storage.cache, _storage.temp]) {
       try {
         await for (final e in dir.list()) {

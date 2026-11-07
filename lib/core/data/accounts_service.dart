@@ -38,6 +38,9 @@ class AccountsService(
 
   @override
   Future<Result<Account>> connectGmail({String? loginHint}) async {
+    // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
+    // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
+    await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
     final GoogleGrant grant;
     switch (await _consent.run(loginHint: loginHint)) {
       case Err(:final failure):
@@ -53,8 +56,12 @@ class AccountsService(
     final address = grant.address.trim().toLowerCase();
     final id = 'gmail:$address';
     if (await _connectedElsewhere(id, address)) return const Err(AlreadyConnectedFailure());
-    // A removal of the same Account still clearing its credentials must not clear the new ones.
-    await _removals[id]?.catchError((Object _) {});
+    // Removed while the user was on Google's page: its revocation would end this grant too, so the consent is to
+    // run again once it is over.
+    if (_removals[id] case final removing?) {
+      await removing.catchError((Object _) {});
+      return const Err(CancelledFailure());
+    }
     await GmailTokens.of(grant).write(_keychain, id);
     return Ok(await _save(id, address, ProviderKind.gmail));
   }
@@ -149,9 +156,10 @@ class AccountsService(
 
   Future<void> _remove(String accountId) async {
     if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
-    // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
-    final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
+    // First: from here nothing of the Account goes to the Provider, whatever the keychain below takes.
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
+    // Still there (they go last); a keychain that does not answer never blocks the removal.
+    final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
     // The Impostazioni di Postino no longer have a Drive to sync on.
     if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
     // After the delete: a download already running for the Account finds it removed and writes nothing. A cache

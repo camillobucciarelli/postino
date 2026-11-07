@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -58,7 +59,7 @@ Future<void> _confirmRemoval(WidgetTester tester, [String id = 'a1']) async {
 
 /// Lets a removal end: it reads the Accounts left from a database stream, which answers outside the fake time.
 Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 5; i++) {
+  for (var i = 0; i < 20; i++) {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
     await tester.pump();
   }
@@ -138,7 +139,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text("Rimuovere l'Account a1@example.com?"), findsOneWidget);
     expect(
-      find.text('Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.'),
+      find.text('Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.'),
+      findsOneWidget,
+    );
+    // A Gmail Account: the revocation at Google is said too.
+    expect(
+      find.text(
+        'Le modifiche non ancora inviate al server vanno perse.\n'
+        'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account '
+        'dovranno ricollegarlo.',
+      ),
       findsOneWidget,
     );
     final focused = FocusManager.instance.primaryFocus!.context!;
@@ -182,5 +192,17 @@ void main() {
     await _settle(tester);
 
     expect(find.text('Tutte le tue caselle in un posto solo.'), findsOneWidget);
+  });
+
+  testWidgets('removing an IMAP Account says nothing about Google', (tester) async {
+    final h = await _start(tester);
+    await h.addAccount('imap1', provider: ProviderKind.imap);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('settings-remove-account-imap1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Le modifiche non ancora inviate al server vanno perse.'), findsOneWidget);
+    expect(find.textContaining('revoca'), findsNothing);
   });
 }

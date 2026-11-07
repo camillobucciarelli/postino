@@ -1061,11 +1061,14 @@ class Translations$accounts$it {
 	/// it: 'Rimuovere l'Account $name?'
 	String removeTitle({required Object name}) => 'Rimuovere l\'Account ${name}?';
 
-	/// it: 'Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.'
-	String get removeMessage => 'Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.';
+	/// it: 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.'
+	String get removeMessage => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.';
 
 	/// it: 'Le modifiche non ancora inviate al server vanno perse.'
 	String get removeNote => 'Le modifiche non ancora inviate al server vanno perse.';
+
+	/// it: 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.'
+	String get removeGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.';
 
 	/// it: 'Rimuovi'
 	String get removeConfirm => 'Rimuovi';
@@ -1459,8 +1462,9 @@ extension on Translations {
 			'accounts.microsoft' => 'Microsoft',
 			'accounts.remove' => ({required Object address}) => 'Rimuovi l\'Account ${address}',
 			'accounts.removeTitle' => ({required Object name}) => 'Rimuovere l\'Account ${name}?',
-			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server non cambia nulla.',
+			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.',
 			'accounts.removeNote' => 'Le modifiche non ancora inviate al server vanno perse.',
+			'accounts.removeGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.',
 			'accounts.removeConfirm' => 'Rimuovi',
 			'accounts.removeCancel' => 'Annulla',
 			_ => null,

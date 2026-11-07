@@ -50,9 +50,9 @@ class IntentReplayer(
         // Gone from the Provider: the voce is dropped in silence.
         case Ok(value: ActionApplied() || ActionMessageGone()) || Err(failure: NotFoundFailure()):
           await _store.actionDone(accountId, q);
-        case Ok(value: ActionConflict(:final providerValue)):
+        case Ok(value: ActionConflict(:final providerValue, :final movedTo)):
           debugPrint('[sync] $accountId: Conflitto on ${q.messageId} ${q.action.attribute}');
-          await _store.actionConflict(accountId, q, providerValue);
+          await _store.actionConflict(accountId, q, providerValue, movedTo: movedTo);
         // ponytail: a refusal (an Etichetta deleted elsewhere) would be retried forever, and the message may never
         // come back in the history: the voce is dropped and the change undone here.
         case Err(failure: final f && RejectedFailure()):

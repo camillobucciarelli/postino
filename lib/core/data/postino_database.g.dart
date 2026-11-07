@@ -2589,6 +2589,17 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _rfcMessageIdMeta = const VerificationMeta(
+    'rfcMessageId',
+  );
+  @override
+  late final GeneratedColumn<String> rfcMessageId = GeneratedColumn<String>(
+    'rfc_message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -2599,6 +2610,7 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
     heldUntil,
     previous,
     synced,
+    rfcMessageId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2668,6 +2680,15 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
       );
     }
+    if (data.containsKey('rfc_message_id')) {
+      context.handle(
+        _rfcMessageIdMeta,
+        rfcMessageId.isAcceptableOrUnknown(
+          data['rfc_message_id']!,
+          _rfcMessageIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2709,6 +2730,10 @@ class $IntentsTable extends Intents with TableInfo<$IntentsTable, IntentRow> {
         DriftSqlType.string,
         data['${effectivePrefix}synced'],
       ),
+      rfcMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rfc_message_id'],
+      ),
     );
   }
 
@@ -2741,6 +2766,11 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
   /// voce back (Annulla, a refusal) shows it instead of the stale [expected]; the replay still expects [expected],
   /// so a change elsewhere is a Conflitto (ADR 0008).
   final String? synced;
+
+  /// The Message-ID (RFC 5322) of the message when the voce was queued, v20: an adapter whose Provider ids change
+  /// when a message moves (IMAP) finds it again by it, though a sync has removed the old id from here. Null for the
+  /// voci queued before, and for a message the Account no longer had.
+  final String? rfcMessageId;
   const IntentRow({
     required this.accountId,
     required this.messageId,
@@ -2750,6 +2780,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     this.heldUntil,
     this.previous,
     this.synced,
+    this.rfcMessageId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2769,6 +2800,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     }
     if (!nullToAbsent || synced != null) {
       map['synced'] = Variable<String>(synced);
+    }
+    if (!nullToAbsent || rfcMessageId != null) {
+      map['rfc_message_id'] = Variable<String>(rfcMessageId);
     }
     return map;
   }
@@ -2791,6 +2825,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       synced: synced == null && nullToAbsent
           ? const Value.absent()
           : Value(synced),
+      rfcMessageId: rfcMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rfcMessageId),
     );
   }
 
@@ -2808,6 +2845,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       heldUntil: serializer.fromJson<int?>(json['heldUntil']),
       previous: serializer.fromJson<String?>(json['previous']),
       synced: serializer.fromJson<String?>(json['synced']),
+      rfcMessageId: serializer.fromJson<String?>(json['rfcMessageId']),
     );
   }
   @override
@@ -2822,6 +2860,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       'heldUntil': serializer.toJson<int?>(heldUntil),
       'previous': serializer.toJson<String?>(previous),
       'synced': serializer.toJson<String?>(synced),
+      'rfcMessageId': serializer.toJson<String?>(rfcMessageId),
     };
   }
 
@@ -2834,6 +2873,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     Value<int?> heldUntil = const Value.absent(),
     Value<String?> previous = const Value.absent(),
     Value<String?> synced = const Value.absent(),
+    Value<String?> rfcMessageId = const Value.absent(),
   }) => IntentRow(
     accountId: accountId ?? this.accountId,
     messageId: messageId ?? this.messageId,
@@ -2843,6 +2883,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     heldUntil: heldUntil.present ? heldUntil.value : this.heldUntil,
     previous: previous.present ? previous.value : this.previous,
     synced: synced.present ? synced.value : this.synced,
+    rfcMessageId: rfcMessageId.present ? rfcMessageId.value : this.rfcMessageId,
   );
   IntentRow copyWithCompanion(IntentsCompanion data) {
     return IntentRow(
@@ -2854,6 +2895,9 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
       heldUntil: data.heldUntil.present ? data.heldUntil.value : this.heldUntil,
       previous: data.previous.present ? data.previous.value : this.previous,
       synced: data.synced.present ? data.synced.value : this.synced,
+      rfcMessageId: data.rfcMessageId.present
+          ? data.rfcMessageId.value
+          : this.rfcMessageId,
     );
   }
 
@@ -2867,7 +2911,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           ..write('expected: $expected, ')
           ..write('heldUntil: $heldUntil, ')
           ..write('previous: $previous, ')
-          ..write('synced: $synced')
+          ..write('synced: $synced, ')
+          ..write('rfcMessageId: $rfcMessageId')
           ..write(')'))
         .toString();
   }
@@ -2882,6 +2927,7 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
     heldUntil,
     previous,
     synced,
+    rfcMessageId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2894,7 +2940,8 @@ class IntentRow extends DataClass implements Insertable<IntentRow> {
           other.expected == this.expected &&
           other.heldUntil == this.heldUntil &&
           other.previous == this.previous &&
-          other.synced == this.synced);
+          other.synced == this.synced &&
+          other.rfcMessageId == this.rfcMessageId);
 }
 
 class IntentsCompanion extends UpdateCompanion<IntentRow> {
@@ -2906,6 +2953,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
   final Value<int?> heldUntil;
   final Value<String?> previous;
   final Value<String?> synced;
+  final Value<String?> rfcMessageId;
   final Value<int> rowid;
   const IntentsCompanion({
     this.accountId = const Value.absent(),
@@ -2916,6 +2964,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
     this.synced = const Value.absent(),
+    this.rfcMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IntentsCompanion.insert({
@@ -2927,6 +2976,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     this.heldUntil = const Value.absent(),
     this.previous = const Value.absent(),
     this.synced = const Value.absent(),
+    this.rfcMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        messageId = Value(messageId),
@@ -2941,6 +2991,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Expression<int>? heldUntil,
     Expression<String>? previous,
     Expression<String>? synced,
+    Expression<String>? rfcMessageId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2952,6 +3003,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       if (heldUntil != null) 'held_until': heldUntil,
       if (previous != null) 'previous': previous,
       if (synced != null) 'synced': synced,
+      if (rfcMessageId != null) 'rfc_message_id': rfcMessageId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2965,6 +3017,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     Value<int?>? heldUntil,
     Value<String?>? previous,
     Value<String?>? synced,
+    Value<String?>? rfcMessageId,
     Value<int>? rowid,
   }) {
     return IntentsCompanion(
@@ -2976,6 +3029,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
       heldUntil: heldUntil ?? this.heldUntil,
       previous: previous ?? this.previous,
       synced: synced ?? this.synced,
+      rfcMessageId: rfcMessageId ?? this.rfcMessageId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3007,6 +3061,9 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
     if (synced.present) {
       map['synced'] = Variable<String>(synced.value);
     }
+    if (rfcMessageId.present) {
+      map['rfc_message_id'] = Variable<String>(rfcMessageId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3024,6 +3081,7 @@ class IntentsCompanion extends UpdateCompanion<IntentRow> {
           ..write('heldUntil: $heldUntil, ')
           ..write('previous: $previous, ')
           ..write('synced: $synced, ')
+          ..write('rfcMessageId: $rfcMessageId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7799,6 +7857,7 @@ typedef $$IntentsTableCreateCompanionBuilder = IntentsCompanion Function({
   Value<int?> heldUntil,
   Value<String?> previous,
   Value<String?> synced,
+  Value<String?> rfcMessageId,
   Value<int> rowid,
 });
 typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
@@ -7810,6 +7869,7 @@ typedef $$IntentsTableUpdateCompanionBuilder = IntentsCompanion Function({
   Value<int?> heldUntil,
   Value<String?> previous,
   Value<String?> synced,
+  Value<String?> rfcMessageId,
   Value<int> rowid,
 });
 
@@ -7859,6 +7919,11 @@ class $$IntentsTableFilterComposer
 
   ColumnFilters<String> get synced => $composableBuilder(
     column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7911,6 +7976,11 @@ class $$IntentsTableOrderingComposer
     column: $table.synced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$IntentsTableAnnotationComposer
@@ -7945,6 +8015,11 @@ class $$IntentsTableAnnotationComposer
 
   GeneratedColumn<String> get synced =>
       $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<String> get rfcMessageId => $composableBuilder(
+    column: $table.rfcMessageId,
+    builder: (column) => column,
+  );
 }
 
 class $$IntentsTableTableManager
@@ -7986,6 +8061,7 @@ class $$IntentsTableTableManager
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
                 Value<String?> synced = const Value.absent(),
+                Value<String?> rfcMessageId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion(
                 accountId: accountId,
@@ -7996,6 +8072,7 @@ class $$IntentsTableTableManager
                 heldUntil: heldUntil,
                 previous: previous,
                 synced: synced,
+                rfcMessageId: rfcMessageId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8008,6 +8085,7 @@ class $$IntentsTableTableManager
                 Value<int?> heldUntil = const Value.absent(),
                 Value<String?> previous = const Value.absent(),
                 Value<String?> synced = const Value.absent(),
+                Value<String?> rfcMessageId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IntentsCompanion.insert(
                 accountId: accountId,
@@ -8018,6 +8096,7 @@ class $$IntentsTableTableManager
                 heldUntil: heldUntil,
                 previous: previous,
                 synced: synced,
+                rfcMessageId: rfcMessageId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

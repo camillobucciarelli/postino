@@ -8,19 +8,17 @@ import '../../../support/greenmail_server.dart';
 import '../../../support/imap_harness.dart';
 import '../../domain/mail_provider_contract.dart';
 
-/// What the adapter does not do yet, by the ticket bringing it.
-const _pending = {'action': 'T5 (#165)'};
-
 void main() {
   if (imapSkipReason case final reason?) {
     test('IMAP contract', () {}, skip: reason);
     return;
   }
   tearDownAll(ImapHarness.stopServer);
-  mailProviderAuthContract('ImapProvider', ImapHarness.create, pending: _pending);
-  mailProviderSyncContract('ImapProvider', ImapHarness.create, pending: _pending);
-  mailProviderLabelContract('ImapProvider', ImapHarness.create, pending: _pending);
+  mailProviderAuthContract('ImapProvider', ImapHarness.create);
+  mailProviderSyncContract('ImapProvider', ImapHarness.create);
+  mailProviderLabelContract('ImapProvider', ImapHarness.create);
+  mailProviderActionContract('ImapProvider', ImapHarness.create);
   mailProviderAttachmentContract('ImapProvider', ImapHarness.create);
-  mailProviderDraftContract('ImapProvider', ImapHarness.create, pending: _pending);
+  mailProviderDraftContract('ImapProvider', ImapHarness.create);
   mailProviderSendContract('ImapProvider', ImapHarness.create);
 }

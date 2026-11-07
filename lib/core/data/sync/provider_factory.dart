@@ -6,6 +6,7 @@ import '../gmail/gmail_provider.dart';
 import '../imap/imap_provider.dart';
 import '../imap/imap_session.dart';
 import '../imap/unsynced_provider.dart';
+import '../mail_store.dart';
 
 /// Whether Postino APPENDs a sent message to Inviati on [provider] (#166): the generic IMAP servers do not file
 /// SMTP submissions themselves.
@@ -30,6 +31,7 @@ MailProvider providerFor(Account account) {
           account.address,
           g(),
           g(),
+          messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
           // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
           appendToSent: appendsToSent(account.provider),

@@ -56,7 +56,7 @@ class ImapDrafts(final ImapSession _session) {
     await c.uidMarkDeleted(sequence, silent: true);
     // ponytail: without UIDPLUS a plain EXPUNGE also removes what another client marked \Deleted in Bozze and did
     // not expunge yet; a server lacking UIDPLUS today is rare.
-    _session.uidplus ? await c.uidExpunge(sequence) : await c.expunge();
+    _session.uidPlus ? await c.uidExpunge(sequence) : await c.expunge();
   }
 
   /// The Bozza [uid] as the server has it: what its impronta compares. A plain text body is taken as HTML, as when

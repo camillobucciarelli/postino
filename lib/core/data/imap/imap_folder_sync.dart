@@ -59,12 +59,33 @@ class ImapFolderSync(final ImapSession _session) {
     );
   }
 
-  /// What changed in [folder] since [was]. A new UIDVALIDITY rebuilds it: the old ids all go, the window comes
+  /// What changed in [folder] since [known]. A new UIDVALIDITY rebuilds it: the old ids all go, the window comes
   /// again. With CONDSTORE only the flags changed since the last HIGHESTMODSEQ come (with QRESYNC the UIDs
-  /// expunged too, `VANISHED`); without it the flags of every known UID are compared with [was].
-  Future<FolderDelta> changes(ImapClient c, ImapFolder folder, FolderState was, DateTime since) async {
+  /// expunged too, `VANISHED`); without it the flags of every known UID are compared with [known]. The [stored]
+  /// messages of the folder (in the app's cache, maybe older than the window) are known UIDs from now on; every
+  /// UID above the last UIDNEXT is new, whatever its date (a message moved here keeps its INTERNALDATE).
+  Future<FolderDelta> changes(
+    ImapClient c,
+    ImapFolder folder,
+    FolderState known,
+    DateTime since, {
+    Iterable<({String path, int uidValidity, int uid})> stored = const [],
+  }) async {
     final box = await selectFolder(c, folder.path, condstore: _session.condstore);
     final uidValidity = box.uidValidity ?? 0;
+    // ponytail: a stored message not yet followed counts as unread and without Stella: one extra download if not.
+    final was = FolderState(
+      uidValidity: known.uidValidity,
+      uidNext: known.uidNext,
+      modSeq: known.modSeq,
+      uids: {
+        ...known.uids,
+        for (final s in stored)
+          if (s.uidValidity == known.uidValidity && s.uid < known.uidNext) s.uid,
+      },
+      seen: known.seen,
+      flagged: known.flagged,
+    );
     if (uidValidity != was.uidValidity) {
       final rebuilt = await _window(c, folder, box, since);
       return (
@@ -78,7 +99,7 @@ class ImapFolderSync(final ImapSession _session) {
     // Only QRESYNC makes an EXPUNGE raise HIGHESTMODSEQ (RFC 7162 §3.2.10): with CONDSTORE alone a deletion may
     // leave it as it was.
     if (_session.qresync && modSeq != null && modSeq == was.modSeq && uidNext == was.uidNext) {
-      return (messages: const <ImapParsed>[], removed: const <String>[], state: was);
+      return (messages: const <ImapParsed>[], removed: const <String>[], state: known);
     }
 
     final (:flags, :gone) = await _knownFlags(c, was, condstore: modSeq != null && was.modSeq != null);
@@ -92,7 +113,7 @@ class ImapFolderSync(final ImapSession _session) {
       isFlagged ? flagged.add(uid) : flagged.remove(uid);
     }
     final fresh = [
-      for (final u in await search(c, 'UID ${was.uidNext}:* SINCE ${imapDate(since)}'))
+      for (final u in await search(c, 'UID ${was.uidNext}:*'))
         if (u >= was.uidNext) u,
     ];
     final messages = [
@@ -122,10 +143,12 @@ class ImapFolderSync(final ImapSession _session) {
     );
   }
 
-  /// The flags (seen, flagged) of the known UIDs that may have changed, and the known UIDs gone from the folder.
-  /// Asked for the range from the lowest known UID to the highest, not the UIDs one by one: a sparse set would
-  /// make a command longer than servers take (RFC 7162 §4 suggests 8192 octets); what else the range holds is
-  /// left out.
+  /// The flags (seen, flagged) of the known UIDs that may have changed, and the known UIDs gone from the folder:
+  /// expunged, or `\Deleted` and not expunged yet (as another client's Elimina means it). With CONDSTORE asked
+  /// for the range from the lowest known UID to the highest (what else it holds is left out); without it for the
+  /// known UIDs a block at a time: a sparse set in one command would be longer than servers take (RFC 7162 §4
+  /// suggests 8192 octets).
+  // ponytail: `\Answered`, `$Forwarded` and the keywords are not read: no indicator shows them, nor an Etichetta.
   Future<({Map<int, (bool, bool)> flags, Set<int> gone})> _knownFlags(
     ImapClient c,
     FolderState was, {
@@ -134,17 +157,24 @@ class ImapFolderSync(final ImapSession _session) {
     if (was.uids.isEmpty) return (flags: const <int, (bool, bool)>{}, gone: const <int>{});
     final sorted = was.uids.toList()..sort();
     final known = MessageSequence.fromRange(sorted.first, sorted.last, isUidSequence: true);
-    Map<int, (bool, bool)> flagsOf(List<MimeMessage> ms) => {
-      for (final m in ms)
-        if (m.uid case final uid? when was.uids.contains(uid)) uid: (m.isSeen, m.isFlagged),
-    };
+    final flags = <int, (bool, bool)>{};
+    final deleted = <int>{};
+    void read(List<MimeMessage> ms) {
+      for (final m in ms) {
+        if (m.uid case final uid? when was.uids.contains(uid)) {
+          m.isDeleted ? deleted.add(uid) : flags[uid] = (m.isSeen, m.isFlagged);
+        }
+      }
+    }
+
     if (condstore && _session.qresync) {
       final r = await c.uidFetchMessagesByCriteria(
         '$known (FLAGS) (CHANGEDSINCE ${was.modSeq} VANISHED)',
         responseTimeout: ImapSession.timeout,
       );
+      read(r.messages);
       final vanished = r.vanishedMessagesUidSequence?.toList() ?? const <int>[];
-      return (flags: flagsOf(r.messages), gone: was.uids.intersection(vanished.toSet()));
+      return (flags: flags, gone: {...was.uids.intersection(vanished.toSet()), ...deleted});
     }
     if (condstore) {
       final r = await c.uidFetchMessages(
@@ -153,13 +183,19 @@ class ImapFolderSync(final ImapSession _session) {
         changedSinceModSequence: was.modSeq,
         responseTimeout: ImapSession.timeout,
       );
-      return (flags: flagsOf(r.messages), gone: was.uids.difference((await search(c, 'UID $known')).toSet()));
+      read(r.messages);
+      return (flags: flags, gone: was.uids.difference((await search(c, 'UID $known')).toSet()));
     }
     // ponytail: every known UID's flags on every poll; fine for a 90-day window, CONDSTORE spares it where announced.
-    final r = await c.uidFetchMessages(known, '(UID FLAGS)', responseTimeout: ImapSession.timeout);
-    final flags = flagsOf(r.messages);
+    for (var i = 0; i < sorted.length; i += _flagsBlock) {
+      final block = MessageSequence.fromIds(sorted.skip(i).take(_flagsBlock).toList(), isUid: true);
+      read((await c.uidFetchMessages(block, '(UID FLAGS)', responseTimeout: ImapSession.timeout)).messages);
+    }
     return (flags: flags, gone: was.uids.difference(flags.keys.toSet()));
   }
+
+  /// UIDs per FETCH FLAGS without CONDSTORE: 500 sparse ones stay under 8192 octets.
+  static const _flagsBlock = 500;
 
   /// [fetchMessages] whole only for the inbox (ADR 0003).
   static Future<List<ImapParsed>> _fetch(
@@ -204,9 +240,10 @@ Future<List<ImapParsed>> fetchMessages(
   ];
 }
 
-/// The UIDs of the selected folder matching [criteria] (an IMAP SEARCH key).
+/// The UIDs of the selected folder matching [criteria] (an IMAP SEARCH key), but those `\Deleted` and not expunged
+/// yet: deleted elsewhere, they are gone for every caller.
 Future<List<int>> search(ImapClient c, String criteria) async {
-  final r = await c.uidSearchMessages(searchCriteria: criteria, responseTimeout: ImapSession.timeout);
+  final r = await c.uidSearchMessages(searchCriteria: '$criteria NOT DELETED', responseTimeout: ImapSession.timeout);
   final found = r.matchingSequence;
   return found == null || found.isEmpty ? <int>[] : found.toList();
 }

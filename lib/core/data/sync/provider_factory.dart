@@ -32,6 +32,7 @@ MailProvider providerFor(Account account) {
           g(),
           g(),
           messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
+          storedIds: () => g<MailStore>().messageIds(account.id),
           // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
           appendToSent: appendsToSent(account.provider),

@@ -128,9 +128,10 @@ Future<Mailbox> selectFolder(ImapClient c, String path, {bool condstore = false}
   }
 }
 
+/// Released within a few seconds: a LOGOUT to a server that died waits for an answer that never comes.
 Future<void> _quietly(Future<Object?> Function() close) async {
   try {
-    await close();
+    await close().timeout(const Duration(seconds: 5));
   } on Object {
     // Already closed or never opened: nothing to release.
   }

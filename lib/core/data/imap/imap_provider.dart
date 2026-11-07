@@ -11,6 +11,8 @@ import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import 'imap_actions.dart';
+import 'imap_bodies.dart';
+import 'imap_conversations.dart';
 import 'imap_cursor.dart';
 import 'imap_failure.dart';
 import 'imap_folder_create.dart';
@@ -58,7 +60,10 @@ class ImapProvider(
     _messageIdOf ?? (_) async => null,
   );
 
-  // ponytail: until T4 (#164, bodies on request and Conversazioni), T6 (#166, send and Bozze).
+  late final _fetched = ImapBodies(_session);
+  late final _conversations = ImapConversations(_session, _address);
+
+  // ponytail: until T6 (#166, send and Bozze).
   static Err<Never> _later(String ticket) => Err(UnexpectedFailure('IMAP: arrives with $ticket'));
 
   /// Logs out; the next call logs in again.
@@ -165,10 +170,11 @@ class ImapProvider(
       imapGuard(() => _session.run((c) async => _labelOf(await ensureFolder(c, name, () => _boxes(c)))));
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) async => _later('T4');
+  Future<Result<MessageBody>> fetchBody(String messageId) => imapGuard(() => _fetched.body(messageId));
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) async => _later('T4');
+  Future<Result<List<Message>>> fetchConversation(String conversationId) =>
+      imapGuard(() => _session.run((c) async => _conversations.fetch(c, await _list(c), conversationId)));
 
   /// Conditional (ADR 0008): the message is read once, compared and written only if needed.
   @override
@@ -181,7 +187,7 @@ class ImapProvider(
     String attachmentId, {
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) async => _later('T4');
+  }) => imapGuard(() => _fetched.attachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel));
 
   @override
   Future<Result<String>> send(String messageId, String raw, {String? threadId}) async => _later('T6');

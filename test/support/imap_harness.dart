@@ -1,5 +1,6 @@
 import 'dart:convert' show base64Url;
 import 'dart:math' show Random;
+import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:postino/core/data/imap/imap_folders.dart' show folderLabelId, folderPathOf;
@@ -39,6 +40,10 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
 
   /// The Message-ID of every id ever delivered: what the app's cache would give for an id since moved.
   final _messageIds = <String, String>{};
+
+  /// The messages as last delivered, and the attachments given to each, by `msg` key.
+  final _delivered = <String, domain.Message>{};
+  final _attached = <String, List<(String, List<int>)>>{};
 
   String get address => GreenmailServer.addressOf(login);
   String get accountId => 'imap:$address';
@@ -125,11 +130,20 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   Future<void> deliver(domain.Message m) => withClient((c) async {
     final path = _pathOf(m);
     final key = m.messageId.substring(1, m.messageId.indexOf('@'));
+    _delivered[key] = m;
     final flags = [if (m.isRead) MessageFlags.seen, if (m.isStarred) MessageFlags.flagged];
     final found = await _find(c, m.messageId);
     if (found == null) {
       await _create(c, path);
-      final builder = MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
+      final attached = _attached[key] ?? const [];
+      final builder = attached.isEmpty
+          ? MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
+          : (MessageBuilder.prepareMultipartMixedMessage()
+              ..addMultipartAlternative(plainText: 'Ciao', htmlText: '<p>Ciao</p>'));
+      for (final (name, bytes) in attached) {
+        builder.addBinary(Uint8List.fromList(bytes), MediaType.guessFromFileName(name), filename: name);
+      }
+      builder
         ..from = [MailAddress(m.fromName, m.from)]
         ..to = m.to.map((a) => MailAddress(null, a)).toList()
         ..cc = [for (final a in m.cc) _address(a)]
@@ -158,6 +172,12 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   Future<void> append(String path, String raw) => withClient((c) async {
     await _create(c, path);
     await c.appendMessageText(raw, targetMailboxPath: path);
+  });
+
+  /// APPEND of the RFC 5322 [raw] bytes in [path], as another client, with the INTERNALDATE [at] if given.
+  Future<void> appendBytes(String path, List<int> raw, {DateTime? at}) => withClient((c) async {
+    await _create(c, path);
+    await c.appendMessageBytes(Uint8List.fromList(raw), targetMailboxPath: path, internalDate: at);
   });
 
   /// `\Deleted` + EXPUNGE of the message with Message-ID `<id@example.com>`, wherever it is.
@@ -202,9 +222,13 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
     );
   });
 
+  /// The message `msg(key)` delivered again, as another message with the attachment (a new UID).
   @override
-  Future<void> attach(String messageId, String name, List<int> bytes) =>
-      throw UnimplementedError('Gli allegati arrivano con T4');
+  Future<void> attach(String key, String name, List<int> bytes) async {
+    (_attached[key] ??= []).add((name, bytes));
+    await removeRemotely(key);
+    await deliver(_delivered[key]!);
+  }
 
   /// The folder and UID of the message with [messageId], in any folder.
   static Future<(String, int)?> _find(ImapClient c, String messageId) async {

@@ -66,7 +66,12 @@ class SyncEngine(
   final _tail = <String, Future<void>>{};
 
   /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
-  final _queuedSync = <String, Future<void>>{};
+  /// `synced` completes at the end of its sync phase, before the Bozze and outbox go.
+  final _queuedSync = <String, _QueuedSync>{};
+
+  /// Per Account, the sync phase of the sync running now (finished once it reaches the Bozze and the outbox):
+  /// a pull-to-refresh waits for it instead of queuing another.
+  final _runningSync = <String, Future<void>>{};
 
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   @visibleForTesting
@@ -110,7 +115,17 @@ class SyncEngine(
     await Future.wait([
       for (final account in await _store.accounts())
         // A Da ricollegare Account stops syncing until the user consents again.
-        if (account.status == AccountStatus.attivo) _sync(account),
+        if (account.status == AccountStatus.attivo) _sync(account)?.done ?? Future<void>.value(),
+    ]);
+  }
+
+  @override
+  Future<void> refresh() async {
+    _store.refreshAfterExternalWrites();
+    await Future.wait([
+      for (final account in await _store.accounts())
+        if (account.status == AccountStatus.attivo)
+          _runningSync[account.id] ?? _sync(account)?.synced ?? Future<void>.value(),
     ]);
   }
 
@@ -317,7 +332,7 @@ class SyncEngine(
   Future<void> _poll() async {
     await Future.wait([
       for (final account in await _store.accounts())
-        if (account.status == AccountStatus.attivo) _sync(account),
+        if (account.status == AccountStatus.attivo) _sync(account)?.done ?? Future<void>.value(),
     ]);
   }
 
@@ -338,7 +353,7 @@ class SyncEngine(
         switch (signal) {
           // Up: whatever changed while it was down.
           case ChangeSignal.up || ChangeSignal.changed:
-            unawaited(_sync(a));
+            unawaited(_sync(a)?.done);
           case ChangeSignal.down:
         }
       });
@@ -346,14 +361,20 @@ class SyncEngine(
   }
 
   /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
-  Future<void> _sync(Account account) {
+  /// Null while the Provider's pause holds.
+  _QueuedSync? _sync(Account account) {
     final id = account.id;
-    if (_paused(id)) return Future.value();
-    return _queuedSync[id] ??= _serial(id, () {
-      // Only drops the map entry: the queued future is the one returned to the caller.
-      unawaited(_queuedSync.remove(id));
-      return _syncOnce(id, providerFor(account));
+    if (_paused(id)) return null;
+    if (_queuedSync[id] case final queued?) return queued;
+    final synced = Completer<void>();
+    // A failure reaches the callers through `done` too: with no pull listening it is not reported twice.
+    synced.future.ignore();
+    final done = _serial(id, () {
+      _queuedSync.remove(id);
+      _runningSync[id] = synced.future;
+      return _syncOnce(account, synced);
     });
+    return _queuedSync[id] = (done: done, synced: synced.future);
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
@@ -380,10 +401,35 @@ class SyncEngine(
     }
   }
 
-  Future<void> _syncOnce(String accountId, MailProvider provider) async {
-    // The queue first, so the sync brings back what the user did offline.
-    await _replay(accountId, provider);
-    if (_paused(accountId)) return;
+  /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two.
+  Future<void> _syncOnce(Account account, Completer<void> synced) async {
+    final accountId = account.id;
+    try {
+      final provider = providerFor(account);
+      try {
+        // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
+        if (!_paused(accountId)) await _intents.replayActions(accountId, provider);
+        if (!_paused(accountId)) await _syncPhase(accountId, provider);
+        synced.complete();
+      } catch (e, s) {
+        synced.completeError(e, s);
+        rethrow;
+      } finally {
+        // After the sync phase, failed too: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox
+        // attachments. Not once the sync made the Account Da ricollegare: its queue waits (ADR 0008).
+        if (await _activeAccount(accountId) != null) {
+          await _intents.replayDrafts(accountId, provider);
+          if (!_paused(accountId)) await _outbox.sendDue(accountId, provider);
+        }
+      }
+    } finally {
+      // Only now: a pull during the replay joins this finished sync phase instead of queuing one behind the uploads.
+      unawaited(_runningSync.remove(accountId));
+      if (!synced.isCompleted) synced.complete();
+    }
+  }
+
+  Future<void> _syncPhase(String accountId, MailProvider provider) async {
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
@@ -430,6 +476,9 @@ class SyncEngine(
     }
   }
 }
+
+/// A queued sync: `done` when its whole slot ends, `synced` at the end of its sync phase.
+typedef _QueuedSync = ({Future<void> done, Future<void> synced});
 
 @module
 abstract class SyncModule() {

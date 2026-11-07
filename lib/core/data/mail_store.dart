@@ -34,6 +34,9 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   /// True when the Account already has the message with Provider id [id].
   Future<bool> hasMessage(String accountId, String id) => _db.messagesDao.exists(accountId, id);
 
+  /// The Message-ID (RFC 5322) of the message with Provider id [id]: how an adapter finds it again once its id is gone.
+  Future<String?> rfcMessageId(String accountId, String id) => _db.messagesDao.rfcMessageId(accountId, id);
+
   /// The messages of [messages] the Account does not have yet.
   Future<List<Message>> unknown(String accountId, List<Message> messages) async => [
     for (final m in messages)

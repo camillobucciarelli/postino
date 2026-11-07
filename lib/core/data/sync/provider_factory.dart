@@ -6,6 +6,7 @@ import '../gmail/gmail_provider.dart';
 import '../imap/imap_provider.dart';
 import '../imap/imap_session.dart';
 import '../imap/unsynced_provider.dart';
+import '../mail_store.dart';
 
 /// The Account's adapter, created on first use; tests register fakes by Account id beforehand.
 /// The only place in core/data that names a concrete Provider (ADR 0002): the choice lives here, not in switches.
@@ -21,6 +22,7 @@ MailProvider providerFor(Account account) {
           g(),
           g(),
           // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
+          messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
         ),
         // ponytail: no Microsoft adapter before step 5: it syncs nothing meanwhile.

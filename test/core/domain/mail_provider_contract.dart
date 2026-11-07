@@ -49,6 +49,9 @@ abstract class ContractHarness() {
   /// folder again) instead of being [NotFoundFailure].
   bool get rebuildsExpiredCursor => false;
 
+  /// Whether an Etichetta is a folder: applying it moves the message out of the inbox, and its Provider id changes.
+  bool get labelsAreFolders => false;
+
   /// Releases the adapter's connections after a test.
   Future<void> dispose() async {}
 }
@@ -106,9 +109,9 @@ void mailProviderAuthContract(String name, CreateHarness create, {Pending pendin
         await h.provider.refreshAuth(),
         await h.provider.initialSync(),
         await h.provider.incrementalSync('0'),
-        if (actions) await h.provider.applyAction('a', const MarkRead(), expected: false),
+        if (actions) await h.provider.applyAction(h.idOf('a'), const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        if (actions) await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
+        if (actions) await h.provider.applyAction(h.idOf('a'), ApplyLabel(h.viaggiId), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
@@ -120,9 +123,9 @@ void mailProviderAuthContract(String name, CreateHarness create, {Pending pendin
         await h.provider.initialSync(),
         if (!pending.containsKey('body')) await h.provider.fetchBody('a'),
         if (!pending.containsKey('conversation')) await h.provider.fetchConversation('t-a'),
-        if (actions) await h.provider.applyAction('a', const MarkRead(), expected: false),
+        if (actions) await h.provider.applyAction(h.idOf('a'), const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        if (actions) await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
+        if (actions) await h.provider.applyAction(h.idOf('a'), ApplyLabel(h.viaggiId), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
@@ -269,10 +272,10 @@ void mailProviderSyncContract(String name, CreateHarness create, {Pending pendin
     test('a message marked read comes back read with the next sync', () async {
       await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
+      _ok(await h.provider.applyAction(h.idOf('a'), const MarkRead(), expected: false));
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(next.messages.single.isRead, isTrue);
-      _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
+      _ok(await h.provider.applyAction(h.idOf('a'), const MarkRead(), expected: false));
     }, skip: pending['action']);
   });
 }
@@ -413,8 +416,11 @@ void mailProviderLabelContract(String name, CreateHarness create, {Pending pendi
     late ContractHarness h;
     _harness(create, (x) => h = x);
 
-    Future<List<String>> labelsOf(String cursor, String id) async =>
-        _ok(await h.provider.incrementalSync(cursor)).messages.singleWhere((m) => m.id == id).labelIds;
+    // By Message-ID: an Etichetta that is a folder moves the message, and its id changes.
+    Future<List<String>> labelsOf(String cursor, String key) async =>
+        _ok(await h.provider.incrementalSync(cursor)).messages
+            .singleWhere((m) => m.messageId == '<$key@example.com>')
+            .labelIds;
 
     test('a created Etichetta comes with the next incremental sync; creating it again returns the same one', () async {
       final first = _ok(await h.provider.initialSync());
@@ -435,19 +441,19 @@ void mailProviderLabelContract(String name, CreateHarness create, {Pending pendi
     test('an Etichetta added twice is on the message once; removed twice, it is gone', () async {
       await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
-      _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
+      _ok(await h.provider.applyAction(h.idOf('a'), ApplyLabel(h.viaggiId), expected: false));
+      _ok(await h.provider.applyAction(h.idOf('a'), ApplyLabel(h.viaggiId), expected: false));
       final added = await labelsOf(first.cursor, 'a');
-      expect(added.where((l) => l == 'Label_12'), hasLength(1));
-      expect(added, contains(inboxLabelId));
-      _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
-      _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
-      expect(await labelsOf(first.cursor, 'a'), isNot(contains('Label_12')));
+      expect(added.where((l) => l == h.viaggiId), hasLength(1));
+      expect(added, h.labelsAreFolders ? isNot(contains(inboxLabelId)) : contains(inboxLabelId));
+      _ok(await h.provider.applyAction(h.idOf('a'), RemoveLabel(h.viaggiId), expected: true));
+      _ok(await h.provider.applyAction(h.idOf('a'), RemoveLabel(h.viaggiId), expected: true));
+      expect(await labelsOf(first.cursor, 'a'), isNot(contains(h.viaggiId)));
     }, skip: pending['action']);
 
     test('an Etichetta on a message gone from the Provider is messaggioSparito', () async {
       expect(
-        _ok(await h.provider.applyAction('zzz', const ApplyLabel('Label_12'), expected: false)),
+        _ok(await h.provider.applyAction(h.idOf('zzz'), ApplyLabel(h.viaggiId), expected: false)),
         isA<ActionMessageGone>(),
       );
     }, skip: pending['action']);
@@ -460,24 +466,26 @@ void mailProviderActionContract(String name, CreateHarness create) {
     late ContractHarness h;
     _harness(create, (x) => h = x);
 
-    Future<Message> now(String id) async => _ok(await h.provider.initialSync()).messages.singleWhere((m) => m.id == id);
+    // By Message-ID: Archivia and Elimina may move the message, and its id changes.
+    Future<Message> now(String key) async =>
+        _ok(await h.provider.initialSync()).messages.singleWhere((m) => m.messageId == '<$key@example.com>');
 
     test('the expected value: applied', () async {
       await h.deliver(msg('a'));
-      expect(_ok(await h.provider.applyAction('a', const Star(), expected: false)), isA<ActionApplied>());
+      expect(_ok(await h.provider.applyAction(h.idOf('a'), const Star(), expected: false)), isA<ActionApplied>());
       expect((await now('a')).isStarred, isTrue);
     });
 
     test('the wanted value already, changed elsewhere the same way: applied', () async {
       await h.deliver(msg('a', isRead: true));
-      expect(_ok(await h.provider.applyAction('a', const MarkRead(), expected: false)), isA<ActionApplied>());
+      expect(_ok(await h.provider.applyAction(h.idOf('a'), const MarkRead(), expected: false)), isA<ActionApplied>());
       expect((await now('a')).isRead, isTrue);
     });
 
     test('another value, changed elsewhere: a Conflitto with it, nothing written', () async {
       await h.deliver(msg('a', labelIds: const [trashLabelId]));
       expect(
-        _ok(await h.provider.applyAction('a', const Archive(), expected: Placement.inbox)),
+        _ok(await h.provider.applyAction(h.idOf('a'), const Archive(), expected: Placement.inbox)),
         isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', Placement.trash),
       );
       expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
@@ -485,19 +493,22 @@ void mailProviderActionContract(String name, CreateHarness create) {
 
     test('Elimina never conflicts', () async {
       await h.deliver(msg('a', labelIds: const []));
-      expect(_ok(await h.provider.applyAction('a', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
+      expect(
+        _ok(await h.provider.applyAction(h.idOf('a'), const Delete(), expected: Placement.inbox)),
+        isA<ActionApplied>(),
+      );
       expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
     });
 
     test('no expected value: forced', () async {
       await h.deliver(msg('a', isRead: true));
-      expect(_ok(await h.provider.applyAction('a', const MarkUnread())), isA<ActionApplied>());
+      expect(_ok(await h.provider.applyAction(h.idOf('a'), const MarkUnread())), isA<ActionApplied>());
       expect((await now('a')).isRead, isFalse);
     });
 
     test('a message gone: messaggioSparito', () async {
       expect(
-        _ok(await h.provider.applyAction('zzz', const Delete(), expected: Placement.inbox)),
+        _ok(await h.provider.applyAction(h.idOf('zzz'), const Delete(), expected: Placement.inbox)),
         isA<ActionMessageGone>(),
       );
     });

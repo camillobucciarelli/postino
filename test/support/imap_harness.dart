@@ -37,6 +37,9 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   /// Provider ids by `msg` key, where each was last delivered.
   final _ids = <String, String>{};
 
+  /// The Message-ID of every id ever delivered: what the app's cache would give for an id since moved.
+  final _messageIds = <String, String>{};
+
   String get address => GreenmailServer.addressOf(login);
   String get accountId => 'imap:$address';
 
@@ -69,6 +72,7 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
     keychain,
     FakeClock(DateTime.now().toUtc()),
     onBadCertificate: (_) => true,
+    messageIdOf: (id) async => _messageIds[id],
   );
 
   @override
@@ -108,6 +112,9 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   @override
   bool get rebuildsExpiredCursor => true;
 
+  @override
+  bool get labelsAreFolders => true;
+
   /// The folder [m] goes to: the first of its `labelIds` with one, else the inbox.
   static String _pathOf(domain.Message m) =>
       m.labelIds.map((l) => _paths[l] ?? folderPathOf(l)).nonNulls.firstOrNull ?? 'INBOX';
@@ -144,6 +151,7 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
     final box = await c.selectMailboxByPath(path);
     final uids = (await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "${m.messageId}"')).matchingSequence;
     _ids[key] = imapMessageId(path, box.uidValidity!, uids!.toList().last);
+    _messageIds[_ids[key]!] = m.messageId;
   });
 
   /// APPEND of the RFC 5322 text [raw] in [path], as another client.

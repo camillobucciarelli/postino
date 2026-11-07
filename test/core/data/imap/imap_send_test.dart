@@ -181,6 +181,14 @@ void main() {
       },
     );
 
+    test('onSubmitted failing does not stop the APPEND, nor lets the same adapter submit again (#175)', () async {
+      final d = _draft(to: h.address);
+      final raw = renderMime(d, DateTime.utc(2026));
+      _ok(await h.provider.send(d.messageId, raw, onSubmitted: () async => throw StateError('db locked')));
+      expect(await delivered(), 1);
+      expect(await copies('Sent'), 1);
+    });
+
     test('a Provider filing the submission itself: no second copy in Inviati', () async {
       final d = _draft(to: h.address);
       final raw = renderMime(d, DateTime.utc(2026));

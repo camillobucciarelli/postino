@@ -3,7 +3,8 @@ import 'inbox_repository.dart';
 import 'message.dart';
 
 /// An outbox row as the sender reads it (#36): `version` tags its preparation, `sendAfter` (ms since epoch, UTC)
-/// is when Annulla invio ends, `submitted` once SMTP accepted it (#175), `attempted` once a send was tried, `failed` when the Provider refused it for good.
+/// is when Annulla invio ends, `submitted` once SMTP accepted it (#175), `attempted` once a send was tried,
+/// `failed` when the Provider refused it for good.
 typedef OutboxItem = ({
   String messageId,
   int version,

@@ -389,9 +389,9 @@ class FakeMailProvider() implements MailProvider {
     final f = _failure ?? sendFailure;
     if (f != null) return Err(f);
     sendSubmitted.add(submitted);
-    if (!submitted) {
+    if (!submitted && failAfterSubmit != null) {
       await onSubmitted?.call();
-      if (failAfterSubmit case final after?) return Err(after);
+      return Err(failAfterSubmit!);
     }
     final existing = _messages.values
         .where((m) => m.messageId == messageId && m.labelIds.contains(sentLabelId))

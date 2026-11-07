@@ -178,6 +178,44 @@ void main() {
     },
   );
 
+  test('a submission refused for good after SMTP (#175) is not failed: the message went, the row goes', () async {
+    engine.start();
+    addTearDown(engine.stop);
+    await pumpEventQueue();
+    a.failAfterSubmit = const RejectedFailure('full');
+    await engine.send('a', _message(id));
+    h.clock.advance(sendWindow);
+    await pumpEventQueue();
+    expect(await outbox(), isEmpty);
+  });
+
+  test('Annulla of a row SMTP already delivered (#175) is refused: the replay finishes the copy', () async {
+    await engine.send('a', _message(id));
+    await GetIt.I<OutboxStore>().outgoingSubmitted('a', id, nowMs: 1);
+    expect(await engine.cancelSend('a', id), isNull);
+    expect(await outbox(), hasLength(1));
+  });
+
+  test(
+    'the submitted state is read after the claim: a row another isolate submitted meanwhile is not submitted again',
+    () async {
+      const other = '<o@example.com>';
+      await engine.send('a', _message(id));
+      h.clock.advance(const Duration(seconds: 1));
+      await engine.send('a', _message(other));
+      h.clock.advance(sendWindow);
+      a.holdSend = Completer();
+      unawaited(engine.flushOutbox('a'));
+      await pumpEventQueue();
+      // The first send is held; the other isolate submits the second row (snapshot already taken), then lets it go.
+      await GetIt.I<OutboxStore>().outgoingSubmitted('a', other, nowMs: 1);
+      a.holdSend!.complete();
+      a.holdSend = null;
+      await pumpEventQueue();
+      expect(a.sendSubmitted, [false, true]);
+    },
+  );
+
   test('an entry still queued at restart goes at the next start', () async {
     await engine.send('a', _message(id));
     await engine.stop();

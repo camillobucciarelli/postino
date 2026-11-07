@@ -71,7 +71,8 @@ jobs:
 
   # The download page (#173) goes up as index.html at the bucket root, with __VERSION__ replaced. It waits for `macos`
   # and `android` (a skipped or failed job skips this one), so it never names a version whose files are not up yet nor
-  # moves the "latest" buttons ahead of them. The root `/` itself is served by a Cloudflare Transform Rule (Rewrite URL:
+  # moves the "latest" links ahead of them. Its main buttons point to the versioned files of this very run: a manual run
+  # publishes those but never moves "latest" (only tag pushes do), so the "latest" links are only the secondary ones. The root `/` itself is served by a Cloudflare Transform Rule (Rewrite URL:
   # path exactly `/` -> static `/index.html`), set by hand by the owner in the dashboard, outside this repo: without it
   # only /index.html works.
   download:

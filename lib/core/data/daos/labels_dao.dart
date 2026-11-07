@@ -30,4 +30,7 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
             ..where((t) => t.accountId.equals(accountId) & t.kind.equalsValue(LabelKind.etichetta))
             ..orderBy([(t) => OrderingTerm.asc(t.name)]))
           .watch();
+
+  /// Removes the Account's labels (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(labels)..where((t) => t.accountId.equals(accountId))).go();
 }

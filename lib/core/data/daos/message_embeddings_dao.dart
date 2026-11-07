@@ -17,15 +17,21 @@ part 'message_embeddings_dao.g.dart';
 class MessageEmbeddingsDao(super.attachedDatabase)
     extends DatabaseAccessor<PostinoDatabase>
     with _$MessageEmbeddingsDaoMixin {
-  Future<void> save(String accountId, String messageId, String modelId, List<double> vector) => into(messageEmbeddings)
-      .insertOnConflictUpdate(
-        MessageEmbeddingsCompanion.insert(
-          accountId: accountId,
-          messageId: messageId,
-          modelId: modelId,
-          vector: _bytes(vector),
-        ),
-      );
+  /// Nothing when the message is gone meanwhile (its Account removed, #174): checked in the same transaction.
+  Future<void> save(String accountId, String messageId, String modelId, List<double> vector) => transaction(() async {
+    final known = await (select(
+      messages,
+    )..where((t) => t.accountId.equals(accountId) & t.id.equals(messageId))).getSingleOrNull();
+    if (known == null) return;
+    await into(messageEmbeddings).insertOnConflictUpdate(
+      MessageEmbeddingsCompanion.insert(
+        accountId: accountId,
+        messageId: messageId,
+        modelId: modelId,
+        vector: _bytes(vector),
+      ),
+    );
+  });
 
   /// The vectors of [modelId] among the [limit] newest messages of the Account with the Etichetta [labelId].
   Future<List<List<double>>> examples(
@@ -93,4 +99,8 @@ class MessageEmbeddingsDao(super.attachedDatabase)
     final data = ByteData.sublistView(bytes);
     return [for (var i = 0; i < bytes.length ~/ 4; i++) data.getFloat32(i * 4, Endian.little)];
   }
+
+  /// Removes the Account's message embeddings (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) =>
+      (delete(messageEmbeddings)..where((t) => t.accountId.equals(accountId))).go();
 }

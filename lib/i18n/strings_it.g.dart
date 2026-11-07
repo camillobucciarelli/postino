@@ -1054,6 +1054,27 @@ class Translations$accounts$it {
 
 	/// it: 'Microsoft'
 	String get microsoft => 'Microsoft';
+
+	/// it: 'Rimuovi l'Account $address'
+	String remove({required Object address}) => 'Rimuovi l\'Account ${address}';
+
+	/// it: 'Rimuovere l'Account $name?'
+	String removeTitle({required Object name}) => 'Rimuovere l\'Account ${name}?';
+
+	/// it: 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.'
+	String get removeMessage => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.';
+
+	/// it: 'Le modifiche non ancora inviate al server vanno perse.'
+	String get removeNote => 'Le modifiche non ancora inviate al server vanno perse.';
+
+	/// it: 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.'
+	String get removeGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.';
+
+	/// it: 'Rimuovi'
+	String get removeConfirm => 'Rimuovi';
+
+	/// it: 'Annulla'
+	String get removeCancel => 'Annulla';
 }
 
 // Path: etichetteAutomatiche.model
@@ -1439,6 +1460,13 @@ extension on Translations {
 			'accounts.icloud' => 'iCloud',
 			'accounts.imap' => 'IMAP',
 			'accounts.microsoft' => 'Microsoft',
+			'accounts.remove' => ({required Object address}) => 'Rimuovi l\'Account ${address}',
+			'accounts.removeTitle' => ({required Object name}) => 'Rimuovere l\'Account ${name}?',
+			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.',
+			'accounts.removeNote' => 'Le modifiche non ancora inviate al server vanno perse.',
+			'accounts.removeGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.',
+			'accounts.removeConfirm' => 'Rimuovi',
+			'accounts.removeCancel' => 'Annulla',
 			_ => null,
 		};
 	}

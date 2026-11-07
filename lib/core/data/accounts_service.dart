@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/accounts_repository.dart';
+import '../domain/attachment_repository.dart';
 import '../domain/connection_tester.dart';
 import '../domain/google_consent.dart';
 import '../domain/mail_servers.dart';
@@ -11,7 +13,9 @@ import '../domain/password_provider.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/server_discovery.dart';
+import '../domain/settings_repository.dart';
 import 'gmail/gmail_tokens.dart';
+import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'sync_engine.dart';
@@ -24,12 +28,19 @@ class AccountsService(
   final SyncEngine _sync,
   final ServerDiscovery _discovery,
   final ConnectionTester _tester,
+  final GoogleRevoke _revoke,
+  final SettingsRepository _settings,
+  final Clock _clock,
+  final AttachmentRepository _attachments,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
 
   @override
   Future<Result<Account>> connectGmail({String? loginHint}) async {
+    // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
+    // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
+    await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
     final GoogleGrant grant;
     switch (await _consent.run(loginHint: loginHint)) {
       case Err(:final failure):
@@ -45,6 +56,12 @@ class AccountsService(
     final address = grant.address.trim().toLowerCase();
     final id = 'gmail:$address';
     if (await _connectedElsewhere(id, address)) return const Err(AlreadyConnectedFailure());
+    // Removed while the user was on Google's page: its revocation would end this grant too, so the consent is to
+    // run again once it is over.
+    if (_removals[id] case final removing?) {
+      await removing.catchError((Object _) {});
+      return const Err(CancelledFailure());
+    }
     await GmailTokens.of(grant).write(_keychain, id);
     return Ok(await _save(id, address, ProviderKind.gmail));
   }
@@ -75,7 +92,9 @@ class AccountsService(
         return Err(failure);
       case Ok():
     }
-    // The user closed the form while the servers answered: nothing is written.
+    await _removals[id]?.catchError((Object _) {});
+    // The user closed the form while the servers answered, or while a removal of the same Account ended: nothing
+    // is written.
     if (cancelled) return const Err(CancelledFailure());
     await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
     return Ok(await _save(id, normalized, provider.kind));
@@ -95,8 +114,8 @@ class AccountsService(
       address: address,
       provider: provider,
       color: known?.color ?? all.length % accountColorCount,
-      // ponytail: no Account removal yet, so the count is the next free position.
-      position: known?.position ?? all.length,
+      // After the last one: a removal leaves a gap, never a duplicate.
+      position: known?.position ?? all.fold<int>(-1, (m, a) => a.position > m ? a.position : m) + 1,
     );
     await _store.addAccount(account);
     unawaited(_sync.syncAll());
@@ -112,8 +131,53 @@ class AccountsService(
         return Err(failure);
       case Ok(:final value):
         if (value.address.trim().toLowerCase() != account.address) return Err(WrongAccountFailure(account.address));
+        // Removed while the user was on Google's page (#174): no tokens for it, and nothing to choose.
+        if (_removals.containsKey(accountId) || !(await _store.accounts()).any((a) => a.id == accountId)) {
+          return const Err(NotFoundFailure());
+        }
         await GmailTokens.of(value).write(_keychain, account.id);
         return const Ok(null);
+    }
+  }
+
+  /// The removals running, by Account: a connection of the same Account waits for its credential cleanup.
+  final _removals = <String, Future<void>>{};
+
+  @override
+  Future<void> remove(String accountId) {
+    // A second «Rimuovi» of the same Account while the first runs joins it: one cleanup, one entry to wait for.
+    if (_removals[accountId] case final running?) return running;
+    final run = _removals[accountId] = _remove(accountId);
+    run.whenComplete(() {
+      if (identical(_removals[accountId], run)) _removals.remove(accountId)?.ignore();
+    }).ignore();
+    return run;
+  }
+
+  Future<void> _remove(String accountId) async {
+    if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
+    // First: from here nothing of the Account goes to the Provider, whatever the keychain below takes.
+    await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
+    // Still there (they go last); a keychain that does not answer never blocks the removal.
+    final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
+    // The Impostazioni di Postino no longer have a Drive to sync on.
+    if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
+    // that cannot be emptied never stops the revocation nor the keychain cleanup.
+    try {
+      await _attachments.clear();
+    } on Object catch (e) {
+      debugPrint('[accounts] $accountId: attachment cache not cleared, ${e.runtimeType}');
+    }
+    if (tokens != null) await _revoke.revoke(tokens.refresh);
+    // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
+    // that refuses one never leaves the other.
+    for (final delete in [GmailTokens.delete, PasswordCredentials.delete]) {
+      try {
+        await delete(_keychain, accountId);
+      } on Object catch (e) {
+        debugPrint('[accounts] $accountId: keychain delete failed, ${e.runtimeType}');
+      }
     }
   }
 }

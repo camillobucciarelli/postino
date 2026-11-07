@@ -8,6 +8,9 @@ abstract interface class SecureStore() {
 
   /// Salva `value` sotto `key`.
   Future<void> write(String key, String value);
+
+  /// Cancella `key`; nulla se manca.
+  Future<void> delete(String key);
 }
 
 /// L'orologio, sostituibile nei test.

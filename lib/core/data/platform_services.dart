@@ -34,6 +34,9 @@ class KeychainStore() implements SecureStore {
 
   @override
   Future<void> write(String key, String value) => _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
 }
 
 @Singleton(as: Clock, env: [Environment.prod])

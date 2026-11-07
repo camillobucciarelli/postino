@@ -18,6 +18,8 @@ class const PasswordCredentials({required final String password, required final 
     );
   }
 
+  static Future<void> delete(SecureStore keychain, String accountId) => keychain.delete(_key(accountId));
+
   Future<void> write(SecureStore keychain, String accountId) => keychain.write(
     _key(accountId),
     jsonEncode({'password': password, 'imap': _json(servers.imap), 'smtp': _json(servers.smtp)}),

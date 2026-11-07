@@ -318,7 +318,10 @@ void main() {
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    await db.messageEmbeddingsDao.save('a1', 'm1', 'model', [0.5, -1]);
+    // The table is there again (the DAO's save also wants the message: #174).
+    await db.customStatement(
+      "INSERT INTO message_embeddings (account_id, message_id, model_id, vector) VALUES ('a1', 'm1', 'model', x'00')",
+    );
     expect(await db.select(db.messageEmbeddings).get(), hasLength(1));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
     expect(raw.select('PRAGMA user_version').first.values.first, 21);

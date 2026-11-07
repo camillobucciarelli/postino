@@ -70,8 +70,17 @@ class AttachmentCache(
   }) async {
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
+    // A [clear] during the download counts as Annulla: what this call wrote goes again (#174).
+    final generation = _generation;
     try {
-      return await _file(accountId, messageId, attachment, onProgress, cancel, () => cancelled);
+      return await _file(
+        accountId,
+        messageId,
+        attachment,
+        onProgress,
+        cancel,
+        () => cancelled || _generation != generation,
+      );
     } on Exception catch (e, s) {
       return Err(UnexpectedFailure(e, s));
     }
@@ -178,6 +187,34 @@ class AttachmentCache(
     }
     return _sync.fetchAttachment(accountId, messageId, attachmentId);
   }
+
+  // ponytail: svuota tutta la cache, per-Account se servirà (the file names are hashes: they do not say the Account).
+  /// Best effort, never throws: what is left (a copy another app holds open on Windows, a folder that cannot be
+  /// listed) goes with the next launch or the eviction.
+  @override
+  Future<void> clear() {
+    _generation++;
+    return _clearing();
+  }
+
+  /// Bumped by each [clear]: a [file] call that started before it keeps nothing.
+  int _generation = 0;
+
+  Future<void> _clearing() => _serially(() async {
+    for (final dir in [_storage.cache, _storage.temp]) {
+      try {
+        await for (final e in dir.list()) {
+          try {
+            await e.delete(recursive: true);
+          } on Object catch (err) {
+            debugPrint('[attachments] clear: ${e.basename} left, ${err.runtimeType}');
+          }
+        }
+      } on Object catch (err) {
+        debugPrint('[attachments] clear: ${dir.basename} not listed, ${err.runtimeType}');
+      }
+    }
+  });
 
   File _cached(String accountId, String messageId, String attachmentId) =>
       _storage.cache.childFile(sha256.convert(utf8.encode('$accountId\n$messageId\n$attachmentId')).toString());

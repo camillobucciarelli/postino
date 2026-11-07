@@ -51,4 +51,8 @@ class ConflictsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatab
     if (c != null) await (delete(conflicts)..where(key)).go();
     return c;
   }
+
+  /// Removes the Account's Conflitti (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) =>
+      (delete(conflicts)..where((t) => t.accountId.equals(accountId))).go();
 }

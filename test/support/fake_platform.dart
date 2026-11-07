@@ -10,14 +10,32 @@ class FakeSecureStore() implements SecureStore {
 
   /// While set, every read throws it: a locked keychain, access denied.
   Exception? failure;
+
+  /// While set, every read waits for it: a keychain prompt the user has not answered yet.
+  Future<void>? readGate;
+
   @override
   Future<String?> read(String key) async {
+    await readGate;
     if (failure case final f?) throw f;
     return values[key];
   }
 
   @override
   Future<void> write(String key, String value) async => values[key] = value;
+
+  /// While set, every delete throws it.
+  Exception? deleteFailure;
+
+  /// While set, every delete waits for it: a slow keychain.
+  Future<void>? deleteGate;
+
+  @override
+  Future<void> delete(String key) async {
+    await deleteGate;
+    if (deleteFailure case final f?) throw f;
+    values.remove(key);
+  }
 }
 
 /// Time moves only with [advance], which also fires the [every] tickers that came due.

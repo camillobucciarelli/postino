@@ -39,8 +39,20 @@ class SyncEngine(
   final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
-  late final _drafts = DraftOpener(_store, _outboxStore);
+  late final _intents = IntentReplayer(
+    _store,
+    _outboxStore,
+    _clock,
+    _log,
+    pause: _pauseAccount,
+    removed: _removing.containsKey,
+  );
+
+  /// Accounts whose removal started (#174), true once their data is deleted: their queue sends nothing more, and
+  /// what was downloading for them is not written (set before the delete, so a check right before a write is
+  /// enough). The entry goes when the same Account is connected again.
+  final _removing = <String, bool>{};
+  late final _drafts = DraftOpener(_store, _outboxStore, removed: _removing.containsKey);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
   late final _outbox = OutboxSender(
@@ -162,6 +174,8 @@ class SyncEngine(
     if (account == null) return const Err(NotFoundFailure());
     switch (await providerFor(account).fetchBody(messageId)) {
       case Ok(:final value):
+        // Removed while the body downloaded (#174): nothing of it is written again.
+        if (_removing.containsKey(accountId)) return const Err(NotFoundFailure());
         await _store.saveBody(accountId, messageId, value);
         return const Ok(null);
       case Err(:final failure):
@@ -220,8 +234,11 @@ class SyncEngine(
     Future<void>? cancel,
   }) async {
     final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    return providerFor(account).fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
+    if (account == null || _removing.containsKey(accountId)) return const Err(NotFoundFailure());
+    final fetched = await providerFor(account)
+        .fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
+    // Removed during the download (#174): the cache does not keep it.
+    return _removing.containsKey(accountId) ? const Err(NotFoundFailure()) : fetched;
   }
 
   @override
@@ -230,8 +247,12 @@ class SyncEngine(
     if (account == null) return const Err(NotFoundFailure());
     // In the Account's queue: a sync that read the list before the creation cannot drop it afterwards.
     return _serial(accountId, () async {
+      // Its removal started while this waited in the queue (#174): nothing is created on the Provider.
+      if (_removing.containsKey(accountId)) return const Err(NotFoundFailure());
       final created = await providerFor(account).createLabel(name);
-      if (created case Ok(:final value)) await _store.saveLabel(accountId, value);
+      if (created case Ok(:final value) when !_removing.containsKey(accountId)) {
+        await _store.saveLabel(accountId, value);
+      }
       return created;
     });
   }
@@ -300,11 +321,34 @@ class SyncEngine(
     };
   }
 
+  /// Rimozione dell'Account (#174): stops its change signal (IDLE) and Bozze ticker, runs [delete] in its queue
+  /// after whatever already runs there, then drops its adapter. A sync queued meanwhile finds no Account and stops.
+  Future<void> removeAccount(String accountId, Future<void> Function() delete) async {
+    _removing[accountId] = false;
+    // Not awaited, as in _watchSignals: ending IDLE may wait on the network.
+    unawaited(_signals.remove(accountId)?.cancel());
+    await _draftTimers.remove(accountId)?.cancel();
+    // Not behind the queue: a replay running or queued there must not send the Azioni the user gave up.
+    try {
+      await _store.dropQueue(accountId);
+      await _serial(accountId, delete);
+    } catch (_) {
+      // Not removed after all: the Account works again (its dropped queue stays dropped).
+      _removing.remove(accountId);
+      rethrow;
+    }
+    _removing[accountId] = true;
+    _pausedUntil.remove(accountId);
+    // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
+    unawaited(forgetProvider(accountId));
+  }
+
   Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
 
   /// The Account if its queue may go to the Provider now: not paused, not Da ricollegare (it waits for the reconnection).
+  /// Never once its removal started (#174).
   Future<Account?> _activeAccount(String id) async {
-    if (_paused(id)) return null;
+    if (_paused(id) || _removing.containsKey(id)) return null;
     final account = await _account(id);
     return account?.status == AccountStatus.attivo ? account : null;
   }
@@ -321,6 +365,8 @@ class SyncEngine(
   /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
   /// Called only from inside the Account's serial queue.
   Future<void> _replay(String accountId, MailProvider provider, {bool flush = false, bool outboxOnly = false}) async {
+    // Its removal started (#174): nothing more goes to the Provider.
+    if (_removing.containsKey(accountId)) return;
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
@@ -348,6 +394,9 @@ class SyncEngine(
       }
     }
     for (final a in attivi.values) {
+      // Still listed while its removal runs; listed again after it: connected anew.
+      if (_removing[a.id] == false) continue;
+      _removing.remove(a.id);
       if (_signals.containsKey(a.id)) continue;
       _signals[a.id] = providerFor(a).changes.listen((signal) {
         switch (signal) {
@@ -378,9 +427,13 @@ class SyncEngine(
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
+  /// [NotFoundFailure] once the Account's removal started (#174), also when it starts during the fetch: the caller
+  /// writes nothing then.
   Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
+    if (_removing.containsKey(id)) return const Err(NotFoundFailure());
     if (_paused(id)) return Err(RateLimitFailure(retryAfter: _pausedUntil[id]));
     final fetched = await provider.fetchConversation(conversationId);
+    if (_removing.containsKey(id)) return const Err(NotFoundFailure());
     if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _pauseAccount(id, retryAfter);
     return fetched;
   }
@@ -405,6 +458,9 @@ class SyncEngine(
   Future<void> _syncOnce(Account account, Completer<void> synced) async {
     final accountId = account.id;
     try {
+      // Removed while this sync waited in the queue (#174): nothing of it is written again, and its adapter, already
+      // dropped, is not created again.
+      if (await _account(accountId) == null) return;
       final provider = providerFor(account);
       try {
         // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).

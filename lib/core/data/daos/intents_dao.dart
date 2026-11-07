@@ -210,4 +210,7 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
 
   Expression<bool> Function($ConflictsTable) _conflictKey(String accountId, String messageId, String attribute) =>
       (t) => t.accountId.equals(accountId) & t.messageId.equals(messageId) & t.attribute.equals(attribute);
+
+  /// Removes the Account's queued Azioni (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(intents)..where((t) => t.accountId.equals(accountId))).go();
 }

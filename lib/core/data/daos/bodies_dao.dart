@@ -32,4 +32,7 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     kind: Value(body.kind),
     attachments: Value(body.attachments),
   );
+
+  /// Removes the Account's message bodies (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(bodies)..where((t) => t.accountId.equals(accountId))).go();
 }

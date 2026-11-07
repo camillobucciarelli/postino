@@ -343,6 +343,13 @@
     "gmail": "Gmail",
     "icloud": "iCloud",
     "imap": "IMAP",
-    "microsoft": "Microsoft"
+    "microsoft": "Microsoft",
+    "remove": "Remove the Account $address",
+    "removeTitle": "Remove the Account $name?",
+    "removeMessage": "The emails downloaded on this device are deleted; on the server they stay as they are.",
+    "removeNote": "Changes not yet sent to the server are lost.",
+    "removeGmailNote": "Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.",
+    "removeConfirm": "Remove",
+    "removeCancel": "Cancel"
   }
 }

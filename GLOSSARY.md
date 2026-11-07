@@ -48,6 +48,10 @@ _Avoid_: Classificazione, smistamento automatico, tag automatici
 Il segno che marca un messaggio come importante. Non è la stessa cosa di Posticipa.
 _Avoid_: Preferito, flag, importante
 
+**Spam**:
+L'Etichetta di sistema dei messaggi indesiderati: su Gmail l'etichetta `SPAM`, sui Provider IMAP la cartella Junk. Un messaggio Spam non compare nella posta in arrivo né in altre viste; spostarlo nello Spam da un altro client gli cambia Etichetta, non lo cancella.
+_Avoid_: Junk, posta indesiderata
+
 **Posticipa**:
 Nascondere un messaggio fino a un momento scelto, dopo il quale torna nella posta in arrivo. Il messaggio esce dalla posta in arrivo anche sul Provider e attende nell'Etichetta **Posticipati**, così tutti i dispositivi e la webmail restano d'accordo.
 _Avoid_: Snooze, rimanda, sospendi

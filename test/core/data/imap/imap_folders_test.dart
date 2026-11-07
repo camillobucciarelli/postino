@@ -7,9 +7,7 @@ import 'package:postino/core/domain/message.dart';
 Mailbox _box(String path, [List<MailboxFlag> flags = const []]) =>
     Mailbox(encodedName: path.split('/').last, encodedPath: path, flags: [...flags], pathSeparator: '/');
 
-Map<String, (String, bool)> _ids(List<Mailbox> boxes) => {
-  for (final f in imapFolders(boxes)) f.path: (f.labelId, f.synced),
-};
+Map<String, String> _ids(List<Mailbox> boxes) => {for (final f in imapFolders(boxes)) f.path: f.labelId};
 
 void main() {
   test('SPECIAL-USE folders get the system ids; the others are cartelle of the user, by full path', () {
@@ -30,7 +28,7 @@ void main() {
         'Posta inviata': sentLabelId,
         'Bozze': draftLabelId,
         'Cestino': trashLabelId,
-        'Spam': 'cartella:Spam',
+        'Spam': spamLabelId,
         'Archivio': 'cartella:Archivio',
         'Viaggi': 'cartella:Viaggi',
         'Viaggi/2026/Estate': 'cartella:Viaggi/2026/Estate',
@@ -44,7 +42,6 @@ void main() {
         const Label(id: 'cartella:Viaggi/2026/Estate', name: 'Viaggi/2026/Estate', kind: LabelKind.cartella),
       ],
     );
-    expect(folders.where((f) => !f.synced).map((f) => f.path), ['Spam']);
   });
 
   test("without SPECIAL-USE, iCloud's names are the special folders", () {
@@ -59,13 +56,13 @@ void main() {
         _box('Notes'),
       ]),
       {
-        'INBOX': (inboxLabelId, true),
-        'Sent Messages': (sentLabelId, true),
-        'Deleted Messages': (trashLabelId, true),
-        'Drafts': (draftLabelId, true),
-        'Junk': ('cartella:Junk', false),
-        'Archive': ('cartella:Archive', true),
-        'Notes': ('cartella:Notes', true),
+        'INBOX': inboxLabelId,
+        'Sent Messages': sentLabelId,
+        'Deleted Messages': trashLabelId,
+        'Drafts': draftLabelId,
+        'Junk': spamLabelId,
+        'Archive': 'cartella:Archive',
+        'Notes': 'cartella:Notes',
       },
     );
   });
@@ -77,7 +74,7 @@ void main() {
         _box('Inviati', [MailboxFlag.sent]),
         _box('Sent'),
       ])['Sent'],
-      ('cartella:Sent', true),
+      'cartella:Sent',
     );
   });
 
@@ -91,11 +88,11 @@ void main() {
         _box('STARRED'),
       ]),
       {
-        'INBOX': (inboxLabelId, true),
-        'Inviati': (sentLabelId, true),
-        'SENT': ('cartella:SENT', true),
-        'DRAFT': ('cartella:DRAFT', true),
-        'STARRED': ('cartella:STARRED', true),
+        'INBOX': inboxLabelId,
+        'Inviati': sentLabelId,
+        'SENT': 'cartella:SENT',
+        'DRAFT': 'cartella:DRAFT',
+        'STARRED': 'cartella:STARRED',
       },
     );
     expect(folderPathOf('cartella:Viaggi/2026'), 'Viaggi/2026');

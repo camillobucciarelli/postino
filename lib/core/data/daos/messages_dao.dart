@@ -19,6 +19,14 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Future<String?> cursor(String accountId) async =>
       (await (select(syncCursors)..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;
 
+  /// The Provider ids of the Account's messages in cache.
+  Future<List<String>> ids(String accountId) =>
+      (selectOnly(messages)
+            ..addColumns([messages.id])
+            ..where(messages.accountId.equals(accountId)))
+          .map((r) => r.read(messages.id)!)
+          .get();
+
   /// True when the Account has the message with Provider id [id] in cache.
   Future<bool> exists(String accountId, String id) async =>
       (await (select(messages)

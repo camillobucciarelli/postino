@@ -163,6 +163,9 @@ const starredLabelId = 'STARRED';
 /// Provider-side id of the Cestino label: where Elimina puts a message.
 const trashLabelId = 'TRASH';
 
+/// Provider-side id of the Spam label: a message there is in no view (no Spam view yet), not in the inbox.
+const spamLabelId = 'SPAM';
+
 /// Intestazioni di un messaggio ricevuto o sincronizzato; il corpo sta in [MessageBody].
 class const Message({
   /// Provider-side id.

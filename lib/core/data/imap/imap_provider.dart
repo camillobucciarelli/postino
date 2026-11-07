@@ -53,6 +53,10 @@ class ImapProvider(
   /// The Message-ID of a message by its Provider id, from the app's cache: how an Azione finds a message whose UID
   /// is gone.
   final MessageIdOf? _messageIdOf,
+
+  /// The Provider ids of the messages in the app's cache: those outside the sync window (a whole Conversazione
+  /// opened) get their flags followed too (#185).
+  final Future<Iterable<String>> Function()? _storedIds,
 }) implements MailProvider {
   this
     : _session = ImapSession(_accountId, _address, _keychain, connect: _connect, onBadCertificate: _onBadCertificate),
@@ -117,13 +121,19 @@ class ImapProvider(
       final folders = await _list(c);
       final was = ImapCursor.decode(cursor) ?? (throw const ImapFailed(NotFoundFailure()));
       final since = _since;
+      final stored = <String, List<({String path, int uidValidity, int uid})>>{};
+      for (final id in await _storedIds?.call() ?? const <String>[]) {
+        if (parseImapMessageId(id) case final p?) (stored[p.path] ??= []).add(p);
+      }
       final messages = <ImapParsed>[];
       final removed = <String>[];
       final states = <String, FolderState>{};
       for (final f in folders) {
         final state = was.folders[f.path];
         final delta = await _unlessGone(
-          () => state == null ? _folders.window(c, f, since) : _folders.changes(c, f, state, since),
+          () => state == null
+              ? _folders.window(c, f, since)
+              : _folders.changes(c, f, state, since, stored: stored[f.path] ?? const []),
         );
         if (delta == null) {
           // Listed but refused (gone since the LIST, or not readable): as it was, until the next sync.
@@ -225,9 +235,9 @@ class ImapProvider(
 
   DateTime get _since => _clock.now().subtract(syncWindow);
 
-  /// The synced folders, the inbox first: its page is the first the user sees.
+  /// The synced folders (all of them), the inbox first: its page is the first the user sees.
   Future<List<ImapFolder>> _list(ImapClient c) async {
-    final folders = imapFolders(await _boxes(c)).where((f) => f.synced).toList();
+    final folders = imapFolders(await _boxes(c));
     return [...folders.where((f) => f.role == FolderRole.inbox), ...folders.where((f) => f.role != FolderRole.inbox)];
   }
 

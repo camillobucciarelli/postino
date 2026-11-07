@@ -11,7 +11,8 @@ import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/mailbox.dart' show parseMailboxes;
 import 'package:postino/core/domain/message.dart' as domain show Message, OutgoingMessage;
-import 'package:postino/core/domain/message.dart' show LabelKind, draftLabelId, inboxLabelId, sentLabelId, trashLabelId;
+import 'package:postino/core/domain/message.dart'
+    show LabelKind, draftLabelId, inboxLabelId, sentLabelId, spamLabelId, trashLabelId;
 
 import '../core/domain/mail_provider_contract.dart';
 import 'fake_platform.dart';
@@ -25,7 +26,13 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
   static var _users = 0;
 
   /// The folder of each system Etichetta; any other Etichetta id is the folder's path.
-  static const _paths = {inboxLabelId: 'INBOX', sentLabelId: 'Sent', draftLabelId: 'Drafts', trashLabelId: 'Trash'};
+  static const _paths = {
+    inboxLabelId: 'INBOX',
+    sentLabelId: 'Sent',
+    draftLabelId: 'Drafts',
+    trashLabelId: 'Trash',
+    spamLabelId: 'Junk',
+  };
 
   /// The password the adapter logs in with; after [breakAuth] the server has another one.
   // Generated on every run: no password in the source.

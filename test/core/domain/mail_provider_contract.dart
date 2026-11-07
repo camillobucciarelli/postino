@@ -118,8 +118,8 @@ void mailProviderAuthContract(String name, CreateHarness create, {Pending pendin
       await h.goOffline();
       for (final r in [
         await h.provider.initialSync(),
-        if (!pending.containsKey('body')) await h.provider.fetchBody('a'),
-        if (!pending.containsKey('conversation')) await h.provider.fetchConversation('t-a'),
+        if (!pending.containsKey('body')) await h.provider.fetchBody(h.idOf('a')),
+        if (!pending.containsKey('conversation')) await h.provider.fetchConversation(h.conversationOf('a')),
         if (actions) await h.provider.applyAction('a', const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
         if (actions) await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
@@ -253,17 +253,18 @@ void mailProviderSyncContract(String name, CreateHarness create, {Pending pendin
 
     test('fetches a body on request and NotFound for an unknown message', () async {
       await h.deliver(msg('a'));
-      expect(_ok(await h.provider.fetchBody('a')).content, isNotEmpty);
+      expect(_ok(await h.provider.fetchBody(h.idOf('a'))).content, isNotEmpty);
       expect(await h.provider.fetchBody('zzz'), _err<NotFoundFailure>());
     }, skip: pending['body']);
 
     test('fetches every message of a Conversazione, Inviati too', () async {
-      await h.deliver(msg('a', conversationId: 't'));
-      await h.deliver(msg('b', conversationId: 't', labelIds: const ['SENT']));
+      final t = h.conversationOf('a');
+      await h.deliver(msg('a', conversationId: t));
+      await h.deliver(msg('b', conversationId: t, labelIds: const ['SENT'], references: const ['<a@example.com>']));
       await h.deliver(msg('c'));
-      final messages = _ok(await h.provider.fetchConversation('t'));
-      expect(messages.map((m) => m.id), unorderedEquals(['a', 'b']));
-      expect(messages.map((m) => m.conversationId).toSet(), {'t'});
+      final messages = _ok(await h.provider.fetchConversation(t));
+      expect(messages.map((m) => m.id), unorderedEquals(['a', 'b'].map(h.idOf)));
+      expect(messages.map((m) => m.conversationId).toSet(), {t});
     }, skip: pending['conversation']);
 
     test('a message marked read comes back read with the next sync', () async {
@@ -342,28 +343,30 @@ void mailProviderAttachmentContract(String name, CreateHarness create) {
       await h.deliver(msg('a'));
       await h.attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'));
       await h.attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
-      final body = _ok(await h.provider.fetchBody('a'));
-      expect(body.attachments!.map((a) => (a.name, a.size)), [('Preventivo.pdf', 19), ('foto.jpg', 4)]);
+      final a = h.idOf('a');
+      final body = _ok(await h.provider.fetchBody(a));
+      expect(body.attachments!.map((a) => a.name), ['Preventivo.pdf', 'foto.jpg']);
+      expect(body.attachments!.map((a) => a.size), [19, 4]);
 
       final progress = <double>[];
-      final pdf = _ok(await h.provider.fetchAttachment('a', body.attachments!.first.id, onProgress: progress.add));
+      final pdf = _ok(await h.provider.fetchAttachment(a, body.attachments!.first.id, onProgress: progress.add));
       expect(utf8.decode(pdf), '%PDF-1.4 preventivo');
       expect(progress.last, 1);
-      expect(_ok(await h.provider.fetchAttachment('a', body.attachments!.last.id)), [0xFF, 0xD8, 0xFF, 0xE0]);
+      expect(_ok(await h.provider.fetchAttachment(a, body.attachments!.last.id)), [0xFF, 0xD8, 0xFF, 0xE0]);
     });
 
     test('an unknown attachment is NotFound', () async {
       await h.deliver(msg('a'));
-      final r = await h.provider.fetchAttachment('a', 'nope');
+      final r = await h.provider.fetchAttachment(h.idOf('a'), 'nope');
       expect(r, _err<NotFoundFailure>());
     });
 
     test('offline, a download is OfflineFailure', () async {
       await h.deliver(msg('a'));
       await h.attach('a', 'a.txt', [1, 2, 3]);
-      final id = _ok(await h.provider.fetchBody('a')).attachments!.single.id;
+      final id = _ok(await h.provider.fetchBody(h.idOf('a'))).attachments!.single.id;
       await h.goOffline();
-      expect(await h.provider.fetchAttachment('a', id), _err<OfflineFailure>());
+      expect(await h.provider.fetchAttachment(h.idOf('a'), id), _err<OfflineFailure>());
     });
   });
 }

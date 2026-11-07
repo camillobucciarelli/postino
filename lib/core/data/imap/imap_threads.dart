@@ -60,7 +60,7 @@ List<Message> threadMessages(
     return memo[t] = id;
   }
 
-  return [for (final t in messages) _withConversation(t.message, root(t, 0))];
+  return [for (final t in messages) withConversation(t.message, root(t, 0))];
 }
 
 /// The earliest message of [known] that [t] may answer by subject: same normalized subject, sent before it
@@ -87,7 +87,8 @@ ThreadInput? _earliestSibling(
   return best;
 }
 
-Message _withConversation(Message m, String conversationId) => Message(
+/// [m] in the Conversazione [conversationId], with the list preview [snippet] where given.
+Message withConversation(Message m, String conversationId, {String? snippet}) => Message(
   id: m.id,
   messageId: m.messageId,
   conversationId: conversationId,
@@ -100,7 +101,7 @@ Message _withConversation(Message m, String conversationId) => Message(
   cc: m.cc,
   bcc: m.bcc,
   subject: m.subject,
-  snippet: m.snippet,
+  snippet: snippet ?? m.snippet,
   date: m.date,
   replyTo: m.replyTo,
   references: m.references,

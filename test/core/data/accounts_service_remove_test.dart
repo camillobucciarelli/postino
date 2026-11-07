@@ -123,6 +123,76 @@ void main() {
     expect(provider.drafts.keys, [provider.draftHeld], reason: 'the uploaded Bozza stays, the next one never goes');
   });
 
+  Future<int> count(String table) async =>
+      (await getIt<PostinoDatabase>().customSelect('SELECT count(*) AS n FROM $table').getSingle()).read<int>('n');
+
+  test('a body or a remote Bozza downloaded after the removal is not written', () async {
+    final sync = getIt<MailSync>();
+    provider
+      ..deliver(msg('m1'), signal: false)
+      ..deliverDraft(
+        const OutgoingMessage(
+          messageId: '<r@x>',
+          from: 'ada@gmail.com',
+          to: ['b@example.com'],
+          subject: 's',
+          body: 'b',
+        ),
+        date: DateTime.utc(2030),
+      );
+    await sync.syncAll();
+    // The bodies are to download again.
+    await getIt<PostinoDatabase>().customStatement('DELETE FROM bodies');
+    provider.holdBody = Completer<void>();
+    final opening = sync.openDraft(_ada, '<r@x>');
+    final body = sync.fetchBody(_ada, 'm1');
+    await pumpEventQueue();
+
+    await accounts.remove(_ada);
+    provider.holdBody!.complete();
+    await Future.wait([opening, body]);
+
+    for (final table in ['bodies', 'drafts']) {
+      expect(await count(table), 0, reason: table);
+    }
+  });
+
+  test('a Conversazione opened while the removal waits in the queue writes nothing', () async {
+    final sync = getIt<MailSync>();
+    provider
+      ..deliver(msg('m1'), signal: false)
+      ..hold = Completer<void>();
+    final running = sync.syncAll();
+    await pumpEventQueue();
+    final removing = accounts.remove(_ada);
+    await pumpEventQueue();
+    // The Account is still listed: the opening queues behind the delete.
+    final opening = sync.openConversation(_ada, 't-m1');
+    final completing = sync.completeConversation(_ada, 't-m1');
+    await pumpEventQueue();
+    provider.hold!.complete();
+    await Future.wait([running, removing, opening, completing]);
+
+    for (final table in ['messages', 'message_labels', 'intents']) {
+      expect(await count(table), 0, reason: table);
+    }
+  });
+
+  test('connecting the same Account again while its removal still runs keeps the new credentials', () async {
+    h.httpHold = Completer<void>();
+    final removing = accounts.remove(_ada);
+    while (h.httpRequests.isEmpty) {
+      await pumpEventQueue();
+    }
+    h.providerFor(_ada);
+    final connecting = accounts.connectGmail();
+    await pumpEventQueue();
+    h.httpHold!.complete();
+    await Future.wait([removing, connecting]);
+
+    expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
+  });
+
   test('a failed revocation or a keychain that refuses never stops the removal', () async {
     h
       ..httpFailure = Exception('no network')

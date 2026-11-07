@@ -48,10 +48,11 @@ class SyncEngine(
     removed: _removing.containsKey,
   );
 
-  /// Accounts whose removal started (#174), true once their data is deleted: their queue sends nothing more. The
-  /// entry goes when the same Account is connected again.
+  /// Accounts whose removal started (#174), true once their data is deleted: their queue sends nothing more, and
+  /// what was downloading for them is not written (set before the delete, so a check right before a write is
+  /// enough). The entry goes when the same Account is connected again.
   final _removing = <String, bool>{};
-  late final _drafts = DraftOpener(_store, _outboxStore);
+  late final _drafts = DraftOpener(_store, _outboxStore, removed: _removing.containsKey);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
   late final _outbox = OutboxSender(
@@ -159,7 +160,7 @@ class SyncEngine(
     switch (await providerFor(account).fetchBody(messageId)) {
       case Ok(:final value):
         // Removed while the body downloaded (#174): nothing of it is written again.
-        if (await _account(accountId) == null) return const Err(NotFoundFailure());
+        if (_removing.containsKey(accountId)) return const Err(NotFoundFailure());
         await _store.saveBody(accountId, messageId, value);
         return const Ok(null);
       case Err(:final failure):
@@ -229,7 +230,9 @@ class SyncEngine(
     // In the Account's queue: a sync that read the list before the creation cannot drop it afterwards.
     return _serial(accountId, () async {
       final created = await providerFor(account).createLabel(name);
-      if (created case Ok(:final value)) await _store.saveLabel(accountId, value);
+      if (created case Ok(:final value) when !_removing.containsKey(accountId)) {
+        await _store.saveLabel(accountId, value);
+      }
       return created;
     });
   }
@@ -335,6 +338,8 @@ class SyncEngine(
   /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
   /// Called only from inside the Account's serial queue.
   Future<void> _replay(String accountId, MailProvider provider, {bool flush = false, bool outboxOnly = false}) async {
+    // Its removal started (#174): nothing more goes to the Provider.
+    if (_removing.containsKey(accountId)) return;
     // A send ahead of this one in the queue may have just paused the Account.
     if (_paused(accountId)) return;
     if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
@@ -389,9 +394,13 @@ class SyncEngine(
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
+  /// [NotFoundFailure] once the Account's removal started (#174), also when it starts during the fetch: the caller
+  /// writes nothing then.
   Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
+    if (_removing.containsKey(id)) return const Err(NotFoundFailure());
     if (_paused(id)) return Err(RateLimitFailure(retryAfter: _pausedUntil[id]));
     final fetched = await provider.fetchConversation(conversationId);
+    if (_removing.containsKey(id)) return const Err(NotFoundFailure());
     if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _pauseAccount(id, retryAfter);
     return fetched;
   }

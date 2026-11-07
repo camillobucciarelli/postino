@@ -50,6 +50,8 @@ class AccountsService(
     final address = grant.address.trim().toLowerCase();
     final id = 'gmail:$address';
     if (await _connectedElsewhere(id, address)) return const Err(AlreadyConnectedFailure());
+    // A removal of the same Account still clearing its credentials must not clear the new ones.
+    await _removals[id]?.catchError((Object _) {});
     await GmailTokens.of(grant).write(_keychain, id);
     return Ok(await _save(id, address, ProviderKind.gmail));
   }
@@ -82,6 +84,7 @@ class AccountsService(
     }
     // The user closed the form while the servers answered: nothing is written.
     if (cancelled) return const Err(CancelledFailure());
+    await _removals[id]?.catchError((Object _) {});
     await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
     return Ok(await _save(id, normalized, provider.kind));
   }
@@ -122,9 +125,21 @@ class AccountsService(
     }
   }
 
+  /// The removals running, by Account: a connection of the same Account waits for its credential cleanup.
+  final _removals = <String, Future<void>>{};
+
   @override
   Future<void> remove(String accountId) async {
     if (!(await _store.accounts()).any((a) => a.id == accountId)) return;
+    final run = _removals[accountId] = _remove(accountId);
+    try {
+      await run;
+    } finally {
+      _removals.remove(accountId)?.ignore();
+    }
+  }
+
+  Future<void> _remove(String accountId) async {
     // Read before the keychain is cleared; a keychain that does not answer never blocks the removal.
     final tokens = await GmailTokens.read(_keychain, accountId).catchError((Object _) => null);
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId));

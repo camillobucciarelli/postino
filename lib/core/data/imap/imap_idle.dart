@@ -1,27 +1,43 @@
 import 'dart:async';
+import 'dart:io' show X509Certificate;
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../domain/mail_provider.dart';
+import '../../domain/mail_servers.dart';
+import 'imap_session.dart';
 
-/// Opens IMAP IDLE on the inbox of [user] at [host] (XOAUTH2), used only as a change signal (ADR 0008).
+/// Opens IMAP IDLE on the inbox of [user] at [host], used only as a change signal (ADR 0008): with XOAUTH2 when
+/// [accessToken] is given (Gmail), else with LOGIN and [password] (iCloud and IMAP).
 typedef ImapIdle = Stream<ChangeSignal> Function({
   required String host,
   required String user,
-  required Future<String> Function() accessToken,
+  int port,
+  ServerSecurity security,
+  Future<String> Function()? accessToken,
+  Future<String> Function()? password,
+  bool Function(X509Certificate)? onBadCertificate,
+  ImapConnector connect,
 });
 
 /// Gmail drops an IDLE after about 29 minutes: it is renewed before that.
 const _renewIdle = Duration(minutes: 25);
 
-/// Reconnects for as long as it is listened to; never throws, a failure is [ChangeSignal.down].
+/// Reconnects for as long as it is listened to; never throws, a failure is [ChangeSignal.down]. A server without
+/// IDLE stays [ChangeSignal.down] for good: the sync engine's 60 s poll covers it.
 // ponytail: fixed 30 s between reconnections; backoff if servers start refusing.
 Stream<ChangeSignal> imapIdle({
   required String host,
   required String user,
-  required Future<String> Function() accessToken,
+  int port = 993,
+  ServerSecurity security = ServerSecurity.ssl,
+  Future<String> Function()? accessToken,
+  Future<String> Function()? password,
+  bool Function(X509Certificate)? onBadCertificate,
+  ImapConnector connect = connectImap,
 }) {
+  assert((accessToken == null) != (password == null), 'either an access token or a password');
   var stopped = false;
   ImapClient? client;
   Completer<void>? wake;
@@ -37,11 +53,20 @@ Stream<ChangeSignal> imapIdle({
 
   Future<void> run() async {
     while (!stopped) {
-      final c = client = ImapClient();
+      final c = client = ImapClient(onBadCertificate: onBadCertificate);
       StreamSubscription<ImapEvent>? events;
       try {
-        await c.connectToServer(host, 993);
-        await c.authenticateWithOAuth2(user, await accessToken());
+        await connect(c, MailServer(host: host, port: port, security: security));
+        if (accessToken != null) {
+          await c.authenticateWithOAuth2(user, await accessToken());
+        } else {
+          await c.login(user, await password!());
+          if (!(await c.capability()).any((x) => x.name.toUpperCase() == 'IDLE')) {
+            debugPrint('[idle] $user: no IDLE, polling');
+            out.add(ChangeSignal.down);
+            return;
+          }
+        }
         await c.selectInbox();
         final lost = Completer<void>();
         events = c.eventStream.listen((e) {

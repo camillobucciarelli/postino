@@ -1,4 +1,5 @@
 // Contract suite of the Provider adapter (ADR 0002): real adapters pass the same cases.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -11,29 +12,48 @@ import 'package:postino/core/domain/result.dart';
 
 import '../../support/fake_mail_provider.dart';
 
-/// What the suite needs from an adapter under test, beyond [MailProvider] itself.
+/// What the suite needs from an adapter under test, beyond [MailProvider] itself. The changes "elsewhere" may be
+/// asynchronous (a real server): the suite awaits them.
 abstract class ContractHarness() {
   MailProvider get provider;
 
-  /// A message arrives in the mailbox "elsewhere".
-  void deliver(Message m);
+  /// A message arrives in the mailbox "elsewhere"; delivered again (same id), it changes there: its flags, its folder.
+  FutureOr<void> deliver(Message m);
 
   /// A message is deleted from the mailbox "elsewhere".
-  void removeRemotely(String id);
+  FutureOr<void> removeRemotely(String id);
 
   /// The Provider no longer remembers the changes behind any cursor handed out so far.
-  void expireCursors();
-  void goOffline();
-  void breakAuth();
+  FutureOr<void> expireCursors();
+  FutureOr<void> goOffline();
+  FutureOr<void> breakAuth();
 
   /// A Bozza is written in the Bozze folder "elsewhere" (another client).
-  void deliverDraft(OutgoingMessage d);
+  FutureOr<void> deliverDraft(OutgoingMessage d);
 
   /// Gives message [messageId] an attachment [name] holding [bytes].
-  void attach(String messageId, String name, List<int> bytes);
+  FutureOr<void> attach(String messageId, String name, List<int> bytes);
+
+  /// The Provider id of the message delivered as `msg(key)`, where it was last delivered: the adapter may name it
+  /// otherwise (IMAP: `cartella/UIDVALIDITY/UID`).
+  String idOf(String key) => key;
+
+  /// The Conversazione the adapter gives `msg(key)` delivered on its own.
+  String conversationOf(String key) => 't-$key';
+
+  /// The id of the Etichetta `Viaggi` every mailbox starts with, and the kind of a created one.
+  String get viaggiId => 'Label_12';
+  LabelKind get createdKind => LabelKind.etichetta;
+
+  /// Whether an expired cursor rebuilds what it covered (IMAP: a new UIDVALIDITY drops the old ids and fetches the
+  /// folder again) instead of being [NotFoundFailure].
+  bool get rebuildsExpiredCursor => false;
+
+  /// Releases the adapter's connections after a test.
+  Future<void> dispose() async {}
 }
 
-class FakeHarness() implements ContractHarness {
+class FakeHarness() extends ContractHarness {
   final fake = FakeMailProvider();
   @override
   MailProvider get provider => fake;
@@ -53,6 +73,19 @@ class FakeHarness() implements ContractHarness {
   void attach(String messageId, String name, List<int> bytes) => fake.attach(messageId, name, bytes);
 }
 
+/// Builds the harness of one test.
+typedef CreateHarness = FutureOr<ContractHarness> Function();
+
+/// The capabilities an adapter does not have yet, by the ticket bringing them: their cases are skipped.
+/// Keys: `body` (fetchBody), `conversation` (fetchConversation), `action` (applyAction).
+typedef Pending = Map<String, String>;
+
+void _harness(CreateHarness create, void Function(ContractHarness h) got) {
+  late ContractHarness h;
+  setUp(() async => got(h = await create()));
+  tearDown(() => h.dispose());
+}
+
 T _ok<T>(Result<T> r) => switch (r) {
   Ok(:final value) => value,
   Err(:final failure) => fail('expected Ok, got $failure'),
@@ -61,34 +94,35 @@ T _ok<T>(Result<T> r) => switch (r) {
 Matcher _err<F>() => isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<F>());
 
 /// The access part of the contract: what an adapter must honour before it can sync.
-void mailProviderAuthContract(String name, ContractHarness Function() create) {
+void mailProviderAuthContract(String name, CreateHarness create, {Pending pending = const {}}) {
   group('MailProvider auth contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
+    final actions = !pending.containsKey('action');
 
     test('a refused login is an AuthFailure', () async {
-      h.breakAuth();
+      await h.breakAuth();
       for (final r in [
         await h.provider.refreshAuth(),
         await h.provider.initialSync(),
         await h.provider.incrementalSync('0'),
-        await h.provider.applyAction('a', const MarkRead(), expected: false),
+        if (actions) await h.provider.applyAction('a', const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
+        if (actions) await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
       }
     });
 
     test('no network is an OfflineFailure', () async {
-      h.goOffline();
+      await h.goOffline();
       for (final r in [
         await h.provider.initialSync(),
-        await h.provider.fetchBody('a'),
-        await h.provider.fetchConversation('t-a'),
-        await h.provider.applyAction('a', const MarkRead(), expected: false),
+        if (!pending.containsKey('body')) await h.provider.fetchBody('a'),
+        if (!pending.containsKey('conversation')) await h.provider.fetchConversation('t-a'),
+        if (actions) await h.provider.applyAction('a', const MarkRead(), expected: false),
         await h.provider.createLabel('Fatture'),
-        await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
+        if (actions) await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false),
       ]) {
         expect(r, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<OfflineFailure>()));
       }
@@ -97,24 +131,23 @@ void mailProviderAuthContract(String name, ContractHarness Function() create) {
 }
 
 /// The sync part of the contract (ADR 0008): initial sync, incremental sync from the cursor, bodies.
-void mailProviderSyncContract(String name, ContractHarness Function() create) {
+void mailProviderSyncContract(String name, CreateHarness create, {Pending pending = const {}}) {
   group('MailProvider sync contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
 
     test('initial sync returns the mailbox messages and a cursor', () async {
-      h
-        ..deliver(msg('a'))
-        ..deliver(msg('b'))
-        ..deliver(msg('c'));
+      await h.deliver(msg('a'));
+      await h.deliver(msg('b'));
+      await h.deliver(msg('c'));
       final batch = _ok(await h.provider.initialSync());
-      expect(batch.messages.map((m) => m.id), unorderedEquals(['a', 'b', 'c']));
+      expect(batch.messages.map((m) => m.id), unorderedEquals(['a', 'b', 'c'].map(h.idOf)));
       expect(batch.cursor, isNotEmpty);
     });
 
     test('initial sync hands over every message in pages too', () async {
       for (final id in ['a', 'b', 'c']) {
-        h.deliver(msg(id));
+        await h.deliver(msg(id));
       }
       final paged = <String>[];
       final batch = _ok(
@@ -135,104 +168,112 @@ void mailProviderSyncContract(String name, ContractHarness Function() create) {
     });
 
     test('initial sync brings Etichette, Conversazioni and only the inbox bodies', () async {
-      h
-        ..deliver(msg('a', isRead: true, isStarred: true))
-        ..deliver(msg('s', labelIds: const ['SENT']));
+      await h.deliver(msg('a', isRead: true, isStarred: true));
+      await h.deliver(msg('s', labelIds: const ['SENT']));
       final batch = _ok(await h.provider.initialSync());
-      expect(batch.labels!.map((l) => (l.id, l.name)), [('Label_12', 'Viaggi')]);
-      final a = batch.messages.singleWhere((m) => m.id == 'a');
-      expect(a.conversationId, 't-a');
+      expect(batch.labels!.map((l) => (l.id, l.name)), [(h.viaggiId, 'Viaggi')]);
+      final a = batch.messages.singleWhere((m) => m.id == h.idOf('a'));
+      expect(a.conversationId, h.conversationOf('a'));
       expect(a.labelIds, contains(inboxLabelId));
       expect((a.isRead, a.isStarred), (true, true));
       expect(a.messageId, '<a@example.com>');
       expect(a.from, 'ada@example.com');
       expect(a.subject, 'Oggetto');
       expect(a.date, DateTime.utc(2026));
-      expect(batch.bodies.keys, ['a']);
+      expect(batch.bodies.keys, [h.idOf('a')]);
     });
 
     test('the sender name and the Cc come back with the message', () async {
-      h.deliver(msg('a', fromName: 'Ada Okafor', cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org']));
+      await h.deliver(
+        msg('a', fromName: 'Ada Okafor', cc: const ['Marco Lenti <marco@example.com>', 'carla@example.org']),
+      );
       final a = _ok(await h.provider.initialSync()).messages.single;
       expect((a.from, a.fromName), ('ada@example.com', 'Ada Okafor'));
       expect(a.cc, ['Marco Lenti <marco@example.com>', 'carla@example.org']);
     });
 
     test('incremental sync from a cursor returns only what changed', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h.deliver(msg('b'));
+      await h.deliver(msg('b'));
       final next = _ok(await h.provider.incrementalSync(first.cursor));
-      expect(next.messages.map((m) => m.id), ['b']);
-      expect(next.bodies.keys, ['b']);
+      expect(next.messages.map((m) => m.id), [h.idOf('b')]);
+      expect(next.bodies.keys, [h.idOf('b')]);
       final again = _ok(await h.provider.incrementalSync(next.cursor));
       expect(again.messages, isEmpty);
     });
 
     test('a message read and starred elsewhere comes back changed', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h.deliver(msg('a', isRead: true, isStarred: true));
+      await h.deliver(msg('a', isRead: true, isStarred: true));
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       final a = next.messages.single;
-      expect((a.id, a.isRead, a.isStarred), ('a', true, true));
+      expect((a.id, a.isRead, a.isStarred), (h.idOf('a'), true, true));
     });
 
     test('a message removed remotely shows up as removed and moves the cursor', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h.removeRemotely('a');
+      await h.removeRemotely('a');
       final next = _ok(await h.provider.incrementalSync(first.cursor));
-      expect(next.removedMessageIds, ['a']);
+      expect(next.removedMessageIds, [h.idOf('a')]);
       expect(next.cursor, isNot(first.cursor));
     });
 
     test('the delta reduces each message to its final state', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h
-        ..removeRemotely('a')
-        ..deliver(msg('a'))
-        ..deliver(msg('b'))
-        ..removeRemotely('b');
+      final before = h.idOf('a');
+      await h.removeRemotely('a');
+      await h.deliver(msg('a'));
+      await h.deliver(msg('b'));
+      final b = h.idOf('b');
+      await h.removeRemotely('b');
       final next = _ok(await h.provider.incrementalSync(first.cursor));
-      expect(next.messages.map((m) => m.id), ['a']);
-      expect(next.removedMessageIds, ['b']);
+      expect(next.messages.map((m) => m.id), [h.idOf('a')]);
+      // Delivered again, `a` may have a new id (IMAP: a new UID): only the old one may go, with `b`.
+      expect(next.removedMessageIds, isNot(contains(h.idOf('a'))));
+      expect(next.removedMessageIds.toSet().difference({b, before}), isEmpty);
+      if (before == h.idOf('a')) expect(next.removedMessageIds, [b]);
     });
 
-    test('an expired cursor is NotFound', () async {
-      h.deliver(msg('a'));
+    test('an expired cursor is NotFound, or rebuilds what it covered', () async {
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
-      h
-        ..deliver(msg('b'))
-        ..expireCursors();
-      expect(await h.provider.incrementalSync(first.cursor), _err<NotFoundFailure>());
+      final a = h.idOf('a');
+      await h.deliver(msg('b'));
+      await h.expireCursors();
+      final next = await h.provider.incrementalSync(first.cursor);
+      if (!h.rebuildsExpiredCursor) return expect(next, _err<NotFoundFailure>());
+      // The mailbox starts over empty: whatever the cursor knew goes, nothing stays twice.
+      expect(_ok(next).removedMessageIds, contains(a));
+      expect(_ok(next).messages, isEmpty);
     });
 
     test('fetches a body on request and NotFound for an unknown message', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       expect(_ok(await h.provider.fetchBody('a')).content, isNotEmpty);
       expect(await h.provider.fetchBody('zzz'), _err<NotFoundFailure>());
-    });
+    }, skip: pending['body']);
 
     test('fetches every message of a Conversazione, Inviati too', () async {
-      h
-        ..deliver(msg('a', conversationId: 't'))
-        ..deliver(msg('b', conversationId: 't', labelIds: const ['SENT']))
-        ..deliver(msg('c'));
+      await h.deliver(msg('a', conversationId: 't'));
+      await h.deliver(msg('b', conversationId: 't', labelIds: const ['SENT']));
+      await h.deliver(msg('c'));
       final messages = _ok(await h.provider.fetchConversation('t'));
       expect(messages.map((m) => m.id), unorderedEquals(['a', 'b']));
       expect(messages.map((m) => m.conversationId).toSet(), {'t'});
-    });
+    }, skip: pending['conversation']);
 
     test('a message marked read comes back read with the next sync', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
       _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(next.messages.single.isRead, isTrue);
       _ok(await h.provider.applyAction('a', const MarkRead(), expected: false));
-    });
+    }, skip: pending['action']);
   });
 }
 
@@ -245,10 +286,10 @@ OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) => Outgo
 );
 
 /// The Bozze part of the contract (#35): create, update by Message-ID, delete, and Bozze written elsewhere.
-void mailProviderDraftContract(String name, ContractHarness Function() create) {
+void mailProviderDraftContract(String name, CreateHarness create) {
   group('MailProvider draft contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
 
     test('a saved Bozza can be updated by its Message-ID', () async {
       final d = _draft('<x@example.com>');
@@ -272,7 +313,7 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
     });
 
     test('a Bozza written elsewhere syncs as a DRAFT message with its body', () async {
-      h.deliverDraft(
+      await h.deliverDraft(
         const OutgoingMessage(
           messageId: '<y@example.com>',
           from: 'me@example.com',
@@ -292,16 +333,15 @@ void mailProviderDraftContract(String name, ContractHarness Function() create) {
 }
 
 /// Attachments (#34): listed with the body, downloaded one at a time.
-void mailProviderAttachmentContract(String name, ContractHarness Function() create) {
+void mailProviderAttachmentContract(String name, CreateHarness create) {
   group('MailProvider attachment contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
 
     test('the body lists the attachments, each downloads on its own', () async {
-      h
-        ..deliver(msg('a'))
-        ..attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'))
-        ..attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
+      await h.deliver(msg('a'));
+      await h.attach('a', 'Preventivo.pdf', utf8.encode('%PDF-1.4 preventivo'));
+      await h.attach('a', 'foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
       final body = _ok(await h.provider.fetchBody('a'));
       expect(body.attachments!.map((a) => (a.name, a.size)), [('Preventivo.pdf', 19), ('foto.jpg', 4)]);
 
@@ -313,27 +353,26 @@ void mailProviderAttachmentContract(String name, ContractHarness Function() crea
     });
 
     test('an unknown attachment is NotFound', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final r = await h.provider.fetchAttachment('a', 'nope');
       expect(r, _err<NotFoundFailure>());
     });
 
     test('offline, a download is OfflineFailure', () async {
-      h
-        ..deliver(msg('a'))
-        ..attach('a', 'a.txt', [1, 2, 3]);
+      await h.deliver(msg('a'));
+      await h.attach('a', 'a.txt', [1, 2, 3]);
       final id = _ok(await h.provider.fetchBody('a')).attachments!.single.id;
-      h.goOffline();
+      await h.goOffline();
       expect(await h.provider.fetchAttachment('a', id), _err<OfflineFailure>());
     });
   });
 }
 
 /// Sending (#36): idempotent on the Message-ID, the sent message lands in Inviati, its Bozza goes.
-void mailProviderSendContract(String name, ContractHarness Function() create) {
+void mailProviderSendContract(String name, CreateHarness create) {
   group('MailProvider send contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
     final d = _draft('<x@example.com>');
     final raw = renderMime(d, DateTime.utc(2026));
 
@@ -362,17 +401,17 @@ void mailProviderSendContract(String name, ContractHarness Function() create) {
     });
 
     test('offline is an OfflineFailure', () async {
-      h.goOffline();
+      await h.goOffline();
       expect(await h.provider.send(d.messageId, raw), _err<OfflineFailure>());
     });
   });
 }
 
 /// Etichette (#105): created on the Provider, added to and removed from a message; every call idempotent.
-void mailProviderLabelContract(String name, ContractHarness Function() create) {
+void mailProviderLabelContract(String name, CreateHarness create, {Pending pending = const {}}) {
   group('MailProvider label contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
 
     Future<List<String>> labelsOf(String cursor, String id) async =>
         _ok(await h.provider.incrementalSync(cursor)).messages.singleWhere((m) => m.id == id).labelIds;
@@ -380,21 +419,21 @@ void mailProviderLabelContract(String name, ContractHarness Function() create) {
     test('a created Etichetta comes with the next incremental sync; creating it again returns the same one', () async {
       final first = _ok(await h.provider.initialSync());
       final created = _ok(await h.provider.createLabel('Fatture'));
-      expect((created.name, created.kind), ('Fatture', LabelKind.etichetta));
+      expect((created.name, created.kind), ('Fatture', h.createdKind));
       expect(_ok(await h.provider.createLabel('Fatture')), created);
       final next = _ok(await h.provider.incrementalSync(first.cursor));
       expect(
         next.labels!.map((l) => (l.id, l.name)),
-        unorderedEquals([('Label_12', 'Viaggi'), (created.id, 'Fatture')]),
+        unorderedEquals([(h.viaggiId, 'Viaggi'), (created.id, 'Fatture')]),
       );
     });
 
     test('creating an Etichetta that already exists returns it', () async {
-      expect(_ok(await h.provider.createLabel('Viaggi')).id, 'Label_12');
+      expect(_ok(await h.provider.createLabel('Viaggi')).id, h.viaggiId);
     });
 
     test('an Etichetta added twice is on the message once; removed twice, it is gone', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       final first = _ok(await h.provider.initialSync());
       _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
       _ok(await h.provider.applyAction('a', const ApplyLabel('Label_12'), expected: false));
@@ -404,39 +443,39 @@ void mailProviderLabelContract(String name, ContractHarness Function() create) {
       _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
       _ok(await h.provider.applyAction('a', const RemoveLabel('Label_12'), expected: true));
       expect(await labelsOf(first.cursor, 'a'), isNot(contains('Label_12')));
-    });
+    }, skip: pending['action']);
 
     test('an Etichetta on a message gone from the Provider is messaggioSparito', () async {
       expect(
         _ok(await h.provider.applyAction('zzz', const ApplyLabel('Label_12'), expected: false)),
         isA<ActionMessageGone>(),
       );
-    });
+    }, skip: pending['action']);
   });
 }
 
 /// The conditional Azione (ADR 0008): applied on the expected or the wanted value, a Conflitto on another one.
-void mailProviderActionContract(String name, ContractHarness Function() create) {
+void mailProviderActionContract(String name, CreateHarness create) {
   group('MailProvider action contract: $name', () {
     late ContractHarness h;
-    setUp(() => h = create());
+    _harness(create, (x) => h = x);
 
     Future<Message> now(String id) async => _ok(await h.provider.initialSync()).messages.singleWhere((m) => m.id == id);
 
     test('the expected value: applied', () async {
-      h.deliver(msg('a'));
+      await h.deliver(msg('a'));
       expect(_ok(await h.provider.applyAction('a', const Star(), expected: false)), isA<ActionApplied>());
       expect((await now('a')).isStarred, isTrue);
     });
 
     test('the wanted value already, changed elsewhere the same way: applied', () async {
-      h.deliver(msg('a', isRead: true));
+      await h.deliver(msg('a', isRead: true));
       expect(_ok(await h.provider.applyAction('a', const MarkRead(), expected: false)), isA<ActionApplied>());
       expect((await now('a')).isRead, isTrue);
     });
 
     test('another value, changed elsewhere: a Conflitto with it, nothing written', () async {
-      h.deliver(msg('a', labelIds: const [trashLabelId]));
+      await h.deliver(msg('a', labelIds: const [trashLabelId]));
       expect(
         _ok(await h.provider.applyAction('a', const Archive(), expected: Placement.inbox)),
         isA<ActionConflict>().having((c) => c.providerValue, 'providerValue', Placement.trash),
@@ -445,13 +484,13 @@ void mailProviderActionContract(String name, ContractHarness Function() create) 
     });
 
     test('Elimina never conflicts', () async {
-      h.deliver(msg('a', labelIds: const []));
+      await h.deliver(msg('a', labelIds: const []));
       expect(_ok(await h.provider.applyAction('a', const Delete(), expected: Placement.inbox)), isA<ActionApplied>());
       expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
     });
 
     test('no expected value: forced', () async {
-      h.deliver(msg('a', isRead: true));
+      await h.deliver(msg('a', isRead: true));
       expect(_ok(await h.provider.applyAction('a', const MarkUnread())), isA<ActionApplied>());
       expect((await now('a')).isRead, isFalse);
     });
@@ -465,7 +504,7 @@ void mailProviderActionContract(String name, ContractHarness Function() create) 
   });
 }
 
-void mailProviderContract(String name, ContractHarness Function() create) {
+void mailProviderContract(String name, CreateHarness create) {
   mailProviderAuthContract(name, create);
   mailProviderSyncContract(name, create);
   mailProviderAttachmentContract(name, create);

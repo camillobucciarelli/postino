@@ -3,6 +3,8 @@ import 'package:get_it/get_it.dart';
 import '../../domain/account.dart';
 import '../../domain/mail_provider.dart';
 import '../gmail/gmail_provider.dart';
+import '../imap/imap_provider.dart';
+import '../imap/imap_session.dart';
 import '../imap/unsynced_provider.dart';
 
 /// The Account's adapter, created on first use; tests register fakes by Account id beforehand.
@@ -13,8 +15,16 @@ MailProvider providerFor(Account account) {
     g.registerLazySingleton<MailProvider>(
       () => switch (account.provider) {
         ProviderKind.gmail => GmailProvider(account.id, g(), g(), g()),
-        // ponytail: no IMAP adapter before T3, nor a Microsoft one before step 5: they sync nothing meanwhile.
-        ProviderKind.icloud || ProviderKind.imap || ProviderKind.microsoft => const UnsyncedProvider(),
+        ProviderKind.icloud || ProviderKind.imap => ImapProvider(
+          account.id,
+          account.address,
+          g(),
+          g(),
+          // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
+          connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
+        ),
+        // ponytail: no Microsoft adapter before step 5: it syncs nothing meanwhile.
+        ProviderKind.microsoft => const UnsyncedProvider(),
       },
       instanceName: account.id,
     );

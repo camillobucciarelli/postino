@@ -84,11 +84,12 @@ class GreenmailServer._(
   /// L'indirizzo dell'utente [login].
   static String addressOf(String login) => '$login@localhost';
 
+  /// Creates the user [login]; it logs in with its whole address, as Postino does with every password Account.
   Future<void> createUser(String login, String password) async {
     final r = await _http.post(
       Uri.parse('$_api/user'),
       headers: {'content-type': 'application/json'},
-      body: jsonEncode({'email': addressOf(login), 'login': login, 'password': password}),
+      body: jsonEncode({'email': addressOf(login), 'login': addressOf(login), 'password': password}),
     );
     if (r.statusCode != 200) throw StateError('createUser $login: ${r.statusCode} ${r.body}');
   }

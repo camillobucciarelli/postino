@@ -9,11 +9,13 @@ import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart' show sendTimeout;
 import 'package:postino/core/data/gmail/gmail_message_parser.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
+import 'package:postino/core/data/imap/imap_session.dart' show connectImap;
 import 'package:postino/core/data/json_objects.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/draft_content.dart';
 import 'package:postino/core/domain/draft_outcome.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
@@ -26,7 +28,7 @@ import '../../domain/mail_provider_contract.dart';
 /// Google as seen over HTTP: the token endpoint and a simulated Gmail API mailbox,
 /// shaped like the recorded responses.
 class GmailHarness({String access = 'ya29.initial', Duration validFor = const Duration(hours: 1)})
-    implements ContractHarness {
+    extends ContractHarness {
   this : keychain = gmailKeychain(access: access, validFor: validFor);
 
   final FakeSecureStore keychain;
@@ -1325,7 +1327,7 @@ void main() {
   });
 
   test('the change signal is IMAP IDLE on Gmail, as the Account, with a valid token', () async {
-    late (String, String) seen;
+    late (String, String, int, ServerSecurity, bool) seen;
     late Future<String> Function() token;
     final p = GmailProvider(
       gmailAccount,
@@ -1333,14 +1335,24 @@ void main() {
       MockClient((_) async => fail('no HTTP')),
       FakeClock(gmailNow),
       client: gmailTestClient,
-      idle: ({required String host, required String user, required accessToken}) {
-        seen = (host, user);
-        token = accessToken;
-        return Stream.value(ChangeSignal.changed);
-      },
+      idle:
+          ({
+            required String host,
+            required String user,
+            int port = 993,
+            ServerSecurity security = ServerSecurity.ssl,
+            accessToken,
+            password,
+            onBadCertificate,
+            connect = connectImap,
+          }) {
+            seen = (host, user, port, security, password != null);
+            token = accessToken!;
+            return Stream.value(ChangeSignal.changed);
+          },
     );
     expect(await p.changes.toList(), [ChangeSignal.changed]);
-    expect(seen, ('imap.gmail.com', 'ada@gmail.com'));
+    expect(seen, ('imap.gmail.com', 'ada@gmail.com', 993, ServerSecurity.ssl, false));
     expect(await token(), 'ya29.initial');
   });
 }

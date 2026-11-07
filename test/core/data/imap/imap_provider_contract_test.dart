@@ -19,4 +19,6 @@ void main() {
   mailProviderLabelContract('ImapProvider', ImapHarness.create);
   mailProviderActionContract('ImapProvider', ImapHarness.create);
   mailProviderAttachmentContract('ImapProvider', ImapHarness.create);
+  mailProviderDraftContract('ImapProvider', ImapHarness.create);
+  mailProviderSendContract('ImapProvider', ImapHarness.create);
 }

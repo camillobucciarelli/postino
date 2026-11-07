@@ -168,6 +168,14 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
     _messageIds[_ids[key]!] = m.messageId;
   });
 
+  /// How many messages with [messageId] [path] holds (a missing folder holds none).
+  Future<int> copies(String path, String messageId) => withClient((c) async {
+    if (!(await c.listMailboxes(recursive: true)).any((b) => b.path == path)) return 0;
+    await c.selectMailboxByPath(path);
+    final r = await c.uidSearchMessages(searchCriteria: 'HEADER Message-ID "$messageId"');
+    return r.matchingSequence?.length ?? 0;
+  });
+
   /// APPEND of the RFC 5322 text [raw] in [path], as another client.
   Future<void> append(String path, String raw) => withClient((c) async {
     await _create(c, path);

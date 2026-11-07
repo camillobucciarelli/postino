@@ -8,6 +8,16 @@ import '../imap/imap_session.dart';
 import '../imap/unsynced_provider.dart';
 import '../mail_store.dart';
 
+/// Whether Postino APPENDs a sent message to Inviati on [provider] (#166): the generic IMAP servers do not file
+/// SMTP submissions themselves.
+// Decision to confirm with the manual check on the iCloud test Account (#28): Apple does not document whether
+// iCloud files SMTP submissions in «Sent Messages»; until then Postino APPENDs, and Inviati is searched by
+// Message-ID first, so a retry never adds a second copy.
+bool appendsToSent(ProviderKind provider) => switch (provider) {
+  ProviderKind.icloud => true,
+  _ => true,
+};
+
 /// The Account's adapter, created on first use; tests register fakes by Account id beforehand.
 /// The only place in core/data that names a concrete Provider (ADR 0002): the choice lives here, not in switches.
 MailProvider providerFor(Account account) {
@@ -21,9 +31,10 @@ MailProvider providerFor(Account account) {
           account.address,
           g(),
           g(),
-          // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
           messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
+          // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
+          appendToSent: appendsToSent(account.provider),
         ),
         // ponytail: no Microsoft adapter before step 5: it syncs nothing meanwhile.
         ProviderKind.microsoft => const UnsyncedProvider(),

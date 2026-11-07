@@ -233,7 +233,7 @@ void main() {
   });
 
   group('message tile at moderate text scales', () {
-    for (final scale in [1.0, 1.15, 1.3]) {
+    for (final scale in [1.0, 1.15, 1.3, 1.5]) {
       testWidgets('keeps one line per field at $scale', (tester) async {
         await tester.pumpWidget(
           _app(
@@ -251,15 +251,40 @@ void main() {
             scale: scale,
           ),
         );
-        for (final text in ['Bruno Bianchi', _long]) {
-          final p = tester.renderObject<RenderParagraph>(find.textContaining(text, findRichText: true).first);
+        for (final text in ['Bruno Bianchi della Valle Superiore e Associati', _long]) {
+          final p = tester.renderObject<RenderParagraph>(find.text(text));
           expect(p.maxLines, 1, reason: text);
         }
-        final preview = tester.renderObject<RenderParagraph>(find.textContaining('$_long. ').first);
+        final preview = tester.renderObject<RenderParagraph>(find.text('$_long. $_long'));
         expect(preview.maxLines, PostinoDensity.comfortable.previewLines);
         expect(preview.overflow, TextOverflow.ellipsis);
       });
     }
+  });
+
+  testWidgets('message tile above 150% wraps sender and subject, caps the preview at two lines', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        const Scaffold(
+          body: PostinoMessageTile(
+            sender: 'Bruno Bianchi della Valle Superiore e Associati',
+            subject: _long,
+            preview: '$_long. $_long',
+            time: '09:42',
+            unread: false,
+            starred: false,
+            semanticLabel: 'Bruno',
+          ),
+        ),
+        scale: 2,
+      ),
+    );
+    final sender = tester.renderObject<RenderParagraph>(find.textContaining('Bruno Bianchi'));
+    final subject = tester.renderObject<RenderParagraph>(find.text(_long));
+    final preview = tester.renderObject<RenderParagraph>(find.text('$_long. $_long'));
+    expect([sender.maxLines, subject.maxLines], [null, null]);
+    expect(preview.maxLines, PostinoDensity.comfortable.previewLines * 2);
+    expect(preview.overflow, TextOverflow.ellipsis);
   });
 
   group('text at 200%', () {
@@ -331,7 +356,8 @@ void main() {
                 // capped at two lines even at 200%.
                 (p) =>
                     p.textScaler != TextScaler.noScaling &&
-                    p.maxLines != PostinoDensity.comfortable.previewLines * 2 &&
+                    !(p.maxLines == PostinoDensity.comfortable.previewLines * 2 &&
+                        p.text.toPlainText() == '$_long. $_long') &&
                     (p.didExceedMaxLines || p.overflow == TextOverflow.ellipsis),
               )
               .map((p) => p.text.toPlainText());

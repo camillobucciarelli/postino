@@ -41,10 +41,10 @@ class GraphBodies(final GraphHttp _graph) {
 
   Future<List<Attachment>> _attachments(String id, String html) async {
     final items = await _list(id);
-    final lower = Uri.decodeFull(html.toLowerCase());
+    final refs = _cidRefs(html);
     return [
       for (final a in items)
-        if (!_shownByHtml(a, lower))
+        if (!_shownByHtml(a, refs))
           Attachment(
             id: a['id'] as String,
             name: a['name'] as String? ?? '',
@@ -70,12 +70,26 @@ class GraphBodies(final GraphHttp _graph) {
     }
   }
 
-  /// An inline attachment whose Content-ID the [lowerHtml] refers to as `cid:` (up to the end of the reference, so
-  /// `logo-1` is not taken for `logo-10`): part of the body, not a file. Without a `contentId`, any `cid:` does.
-  static bool _shownByHtml(Map<String, dynamic> a, String lowerHtml) {
+  /// The `cid:` references of [html], lowercased and each percent-decoded on its own (a malformed escape stays raw):
+  /// the body as a whole is never decoded, a literal `%` in it is not an escape.
+  static Set<String> _cidRefs(String html) => {
+    for (final m in RegExp('cid:([^"\'\\s)>&]+)', caseSensitive: false).allMatches(html)) _decode(m[1]!.toLowerCase()),
+  };
+
+  static String _decode(String ref) {
+    try {
+      return Uri.decodeComponent(ref);
+    } on ArgumentError {
+      return ref;
+    }
+  }
+
+  /// An inline attachment whose Content-ID is among the [refs] of the body (whole references, so `logo-1` is not
+  /// `logo-10`): part of the body, not a file. Without a `contentId`, any reference does.
+  static bool _shownByHtml(Map<String, dynamic> a, Set<String> refs) {
     if (a['isInline'] != true) return false;
+    if (!a.containsKey('contentId')) return refs.isNotEmpty;
     final cid = (a['contentId'] as String?)?.toLowerCase();
-    if (!a.containsKey('contentId')) return lowerHtml.contains('cid:');
-    return cid != null && cid.isNotEmpty && RegExp('cid:${RegExp.escape(cid)}(?=["\'\\s)>&]|\$)').hasMatch(lowerHtml);
+    return cid != null && cid.isNotEmpty && refs.contains(cid);
   }
 }

@@ -111,6 +111,28 @@ void main() {
     expect(body.attachments!.map((a) => a.id), ['att-1']);
   });
 
+  test('a literal % in the body, or a malformed escape in a cid:, fails nothing', () async {
+    http.Response route(http.Request r, String path) => switch (path.split('/')) {
+      ['messages', _] => graphJson({
+        'hasAttachments': true,
+        'body': {
+          'contentType': 'html',
+          'content': '<table width="100%">20% off</table><img src="cid:logo-1"><img src="cid:x%zz">',
+        },
+      }),
+      ['messages', _, 'attachments'] => graphJson({
+        'value': [
+          {'id': 'att-1', 'name': 'a.pdf', 'size': 1, 'isInline': false, 'contentId': null},
+          {'id': 'att-2', 'name': 'b.png', 'size': 1, 'isInline': true, 'contentId': 'logo-1'},
+        ],
+      }),
+      _ => fail('unexpected $path'),
+    };
+    final body = okValue(await RecordedGraph(route).provider.fetchBody(messageIdOf('f2')));
+    expect(body.content, contains('20% off'));
+    expect(body.attachments!.map((a) => a.id), ['att-1']);
+  });
+
   test('a Graph that refuses contentId on the attachment list gets the list without it', () async {
     final g = RecordedGraph((r, path) {
       if (path.endsWith('/attachments') && r.url.queryParameters[r'$select']!.contains('contentId')) {

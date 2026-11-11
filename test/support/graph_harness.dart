@@ -136,8 +136,12 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
   @override
   void deliverDraft(OutgoingMessage d) => throw UnimplementedError('Bozze on Microsoft: T5');
 
+  /// The file attachments of each message, in order: (id, name, bytes).
+  final _attachments = <String, List<(String, String, List<int>)>>{};
+
   @override
-  void attach(String messageId, String name, List<int> bytes) => throw UnimplementedError('attachments: T3');
+  void attach(String messageId, String name, List<int> bytes) =>
+      (_attachments[messageId] ??= []).add(('att-${(_attachments[messageId]?.length ?? 0) + 1}', name, bytes));
 
   /// Sees every request before it is answered: a change "elsewhere" can land in the middle of a sync.
   void Function(http.Request r)? onRequest;
@@ -157,8 +161,16 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       ['mailFolders', 'delta'] => _folderDelta(q),
       ['mailFolders', final id, 'childFolders'] => _children(id),
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
+      ['messages'] => _conversation(q),
+      ['messages', final id, 'attachments'] => _attachmentList(id),
+      ['messages', final id, 'attachments', final att, r'$value'] => switch (_file(id, att)) {
+        (_, _, final bytes)? => http.Response.bytes(bytes, 200),
+        null => graphFixture('not_found'),
+      },
       ['messages', final id] => switch (_mailbox[id]) {
-        (final m, final folder) => graphJson(_item(m, folder, r.url.queryParameters[r'$select'] ?? '')),
+        (final m, final folder) => graphJson(
+          _item(m, folder, r.url.queryParameters[r'$select'] ?? '', _attachments[m.id] != null),
+        ),
         null => graphFixture('not_found'),
       },
       ['mailFolders', final name] => switch ([
@@ -170,6 +182,45 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       },
       final path => throw StateError('unexpected Graph request $path'),
     };
+  }
+
+  (String, String, List<int>)? _file(String message, String id) =>
+      _attachments[message]?.where((a) => a.$1 == id).firstOrNull;
+
+  http.Response _attachmentList(String id) => _mailbox.containsKey(id)
+      ? graphJson({
+          'value': [
+            for (final (att, name, bytes) in _attachments[id] ?? const <(String, String, List<int>)>[])
+              {
+                '@odata.type': '#microsoft.graph.fileAttachment',
+                'id': att,
+                'name': name,
+                'contentType': 'application/octet-stream',
+                'size': bytes.length,
+                'isInline': false,
+              },
+          ],
+        })
+      : graphFixture('not_found');
+
+  /// `conversationId eq '<id>'` over every folder, in pages of [_page].
+  http.Response _conversation(Map<String, String> q) {
+    final id = RegExp(r"^conversationId eq '(.*)'$").firstMatch(q[r'$filter'] ?? '')![1]!.replaceAll("''", "'");
+    final all = [
+      for (final MapEntry(:value) in _mailbox.entries)
+        if (value.$1.conversationId == id) value,
+    ];
+    final offset = int.tryParse(q[r'$skiptoken'] ?? '') ?? 0;
+    return graphJson({
+      'value': [
+        for (final (m, folder) in all.skip(offset).take(_page)) _item(m, folder, '', _attachments[m.id] != null),
+      ],
+      if (offset + _page < all.length)
+        '@odata.nextLink': Uri.https('graph.microsoft.com', '${graphApi}messages', {
+          ...q,
+          r'$skiptoken': '${offset + _page}',
+        }).toString(),
+    });
   }
 
   Map<String, Object?> _folderJson(String id) {
@@ -250,7 +301,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       'value': [
         for (final id in ids.skip(offset).take(_page))
           if (_mailbox[id] case (final m, final f) when f == folder)
-            _item(m, folder, keep[r'$select']!)
+            _item(m, folder, keep[r'$select']!, _attachments[m.id] != null)
           else
             {
               'id': id,
@@ -267,7 +318,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     });
   }
 
-  static Map<String, Object?> _item(Message m, String folder, String select) => {
+  static Map<String, Object?> _item(Message m, String folder, String select, bool attached) => {
     'id': m.id,
     'internetMessageId': m.messageId,
     'conversationId': m.conversationId,
@@ -282,7 +333,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     'subject': m.subject,
     'bodyPreview': m.snippet,
     'receivedDateTime': m.date.toIso8601String(),
-    'hasAttachments': false,
+    'hasAttachments': attached,
     if (select.split(',').contains('body')) 'body': {'contentType': 'html', 'content': '<p>Ciao</p>'},
   };
 

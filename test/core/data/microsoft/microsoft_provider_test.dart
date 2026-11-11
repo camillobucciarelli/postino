@@ -9,13 +9,14 @@ import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/graph_harness.dart';
 import '../../domain/mail_provider_contract.dart';
 
-/// Bodies on request and Conversazioni come with T3, the Azioni with T4.
-const _pending = {'body': 'T3', 'conversation': 'T3', 'action': 'T4'};
+/// The Azioni come with T4.
+const _pending = {'action': 'T4'};
 
 void main() {
   mailProviderAuthContract('MicrosoftProvider', GraphHarness.new, pending: _pending);
   mailProviderSyncContract('MicrosoftProvider', GraphHarness.new, pending: _pending);
   mailProviderLabelContract('MicrosoftProvider', GraphHarness.new, pending: _pending);
+  mailProviderAttachmentContract('MicrosoftProvider', GraphHarness.new);
 
   test('a message moved to another folder comes once, in the new folder, with the same id', () async {
     final h = GraphHarness()..deliver(msg('a'));

@@ -1,0 +1,69 @@
+{
+  "status": 200,
+  "body": {
+    "value": [
+      {
+        "id": "msg-f1",
+        "internetMessageId": "<msg-f1@mail.example.com>",
+        "conversationId": "conv-c1",
+        "parentFolderId": "folder-inbox",
+        "isRead": true,
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "replyTo": [],
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "subject": "Cena di venerdì",
+        "bodyPreview": "Ciao",
+        "receivedDateTime": "2026-10-26T08:15:02Z",
+        "hasAttachments": false
+      },
+      {
+        "id": "msg-f9",
+        "internetMessageId": "<msg-f9@mail.example.com>",
+        "conversationId": "conv-c1",
+        "parentFolderId": "folder-sentitems",
+        "isRead": true,
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "replyTo": [],
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "subject": "Cena di venerdì",
+        "bodyPreview": "Ciao",
+        "receivedDateTime": "2026-06-01T10:00:00Z",
+        "hasAttachments": false
+      }
+    ]
+  }
+}

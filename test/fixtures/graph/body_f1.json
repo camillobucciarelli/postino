@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "id": "msg-f1",
+    "hasAttachments": false,
+    "body": {
+      "contentType": "html",
+      "content": "<html><body><p>Porto io il vino &amp; il dolce: perché è già pronto.</p></body></html>"
+    }
+  }
+}

@@ -94,6 +94,9 @@ class GraphFolders(final GraphHttp _graph) {
     return null;
   }
 
+  /// The Etichetta id of the messages in folder [folderId]: the system one, else the folder id.
+  Future<String> labelOf(String folderId) async => (await _systemIds())[folderId] ?? folderId;
+
   Future<Map<String, String>> _systemIds() async {
     if (_system case final known?) return known;
     final ids = await Future.wait(_wellKnown.keys.map(_idOf));

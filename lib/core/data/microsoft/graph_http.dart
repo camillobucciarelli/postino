@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math' show min;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -52,9 +53,14 @@ class GraphHttp(
     await _auth.refresh(await _auth.tokens());
   }
 
-  /// GET [path] (under `/v1.0/me/`) with [query].
-  Future<Map<String, dynamic>> get(String path, {Map<String, String> query = const {}}) =>
-      _request('GET', _api.resolve(path).replace(queryParameters: query.isEmpty ? null : query));
+  /// GET [path] (under `/v1.0/me/`) with [query]; [prefer] adds preferences to [GraphHttp.prefer].
+  Future<Map<String, dynamic>> get(String path, {Map<String, String> query = const {}, String? prefer}) =>
+      _request('GET', _api.resolve(path).replace(queryParameters: query.isEmpty ? null : query), prefer: prefer);
+
+  /// GET of the raw bytes at [path] (an attachment's `$value`), read as they arrive: [onProgress] gets the share
+  /// read out of `Content-Length`, and completing [cancel] aborts the request (`http.RequestAbortedException`).
+  Future<Uint8List> getBytes(String path, {void Function(double done)? onProgress, Future<void>? cancel}) async =>
+      (await _response('GET', _api.resolve(path), onProgress: onProgress, cancel: cancel)).bodyBytes;
 
   /// GET of a `@odata.nextLink` or `@odata.deltaLink`. Only Graph's own links: the token goes to no other host,
   /// and a link that is not one (a tampered cursor) is [NotFoundFailure].
@@ -77,9 +83,23 @@ class GraphHttp(
     }
   }
 
-  Future<Map<String, dynamic>> _request(String method, Uri url, {Object? body}) async {
+  Future<Map<String, dynamic>> _request(String method, Uri url, {Object? body, String? prefer}) async {
+    final r = await _response(method, url, body: body, prefer: prefer);
+    // A 204 (a DELETE) has no body.
+    return r.body.isEmpty ? const {} : jsonDecode(r.body) as Map<String, dynamic>;
+  }
+
+  Future<http.Response> _response(
+    String method,
+    Uri url, {
+    Object? body,
+    String? prefer,
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) async {
     final payload = body == null ? null : jsonEncode(body);
-    Future<http.Response> send(String token) => _slot(() => _send(method, url, token, payload));
+    Future<http.Response> send(String token) =>
+        _slot(() => _send(method, url, token, payload, prefer, onProgress, cancel));
 
     var r = await _auth.authorized(send);
     if (graphThrottled(r)) {
@@ -87,10 +107,7 @@ class GraphHttp(
       // Authorized again: the token may have expired during the wait.
       r = await _auth.authorized(send);
     }
-    if (r.statusCode >= 200 && r.statusCode < 300) {
-      // A 204 (a DELETE) has no body.
-      return r.body.isEmpty ? const {} : jsonDecode(r.body) as Map<String, dynamic>;
-    }
+    if (r.statusCode >= 200 && r.statusCode < 300) return r;
     // Never the Authorization header nor the query: method, path and status only.
     if (graphThrottled(r)) debugPrint('[graph] throttled: $method ${url.path} ${r.statusCode}');
     final wait = _retryAfter(r);
@@ -98,11 +115,24 @@ class GraphHttp(
   }
 
   /// One try; a timeout aborts the connection too, before its slot goes to the next request.
-  Future<http.Response> _send(String method, Uri url, String access, String? payload) async {
+  Future<http.Response> _send(
+    String method,
+    Uri url,
+    String access,
+    String? payload,
+    String? extraPrefer,
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  ) async {
     final abort = Completer<void>();
-    final request = http.AbortableRequest(method, url, abortTrigger: abort.future)
-      ..headers['authorization'] = 'Bearer $access'
-      ..headers['prefer'] = prefer;
+    final request =
+        http.AbortableRequest(
+            method,
+            url,
+            abortTrigger: cancel == null ? abort.future : Future.any([cancel, abort.future]),
+          )
+          ..headers['authorization'] = 'Bearer $access'
+          ..headers['prefer'] = extraPrefer == null ? prefer : '$prefer, $extraPrefer';
     if (payload != null) {
       request
         ..headers['content-type'] = 'application/json'
@@ -110,7 +140,18 @@ class GraphHttp(
     }
     try {
       final streamed = await _http.send(request).timeout(_timeout);
-      return await http.Response.fromStream(streamed).timeout(_timeout);
+      final total = streamed.contentLength ?? 0;
+      var read = 0;
+      // At most [_timeout] between two chunks: a long download is fine, a stalled one is not.
+      final bytes = await http.ByteStream(
+        streamed.stream.timeout(_timeout).map((chunk) {
+          read += chunk.length;
+          // Only an answer that is the file: an error body would restart the progress at the retry.
+          if (total > 0 && streamed.statusCode < 300) onProgress?.call(min(1, read / total));
+          return chunk;
+        }),
+      ).toBytes();
+      return http.Response.bytes(bytes, streamed.statusCode, headers: streamed.headers, request: streamed.request);
     } on TimeoutException {
       abort.complete();
       rethrow;

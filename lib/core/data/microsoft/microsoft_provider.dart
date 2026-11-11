@@ -13,6 +13,7 @@ import 'graph_cursor.dart';
 import 'graph_delta.dart';
 import 'graph_folders.dart';
 import 'graph_http.dart';
+import 'graph_message_parser.dart';
 import 'microsoft_client.dart';
 
 /// Microsoft Graph adapter (ADR 0002) for a personal Outlook.com Account: folders are Etichette
@@ -99,11 +100,16 @@ class MicrosoftProvider(
     }
     // A message moved between two folders is removed from one and new in the other, with the same id: it stays.
     removed.removeAll(messages.keys);
-    // A move that fell between two folder rounds (of this sync or the last) shows here as a removal only: a message
-    // still in a synced folder stays.
+    // A removal alone may be a move: between two folder rounds (of this sync or the last), or of a message older
+    // than the window, which the destination's filtered delta never reports. A message still in a synced folder
+    // stays, with that folder's Etichetta.
     // ponytail: one GET per removed message; fine for the few deletions of a poll.
     for (final id in removed.toList()) {
-      if (await _delta.folderOf(id) case final folder? when synced.containsKey(folder)) removed.remove(id);
+      final now = await _delta.current(id);
+      if (synced[now?['parentFolderId']] case final label?) {
+        removed.remove(id);
+        messages[id] = parseGraphMessage(now!, labelId: label);
+      }
     }
     return Ok(
       SyncBatch(

@@ -111,7 +111,7 @@ void main() {
     expect(next.removedMessageIds, [messageIdOf('f9')], reason: 'the moved message stays: one message, same id');
     expect(
       g.urls.where((u) => u.path.endsWith('/messages/${messageIdOf('f9')}')).single.queryParameters[r'$select'],
-      'parentFolderId',
+      contains('parentFolderId'),
       reason: 'a removal only is checked: deleted, or moved to a folder synced earlier',
     );
     expect(next.bodies.keys, unorderedEquals(['f1', 'f2', 'f4'].map(messageIdOf)));

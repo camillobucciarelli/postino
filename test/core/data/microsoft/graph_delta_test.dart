@@ -54,8 +54,8 @@ void main() {
   });
 
   test('where a message is now: its folder, or null once it is gone', () async {
-    final delta = _delta((url) => url.path.endsWith('/m1') ? {'id': 'm1', 'parentFolderId': 'f-viaggi'} : 404);
-    expect(await delta.folderOf('m1'), 'f-viaggi');
-    expect(await delta.folderOf('m2'), isNull);
+    final delta = _delta((url) => url.path.endsWith('/m1') ? {..._message('m1'), 'parentFolderId': 'f-viaggi'} : 404);
+    expect((await delta.current('m1'))!['parentFolderId'], 'f-viaggi');
+    expect(await delta.current('m2'), isNull);
   });
 }

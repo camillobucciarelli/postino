@@ -44,6 +44,24 @@ void main() {
     expect(third.removedMessageIds, isEmpty, reason: 'the inbox reports it @removed, but it is in Viaggi');
   });
 
+  test(
+    'a message older than the window moved to a new folder takes its Etichetta: not gone, not left behind',
+    () async {
+      final h = GraphHarness();
+      final first = okValue(await h.provider.initialSync());
+      // Older than 90 days, in the cache all the same (its Conversazione opened, or the window moved on).
+      h.deliver(msg('o', date: GraphHarness.now.subtract(const Duration(days: 200))));
+      final cached = okValue(await h.provider.incrementalSync(first.cursor));
+      expect(cached.messages.map((m) => m.id), ['o']);
+      h
+        ..createFolderElsewhere('f-archivio', 'Archivio')
+        ..deliver(msg('o', date: GraphHarness.now.subtract(const Duration(days: 200)), labelIds: const ['f-archivio']));
+      final next = okValue(await h.provider.incrementalSync(cached.cursor));
+      expect(next.removedMessageIds, isEmpty);
+      expect(next.messages.single.labelIds, ['f-archivio'], reason: 'the filtered first round of the folder omits it');
+    },
+  );
+
   test('only the last 90 days are synced', () async {
     final h = GraphHarness()
       ..deliver(msg('old', date: GraphHarness.now.subtract(const Duration(days: 91))))

@@ -150,7 +150,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       ['mailFolders', final id, 'childFolders'] => _children(id),
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
       ['messages', final id] => switch (_mailbox[id]) {
-        (_, final folder) => graphJson({'id': id, 'parentFolderId': folder}),
+        (final m, final folder) => graphJson(_item(m, folder, r.url.queryParameters[r'$select'] ?? '')),
         null => graphFixture('not_found'),
       },
       ['mailFolders', final name] => switch ([

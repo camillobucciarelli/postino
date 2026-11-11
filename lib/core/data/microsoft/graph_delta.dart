@@ -46,10 +46,10 @@ class GraphDelta(final GraphHttp _graph) {
   /// The changes since the round that handed out [link].
   Future<FolderDelta> follow(String link, String labelId) => _round(_graph.follow(link), labelId, null);
 
-  /// The Graph id of the folder message [id] is in now; null when it is gone.
-  Future<String?> folderOf(String id) async {
+  /// Message [id] as it is now (its headers, `parentFolderId` the folder it is in); null when it is gone.
+  Future<Map<String, dynamic>?> current(String id) async {
     try {
-      return (await _graph.get('messages/$id', query: {r'$select': 'parentFolderId'}))['parentFolderId'] as String?;
+      return await _graph.get('messages/$id', query: {r'$select': graphMessageSelect});
     } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;

@@ -9,6 +9,8 @@ import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../oauth/oauth_failed.dart';
 import '../oauth/oauth_guard.dart';
+import 'graph_bodies.dart';
+import 'graph_conversations.dart';
 import 'graph_cursor.dart';
 import 'graph_delta.dart';
 import 'graph_folders.dart';
@@ -29,12 +31,14 @@ class MicrosoftProvider(
 }) implements MailProvider {
   this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: sleep);
 
-  // ponytail: bodies on request, attachments and Conversazioni (T3), Azioni (T4), sending and Bozze (T5).
+  // ponytail: Azioni (T4), sending and Bozze (T5).
   static const _unsupported = Err<Never>(UnexpectedFailure('Microsoft: not available yet'));
 
   final GraphHttp _graph;
   late final _folders = GraphFolders(_graph);
   late final _delta = GraphDelta(_graph);
+  late final _bodies = GraphBodies(_graph);
+  late final _conversations = GraphConversations(_graph, _folders);
 
   @override
   Future<Result<void>> refreshAuth() => oauthGuard(() async {
@@ -129,10 +133,11 @@ class MicrosoftProvider(
   Future<Result<Label>> createLabel(String name) => oauthGuard(() async => Ok(await _folders.create(name)));
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) async => _unsupported;
+  Future<Result<MessageBody>> fetchBody(String messageId) => oauthGuard(() async => Ok(await _bodies.body(messageId)));
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) async => _unsupported;
+  Future<Result<List<Message>>> fetchConversation(String conversationId) =>
+      oauthGuard(() async => Ok(await _conversations.fetch(conversationId)));
 
   @override
   Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async =>
@@ -144,7 +149,9 @@ class MicrosoftProvider(
     String attachmentId, {
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) async => _unsupported;
+  }) => oauthGuard(
+    () async => Ok(await _bodies.attachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel)),
+  );
 
   @override
   Future<Result<String>> send(

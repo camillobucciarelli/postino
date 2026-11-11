@@ -15,6 +15,7 @@ import '../../domain/result.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
+import '../oauth/oauth_failed.dart';
 import 'gmail_actions.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
@@ -169,7 +170,7 @@ class GmailProvider(
     final part = gmailAttachmentParts(j['payload'] as Map<String, dynamic>? ?? const {})
         .where((p) => p['partId'] == attachmentId)
         .firstOrNull;
-    if (part == null) throw const GoogleFailed(NotFoundFailure());
+    if (part == null) throw const OAuthFailed(NotFoundFailure());
     final body = part['body'] as Map;
     // An empty file has neither.
     if (body['data'] == null && body['attachmentId'] == null) {
@@ -246,8 +247,8 @@ class GmailProvider(
         final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
           Ok(:final value) => value,
           // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-          Err(failure: NotFoundFailure()) => throw const GoogleFailed(UnexpectedFailure('forwarded attachment gone')),
-          Err(:final failure) => throw GoogleFailed(failure),
+          Err(failure: NotFoundFailure()) => throw const OAuthFailed(UnexpectedFailure('forwarded attachment gone')),
+          Err(:final failure) => throw OAuthFailed(failure),
         };
         final message = {
           'raw': base64Url.encode(utf8.encode(raw)),
@@ -262,7 +263,7 @@ class GmailProvider(
         final String id;
         try {
           id = await _draftId(draft.messageId);
-        } on GoogleFailed catch (e) {
+        } on OAuthFailed catch (e) {
           if (!isNew || e.failure is! NotFoundFailure) rethrow;
           await create();
           return const Ok(DraftSaved());
@@ -298,10 +299,10 @@ class GmailProvider(
   Future<String> _draftId(String messageId) async {
     if (_draftIds[messageId] case final id?) return id;
     // An empty `rfc822msgid:` would match any draft.
-    if (messageId.isEmpty) throw const GoogleFailed(NotFoundFailure());
+    if (messageId.isEmpty) throw const OAuthFailed(NotFoundFailure());
     final r = await _gmail.get('drafts', query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'});
     final id = jsonObjects(r['drafts']).firstOrNull?['id'] as String?;
-    if (id == null) throw const GoogleFailed(NotFoundFailure());
+    if (id == null) throw const OAuthFailed(NotFoundFailure());
     return _draftIds[messageId] = id;
   }
 
@@ -343,7 +344,7 @@ class GmailProvider(
         'messages/$id',
         query: {'format': full ? 'full' : 'metadata', if (!full) 'metadataHeaders': _headers},
       );
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }
@@ -351,7 +352,7 @@ class GmailProvider(
     if (!full) return (message, null);
     try {
       return (message, await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}));
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }

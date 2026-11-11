@@ -112,15 +112,17 @@ jobs:
       APP: build/macos/Build/Products/Release/Postino.app
       DMG: build/release/Postino-${{ needs.version.outputs.version }}.dmg
     steps:
-      # Without GOOGLE_CLIENT_ID the app builds fine but no Gmail Account can connect (README, "Client OAuth di
-      # Google"); without SPARKLE_ED_PRIVATE_KEY no appcast can be signed (#122): both stop the job before any build.
+      # Without GOOGLE_CLIENT_ID or MICROSOFT_CLIENT_ID the app builds fine but no Gmail or Outlook.com Account can
+      # connect (README, "Client OAuth di Google" and "Client OAuth di Microsoft"); without SPARKLE_ED_PRIVATE_KEY no
+      # appcast can be signed (#122): all stop the job before any build.
       - name: Required secrets are set
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           missing=0
-          for name in GOOGLE_CLIENT_ID SPARKLE_ED_PRIVATE_KEY; do
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID SPARKLE_ED_PRIVATE_KEY; do
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
@@ -145,9 +147,11 @@ jobs:
       - name: flutter build macos --release
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
         run: |
           build=$(tool/release/build_number.sh "$VERSION")
-          flutter build macos --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+          flutter build macos --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
       - name: Developer ID certificate in a job keychain
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -231,6 +235,7 @@ jobs:
       - name: Required secrets are set
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -241,7 +246,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           missing=0
-          for name in GOOGLE_CLIENT_ID ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
             ANDROID_KEY_PASSWORD R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ACCOUNT_ID R2_BUCKET; do
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
@@ -270,13 +275,15 @@ jobs:
       - name: flutter build apk --release
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           # versionCode grows with the version (build_number.sh), as the macOS build number; pubspec's "+1" is fixed.
           build=$(tool/release/build_number.sh "$VERSION")
-          flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+          flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
       - name: Delete the upload keystore
         if: always()
@@ -321,13 +328,14 @@ jobs:
       - name: Required secrets are set
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
           missing=0
-          for name in GOOGLE_CLIENT_ID APPLE_TEAM_ID APP_STORE_CONNECT_API_KEY_BASE64 APP_STORE_CONNECT_KEY_ID \
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID APPLE_TEAM_ID APP_STORE_CONNECT_API_KEY_BASE64 APP_STORE_CONNECT_KEY_ID \
             APP_STORE_CONNECT_ISSUER_ID; do
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
@@ -343,9 +351,11 @@ jobs:
       - name: Configure the iOS build
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
         run: |
           build=$(tool/release/build_number.sh "$VERSION")
-          flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+          flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
       - name: Archive and export the IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

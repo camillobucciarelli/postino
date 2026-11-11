@@ -26,13 +26,27 @@ const _byDomain = {
   'mac.com': PasswordProvider(ProviderKind.icloud, icloudServers),
 };
 
-/// Domains that connect with their own button (OAuth), never with a password.
-const _oauthDomains = {'gmail.com', 'googlemail.com'};
+/// Domains that connect with their own button (OAuth), never with a password: domain -> Provider. A custom domain
+/// hosted at Outlook.com cannot be told from its address: it stays with the button.
+const _oauthDomains = {
+  'gmail.com': ProviderKind.gmail,
+  'googlemail.com': ProviderKind.gmail,
+  'outlook.com': ProviderKind.microsoft,
+  'outlook.it': ProviderKind.microsoft,
+  'hotmail.com': ProviderKind.microsoft,
+  'hotmail.it': ProviderKind.microsoft,
+  'live.com': ProviderKind.microsoft,
+  'live.it': ProviderKind.microsoft,
+  'msn.com': ProviderKind.microsoft,
+};
 
-/// The Provider of the password Account [address] (already trimmed and lower case); null for a Gmail address,
-/// which connects with «Collega Gmail». Any other domain is a generic IMAP server.
+/// The Provider whose own button [address] (already trimmed and lower case) connects with, or null when the
+/// password form does: a Gmail or Microsoft address.
+ProviderKind? oauthProviderFor(String address) => _oauthDomains[address.substring(address.lastIndexOf('@') + 1)];
+
+/// The Provider of the password Account [address] (already trimmed and lower case); null for an address of
+/// [oauthProviderFor]. Any other domain is a generic IMAP server.
 PasswordProvider? passwordProviderFor(String address) {
-  final domain = address.substring(address.lastIndexOf('@') + 1);
-  if (_oauthDomains.contains(domain)) return null;
-  return _byDomain[domain] ?? const PasswordProvider(ProviderKind.imap);
+  if (oauthProviderFor(address) != null) return null;
+  return _byDomain[address.substring(address.lastIndexOf('@') + 1)] ?? const PasswordProvider(ProviderKind.imap);
 }

@@ -7,8 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/drive_http.dart';
 import 'package:postino/core/data/gmail/drive_settings_backend.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
+import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_document.dart';
 import 'package:postino/core/domain/settings_entry.dart';
@@ -60,7 +60,7 @@ class _Drive() {
   DriveSettingsBackend backend() {
     final keychain = FakeSecureStore();
     unawaited(
-      GmailTokens(
+      OAuthTokens(
         access: 'ya29.a',
         refresh: '1//r',
         expiresAt: _now.add(const Duration(hours: 1)),

@@ -19,6 +19,7 @@ import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/google_consent.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/microsoft_consent.dart';
 import 'package:postino/core/domain/model_download.dart';
 import 'package:postino/core/domain/model_manager.dart';
 import 'package:postino/core/domain/notifications.dart';
@@ -31,6 +32,7 @@ import 'package:postino/main.dart';
 import 'fake_google_consent.dart';
 import 'fake_mail_provider.dart';
 import 'fake_mail_servers.dart';
+import 'fake_microsoft_consent.dart';
 import 'fake_model_manager.dart';
 import 'fake_notifications.dart';
 import 'fake_platform.dart';
@@ -43,6 +45,7 @@ import 'fake_text_embedder.dart';
 /// one on that file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
+  final microsoft = FakeMicrosoftConsent();
   final keychain = FakeSecureStore();
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));
   final connectivity = FakeConnectivity();
@@ -81,6 +84,7 @@ class Harness._() {
     getIt
       ..registerSingleton<PostinoDatabase>(PostinoDatabase.inMemory(), dispose: (db) => db.close())
       ..registerSingleton<GoogleConsent>(h.consent)
+      ..registerSingleton<MicrosoftConsent>(h.microsoft)
       ..registerSingleton<SecureStore>(h.keychain)
       ..registerSingleton<Clock>(h.clock)
       ..registerSingleton<Connectivity>(h.connectivity)

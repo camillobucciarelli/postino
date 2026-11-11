@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_http.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/data/gmail/google_failure.dart';
+import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -26,7 +26,7 @@ http.Response _json(Object body, [int status = 200]) => http.Response(jsonEncode
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
   unawaited(
-    GmailTokens(
+    OAuthTokens(
       access: 'ya29.initial',
       refresh: '1//refresh',
       expiresAt: _now.add(const Duration(hours: 1)),

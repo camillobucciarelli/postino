@@ -1,7 +1,7 @@
 import '../../domain/message.dart';
 import '../json_objects.dart';
+import '../oauth/oauth_failed.dart';
 import 'gmail_http.dart';
-import 'google_failure.dart';
 
 /// The Account's Etichette on Gmail: `users.labels` and the label changes of `users.messages.modify`.
 class GmailLabels(final GmailHttp _gmail) {
@@ -22,7 +22,7 @@ class GmailLabels(final GmailHttp _gmail) {
         body: {'name': name, 'labelListVisibility': 'labelShow', 'messageListVisibility': 'show'},
       );
       return Label(id: r['id'] as String, name: r['name'] as String, kind: LabelKind.etichetta);
-    } on GoogleFailed {
+    } on OAuthFailed {
       // Another client created it between the list and the post: Gmail's 409.
       // ponytail: any refused post lists again (one GET); match the 409 alone if that ever costs.
       if (await _named(name) case final existing?) return existing;

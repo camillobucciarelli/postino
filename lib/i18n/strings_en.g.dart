@@ -103,6 +103,7 @@ class _Translations$onboarding$en extends Translations$onboarding$it {
 	// Translations
 	@override String get body => 'All your mailboxes in one place.';
 	@override String get connectGmail => 'Connect Gmail';
+	@override String get connectOutlook => 'Connect Outlook';
 	@override String get connectIcloud => 'Connect iCloud';
 	@override String get connectImap => 'Other IMAP';
 }
@@ -118,6 +119,7 @@ class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
 	@override String get message => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
 	@override String get signIn => 'Sign in';
 	@override String get status => 'Needs signing in';
+	@override String get microsoftMessage => 'Microsoft no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
 	@override String get passwordMessage => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.';
 }
 
@@ -132,9 +134,11 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String missingSetting({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).';
 	@override String get offline => 'No connection: try again when you are online.';
 	@override String get missingPermission => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.';
-	@override String wrongAccount({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.';
+	@override String get missingPermissionMicrosoft => 'Permission to read and send your mail is required: try again and keep it ticked.';
+	@override String wrongAccount({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.';
 	@override String get failed => 'Something went wrong: try again.';
 	@override String get alreadyConnected => 'This address is already connected as another Account.';
+	@override String get workAccount => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.';
 }
 
 // Path: offline
@@ -519,6 +523,7 @@ class _Translations$passwordForm$en extends Translations$passwordForm$it {
 	@override String get unreachable => 'Server unreachable: check the connection, the host and the port.';
 	@override String get alreadyConnected => 'This Account is already connected.';
 	@override String get useGmail => 'For a Gmail address use «Connect Gmail».';
+	@override String get useMicrosoft => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».';
 }
 
 // Path: accounts
@@ -606,20 +611,24 @@ extension on TranslationsEn {
 			'etichette' => 'Labels',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',
+			'onboarding.connectOutlook' => 'Connect Outlook',
 			'onboarding.connectIcloud' => 'Connect iCloud',
 			'onboarding.connectImap' => 'Other IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} needs signing in again',
 			'daRicollegare.message' => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
 			'daRicollegare.signIn' => 'Sign in',
 			'daRicollegare.status' => 'Needs signing in',
+			'daRicollegare.microsoftMessage' => 'Microsoft no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
 			'daRicollegare.passwordMessage' => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.',
 			'connect.title' => 'Couldn\'t connect',
 			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
 			'connect.offline' => 'No connection: try again when you are online.',
 			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
-			'connect.wrongAccount' => ({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.',
+			'connect.missingPermissionMicrosoft' => 'Permission to read and send your mail is required: try again and keep it ticked.',
+			'connect.wrongAccount' => ({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Something went wrong: try again.',
 			'connect.alreadyConnected' => 'This address is already connected as another Account.',
+			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',
 			'list.loading' => 'Loading messages',
@@ -870,6 +879,7 @@ extension on TranslationsEn {
 			'passwordForm.unreachable' => 'Server unreachable: check the connection, the host and the port.',
 			'passwordForm.alreadyConnected' => 'This Account is already connected.',
 			'passwordForm.useGmail' => 'For a Gmail address use «Connect Gmail».',
+			'passwordForm.useMicrosoft' => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».',
 			'accounts.section' => 'Accounts',
 			'accounts.add' => 'Add Account',
 			'accounts.gmail' => 'Gmail',

@@ -4,18 +4,18 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
-import 'package:postino/core/data/gmail/google_auth.dart';
-import 'package:postino/core/data/gmail/google_failure.dart';
+import 'package:postino/core/data/oauth/oauth_auth.dart';
+import 'package:postino/core/data/oauth/oauth_failed.dart';
+import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
 import '../../../support/gmail_recorded.dart';
 
-/// A GoogleAuth on [keychain], the token endpoint answering the recorded `token_refresh` or [token].
-({GoogleAuth auth, List<http.Request> requests}) _auth(FakeSecureStore keychain, {String token = 'token_refresh'}) {
+/// A OAuthAuth on [keychain], the token endpoint answering the recorded `token_refresh` or [token].
+({OAuthAuth auth, List<http.Request> requests}) _auth(FakeSecureStore keychain, {String token = 'token_refresh'}) {
   final requests = <http.Request>[];
-  final auth = GoogleAuth(
+  final auth = OAuthAuth(
     gmailAccount,
     keychain,
     MockClient((r) async {
@@ -28,7 +28,7 @@ import '../../../support/gmail_recorded.dart';
   return (auth: auth, requests: requests);
 }
 
-Matcher _throwsFailure<F>() => throwsA(isA<GoogleFailed>().having((e) => e.failure, 'failure', isA<F>()));
+Matcher _throwsFailure<F>() => throwsA(isA<OAuthFailed>().having((e) => e.failure, 'failure', isA<F>()));
 
 void main() {
   test('refresh swaps the access token in the keychain, keeping the refresh token', () async {
@@ -43,7 +43,7 @@ void main() {
       'refresh_token': '1//refresh',
       'client_id': 'test-client.apps.googleusercontent.com',
     });
-    final saved = (await GmailTokens.read(keychain, gmailAccount))!;
+    final saved = (await OAuthTokens.read(keychain, gmailAccount))!;
     expect((saved.access, saved.refresh), ('ya29.refreshed', '1//refresh'));
     expect(saved.expiresAt, gmailNow.add(const Duration(seconds: 3599)));
   });
@@ -52,7 +52,7 @@ void main() {
     final keychain = gmailKeychain();
     final t = _auth(keychain);
     final old = await t.auth.tokens();
-    await GmailTokens.delete(keychain, gmailAccount);
+    await OAuthTokens.delete(keychain, gmailAccount);
 
     await t.auth.refresh(old);
 
@@ -63,11 +63,11 @@ void main() {
     final keychain = gmailKeychain();
     final t = _auth(keychain);
     final old = await t.auth.tokens();
-    await GmailTokens(access: 'new', refresh: '1//new', expiresAt: gmailNow).write(keychain, gmailAccount);
+    await OAuthTokens(access: 'new', refresh: '1//new', expiresAt: gmailNow).write(keychain, gmailAccount);
 
     await t.auth.refresh(old);
 
-    expect((await GmailTokens.read(keychain, gmailAccount))!.refresh, '1//new');
+    expect((await OAuthTokens.read(keychain, gmailAccount))!.refresh, '1//new');
   });
 
   test('validTokens keeps a valid access token and refreshes an expired one', () async {

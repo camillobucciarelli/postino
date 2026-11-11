@@ -28,6 +28,7 @@ import 'package:postino/core/data/imap/enough_connection_tester.dart' as _i782;
 import 'package:postino/core/data/imap/enough_server_discovery.dart' as _i26;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
 import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/microsoft/microsoft_consent.dart' as _i801;
 import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
@@ -51,6 +52,7 @@ import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
 import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
+import 'package:postino/core/domain/microsoft_consent.dart' as _i6;
 import 'package:postino/core/domain/model_download.dart' as _i96;
 import 'package:postino/core/domain/model_manager.dart' as _i689;
 import 'package:postino/core/domain/notifications.dart' as _i184;
@@ -124,6 +126,10 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i398.SecureStore>(
       () => _i524.KeychainStore(),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i6.MicrosoftConsent>(
+      () => _i801.MicrosoftWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
     );
     gh.lazySingleton<_i739.SystemTray>(
@@ -299,6 +305,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i413.AccountsService(
         gh<_i385.MailStore>(),
         gh<_i902.GoogleConsent>(),
+        gh<_i6.MicrosoftConsent>(),
         gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
         gh<_i221.ServerDiscovery>(),

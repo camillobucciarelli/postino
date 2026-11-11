@@ -12,6 +12,7 @@ import '../../domain/message.dart';
 import '../../domain/outbox_repository.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../../domain/send_limit.dart';
 import '../daos/outbox_dao.dart';
 import '../mime.dart';
 
@@ -98,12 +99,12 @@ class OutboxSender(
         await _releaseIfEmpty(accountId);
         return Err(failure);
     }
-    // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
-    if (raw.length > gmailSendLimitBytes) {
-      _log.failure('send $accountId', const SizeLimitFailure(gmailSendLimitBytes));
+    // The Provider's limit; IMAP/SMTP has none here: the server's SIZE refuses it at submission.
+    if (sendLimitBytes(account.provider) case final limit? when raw.length > limit) {
+      _log.failure('send $accountId', SizeLimitFailure(limit));
       await _outbox.outgoingFailed(accountId, message.messageId, version: version);
       await _releaseIfEmpty(accountId);
-      return const Err(SizeLimitFailure(gmailSendLimitBytes));
+      return Err(SizeLimitFailure(limit));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
     final sendAfter = _clock.now().add(sendWindow);

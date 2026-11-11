@@ -5,10 +5,6 @@ import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/result.dart';
 
-/// The biggest message Gmail sends: 35 MB of RFC 5322 text (`messages.send`).
-// ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
-const gmailSendLimitBytes = 36700160;
-
 /// The raw RFC 5322 text of [m], dated [date]: multipart/alternative, the plain text read off the HTML,
 /// with In-Reply-To and References of a reply; inside a multipart/mixed with [attachments] (the bytes of
 /// [OutgoingMessage.attachments], in order) when a forward carries any (#37).

@@ -30,4 +30,14 @@ class GraphLookup(final GraphHttp _graph) {
     if (found.length > 1) throw const OAuthFailed(UnexpectedFailure('Graph: more messages share the Message-ID'));
     return found.firstOrNull;
   }
+
+  /// The Graph ids of the messages with Message-ID [messageId] in the well-known folder [folder] (`sentitems`,
+  /// `drafts`), in Graph's order: more than one is a save whose old version is still to remove.
+  Future<List<String>> idsIn(String folder, String messageId) async {
+    final page = await _graph.get(
+      'mailFolders/$folder/messages',
+      query: {r'$filter': "internetMessageId eq '${messageId.replaceAll("'", "''")}'", r'$select': 'id', r'$top': '10'},
+    );
+    return [for (final m in jsonObjects(page['value'])) m['id'] as String];
+  }
 }

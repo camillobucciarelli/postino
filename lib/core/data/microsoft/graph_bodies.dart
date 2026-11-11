@@ -9,7 +9,7 @@ import 'graph_message_parser.dart';
 /// The body and the attachments of one message, from Graph's JSON and not from the whole MIME (`/$value`), so a
 /// body does not download its attachments too. Reading changes nothing: `isRead` stays as it is.
 class GraphBodies(final GraphHttp _graph) {
-  static const _html = 'outlook.body-content-type="html"';
+  static const html = 'outlook.body-content-type="html"';
   static const _attachmentSelect = 'id,name,contentType,size,isInline,microsoft.graph.fileAttachment/contentId';
 
   /// The body of message [id] as HTML (Graph converts a plain text one) and its [Attachment]s: those the user sees,
@@ -17,7 +17,7 @@ class GraphBodies(final GraphHttp _graph) {
   /// is `message/rfc822`; a `referenceAttachment` (a OneDrive link) is listed by name and cannot be downloaded.
   // `uniqueBody` is asked as the issue says, but the full `body` is what is shown, as on Gmail and IMAP.
   Future<MessageBody> body(String id) async {
-    final j = await _graph.get('messages/$id', query: {r'$select': 'body,uniqueBody,hasAttachments'}, prefer: _html);
+    final j = await _graph.get('messages/$id', query: {r'$select': 'body,uniqueBody,hasAttachments'}, prefer: html);
     final body = graphBody(j) ?? const MessageBody('', BodyKind.testo);
     final attachments = j['hasAttachments'] == true ? await _attachments(id, body.content) : const <Attachment>[];
     return MessageBody(body.content, body.kind, attachments: attachments);

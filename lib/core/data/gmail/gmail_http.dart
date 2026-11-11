@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
-import '../mime.dart';
+import '../../domain/send_limit.dart';
 import '../oauth/oauth_auth.dart';
 import '../oauth/oauth_failed.dart';
 import '../oauth/oauth_tokens.dart';

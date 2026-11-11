@@ -8,7 +8,6 @@ import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/background_send.dart';
 import 'package:postino/core/data/daos/outbox_dao.dart';
 import 'package:postino/core/data/mail_store.dart';
-import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
@@ -23,6 +22,7 @@ import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/send_limit.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';

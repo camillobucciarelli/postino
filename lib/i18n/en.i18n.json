@@ -136,7 +136,7 @@
     "send": "Send",
     "queued": "Waiting to send",
     "undo": "Undo",
-    "tooLarge": "The message exceeds Gmail's $mb MB limit",
+    "tooLarge": "The message exceeds the $mb MB limit of the Provider",
     "sendFailed": "Sending failed: try again",
     "offlineAttachments": "You are offline: the forwarded attachments are not downloaded yet, try again online",
     "noRecipient": "Add at least one recipient",

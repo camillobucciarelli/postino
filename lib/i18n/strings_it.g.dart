@@ -489,8 +489,8 @@ class Translations$composizione$it {
 	/// it: 'Annulla'
 	String get undo => 'Annulla';
 
-	/// it: 'Il messaggio supera il limite di $mb MB di Gmail'
-	String tooLarge({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail';
+	/// it: 'Il messaggio supera il limite di $mb MB del Provider'
+	String tooLarge({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB del Provider';
 
 	/// it: 'Invio non riuscito: riprova'
 	String get sendFailed => 'Invio non riuscito: riprova';
@@ -1304,7 +1304,7 @@ extension on Translations {
 			'composizione.send' => 'Invia',
 			'composizione.queued' => 'In attesa d\'invio',
 			'composizione.undo' => 'Annulla',
-			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail',
+			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB del Provider',
 			'composizione.sendFailed' => 'Invio non riuscito: riprova',
 			'composizione.offlineAttachments' => 'Sei offline: gli allegati dell\'inoltro non sono ancora scaricati, riprova in rete',
 			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',

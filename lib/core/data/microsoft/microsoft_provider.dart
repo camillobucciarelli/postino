@@ -8,6 +8,7 @@ import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../message_id_of.dart';
+import '../mime.dart';
 import '../oauth/oauth_failed.dart';
 import '../oauth/oauth_guard.dart';
 import 'graph_actions.dart';
@@ -15,12 +16,14 @@ import 'graph_bodies.dart';
 import 'graph_conversations.dart';
 import 'graph_cursor.dart';
 import 'graph_delta.dart';
+import 'graph_drafts.dart';
 import 'graph_flags.dart';
 import 'graph_folders.dart';
 import 'graph_http.dart';
 import 'graph_lookup.dart';
 import 'graph_message_parser.dart';
 import 'graph_moves.dart';
+import 'graph_sender.dart';
 import 'microsoft_client.dart';
 
 /// Microsoft Graph adapter (ADR 0002) for a personal Outlook.com Account: folders are Etichette
@@ -32,15 +35,12 @@ class MicrosoftProvider(
   http.Client httpClient,
   final Clock _clock, {
   MicrosoftClient client = const MicrosoftClient.fromEnvironment(),
-  Future<void> Function(Duration) sleep = Future<void>.delayed,
+  final Future<void> Function(Duration) _sleep = Future<void>.delayed,
 
   /// The Message-ID of a message by its Graph id, from the app's cache: how an Azione finds a message whose id is gone.
   final MessageIdOf? _messageIdOf,
 }) implements MailProvider {
-  this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: sleep);
-
-  // ponytail: sending and Bozze (T5).
-  static const _unsupported = Err<Never>(UnexpectedFailure('Microsoft: not available yet'));
+  this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: _sleep);
 
   final GraphHttp _graph;
   late final _folders = GraphFolders(_graph);
@@ -48,6 +48,8 @@ class MicrosoftProvider(
   late final _bodies = GraphBodies(_graph);
   late final _conversations = GraphConversations(_graph, _folders);
   late final _lookup = GraphLookup(_graph);
+  late final _drafts = GraphDrafts(_graph, _lookup);
+  late final _sender = GraphSender(_graph, _lookup, _drafts, _sleep);
   late final _actions = GraphActions(
     _folders,
     _lookup,
@@ -169,6 +171,7 @@ class MicrosoftProvider(
     () async => Ok(await _bodies.attachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel)),
   );
 
+  /// [threadId] is not needed: Outlook joins the Conversazione by `In-Reply-To` and `References`, already in [raw].
   @override
   Future<Result<String>> send(
     String messageId,
@@ -176,12 +179,23 @@ class MicrosoftProvider(
     String? threadId,
     bool submitted = false,
     Future<void> Function()? onSubmitted,
-  }) async => _unsupported;
+  }) => oauthGuard(() async => Ok(await _sender.send(messageId, raw, submitted: submitted, onSubmitted: onSubmitted)));
 
   @override
-  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) async =>
-      _unsupported;
+  Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) =>
+      oauthGuard(() async {
+        final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
+          Ok(:final value) => value,
+          // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
+          Err(failure: NotFoundFailure()) => throw const OAuthFailed(UnexpectedFailure('forwarded attachment gone')),
+          Err(:final failure) => throw OAuthFailed(failure),
+        };
+        return Ok(await _drafts.save(draft, raw, isNew: isNew, expected: expected));
+      });
 
   @override
-  Future<Result<void>> deleteDraft(String messageId) async => _unsupported;
+  Future<Result<void>> deleteDraft(String messageId) => oauthGuard(() async {
+    await _drafts.delete(messageId);
+    return const Ok(null);
+  });
 }

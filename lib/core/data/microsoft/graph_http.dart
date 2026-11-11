@@ -70,13 +70,15 @@ class GraphHttp(
     return _request('GET', url);
   }
 
-  /// A write: [method] on [path], [body] as JSON, [headers] added to the request (`If-Match`).
+  /// A write: [method] on [path], [body] as JSON or [text] as `text/plain` (a message as base64 MIME), [headers]
+  /// added to the request (`If-Match`).
   Future<Map<String, dynamic>> send(
     String method,
     String path, {
     Object? body,
+    String? text,
     Map<String, String> headers = const {},
-  }) => _request(method, _api.resolve(path), body: body, headers: headers);
+  }) => _request(method, _api.resolve(path), body: body, text: text, headers: headers);
 
   /// Every item of the collection [path], following `@odata.nextLink`.
   Future<List<Map<String, dynamic>>> list(String path, {Map<String, String> query = const {}}) async {
@@ -91,10 +93,11 @@ class GraphHttp(
     String method,
     Uri url, {
     Object? body,
+    String? text,
     String? prefer,
     Map<String, String> headers = const {},
   }) async {
-    final r = await _response(method, url, body: body, prefer: prefer, headers: headers);
+    final r = await _response(method, url, body: body, text: text, prefer: prefer, headers: headers);
     // A 204 (a DELETE) has no body.
     return r.body.isEmpty ? const {} : jsonDecode(r.body) as Map<String, dynamic>;
   }
@@ -103,14 +106,16 @@ class GraphHttp(
     String method,
     Uri url, {
     Object? body,
+    String? text,
     String? prefer,
     Map<String, String> headers = const {},
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) async {
-    final payload = body == null ? null : jsonEncode(body);
+    final payload = text ?? (body == null ? null : jsonEncode(body));
+    final type = text == null ? 'application/json' : 'text/plain';
     Future<http.Response> send(String token) =>
-        _slot(() => _send(method, url, token, payload, prefer, headers, onProgress, cancel));
+        _slot(() => _send(method, url, token, payload, type, prefer, headers, onProgress, cancel));
 
     var r = await _auth.authorized(send);
     if (graphThrottled(r)) {
@@ -131,6 +136,7 @@ class GraphHttp(
     Uri url,
     String access,
     String? payload,
+    String type,
     String? extraPrefer,
     Map<String, String> headers,
     void Function(double done)? onProgress,
@@ -148,7 +154,7 @@ class GraphHttp(
           ..headers.addAll(headers);
     if (payload != null) {
       request
-        ..headers['content-type'] = 'application/json'
+        ..headers['content-type'] = type
         ..body = payload;
     }
     try {

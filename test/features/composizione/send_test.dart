@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/conflict.dart';
 import 'package:postino/core/domain/draft_conflict.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
@@ -18,6 +17,7 @@ import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/send_limit.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -246,9 +246,26 @@ void main() {
       ..registerSingleton<MailSync>(_TooBig(real));
     await _write(tester);
     await _send(tester);
-    expect(find.text('Il messaggio supera il limite di 35 MB di Gmail'), findsOneWidget);
+    expect(find.text('Il messaggio supera il limite di 35 MB del Provider'), findsOneWidget);
     expect(find.byType(PostinoComposerField), findsWidgets);
     expect(_undo, findsNothing);
+    await _afterWindow(tester);
+    expect(gmail.sent, isEmpty);
+  });
+
+  _onMac('a message over the Microsoft limit names the 3 MB, announced to the screen reader', (tester) async {
+    await _start(tester);
+    final real = GetIt.I<MailSync>();
+    GetIt.I
+      ..unregister<MailSync>()
+      ..registerSingleton<MailSync>(_TooBig(real, limit: microsoftSendLimitBytes));
+    await _write(tester);
+    await _send(tester);
+    final limit = find.text('Il messaggio supera il limite di 3 MB del Provider');
+    expect(limit, findsOneWidget);
+    // A live region: the screen reader announces the refusal when it appears (ADR 0014).
+    final announced = find.byWidgetPredicate((w) => w is Semantics && w.properties.liveRegion == true);
+    expect(find.ancestor(of: limit, matching: announced), findsOneWidget);
     await _afterWindow(tester);
     expect(gmail.sent, isEmpty);
   });
@@ -420,6 +437,9 @@ class _TooBig(
 
   /// With [delegate], the real engine gets a message over the limit: its preparation fails.
   final bool oversize = false,
+
+  /// The limit the refusal names.
+  final int limit = gmailSendLimitBytes,
 }) implements MailSync {
   int saves = 0;
 
@@ -439,7 +459,7 @@ class _TooBig(
       );
     }
     if (delegate) return real.send(a, m);
-    return const Err(SizeLimitFailure(gmailSendLimitBytes));
+    return Err(SizeLimitFailure(limit));
   }
 
   @override

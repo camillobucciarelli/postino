@@ -12,6 +12,7 @@ import 'package:postino/core/domain/result.dart';
 
 import '../core/domain/mail_provider_contract.dart';
 import 'fake_platform.dart';
+import 'graph_mime.dart';
 import 'graph_recorded.dart';
 
 typedef _Folder = ({String name, String? parent, String? wellKnown});
@@ -22,6 +23,29 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
 
   final FakeSecureStore keychain;
   final requests = <http.Request>[];
+
+  /// The waits the adapter asked for (throttling, a send looked for in Posta inviata), none really slept.
+  final sleeps = <Duration>[];
+
+  /// How many searches of Posta inviata must pass before a message `sendMail` accepted shows there: Graph files it
+  /// asynchronously.
+  int sentVisibleAfter = 0;
+
+  /// The next `sendMail` is processed and then its answer is lost (the connection drops).
+  bool loseNextSendAnswer = false;
+
+  /// What `sendMail` answers instead of 202; the message is not sent.
+  http.Response? sendRefusal;
+
+  /// Messages accepted by `sendMail` and not yet in Posta inviata, with the searches they still wait.
+  final _inFlight = <(Message, String, int)>[];
+  var _created = 0;
+
+  /// Whether `permanentDelete` exists: without it Graph answers 405.
+  bool purgeSupported = true;
+
+  /// How many times `sendMail` was called.
+  int get sendMailCalls => requests.where((r) => graphPath(r) == 'sendMail').length;
 
   final _accepted = {'EwB.initial', 'EwB.refreshed'};
   var _authBroken = false;
@@ -73,7 +97,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     MockClient(_handle),
     FakeClock(now),
     client: graphTestClient,
-    sleep: (_) async {},
+    sleep: (d) async => sleeps.add(d),
   );
 
   @override
@@ -146,8 +170,87 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     _accepted.clear();
   }
 
+  /// The HTML body of the messages written through the API or delivered as Bozze, by id.
+  final _html = <String, String>{};
+
   @override
-  void deliverDraft(OutgoingMessage d) => throw UnimplementedError('Bozze on Microsoft: T5');
+  void deliverDraft(OutgoingMessage d) {
+    final id = 'draft-${++_created}';
+    deliver(
+      Message(
+        id: id,
+        messageId: d.messageId,
+        conversationId: 't-$id',
+        labelIds: const [draftLabelId],
+        isRead: true,
+        isStarred: false,
+        from: d.from,
+        to: d.to,
+        cc: d.cc,
+        bcc: d.bcc,
+        subject: d.subject,
+        snippet: '',
+        date: now,
+      ),
+    );
+    _html[id] = d.body;
+  }
+
+  /// The Bozze in the mailbox: their Message-IDs.
+  List<String> get draftMessageIds => [
+    for (final (m, folder) in _mailbox.values)
+      if (folder == 'f-drafts') m.messageId,
+  ];
+
+  /// A message in the folder with the well-known name [name] (`sentitems`, `drafts`).
+  List<Message> inFolder(String name) {
+    final id = _folders.entries.singleWhere((f) => f.value.wellKnown == name).key;
+    return [
+      for (final (m, folder) in _mailbox.values)
+        if (folder == id) m,
+    ];
+  }
+
+  /// `sendMail` (MIME as base64): 202, the copy in Posta inviata now or after [sentVisibleAfter] searches.
+  http.Response _sendMail(http.Request r) {
+    if (sendRefusal case final refusal?) return refusal;
+    final (m, html) = graphMessageFromMime(graphMimeText(r.body), 'sent-${++_created}', sentLabelId, now);
+    if (sentVisibleAfter == 0) {
+      deliver(m);
+      _html[m.id] = html;
+    } else {
+      _inFlight.add((m, html, sentVisibleAfter));
+    }
+    if (loseNextSendAnswer) {
+      loseNextSendAnswer = false;
+      throw http.ClientException('Connection closed before the answer');
+    }
+    return http.Response('', 202);
+  }
+
+  /// `POST /me/messages` (MIME as base64): a new Bozza.
+  http.Response _createDraft(http.Request r) {
+    final (m, html) = graphMessageFromMime(graphMimeText(r.body), 'draft-${++_created}', draftLabelId, now);
+    deliver(m);
+    _html[m.id] = html;
+    return graphJson(_item(m, 'f-drafts', '', false), 201);
+  }
+
+  /// `DELETE /me/messages/{id}`: into Posta eliminata, the id kept.
+  http.Response _trash(String id) {
+    final (m, _) = _mailbox[id] ?? (null, '');
+    if (m == null) return graphFixture('not_found');
+    deliver(_changed(m, isRead: m.isRead, starred: m.isStarred, folder: 'f-deleted'));
+    return http.Response('', 204);
+  }
+
+  /// `POST /me/messages/{id}/permanentDelete`: gone, not into Posta eliminata.
+  http.Response _purge(String id) {
+    if (!purgeSupported) return http.Response('', 405);
+    if (!_mailbox.containsKey(id)) return graphFixture('not_found');
+    removeRemotely(id);
+    return http.Response('', 204);
+  }
 
   /// The file attachments of each message, in order: (id, name, bytes).
   final _attachments = <String, List<(String, String, List<int>)>>{};
@@ -174,8 +277,13 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
       ['mailFolders', 'delta'] => _folderDelta(q),
       ['mailFolders', final id, 'childFolders'] => _children(id),
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
+      ['sendMail'] => _sendMail(r),
+      ['messages'] when r.method == 'POST' => _createDraft(r),
       ['messages'] => _find(q),
+      ['mailFolders', final name, 'messages'] => _find(q, wellKnown: name),
+      ['messages', final id, 'permanentDelete'] => _purge(id),
       ['messages', final id] when r.method == 'PATCH' => _patch(id, r),
+      ['messages', final id] when r.method == 'DELETE' => _trash(id),
       ['messages', final id, 'move'] => _move(id, (jsonDecode(r.body) as Map<String, dynamic>)['destinationId']),
       ['messages', final id, 'attachments'] => _attachmentList(id),
       ['messages', final id, 'attachments', final att, r'$value'] => switch (_file(id, att)) {
@@ -267,12 +375,15 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
   }
 
   /// `conversationId eq '<id>'` or `internetMessageId eq '<id>'` over every folder, in pages of [_page].
-  http.Response _find(Map<String, String> q) {
+  http.Response _find(Map<String, String> q, {String? wellKnown}) {
+    if (wellKnown == 'sentitems') _fileSent();
     final filter = RegExp(r"^(conversationId|internetMessageId) eq '(.*)'$").firstMatch(q[r'$filter'] ?? '')!;
     final id = filter[2]!.replaceAll("''", "'");
     final all = [
       for (final MapEntry(:value) in _mailbox.entries)
-        if ((filter[1] == 'conversationId' ? value.$1.conversationId : value.$1.messageId) == id) value,
+        if ((filter[1] == 'conversationId' ? value.$1.conversationId : value.$1.messageId) == id &&
+            (wellKnown == null || _folders[value.$2]?.wellKnown == wellKnown))
+          value,
     ];
     final offset = int.tryParse(q[r'$skiptoken'] ?? '') ?? 0;
     return graphJson({
@@ -285,6 +396,22 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
           r'$skiptoken': '${offset + _page}',
         }).toString(),
     });
+  }
+
+  /// A search of Posta inviata: what Graph was still filing comes one search closer.
+  void _fileSent() {
+    final waiting = <(Message, String, int)>[];
+    for (final (m, html, left) in _inFlight) {
+      if (left > 1) {
+        waiting.add((m, html, left - 1));
+      } else {
+        deliver(m);
+        _html[m.id] = html;
+      }
+    }
+    _inFlight
+      ..clear()
+      ..addAll(waiting);
   }
 
   Map<String, Object?> _folderJson(String id) {
@@ -399,7 +526,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     'bodyPreview': m.snippet,
     'receivedDateTime': m.date.toIso8601String(),
     'hasAttachments': attached,
-    if (select.split(',').contains('body')) 'body': {'contentType': 'html', 'content': '<p>Ciao</p>'},
+    if (select.split(',').contains('body')) 'body': {'contentType': 'html', 'content': _html[m.id] ?? '<p>Ciao</p>'},
   };
 
   /// Outlook gives the address as the name when there is none.

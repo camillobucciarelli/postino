@@ -136,7 +136,7 @@
     "send": "Invia",
     "queued": "In attesa d'invio",
     "undo": "Annulla",
-    "tooLarge": "Il messaggio supera il limite di $mb MB di Gmail",
+    "tooLarge": "Il messaggio supera il limite di $mb MB del Provider",
     "sendFailed": "Invio non riuscito: riprova",
     "offlineAttachments": "Sei offline: gli allegati dell'inoltro non sono ancora scaricati, riprova in rete",
     "noRecipient": "Aggiungi almeno un destinatario",

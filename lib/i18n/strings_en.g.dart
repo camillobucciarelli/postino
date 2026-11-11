@@ -262,7 +262,7 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get send => 'Send';
 	@override String get queued => 'Waiting to send';
 	@override String get undo => 'Undo';
-	@override String tooLarge({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit';
+	@override String tooLarge({required Object mb}) => 'The message exceeds the ${mb} MB limit of the Provider';
 	@override String get sendFailed => 'Sending failed: try again';
 	@override String get offlineAttachments => 'You are offline: the forwarded attachments are not downloaded yet, try again online';
 	@override String get noRecipient => 'Add at least one recipient';
@@ -710,7 +710,7 @@ extension on TranslationsEn {
 			'composizione.send' => 'Send',
 			'composizione.queued' => 'Waiting to send',
 			'composizione.undo' => 'Undo',
-			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit',
+			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds the ${mb} MB limit of the Provider',
 			'composizione.sendFailed' => 'Sending failed: try again',
 			'composizione.offlineAttachments' => 'You are offline: the forwarded attachments are not downloaded yet, try again online',
 			'composizione.noRecipient' => 'Add at least one recipient',

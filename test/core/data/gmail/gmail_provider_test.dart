@@ -19,6 +19,7 @@ import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/send_limit.dart';
 
 import '../../../support/fake_mail_provider.dart' show copyOf;
 import '../../../support/fake_platform.dart';

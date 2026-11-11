@@ -2,9 +2,9 @@
   "status": 201,
   "body": {
     "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders/$entity",
-    "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-fatture",
+    "id": "folder-fatture",
     "displayName": "Fatture",
-    "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+    "parentFolderId": "folder-root",
     "childFolderCount": 0,
     "unreadItemCount": 0,
     "totalItemCount": 0,

@@ -20,8 +20,8 @@ const graphApi = '/v1.0/me/';
 const tokenHost = 'login.microsoftonline.com';
 
 /// The Graph id of a fixture folder (`inbox`, `viaggi`...) and of a fixture message (`f1`...).
-String folderId(String key) => 'AQMkADAwATZiZmYAZS0yNgAuAAADm-$key';
-String messageIdOf(String key) => 'AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-$key';
+String folderId(String key) => 'folder-$key';
+String messageIdOf(String key) => 'msg-$key';
 
 /// The recorded response `test/fixtures/graph/<name>.json`; `{folder}` in it becomes [folder]. Header names are
 /// lowercased, as package:http gives them.

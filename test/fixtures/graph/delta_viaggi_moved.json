@@ -5,16 +5,15 @@
     "value": [
       {
         "@odata.type": "#microsoft.graph.message",
-        "@odata.etag": "W/\"CQAAABYAAADf3\"",
-        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f3",
+        "id": "msg-f3",
         "receivedDateTime": "2026-10-02T09:00:00Z",
         "hasAttachments": false,
-        "internetMessageId": "<F3x7Yk2b@mail.example.com>",
+        "internetMessageId": "<f3@mail.example.com>",
         "subject": "Re: Cena di venerdì",
         "bodyPreview": "Ci sono!",
         "isRead": false,
-        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c1",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-viaggi",
+        "conversationId": "conv-c1",
+        "parentFolderId": "folder-viaggi",
         "replyTo": [],
         "from": {
           "emailAddress": {
@@ -37,6 +36,6 @@
         }
       }
     ],
-    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('AQMkADAwATZiZmYAZS0yNgAuAAADm-viaggi')/messages/delta?$deltatoken=pQ6xRD8VB3eIwm6WaUf0z0yvM_V2"
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('folder-viaggi')/messages/delta?$deltatoken=viaggi-delta-token-2"
   }
 }

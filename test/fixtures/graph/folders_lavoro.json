@@ -1,12 +1,12 @@
 {
   "status": 200,
   "body": {
-    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders('AQMkADAwATZiZmYAZS0yNgAuAAADm-lavoro')/childFolders",
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders('folder-lavoro')/childFolders",
     "value": [
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-progetti",
+        "id": "folder-progetti",
         "displayName": "Progetti",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-lavoro",
+        "parentFolderId": "folder-lavoro",
         "childFolderCount": 0,
         "unreadItemCount": 0,
         "totalItemCount": 0,

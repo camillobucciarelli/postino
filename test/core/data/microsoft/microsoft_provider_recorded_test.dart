@@ -84,9 +84,9 @@ void main() {
     expect(batch.bodies.keys, unorderedEquals(['f1', 'f2', 'f3'].map(messageIdOf)));
 
     final cursor = GraphCursor.decode(batch.cursor)!;
-    expect(cursor.folders, endsWith('_F1'));
+    expect(cursor.folders, endsWith('folders-delta-token-1'));
     expect(cursor.messages[folderId('inbox')]!.label, inboxLabelId);
-    expect(cursor.messages[folderId('inbox')]!.link, endsWith('_D1'));
+    expect(cursor.messages[folderId('inbox')]!.link, endsWith('inbox-delta-token-1'));
   });
 
   test('incremental sync: new, read, starred, moved and deleted messages; the Etichette unchanged', () async {
@@ -116,7 +116,7 @@ void main() {
     );
     expect(next.bodies.keys, unorderedEquals(['f1', 'f2', 'f4'].map(messageIdOf)));
     expect(next.labels, isNull, reason: 'no folder changed: the stored Etichette stay');
-    expect(GraphCursor.decode(next.cursor)!.messages[folderId('inbox')]!.link, endsWith('_D2'));
+    expect(GraphCursor.decode(next.cursor)!.messages[folderId('inbox')]!.link, endsWith('inbox-delta-token-2'));
   });
 
   test('an empty delta: nothing changed, and the cursor stays valid', () async {

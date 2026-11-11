@@ -3,6 +3,6 @@
   "body": {
     "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(mailFolder)",
     "value": [],
-    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=LztZwWjo5IivWBhyxw5rACKxf7mPm0oW6JZZ7fvKxYPS_F2"
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=folders-delta-token-2"
   }
 }

@@ -18,8 +18,8 @@ void main() {
   test('the headers: addresses, Conversazione, Message-ID, date, read state', () {
     final m = parseGraphMessage(_fixtureMessage('messages_page1', 0), labelId: inboxLabelId);
     expect(m.id, messageIdOf('f1'));
-    expect(m.messageId, '<F1x7Yk2b@mail.example.com>');
-    expect(m.conversationId, 'AAQkADAwATZiZmYAZS0yNgAQA-c1');
+    expect(m.messageId, '<f1@mail.example.com>');
+    expect(m.conversationId, 'conv-c1');
     expect(m.labelIds, [inboxLabelId]);
     expect((m.from, m.fromName), ('bruno@example.com', 'Bruno Verdi'));
     expect(m.to, [

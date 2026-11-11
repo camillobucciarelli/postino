@@ -4,51 +4,51 @@
     "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(mailFolder)",
     "value": [
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "id": "folder-inbox",
         "displayName": "Posta in arrivo",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-drafts",
+        "id": "folder-drafts",
         "displayName": "Bozze",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-sentitems",
+        "id": "folder-sentitems",
         "displayName": "Posta inviata",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-deleteditems",
+        "id": "folder-deleteditems",
         "displayName": "Posta eliminata",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-junkemail",
+        "id": "folder-junkemail",
         "displayName": "Posta indesiderata",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-outbox",
+        "id": "folder-outbox",
         "displayName": "Posta in uscita",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-archive",
+        "id": "folder-archive",
         "displayName": "Archivio",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-lavoro",
+        "id": "folder-lavoro",
         "displayName": "Lavoro",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       },
       {
-        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-viaggi",
+        "id": "folder-viaggi",
         "displayName": "Viaggi",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+        "parentFolderId": "folder-root"
       }
     ],
-    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=LztZwWjo5IivWBhyxw5rACKxf7mPm0oW6JZZ7fvKxYPS_F1"
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=folders-delta-token-1"
   }
 }

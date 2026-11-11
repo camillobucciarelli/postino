@@ -5,16 +5,15 @@
     "value": [
       {
         "@odata.type": "#microsoft.graph.message",
-        "@odata.etag": "W/\"CQAAABYAAADf1\"",
-        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f1",
+        "id": "msg-f1",
         "receivedDateTime": "2026-10-26T08:15:02Z",
         "hasAttachments": false,
-        "internetMessageId": "<F1x7Yk2b@mail.example.com>",
+        "internetMessageId": "<f1@mail.example.com>",
         "subject": "Cena di venerdì",
         "bodyPreview": "Porto io il vino & il dolce.",
         "isRead": false,
-        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c1",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "conversationId": "conv-c1",
+        "parentFolderId": "folder-inbox",
         "replyTo": [],
         "from": {
           "emailAddress": {
@@ -55,16 +54,15 @@
       },
       {
         "@odata.type": "#microsoft.graph.message",
-        "@odata.etag": "W/\"CQAAABYAAADf2\"",
-        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f2",
+        "id": "msg-f2",
         "receivedDateTime": "2026-10-20T17:40:00Z",
         "hasAttachments": true,
-        "internetMessageId": "<F2x7Yk2b@mail.example.com>",
+        "internetMessageId": "<f2@mail.example.com>",
         "subject": "Biglietti",
         "bodyPreview": "Il tuo biglietto è allegato.",
         "isRead": true,
-        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c2",
-        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "conversationId": "conv-c2",
+        "parentFolderId": "folder-inbox",
         "replyTo": [],
         "from": {
           "emailAddress": {
@@ -91,6 +89,6 @@
         }
       }
     ],
-    "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/mailFolders('AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox')/messages/delta?$skiptoken=MSwyLDM3MzY3NjI5"
+    "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/mailFolders('folder-inbox')/messages/delta?$skiptoken=inbox-skip-token-1"
   }
 }

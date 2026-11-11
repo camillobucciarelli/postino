@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(mailFolder)",
+    "value": [
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-fatture",
+        "displayName": "Fatture",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=LztZwWjo5IivWBhyxw5rACKxf7mPm0oW6JZZ7fvKxYPS_F3"
+  }
+}

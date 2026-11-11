@@ -1,0 +1,46 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(message)",
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADf3\"",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f3",
+        "receivedDateTime": "2026-10-02T09:00:00Z",
+        "hasAttachments": false,
+        "internetMessageId": "<F3x7Yk2b@mail.example.com>",
+        "subject": "Re: Cena di venerdì",
+        "bodyPreview": "Ci sono!",
+        "isRead": false,
+        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c1",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Carla Rossi",
+            "address": "carla.rossi@example.org"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "body": {
+          "contentType": "html",
+          "content": "<p>Ci sono!</p>"
+        }
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox')/messages/delta?$deltatoken=N1nGs8pXZYZ0cRqXxNZW8iVIUDIJ7f4VL2Y0dH3oqfQ_D1"
+  }
+}

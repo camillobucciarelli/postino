@@ -1,0 +1,147 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(message)",
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADf4\"",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f4",
+        "receivedDateTime": "2026-10-28T11:58:10Z",
+        "hasAttachments": false,
+        "internetMessageId": "<F4x7Yk2b@mail.example.com>",
+        "subject": "Fattura ottobre",
+        "bodyPreview": "In allegato la fattura.",
+        "isRead": false,
+        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c4",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Fatture Luce",
+            "address": "fatture@example.net"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "body": {
+          "contentType": "html",
+          "content": "<p>In allegato la fattura.</p>"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADf1\"",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f1",
+        "receivedDateTime": "2026-10-26T08:15:02Z",
+        "hasAttachments": false,
+        "internetMessageId": "<F1x7Yk2b@mail.example.com>",
+        "subject": "Cena di venerdì",
+        "bodyPreview": "Porto io il vino & il dolce.",
+        "isRead": true,
+        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c1",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          },
+          {
+            "emailAddress": {
+              "name": "carla@example.org",
+              "address": "carla@example.org"
+            }
+          }
+        ],
+        "ccRecipients": [
+          {
+            "emailAddress": {
+              "name": "Rossi, Carla",
+              "address": "carla.rossi@example.org"
+            }
+          }
+        ],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "body": {
+          "contentType": "html",
+          "content": "<html><body><p>Porto io il vino &amp; il dolce.</p></body></html>"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADf2\"",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f2",
+        "receivedDateTime": "2026-10-20T17:40:00Z",
+        "hasAttachments": true,
+        "internetMessageId": "<F2x7Yk2b@mail.example.com>",
+        "subject": "Biglietti",
+        "bodyPreview": "Il tuo biglietto è allegato.",
+        "isRead": true,
+        "conversationId": "AAQkADAwATZiZmYAZS0yNgAQA-c2",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "treni@example.com",
+            "address": "treni@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "flagged"
+        },
+        "body": {
+          "contentType": "text",
+          "content": "Il tuo biglietto è allegato."
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f3",
+        "@removed": {
+          "reason": "deleted"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "AAkALgAAAAAAHYQDEapmEc2byACqAC-EWg0AWLuF-f9",
+        "@removed": {
+          "reason": "deleted"
+        }
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox')/messages/delta?$deltatoken=N1nGs8pXZYZ0cRqXxNZW8iVIUDIJ7f4VL2Y0dH3oqfQ_D2"
+  }
+}

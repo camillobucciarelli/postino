@@ -107,6 +107,7 @@ List<String> violations(String file, String source) {
         file != 'core/data/sync/provider_factory.dart' &&
         !file.startsWith('core/data/gmail/') &&
         (t.endsWith('core/data/gmail/gmail_provider.dart') ||
+            t.endsWith('core/data/microsoft/microsoft_provider.dart') && !file.startsWith('core/data/microsoft/') ||
             t.startsWith('core/data/imap/') && t.endsWith('_provider.dart') && !file.startsWith('core/data/imap/'))) {
       bad('only the provider factory may import a concrete Provider');
     }
@@ -264,7 +265,8 @@ void main() {
     for (final (file, uri) in [
       ('core/data/sync_engine.dart', 'gmail/gmail_provider.dart'),
       ('core/data/sync/outbox_sender.dart', 'package:postino/core/data/gmail/gmail_provider.dart'),
-      ('core/data/sync_engine.dart', 'package:postino/core/data/imap/unsynced_provider.dart'),
+      ('core/data/sync_engine.dart', 'package:postino/core/data/imap/imap_provider.dart'),
+      ('core/data/sync/sync_phase.dart', '../microsoft/microsoft_provider.dart'),
     ]) {
       test('$file may not import a concrete Provider ($uri)', () {
         expect(violations(file, "import '$uri';"), contains(contains('only the provider factory')));

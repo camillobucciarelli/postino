@@ -1,0 +1,7 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders/$entity",
+    "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-sentitems"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders",
+    "value": [
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "displayName": "Posta in arrivo",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 3,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-drafts",
+        "displayName": "Bozze",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-sentitems",
+        "displayName": "Posta inviata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-deleteditems",
+        "displayName": "Posta eliminata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 1,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-junkemail",
+        "displayName": "Posta indesiderata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-outbox",
+        "displayName": "Posta in uscita",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-archive",
+        "displayName": "Archivio",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-lavoro",
+        "displayName": "Lavoro",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 1,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-viaggi",
+        "displayName": "Viaggi",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-fatture",
+        "displayName": "Fatture",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      }
+    ]
+  }
+}

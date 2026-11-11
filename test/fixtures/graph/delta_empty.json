@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(message)",
+    "value": [],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('{folder}')/messages/delta?$deltatoken=tVtzMGI2Z4IlGLEvb2pQ6xRD8VB3eIwm6WaUf0z0yvM_E1"
+  }
+}

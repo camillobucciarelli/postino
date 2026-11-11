@@ -25,5 +25,5 @@ Quando un Provider rifiuta l'accesso a un Account (password cambiata, accesso re
 ## Conseguenze
 
 - La schermata di consenso mostra scope più ampi.
-- Due connessioni per ogni Account Google o Microsoft (IDLE + API).
+- Due connessioni per ogni Account Google (IDLE + API); per Microsoft in v1 solo le chiamate a Graph, senza IDLE.
 - Il comportamento in background su mobile non cambia (ADR 0001).

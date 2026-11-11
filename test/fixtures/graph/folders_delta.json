@@ -1,0 +1,54 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(mailFolder)",
+    "value": [
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-inbox",
+        "displayName": "Posta in arrivo",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-drafts",
+        "displayName": "Bozze",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-sentitems",
+        "displayName": "Posta inviata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-deleteditems",
+        "displayName": "Posta eliminata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-junkemail",
+        "displayName": "Posta indesiderata",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-outbox",
+        "displayName": "Posta in uscita",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-archive",
+        "displayName": "Archivio",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-lavoro",
+        "displayName": "Lavoro",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      },
+      {
+        "id": "AQMkADAwATZiZmYAZS0yNgAuAAADm-viaggi",
+        "displayName": "Viaggi",
+        "parentFolderId": "AQMkADAwATZiZmYAZS0yNgAuAAADm-root"
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=LztZwWjo5IivWBhyxw5rACKxf7mPm0oW6JZZ7fvKxYPS_F1"
+  }
+}

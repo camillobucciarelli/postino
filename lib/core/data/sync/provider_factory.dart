@@ -5,8 +5,8 @@ import '../../domain/mail_provider.dart';
 import '../gmail/gmail_provider.dart';
 import '../imap/imap_provider.dart';
 import '../imap/imap_session.dart';
-import '../imap/unsynced_provider.dart';
 import '../mail_store.dart';
+import '../microsoft/microsoft_provider.dart';
 
 /// Whether Postino APPENDs a sent message to Inviati on [provider] (#166): the generic IMAP servers do not file
 /// SMTP submissions themselves.
@@ -37,8 +37,7 @@ MailProvider providerFor(Account account) {
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
           appendToSent: appendsToSent(account.provider),
         ),
-        // ponytail: no Microsoft adapter before step 5: it syncs nothing meanwhile.
-        ProviderKind.microsoft => const UnsyncedProvider(),
+        ProviderKind.microsoft => MicrosoftProvider(account.id, g(), g(), g()),
       },
       instanceName: account.id,
       // An IMAP adapter holds a connection (and IDLE): logged out when the Account is removed.

@@ -1,0 +1,17 @@
+{
+  "status": 429,
+  "headers": {
+    "Retry-After": "2"
+  },
+  "body": {
+    "error": {
+      "code": "ApplicationThrottled",
+      "message": "Application is over its MailboxConcurrency limit.",
+      "innerError": {
+        "date": "2026-10-28T12:00:00",
+        "request-id": "00000000-0000-0000-0000-000000000000",
+        "client-request-id": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

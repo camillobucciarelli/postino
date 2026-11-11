@@ -15,7 +15,7 @@ import 'google_client.dart';
 import 'google_failure.dart';
 
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
-/// quota hits retried with backoff. Failures are thrown as [OAuthFailed], which [googleGuard] turns into an [Err].
+/// quota hits retried with backoff. Failures are thrown as [OAuthFailed], which `oauthGuard` turns into an [Err].
 class GmailHttp(
   final String _accountId,
   final SecureStore _keychain,

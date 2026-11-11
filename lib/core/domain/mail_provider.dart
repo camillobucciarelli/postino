@@ -47,6 +47,9 @@ enum ChangeSignal() {
   down,
 }
 
+/// Headers of the last [syncWindow] are synced, by every adapter (ADR 0003).
+const syncWindow = Duration(days: 90);
+
 /// The single adapter interface (ADR 0002), one instance per Account.
 // ponytail: Search joins the interface at step 6.
 abstract interface class MailProvider() {

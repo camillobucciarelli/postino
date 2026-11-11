@@ -1,0 +1,108 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/mailFolders",
+    "value": [
+      {
+        "id": "folder-inbox",
+        "displayName": "Posta in arrivo",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 3,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-drafts",
+        "displayName": "Bozze",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-sentitems",
+        "displayName": "Posta inviata",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-deleteditems",
+        "displayName": "Posta eliminata",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 1,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-junkemail",
+        "displayName": "Posta indesiderata",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-outbox",
+        "displayName": "Posta in uscita",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-archive",
+        "displayName": "Archivio",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-lavoro",
+        "displayName": "Lavoro",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 1,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-viaggi",
+        "displayName": "Viaggi",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      },
+      {
+        "id": "folder-fatture",
+        "displayName": "Fatture",
+        "parentFolderId": "folder-root",
+        "childFolderCount": 0,
+        "unreadItemCount": 0,
+        "totalItemCount": 0,
+        "sizeInBytes": 0,
+        "isHidden": false
+      }
+    ]
+  }
+}

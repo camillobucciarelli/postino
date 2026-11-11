@@ -70,9 +70,13 @@ class GraphHttp(
     return _request('GET', url);
   }
 
-  /// A write: [method] on [path], [body] as JSON.
-  Future<Map<String, dynamic>> send(String method, String path, {Object? body}) =>
-      _request(method, _api.resolve(path), body: body);
+  /// A write: [method] on [path], [body] as JSON, [headers] added to the request (`If-Match`).
+  Future<Map<String, dynamic>> send(
+    String method,
+    String path, {
+    Object? body,
+    Map<String, String> headers = const {},
+  }) => _request(method, _api.resolve(path), body: body, headers: headers);
 
   /// Every item of the collection [path], following `@odata.nextLink`.
   Future<List<Map<String, dynamic>>> list(String path, {Map<String, String> query = const {}}) async {
@@ -83,8 +87,14 @@ class GraphHttp(
     }
   }
 
-  Future<Map<String, dynamic>> _request(String method, Uri url, {Object? body, String? prefer}) async {
-    final r = await _response(method, url, body: body, prefer: prefer);
+  Future<Map<String, dynamic>> _request(
+    String method,
+    Uri url, {
+    Object? body,
+    String? prefer,
+    Map<String, String> headers = const {},
+  }) async {
+    final r = await _response(method, url, body: body, prefer: prefer, headers: headers);
     // A 204 (a DELETE) has no body.
     return r.body.isEmpty ? const {} : jsonDecode(r.body) as Map<String, dynamic>;
   }
@@ -94,12 +104,13 @@ class GraphHttp(
     Uri url, {
     Object? body,
     String? prefer,
+    Map<String, String> headers = const {},
     void Function(double done)? onProgress,
     Future<void>? cancel,
   }) async {
     final payload = body == null ? null : jsonEncode(body);
     Future<http.Response> send(String token) =>
-        _slot(() => _send(method, url, token, payload, prefer, onProgress, cancel));
+        _slot(() => _send(method, url, token, payload, prefer, headers, onProgress, cancel));
 
     var r = await _auth.authorized(send);
     if (graphThrottled(r)) {
@@ -121,6 +132,7 @@ class GraphHttp(
     String access,
     String? payload,
     String? extraPrefer,
+    Map<String, String> headers,
     void Function(double done)? onProgress,
     Future<void>? cancel,
   ) async {
@@ -132,7 +144,8 @@ class GraphHttp(
             abortTrigger: cancel == null ? abort.future : Future.any([cancel, abort.future]),
           )
           ..headers['authorization'] = 'Bearer $access'
-          ..headers['prefer'] = extraPrefer == null ? prefer : '$prefer, $extraPrefer';
+          ..headers['prefer'] = extraPrefer == null ? prefer : '$prefer, $extraPrefer'
+          ..headers.addAll(headers);
     if (payload != null) {
       request
         ..headers['content-type'] = 'application/json'

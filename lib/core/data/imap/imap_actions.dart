@@ -3,6 +3,7 @@ import 'package:enough_mail/enough_mail.dart' show ImapClient;
 import '../../domain/action_outcome.dart';
 import '../../domain/mail_action.dart';
 import '../../domain/result.dart';
+import '../message_id_of.dart';
 import 'imap_failure.dart';
 import 'imap_flags.dart';
 import 'imap_folders.dart';
@@ -10,9 +11,6 @@ import 'imap_lookup.dart';
 import 'imap_message_parser.dart';
 import 'imap_moves.dart';
 import 'imap_session.dart';
-
-/// The Message-ID (RFC 5322) of the message with Provider id `id`, as the app remembers it; null if it does not.
-typedef MessageIdOf = Future<String?> Function(String id);
 
 /// The Azioni on IMAP (ADR 0008): the message is read once (flags and folder), compared with the expected and the
 /// wanted value, and written only if needed. Letto and Stella are `\Seen` and `\Flagged`, written conditionally

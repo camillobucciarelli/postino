@@ -17,6 +17,9 @@ String? graphErrorCode(String body) {
   }
 }
 
+/// The reason of the [RejectedFailure] of a 412.
+const graphPreconditionFailed = 'Graph: precondition failed';
+
 /// The [Failure] of a Graph answer that is not a success, the token already refreshed once: a 401 is
 /// [AuthFailure]; a message gone or an expired delta (410, or a sync state Graph no longer knows) is
 /// [NotFoundFailure], so the core redoes the initial sync; a throttled one, after its retry, [RateLimitFailure].
@@ -27,6 +30,8 @@ Failure graphFailure(http.Response r, String path, {DateTime? retryAfter}) {
   return switch (r.statusCode) {
     401 => const AuthFailure(),
     404 || 410 => const NotFoundFailure(),
+    // A write with `If-Match` on an etag that is no longer the message's: it changed elsewhere.
+    412 => const RejectedFailure(graphPreconditionFailed),
     _ when lower == 'syncstatenotfound' || lower == 'syncstateinvalid' => const NotFoundFailure(),
     _ when graphThrottled(r) => RateLimitFailure(retryAfter: retryAfter),
     _ => UnexpectedFailure('Graph $path: HTTP ${r.statusCode}${code == null ? '' : ' $code'}'),

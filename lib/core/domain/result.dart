@@ -144,7 +144,7 @@ final class const CancelledFailure() extends Failure {
   this;
 }
 
-/// Reconnecting an Account, the user picked another Google identity than [expected].
+/// Reconnecting an Account, the user picked another identity than [expected].
 final class const WrongAccountFailure(
   /// L'indirizzo dell'Account che si stava ricollegando.
   final String expected,
@@ -175,6 +175,18 @@ final class const AlreadyConnectedFailure() extends Failure {
 
 /// A Gmail address given to the password form: it connects with «Collega Gmail» (OAuth), never with a password.
 final class const UseGmailFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// A Microsoft address given to the password form: it connects with «Collega Outlook» (OAuth), never with a password.
+final class const UseMicrosoftFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// The Microsoft identity is a work or school account: v1 connects only personal ones (Outlook.com, Hotmail, Live).
+final class const WorkAccountFailure() extends Failure {
   /// Crea il fallimento.
   this;
 }

@@ -1,4 +1,5 @@
 import 'package:postino/core/domain/google_consent.dart';
+import 'package:postino/core/domain/oauth_grant.dart';
 import 'package:postino/core/domain/result.dart';
 
 /// Consent that always succeeds for [address], with fresh tokens each run (unless [failure] is set).
@@ -13,7 +14,7 @@ class FakeGoogleConsent() implements GoogleConsent {
   Future<void>? gate;
 
   @override
-  Future<Result<GoogleGrant>> run({String? loginHint, bool drive = false}) async {
+  Future<Result<OAuthGrant>> run({String? loginHint, bool drive = false}) async {
     lastLoginHint = loginHint;
     lastDrive = drive;
     await gate;
@@ -21,7 +22,7 @@ class FakeGoogleConsent() implements GoogleConsent {
     if (f != null) return Err(f);
     runs++;
     return Ok(
-      GoogleGrant(
+      OAuthGrant(
         address: address,
         accessToken: 'access-token-$runs',
         refreshToken: 'refresh-token-$runs',

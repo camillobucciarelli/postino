@@ -132,6 +132,9 @@ class Translations$onboarding$it {
 	/// it: 'Collega Gmail'
 	String get connectGmail => 'Collega Gmail';
 
+	/// it: 'Collega Outlook'
+	String get connectOutlook => 'Collega Outlook';
+
 	/// it: 'Collega iCloud'
 	String get connectIcloud => 'Collega iCloud';
 
@@ -159,6 +162,9 @@ class Translations$daRicollegare$it {
 	/// it: 'Da ricollegare'
 	String get status => 'Da ricollegare';
 
+	/// it: 'Microsoft non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.'
+	String get microsoftMessage => 'Microsoft non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.';
+
 	/// it: 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.'
 	String get passwordMessage => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.';
 }
@@ -183,14 +189,20 @@ class Translations$connect$it {
 	/// it: 'Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.'
 	String get missingPermission => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.';
 
-	/// it: 'Hai scelto un altro account Google: per ricollegare $address scegli quell'account.'
-	String wrongAccount({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.';
+	/// it: 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.'
+	String get missingPermissionMicrosoft => 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.';
+
+	/// it: 'Hai scelto un altro account: per ricollegare $address scegli quell'account.'
+	String wrongAccount({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.';
 
 	/// it: 'Qualcosa è andato storto: riprova.'
 	String get failed => 'Qualcosa è andato storto: riprova.';
 
 	/// it: 'Questo indirizzo è già collegato come un altro Account.'
 	String get alreadyConnected => 'Questo indirizzo è già collegato come un altro Account.';
+
+	/// it: 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.'
+	String get workAccount => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.';
 }
 
 // Path: offline
@@ -1027,6 +1039,9 @@ class Translations$passwordForm$it {
 
 	/// it: 'Per un indirizzo Gmail usa «Collega Gmail».'
 	String get useGmail => 'Per un indirizzo Gmail usa «Collega Gmail».';
+
+	/// it: 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».'
+	String get useMicrosoft => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».';
 }
 
 // Path: accounts
@@ -1190,20 +1205,24 @@ extension on Translations {
 			'etichette' => 'Etichette',
 			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',
+			'onboarding.connectOutlook' => 'Collega Outlook',
 			'onboarding.connectIcloud' => 'Collega iCloud',
 			'onboarding.connectImap' => 'Altro IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} è da ricollegare',
 			'daRicollegare.message' => 'Google non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'daRicollegare.signIn' => 'Accedi',
 			'daRicollegare.status' => 'Da ricollegare',
+			'daRicollegare.microsoftMessage' => 'Microsoft non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'daRicollegare.passwordMessage' => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'connect.title' => 'Collegamento non riuscito',
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
-			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
+			'connect.missingPermissionMicrosoft' => 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.',
+			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
 			'connect.alreadyConnected' => 'Questo indirizzo è già collegato come un altro Account.',
+			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
 			'list.loading' => 'Caricamento dei messaggi',
@@ -1454,6 +1473,7 @@ extension on Translations {
 			'passwordForm.unreachable' => 'Server non raggiungibile: controlla la connessione, l\'host e la porta.',
 			'passwordForm.alreadyConnected' => 'Questo Account è già collegato.',
 			'passwordForm.useGmail' => 'Per un indirizzo Gmail usa «Collega Gmail».',
+			'passwordForm.useMicrosoft' => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».',
 			'accounts.section' => 'Account',
 			'accounts.add' => 'Aggiungi Account',
 			'accounts.gmail' => 'Gmail',

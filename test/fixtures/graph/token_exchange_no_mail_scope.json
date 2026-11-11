@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "token_type": "Bearer",
+    "scope": "Mail.ReadWrite User.Read openid profile email",
+    "expires_in": 3599,
+    "ext_expires_in": 3599,
+    "access_token": "EwB.granted",
+    "refresh_token": "M.C5.granted",
+    "id_token": "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJ0aWQiOiAiOTE4ODA0MGQtNmM2Ny00YzViLWIxMTItMzZhMzA0YjY2ZGFkIiwgImVtYWlsIjogImFkYUBvdXRsb29rLmNvbSJ9.signature"
+  }
+}

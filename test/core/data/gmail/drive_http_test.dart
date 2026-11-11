@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/drive_http.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/data/gmail/google_failure.dart';
+import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -25,7 +25,7 @@ final _files = Uri.parse('https://www.googleapis.com/drive/v3/files');
 }) {
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
-  unawaited(GmailTokens(access: 'ya29.a', refresh: '1//r', expiresAt: _now.add(validFor)).write(keychain, _account));
+  unawaited(OAuthTokens(access: 'ya29.a', refresh: '1//r', expiresAt: _now.add(validFor)).write(keychain, _account));
   final requests = <http.Request>[];
   final drive = DriveHttp(
     _account,

@@ -8,13 +8,14 @@ import 'package:http/http.dart' as http;
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../mime.dart';
-import 'gmail_tokens.dart';
-import 'google_auth.dart';
+import '../oauth/oauth_auth.dart';
+import '../oauth/oauth_failed.dart';
+import '../oauth/oauth_tokens.dart';
 import 'google_client.dart';
 import 'google_failure.dart';
 
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
-/// quota hits retried with backoff. Failures are thrown as [GoogleFailed], which [googleGuard] turns into an [Err].
+/// quota hits retried with backoff. Failures are thrown as [OAuthFailed], which [googleGuard] turns into an [Err].
 class GmailHttp(
   final String _accountId,
   final SecureStore _keychain,
@@ -31,7 +32,7 @@ class GmailHttp(
   static const _maxWait = 32;
   static final _random = Random();
 
-  late final _auth = GoogleAuth(_accountId, _keychain, _http, _clock, client: _client);
+  late final _auth = OAuthAuth(_accountId, _keychain, _http, _clock, client: _client);
 
   /// Refreshes the access token now.
   Future<void> refreshAuth() async {
@@ -39,7 +40,7 @@ class GmailHttp(
   }
 
   /// Tokens with an access token still valid for at least a minute.
-  Future<GmailTokens> validTokens() => _auth.validTokens();
+  Future<OAuthTokens> validTokens() => _auth.validTokens();
 
   /// A read: GET [path] with [query].
   /// [onProgress] gets the share of the response read, out of its length or else [expected] bytes;
@@ -55,7 +56,7 @@ class GmailHttp(
   /// A write: [method] on [path], [body] as JSON.
   Future<Map<String, dynamic>> send(String method, String path, {Object? body}) => _request(method, path, body: body);
 
-  /// A call to the Gmail API: refreshes an expired token first and once more on a 401 ([GoogleAuth.authorized]);
+  /// A call to the Gmail API: refreshes an expired token first and once more on a 401 ([OAuthAuth.authorized]);
   /// retries a quota hit with backoff.
   Future<Map<String, dynamic>> _request(
     String method,
@@ -93,7 +94,7 @@ class GmailHttp(
         '${r.body.length > 300 ? r.body.substring(0, 300) : r.body}',
       );
     }
-    throw GoogleFailed(switch (r.statusCode) {
+    throw OAuthFailed(switch (r.statusCode) {
       401 => const AuthFailure(),
       // Token without the Gmail scope: only a new consent fixes it.
       403 when googleScopeMissing(r) => const AuthFailure(),

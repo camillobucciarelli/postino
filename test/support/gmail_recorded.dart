@@ -7,8 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
-import 'package:postino/core/data/gmail/gmail_tokens.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
+import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
 
 import 'fake_platform.dart';
@@ -34,7 +34,7 @@ FakeSecureStore gmailKeychain({String access = 'ya29.initial', Duration validFor
   final keychain = FakeSecureStore();
   // FakeSecureStore writes synchronously.
   unawaited(
-    GmailTokens(access: access, refresh: '1//refresh', expiresAt: gmailNow.add(validFor)).write(keychain, gmailAccount),
+    OAuthTokens(access: access, refresh: '1//refresh', expiresAt: gmailNow.add(validFor)).write(keychain, gmailAccount),
   );
   return keychain;
 }

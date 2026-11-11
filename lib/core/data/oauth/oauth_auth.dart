@@ -4,26 +4,24 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
-import 'gmail_tokens.dart';
-import 'google_client.dart';
-import 'google_failure.dart';
+import 'oauth_client.dart';
+import 'oauth_failed.dart';
+import 'oauth_tokens.dart';
 
-/// The OAuth tokens of a Google Account for any Google API (Gmail, Drive): from the keychain, refreshed when
-/// they expire. Failures are thrown as [GoogleFailed].
-class GoogleAuth(
+/// The OAuth tokens of an Account for any API of its Provider (Gmail, Drive, Graph): from the keychain, refreshed
+/// when they expire. Failures are thrown as [OAuthFailed].
+class OAuthAuth(
   final String _accountId,
   final SecureStore _keychain,
   final http.Client _http,
   final Clock _clock, {
-  required final GoogleClient _client,
+  required final OAuthClient _client,
 }) {
-  static final _tokenEndpoint = Uri.parse('https://oauth2.googleapis.com/token');
-
   /// The tokens in the keychain, as they are.
-  Future<GmailTokens?> tokens() => GmailTokens.read(_keychain, _accountId);
+  Future<OAuthTokens?> tokens() => OAuthTokens.read(_keychain, _accountId);
 
   /// Tokens with an access token still valid for at least a minute.
-  Future<GmailTokens> validTokens() async {
+  Future<OAuthTokens> validTokens() async {
     final tokens = await this.tokens();
     if (tokens != null && _clock.now().isBefore(tokens.expiresAt.subtract(const Duration(minutes: 1)))) {
       return tokens;
@@ -41,17 +39,17 @@ class GoogleAuth(
 
   /// A new access token from the refresh token of [old], saved in the keychain.
   /// A revoked or expired refresh token is the Provider's definitive refusal: [AuthFailure].
-  Future<GmailTokens> refresh(GmailTokens? old) async {
-    if (old == null) throw const GoogleFailed(AuthFailure());
+  Future<OAuthTokens> refresh(OAuthTokens? old) async {
+    if (old == null) throw const OAuthFailed(AuthFailure());
     final r = await _http.post(
-      _tokenEndpoint,
+      _client.tokenEndpoint,
       body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
     );
     final body = jsonDecode(r.body) as Map<String, dynamic>;
     if (r.statusCode == 200) {
-      final fresh = GmailTokens(
+      final fresh = OAuthTokens(
         access: body['access_token'] as String,
-        // Google may rotate it.
+        // The Provider may rotate it (Microsoft always does).
         refresh: body['refresh_token'] as String? ?? old.refresh,
         expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
       );
@@ -62,8 +60,8 @@ class GoogleAuth(
       return fresh;
     }
     if (r.statusCode == 401 || body['error'] == 'invalid_grant') {
-      throw const GoogleFailed(AuthFailure());
+      throw const OAuthFailed(AuthFailure());
     }
-    throw GoogleFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
+    throw OAuthFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
   }
 }

@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
-import 'google_auth.dart';
+import '../oauth/oauth_auth.dart';
+import '../oauth/oauth_failed.dart';
 import 'google_client.dart';
 import 'google_failure.dart';
 
@@ -19,12 +20,12 @@ class DriveHttp(
   GoogleClient client = const GoogleClient.fromEnvironment(),
   final Duration _timeout = const Duration(seconds: 30),
 }) {
-  this : _auth = GoogleAuth(accountId, keychain, _http, clock, client: client);
+  this : _auth = OAuthAuth(accountId, keychain, _http, clock, client: client);
 
-  final GoogleAuth _auth;
+  final OAuthAuth _auth;
 
   /// A Drive call with a valid token, refreshed once more on a 401. Token and request together get at most
-  /// [_timeout], so a stalled refresh never holds the caller; anything but a 200 or 204 throws a [GoogleFailed].
+  /// [_timeout], so a stalled refresh never holds the caller; anything but a 200 or 204 throws a [OAuthFailed].
   Future<http.Response> send(String method, Uri url, {String? body, String? type}) async {
     final abort = Completer<void>();
     final http.Response r;
@@ -47,7 +48,7 @@ class DriveHttp(
       rethrow;
     }
     if (r.statusCode == 200 || r.statusCode == 204) return r;
-    throw GoogleFailed(switch (r.statusCode) {
+    throw OAuthFailed(switch (r.statusCode) {
       _ when googleRateLimited(r) => const RateLimitFailure(),
       // The token lacks drive.appdata: only the incremental consent fixes it.
       _ when googleScopeMissing(r) => const DriveScopeFailure(),

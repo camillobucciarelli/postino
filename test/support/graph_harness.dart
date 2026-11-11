@@ -41,6 +41,9 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
   final _inFlight = <(Message, String, int)>[];
   var _created = 0;
 
+  /// Whether `permanentDelete` exists: without it Graph answers 405.
+  bool purgeSupported = true;
+
   /// How many times `sendMail` was called.
   int get sendMailCalls => requests.where((r) => graphPath(r) == 'sendMail').length;
 
@@ -233,8 +236,17 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     return graphJson(_item(m, 'f-drafts', '', false), 201);
   }
 
+  /// `DELETE /me/messages/{id}`: into Posta eliminata, the id kept.
+  http.Response _trash(String id) {
+    final (m, _) = _mailbox[id] ?? (null, '');
+    if (m == null) return graphFixture('not_found');
+    deliver(_changed(m, isRead: m.isRead, starred: m.isStarred, folder: 'f-deleted'));
+    return http.Response('', 204);
+  }
+
   /// `POST /me/messages/{id}/permanentDelete`: gone, not into Posta eliminata.
   http.Response _purge(String id) {
+    if (!purgeSupported) return http.Response('', 405);
     if (!_mailbox.containsKey(id)) return graphFixture('not_found');
     removeRemotely(id);
     return http.Response('', 204);
@@ -271,6 +283,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
       ['mailFolders', final name, 'messages'] => _find(q, wellKnown: name),
       ['messages', final id, 'permanentDelete'] => _purge(id),
       ['messages', final id] when r.method == 'PATCH' => _patch(id, r),
+      ['messages', final id] when r.method == 'DELETE' => _trash(id),
       ['messages', final id, 'move'] => _move(id, (jsonDecode(r.body) as Map<String, dynamic>)['destinationId']),
       ['messages', final id, 'attachments'] => _attachmentList(id),
       ['messages', final id, 'attachments', final att, r'$value'] => switch (_file(id, att)) {

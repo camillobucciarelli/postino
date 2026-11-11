@@ -163,6 +163,31 @@ void main() {
       final r = okValue(await h.provider.saveDraft(_draft('<p>Mio</p>'), isNew: false, expected: expected));
       expect(r, isA<DraftSaved>());
       expect(h.draftMessageIds, [_d.messageId]);
+      expect(h.inFolder('deleteditems').map((m) => m.messageId), [_d.messageId], reason: 'the unknown copy is kept');
+    });
+
+    test(
+      'a copy edited elsewhere is not purged by the cleanup: it goes to Posta eliminata; the known one is gone',
+      () async {
+        final h = GraphHarness();
+        okValue(await h.provider.saveDraft(_d, isNew: true));
+        final expected = DraftContent.of(_d).fingerprint;
+        h.deliverDraft(_draft('<p>Da altrove</p>'));
+        okValue(await h.provider.saveDraft(_draft('<p>Mio</p>'), isNew: false, expected: expected));
+        expect(h.draftMessageIds, [_d.messageId], reason: 'only the new version is a Bozza');
+        final trashed = h.inFolder('deleteditems');
+        expect(trashed.map((m) => m.id), [
+          'draft-2',
+        ], reason: 'the edited copy stays recoverable, the known one is purged');
+      },
+    );
+
+    test('without permanentDelete the known copy is deleted the ordinary way', () async {
+      final h = GraphHarness()..purgeSupported = false;
+      okValue(await h.provider.saveDraft(_d, isNew: true));
+      okValue(await h.provider.saveDraft(_draft('<p>Due</p>'), isNew: false));
+      expect(h.draftMessageIds, [_d.messageId]);
+      expect(h.inFolder('deleteditems'), hasLength(1));
     });
 
     test('a Bozza over the limit is refused before any upload', () async {

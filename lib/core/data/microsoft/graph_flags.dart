@@ -17,13 +17,10 @@ class GraphFlags(final GraphHttp _graph) {
       },
       _ => throw ArgumentError.value(action, 'action', 'not a flag'),
     };
+    // Never blind: without the etag the write would not be conditional.
+    if (at.etag.isEmpty) throw const OAuthFailed(UnexpectedFailure('Graph answered without an etag'));
     try {
-      await _graph.send(
-        'PATCH',
-        'messages/${at.id}',
-        body: body,
-        headers: {if (at.etag.isNotEmpty) 'If-Match': at.etag},
-      );
+      await _graph.send('PATCH', 'messages/${at.id}', body: body, headers: {'If-Match': at.etag});
       return true;
     } on OAuthFailed catch (e) {
       if (e.failure case RejectedFailure(reason: graphPreconditionFailed)) return false;

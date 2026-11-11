@@ -16,14 +16,18 @@ class GraphLookup(final GraphHttp _graph) {
     }
   }
 
-  /// The message with Message-ID [messageId] wherever it is in the mailbox; null when there is none.
+  /// The message with Message-ID [messageId] wherever it is in the mailbox; null when there is none. Two copies
+  /// (a self-sent message is in Inviati too) do not say which one the Azione was queued for: [UnexpectedFailure],
+  /// the Azione stays queued rather than acting on a guess.
   Future<GraphPlace?> byInternetMessageId(String messageId) async {
     // OData quotes a single quote by doubling it.
     final quoted = messageId.replaceAll("'", "''");
     final page = await _graph.get(
       'messages',
-      query: {r'$filter': "internetMessageId eq '$quoted'", r'$select': graphPlaceSelect, r'$top': '1'},
+      query: {r'$filter': "internetMessageId eq '$quoted'", r'$select': graphPlaceSelect, r'$top': '2'},
     );
-    return jsonObjects(page['value']).map(parseGraphPlace).firstOrNull;
+    final found = jsonObjects(page['value']).map(parseGraphPlace).toList();
+    if (found.length > 1) throw const OAuthFailed(UnexpectedFailure('Graph: more messages share the Message-ID'));
+    return found.firstOrNull;
   }
 }

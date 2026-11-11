@@ -115,4 +115,68 @@ void main() {
       isA<ActionMessageGone>(),
     );
   });
+
+  test(
+    'a message that never stops changing under the write is not applied blind: an error after three tries',
+    () async {
+      final h = GraphHarness()..deliver(msg('a'));
+      // Every write finds a new etag.
+      h.onRequest = (r) {
+        if (r.method == 'PATCH') h.deliver(msg('a', isStarred: !(h.requests.length.isEven)));
+      };
+      expect(await h.provider.applyAction('a', const MarkRead(), expected: false), isErr<UnexpectedFailure>());
+      expect(h.requests.where((r) => r.method == 'PATCH'), hasLength(3));
+      expect((await h.current('a')).isRead, isFalse);
+    },
+  );
+
+  test(
+    'every v1 Azione: applied when the value is the expected one, nothing written when it is the wanted one',
+    () async {
+      final cases = <(MailAction, Object, Message, Message)>[
+        (const MarkRead(), false, msg('a'), msg('a', isRead: true)),
+        (const MarkUnread(), true, msg('a', isRead: true), msg('a')),
+        (const Star(), false, msg('a'), msg('a', isStarred: true, labelIds: const [inboxLabelId, starredLabelId])),
+        (const Unstar(), true, msg('a', isStarred: true), msg('a')),
+        (const Archive(), Placement.inbox, msg('a'), msg('a', labelIds: const ['f-archive'])),
+        (const Delete(), Placement.inbox, msg('a'), msg('a', labelIds: const [trashLabelId])),
+        (const ApplyLabel(_viaggi), false, msg('a'), msg('a', labelIds: const [_viaggi])),
+        (const RemoveLabel(_viaggi), true, msg('a', labelIds: const [_viaggi]), msg('a')),
+      ];
+      for (final (action, before, from, wanted) in cases) {
+        final h = GraphHarness()..deliver(from);
+        expect(
+          okValue(await h.provider.applyAction('a', action, expected: before)),
+          isA<ActionApplied>(),
+          reason: '$action',
+        );
+        final now = await h.current('a');
+        expect(
+          [now.isRead, now.isStarred, ...now.labelIds],
+          [wanted.isRead, wanted.isStarred, ...wanted.labelIds],
+          reason: '$action',
+        );
+        final done = _writes(h).length;
+        expect(okValue(await h.provider.applyAction('a', action, expected: before)), isA<ActionApplied>());
+        expect(_writes(h), hasLength(done), reason: 'again: already as wanted, nothing written for $action');
+      }
+    },
+  );
+
+  test('Unstar sends notFlagged and clears the Stella', () async {
+    final h = GraphHarness()..deliver(msg('a', isStarred: true));
+    okValue(await h.provider.applyAction('a', const Unstar(), expected: true));
+    expect(h.requests.singleWhere((r) => r.method == 'PATCH').body, '{"flag":{"flagStatus":"notFlagged"}}');
+    expect((await h.current('a')).isStarred, isFalse);
+  });
+
+  test('a system Etichetta moves to its well-known folder: Cestino is `deleteditems`', () async {
+    final h = GraphHarness()..deliver(msg('a'));
+    expect(
+      okValue(await h.provider.applyAction('a', const ApplyLabel(trashLabelId), expected: false)),
+      isA<ActionApplied>(),
+    );
+    expect(h.requests.singleWhere((r) => r.url.path.endsWith('/move')).body, contains('"deleteditems"'));
+    expect((await h.current('a')).labelIds, [trashLabelId]);
+  });
 }

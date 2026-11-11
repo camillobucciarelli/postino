@@ -1,3 +1,4 @@
+import '../../domain/message.dart';
 import '../../domain/result.dart';
 import '../oauth/oauth_failed.dart';
 import 'graph_folders.dart';
@@ -13,6 +14,18 @@ class GraphMoves(final GraphHttp _graph, final GraphFolders _folders, final Grap
 
   /// The folder created when an Account has no `archive` (Outlook.com has one), as on IMAP.
   static const archiveName = 'Archivio';
+
+  /// Graph's name for each system Etichetta (`TRASH` is `deleteditems`); any other Etichetta id is a folder id.
+  static const _systemFolders = {
+    inboxLabelId: inbox,
+    trashLabelId: trash,
+    spamLabelId: 'junkemail',
+    sentLabelId: 'sentitems',
+    draftLabelId: 'drafts',
+  };
+
+  /// The folder to move into for Etichetta [labelId].
+  static String folderOf(String labelId) => _systemFolders[labelId] ?? labelId;
 
   /// Moves message [id] into folder [destination] (a Graph folder id or well-known name). Graph has no
   /// precondition for a move: the caller read the folder just before. A message gone is [NotFoundFailure];

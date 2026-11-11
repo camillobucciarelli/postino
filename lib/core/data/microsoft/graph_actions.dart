@@ -20,29 +20,28 @@ class GraphActions(
   final GraphMoves _moves,
   final MessageIdOf _messageIdOf,
 ) {
-  /// Reads again at most this many times when the etag moved under the write.
+  /// Reads again at most this many times when the etag moved, or the message went, under the write.
   static const _tries = 3;
 
   /// Applies [action] to [messageId]; [expected] null forces it. A message gone, also by its Message-ID, is
   /// [ActionMessageGone].
   Future<ActionOutcome> apply(String messageId, MailAction action, Object? expected) async {
-    try {
-      for (var i = 0; i < _tries; i++) {
-        final at = await _locate(messageId);
-        if (at == null) return const ActionMessageGone();
-        final current = await _value(at, action);
-        // Already as wanted: nothing to write.
-        if (current == action.wanted) return const ActionApplied();
-        // Elimina never conflicts. Another folder or flag changed is another attribute: not a Conflitto.
-        if (expected != null && current != expected && action is! Delete) {
-          return ActionConflict(current, movedTo: at.id == messageId ? null : at.id);
-        }
-        if (await _write(at, action)) return const ActionApplied();
+    for (var i = 0; i < _tries; i++) {
+      final at = await _locate(messageId);
+      if (at == null) return const ActionMessageGone();
+      final current = await _value(at, action);
+      // Already as wanted: nothing to write.
+      if (current == action.wanted) return const ActionApplied();
+      // Elimina never conflicts. Another folder or flag changed is another attribute: not a Conflitto.
+      if (expected != null && current != expected && action is! Delete) {
+        return ActionConflict(current, movedTo: at.id == messageId ? null : at.id);
       }
-    } on OAuthFailed catch (e) {
-      // Deleted between the read and the write.
-      if (e.failure is NotFoundFailure) return const ActionMessageGone();
-      rethrow;
+      try {
+        if (await _write(at, action)) return const ActionApplied();
+      } on OAuthFailed catch (e) {
+        // Gone or renamed between the read and the write: locate it again (by Message-ID), which tells which.
+        if (e.failure is! NotFoundFailure) rethrow;
+      }
     }
     throw const OAuthFailed(UnexpectedFailure('the message kept changing under the write'));
   }
@@ -76,7 +75,7 @@ class GraphActions(
       case Delete():
         await _moves.move(at.id, GraphMoves.trash);
       case ApplyLabel(:final labelId):
-        await _moves.move(at.id, labelId);
+        await _moves.move(at.id, GraphMoves.folderOf(labelId));
       case RemoveLabel():
         // A message is in one folder only: out of it is back in the inbox.
         // ponytail: the inbox even if it came from the archive; remember the folder it left if that matters.

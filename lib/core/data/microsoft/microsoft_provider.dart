@@ -7,6 +7,7 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../../domain/send_limit.dart';
 import '../message_id_of.dart';
 import '../mime.dart';
 import '../oauth/oauth_failed.dart';
@@ -190,6 +191,8 @@ class MicrosoftProvider(
           Err(failure: NotFoundFailure()) => throw const OAuthFailed(UnexpectedFailure('forwarded attachment gone')),
           Err(:final failure) => throw OAuthFailed(failure),
         };
+        // As the outbox does: a Bozza Graph would refuse (413) is not uploaded at every replay.
+        if (raw.length > microsoftSendLimitBytes) throw const OAuthFailed(SizeLimitFailure(microsoftSendLimitBytes));
         return Ok(await _drafts.save(draft, raw, isNew: isNew, expected: expected));
       });
 

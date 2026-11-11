@@ -34,10 +34,10 @@ class GraphLookup(final GraphHttp _graph) {
   /// The Graph ids of the messages with Message-ID [messageId] in the well-known folder [folder] (`sentitems`,
   /// `drafts`), in Graph's order: more than one is a save whose old version is still to remove.
   Future<List<String>> idsIn(String folder, String messageId) async {
-    final page = await _graph.get(
+    final found = await _graph.list(
       'mailFolders/$folder/messages',
-      query: {r'$filter': "internetMessageId eq '${messageId.replaceAll("'", "''")}'", r'$select': 'id', r'$top': '10'},
+      query: {r'$filter': "internetMessageId eq '${messageId.replaceAll("'", "''")}'", r'$select': 'id'},
     );
-    return [for (final m in jsonObjects(page['value'])) m['id'] as String];
+    return [for (final m in found) m['id'] as String];
   }
 }

@@ -61,6 +61,13 @@ void main() {
       expect(h.inFolder('sentitems').map((m) => m.id), [retry]);
     });
 
+    test('Graph files the copy a moment after the 202: one wait, and the real id comes back', () async {
+      final h = GraphHarness()..sentVisibleAfter = 2;
+      final id = okValue(await h.provider.send(_d.messageId, _raw));
+      expect(h.sleeps, [GraphSender.sentLag]);
+      expect(h.inFolder('sentitems').map((m) => m.id), [id]);
+    });
+
     test('a retry that still does not see it after the wait sends again', () async {
       final h = GraphHarness()
         ..sentVisibleAfter = 9
@@ -68,7 +75,7 @@ void main() {
       await h.provider.send(_d.messageId, _raw);
       okValue(await h.provider.send(_d.messageId, _raw));
       expect(h.sendMailCalls, 2);
-      expect(h.sleeps, [GraphSender.sentLag]);
+      expect(h.sleeps, [GraphSender.sentLag, GraphSender.sentLag], reason: 'before the resend, and after it');
     });
 
     test('after a recorded 202 (submitted) it never sends again, even if Graph has not filed it', () async {
@@ -104,9 +111,11 @@ void main() {
       final old = debugPrint;
       debugPrint = (m, {wrapWidth}) => lines.add(m ?? '');
       addTearDown(() => debugPrint = old);
-      final h = GraphHarness()..sendRefusal = graphFixture('send_too_large');
+      // Throttled: the adapter logs the request, which must carry the path and the status, never the token.
+      final h = GraphHarness()..sendRefusal = graphFixture('rate_limited');
       await h.provider.send(_d.messageId, _raw);
-      expect(lines.join(), isNot(contains('EwB.initial')));
+      expect(lines.join(), contains('[graph] throttled'));
+      expect(lines.join(), isNot(contains('EwB.')));
     });
   });
 
@@ -144,6 +153,23 @@ void main() {
       final r = okValue(await h.provider.saveDraft(_draft('<p>Mio</p>'), isNew: false, expected: mine));
       expect(r, isA<DraftDiverged>().having((o) => o.provider.body, 'body', '<p>Da altrove</p>'));
       expect(h.requests.skip(before).where((q) => q.method == 'POST'), isEmpty);
+    });
+
+    test('a half-finished save left two copies, one is the expected: saved, not diverged', () async {
+      final h = GraphHarness();
+      okValue(await h.provider.saveDraft(_d, isNew: true));
+      final expected = DraftContent.of(_d).fingerprint;
+      h.deliverDraft(_draft('<p>Altra copia</p>'));
+      final r = okValue(await h.provider.saveDraft(_draft('<p>Mio</p>'), isNew: false, expected: expected));
+      expect(r, isA<DraftSaved>());
+      expect(h.draftMessageIds, [_d.messageId]);
+    });
+
+    test('a Bozza over the limit is refused before any upload', () async {
+      final h = GraphHarness();
+      final big = _draft('<p>${'x' * microsoftSendLimitBytes}</p>');
+      expect(await h.provider.saveDraft(big, isNew: true), isA<Err<DraftOutcome>>());
+      expect(h.requests.where((q) => q.method == 'POST'), isEmpty);
     });
 
     test('unchanged since the expected one: saved', () async {

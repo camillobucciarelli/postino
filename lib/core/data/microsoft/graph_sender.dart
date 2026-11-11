@@ -45,7 +45,13 @@ class GraphSender(
     }
     if (id == null && !submitted) {
       _unanswered.add(messageId);
-      await _graph.send('POST', 'sendMail', text: base64.encode(utf8.encode(raw)));
+      try {
+        await _graph.send('POST', 'sendMail', text: base64.encode(utf8.encode(raw)));
+      } on OAuthFailed catch (e) {
+        // Refused for good: it did not go, the retry has nothing to wait for.
+        if (e.failure is SizeLimitFailure || e.failure is RejectedFailure) _unanswered.remove(messageId);
+        rethrow;
+      }
       _unanswered.remove(messageId);
       try {
         await onSubmitted?.call();
@@ -54,6 +60,11 @@ class GraphSender(
         debugPrint('[graph] submission of $messageId not recorded, $e');
       }
       id = await _find(messageId);
+      // Graph files the copy asynchronously: one wait, so the real id is stored and the sync does not add a second row.
+      if (id == null) {
+        await _sleep(sentLag);
+        id = await _find(messageId);
+      }
     }
     // Best effort: the message went, a Bozza left behind is deleted by the next save or by hand.
     try {

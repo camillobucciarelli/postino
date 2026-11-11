@@ -25,9 +25,20 @@ class GraphDrafts(final GraphHttp _graph, final GraphLookup _lookup) {
     final old = await _lookup.idsIn(_folder, draft.messageId);
     if (old.isEmpty && !isNew) throw const OAuthFailed(NotFoundFailure());
     if (old.isNotEmpty && !isNew && expected != null) {
-      final current = await _content(old.last);
-      final fingerprint = current.fingerprint;
-      if (fingerprint != expected && fingerprint != DraftContent.of(draft).fingerprint) return DraftDiverged(current);
+      // ponytail: a copy edited elsewhere while a half-finished save is cleaned up is purged with the rest; a pass over
+      // every copy would flag the older leftover as a conflict instead.
+      // A half-finished save leaves two copies, and Graph's order is unspecified: diverged only if none of them is
+      // what was expected or what is being saved.
+      final mine = DraftContent.of(draft).fingerprint;
+      DraftContent? last;
+      for (final id in old) {
+        last = await _content(id);
+        if (last.fingerprint == expected || last.fingerprint == mine) {
+          last = null;
+          break;
+        }
+      }
+      if (last != null) return DraftDiverged(last);
     }
     await _graph.send('POST', 'messages', text: base64.encode(utf8.encode(raw)));
     // Created first: a failure in between leaves two copies, never none; the next save removes the older.

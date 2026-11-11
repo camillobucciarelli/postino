@@ -1,0 +1,144 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(message)",
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "msg-f4",
+        "receivedDateTime": "2026-10-28T11:58:10Z",
+        "hasAttachments": false,
+        "internetMessageId": "<f4@mail.example.com>",
+        "subject": "Fattura ottobre",
+        "bodyPreview": "In allegato la fattura.",
+        "isRead": false,
+        "conversationId": "conv-c4",
+        "parentFolderId": "folder-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Fatture Luce",
+            "address": "fatture@example.net"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "body": {
+          "contentType": "html",
+          "content": "<p>In allegato la fattura.</p>"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "msg-f1",
+        "receivedDateTime": "2026-10-26T08:15:02Z",
+        "hasAttachments": false,
+        "internetMessageId": "<f1@mail.example.com>",
+        "subject": "Cena di venerdì",
+        "bodyPreview": "Porto io il vino & il dolce.",
+        "isRead": true,
+        "conversationId": "conv-c1",
+        "parentFolderId": "folder-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          },
+          {
+            "emailAddress": {
+              "name": "carla@example.org",
+              "address": "carla@example.org"
+            }
+          }
+        ],
+        "ccRecipients": [
+          {
+            "emailAddress": {
+              "name": "Rossi, Carla",
+              "address": "carla.rossi@example.org"
+            }
+          }
+        ],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        },
+        "body": {
+          "contentType": "html",
+          "content": "<html><body><p>Porto io il vino &amp; il dolce.</p></body></html>"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "msg-f2",
+        "receivedDateTime": "2026-10-20T17:40:00Z",
+        "hasAttachments": true,
+        "internetMessageId": "<f2@mail.example.com>",
+        "subject": "Biglietti",
+        "bodyPreview": "Il tuo biglietto è allegato.",
+        "isRead": true,
+        "conversationId": "conv-c2",
+        "parentFolderId": "folder-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "treni@example.com",
+            "address": "treni@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "flagged"
+        },
+        "body": {
+          "contentType": "text",
+          "content": "Il tuo biglietto è allegato."
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "msg-f3",
+        "@removed": {
+          "reason": "deleted"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "id": "msg-f9",
+        "@removed": {
+          "reason": "deleted"
+        }
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders('folder-inbox')/messages/delta?$deltatoken=inbox-delta-token-2"
+  }
+}

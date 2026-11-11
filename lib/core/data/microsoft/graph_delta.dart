@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
+
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
+import '../../domain/result.dart';
 import '../json_objects.dart';
+import '../oauth/oauth_failed.dart';
 import 'graph_http.dart';
 import 'graph_message_parser.dart';
 
@@ -15,23 +19,42 @@ typedef FolderDelta = ({
 
 /// The message delta query of Graph, per folder (`/me/mailFolders/{id}/messages/delta`).
 class GraphDelta(final GraphHttp _graph) {
+  /// Graph answers a delta with `$filter` with at most this many messages (delta-query-messages).
+  static const filterCap = 5000;
+
   /// The first round of folder [folderId], whose Etichetta is [labelId]: the messages received since [since],
   /// newest first, page by page to [onPage]. The next rounds keep the window and the properties asked here.
-  Future<FolderDelta> start(String folderId, String labelId, DateTime since, {SyncPage? onPage}) => _round(
-    _graph.get(
-      'mailFolders/$folderId/messages/delta',
-      query: {
-        r'$select': labelId == inboxLabelId ? graphBodySelect : graphMessageSelect,
-        r'$filter': 'receivedDateTime ge ${since.toUtc().toIso8601String()}',
-        r'$orderby': 'receivedDateTime desc',
-      },
-    ),
-    labelId,
-    onPage,
-  );
+  // ponytail: a folder with more than [filterCap] messages in the window syncs only [filterCap] of them; drop the
+  // `$filter` and keep the window here if such folders show up (a far longer first round).
+  Future<FolderDelta> start(String folderId, String labelId, DateTime since, {SyncPage? onPage}) async {
+    final d = await _round(
+      _graph.get(
+        'mailFolders/$folderId/messages/delta',
+        query: {
+          r'$select': labelId == inboxLabelId ? graphBodySelect : graphMessageSelect,
+          r'$filter': 'receivedDateTime ge ${since.toUtc().toIso8601String()}',
+          r'$orderby': 'receivedDateTime desc',
+        },
+      ),
+      labelId,
+      onPage,
+    );
+    if (d.messages.length >= filterCap) debugPrint('[graph] a folder reached the $filterCap messages of a delta');
+    return d;
+  }
 
   /// The changes since the round that handed out [link].
   Future<FolderDelta> follow(String link, String labelId) => _round(_graph.follow(link), labelId, null);
+
+  /// The Graph id of the folder message [id] is in now; null when it is gone.
+  Future<String?> folderOf(String id) async {
+    try {
+      return (await _graph.get('messages/$id', query: {r'$select': 'parentFolderId'}))['parentFolderId'] as String?;
+    } on OAuthFailed catch (e) {
+      if (e.failure is NotFoundFailure) return null;
+      rethrow;
+    }
+  }
 
   Future<FolderDelta> _round(Future<Map<String, dynamic>> first, String labelId, SyncPage? onPage) async {
     final messages = <String, Message>{};

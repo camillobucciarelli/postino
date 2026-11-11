@@ -27,6 +27,30 @@ void main() {
     expect(next.removedMessageIds, isEmpty, reason: 'removed from the inbox, new in Viaggi: one message');
   });
 
+  test('a move that lands between two folder rounds is not taken for a deletion at the next sync', () async {
+    final h = GraphHarness()..deliver(msg('a'));
+    final first = okValue(await h.provider.initialSync());
+    var moved = false;
+    // The inbox round is done; Viaggi's has not started yet.
+    h.onRequest = (r) {
+      if (!moved && r.url.path.contains('f-viaggi/messages/delta')) {
+        moved = true;
+        h.deliver(msg('a', labelIds: [h.viaggiId]));
+      }
+    };
+    final second = okValue(await h.provider.incrementalSync(first.cursor));
+    expect(second.messages.single.labelIds, [h.viaggiId]);
+    final third = okValue(await h.provider.incrementalSync(second.cursor));
+    expect(third.removedMessageIds, isEmpty, reason: 'the inbox reports it @removed, but it is in Viaggi');
+  });
+
+  test('only the last 90 days are synced', () async {
+    final h = GraphHarness()
+      ..deliver(msg('old', date: GraphHarness.now.subtract(const Duration(days: 91))))
+      ..deliver(msg('new', date: GraphHarness.now.subtract(const Duration(days: 89))));
+    expect(okValue(await h.provider.initialSync()).messages.map((m) => m.id), ['new']);
+  });
+
   test('nothing changed: an empty batch, the Etichette not read again, and the cursor stays valid', () async {
     final h = GraphHarness()..deliver(msg('a'));
     final first = okValue(await h.provider.initialSync());
@@ -64,7 +88,7 @@ void main() {
     expect(okValue(await h.provider.initialSync()).messages, isEmpty);
   });
 
-  test('Cestino, Posta indesiderata and Posta in uscita are not synced', () async {
+  test('Cestino, Spam and Posta in uscita are not synced', () async {
     final h = GraphHarness();
     for (final (key, label) in [('t', trashLabelId), ('j', spamLabelId), ('i', inboxLabelId)]) {
       h.deliver(msg(key, labelIds: [label]));

@@ -20,6 +20,8 @@ http.Response Function(http.Request, String) _route({
   final token = r.url.queryParameters.containsKey(r'$deltatoken');
   return switch (path.split('/')) {
     ['mailFolders', 'delta'] => graphFixture(token ? folderDelta : 'folders_delta'),
+    // A message reported @removed and gone for good (deleted, not moved).
+    ['messages', _] => graphFixture('not_found'),
     ['mailFolders', final name] when _wellKnown.contains(name) => graphFixture('folder_$name'),
     ['mailFolders'] when r.method == 'POST' => graphFixture('folder_created'),
     ['mailFolders'] => graphFixture(folders),
@@ -107,6 +109,11 @@ void main() {
     expect(byId['f2']!.labelIds, [inboxLabelId, starredLabelId]);
     expect(byId['f3']!.labelIds, [folderId('viaggi')], reason: 'moved: removed from the inbox, new in Viaggi');
     expect(next.removedMessageIds, [messageIdOf('f9')], reason: 'the moved message stays: one message, same id');
+    expect(
+      g.urls.where((u) => u.path.endsWith('/messages/${messageIdOf('f9')}')).single.queryParameters[r'$select'],
+      'parentFolderId',
+      reason: 'a removal only is checked: deleted, or moved to a folder synced earlier',
+    );
     expect(next.bodies.keys, unorderedEquals(['f1', 'f2', 'f4'].map(messageIdOf)));
     expect(next.labels, isNull, reason: 'no folder changed: the stored Etichette stay');
     expect(GraphCursor.decode(next.cursor)!.messages[folderId('inbox')]!.link, endsWith('_D2'));

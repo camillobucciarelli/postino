@@ -24,6 +24,9 @@ class GraphHttp(
   final Clock _clock, {
   MicrosoftClient client = const MicrosoftClient.fromEnvironment(),
   final Future<void> Function(Duration) _sleep = Future<void>.delayed,
+
+  /// The longest wait for an answer to start, and between two of its chunks.
+  final Duration _timeout = const Duration(seconds: 30),
 }) {
   this : _auth = microsoftAuth(accountId, keychain, _http, _clock, client: client);
 
@@ -35,8 +38,6 @@ class GraphHttp(
 
   /// Immutable ids: a message keeps its id when it moves to another folder. Pages of 100 items.
   static const prefer = 'IdType="ImmutableId", odata.maxpagesize=100';
-
-  static const _timeout = Duration(seconds: 30);
 
   /// The wait of a throttled request without `Retry-After`, and the longest one honoured.
   static const _defaultWait = Duration(seconds: 5);
@@ -78,14 +79,13 @@ class GraphHttp(
 
   Future<Map<String, dynamic>> _request(String method, Uri url, {Object? body}) async {
     final payload = body == null ? null : jsonEncode(body);
-    // The token of the last try, refreshed or not, for the retry below.
-    late String access;
-    Future<http.Response> send(String token) => _slot(() => _send(method, url, access = token, payload));
+    Future<http.Response> send(String token) => _slot(() => _send(method, url, token, payload));
 
     var r = await _auth.authorized(send);
     if (graphThrottled(r)) {
       await _sleep(_retryAfter(r) ?? _defaultWait);
-      r = await send(access);
+      // Authorized again: the token may have expired during the wait.
+      r = await _auth.authorized(send);
     }
     if (r.statusCode >= 200 && r.statusCode < 300) {
       // A 204 (a DELETE) has no body.
@@ -97,8 +97,10 @@ class GraphHttp(
     throw OAuthFailed(graphFailure(r, url.path, retryAfter: wait == null ? null : _clock.now().add(wait)));
   }
 
+  /// One try; a timeout aborts the connection too, before its slot goes to the next request.
   Future<http.Response> _send(String method, Uri url, String access, String? payload) async {
-    final request = http.Request(method, url)
+    final abort = Completer<void>();
+    final request = http.AbortableRequest(method, url, abortTrigger: abort.future)
       ..headers['authorization'] = 'Bearer $access'
       ..headers['prefer'] = prefer;
     if (payload != null) {
@@ -106,8 +108,13 @@ class GraphHttp(
         ..headers['content-type'] = 'application/json'
         ..body = payload;
     }
-    final streamed = await _http.send(request).timeout(_timeout);
-    return http.Response.fromStream(streamed).timeout(_timeout);
+    try {
+      final streamed = await _http.send(request).timeout(_timeout);
+      return await http.Response.fromStream(streamed).timeout(_timeout);
+    } on TimeoutException {
+      abort.complete();
+      rethrow;
+    }
   }
 
   /// Runs [request] once fewer than [maxConcurrent] are running; a finished one hands its slot to the next waiting.

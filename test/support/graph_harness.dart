@@ -55,6 +55,9 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
   /// Bumped by [expireCursors]: every link of an older epoch is a 410.
   var _epoch = 0;
 
+  /// The adapter's clock: the messages of the contract (January 2026) are inside its 90 days.
+  static final now = DateTime.utc(2026, 3);
+
   /// Tiny pages exercise `@odata.nextLink`.
   static const _page = 2;
 
@@ -63,7 +66,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     graphAccount,
     keychain,
     MockClient(_handle),
-    FakeClock(graphNow),
+    FakeClock(now),
     client: graphTestClient,
     sleep: (_) async {},
   );
@@ -128,8 +131,12 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
   @override
   void attach(String messageId, String name, List<int> bytes) => throw UnimplementedError('attachments: T3');
 
+  /// Sees every request before it is answered: a change "elsewhere" can land in the middle of a sync.
+  void Function(http.Request r)? onRequest;
+
   Future<http.Response> _handle(http.Request r) async {
     requests.add(r);
+    onRequest?.call(r);
     if (_offline) throw http.ClientException('Failed host lookup');
     if (r.url.host == tokenHost) return graphFixture(_authBroken ? 'token_invalid_grant' : 'token_refresh');
     if (!_accepted.contains(r.headers['authorization']?.substring('Bearer '.length))) {
@@ -142,6 +149,10 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       ['mailFolders', 'delta'] => _folderDelta(q),
       ['mailFolders', final id, 'childFolders'] => _children(id),
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
+      ['messages', final id] => switch (_mailbox[id]) {
+        (_, final folder) => graphJson({'id': id, 'parentFolderId': folder}),
+        null => graphFixture('not_found'),
+      },
       ['mailFolders', final name] => switch ([
         for (final MapEntry(:key, :value) in _folders.entries)
           if (value.wellKnown == name) key,
@@ -210,17 +221,20 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     // The sequence the round starts after; -1 for a first round.
     final from = token?[1] ?? -1;
     final offset = skip?[2] ?? 0;
+    // The window of the first round, `receivedDateTime ge <date>`, as Graph applies it.
+    final window = q[r'$filter'];
+    final since = window == null ? null : DateTime.parse(window.split(' ').last);
     final ids = from < 0
         ? ([
             for (final MapEntry(:key, :value) in _mailbox.entries)
-              if (value.$2 == folder) (key, value.$1.date),
+              if (value.$2 == folder && !(since != null && value.$1.date.isBefore(since))) (key, value.$1.date),
           ]..sort((a, b) => b.$2.compareTo(a.$2))).map((e) => e.$1).toList()
         : <String>{
             for (final (seq, f, message) in _log)
               if (seq > from && f == folder && message != null) message,
           }.toList();
     final path = 'mailFolders/$folder/messages/delta';
-    final keep = {r'$select': q[r'$select'] ?? ''};
+    final keep = {r'$select': q[r'$select'] ?? '', r'$filter': ?window};
     final more = offset + _page < ids.length;
     return graphJson({
       'value': [

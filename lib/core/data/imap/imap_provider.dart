@@ -30,9 +30,6 @@ import 'imap_threads.dart';
 import 'password_credentials.dart';
 import 'smtp_sender.dart';
 
-/// Headers of the last [syncWindow] are synced (ADR 0003).
-const syncWindow = Duration(days: 90);
-
 /// IMAP adapter (ADR 0002) for iCloud and generic IMAP Accounts, one per Account, the password in the keychain.
 /// Folders are Etichette ([LabelKind.cartella]); a message's id is `cartella/UIDVALIDITY/UID`.
 class ImapProvider(

@@ -28,9 +28,6 @@ class MicrosoftProvider(
 }) implements MailProvider {
   this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: sleep);
 
-  /// Headers of the last 90 days are synced (ADR 0003).
-  static const _window = Duration(days: 90);
-
   // ponytail: bodies on request, attachments and Conversazioni (T3), Azioni (T4), sending and Bozze (T5).
   static const _unsupported = Err<Never>(UnexpectedFailure('Microsoft: not available yet'));
 
@@ -49,7 +46,7 @@ class MicrosoftProvider(
     // The cursor comes first: a folder that changes while listing shows up in the next incremental sync.
     final (_, folderLink) = await _folders.delta(null);
     final folders = await _folders.list();
-    final since = _clock.now().subtract(_window);
+    final since = _clock.now().subtract(syncWindow);
     final messages = <String, Message>{};
     final bodies = <String, MessageBody>{};
     final links = <String, FolderLink>{};
@@ -86,7 +83,7 @@ class MicrosoftProvider(
     // ponytail: a folder gone (deleted, or moved into Cestino) takes its messages along through a new initial sync,
     // whose snapshot drops them; keep the ids per folder if folders get deleted often.
     if (was.messages.keys.any((id) => !synced.containsKey(id))) throw const OAuthFailed(NotFoundFailure());
-    final since = _clock.now().subtract(_window);
+    final since = _clock.now().subtract(syncWindow);
     final messages = <String, Message>{};
     final bodies = <String, MessageBody>{};
     final removed = <String>{};
@@ -102,6 +99,12 @@ class MicrosoftProvider(
     }
     // A message moved between two folders is removed from one and new in the other, with the same id: it stays.
     removed.removeAll(messages.keys);
+    // A move that fell between two folder rounds (of this sync or the last) shows here as a removal only: a message
+    // still in a synced folder stays.
+    // ponytail: one GET per removed message; fine for the few deletions of a poll.
+    for (final id in removed.toList()) {
+      if (await _delta.folderOf(id) case final folder? when synced.containsKey(folder)) removed.remove(id);
+    }
     return Ok(
       SyncBatch(
         cursor: GraphCursor(folderLink, links).encode(),

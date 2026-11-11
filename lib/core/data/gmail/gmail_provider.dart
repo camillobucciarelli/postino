@@ -23,9 +23,6 @@ import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
 import 'google_client.dart';
 
-/// Headers of the last [syncWindow] are synced (ADR 0003).
-const syncWindow = Duration(days: 90);
-
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
 class GmailProvider(
   final String _accountId,

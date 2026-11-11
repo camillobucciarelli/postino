@@ -2,14 +2,8 @@ import '../../domain/message.dart';
 import '../../domain/result.dart';
 import '../json_objects.dart';
 import '../oauth/oauth_failed.dart';
+import 'graph_folder.dart';
 import 'graph_http.dart';
-
-/// A folder of the Account: its Graph [id], its [path] from the top (`Lavoro/Progetti`), and the Etichetta id its
-/// messages carry: the system one (`INBOX`, `SENT`...) for a well-known folder, else the Graph id.
-class const GraphFolder(final String id, final String path, final String labelId) {
-  /// An Etichetta of the user (Archivio too: it has no system id), named by its full path as on IMAP.
-  Label? get label => labelId == id ? Label(id: id, name: path, kind: LabelKind.cartella) : null;
-}
 
 /// The folders of a Microsoft Account (`/me/mailFolders`): the well-known ones by Graph's own names, never by their
 /// display name, which is localized («Posta in arrivo»).
@@ -26,7 +20,7 @@ class GraphFolders(final GraphHttp _graph) {
     'outbox': _outbox,
   };
 
-  /// Not synced, nor what is inside them: Cestino and Posta indesiderata as on IMAP, Posta in uscita being a
+  /// Not synced, nor what is inside them: Cestino and Spam as on IMAP, Posta in uscita being a
   /// transit folder.
   static const _unsynced = {trashLabelId, spamLabelId, _outbox};
 

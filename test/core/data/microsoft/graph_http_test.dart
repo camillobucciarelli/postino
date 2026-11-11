@@ -85,6 +85,59 @@ void main() {
     expect(await _get(t.graph), isA<Ok<Object?>>());
   });
 
+  test('a 503 without Retry-After waits 5 s; a Retry-After over a minute waits a minute', () async {
+    final busy = _graph((_) => graphJson({}, 503));
+    expect(await _get(busy.graph), isErr<RateLimitFailure>());
+    expect(busy.sleeps, [const Duration(seconds: 5)]);
+    final long = _graph((_) => graphJson({}, 429, {'retry-after': '300'}));
+    expect(await _get(long.graph), isErr<RateLimitFailure>());
+    expect(long.sleeps, [const Duration(seconds: 60)]);
+  });
+
+  test('a 401 on the retry after a 429 refreshes the token once more', () async {
+    var calls = 0;
+    final t = _graph(
+      (r) => switch (calls++) {
+        0 => graphFixture('rate_limited'),
+        1 => graphFixture('unauthorized'),
+        _ => graphFixture('folder_inbox'),
+      },
+    );
+    expect(await _get(t.graph), isA<Ok<Object?>>());
+    expect(t.requests.where((r) => r.url.host == tokenHost), hasLength(1));
+  });
+
+  test('a sync state Graph no longer knows is NotFoundFailure, whatever the status', () async {
+    final t = _graph(
+      (_) => graphJson({
+        'error': {'code': 'syncStateInvalid', 'message': 'Invalid sync state.'},
+      }, 400),
+    );
+    expect(await _get(t.graph), isErr<NotFoundFailure>());
+  });
+
+  test('an empty answer (a 204) is an empty object', () async {
+    final t = _graph((_) => http.Response('', 204));
+    expect(okValue(await oauthGuard(() async => Ok(await t.graph.send('DELETE', 'mailFolders/x')))), isEmpty);
+  });
+
+  test('a request that stalls is OfflineFailure and its connection is aborted', () async {
+    final aborted = Completer<void>();
+    final graph = GraphHttp(
+      graphAccount,
+      graphKeychain(),
+      MockClient.streaming((r, _) async {
+        unawaited((r as http.Abortable).abortTrigger!.then((_) => aborted.complete()));
+        return Completer<http.StreamedResponse>().future;
+      }),
+      FakeClock(graphNow),
+      client: graphTestClient,
+      timeout: const Duration(milliseconds: 10),
+    );
+    expect(await _get(graph), isErr<OfflineFailure>());
+    await aborted.future;
+  });
+
   test('no network is an OfflineFailure', () async {
     final t = _graph((_) => throw http.ClientException('Failed host lookup'));
     expect(await _get(t.graph), isErr<OfflineFailure>());

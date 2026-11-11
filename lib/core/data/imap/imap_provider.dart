@@ -10,6 +10,7 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../message_id_of.dart';
 import '../mime.dart';
 import 'imap_actions.dart';
 import 'imap_bodies.dart';

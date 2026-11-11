@@ -37,7 +37,13 @@ MailProvider providerFor(Account account) {
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
           appendToSent: appendsToSent(account.provider),
         ),
-        ProviderKind.microsoft => MicrosoftProvider(account.id, g(), g(), g()),
+        ProviderKind.microsoft => MicrosoftProvider(
+          account.id,
+          g(),
+          g(),
+          g(),
+          messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
+        ),
       },
       instanceName: account.id,
       // An IMAP adapter holds a connection (and IDLE): logged out when the Account is removed.

@@ -1,7 +1,7 @@
 // The Azioni on servers GreenMail is not (2.1.15 announces MOVE and UIDPLUS, no CONDSTORE): recorded responses.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/data/imap/imap_actions.dart' show MessageIdOf;
 import 'package:postino/core/data/imap/imap_provider.dart';
+import 'package:postino/core/data/message_id_of.dart';
 import 'package:postino/core/domain/action_outcome.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/result.dart';

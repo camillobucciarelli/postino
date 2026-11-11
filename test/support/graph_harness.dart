@@ -8,6 +8,7 @@ import 'package:postino/core/data/microsoft/microsoft_provider.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/result.dart';
 
 import '../core/domain/mail_provider_contract.dart';
 import 'fake_platform.dart';
@@ -15,7 +16,8 @@ import 'graph_recorded.dart';
 
 typedef _Folder = ({String name, String? parent, String? wellKnown});
 
-class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
+/// [hasArchive]: whether the mailbox has Graph's `archive` folder, which appears (as Outlook.com's does) with the first move.
+class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}) extends ContractHarness {
   this : keychain = graphKeychain(access: access);
 
   final FakeSecureStore keychain;
@@ -47,6 +49,9 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
 
   /// Each message and the folder it is in.
   final _mailbox = <String, (Message, String)>{};
+
+  /// How many times each message changed: its `@odata.etag`.
+  final _versions = <String, int>{};
 
   /// Every change, in order: (sequence number, folder id, message id); a folder change has no message id.
   final _log = <(int, String, String?)>[];
@@ -90,10 +95,18 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     final folder = _folderOf(m);
     final was = _mailbox[m.id]?.$2;
     _mailbox[m.id] = (m, folder);
+    _versions[m.id] = (_versions[m.id] ?? 0) + 1;
     _seq++;
     if (was != null && was != folder) _log.add((_seq, was, m.id));
     _log.add((_seq, folder, m.id));
   }
+
+  /// The message as it is in Posta eliminata too, which the sync does not read: its Conversazione does.
+  @override
+  Future<Message> current(String key) async => switch (await provider.fetchConversation('t-$key')) {
+    Ok(:final value) => value.singleWhere((m) => m.messageId == '<$key@example.com>'),
+    Err(:final failure) => throw StateError('$failure'),
+  };
 
   @override
   void removeRemotely(String id) {
@@ -161,7 +174,9 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       ['mailFolders', 'delta'] => _folderDelta(q),
       ['mailFolders', final id, 'childFolders'] => _children(id),
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
-      ['messages'] => _conversation(q),
+      ['messages'] => _find(q),
+      ['messages', final id] when r.method == 'PATCH' => _patch(id, r),
+      ['messages', final id, 'move'] => _move(id, (jsonDecode(r.body) as Map<String, dynamic>)['destinationId']),
       ['messages', final id, 'attachments'] => _attachmentList(id),
       ['messages', final id, 'attachments', final att, r'$value'] => switch (_file(id, att)) {
         (_, _, final bytes)? => http.Response.bytes(bytes, 200),
@@ -203,12 +218,61 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
         })
       : graphFixture('not_found');
 
-  /// `conversationId eq '<id>'` over every folder, in pages of [_page].
-  http.Response _conversation(Map<String, String> q) {
-    final id = RegExp(r"^conversationId eq '(.*)'$").firstMatch(q[r'$filter'] ?? '')![1]!.replaceAll("''", "'");
+  /// A write of `isRead` or `flag`, honouring `If-Match`: another etag is a 412, nothing written.
+  http.Response _patch(String id, http.Request r) {
+    final (m, folder) = _mailbox[id] ?? (null, '');
+    if (m == null) return graphFixture('not_found');
+    if (r.headers['if-match'] case final etag? when etag != _etag(id)) return graphFixture('precondition_failed');
+    final body = jsonDecode(r.body) as Map<String, dynamic>;
+    final starred = body['flag'] == null ? m.isStarred : (body['flag'] as Map)['flagStatus'] == 'flagged';
+    deliver(_changed(m, isRead: body['isRead'] as bool? ?? m.isRead, starred: starred, folder: folder));
+    return graphJson(_item(_mailbox[id]!.$1, folder, '', false));
+  }
+
+  /// A move to a folder id or a well-known name (`archive` appears with its first use); the id stays.
+  http.Response _move(String id, Object? destination) {
+    final (m, _) = _mailbox[id] ?? (null, '');
+    if (m == null) return graphFixture('not_found');
+    if (destination == 'archive' && hasArchive && !_folders.containsKey('f-archive')) {
+      _folders['f-archive'] = (name: 'Archivio', parent: null, wellKnown: 'archive');
+      _log.add((++_seq, 'f-archive', null));
+    }
+    final to = _folders.entries.where((f) => f.key == destination || f.value.wellKnown == destination).firstOrNull;
+    if (to == null) return graphFixture('not_found');
+    deliver(_changed(m, isRead: m.isRead, starred: m.isStarred, folder: to.key));
+    return graphJson(_item(_mailbox[id]!.$1, to.key, '', false), 201);
+  }
+
+  String _etag(String id) => 'W/"change-key-${_versions[id]}"';
+
+  /// [m] with new flags, in [folder]: the Etichette are its folder's and the Stella.
+  Message _changed(Message m, {required bool isRead, required bool starred, required String folder}) {
+    final label = _system.entries.where((e) => e.value == folder).map((e) => e.key).firstOrNull ?? folder;
+    return Message(
+      id: m.id,
+      messageId: m.messageId,
+      conversationId: m.conversationId,
+      labelIds: [label, if (starred) starredLabelId],
+      isRead: isRead,
+      isStarred: starred,
+      from: m.from,
+      fromName: m.fromName,
+      to: m.to,
+      cc: m.cc,
+      bcc: m.bcc,
+      subject: m.subject,
+      snippet: m.snippet,
+      date: m.date,
+    );
+  }
+
+  /// `conversationId eq '<id>'` or `internetMessageId eq '<id>'` over every folder, in pages of [_page].
+  http.Response _find(Map<String, String> q) {
+    final filter = RegExp(r"^(conversationId|internetMessageId) eq '(.*)'$").firstMatch(q[r'$filter'] ?? '')!;
+    final id = filter[2]!.replaceAll("''", "'");
     final all = [
       for (final MapEntry(:value) in _mailbox.entries)
-        if (value.$1.conversationId == id) value,
+        if ((filter[1] == 'conversationId' ? value.$1.conversationId : value.$1.messageId) == id) value,
     ];
     final offset = int.tryParse(q[r'$skiptoken'] ?? '') ?? 0;
     return graphJson({
@@ -318,7 +382,8 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     });
   }
 
-  static Map<String, Object?> _item(Message m, String folder, String select, bool attached) => {
+  Map<String, Object?> _item(Message m, String folder, String select, bool attached) => {
+    '@odata.etag': _etag(m.id),
     'id': m.id,
     'internetMessageId': m.messageId,
     'conversationId': m.conversationId,

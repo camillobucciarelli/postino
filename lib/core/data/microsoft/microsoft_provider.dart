@@ -7,15 +7,20 @@ import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../message_id_of.dart';
 import '../oauth/oauth_failed.dart';
 import '../oauth/oauth_guard.dart';
+import 'graph_actions.dart';
 import 'graph_bodies.dart';
 import 'graph_conversations.dart';
 import 'graph_cursor.dart';
 import 'graph_delta.dart';
+import 'graph_flags.dart';
 import 'graph_folders.dart';
 import 'graph_http.dart';
+import 'graph_lookup.dart';
 import 'graph_message_parser.dart';
+import 'graph_moves.dart';
 import 'microsoft_client.dart';
 
 /// Microsoft Graph adapter (ADR 0002) for a personal Outlook.com Account: folders are Etichette
@@ -28,10 +33,13 @@ class MicrosoftProvider(
   final Clock _clock, {
   MicrosoftClient client = const MicrosoftClient.fromEnvironment(),
   Future<void> Function(Duration) sleep = Future<void>.delayed,
+
+  /// The Message-ID of a message by its Graph id, from the app's cache: how an Azione finds a message whose id is gone.
+  final MessageIdOf? _messageIdOf,
 }) implements MailProvider {
   this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: sleep);
 
-  // ponytail: Azioni (T4), sending and Bozze (T5).
+  // ponytail: sending and Bozze (T5).
   static const _unsupported = Err<Never>(UnexpectedFailure('Microsoft: not available yet'));
 
   final GraphHttp _graph;
@@ -39,6 +47,14 @@ class MicrosoftProvider(
   late final _delta = GraphDelta(_graph);
   late final _bodies = GraphBodies(_graph);
   late final _conversations = GraphConversations(_graph, _folders);
+  late final _lookup = GraphLookup(_graph);
+  late final _actions = GraphActions(
+    _folders,
+    _lookup,
+    GraphFlags(_graph),
+    GraphMoves(_graph, _folders, _lookup),
+    _messageIdOf ?? (_) async => null,
+  );
 
   @override
   Future<Result<void>> refreshAuth() => oauthGuard(() async {
@@ -140,8 +156,8 @@ class MicrosoftProvider(
       oauthGuard(() async => Ok(await _conversations.fetch(conversationId)));
 
   @override
-  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) async =>
-      _unsupported;
+  Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) =>
+      oauthGuard(() async => Ok(await _actions.apply(messageId, action, expected)));
 
   @override
   Future<Result<AttachmentBytes>> fetchAttachment(

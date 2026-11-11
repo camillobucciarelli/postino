@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postino/core/data/message_id_of.dart';
 import 'package:postino/core/data/microsoft/microsoft_client.dart';
 import 'package:postino/core/data/microsoft/microsoft_provider.dart';
 import 'package:postino/core/data/oauth/oauth_tokens.dart';
@@ -56,7 +57,7 @@ String graphPath(http.Request r) =>
     r.url.path.substring(graphApi.length).replaceAllMapped(RegExp(r"\('([^']*)'\)"), (m) => '/${m[1]}');
 
 /// Graph answering each request with the recorded response `route` gives; the token endpoint refreshes.
-class RecordedGraph(http.Response Function(http.Request r, String path) route) {
+class RecordedGraph(http.Response Function(http.Request r, String path) route, {MessageIdOf? messageIdOf}) {
   this {
     provider = MicrosoftProvider(
       graphAccount,
@@ -69,6 +70,7 @@ class RecordedGraph(http.Response Function(http.Request r, String path) route) {
       FakeClock(graphNow),
       client: graphTestClient,
       sleep: (d) async => sleeps.add(d),
+      messageIdOf: messageIdOf,
     );
   }
 

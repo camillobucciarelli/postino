@@ -91,7 +91,9 @@ class AccountsService(
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
     final normalized = address.trim().toLowerCase();
-    final provider = passwordProviderFor(normalized);
+    // An IMAP Account saved before the Microsoft button (an Outlook.com address) still reconnects with its password.
+    final legacy = (await _store.accounts()).any((a) => a.id == 'imap:$normalized');
+    final provider = passwordProviderFor(normalized) ?? (legacy ? const PasswordProvider(ProviderKind.imap) : null);
     if (provider == null) {
       return Err(
         oauthProviderFor(normalized) == ProviderKind.microsoft ? const UseMicrosoftFailure() : const UseGmailFailure(),

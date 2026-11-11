@@ -42,11 +42,13 @@ const _oauthDomains = {
 
 /// The Provider whose own button [address] (already trimmed and lower case) connects with, or null when the
 /// password form does: a Gmail or Microsoft address.
-ProviderKind? oauthProviderFor(String address) => _oauthDomains[address.substring(address.lastIndexOf('@') + 1)];
+ProviderKind? oauthProviderFor(String address) => _oauthDomains[_domain(address)];
+
+String _domain(String address) => address.substring(address.lastIndexOf('@') + 1);
 
 /// The Provider of the password Account [address] (already trimmed and lower case); null for an address of
 /// [oauthProviderFor]. Any other domain is a generic IMAP server.
 PasswordProvider? passwordProviderFor(String address) {
   if (oauthProviderFor(address) != null) return null;
-  return _byDomain[address.substring(address.lastIndexOf('@') + 1)] ?? const PasswordProvider(ProviderKind.imap);
+  return _byDomain[_domain(address)] ?? const PasswordProvider(ProviderKind.imap);
 }

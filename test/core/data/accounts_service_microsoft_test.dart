@@ -4,6 +4,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/main.dart';
 
@@ -41,7 +42,9 @@ void main() {
     ].join('|');
     expect(stored, contains('ada@outlook.com'), reason: 'the Account is there');
     expect(stored, isNot(contains('token')));
-    expect(await h.errorLog.read(), isNot(contains('token')), reason: 'nor in the log of errors');
+    final log = await h.errorLog.read();
+    expect(log, isNot(contains('ms-access-token')), reason: 'nor in the log of errors');
+    expect(log, isNot(contains('ms-refresh-token')));
   });
 
   test('every failure of the consent writes nothing', () async {
@@ -136,4 +139,29 @@ void main() {
     expect(h.keychain.values, isEmpty);
     expect(await getIt<MailStore>().accounts(), isEmpty);
   });
+
+  test(
+    'an IMAP Account saved on an Outlook.com address before the button still reconnects with its password',
+    () async {
+      await getIt<MailStore>().addAccount(
+        const Account(
+          id: 'imap:ada@outlook.com',
+          address: 'ada@outlook.com',
+          provider: ProviderKind.imap,
+          color: 0,
+          position: 0,
+        ),
+      );
+      h.discovery.servers['ada@outlook.com'] = const ServerSettings(
+        imap: MailServer(host: 'imap.example.org', port: 993, security: ServerSecurity.ssl),
+        smtp: MailServer(host: 'smtp.example.org', port: 465, security: ServerSecurity.ssl),
+      );
+      await getIt<MailStore>().setStatus('imap:ada@outlook.com', AccountStatus.daRicollegare);
+
+      final r = await accounts.connectWithPassword('ada@outlook.com', 'app-password-1');
+
+      expect(r, isA<Ok<Account>>());
+      expect((await getIt<MailStore>().accounts()).single.status, AccountStatus.attivo);
+    },
+  );
 }

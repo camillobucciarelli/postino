@@ -47,7 +47,13 @@ Future<Result<AuthorizationCode>> authorizeInBrowser({
     ).queryParameters;
     if (callback['state'] != state) return const Err(UnexpectedFailure('OAuth state mismatch'));
     final code = callback['code'];
-    if (code == null) return const Err(CancelledFailure()); // access_denied
+    if (code == null) {
+      // access_denied is the user backing out; any other error is a failure to show (a misregistered redirect, say).
+      final error = callback['error'];
+      return error == null || error == 'access_denied'
+          ? const Err(CancelledFailure())
+          : Err(UnexpectedFailure('OAuth error: $error'));
+    }
     return Ok(AuthorizationCode(code: code, verifier: verifier, redirect: redirect));
   } on PlatformException catch (e) {
     return e.code == 'CANCELED' ? const Err(CancelledFailure()) : Err(UnexpectedFailure(e));

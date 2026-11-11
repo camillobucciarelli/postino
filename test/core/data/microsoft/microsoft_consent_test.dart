@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -87,7 +88,10 @@ void main() {
       'redirect_uri': q['redirect_uri'],
       'client_id': _client.id,
     });
-    expect(exchange.bodyFields['code_verifier'], isNotEmpty);
+    // PKCE: the challenge sent to the browser is the S256 of the verifier sent to the token endpoint.
+    final verifier = exchange.bodyFields['code_verifier']!;
+    expect(verifier.length, greaterThanOrEqualTo(43));
+    expect(q['code_challenge'], base64Url.encode(sha256.convert(ascii.encode(verifier)).bytes).replaceAll('=', ''));
   });
 
   test('IMAP.AccessAsUser.All is not asked: polling only for Microsoft in v1', () async {
@@ -137,6 +141,29 @@ void main() {
       browser: (u) => '${u.queryParameters['redirect_uri']}?state=${u.queryParameters['state']}&error=access_denied',
     ).run();
     expect(r, failsWith<CancelledFailure>());
+  });
+
+  test('any other error of the callback is a failure, not the user backing out', () async {
+    final r = await consent(
+      browser: (u) => '${u.queryParameters['redirect_uri']}?state=${u.queryParameters['state']}&error=invalid_request',
+    ).run();
+    expect(r, failsWith<UnexpectedFailure>());
+    expect(requests, isEmpty);
+  });
+
+  test('scopes returned with the Graph prefix, in any case, are the same permissions', () async {
+    token = 'token_exchange_graph_scopes';
+    expect(await consent().run(), isA<Ok<OAuthGrant>>());
+  });
+
+  test('a token response without a refresh token is a Failure', () async {
+    token = 'token_exchange_no_refresh';
+    expect(await consent().run(), failsWith<UnexpectedFailure>());
+  });
+
+  test('an id_token with neither email nor preferred_username is a Failure', () async {
+    token = 'token_exchange_no_address';
+    expect(await consent().run(), failsWith<UnexpectedFailure>());
   });
 
   test('a callback with another state is refused, no code exchanged', () async {

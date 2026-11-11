@@ -124,7 +124,12 @@ void main() {
       await tester.pump();
       expect(_focusedIn(find.widgetWithText(PostinoButton, label)), isTrue, reason: label);
       if (label == 'Collega Outlook') {
-        // Enter on it: the consent runs.
+        // Space and Enter on it run the consent (the first one fails, so the screen stays).
+        h.microsoft.failure = const OfflineFailure();
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Nessuna connessione'), findsOneWidget);
+        h.microsoft.failure = null;
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pumpAndSettle();
         expect(h.microsoft.runs, 1);

@@ -146,7 +146,8 @@ class GraphHttp(
       final bytes = await http.ByteStream(
         streamed.stream.timeout(_timeout).map((chunk) {
           read += chunk.length;
-          if (total > 0) onProgress?.call(min(1, read / total));
+          // Only an answer that is the file: an error body would restart the progress at the retry.
+          if (total > 0 && streamed.statusCode < 300) onProgress?.call(min(1, read / total));
           return chunk;
         }),
       ).toBytes();

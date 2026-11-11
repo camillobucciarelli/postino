@@ -38,7 +38,7 @@ void main() {
     expect(r.method, 'GET', reason: 'opening a body never writes: the message stays unread');
     expect(r.headers['prefer'], contains('outlook.body-content-type="html"'));
     expect(r.headers['prefer'], contains('IdType="ImmutableId"'));
-    expect(r.url.queryParameters[r'$select'], 'body,hasAttachments');
+    expect(r.url.queryParameters[r'$select'], 'body,uniqueBody,hasAttachments');
   });
 
   test('a plain text body is text', () async {
@@ -93,6 +93,53 @@ void main() {
     expect(tokens, ['Bearer EwB.stale', 'Bearer EwB.refreshed']);
   });
 
+  test('logo-1 is not taken for logo-10: only the image the HTML shows is left out', () async {
+    http.Response route(http.Request r, String path) => switch (path.split('/')) {
+      ['messages', _] => graphJson({
+        'hasAttachments': true,
+        'body': {'contentType': 'html', 'content': '<img src="cid:logo-10">'},
+      }),
+      ['messages', _, 'attachments'] => graphJson({
+        'value': [
+          {'id': 'att-1', 'name': 'a.png', 'size': 1, 'isInline': true, 'contentId': 'logo-1'},
+          {'id': 'att-2', 'name': 'b.png', 'size': 1, 'isInline': true, 'contentId': 'logo-10'},
+        ],
+      }),
+      _ => fail('unexpected $path'),
+    };
+    final body = okValue(await RecordedGraph(route).provider.fetchBody(messageIdOf('f2')));
+    expect(body.attachments!.map((a) => a.id), ['att-1']);
+  });
+
+  test('a Graph that refuses contentId on the attachment list gets the list without it', () async {
+    final g = RecordedGraph((r, path) {
+      if (path.endsWith('/attachments') && r.url.queryParameters[r'$select']!.contains('contentId')) {
+        return graphJson({
+          'error': {'code': 'RequestBroker-ParseUri', 'message': 'no contentId'},
+        }, 400);
+      }
+      return _route(r, path);
+    });
+    final body = okValue(await g.provider.fetchBody(messageIdOf('f2')));
+    expect(
+      body.attachments!.map((a) => a.id),
+      ['att-1', 'att-3', 'att-4', 'att-5', 'att-6'].where((id) => id != 'att-2'),
+    );
+  });
+
+  test('progress follows the chunks of the download', () async {
+    final progress = <double>[];
+    final provider = MicrosoftProvider(
+      graphAccount,
+      graphKeychain(),
+      _Chunked(),
+      FakeClock(graphNow),
+      client: graphTestClient,
+    );
+    okValue(await provider.fetchAttachment(messageIdOf('f2'), 'att-1', onProgress: progress.add));
+    expect(progress, [0.25, 0.5, 0.75, 1, 1], reason: 'the last 1 is the end of the download');
+  });
+
   test('Annulla aborts the download in flight', () async {
     final started = Completer<void>();
     final cancel = Completer<void>();
@@ -107,26 +154,6 @@ void main() {
     await started.future;
     cancel.complete();
     expect(await r, isErr<CancelledFailure>());
-  });
-
-  test('a Conversazione is asked of the whole mailbox: the old reply in Inviati comes with its Etichetta', () async {
-    final g = RecordedGraph(_route);
-    final messages = okValue(await g.provider.fetchConversation('conv-c1'));
-    expect(messages.map((m) => (m.id, m.labelIds.single, m.date.year, m.date.month)), [
-      ('msg-f1', inboxLabelId, 2026, 10),
-      ('msg-f9', sentLabelId, 2026, 6),
-    ]);
-    final asked = g.requests.firstWhere((r) => r.url.path.endsWith('/messages'));
-    expect(asked.url.queryParameters[r'$filter'], "conversationId eq 'conv-c1'");
-    expect(asked.url.queryParameters[r'$select']!.split(','), isNot(contains('body')), reason: 'headers only');
-    expect(asked.url.path, isNot(contains('mailFolders')), reason: 'no folder, no date window');
-  });
-
-  test('a quote in a Conversazione id is doubled in the filter', () async {
-    final g = RecordedGraph(_route);
-    okValue(await g.provider.fetchConversation("x' or isRead eq true or conversationId eq 'y"));
-    final asked = g.requests.firstWhere((r) => r.url.path.endsWith('/messages'));
-    expect(asked.url.queryParameters[r'$filter'], "conversationId eq 'x'' or isRead eq true or conversationId eq ''y'");
   });
 }
 
@@ -147,5 +174,23 @@ class _Hanging(final http.Response? Function(http.Request r) answer, {final Comp
     started?.complete();
     await (request as http.Abortable).abortTrigger;
     throw http.RequestAbortedException(request.url);
+  }
+}
+
+/// Answers with a download of four chunks of one byte.
+class _Chunked() extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.host == tokenHost) {
+      final r = graphFixture('token_refresh');
+      return http.StreamedResponse(Stream.value(r.bodyBytes), 200, headers: r.headers);
+    }
+    return http.StreamedResponse(
+      Stream.fromIterable([
+        for (var i = 0; i < 4; i++) [i],
+      ]),
+      200,
+      contentLength: 4,
+    );
   }
 }

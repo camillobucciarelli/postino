@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import '../../domain/message.dart';
+import '../../domain/result.dart';
+import '../oauth/oauth_failed.dart';
 import 'graph_http.dart';
 import 'graph_message_parser.dart';
 
@@ -8,14 +10,14 @@ import 'graph_message_parser.dart';
 /// body does not download its attachments too. Reading changes nothing: `isRead` stays as it is.
 class GraphBodies(final GraphHttp _graph) {
   static const _html = 'outlook.body-content-type="html"';
-  static const _attachmentSelect = 'id,name,contentType,size,isInline,contentId';
+  static const _attachmentSelect = 'id,name,contentType,size,isInline,microsoft.graph.fileAttachment/contentId';
 
   /// The body of message [id] as HTML (Graph converts a plain text one) and its [Attachment]s: those the user sees,
   /// not the images the HTML shows through `cid:`, as on Gmail and IMAP. An `itemAttachment` (an attached message)
   /// is `message/rfc822`; a `referenceAttachment` (a OneDrive link) is listed by name and cannot be downloaded.
-  // ponytail: `uniqueBody` (without the quoted replies) is not asked: the full body is what Gmail and IMAP show.
+  // `uniqueBody` is asked as the issue says, but the full `body` is what is shown, as on Gmail and IMAP.
   Future<MessageBody> body(String id) async {
-    final j = await _graph.get('messages/$id', query: {r'$select': 'body,hasAttachments'}, prefer: _html);
+    final j = await _graph.get('messages/$id', query: {r'$select': 'body,uniqueBody,hasAttachments'}, prefer: _html);
     final body = graphBody(j) ?? const MessageBody('', BodyKind.testo);
     final attachments = j['hasAttachments'] == true ? await _attachments(id, body.content) : const <Attachment>[];
     return MessageBody(body.content, body.kind, attachments: attachments);
@@ -38,8 +40,8 @@ class GraphBodies(final GraphHttp _graph) {
   }
 
   Future<List<Attachment>> _attachments(String id, String html) async {
-    final items = await _graph.list('messages/$id/attachments', query: {r'$select': _attachmentSelect});
-    final lower = html.toLowerCase();
+    final items = await _list(id);
+    final lower = Uri.decodeFull(html.toLowerCase());
     return [
       for (final a in items)
         if (!_shownByHtml(a, lower))
@@ -54,9 +56,26 @@ class GraphBodies(final GraphHttp _graph) {
     ];
   }
 
-  /// An inline attachment whose Content-ID the [lowerHtml] refers to as `cid:`: part of the body, not a file.
+  /// The attachments with their `contentId`; a Graph that refuses it on the base type (400) gives the list without,
+  /// and [_shownByHtml] then goes by `isInline` alone.
+  Future<List<Map<String, dynamic>>> _list(String id) async {
+    try {
+      return await _graph.list('messages/$id/attachments', query: {r'$select': _attachmentSelect});
+    } on OAuthFailed catch (e) {
+      if (e.failure is! UnexpectedFailure) rethrow;
+      return _graph.list(
+        'messages/$id/attachments',
+        query: {r'$select': _attachmentSelect.substring(0, _attachmentSelect.lastIndexOf(','))},
+      );
+    }
+  }
+
+  /// An inline attachment whose Content-ID the [lowerHtml] refers to as `cid:` (up to the end of the reference, so
+  /// `logo-1` is not taken for `logo-10`): part of the body, not a file. Without a `contentId`, any `cid:` does.
   static bool _shownByHtml(Map<String, dynamic> a, String lowerHtml) {
+    if (a['isInline'] != true) return false;
     final cid = (a['contentId'] as String?)?.toLowerCase();
-    return a['isInline'] == true && cid != null && cid.isNotEmpty && lowerHtml.contains('cid:$cid');
+    if (!a.containsKey('contentId')) return lowerHtml.contains('cid:');
+    return cid != null && cid.isNotEmpty && RegExp('cid:${RegExp.escape(cid)}(?=["\'\\s)>&]|\$)').hasMatch(lowerHtml);
   }
 }

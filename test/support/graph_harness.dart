@@ -106,6 +106,14 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     _log.add((++_seq, id, null));
   }
 
+  /// A search folder of another client (unread mail, say): it shows the messages of every folder, ids unchanged.
+  void createSearchFolderElsewhere(String id, String name) {
+    _search.add(id);
+    createFolderElsewhere(id, name);
+  }
+
+  final _search = <String>{};
+
   /// A folder deleted by another client: Outlook moves it, with its messages, into Posta eliminata.
   void deleteFolderElsewhere(String id) {
     final f = _folders[id]!;
@@ -171,6 +179,7 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
       'displayName': f.name,
       'parentFolderId': f.parent ?? 'f-root',
       'childFolderCount': _folders.values.where((c) => c.parent == id).length,
+      if (_search.contains(id)) '@odata.type': '#microsoft.graph.mailSearchFolder',
     };
   }
 
@@ -227,7 +236,8 @@ class GraphHarness({String access = 'EwB.initial'}) extends ContractHarness {
     final ids = from < 0
         ? ([
             for (final MapEntry(:key, :value) in _mailbox.entries)
-              if (value.$2 == folder && !(since != null && value.$1.date.isBefore(since))) (key, value.$1.date),
+              if ((value.$2 == folder || _search.contains(folder)) && !(since != null && value.$1.date.isBefore(since)))
+                (key, value.$1.date),
           ]..sort((a, b) => b.$2.compareTo(a.$2))).map((e) => e.$1).toList()
         : <String>{
             for (final (seq, f, message) in _log)

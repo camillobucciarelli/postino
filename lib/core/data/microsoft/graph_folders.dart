@@ -39,7 +39,7 @@ class GraphFolders(final GraphHttp _graph) {
       for (final f in await _graph.list(path, query: _query)) {
         final id = f['id'] as String;
         final labelId = system[id] ?? id;
-        if (_unsynced.contains(labelId)) continue;
+        if (_unsynced.contains(labelId) || isSearchFolder(f)) continue;
         final name = f['displayName'] as String? ?? '';
         final folderPath = parentId == null ? name : '$parentPath/$name';
         out.add(GraphFolder(id, folderPath, labelId));
@@ -50,6 +50,10 @@ class GraphFolders(final GraphHttp _graph) {
     await walk(null, '');
     return [...out.where((f) => f.labelId == inboxLabelId), ...out.where((f) => f.labelId != inboxLabelId)];
   }
+
+  /// A search folder (`mailSearchFolder`, a derived type: OData annotates it with `@odata.type` whatever `$select`
+  /// asks) holds no message of its own, only views of messages that live in another folder, with the same ids.
+  static bool isSearchFolder(Map<String, dynamic> f) => f['@odata.type'] == '#microsoft.graph.mailSearchFolder';
 
   /// The folder delta from [link] (from scratch when null) to its end: whether any folder came, changed or went,
   /// and the `@odata.deltaLink` of the next round.
@@ -83,7 +87,7 @@ class GraphFolders(final GraphHttp _graph) {
     for (final f in await _graph.list('mailFolders', query: _query)) {
       final id = f['id'] as String;
       final display = f['displayName'] as String? ?? '';
-      if (!system.containsKey(id) && display.toLowerCase() == name.toLowerCase()) {
+      if (!system.containsKey(id) && !isSearchFolder(f) && display.toLowerCase() == name.toLowerCase()) {
         return Label(id: id, name: display, kind: LabelKind.cartella);
       }
     }

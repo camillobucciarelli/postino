@@ -62,6 +62,16 @@ void main() {
     },
   );
 
+  test('a search folder is no Etichetta and leaves the Etichette of the messages it shows as they are', () async {
+    final h = GraphHarness()
+      ..createSearchFolderElsewhere('f-unread', 'Da leggere')
+      ..deliver(msg('a'));
+    final batch = okValue(await h.provider.initialSync());
+    expect(batch.labels!.map((l) => l.id), [h.viaggiId]);
+    expect(batch.messages.single.labelIds, [inboxLabelId]);
+    expect(h.requests.where((r) => r.url.path.contains('f-unread')), isEmpty);
+  });
+
   test('only the last 90 days are synced', () async {
     final h = GraphHarness()
       ..deliver(msg('old', date: GraphHarness.now.subtract(const Duration(days: 91))))

@@ -76,21 +76,20 @@ void main() {
     );
   });
 
-  group('a Bozza left pending by the app (no cross-isolate claim on its upload)', () {
-    setUp(() => getIt<OutboxRepository>().saveDraft('a', _draft, updatedAt: 0));
+  test('without the replay (a background engine not owning the sync yet): queued and applied here only', () async {
+    await useCase.run((conversation: _t, action: NotificationAction.archive), replay: false);
 
-    test('from the background engine only the Azioni go to the Provider: the Bozza stays with the app', () async {
-      await useCase.run((conversation: _t, action: NotificationAction.archive), background: true);
+    expect(valueOf((await here()).last, placementAttribute), Placement.archive);
+    expect(await queued(), hasLength(1));
+    expect(a.actionCalls, isEmpty);
+    expect(h.notifications.visible['a'], isEmpty);
+  });
 
-      expect([for (final c in a.actionCalls) c.$1], ['2']);
-      expect(a.draftCalls, isEmpty);
-    });
+  test("in the app's isolate the replay takes a pending Bozza along, as every Azione's does", () async {
+    await getIt<OutboxRepository>().saveDraft('a', _draft, updatedAt: 0);
+    await useCase.run((conversation: _t, action: NotificationAction.archive));
 
-    test("in the app's isolate the replay takes it along, as every Azione's does", () async {
-      await useCase.run((conversation: _t, action: NotificationAction.archive));
-
-      expect(a.draftCalls, hasLength(1));
-    });
+    expect(a.draftCalls, hasLength(1));
   });
 
   test('Da ricollegare: the Azione waits in the queue, no replay', () async {

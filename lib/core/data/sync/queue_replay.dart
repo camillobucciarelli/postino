@@ -29,8 +29,8 @@ class QueueReplay(
   }
 
   /// [run] in the Account's turn, unless its queue may not go to the Provider now.
-  /// With [actionsOnly] (a notification's button in the background engine, #211) only the Azioni go: the Bozze have
-  /// no cross-isolate claim and the outbox is the app's or WorkManager's.
+  /// With [actionsOnly] (`MailSync.replayActions`, #211) only the Azioni go: the Bozze have no cross-isolate claim and
+  /// the outbox is the app's or WorkManager's.
   Future<void> ifActive(
     String accountId, {
     bool flush = false,

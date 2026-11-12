@@ -495,8 +495,10 @@ class _TooBig(
   @override
   Future<Result<Label>> createLabel(String a, String name) => real.createLabel(a, name);
   @override
-  Future<void> act(String a, Iterable<String> m, MailAction action, {Duration? hold, bool actionsOnly = false}) =>
-      real.act(a, m, action, hold: hold, actionsOnly: actionsOnly);
+  Future<void> act(String a, Iterable<String> m, MailAction action, {Duration? hold, bool replay = true}) =>
+      real.act(a, m, action, hold: hold, replay: replay);
+  @override
+  Future<void> replayActions(String a) => real.replayActions(a);
   @override
   Future<bool> cancelAction(String a, Iterable<String> m, MailAction action) => real.cancelAction(a, m, action);
   @override

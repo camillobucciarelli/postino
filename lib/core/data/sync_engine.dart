@@ -230,7 +230,7 @@ class SyncEngine(
     Iterable<String> messageIds,
     MailAction action, {
     Duration? hold,
-    bool actionsOnly = false,
+    bool replay = true,
   }) async {
     // Applied here at once: a Conversazione left with nothing unread in the inbox loses its notification (#210).
     final conversations = await _cleanup.conversationsOf(accountId, messageIds);
@@ -238,7 +238,8 @@ class SyncEngine(
       await _store.queue(accountId, messageIds, action);
       _cleanInQueue(accountId, conversations);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
-      return _replay.ifActive(accountId, actionsOnly: actionsOnly);
+      if (!replay) return;
+      return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
     _cleanInQueue(accountId, conversations);
@@ -254,6 +255,9 @@ class SyncEngine(
   /// In the Account's queue, after any sync running: its notifications and this cleanup never interleave.
   void _cleanInQueue(String accountId, Set<String> conversations) =>
       unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, conversations)));
+
+  @override
+  Future<void> replayActions(String accountId) => _replay.ifActive(accountId, actionsOnly: true);
 
   @override
   Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>

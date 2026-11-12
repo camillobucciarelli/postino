@@ -13,6 +13,7 @@ import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
+import 'core/data/background_notification_action.dart';
 import 'core/data/background_send.dart';
 import 'core/data/background_sync.dart';
 import 'core/data/error_log/uncaught_errors.dart';
@@ -93,21 +94,11 @@ Future<void> notificationActionDispatcher(NotificationResponse response) async {
     debugPrint('[notifiche] ${tap.conversation.accountId}: background setup failed, ${e.runtimeType}');
     return;
   }
-  await _runAction(tap, background: true);
+  await runNotificationActionTask(tap);
 }
 
 /// The DI of the background engine of [notificationActionDispatcher], wired at its first tap.
 Future<void>? _backgroundDependencies;
-
-/// [tap]'s Azione; from the [background] engine only the Azioni reach the Provider.
-Future<void> _runAction(NotificationActionTap tap, {bool background = false}) async {
-  try {
-    await getIt<NotificationActionUseCase>().run(tap, background: background);
-  } on Object catch (e) {
-    // The type only: the error may quote the message.
-    debugPrint('[notifiche] ${tap.conversation.accountId}: action failed, ${e.runtimeType}');
-  }
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -157,7 +148,12 @@ Future<void> _runNotificationAction(NotificationActionTap tap) async {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     await getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e'));
   }
-  await _runAction(tap);
+  try {
+    await getIt<NotificationActionUseCase>().run(tap);
+  } on Object catch (e) {
+    // The type only: the error may quote the message.
+    debugPrint('[notifiche] ${tap.conversation.accountId}: action failed, ${e.runtimeType}');
+  }
 }
 
 /// Desktop (#38): the avvio al login on by default, then the tray. Neither failing keeps Postino from running.

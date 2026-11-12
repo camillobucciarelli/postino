@@ -20,16 +20,16 @@ class NotificationActionUseCase(
   /// Lega la coda delle Azioni alle notifiche.
   this;
 
-  /// Runs [tap]; completes once the Azione is applied here and its replay ended (or could not start). From the
-  /// [background] engine only the Azioni go to the Provider: the Bozze have no claim across isolates.
-  Future<void> run(NotificationActionTap tap, {bool background = false}) async {
+  /// Runs [tap]; completes once the Azione is applied here and its replay ended (or could not start). Without
+  /// [replay] (a background engine, before it owns the sync) it is only queued and applied here.
+  Future<void> run(NotificationActionTap tap, {bool replay = true}) async {
     final (:conversation, :action) = tap;
     final ids = [
       for (final (:message, body: _)
           in await _inbox.watchConversation(conversation.accountId, conversation.conversationId).first)
         if (message.labelIds.contains(inboxLabelId) && !message.isRead) message.id,
     ];
-    await _sync.act(conversation.accountId, ids, action.mailAction, actionsOnly: background);
+    await _sync.act(conversation.accountId, ids, action.mailAction, replay: replay);
     try {
       await _notifications.cancel([ConversationTarget(conversation)]);
     } on Object catch (_) {

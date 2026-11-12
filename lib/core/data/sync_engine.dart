@@ -27,6 +27,8 @@ import 'sync/on_demand_fetcher.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
 import 'sync/queue_replay.dart';
+import 'sync/sync_hold.dart';
+import 'sync/sync_owner.dart';
 import 'sync/sync_phase.dart';
 import 'sync/sync_triggers.dart';
 
@@ -49,6 +51,9 @@ class SyncEngine(
 ) implements MailSync {
   late final _gate = AccountGate(_store, _clock);
   final _queue = AccountQueue();
+
+  /// The app's hold on the sync, against the background task's (#212).
+  late final _hold = SyncHold(SyncOwner(), _queue, onAsked: syncAll, onOwned: _store.refreshAfterExternalWrites);
   late final _drafts = DraftOpener(_store, _outboxStore, removed: _gate.removed);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through the Account's queue.
@@ -89,13 +94,16 @@ class SyncEngine(
   /// The tickers that replay the «trattenute» Azioni once their Annulla window ends.
   final _holdTimers = <StreamSubscription<void>>{};
 
-  /// Starts listening to change signals, the poll and the network, then syncs everything.
+  /// Starts listening to change signals, the poll and the network, then syncs everything. Nothing goes to a Provider
+  /// before the app owns the sync: a background task syncing now ends first, and later asks the app instead (#212).
   void start() {
+    _hold.start();
     _triggers.start();
     unawaited(syncAll());
   }
 
   Future<void> stop() async {
+    _hold.stop();
     await Future.wait([
       _triggers.stop(),
       for (final s in [..._draftTimers.values, ..._holdTimers]) s.cancel(),
@@ -107,19 +115,31 @@ class SyncEngine(
 
   @override
   Future<void> syncAll() async {
+    _hold.ensure();
+    // After the ownership: a background task syncing now has written all it will, so the streams read it (#212).
+    await _hold.owned;
     // On resume the WorkManager isolate may have sent (or refused) outbox rows: the streams read the file again.
     // ponytail: only when syncAll runs (start, resume, network back); a cross-isolate notification if a worker ever writes while in foreground.
     _store.refreshAfterExternalWrites();
-    await _poll();
+    await _eachActive((account) => _sync(account)?.done);
   }
 
   @override
   Future<void> refresh() async {
+    await _hold.owned;
     _store.refreshAfterExternalWrites();
     await _eachActive((account) => _queue.running(account.id) ?? _sync(account)?.synced);
   }
 
-  Future<void> _poll() => _eachActive((account) => _sync(account)?.done);
+  /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
+  /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
+  Future<void> syncInBackground() =>
+      _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => _phase.run(a, s, autoLabel: false)).done);
+
+  Future<void> _poll() {
+    _hold.ensure();
+    return _eachActive((account) => _sync(account)?.done);
+  }
 
   /// Runs [op] for every attivo Account at once: a Da ricollegare Account stops syncing until the user consents again.
   Future<void> _eachActive(Future<void>? Function(Account account) op) async {

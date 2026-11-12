@@ -39,6 +39,11 @@ void main() {
     );
     expect((await use.accountsFor(q)).map((a) => a.id), ['a', 'c']);
     expect((await use.accountsFor(q.inAccounts({'c'}))).map((a) => a.id), ['c']);
+    expect(
+      (await use.accountsFor(const SearchQuery(terms: ['fattura'], accountNames: ['C@EXAMPLE']))).map((a) => a.id),
+      ['c'],
+      reason: 'the `account:` operator, as the local search reads it',
+    );
   });
 
   test('all at once, each answer as it comes; one past the timeout is offline, the others stay', () async {

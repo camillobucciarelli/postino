@@ -26,11 +26,15 @@ class ProviderSearchUseCase(
   /// Legge gli Account e chiede ai loro Provider.
   this;
 
-  /// The Accounts [query] reaches: those of its `accountIds` (all when empty), attivo only; a Da ricollegare one is
-  /// not asked.
+  /// The Accounts [query] reaches, as the local search reads it: those of its `accountIds` (all when empty) whose
+  /// address holds one of its `accountNames` (any when empty), attivo only; a Da ricollegare one is not asked.
   Future<List<Account>> accountsFor(SearchQuery query) async => [
     for (final a in await _accounts.watchAccounts().first)
-      if (a.status == AccountStatus.attivo && (query.accountIds.isEmpty || query.accountIds.contains(a.id))) a,
+      if (a.status == AccountStatus.attivo &&
+          (query.accountIds.isEmpty || query.accountIds.contains(a.id)) &&
+          (query.accountNames.isEmpty ||
+              query.accountNames.any((n) => a.address.toLowerCase().contains(n.toLowerCase()))))
+        a,
   ];
 
   /// Asks each of [accounts] for one page of [query], from its token in [pageTokens] (none: the first), and gives

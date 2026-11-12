@@ -54,4 +54,11 @@ void main() {
   test('no body selected, no body', () {
     expect(graphBody(_fixtureMessage('delta_viaggi_moved', 0)), isNull);
   });
+
+  test('has attachments: what Graph says, unknown when it does not (#206)', () {
+    expect(parseGraphMessage(_fixtureMessage('delta_inbox_changes', 0), labelId: 'f').hasAttachments, isFalse);
+    expect(parseGraphMessage(_fixtureMessage('delta_inbox_changes', 2), labelId: 'f').hasAttachments, isTrue);
+    final j = {..._fixtureMessage('delta_inbox_changes', 0)}..remove('hasAttachments');
+    expect(parseGraphMessage(j, labelId: 'f').hasAttachments, isNull);
+  });
 }

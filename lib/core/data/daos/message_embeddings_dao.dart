@@ -87,6 +87,15 @@ class MessageEmbeddingsDao(super.attachedDatabase)
     ];
   }
 
+  /// The messages [ids] of the Account still in cache, with their body if downloaded: those a background sync left to
+  /// the Etichettatura automatica of the next one (#212). At most SQLite's 999 variables' worth.
+  Future<List<(MessageRow, BodyRow?)>> withBodies(String accountId, List<String> ids) async {
+    final query = select(messages).join([
+      leftOuterJoin(bodies, bodies.accountId.equalsExp(messages.accountId) & bodies.messageId.equalsExp(messages.id)),
+    ])..where(messages.accountId.equals(accountId) & messages.id.isIn(ids));
+    return [for (final r in await query.get()) (r.readTable(messages), r.readTableOrNull(bodies))];
+  }
+
   static Uint8List _bytes(List<double> v) {
     final out = ByteData(v.length * 4);
     for (var i = 0; i < v.length; i++) {

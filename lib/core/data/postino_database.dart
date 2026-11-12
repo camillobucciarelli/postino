@@ -140,7 +140,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -263,6 +263,17 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
               Variable(r.read<String>('account_id')),
               Variable(r.read<String>('id')),
             ],
+          );
+        }
+      }
+      // v23: whether a message has attachments, unknown (null) for the rows already stored (#206).
+      if (from < 23 && !await _hasColumn('messages', 'has_attachments')) {
+        await m.addColumn(messages, messages.hasAttachments);
+        // What the bodies stored already know (before v9 they kept no attachments).
+        if (await _hasColumn('bodies', 'attachments')) {
+          await customStatement(
+            'UPDATE messages SET has_attachments = json_array_length(b.attachments) > 0 FROM bodies b '
+            'WHERE b.account_id = messages.account_id AND b.message_id = messages.id AND b.attachments IS NOT NULL',
           );
         }
       }

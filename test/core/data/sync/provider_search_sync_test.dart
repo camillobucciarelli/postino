@@ -96,10 +96,7 @@ void main() {
     a.hold = null;
     syncing.complete();
     await sync;
-    expect(
-      await search,
-      isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()),
-    );
+    expect(await search, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()));
     expect(a.searchCalls, isEmpty);
   });
 
@@ -113,10 +110,7 @@ void main() {
     a.hold = null;
     syncing.complete();
     await sync;
-    expect(
-      await search,
-      isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<RateLimitFailure>()),
-    );
+    expect(await search, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<RateLimitFailure>()));
     expect(a.searchCalls, isEmpty);
   });
 

@@ -187,9 +187,7 @@ void main() {
     expect(find.text('Mostra altri'), findsNothing, reason: 'the last page');
   });
 
-  testWidgets('a next page that fails keeps its place: «Mostra altri» asks it again, the results stay', (
-    tester,
-  ) async {
+  testWidgets('a next page that fails keeps its place: «Mostra altri» asks it again, the results stay', (tester) async {
     final (_, a1, _) = await _start(tester);
     for (var i = 0; i < 5; i++) {
       a1.deliverOutsideWindow(msg('p$i', subject: 'Preventivo $i', date: DateTime.utc(2026, 3, 1 + i)));

@@ -108,7 +108,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   void _submit(String text) {
     _debounce?.cancel();
     _apply(text);
-    // ponytail: the query as the local search reads it; the operators of #206 are translated by each adapter.
+    // The query as the local search reads it (#206): each adapter translates its fields, the Accounts are chosen here.
     if (!_query.isEmpty) unawaited(_providers.start(_query));
   }
 

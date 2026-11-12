@@ -13,9 +13,12 @@ import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
+import 'core/data/background_sync.dart';
 import 'core/data/error_log/uncaught_errors.dart';
+import 'core/data/platform_services.dart' show SystemPeriodicSync;
 import 'core/data/postino_database.dart';
 import 'core/data/settings_sync.dart';
+import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
@@ -38,21 +41,27 @@ Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
 }
 
-/// Android WorkManager entry point (#36): a fresh isolate wires the app's DI and runs [runOutboxTask].
+/// Android WorkManager entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
+/// Account (#36, [runOutboxTask]) or the periodic sync (#212, [runSyncTask]), whose notifications it prepares first.
+/// Its name stays: WorkManager keeps the callback handle across an update, and a send queued before it still finds it.
 @pragma('vm:entry-point')
 void sendOutboxDispatcher() {
   Workmanager().executeTask((task, input) async {
+    final sync = task == SystemPeriodicSync.task;
     final accountId = input?['accountId'] as String?;
-    if (accountId == null) return true;
+    if (!sync && accountId == null) return true;
     try {
       DartPluginRegistrant.ensureInitialized();
       await configureDependencies(environment: Environment.prod);
     } on Object catch (e) {
-      debugPrint('[background] $accountId: setup failed, $e');
+      debugPrint('[background] $task: setup failed, ${e.runtimeType}');
       return true;
     }
-    return runOutboxTask(accountId);
-  });
+    if (!sync) return runOutboxTask(accountId!);
+    LocaleSettings.useDeviceLocaleSync();
+    await _startNotifications();
+    return runSyncTask();
+  }, onTaskStopped: (task, _) => stopSyncTask());
 }
 
 Future<void> main() async {
@@ -65,7 +74,7 @@ Future<void> main() async {
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    // The outbox keeps going after the user leaves the app (#36).
+    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212).
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);
@@ -147,6 +156,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     super.initState();
     getIt<SyncEngine>().start();
     getIt<SettingsSync>().start();
+    getIt<PeriodicSchedule>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
     _whenRouted(() {
       if (widget.launch case final launch?) _open(launch);
@@ -193,6 +203,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
     unawaited(getIt<SettingsSync>().stop());
+    unawaited(getIt<PeriodicSchedule>().stop());
     super.dispose();
   }
 

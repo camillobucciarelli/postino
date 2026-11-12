@@ -30,6 +30,7 @@ Message msg(
   String? conversationId,
   String? replyTo,
   List<String> references = const [],
+  bool? hasAttachments,
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
@@ -46,6 +47,7 @@ Message msg(
   date: date ?? DateTime.utc(2026),
   replyTo: replyTo,
   references: references,
+  hasAttachments: hasAttachments,
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
@@ -537,7 +539,13 @@ class FakeMailProvider() implements MailProvider {
     searchCalls.add((query, pageToken));
     await holdSearch?.future;
     if (_failure case final f?) return Err(f);
-    if (query.isEmpty && query.unread != true && query.starred != true && query.hasAttachment != true) {
+    // Nothing the Provider filters on (the Accounts are the caller's): nothing to look for.
+    if (!query.hasText &&
+        query.after == null &&
+        query.before == null &&
+        query.unread != true &&
+        query.starred != true &&
+        query.hasAttachment != true) {
       return const Ok(ProviderSearchPage());
     }
     final all = [

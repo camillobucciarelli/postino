@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../atoms/postino_skeleton.dart';
 import '../molecules/postino_empty_state.dart';
+import '../tokens/postino_icons.dart';
 
 /// The list of messages: Skeleton on the first load, EmptyState when empty, pull-to-refresh always.
 class const PostinoMessageList({
@@ -28,6 +29,9 @@ class const PostinoMessageList({
   /// Testo facoltativo sotto il titolo dello stato vuoto.
   final String? emptyBody,
 
+  /// Icona dello stato vuoto; di default la spunta.
+  final PostinoIconData emptyIcon = PostinoIcons.check,
+
   /// Lets the caller scroll the rows (keeping the selected one visible).
   final ScrollController? controller,
 }) extends StatelessWidget {
@@ -48,7 +52,7 @@ class const PostinoMessageList({
                 if (loading)
                   PostinoSkeleton(label: loadingLabel)
                 else
-                  PostinoEmptyState(title: emptyTitle, body: emptyBody),
+                  PostinoEmptyState(title: emptyTitle, body: emptyBody, icon: emptyIcon),
               ],
             )
           : ListView.builder(controller: controller, physics: physics, itemCount: itemCount, itemBuilder: itemBuilder),

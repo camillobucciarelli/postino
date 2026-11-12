@@ -21,6 +21,7 @@ enum PostaAction() {
   star,
   markRead,
   markUnread,
+  search,
 }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
@@ -58,6 +59,7 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyP, PostaAction.reportProblem, repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyE, PostaAction.archive, repeats: false),
   PostaShortcut(null, PostaAction.delete, character: '#', repeats: false),
+  PostaShortcut(null, PostaAction.search, character: '/', repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyS, PostaAction.star, repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyI, PostaAction.markRead, shift: true, repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyU, PostaAction.markUnread, shift: true, repeats: false),
@@ -70,6 +72,9 @@ class ListCursor() {
 
   /// Whether the focus is on the list and the list is the one in front.
   bool Function()? listFocused;
+
+  /// Puts the focus on the cursor row of the list, from a field above it (Freccia giù in the search): the list plugs it in.
+  VoidCallback? focusRow;
 
   /// Starts a new Bozza (`c`): the «Scrivi» button plugs itself in.
   VoidCallback? write;
@@ -85,6 +90,10 @@ class ListCursor() {
 
   /// Starts the Segnalazione di un problema (`p`, #117): the Posta layout plugs it in.
   VoidCallback? reportProblem;
+
+  /// Opens the search (`/`, #205) from a Posta view, or puts the focus in its field when it is open: the Posta layout
+  /// and the search page plug themselves in.
+  VoidCallback? search;
 
   /// An Azione (#146: `e`, `#`, `s`, Maiusc+I, Maiusc+U) on the open Conversazione: the Conversazione plugs it in.
   void Function(PostaAction action)? act;
@@ -182,6 +191,8 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
         cursor.labels?.call();
       case PostaAction.reportProblem:
         cursor.reportProblem?.call();
+      case PostaAction.search:
+        cursor.search?.call();
       case PostaAction.archive ||
           PostaAction.delete ||
           PostaAction.star ||

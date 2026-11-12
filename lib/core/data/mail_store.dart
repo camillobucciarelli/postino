@@ -44,6 +44,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
     ]) {
       await delete(accountId);
     }
+    // The index entries went with the messages (triggers); this wipes them from the file.
+    await _db.searchDao.optimize();
   });
 
   /// Drops what the Account would still send to the Provider (queued Azioni, outbox) at once, ahead of the removal
@@ -99,25 +101,8 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   @override
   Stream<List<InboxEntry>> watchMessages(String accountId, String labelId) => _entries(accountId, labelId);
 
-  /// Rows come newest first: the first of each Conversazione is its latest message, and keeps the order.
-  // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
   Stream<List<InboxEntry>> _entries(String? accountId, String labelId) =>
-      _db.messagesDao.watchMessages(accountId: accountId, labelId: labelId).map((rows) {
-        final groups = <(String, String), List<(AccountRow, MessageRow, List<String>)>>{};
-        for (final r in rows) {
-          (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
-        }
-        return [
-          for (final g in groups.values)
-            InboxEntry(
-              account: accountOf(g.first.$1),
-              // The Conversazione's labels: those of any of its messages.
-              message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
-              count: g.length,
-              unread: g.any((r) => !r.$2.isRead),
-            ),
-        ];
-      });
+      _db.messagesDao.watchMessages(accountId: accountId, labelId: labelId).map(inboxEntriesOf);
 
   @override
   Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId) => _db.messagesDao

@@ -81,6 +81,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
+	late final Translations$cerca$it cerca = Translations$cerca$it.internal(_root);
 	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
 	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 	late final Translations$scorrimento$it scorrimento = Translations$scorrimento$it.internal(_root);
@@ -811,6 +812,45 @@ class Translations$notifiche$it {
 	String get permissionLater => 'Non ora';
 }
 
+// Path: cerca
+class Translations$cerca$it {
+	Translations$cerca$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Cerca'
+	String get open => 'Cerca';
+
+	/// it: 'Cerca'
+	String get title => 'Cerca';
+
+	/// it: 'Cerca nella posta'
+	String get field => 'Cerca nella posta';
+
+	/// it: 'Tutti gli Account'
+	String get scopeAll => 'Tutti gli Account';
+
+	/// it: 'Cerca nella posta'
+	String get idleTitle => 'Cerca nella posta';
+
+	/// it: 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.'
+	String get idleBody => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.';
+
+	/// it: 'Nessun risultato'
+	String get emptyTitle => 'Nessun risultato';
+
+	/// it: 'Prova con altre parole o con l'inizio di una parola.'
+	String get emptyBody => 'Prova con altre parole o con l\'inizio di una parola.';
+
+	/// it: '(one) {$n risultato} (other) {$n risultati}'
+	String results({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} risultato',
+		other: '${n} risultati',
+	);
+}
+
 // Path: conflitti
 class Translations$conflitti$it {
 	Translations$conflitti$it.internal(this._root);
@@ -1401,6 +1441,15 @@ extension on Translations {
 			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
+			'cerca.open' => 'Cerca',
+			'cerca.title' => 'Cerca',
+			'cerca.field' => 'Cerca nella posta',
+			'cerca.scopeAll' => 'Tutti gli Account',
+			'cerca.idleTitle' => 'Cerca nella posta',
+			'cerca.idleBody' => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.',
+			'cerca.emptyTitle' => 'Nessun risultato',
+			'cerca.emptyBody' => 'Prova con altre parole o con l\'inizio di una parola.',
+			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} risultato', other: '${n} risultati', ), 
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
 			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
 			'conflitti.open' => 'Vedi',

@@ -6,6 +6,7 @@ import '../../domain/result.dart';
 import '../mail_store.dart';
 import 'account_gate.dart';
 import 'account_queue.dart';
+import 'notification_cleanup.dart';
 import 'provider_factory.dart';
 import 'queue_replay.dart';
 
@@ -16,6 +17,7 @@ class OnDemandFetcher(
   final AccountGate _gate,
   final AccountQueue _queue,
   final QueueReplay _replay,
+  final NotificationCleanup _cleanup,
 ) {
   Future<Result<void>> openConversation(String accountId, String conversationId) async {
     final account = await _gate.find(accountId);
@@ -26,6 +28,8 @@ class OnDemandFetcher(
     // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
     // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
     final fetched = await _queue.run(accountId, () async {
+      // Read here: its notification goes (#210), in the queue so a sync's notifications never interleave.
+      await _cleanup.clean(accountId, {conversationId});
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
       final fetched = await _fetchConversation(accountId, provider, conversationId);

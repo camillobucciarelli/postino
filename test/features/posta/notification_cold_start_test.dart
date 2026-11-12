@@ -1,6 +1,7 @@
 // Cold start from a notification (#39): its own file, so routefly's statics are fresh as in a real launch.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -21,7 +22,9 @@ void main() {
     (await h.addAccount(notifiedAccount)).deliver(msg('a', subject: 'Primo'));
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(
-      TranslationProvider(child: const PostinoApp(launch: (accountId: notifiedAccount, conversationId: 't-a'))),
+      TranslationProvider(
+        child: const PostinoApp(launch: ConversationTarget((accountId: notifiedAccount, conversationId: 't-a'))),
+      ),
     );
     await tester.pumpAndSettle();
 

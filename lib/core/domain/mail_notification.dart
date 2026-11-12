@@ -8,6 +8,9 @@ class const MailNotification({
   /// The Conversazione the message belongs to.
   required final ConversationKey conversation,
 
+  /// The address of its Account: the title of the Account's group (#210).
+  required final String accountAddress,
+
   /// The sender's display name, or its address without one.
   required final String sender,
 
@@ -21,5 +24,5 @@ class const MailNotification({
   this;
 
   @override
-  List<Object?> get props => [conversation, sender, subject, preview];
+  List<Object?> get props => [conversation, accountAddress, sender, subject, preview];
 }

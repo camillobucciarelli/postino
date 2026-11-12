@@ -11,6 +11,7 @@ import '../mail_store.dart';
 import 'account_gate.dart';
 import 'auto_labeler.dart';
 import 'new_mail_notifier.dart';
+import 'notification_cleanup.dart';
 import 'provider_factory.dart';
 import 'queue_replay.dart';
 
@@ -20,6 +21,7 @@ import 'queue_replay.dart';
 class SyncPhase(
   final MailStore _store,
   final NewMailNotifier _newMail,
+  final NotificationCleanup _cleanup,
   final AutoLabeler _labeler,
   final ErrorLog _log,
   final AccountGate _gate,
@@ -38,7 +40,7 @@ class SyncPhase(
     try {
       // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
       await _replay.beforeSync(accountId, provider);
-      if (!_gate.paused(accountId)) await _sync(accountId, provider);
+      if (!_gate.paused(accountId)) await _sync(account, provider);
       synced.complete();
     } catch (e, s) {
       synced.completeError(e, s);
@@ -50,7 +52,8 @@ class SyncPhase(
     }
   }
 
-  Future<void> _sync(String accountId, MailProvider provider) async {
+  Future<void> _sync(Account account, MailProvider provider) async {
+    final accountId = account.id;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
     Future<Result<SyncBatch>> initial() {
@@ -71,9 +74,18 @@ class SyncPhase(
         // ponytail: a sync redone for an expired cursor notifies nothing either; diff against the database if that loses mail.
         final unknown = full ? const <Message>[] : await _store.unknown(accountId, value.messages);
         final fresh = await _newMail.fresh(accountId, unknown);
+        // The Conversazioni the batch touched, the removed messages' before the apply drops them (#210).
+        // ponytail: a sync redone from scratch cleans nothing; the next incremental one catches up.
+        final touched = full
+            ? const <String>{}
+            : {
+                for (final m in value.messages) m.conversationId,
+                ...await _cleanup.conversationsOf(accountId, value.removedMessageIds),
+              };
         // The cursor is saved here, from the complete batch: pages alone never save it.
         await _store.applySync(accountId, value, fullSnapshot: full);
-        await _newMail.notify(accountId, fresh);
+        await _newMail.notify(account, fresh);
+        await _cleanup.clean(accountId, touched);
         // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
         if (unknown.isNotEmpty) {
           final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);

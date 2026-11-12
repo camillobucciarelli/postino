@@ -140,16 +140,23 @@ class _ConversationViewState()
       }
     });
     // Only now: the expansion above saw which messages were unread. An unread one shown expanded
-    // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones.
-    if (!closing && (first || messages.any((m) => !m.message.isRead && _expanded[m.message.id]!))) {
-      _open();
-    }
+    // (a reply that arrived while open, too) is read: one mechanism for the opening and for later ones. Off screen
+    // (background, tray, under a page) a reply stays unread, and notified, until the Conversazione is back (#210).
+    if (!closing && (first || onScreen && _unreadShown)) _open();
     for (final (:message, :body) in messages) {
       // A body stored before attachments were known is downloaded again, shown meanwhile.
       if ((body == null || body.attachments == null) && _expanded[message.id]! && !_failed.containsKey(message.id)) {
         _fetchBody(message.id);
       }
     }
+  }
+
+  /// An unread message is shown expanded.
+  bool get _unreadShown => _messages?.any((m) => !m.message.isRead && _expanded[m.message.id]!) ?? false;
+
+  @override
+  void onScreenAgain() {
+    if (!closing && _unreadShown) _open();
   }
 
   void _open() {

@@ -809,6 +809,12 @@ class Translations$notifiche$it {
 
 	/// it: 'Non ora'
 	String get permissionLater => 'Non ora';
+
+	/// it: '(one) {$n nuovo messaggio} (other) {$n nuovi messaggi}'
+	String newMessages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} nuovo messaggio',
+		other: '${n} nuovi messaggi',
+	);
 }
 
 // Path: conflitti
@@ -1401,6 +1407,7 @@ extension on Translations {
 			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
+			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} nuovo messaggio', other: '${n} nuovi messaggi', ), 
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
 			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
 			'conflitti.open' => 'Vedi',

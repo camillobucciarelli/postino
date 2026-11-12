@@ -254,7 +254,11 @@
     "permissionTitle": "New mail notifications",
     "permissionBody": "Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.",
     "permissionAllow": "Continue",
-    "permissionLater": "Not now"
+    "permissionLater": "Not now",
+    "newMessages": {
+      "one": "$n new message",
+      "other": "$n new messages"
+    }
   },
   "conflitti": {
     "bannerTitle": {

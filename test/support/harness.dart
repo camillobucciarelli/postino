@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show SocketException;
+import 'dart:ui' show IsolateNameServer;
 
 import 'package:file/memory.dart';
 import 'package:http/http.dart' as http;
@@ -11,6 +12,7 @@ import 'package:postino/core/data/imap/imap_session.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/managed_model_download.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/sync_owner.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/app_updater.dart';
 import 'package:postino/core/domain/connection_tester.dart';
@@ -41,7 +43,7 @@ import 'fake_text_embedder.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers (an IMAP Account
 /// without one is offline), consent, autodiscovery, test connection, HTTP client, keychain, clock, network,
-/// links, Save As, report sharing, background sender, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
+/// links, Save As, report sharing, background sender, periodic sync, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
 /// one on that file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
@@ -52,6 +54,7 @@ class Harness._() {
   final links = FakeLinkOpener();
   final saver = FakeFileSaver();
   final background = FakeBackgroundSender();
+  final periodic = FakePeriodicSync();
   final launchAtLogin = FakeLaunchAtLogin();
   final updater = FakeAppUpdater();
   final notifications = FakeNotifications();
@@ -80,6 +83,8 @@ class Harness._() {
   /// [attachmentCap]: the attachment cache's cap in bytes, small to test eviction.
   static Future<Harness> create({int? attachmentCap}) async {
     await getIt.reset();
+    // An engine a previous test started and never stopped still owns the sync (#212): its port would answer.
+    IsolateNameServer.removePortNameMapping(syncOwnerName);
     final h = Harness._();
     getIt
       ..registerSingleton<PostinoDatabase>(PostinoDatabase.inMemory(), dispose: (db) => db.close())
@@ -91,6 +96,7 @@ class Harness._() {
       ..registerSingleton<LinkOpener>(h.links)
       ..registerSingleton<FileSaver>(h.saver)
       ..registerSingleton<BackgroundSender>(h.background)
+      ..registerSingleton<PeriodicSync>(h.periodic)
       ..registerSingleton<LaunchAtLogin>(h.launchAtLogin)
       ..registerSingleton<AppUpdater>(h.updater)
       ..registerSingleton<Notifications>(h.notifications)

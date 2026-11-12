@@ -25,6 +25,7 @@ import 'sync/on_demand_fetcher.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
 import 'sync/queue_replay.dart';
+import 'sync/sync_owner.dart';
 import 'sync/sync_phase.dart';
 import 'sync/sync_triggers.dart';
 
@@ -47,6 +48,13 @@ class SyncEngine(
 ) implements MailSync {
   late final _gate = AccountGate(_store, _clock);
   final _queue = AccountQueue();
+
+  /// The app's claim on the sync, against the background task's (#212).
+  final _owner = SyncOwner();
+
+  /// Between [start] and [stop]: the app owns the sync, or claims it.
+  bool _started = false;
+  bool _claiming = false;
   late final _drafts = DraftOpener(_store, _outboxStore, removed: _gate.removed);
 
   /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through the Account's queue.
@@ -87,13 +95,18 @@ class SyncEngine(
   /// The tickers that replay the «trattenute» Azioni once their Annulla window ends.
   final _holdTimers = <StreamSubscription<void>>{};
 
-  /// Starts listening to change signals, the poll and the network, then syncs everything.
+  /// Starts listening to change signals, the poll and the network, then syncs everything. Nothing goes to a Provider
+  /// before the app owns the sync: a background task syncing now ends first, and later asks the app instead (#212).
   void start() {
+    _started = true;
+    _claimOwner();
     _triggers.start();
     unawaited(syncAll());
   }
 
   Future<void> stop() async {
+    _started = false;
+    _owner.release();
     await Future.wait([
       _triggers.stop(),
       for (final s in [..._draftTimers.values, ..._holdTimers]) s.cancel(),
@@ -117,7 +130,22 @@ class SyncEngine(
     await _eachActive((account) => _queue.running(account.id) ?? _sync(account)?.synced);
   }
 
-  Future<void> _poll() => _eachActive((account) => _sync(account)?.done);
+  /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
+  /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
+  Future<void> syncInBackground() =>
+      _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => _phase.run(a, s, autoLabel: false)).done);
+
+  Future<void> _poll() {
+    // A late answer may have let a background task take the name over: the app claims it back before it syncs.
+    if (_started && !_claiming && !_owner.owns) _claimOwner();
+    return _eachActive((account) => _sync(account)?.done);
+  }
+
+  /// Claims the sync for the app, once at a time; the queues wait for it. A background task's ask is a sync of all.
+  void _claimOwner() {
+    _claiming = true;
+    _queue.after(_owner.claim(onAsked: syncAll).whenComplete(() => _claiming = false));
+  }
 
   /// Runs [op] for every attivo Account at once: a Da ricollegare Account stops syncing until the user consents again.
   Future<void> _eachActive(Future<void>? Function(Account account) op) async {

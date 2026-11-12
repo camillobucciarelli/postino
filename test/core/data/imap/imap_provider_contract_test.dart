@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../support/greenmail_server.dart';
 import '../../../support/imap_harness.dart';
 import '../../domain/mail_provider_contract.dart';
+import '../../domain/mail_provider_search_contract.dart';
 
 void main() {
   if (imapSkipReason case final reason?) {
@@ -21,4 +22,5 @@ void main() {
   mailProviderAttachmentContract('ImapProvider', ImapHarness.create);
   mailProviderDraftContract('ImapProvider', ImapHarness.create);
   mailProviderSendContract('ImapProvider', ImapHarness.create);
+  mailProviderSearchContract('ImapProvider', ImapHarness.create);
 }

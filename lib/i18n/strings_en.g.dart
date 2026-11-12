@@ -626,6 +626,7 @@ class _Translations$cerca$provider$en extends Translations$cerca$provider$it {
 	// Translations
 	@override String searching({required Object name}) => 'Also searching ${name}…';
 	@override String unreachable({required Object name}) => 'Local results only: ${name} can\'t be reached';
+	@override String capped({required Object n, required Object name}) => 'Showing the first ${n} results from ${name}';
 	@override String get retry => 'Press Enter in the field to try again.';
 	@override String get more => 'Show more';
 	@override String get reconnect => 'It needs to be reconnected: sign in again from the notice in the mail list.';
@@ -892,6 +893,7 @@ extension on TranslationsEn {
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
 			'cerca.provider.searching' => ({required Object name}) => 'Also searching ${name}…',
 			'cerca.provider.unreachable' => ({required Object name}) => 'Local results only: ${name} can\'t be reached',
+			'cerca.provider.capped' => ({required Object n, required Object name}) => 'Showing the first ${n} results from ${name}',
 			'cerca.provider.retry' => 'Press Enter in the field to try again.',
 			'cerca.provider.more' => 'Show more',
 			'cerca.provider.reconnect' => 'It needs to be reconnected: sign in again from the notice in the mail list.',

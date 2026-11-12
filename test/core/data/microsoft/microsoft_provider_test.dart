@@ -3,11 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
 
 import '../../../support/fake_mail_provider.dart' show msg;
 import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/graph_harness.dart';
 import '../../domain/mail_provider_contract.dart';
+import '../../domain/mail_provider_search_contract.dart';
 
 void main() {
   mailProviderAuthContract('MicrosoftProvider', GraphHarness.new);
@@ -15,6 +17,7 @@ void main() {
   mailProviderLabelContract('MicrosoftProvider', GraphHarness.new);
   mailProviderAttachmentContract('MicrosoftProvider', GraphHarness.new);
   mailProviderActionContract('MicrosoftProvider', GraphHarness.new);
+  mailProviderSearchContract('MicrosoftProvider', GraphHarness.new);
 
   test('a message moved to another folder comes once, in the new folder, with the same id', () async {
     final h = GraphHarness()..deliver(msg('a'));
@@ -69,6 +72,24 @@ void main() {
     expect(batch.labels!.map((l) => l.id), [h.viaggiId]);
     expect(batch.messages.single.labelIds, [inboxLabelId]);
     expect(h.requests.where((r) => r.url.path.contains('f-unread')), isEmpty);
+  });
+
+  test(r'a word finds what begins with it, as the local search does; only unread asks Graph with $filter', () async {
+    final h = GraphHarness()
+      ..deliver(msg('a', subject: 'Fattura di marzo', isRead: true, date: DateTime.utc(2025, 3)))
+      ..deliver(msg('b', subject: 'Riunione', isStarred: true, date: DateTime.utc(2025, 4)));
+    final ids = [
+      for (final m in okValue(await h.provider.search(const SearchQuery(terms: ['fatt']))).messages) m.id,
+    ];
+    expect(ids, ['a']);
+    final unread = okValue(await h.provider.search(const SearchQuery(unread: true))).messages;
+    expect(unread.map((m) => m.id), ['b']);
+    final starred = okValue(await h.provider.search(const SearchQuery(starred: true))).messages;
+    expect(starred.map((m) => m.id), ['b']);
+    expect(
+      h.requests.lastWhere((r) => r.url.path.endsWith('/messages')).url.queryParameters[r'$filter'],
+      "flag/flagStatus eq 'flagged'",
+    );
   });
 
   test('only the last 90 days are synced', () async {

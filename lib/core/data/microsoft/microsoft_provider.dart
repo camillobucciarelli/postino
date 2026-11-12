@@ -26,6 +26,7 @@ import 'graph_http.dart';
 import 'graph_lookup.dart';
 import 'graph_message_parser.dart';
 import 'graph_moves.dart';
+import 'graph_search.dart';
 import 'graph_sender.dart';
 import 'microsoft_client.dart';
 
@@ -51,6 +52,7 @@ class MicrosoftProvider(
   late final _bodies = GraphBodies(_graph);
   late final _conversations = GraphConversations(_graph, _folders);
   late final _lookup = GraphLookup(_graph);
+  late final _search = GraphSearch(_graph, _folders);
   late final _drafts = GraphDrafts(_graph, _lookup);
   late final _sender = GraphSender(_graph, _lookup, _drafts, _sleep);
   late final _actions = GraphActions(
@@ -150,13 +152,9 @@ class MicrosoftProvider(
   @override
   Stream<ChangeSignal> get changes => Stream.value(ChangeSignal.down);
 
-  // ponytail: no search on this Provider yet (#209): only the local results.
   @override
-  Future<Result<ProviderSearchPage>> search(
-    SearchQuery query, {
-    String? pageToken,
-    Set<String> stored = const {},
-  }) async => const Ok(ProviderSearchPage());
+  Future<Result<ProviderSearchPage>> search(SearchQuery query, {String? pageToken, Set<String> stored = const {}}) =>
+      oauthGuard(() async => Ok(await _search.page(query, pageToken: pageToken, stored: stored)));
 
   @override
   Future<Result<Label>> createLabel(String name) => oauthGuard(() async => Ok(await _folders.create(name)));

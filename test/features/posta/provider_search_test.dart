@@ -119,6 +119,27 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a Provider that stopped at its cap says so, in a live region (#209)', (tester) async {
+    final handle = tester.ensureSemantics();
+    final (_, a1, _) = await _start(tester);
+    a1.searchLimit = 1000;
+    await _type(tester, 'affitto');
+    await _enter(tester);
+    final banner = find.textContaining('Mostrati i primi 1.000 risultati di a1@example.com');
+    expect(banner, findsOneWidget);
+    expect(find.textContaining('risultati di a2@example.com'), findsNothing);
+    expect(
+      find.ancestor(
+        of: banner,
+        matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.liveRegion == true),
+      ),
+      findsWidgets,
+    );
+    await _type(tester, 'fattura');
+    expect(banner, findsNothing, reason: 'a new text drops it');
+    handle.dispose();
+  });
+
   testWidgets('offline: the local results stay, with a notice for the Account; the other one answers', (tester) async {
     final (_, a1, _) = await _start(tester);
     a1.goOffline();

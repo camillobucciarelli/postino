@@ -143,10 +143,12 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
     if (found == null) {
       await _create(c, path);
       final attached = _attached[key] ?? const [];
+      // The body is the snippet the test gave (the default one stays «Ciao», as the older tests read it).
+      final text = m.snippet == 'Anteprima' ? 'Ciao' : m.snippet;
       final builder = attached.isEmpty
-          ? MessageBuilder.prepareMultipartAlternativeMessage(plainText: 'Ciao', htmlText: '<p>Ciao</p>')
+          ? MessageBuilder.prepareMultipartAlternativeMessage(plainText: text, htmlText: '<p>$text</p>')
           : (MessageBuilder.prepareMultipartMixedMessage()
-              ..addMultipartAlternative(plainText: 'Ciao', htmlText: '<p>Ciao</p>'));
+              ..addMultipartAlternative(plainText: text, htmlText: '<p>$text</p>'));
       for (final (name, bytes) in attached) {
         builder.addBinary(Uint8List.fromList(bytes), MediaType.guessFromFileName(name), filename: name);
       }
@@ -239,7 +241,9 @@ class ImapHarness._(final GreenmailServer server, final String login) extends Co
 
   /// The message `msg(key)` delivered again, as another message with the attachment (a new UID).
   @override
-  Future<void> attach(String key, String name, List<int> bytes) async {
+  Future<void> attach(String messageId, String name, List<int> bytes) async {
+    // The `msg` key or the Provider id of the message.
+    final key = _ids.entries.where((e) => e.value == messageId).map((e) => e.key).firstOrNull ?? messageId;
     (_attached[key] ??= []).add((name, bytes));
     await removeRemotely(key);
     await deliver(_delivered[key]!);

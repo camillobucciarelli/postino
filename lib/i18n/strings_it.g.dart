@@ -1256,6 +1256,9 @@ class Translations$cerca$provider$it {
 	/// it: 'Risultati solo locali: $name non è raggiungibile'
 	String unreachable({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile';
 
+	/// it: 'Mostrati i primi $n risultati di $name'
+	String capped({required Object n, required Object name}) => 'Mostrati i primi ${n} risultati di ${name}';
+
 	/// it: 'Premi Invio nel campo per riprovare.'
 	String get retry => 'Premi Invio nel campo per riprovare.';
 
@@ -1547,6 +1550,7 @@ extension on Translations {
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} risultato', other: '${n} risultati', ), 
 			'cerca.provider.searching' => ({required Object name}) => 'Cerco anche su ${name}…',
 			'cerca.provider.unreachable' => ({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile',
+			'cerca.provider.capped' => ({required Object n, required Object name}) => 'Mostrati i primi ${n} risultati di ${name}',
 			'cerca.provider.retry' => 'Premi Invio nel campo per riprovare.',
 			'cerca.provider.more' => 'Mostra altri',
 			'cerca.provider.reconnect' => 'Va ricollegato: accedi di nuovo dall\'avviso nella lista della posta.',

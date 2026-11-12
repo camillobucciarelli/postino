@@ -21,12 +21,14 @@ import 'imap_cursor.dart';
 import 'imap_drafts.dart';
 import 'imap_failure.dart';
 import 'imap_folder_create.dart';
+import 'imap_folder_search.dart';
 import 'imap_folder_sync.dart';
 import 'imap_folders.dart';
 import 'imap_idle.dart';
 import 'imap_lookup.dart';
 import 'imap_message_parser.dart';
 import 'imap_moves.dart';
+import 'imap_search.dart';
 import 'imap_sent.dart';
 import 'imap_session.dart';
 import 'imap_threads.dart';
@@ -57,6 +59,9 @@ class ImapProvider(
   /// The Provider ids of the messages in the app's cache: those outside the sync window (a whole Conversazione
   /// opened) get their flags followed too (#185).
   final Future<Iterable<String>> Function()? _storedIds,
+
+  /// How long the search of one folder may take (#208).
+  final Duration _searchTimeout = const Duration(seconds: 6),
 }) implements MailProvider {
   this
     : _session = ImapSession(_accountId, _address, _keychain, connect: _connect, onBadCertificate: _onBadCertificate),
@@ -74,6 +79,12 @@ class ImapProvider(
     _messageIdOf ?? (_) async => null,
   );
 
+  late final _search = ImapFolderSearch(
+    _session,
+    (found, related) => _thread(found, found, related),
+    _related,
+    timeout: _searchTimeout,
+  );
   late final _fetched = ImapBodies(_session);
   late final _conversations = ImapConversations(_session, _address);
   late final _drafts = ImapDrafts(_session);
@@ -183,13 +194,16 @@ class ImapProvider(
     );
   }
 
-  // ponytail: no search on this Provider yet (#208): only the local results.
+  /// [ImapFolderSearch] over the folders; the threading is the syncs'.
   @override
   Future<Result<ProviderSearchPage>> search(
     SearchQuery query, {
     String? pageToken,
     Set<String> stored = const {},
-  }) async => const Ok(ProviderSearchPage());
+  }) async {
+    if (imapSearchCriteria(query) == null) return const Ok(ProviderSearchPage());
+    return imapGuard(() => _search.page(_list, query, pageToken, stored));
+  }
 
   /// CREATE, idempotent on the name: a folder already there is returned.
   @override

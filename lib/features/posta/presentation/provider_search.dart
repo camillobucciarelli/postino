@@ -17,6 +17,9 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
   /// paused by the Provider).
   final unreachable = signal<List<(Account, Failure)>>(const []);
 
+  /// The Accounts whose Provider stopped at its cap of results, with the cap (Graph: 1.000, #209).
+  final capped = signal<List<(Account, int)>>(const []);
+
   /// Whether some Account has a next page («Mostra altri»).
   final hasMore = signal(false);
 
@@ -71,6 +74,7 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
     batch(() {
       searching.value = const [];
       unreachable.value = const [];
+      capped.value = const [];
       hasMore.value = false;
       found.value = const {};
     });
@@ -101,6 +105,7 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
               account.id: {...?found.value[account.id], ...value.conversationIds},
             };
             if (value.nextPageToken case final token?) _next[account.id] = (account, token);
+            if (value.limit case final n?) capped.value = [...capped.value, (account, n)];
           case Err(:final failure):
             unreachable.value = [...unreachable.value, (account, failure)];
             // A page that failed for a passing reason stays to ask again with «Mostra altri»; what was found so far
@@ -117,7 +122,7 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
   /// Releases the signals.
   void dispose() {
     _run++;
-    for (final s in [searching, unreachable, hasMore, found]) {
+    for (final s in [searching, unreachable, capped, hasMore, found]) {
       s.dispose();
     }
   }

@@ -293,6 +293,7 @@
     "provider": {
       "searching": "Cerco anche su $name…",
       "unreachable": "Risultati solo locali: $name non è raggiungibile",
+      "capped": "Mostrati i primi $n risultati di $name",
       "retry": "Premi Invio nel campo per riprovare.",
       "more": "Mostra altri",
       "reconnect": "Va ricollegato: accedi di nuovo dall'avviso nella lista della posta.",

@@ -855,6 +855,8 @@ class Translations$cerca$it {
 		one: '${n} risultato',
 		other: '${n} risultati',
 	);
+
+	late final Translations$cerca$provider$it provider = Translations$cerca$provider$it.internal(_root);
 }
 
 // Path: conflitti
@@ -1195,6 +1197,27 @@ class Translations$etichetteAutomatiche$model$it {
 	String get confirmWait => 'Aspetta il Wi-Fi';
 }
 
+// Path: cerca.provider
+class Translations$cerca$provider$it {
+	Translations$cerca$provider$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Cerco anche su $name…'
+	String searching({required Object name}) => 'Cerco anche su ${name}…';
+
+	/// it: 'Risultati solo locali: $name non è raggiungibile'
+	String unreachable({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile';
+
+	/// it: 'Premi Invio nel campo per riprovare.'
+	String get retry => 'Premi Invio nel campo per riprovare.';
+
+	/// it: 'Mostra altri'
+	String get more => 'Mostra altri';
+}
+
 // Path: conflitti.values
 class Translations$conflitti$values$it {
 	Translations$conflitti$values$it.internal(this._root);
@@ -1457,6 +1480,10 @@ extension on Translations {
 			'cerca.emptyTitle' => 'Nessun risultato',
 			'cerca.emptyBody' => 'Prova con altre parole o con l\'inizio di una parola.',
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} risultato', other: '${n} risultati', ), 
+			'cerca.provider.searching' => ({required Object name}) => 'Cerco anche su ${name}…',
+			'cerca.provider.unreachable' => ({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile',
+			'cerca.provider.retry' => 'Premi Invio nel campo per riprovare.',
+			'cerca.provider.more' => 'Mostra altri',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
 			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
 			'conflitti.open' => 'Vedi',

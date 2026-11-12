@@ -446,6 +446,7 @@ class _Translations$cerca$en extends Translations$cerca$it {
 		one: '${n} result',
 		other: '${n} results',
 	);
+	@override late final _Translations$cerca$provider$en provider = _Translations$cerca$provider$en._(_root);
 }
 
 // Path: conflitti
@@ -597,6 +598,19 @@ class _Translations$etichetteAutomatiche$model$en extends Translations$etichette
 	@override String get dismiss => 'OK';
 	@override String confirmTitle({required Object size}) => 'Download ${size} over cellular?';
 	@override String get confirmWait => 'Wait for Wi-Fi';
+}
+
+// Path: cerca.provider
+class _Translations$cerca$provider$en extends Translations$cerca$provider$it {
+	_Translations$cerca$provider$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String searching({required Object name}) => 'Also searching ${name}…';
+	@override String unreachable({required Object name}) => 'Local results only: ${name} can\'t be reached';
+	@override String get retry => 'Press Enter in the field to try again.';
+	@override String get more => 'Show more';
 }
 
 // Path: conflitti.values
@@ -843,6 +857,10 @@ extension on TranslationsEn {
 			'cerca.emptyTitle' => 'No results',
 			'cerca.emptyBody' => 'Try other words, or just the start of a word.',
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
+			'cerca.provider.searching' => ({required Object name}) => 'Also searching ${name}…',
+			'cerca.provider.unreachable' => ({required Object name}) => 'Local results only: ${name} can\'t be reached',
+			'cerca.provider.retry' => 'Press Enter in the field to try again.',
+			'cerca.provider.more' => 'Show more',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} conflict', other: '${n} conflicts', ), 
 			'conflitti.bannerMessage' => 'You changed some messages offline, and they changed somewhere else too.',
 			'conflitti.open' => 'Review',

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
+import '../../../core/domain/provider_search_use_case.dart';
 import '../../../core/domain/search_query.dart';
 import '../../../core/domain/search_query_parser.dart';
 import '../../../core/domain/search_repository.dart';
@@ -14,9 +15,12 @@ import '../../../i18n/strings.g.dart';
 import 'conversation_view.dart';
 import 'message_list.dart';
 import 'posta_shortcuts.dart';
+import 'provider_search.dart';
+import 'provider_search_status.dart';
 
 /// The search of the Posta (#205): one field, the results below it as the Conversazioni of any list, updated while
-/// the user types. [accountId] narrows it to that Account (the view it was opened from); null searches all.
+/// the user types; Invio searches the Providers too (#207), whose finds join the results. [accountId] narrows it to
+/// that Account (the view it was opened from); null searches all.
 /// A result opens beside the list, or over it on a narrow window, and back returns to the results.
 /// `/` puts the focus in the field, Esc clears it and then leaves ([onBack]), Freccia giù goes to the results.
 /// Routing is the caller's: [onBack], and [onOpenDraft] for the composer of a Bozza a Rispondi just saved.
@@ -35,6 +39,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   final _field = FocusNode(debugLabel: 'Cerca nella posta');
   final _cursor = ListCursor();
   Timer? _debounce;
+  final _providers = ProviderSearch(GetIt.I<ProviderSearchUseCase>());
 
   /// What the results show; the list is rebuilt for each new one.
   SearchQuery _query = const SearchQuery();
@@ -73,6 +78,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   @override
   void dispose() {
     _debounce?.cancel();
+    _providers.dispose();
     _text.dispose();
     _field.dispose();
     super.dispose();
@@ -88,10 +94,22 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
     if (!mounted) return;
     final query = parseSearchQuery(text);
     final scope = widget.accountId;
+    final scoped = scope == null ? query : query.inAccounts({scope});
+    if (scoped == _query) return;
+    // What the Providers found was for the old text.
+    _providers.clear();
     setState(() {
-      _query = scope == null ? query : query.inAccounts({scope});
+      _query = scoped;
       _count = null;
     });
+  }
+
+  /// Invio: the search goes to the Providers as well (#207), the only time it does.
+  void _submit(String text) {
+    _debounce?.cancel();
+    _apply(text);
+    // ponytail: the query as the local search reads it; the operators of #206 are translated by each adapter.
+    if (!_query.isEmpty) unawaited(_providers.start(_query));
   }
 
   /// Esc: first empties the field, then leaves the search.
@@ -128,9 +146,11 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
               focusNode: _field,
               autofocus: true,
               onChanged: _changed,
+              onSubmitted: _submit,
             ),
           ),
         ),
+        ProviderSearchStatus(search: _providers),
         // The number of results (or none), announced when it changes; it takes no room.
         Semantics(
           liveRegion: true,
@@ -146,7 +166,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
           child: MessageList(
             // A new query is a new list: its stream starts over.
             key: ValueKey(_query),
-            watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query),
+            watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query, found: _providers.watchFound()),
             showAccount: widget.accountId == null,
             selected: _open,
             cursor: _cursor,

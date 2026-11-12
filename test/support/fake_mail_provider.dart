@@ -9,7 +9,11 @@ import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/provider_search_page.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
+
+import 'fake_search_match.dart';
 
 Message msg(
   String id, {
@@ -511,6 +515,50 @@ class FakeMailProvider() implements MailProvider {
       deliver(changed);
     }
     return const Ok(ActionApplied());
+  }
+
+  /// Results per page of [search]: small, so the pages show.
+  int searchPageSize = 2;
+
+  /// Every [search] that reached the Provider: (query, page token).
+  final searchCalls = <(SearchQuery, String?)>[];
+
+  /// While set, [search] answers only once it completes: a slow Provider.
+  Completer<void>? holdSearch;
+
+  /// Every message, those outside the sync window too, newest first; never Spam nor Cestino. The page token is the
+  /// offset of the next result.
+  @override
+  Future<Result<ProviderSearchPage>> search(
+    SearchQuery query, {
+    String? pageToken,
+    Set<String> stored = const {},
+  }) async {
+    searchCalls.add((query, pageToken));
+    await holdSearch?.future;
+    if (_failure case final f?) return Err(f);
+    if (query.isEmpty && query.unread != true && query.starred != true && query.hasAttachment != true) {
+      return const Ok(ProviderSearchPage());
+    }
+    final all = [
+      for (final m in [..._messages.values, ..._old.values])
+        if (!m.labelIds.contains(spamLabelId) &&
+            !m.labelIds.contains(trashLabelId) &&
+            fakeSearchMatches(m, query, attached: bodies[m.id]?.attachments?.isNotEmpty ?? false))
+          m,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    final from = int.parse(pageToken ?? '0');
+    final page = all.skip(from).take(searchPageSize).toList();
+    return Ok(
+      ProviderSearchPage(
+        messages: [
+          for (final m in page)
+            if (!stored.contains(m.id)) m,
+        ],
+        conversationIds: {for (final m in page) m.conversationId},
+        nextPageToken: from + searchPageSize < all.length ? '${from + searchPageSize}' : null,
+      ),
+    );
   }
 }
 

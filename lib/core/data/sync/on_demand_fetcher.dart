@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/account.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
+import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
+import '../../domain/search_query.dart';
 import '../mail_store.dart';
 import 'account_gate.dart';
 import 'account_queue.dart';
@@ -91,6 +94,29 @@ class OnDemandFetcher(
         .fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
     // Removed during the download (#174): the cache does not keep it.
     return _gate.removed(accountId) ? const Err(NotFoundFailure()) : fetched;
+  }
+
+  Future<Result<ProviderSearchPage>> search(String accountId, SearchQuery query, {String? pageToken}) async {
+    final account = await _gate.find(accountId);
+    if (account == null || _gate.removed(accountId)) return const Err(NotFoundFailure());
+    if (account.status != AccountStatus.attivo) return const Err(AuthFailure());
+    if (_gate.paused(accountId)) return Err(RateLimitFailure(retryAfter: _gate.pausedUntil(accountId)));
+    // Outside the Account's queue: a search never waits behind a sync. Only messages not stored when it started are
+    // written, so a sync can hardly have a newer state of them.
+    // ponytail: a message the sync stores meanwhile may get an older state for one sync; apply in the queue if seen.
+    final found = await providerFor(account)
+        .search(query, pageToken: pageToken, stored: {...await _store.messageIds(accountId)});
+    if (_gate.removed(accountId)) return const Err(NotFoundFailure());
+    switch (found) {
+      case Ok(:final value):
+        await _store.applyPage(accountId, value.messages, const {});
+      case Err(failure: AuthFailure()):
+        await _store.setStatus(accountId, AccountStatus.daRicollegare);
+      case Err(failure: RateLimitFailure(:final retryAfter?)):
+        _gate.pause(accountId, retryAfter);
+      case Err():
+    }
+    return found;
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.

@@ -272,6 +272,12 @@
     "results": {
       "one": "$n risultato",
       "other": "$n risultati"
+    },
+    "provider": {
+      "searching": "Cerco anche su $name…",
+      "unreachable": "Risultati solo locali: $name non è raggiungibile",
+      "retry": "Premi Invio nel campo per riprovare.",
+      "more": "Mostra altri"
     }
   },
   "conflitti": {

@@ -15,9 +15,11 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   /// Every message of the Conversazioni with a message matching the FTS5 expression [match] (see `ftsMatch`), newest
   /// first, with its Account and label ids; of every Account, or only of [accountIds] when not empty.
   /// Grouping is the caller's. [match] holds only quoted letters and digits, so it is safe inside the SQL literal.
+  /// The Conversazioni of [found] (Account id to conversation ids: found on the Provider, #207) are hits too.
   Stream<List<(AccountRow, MessageRow, List<String>)>> watchConversations(
     String match, {
     Set<String> accountIds = const {},
+    Map<String, Set<String>> found = const {},
   }) {
     final m = messages;
     final a = accounts;
@@ -29,13 +31,16 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
         "AND sl.label_id = '$spamLabelId')";
     final hits = CustomExpression<bool>(
       '(messages.account_id, messages.conversation_id) IN (SELECT h.account_id, h.conversation_id FROM search_index '
-      "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match' AND ${notSpam('h')}) "
-      'AND ${notSpam('messages')}',
+      "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match' AND ${notSpam('h')})",
       watchedTables: [messages, bodies, messageLabels],
     );
+    final onProvider = [
+      for (final MapEntry(key: account, value: ids) in found.entries)
+        if (ids.isNotEmpty) m.accountId.equals(account) & m.conversationId.isIn(ids),
+    ];
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])
-      ..where(hits)
+      ..where(Expression.or([hits, ...onProvider]) & CustomExpression<bool>(notSpam('messages')))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (accountIds.isNotEmpty) query.where(m.accountId.isIn(accountIds));
     return query.watch().map(

@@ -102,6 +102,8 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
             if (value.nextPageToken case final token?) _next[account.id] = (account, token);
           case Err(:final failure):
             unreachable.value = [...unreachable.value, (account, failure)];
+            // The page it failed on stays to ask again with «Mostra altri»; what was found so far stays too.
+            if (tokens[account.id] case final token?) _next[account.id] = (account, token);
         }
         if (searching.value.isEmpty) hasMore.value = _next.isNotEmpty;
       });

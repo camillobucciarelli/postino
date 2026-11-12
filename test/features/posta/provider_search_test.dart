@@ -187,6 +187,34 @@ void main() {
     expect(find.text('Mostra altri'), findsNothing, reason: 'the last page');
   });
 
+  testWidgets('a next page that fails keeps its place: «Mostra altri» asks it again, the results stay', (
+    tester,
+  ) async {
+    final (_, a1, _) = await _start(tester);
+    for (var i = 0; i < 5; i++) {
+      a1.deliverOutsideWindow(msg('p$i', subject: 'Preventivo $i', date: DateTime.utc(2026, 3, 1 + i)));
+    }
+    await _type(tester, 'preventivo');
+    await _enter(tester);
+    expect(_row('a1', 'p3'), findsOneWidget);
+
+    a1.goOffline();
+    await tester.tap(find.text('Mostra altri'));
+    await _settle(tester);
+    expect(find.textContaining('a1@example.com non è raggiungibile'), findsOneWidget);
+    expect(_row('a1', 'p4'), findsOneWidget, reason: 'what was found stays');
+    expect(find.text('Mostra altri'), findsOneWidget, reason: 'the page can be asked again');
+
+    a1.goOnline();
+    await tester.tap(find.text('Mostra altri'));
+    await _settle(tester);
+    expect(_row('a1', 'p2'), findsOneWidget);
+    expect(_row('a1', 'p1'), findsOneWidget);
+    expect(_row('a1', 'p4'), findsOneWidget);
+    expect(find.textContaining('non è raggiungibile'), findsNothing);
+    expect(a1.searchCalls.map((c) => c.$2), [null, '2', '2']);
+  });
+
   testWidgets('a new text drops what the Providers found for the old one', (tester) async {
     await _start(tester);
     await _type(tester, 'affitto');

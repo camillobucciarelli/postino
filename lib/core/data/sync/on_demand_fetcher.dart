@@ -99,15 +99,14 @@ class OnDemandFetcher(
   }
 
   Future<Result<ProviderSearchPage>> search(String accountId, SearchQuery query, {String? pageToken}) async {
-    final account = await _gate.find(accountId);
-    if (account == null || _gate.removed(accountId)) return const Err(NotFoundFailure());
-    if (account.status != AccountStatus.attivo) return const Err(AuthFailure());
-    if (_gate.paused(accountId)) return Err(RateLimitFailure(retryAfter: _gate.pausedUntil(accountId)));
+    if (await _searchRefusal(accountId) case final refused?) return Err(refused);
     // In the Account's queue, like an opened Conversazione: no sync can apply a deletion (of a message not stored
     // yet, so a no-op) between the fetch and the write, which would bring the message back for good.
     // ponytail: a search waits behind a running sync (an initial one may outlast its timeout); a cursor check if that hurts.
     return _queue.run(accountId, () async {
-      if (_gate.removed(accountId)) return const Err(NotFoundFailure());
+      // Again here: the sync it waited behind may have made the Account Da ricollegare or paused it.
+      if (await _searchRefusal(accountId) case final refused?) return Err(refused);
+      final account = (await _gate.find(accountId))!;
       final stored = (await _store.messageIds(accountId)).toSet();
       final found = await providerFor(account).search(query, pageToken: pageToken, stored: stored);
       if (_gate.removed(accountId)) return const Err(NotFoundFailure());
@@ -128,6 +127,16 @@ class OnDemandFetcher(
       }
       return found;
     });
+  }
+
+  /// Why the Account's Provider may not be searched now, null when it may: gone or being removed, Da ricollegare,
+  /// paused by a rate limit.
+  Future<Failure?> _searchRefusal(String accountId) async {
+    final account = await _gate.find(accountId);
+    if (account == null || _gate.removed(accountId)) return const NotFoundFailure();
+    if (account.status != AccountStatus.attivo) return const AuthFailure();
+    if (_gate.paused(accountId)) return RateLimitFailure(retryAfter: _gate.pausedUntil(accountId));
+    return null;
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.

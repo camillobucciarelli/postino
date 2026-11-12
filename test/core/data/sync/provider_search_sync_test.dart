@@ -86,6 +86,40 @@ void main() {
     expect(engine().autoLabeling, contains('a'), reason: 'the sync labels what it brings');
   });
 
+  test('a search queued behind a sync that makes the Account Da ricollegare does not reach the Provider', () async {
+    final syncing = a.hold = Completer<void>();
+    a.breakAuth();
+    final sync = engine().syncAll();
+    await pumpEventQueue();
+    final search = engine().search('a', fattura);
+    await pumpEventQueue();
+    a.hold = null;
+    syncing.complete();
+    await sync;
+    expect(
+      await search,
+      isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<AuthFailure>()),
+    );
+    expect(a.searchCalls, isEmpty);
+  });
+
+  test('a search queued behind a sync that the Provider pauses does not reach the Provider', () async {
+    final syncing = a.hold = Completer<void>();
+    a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 1)));
+    final sync = engine().syncAll();
+    await pumpEventQueue();
+    final search = engine().search('a', fattura);
+    await pumpEventQueue();
+    a.hold = null;
+    syncing.complete();
+    await sync;
+    expect(
+      await search,
+      isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<RateLimitFailure>()),
+    );
+    expect(a.searchCalls, isEmpty);
+  });
+
   test('an Account removed while its search runs gets nothing written', () async {
     final held = a.holdSearch = Completer<void>();
     final search = engine().search('a', fattura);

@@ -31,6 +31,10 @@ class Messages() extends Table {
   BoolColumn get isRead => boolean()();
   BoolColumn get isStarred => boolean()();
 
+  /// Whether the message has attachments; null until known (rows before v23, Providers that do not say): the
+  /// `has_attachments` of the Provider, or its structure, or the downloaded body, whichever came last (#206).
+  BoolColumn get hasAttachments => boolean().nullable()();
+
   @override
   Set<Column> get primaryKey => {accountId, id};
 }

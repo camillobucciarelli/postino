@@ -18,29 +18,43 @@ class const SearchQuery({
   /// L'oggetto.
   final String? subject,
 
-  /// Dal giorno [after], secondo il giorno locale dell'utente (criterio di #206).
+  /// Dal giorno [after] compreso, secondo il giorno locale dell'utente (mezzanotte locale di quel giorno).
   final DateTime? after,
 
-  /// Fino al giorno [before], secondo il giorno locale dell'utente (criterio di #206).
+  /// Fino al giorno [before] compreso, secondo il giorno locale dell'utente (mezzanotte locale di quel giorno).
   final DateTime? before,
 
-  /// Solo non letti (criterio di #206).
+  /// Solo non letti: una Conversazione conta se almeno un suo messaggio non è letto.
   final bool? unread,
 
-  /// Solo con Stella (criterio di #206).
+  /// Solo con Stella: una Conversazione conta se almeno un suo messaggio ha la Stella.
   final bool? starred,
 
-  /// Solo con allegati (criterio di #206).
+  /// Solo con allegati: un messaggio di cui non si sa ancora se ne ha non conta.
   final bool? hasAttachment,
 
-  /// Gli Account in cui cercare; vuoto: tutti.
+  /// Nomi (parti dell'indirizzo) degli Account in cui cercare, scritti dall'utente: basta che ne corrisponda uno.
+  /// Vuoto: nessuna restrizione.
+  final List<String> accountNames = const [],
+
+  /// Gli id degli Account in cui cercare, decisi dal chiamante (la vista da cui si apre la ricerca); vuoto: tutti.
   final Set<String> accountIds = const {},
 }) extends Equatable {
   /// Crea una ricerca; senza argomenti è vuota.
   this;
 
-  /// Niente da cercare: nessuna parola, frase, mittente, destinatari o oggetto.
-  bool get isEmpty => terms.isEmpty && phrase == null && from == null && to == null && subject == null;
+  /// Niente da cercare né da filtrare. [accountIds] non conta: è la vista da cui si cerca, non un criterio scritto.
+  bool get isEmpty =>
+      !hasText &&
+      after == null &&
+      before == null &&
+      unread == null &&
+      starred == null &&
+      hasAttachment == null &&
+      accountNames.isEmpty;
+
+  /// Se c'è qualcosa che l'indice full-text possa cercare (parole, frase, mittente, destinatari, oggetto).
+  bool get hasText => terms.isNotEmpty || phrase != null || from != null || to != null || subject != null;
 
   /// La stessa ricerca ristretta a [ids].
   SearchQuery inAccounts(Set<String> ids) => SearchQuery(
@@ -54,6 +68,7 @@ class const SearchQuery({
     unread: unread,
     starred: starred,
     hasAttachment: hasAttachment,
+    accountNames: accountNames,
     accountIds: ids,
   );
 
@@ -69,6 +84,7 @@ class const SearchQuery({
     unread,
     starred,
     hasAttachment,
+    accountNames,
     accountIds,
   ];
 }

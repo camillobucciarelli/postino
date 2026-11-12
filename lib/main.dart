@@ -14,12 +14,15 @@ import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
+import 'core/data/background_sync.dart';
 import 'core/data/error_log/uncaught_errors.dart';
 import 'core/data/local_notifications.dart' show backgroundActionEntry;
 import 'core/data/notification_action_relay.dart';
 import 'core/data/notification_payload.dart' show decodeAction;
+import 'core/data/platform_services.dart' show SystemPeriodicSync;
 import 'core/data/postino_database.dart';
 import 'core/data/settings_sync.dart';
+import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
@@ -45,21 +48,28 @@ Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
 }
 
-/// Android WorkManager entry point (#36): a fresh isolate wires the app's DI and runs [runOutboxTask].
+/// Android WorkManager entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
+/// Account (#36, [runOutboxTask]) or the periodic sync (#212, [runSyncTask]), whose notifications it prepares first.
+/// Its name stays: WorkManager keeps the callback handle across an update, and a send queued before it still finds it.
 @pragma('vm:entry-point')
 void sendOutboxDispatcher() {
   Workmanager().executeTask((task, input) async {
+    final sync = task == SystemPeriodicSync.task;
     final accountId = input?['accountId'] as String?;
-    if (accountId == null) return true;
+    if (!sync && accountId == null) return true;
     try {
       DartPluginRegistrant.ensureInitialized();
       await configureDependencies(environment: Environment.prod);
     } on Object catch (e) {
-      debugPrint('[background] $accountId: setup failed, $e');
+      debugPrint('[background] $task: setup failed, ${e.runtimeType}');
       return true;
     }
-    return runOutboxTask(accountId);
-  });
+    if (!sync) return runOutboxTask(accountId!);
+    LocaleSettings.useDeviceLocaleSync();
+    // Not the app: the buttons tapped meanwhile stay with the app or their own background engine (#211).
+    await _startNotifications(app: false);
+    return runSyncTask();
+  }, onTaskStopped: (task, _) => stopSyncTask());
 }
 
 /// A button of a notification tapped outside the app's isolate (#211): iOS and Android run it in a background engine,
@@ -109,7 +119,7 @@ Future<void> main() async {
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    // The outbox keeps going after the user leaves the app (#36).
+    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212).
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);
@@ -124,8 +134,8 @@ bool get _desktop =>
     const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform);
 
 /// Before `runApp` (#39): the notifications ready, and what the notification that launched the app opens.
-/// Failing keeps Postino from notifying, not from running.
-Future<NotificationTarget?> _startNotifications() async {
+/// Failing keeps Postino from notifying, not from running. Only the [app]'s isolate takes the notifications' buttons.
+Future<NotificationTarget?> _startNotifications({bool app = true}) async {
   backgroundActionEntry = notificationActionDispatcher;
   try {
     return await getIt<Notifications>().start(
@@ -133,7 +143,7 @@ Future<NotificationTarget?> _startNotifications() async {
       openLabel: t.notifiche.open,
       newMessages: (n) => t.notifiche.newMessages(n: n),
       actionLabel: (action) => notificationActionLabel(t, action),
-      onAction: (tap) => unawaited(_runNotificationAction(tap)),
+      onAction: app ? (tap) => unawaited(_runNotificationAction(tap)) : null,
     );
   } on Object catch (e) {
     debugPrint('[notifiche] start: $e');
@@ -203,6 +213,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     super.initState();
     getIt<SyncEngine>().start();
     getIt<SettingsSync>().start();
+    getIt<PeriodicSchedule>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
     _whenRouted(() {
       if (widget.launch case final launch?) _open(launch);
@@ -249,6 +260,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
     unawaited(getIt<SettingsSync>().stop());
+    unawaited(getIt<PeriodicSchedule>().stop());
     super.dispose();
   }
 

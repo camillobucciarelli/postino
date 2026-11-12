@@ -52,7 +52,7 @@ class FakeNotifications() implements Notifications {
     required String openLabel,
     required String Function(int count) newMessages,
     required String Function(NotificationAction action) actionLabel,
-    required void Function(NotificationActionTap tap) onAction,
+    required void Function(NotificationActionTap tap)? onAction,
   }) async {
     this.onAction = onAction;
     return launch;

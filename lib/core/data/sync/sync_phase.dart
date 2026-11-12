@@ -30,8 +30,9 @@ class SyncPhase(
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   final autoLabeling = <String, Future<void>>{};
 
-  /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two.
-  Future<void> run(Account account, Completer<void> synced) async {
+  /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two. Without
+  /// [autoLabel] (the background task, #212) the new mail is left to the next sync's Etichettatura automatica.
+  Future<void> run(Account account, Completer<void> synced, {bool autoLabel = true}) async {
     final accountId = account.id;
     // Removed while this sync waited in the queue (#174): nothing of it is written again, and its adapter, already
     // dropped, is not created again.
@@ -40,7 +41,7 @@ class SyncPhase(
     try {
       // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
       await _replay.beforeSync(accountId, provider);
-      if (!_gate.paused(accountId)) await _sync(account, provider);
+      if (!_gate.paused(accountId)) await _sync(account, provider, autoLabel: autoLabel);
       synced.complete();
     } catch (e, s) {
       synced.completeError(e, s);
@@ -52,7 +53,7 @@ class SyncPhase(
     }
   }
 
-  Future<void> _sync(Account account, MailProvider provider) async {
+  Future<void> _sync(Account account, MailProvider provider, {required bool autoLabel}) async {
     final accountId = account.id;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
@@ -87,7 +88,9 @@ class SyncPhase(
         await _newMail.notify(account, fresh);
         await _cleanup.clean(accountId, touched);
         // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
-        if (unknown.isNotEmpty) {
+        if (!autoLabel) {
+          await _labeler.defer(accountId, unknown);
+        } else if (unknown.isNotEmpty || await _labeler.hasDeferred(accountId)) {
           final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);
           unawaited(autoLabeling[accountId] = run.then((queued) => queued ? _replay.ifActive(accountId) : null));
         }

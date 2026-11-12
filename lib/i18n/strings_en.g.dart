@@ -450,7 +450,7 @@ class _Translations$cerca$en extends Translations$cerca$it {
 	@override String get field => 'Search mail';
 	@override String get scopeAll => 'All Accounts';
 	@override String get idleTitle => 'Search your mail';
-	@override String get idleBody => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase.';
+	@override String get idleBody => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.';
 	@override String get emptyTitle => 'No results';
 	@override String get emptyBody => 'Try other words, or just the start of a word.';
 	@override String results({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
@@ -858,7 +858,7 @@ extension on TranslationsEn {
 			'cerca.field' => 'Search mail',
 			'cerca.scopeAll' => 'All Accounts',
 			'cerca.idleTitle' => 'Search your mail',
-			'cerca.idleBody' => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase.',
+			'cerca.idleBody' => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.',
 			'cerca.emptyTitle' => 'No results',
 			'cerca.emptyBody' => 'Try other words, or just the start of a word.',
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 

@@ -277,7 +277,7 @@
     "field": "Cerca nella posta",
     "scopeAll": "Tutti gli Account",
     "idleTitle": "Cerca nella posta",
-    "idleBody": "Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.",
+    "idleBody": "Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.",
     "emptyTitle": "Nessun risultato",
     "emptyBody": "Prova con altre parole o con l'inizio di una parola.",
     "results": {

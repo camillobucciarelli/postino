@@ -52,7 +52,7 @@ class LocalNotifications() implements Notifications {
     required String openLabel,
     required String Function(int count) newMessages,
     required String Function(NotificationAction action) actionLabel,
-    required void Function(NotificationActionTap tap) onAction,
+    required void Function(NotificationActionTap tap)? onAction,
   }) async {
     _channelName = channelName;
     _newMessages = newMessages;
@@ -64,7 +64,8 @@ class LocalNotifications() implements Notifications {
       notificationCategories: darwinCategories(actionLabel),
     );
     _relay?.close();
-    _relay = listenForRelayedActions(onAction);
+    // Only the app's isolate takes the relayed buttons: a background task must not take the name from it.
+    _relay = onAction == null ? null : listenForRelayedActions(onAction);
     await _plugin.initialize(
       settings: InitializationSettings(
         android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -78,7 +79,7 @@ class LocalNotifications() implements Notifications {
         ),
       ),
       onDidReceiveNotificationResponse: (r) {
-        if (decodeAction(r.payload, r.actionId) case final tap?) return onAction(tap);
+        if (decodeAction(r.payload, r.actionId) case final tap?) return onAction?.call(tap);
         if (decodePayload(r.payload) case final target?) _taps.add(target);
       },
       onDidReceiveBackgroundNotificationResponse: backgroundActionEntry,
@@ -88,7 +89,7 @@ class LocalNotifications() implements Notifications {
     final response = launch!.notificationResponse;
     // A button that launched the app (Windows, macOS): its Azione, and the app opens where it would.
     if (decodeAction(response?.payload, response?.actionId) case final tap?) {
-      onAction(tap);
+      onAction?.call(tap);
       return null;
     }
     return decodePayload(response?.payload);

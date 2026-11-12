@@ -231,3 +231,32 @@ class SystemBackgroundSender() implements BackgroundSender {
     }
   }
 }
+
+/// Android: a WorkManager periodic task every [every] (its minimum; the OS shifts it as it likes), only with a network,
+/// whose isolate runs the background sync (see background_sync.dart). Elsewhere nothing (iOS: #213).
+@LazySingleton(as: PeriodicSync, env: [Environment.prod])
+class SystemPeriodicSync() implements PeriodicSync {
+  /// Name of the WorkManager task, unique too.
+  static const task = 'postino.sync';
+  static const every = Duration(minutes: 15);
+
+  static bool get _android => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  @override
+  Future<void> schedule() async {
+    if (!_android) return;
+    await Workmanager().registerPeriodicTask(
+      task,
+      task,
+      frequency: every,
+      constraints: Constraints(networkType: NetworkType.connected),
+      // One task whatever the app starts: the one scheduled keeps its timing.
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+    );
+  }
+
+  @override
+  Future<void> cancel() async {
+    if (_android) await Workmanager().cancelByUniqueName(task);
+  }
+}

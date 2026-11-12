@@ -13,7 +13,8 @@ class SearchStore(final PostinoDatabase _db) implements SearchRepository {
   @override
   Stream<List<InboxEntry>> watchLocal(SearchQuery query) {
     final match = ftsMatch(query);
-    if (match == null) return Stream.value(const []);
-    return _db.searchDao.watchConversations(match, accountIds: query.accountIds).map(inboxEntriesOf);
+    // Nothing asked, or words that are no letters or digits: nothing the index can find.
+    if (query.isEmpty || (query.hasText && match == null)) return Stream.value(const []);
+    return _db.searchDao.watchConversations(query, match: match).map(inboxEntriesOf);
   }
 }

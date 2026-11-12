@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/local_notifications.dart';
+import 'package:postino/core/data/notification_action_relay.dart';
 import 'package:postino/core/data/notification_payload.dart';
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
@@ -116,6 +117,21 @@ void main() {
 
     expect(actions, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive)]);
     expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+  });
+
+  test("a background task's start (#212) leaves the relayed buttons to the app's isolate", () async {
+    await LocalNotifications().start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n',
+      actionLabel: (a) => a.name,
+      onAction: null,
+    );
+    const tap = (conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.star);
+
+    expect(await relayToApp(tap), isTrue);
+    await pumpEventQueue();
+    expect(actions, [tap], reason: 'the app started in setUp still takes it');
   });
 
   test('a button that launched the app runs its Azione, and the app opens on nothing in particular', () async {

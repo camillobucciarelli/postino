@@ -228,4 +228,34 @@ void main() {
     expect(tester.getSemantics(live).label, 'Nessun risultato');
     handle.dispose();
   });
+
+  testWidgets('criteria are operators of the same field: with the text, or alone (#206)', (tester) async {
+    await _start(tester);
+    await _openFromBar(tester);
+    final live = find.byWidgetPredicate((w) => w is Semantics && w.properties.liveRegion == true);
+
+    await _type(tester, 'fattur');
+    expect(_row('a1', 'm1'), findsOneWidget);
+    expect(_row('a2', 'n1'), findsOneWidget);
+
+    await _type(tester, 'fattur account:a2');
+    expect(_row('a2', 'n1'), findsOneWidget);
+    expect(_row('a1', 'm1'), findsNothing);
+
+    // Criteria alone are a search too: all the unread ones (the three delivered are).
+    await _type(tester, 'è:nonletto');
+    expect(find.text('Cerca nella posta'), findsOneWidget, reason: 'only the field name: the idle hint is gone');
+    expect(_row('a1', 'm1'), findsOneWidget);
+    expect(_row('a1', 'm2'), findsOneWidget);
+    expect(_row('a2', 'n1'), findsOneWidget);
+
+    await _type(tester, 'è:nonletto è:stella');
+    expect(_row('a1', 'm1'), findsNothing);
+    expect(find.text('Nessun risultato'), findsWidgets);
+    expect(tester.getSemantics(live).label, 'Nessun risultato');
+
+    // Emptying the field goes back to nothing.
+    await _type(tester, '');
+    expect(find.text('Nessun risultato'), findsNothing);
+  });
 }

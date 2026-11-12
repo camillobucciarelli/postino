@@ -12,14 +12,15 @@ abstract interface class Notifications() {
   /// Prepares the notifications, in `main()` before `runApp`: [channelName] names them in the system settings
   /// (Android), [openLabel] is their default action (Linux), [newMessages] the text of a [NewMailSummary] of that
   /// many, [actionLabel] the title of a button (#211). [onAction] runs a button tapped in this isolate: while the app
-  /// runs, on every platform; the one that launched the app too. Returns what the notification that launched the app
+  /// runs, on every platform; the one that launched the app too. Null where this isolate is not the app's (a
+  /// background task, #212): the buttons are not taken here. Returns what the notification that launched the app
   /// opens (cold start), null otherwise.
   Future<NotificationTarget?> start({
     required String channelName,
     required String openLabel,
     required String Function(int count) newMessages,
     required String Function(NotificationAction action) actionLabel,
-    required void Function(NotificationActionTap tap) onAction,
+    required void Function(NotificationActionTap tap)? onAction,
   });
 
   /// Shows [notification], in place of the one of its Conversazione; a tap on it comes back through [taps], or

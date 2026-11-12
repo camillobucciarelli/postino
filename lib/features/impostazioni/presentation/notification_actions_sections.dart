@@ -7,6 +7,7 @@ import '../../../core/domain/notification_action.dart';
 import '../../../core/domain/settings_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'notification_action_label.dart';
 
 /// Impostazioni del dispositivo › the two Azioni of a notification (#211): each Archivia, Segna come letto, Stella,
 /// Elimina or «Nessuna»; saved on this device, the next notification has them. Each choice reads to a screen reader
@@ -33,14 +34,6 @@ class _NotificationActionsSectionsState() extends State<NotificationActionsSecti
     unawaited(_settings.setNotificationActions(actions));
   }
 
-  String _label(BuildContext context, NotificationAction? a) => switch (a) {
-    NotificationAction.archive => context.t.azioni.archive,
-    NotificationAction.markRead => context.t.azioni.markRead,
-    NotificationAction.star => context.t.scorrimento.star,
-    NotificationAction.delete => context.t.azioni.delete,
-    null => context.t.impostazioni.notificationActionNone,
-  };
-
   Widget _section(
     BuildContext context, {
     required String place,
@@ -53,7 +46,7 @@ class _NotificationActionsSectionsState() extends State<NotificationActionsSecti
       for (final a in [...NotificationAction.values, null])
         PostinoChoiceRow(
           key: ValueKey('notification-action-$place-${a?.name ?? 'none'}'),
-          label: _label(context, a),
+          label: notificationActionLabel(context.t, a),
           group: title,
           selected: a == chosen,
           onSelected: () => _choose(choice(a)),

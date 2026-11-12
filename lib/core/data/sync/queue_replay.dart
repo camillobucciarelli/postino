@@ -29,9 +29,22 @@ class QueueReplay(
   }
 
   /// [run] in the Account's turn, unless its queue may not go to the Provider now.
-  Future<void> ifActive(String accountId, {bool flush = false, bool outboxOnly = false}) async {
+  /// With [actionsOnly] (a notification's button in the background engine, #211) only the Azioni go: the Bozze have
+  /// no cross-isolate claim and the outbox is the app's or WorkManager's.
+  Future<void> ifActive(
+    String accountId, {
+    bool flush = false,
+    bool outboxOnly = false,
+    bool actionsOnly = false,
+  }) async {
     if (await _gate.active(accountId) case final account?) {
-      await _queue.run(accountId, () => run(accountId, providerFor(account), flush: flush, outboxOnly: outboxOnly));
+      final provider = providerFor(account);
+      await _queue.run(
+        accountId,
+        () => actionsOnly
+            ? beforeSync(accountId, provider)
+            : run(accountId, provider, flush: flush, outboxOnly: outboxOnly),
+      );
     }
   }
 

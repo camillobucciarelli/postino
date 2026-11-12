@@ -26,6 +26,9 @@ void main() {
   late List<NotificationActionTap> actions;
   late List<NotificationTarget> taps;
 
+  /// What the OS says launched the app.
+  Map<String, Object?>? launch;
+
   MailNotification mail(String accountId, String conversationId, {List<NotificationAction> actions = const []}) =>
       MailNotification(
         conversation: (accountId: accountId, conversationId: conversationId),
@@ -42,11 +45,14 @@ void main() {
     shown = {};
     buttons = {};
     cancels = [];
+    launch = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (call) async {
       final args = call.arguments;
       switch (call.method) {
         case 'initialize':
           return true;
+        case 'getNotificationAppLaunchDetails':
+          return launch;
         case 'show':
           final map = args as Map;
           final specifics = map['platformSpecifics'] as Map?;
@@ -110,6 +116,47 @@ void main() {
 
     expect(actions, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive)]);
     expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+  });
+
+  test('a button that launched the app runs its Azione, and the app opens on nothing in particular', () async {
+    final payload = encodePayload(const ConversationTarget((accountId: 'a1', conversationId: 't-a')));
+    launch = {
+      'notificationLaunchedApp': true,
+      'notificationResponse': {
+        'notificationId': 1,
+        'actionId': 'delete',
+        'payload': payload,
+        'notificationResponseType': 1,
+      },
+    };
+    final launched = <NotificationActionTap>[];
+    final target = await LocalNotifications().start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n',
+      actionLabel: (a) => a.name,
+      onAction: launched.add,
+    );
+
+    expect(target, isNull);
+    expect(launched, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.delete)]);
+
+    launch = {
+      ...launch!,
+      'notificationResponse': {...launch!['notificationResponse']! as Map, 'actionId': null},
+    };
+    expect(
+      await LocalNotifications().start(
+        channelName: 'Posta nuova',
+        openLabel: 'Apri',
+        newMessages: (n) => '$n',
+        actionLabel: (a) => a.name,
+        onAction: launched.add,
+      ),
+      const ConversationTarget((accountId: 'a1', conversationId: 't-a')),
+      reason: 'a tap on the notification itself opens its Conversazione',
+    );
+    expect(launched, hasLength(1));
   });
 
   test('iOS: the notification names a category registered at start with its buttons, for any choice', () async {

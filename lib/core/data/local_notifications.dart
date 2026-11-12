@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 
@@ -18,9 +17,6 @@ import 'notification_payload.dart';
 /// Where a button tapped outside the app's isolate goes (iOS, Android run it in a background engine, #211): a top
 /// level `@pragma('vm:entry-point')` function of main.dart, the one place that wires the DI. Set before `start`.
 DidReceiveBackgroundNotificationResponseCallback? backgroundActionEntry;
-
-/// The few native lines that open Postino's notifications in the system settings (MainActivity, AppDelegate).
-const _settingsChannel = MethodChannel('it.postino/notification_settings');
 
 /// flutter_local_notifications (#39). Android, iOS and macOS: notifications, taps and cold start from a tap.
 /// Windows: toasts and taps (cold start only for an MSIX-packaged app). Linux: notifications and taps while the app
@@ -188,7 +184,7 @@ class LocalNotifications() implements Notifications {
   Future<void> openSystemSettings() async {
     if (kIsWeb) return;
     const mobileOrMac = {TargetPlatform.android, TargetPlatform.iOS, TargetPlatform.macOS};
-    if (mobileOrMac.contains(defaultTargetPlatform)) await _settingsChannel.invokeMethod<void>('open');
+    if (mobileOrMac.contains(defaultTargetPlatform)) await _plugin.openAppNotificationSettings();
   }
 
   /// A notification of [accountId], in its group; with the buttons of [actions] on [conversation] (#211).

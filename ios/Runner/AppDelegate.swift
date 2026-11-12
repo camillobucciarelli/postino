@@ -7,8 +7,6 @@ import flutter_local_notifications
   /// Background tasks begun for the outbox (#36), by identifier; ended once or at expiration.
   private var sendTasks = Set<Int>()
   private var backgroundChannel: FlutterMethodChannel?
-  private var notificationSettingsChannel: FlutterMethodChannel?
-
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -25,18 +23,6 @@ import flutter_local_notifications
       GeneratedPluginRegistrant.register(with: registry)
     }
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    // #211: «Consenti» in the Impostazioni del dispositivo, once iOS no longer asks.
-    let settings = FlutterMethodChannel(
-      name: "it.postino/notification_settings",
-      binaryMessenger: engineBridge.applicationRegistrar.messenger())
-    settings.setMethodCallHandler { call, result in
-      guard call.method == "open" else { return result(FlutterMethodNotImplemented) }
-      if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
-        UIApplication.shared.open(url)
-      }
-      result(nil)
-    }
-    notificationSettingsChannel = settings
     let channel = FlutterMethodChannel(
       name: "it.postino/background",
       binaryMessenger: engineBridge.applicationRegistrar.messenger())

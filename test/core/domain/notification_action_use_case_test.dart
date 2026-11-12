@@ -12,12 +12,20 @@ import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_action_use_case.dart';
 import 'package:postino/core/domain/notification_target.dart';
+import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
 
 const _t = (accountId: 'a', conversationId: 't');
+const _draft = OutgoingMessage(
+  messageId: '<bozza@example.com>',
+  from: 'a@example.com',
+  to: ['b@example.com'],
+  subject: 'Bozza',
+  body: '<p>Ciao</p>',
+);
 
 void main() {
   late Harness h;
@@ -40,21 +48,49 @@ void main() {
     useCase = getIt<NotificationActionUseCase>();
   });
 
-  test('Archivia: the Conversazione is archived here and on the Provider, the notification goes', () async {
+  test('Archivia: the unread messages of its inbox archived here and on the Provider, the notification goes', () async {
     await useCase.run((conversation: _t, action: NotificationAction.archive));
 
-    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
-    expect({for (final c in a.actionCalls) c.$1}, {'1', '2'}, reason: 'the replay is tried at once');
+    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.inbox, Placement.archive]);
+    expect([for (final c in a.actionCalls) c.$1], ['2'], reason: 'the replay is tried at once');
     expect(await queued(), isEmpty);
     expect(h.notifications.visible['a'], isEmpty);
   });
 
-  test('offline: archived here, the voci wait in the queue', () async {
+  test('offline: archived here, the voce waits in the queue', () async {
     a.goOffline();
     await useCase.run((conversation: _t, action: NotificationAction.archive));
 
-    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
-    expect(await queued(), hasLength(2));
+    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.inbox, Placement.archive]);
+    expect(await queued(), hasLength(1));
+  });
+
+  test('Elimina leaves alone the messages of the Conversazione outside the inbox', () async {
+    a.deliver(msg('3', conversationId: 't', labelIds: const [sentLabelId]));
+    await getIt<MailSync>().syncAll();
+    await useCase.run((conversation: _t, action: NotificationAction.delete));
+
+    expect(
+      [for (final m in await here()) valueOf(m, placementAttribute)],
+      [Placement.inbox, Placement.trash, Placement.archive],
+    );
+  });
+
+  group('a Bozza left pending by the app (no cross-isolate claim on its upload)', () {
+    setUp(() => getIt<OutboxRepository>().saveDraft('a', _draft, updatedAt: 0));
+
+    test('from the background engine only the Azioni go to the Provider: the Bozza stays with the app', () async {
+      await useCase.run((conversation: _t, action: NotificationAction.archive), background: true);
+
+      expect([for (final c in a.actionCalls) c.$1], ['2']);
+      expect(a.draftCalls, isEmpty);
+    });
+
+    test("in the app's isolate the replay takes it along, as every Azione's does", () async {
+      await useCase.run((conversation: _t, action: NotificationAction.archive));
+
+      expect(a.draftCalls, hasLength(1));
+    });
   });
 
   test('Da ricollegare: the Azione waits in the queue, no replay', () async {
@@ -66,21 +102,19 @@ void main() {
     expect(a.actionCalls, isEmpty);
   });
 
-  test('Stella: the messages are still unread, yet the notification goes', () async {
+  test('Stella: the new message is still unread, yet the notification goes', () async {
     await useCase.run((conversation: _t, action: NotificationAction.star));
 
-    expect([for (final m in await here()) m.isStarred], [true, true]);
+    expect([for (final m in await here()) m.isStarred], [false, true]);
     expect(h.notifications.visible['a'], isEmpty);
   });
 
   test('archived elsewhere already: no Conflitto, the value is the wanted one', () async {
-    a
-      ..changeElsewhere('1', placementAttribute, Placement.archive)
-      ..changeElsewhere('2', placementAttribute, Placement.archive);
+    a.changeElsewhere('2', placementAttribute, Placement.archive);
     await useCase.run((conversation: _t, action: NotificationAction.archive));
 
     expect(await conflicts(), isEmpty);
     expect(await queued(), isEmpty);
-    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
+    expect(valueOf((await here()).last, placementAttribute), Placement.archive);
   });
 }

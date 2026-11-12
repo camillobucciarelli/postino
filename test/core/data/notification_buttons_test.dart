@@ -1,4 +1,5 @@
 // The buttons of a notification on Windows, Linux and the Apple platforms (#211).
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/notification_buttons.dart';
 import 'package:postino/core/data/notification_payload.dart';
@@ -12,10 +13,10 @@ void main() {
     final buttons = windowsButtons(_t, const [NotificationAction.archive, NotificationAction.delete], _label);
 
     expect([for (final b in buttons) b.content], ['label-archive', 'label-delete']);
-    expect([for (final b in buttons) decodeAction(b.arguments, b.arguments)], [
-      (conversation: _t, action: NotificationAction.archive),
-      (conversation: _t, action: NotificationAction.delete),
-    ]);
+    expect(
+      [for (final b in buttons) decodeAction(b.arguments, b.arguments)],
+      [(conversation: _t, action: NotificationAction.archive), (conversation: _t, action: NotificationAction.delete)],
+    );
   });
 
   test('Linux: the key of a button is its Azione', () {
@@ -23,17 +24,24 @@ void main() {
     expect([for (final b in buttons) (b.key, b.label)], [('star', 'label-star')]);
   });
 
-  test('Apple: one category per choice with buttons, Elimina destructive', () {
+  test('Apple: one category per choice with buttons; Elimina destructive, Elimina and Archivia after unlocking', () {
     final categories = {for (final c in darwinCategories(_label)) c.identifier: c};
 
     // 4 with one button, 12 with two different ones.
     expect(categories, hasLength(16));
     final defaults = categories[darwinCategoryOf(buttonsOf(notificationActionsDefault))]!;
-    expect([for (final a in defaults.actions) (a.identifier, a.title)], [
-      ('archive', 'label-archive'),
-      ('markRead', 'label-markRead'),
-    ]);
-    expect(categories[darwinCategoryOf(const [NotificationAction.delete])]!.actions.single.options, isNotEmpty);
-    expect(categories[darwinCategoryOf(const [NotificationAction.star])]!.actions.single.options, isEmpty);
+    expect(
+      [for (final a in defaults.actions) (a.identifier, a.title)],
+      [('archive', 'label-archive'), ('markRead', 'label-markRead')],
+    );
+    Set<DarwinNotificationActionOption> options(NotificationAction a) =>
+        categories[darwinCategoryOf([a])]!.actions.single.options;
+    expect(options(NotificationAction.delete), {
+      DarwinNotificationActionOption.destructive,
+      DarwinNotificationActionOption.authenticationRequired,
+    });
+    expect(options(NotificationAction.archive), {DarwinNotificationActionOption.authenticationRequired});
+    expect(options(NotificationAction.star), isEmpty);
+    expect(options(NotificationAction.markRead), isEmpty);
   });
 }

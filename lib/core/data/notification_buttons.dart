@@ -58,7 +58,12 @@ List<DarwinNotificationCategory> darwinCategories(ActionLabel label) {
             DarwinNotificationAction.plain(
               a.name,
               label(a),
-              options: {if (a == NotificationAction.delete) DarwinNotificationActionOption.destructive},
+              options: {
+                if (a == NotificationAction.delete) DarwinNotificationActionOption.destructive,
+                // What takes mail out of the inbox asks to unlock first: not from a locked phone's screen.
+                if (a == NotificationAction.delete || a == NotificationAction.archive)
+                  DarwinNotificationActionOption.authenticationRequired,
+              },
             ),
         ],
       ),

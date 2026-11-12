@@ -70,7 +70,7 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   Future<NotificationAction?> _action(String key, NotificationAction fallback) async {
     final raw = await _db.deviceSettingsDao.read(key);
     if (raw == _none) return null;
-    return NotificationAction.values.where((a) => a.name == raw).firstOrNull ?? fallback;
+    return NotificationAction.values.asNameMap()[raw] ?? fallback;
   }
 
   Future<bool?> _bool(String key) async => switch (await _db.deviceSettingsDao.read(key)) {

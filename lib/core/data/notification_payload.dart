@@ -42,7 +42,7 @@ NotificationActionTap? decodeAction(String? payload, String? actionId) {
 String encodeAction(NotificationActionTap tap) =>
     jsonEncode([tap.conversation.accountId, tap.conversation.conversationId, tap.action.name]);
 
-NotificationAction? _action(String? name) => NotificationAction.values.where((a) => a.name == name).firstOrNull;
+NotificationAction? _action(String? name) => NotificationAction.values.asNameMap()[name];
 
 Object? _decode(String? payload) {
   if (payload == null) return null;

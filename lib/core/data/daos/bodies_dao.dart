@@ -7,6 +7,13 @@ import '../tables/bodies_table.dart';
 
 part 'bodies_dao.g.dart';
 
+/// The downloaded body knows better than the sync whether a message has attachments (#206): the message takes the
+/// body's answer, and keeps its own when the body does not know them (null).
+const _setHasAttachments =
+    'UPDATE messages SET has_attachments = json_array_length(b.attachments) > 0 FROM bodies b '
+    'WHERE messages.account_id = ?1 AND messages.id = ?2 AND b.account_id = ?1 AND b.message_id = ?2 '
+    'AND b.attachments IS NOT NULL';
+
 /// Downloaded message bodies. The `*In` methods add to a [Batch] of the caller's transaction (ADR 0008).
 @DriftAccessor(tables: [Bodies])
 class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$BodiesDaoMixin {
@@ -25,13 +32,16 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       for (final MapEntry(:key, :value) in all.entries) _companion(accountId, key, value),
     ], mode: InsertMode.insertOrReplace);
     for (final MapEntry(:key, :value) in all.entries) {
-      b.customStatement(indexBodySql, [accountId, key, searchableText(value)]);
+      b
+        ..customStatement(indexBodySql, [accountId, key, searchableText(value)])
+        ..customStatement(_setHasAttachments, [accountId, key]);
     }
   }
 
   Future<void> saveBody(String accountId, String messageId, MessageBody body) => transaction(() async {
     await into(bodies).insert(_companion(accountId, messageId, body), mode: InsertMode.insertOrReplace);
     await customStatement(indexBodySql, [accountId, messageId, searchableText(body)]);
+    await customStatement(_setHasAttachments, [accountId, messageId]);
   });
 
   BodiesCompanion _companion(String accountId, String messageId, MessageBody body) => BodiesCompanion.insert(

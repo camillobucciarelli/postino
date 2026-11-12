@@ -215,6 +215,10 @@ class const Message({
 
   /// The Message-IDs of the `References` header, oldest first (#37).
   final List<String> references = const [],
+
+  /// Se ha allegati: null finché non si sa. Il Provider lo dice alla sync (Graph) o lo si ricava dalla struttura
+  /// del messaggio (Gmail e IMAP, `multipart/mixed`: approssimato); il corpo scaricato lo corregge (#206).
+  final bool? hasAttachments,
 }) extends Equatable {
   /// Crea un messaggio; cc, bcc e references partono vuoti.
   this;
@@ -237,6 +241,7 @@ class const Message({
     date,
     replyTo,
     references,
+    hasAttachments,
   ];
 }
 

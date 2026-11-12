@@ -68,4 +68,17 @@ void main() {
     expect(gmailBody(f7, null, null)?.attachments, hasLength(3));
     expect(gmailBody(const {}, null, null), isNull);
   });
+
+  test('has attachments: exact from the parts, a guess from the top-level type alone, unknown with neither (#206)', () {
+    expect(parseGmailMessage(_message('message_f7_attachments')).hasAttachments, isTrue);
+    expect(parseGmailMessage(_message('message_f1')).hasAttachments, isFalse);
+    // `format=metadata`: no parts, only the type of the whole.
+    Map<String, dynamic> metadata(Map<String, dynamic> payload) => {
+      ..._message('message_f1'),
+      'payload': {'headers': (_payload('message_f1')['headers'] as List), ...payload},
+    };
+    expect(parseGmailMessage(metadata({'mimeType': 'multipart/mixed'})).hasAttachments, isTrue);
+    expect(parseGmailMessage(metadata({'mimeType': 'multipart/alternative'})).hasAttachments, isFalse);
+    expect(parseGmailMessage(metadata(const {})).hasAttachments, isNull);
+  });
 }

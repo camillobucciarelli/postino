@@ -105,6 +105,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
               date: m.date.millisecondsSinceEpoch,
               isRead: m.isRead,
               isStarred: m.isStarred,
+              // Unknown does not erase what a body or an earlier sync already said.
+              hasAttachments: Value.absentIfNull(m.hasAttachments),
             );
             b
               // An upsert, not a replace: the row keeps its rowid, which is the id of its entry in the search index.

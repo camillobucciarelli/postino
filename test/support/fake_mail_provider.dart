@@ -26,6 +26,7 @@ Message msg(
   String? conversationId,
   String? replyTo,
   List<String> references = const [],
+  bool? hasAttachments,
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
@@ -42,6 +43,7 @@ Message msg(
   date: date ?? DateTime.utc(2026),
   replyTo: replyTo,
   references: references,
+  hasAttachments: hasAttachments,
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.

@@ -841,8 +841,8 @@ class Translations$cerca$it {
 	/// it: 'Cerca nella posta'
 	String get idleTitle => 'Cerca nella posta';
 
-	/// it: 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.'
-	String get idleBody => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.';
+	/// it: 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.'
+	String get idleBody => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.';
 
 	/// it: 'Nessun risultato'
 	String get emptyTitle => 'Nessun risultato';
@@ -1453,7 +1453,7 @@ extension on Translations {
 			'cerca.field' => 'Cerca nella posta',
 			'cerca.scopeAll' => 'Tutti gli Account',
 			'cerca.idleTitle' => 'Cerca nella posta',
-			'cerca.idleBody' => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.',
+			'cerca.idleBody' => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.',
 			'cerca.emptyTitle' => 'Nessun risultato',
 			'cerca.emptyBody' => 'Prova con altre parole o con l\'inizio di una parola.',
 			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} risultato', other: '${n} risultati', ), 

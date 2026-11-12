@@ -127,6 +127,27 @@ class FakeBackgroundSender() implements BackgroundSender {
   Future<void> release(String accountId) async => releases.add(accountId);
 }
 
+/// The platform's periodic task (#212): like WorkManager's unique work, scheduling it again keeps the one there.
+class FakePeriodicSync() implements PeriodicSync {
+  bool scheduled = false;
+
+  /// How many times the task was really registered, not kept.
+  int registrations = 0;
+
+  /// Every call of [schedule], kept or not.
+  int calls = 0;
+
+  @override
+  Future<void> schedule() async {
+    calls++;
+    if (!scheduled) registrations++;
+    scheduled = true;
+  }
+
+  @override
+  Future<void> cancel() async => scheduled = false;
+}
+
 /// The OS's login items, in memory: [supported] false like a phone, until a test makes it a desktop.
 class FakeLaunchAtLogin() implements LaunchAtLogin {
   @override

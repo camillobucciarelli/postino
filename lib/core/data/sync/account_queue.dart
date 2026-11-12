@@ -17,9 +17,18 @@ class AccountQueue() {
   /// a pull-to-refresh waits for it instead of queuing another.
   final _runningSync = <String, Future<void>>{};
 
+  /// What every Account's queue waits for first: the app's ownership of the sync (#212).
+  Future<void> _ready = Future<void>.value();
+
+  /// Nothing queued, now or later, runs before [ready]: a background sync running keeps the app's waiting (#212).
+  void after(Future<void> ready) {
+    _ready = ready;
+    _tail.updateAll((_, tail) => tail.then((_) => ready));
+  }
+
   /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
   Future<T> run<T>(String accountId, Future<T> Function() op) {
-    final run = (_tail[accountId] ?? Future<void>.value()).then((_) => op());
+    final run = (_tail[accountId] ?? _ready).then((_) => op());
     _tail[accountId] = run.then<void>((_) {}, onError: (_) {});
     return run;
   }

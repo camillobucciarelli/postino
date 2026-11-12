@@ -28,6 +28,9 @@ class _Mailbox(
 
   /// Folders whose SEARCH is never answered.
   final Set<String> slow = const {},
+
+  /// INBOX's UID 1 answers a message that is not here: its parent is looked up.
+  final bool reply = false,
 }) {
   var _selected = '';
 
@@ -63,7 +66,7 @@ class _Mailbox(
 
   String _header(int u) =>
       'From: Ada <ada@example.com>\r\nSubject: Fattura $u\r\nDate: ${u.clamp(1, 28)} Oct 2026 10:00:00 +0000\r\n'
-      'Message-ID: <$_selected-$u@example.com>\r\n\r\n';
+      'Message-ID: <$_selected-$u@example.com>\r\n${reply && _selected == 'INBOX' && u == 1 ? 'In-Reply-To: <parent@example.com>\r\n' : ''}\r\n';
 }
 
 Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox) async {
@@ -164,6 +167,26 @@ void main() {
     );
     final page = okValue(await p.search(_query));
     expect(page.messages.map((m) => m.subject), ['Fattura 3', 'Fattura 1']);
+  });
+
+  test('the parent of a reply is not looked for in a folder that just timed out, nor in Cestino', () async {
+    final (p, server) = await _setUp(
+      _Mailbox(
+        'IMAP4rev1',
+        {
+          'INBOX': [1],
+          'Archive': [2],
+          'Trash': [5],
+        },
+        slow: {'Archive'},
+        reply: true,
+      ),
+    );
+    okValue(await p.search(_query));
+    final selected = server.commands.where((c) => c.startsWith('SELECT')).join(' ');
+    expect('Archive'.allMatches(selected), hasLength(1), reason: 'the search itself, not the lookup');
+    expect(selected, isNot(contains('Trash')));
+    expect(server.commands.where((c) => c.contains('Message-ID "<parent@example.com>"')), isNotEmpty);
   });
 
   test('every folder slower than the timeout: not "no results" but OfflineFailure', () async {

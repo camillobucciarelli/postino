@@ -27,8 +27,8 @@ String? imapSearchCriteria(SearchQuery query, {int? below}) {
     for (final w in words(query.from)) _any(['FROM', 'HEADER From'], w),
     for (final w in words(query.to)) _any(['TO', 'CC', 'HEADER To', 'HEADER Cc'], w),
     for (final w in words(query.subject)) 'SUBJECT ${_argument(w)}',
-    if (query.after case final d?) 'SENTSINCE ${day(d)}',
-    if (query.before case final d?) 'SENTBEFORE ${day(DateTime(d.year, d.month, d.day + 1))}',
+    if (query.after case final d?) 'SENTSINCE ${day(DateTime(d.year, d.month, d.day - 1))}',
+    if (query.before case final d?) 'SENTBEFORE ${day(DateTime(d.year, d.month, d.day + 2))}',
     if (query.unread == true) 'UNSEEN',
     if (query.starred == true) 'FLAGGED',
     if (query.hasAttachment == true) 'HEADER Content-Type "multipart/mixed"',
@@ -47,3 +47,12 @@ String _any(List<String> fields, String word) =>
 String _argument(String text) => RegExp(r'^[\x20-\x7e]*$').hasMatch(text)
     ? '"${text.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"'
     : '{${utf8.encode(text).length}}\n$text';
+
+/// Whether [date] falls in the local days [query] asks for: the filter the server's day-wide SEARCH leaves to us.
+bool imapInDays(SearchQuery query, DateTime date) {
+  final local = date.toLocal();
+  final after = query.after;
+  final before = query.before;
+  return (after == null || !local.isBefore(DateTime(after.year, after.month, after.day))) &&
+      (before == null || local.isBefore(DateTime(before.year, before.month, before.day + 1)));
+}

@@ -4,6 +4,15 @@ import 'package:postino/core/data/imap/imap_search.dart';
 import 'package:postino/core/domain/search_query.dart';
 
 void main() {
+  test('the finds are filtered on the user\'s local days, which the day-wide SEARCH only brackets', () {
+    final q = SearchQuery(after: DateTime(2026, 3), before: DateTime(2026, 3, 31));
+    expect(imapInDays(q, DateTime(2026, 2, 28, 23, 59)), isFalse);
+    expect(imapInDays(q, DateTime(2026, 3)), isTrue);
+    expect(imapInDays(q, DateTime(2026, 3, 31, 23, 59)), isTrue);
+    expect(imapInDays(q, DateTime(2026, 4)), isFalse);
+    expect(imapInDays(const SearchQuery(terms: ['x']), DateTime(2000)), isTrue);
+  });
+
   const prefix = 'CHARSET UTF-8 NOT DELETED';
 
   test('every field has its key; the words of sender, recipients and subject each on their own', () {
@@ -26,13 +35,13 @@ void main() {
       '$prefix TEXT "fattura" TEXT "marzo" TEXT "totale" TEXT "da pagare" '
       'OR FROM "ada" HEADER From "ada" OR FROM "rossi" HEADER From "rossi" '
       'OR TO "dario" OR CC "dario" OR HEADER To "dario" HEADER Cc "dario" '
-      'SUBJECT "riunione" SENTSINCE 1-Mar-2026 SENTBEFORE 1-Apr-2026 UNSEEN FLAGGED '
+      'SUBJECT "riunione" SENTSINCE 28-Feb-2026 SENTBEFORE 2-Apr-2026 UNSEEN FLAGGED '
       'HEADER Content-Type "multipart/mixed"',
     );
   });
 
   test('dates are whole days: the day after for BEFORE, across the month end', () {
-    expect(imapSearchCriteria(SearchQuery(before: DateTime(2026, 12, 31, 23, 59))), '$prefix SENTBEFORE 1-Jan-2027');
+    expect(imapSearchCriteria(SearchQuery(before: DateTime(2026, 12, 31, 23, 59))), '$prefix SENTBEFORE 2-Jan-2027');
   });
 
   test('quotes and backslashes are escaped: the text cannot close the string or add a key', () {

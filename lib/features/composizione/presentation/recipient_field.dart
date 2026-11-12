@@ -10,7 +10,7 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/recipient_token.dart';
 
-/// A, Cc or Ccn with the Contatti (#216): while an address is being written, after the last comma, the best ones
+/// A, Cc or Ccn with the Contatti (#216): while an address is being written (the one the caret is in), the best ones
 /// are suggested under the field. Up/Down move, Enter writes the highlighted one as `Name <address>, `, Esc closes
 /// the list (a second Esc reaches the composer); Tab still moves to the next field (ADR 0014), Cmd/Ctrl+Enter still
 /// sends. The focus never leaves the field.
@@ -47,19 +47,39 @@ class _RecipientFieldState() extends State<RecipientField> {
     _focus.addListener(() {
       if (!_focus.hasFocus) _close();
     });
+    widget.controller.addListener(_moved);
+  }
+
+  late String _seenText = widget.controller.text;
+
+  /// The caret moved to another address (the text did not change): the list was for the old one, it closes.
+  void _moved() {
+    final text = widget.controller.text;
+    if (text == _seenText && _suggestions.isNotEmpty && _token != _shownFor) _close();
+    _seenText = text;
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_moved);
     _debounce?.cancel();
     _focus.dispose();
     super.dispose();
   }
 
+  /// The caret, -1 with a selection (or none): then nothing is suggested.
+  int get _caret {
+    final s = widget.controller.selection;
+    return s.isValid && s.isCollapsed ? s.baseOffset : -1;
+  }
+
+  /// The address the caret is in.
+  String get _token => recipientToken(widget.controller.text, _caret);
+
   /// One query once the typing pauses for [_wait] (#216): the shown suggestions stay meanwhile.
   void _typed(String text) {
     widget.onChanged?.call(text);
-    final token = recipientToken(text);
+    final token = _token;
     if (token.isEmpty) return _close();
     _debounce?.cancel();
     final n = ++_lookup;
@@ -83,13 +103,16 @@ class _RecipientFieldState() extends State<RecipientField> {
   }
 
   void _choose(int i) {
-    final text = completeRecipient(widget.controller.text, _suggestions[i]);
-    widget.controller.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
+    // A tap on a list meant for another address (typed on, the answer not here yet) writes nothing.
+    if (_token != _shownFor) return;
+    final done = completeRecipient(widget.controller.text, _caret, _suggestions[i]);
     _close();
-    widget.onChanged?.call(text);
+    if (done == null) return;
+    widget.controller.value = TextEditingValue(
+      text: done.text,
+      selection: TextSelection.collapsed(offset: done.caret),
+    );
+    widget.onChanged?.call(done.text);
   }
 
   KeyEventResult _key(FocusNode _, KeyEvent e) {
@@ -102,12 +125,9 @@ class _RecipientFieldState() extends State<RecipientField> {
       case LogicalKeyboardKey.arrowUp:
         setState(() => _highlighted = (_highlighted - 1 + n) % n);
       // Cmd/Ctrl+Enter is Invia: it goes on to the composer.
-      // Typed on since the suggestions came: they are for another address.
+      // Typed on, or the caret moved, since the suggestions came: they are for another address.
       case LogicalKeyboardKey.enter || LogicalKeyboardKey.numpadEnter
-          when e is KeyDownEvent &&
-              !keys.isMetaPressed &&
-              !keys.isControlPressed &&
-              recipientToken(widget.controller.text) == _shownFor:
+          when e is KeyDownEvent && !keys.isMetaPressed && !keys.isControlPressed && _token == _shownFor:
         _choose(_highlighted);
       // Under PostinoListDetailLayout the Esc reaches PostinoSuggestions' dismiss action first; elsewhere it is this.
       case LogicalKeyboardKey.escape when e is KeyDownEvent:

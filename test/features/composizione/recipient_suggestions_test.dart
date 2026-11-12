@@ -127,9 +127,57 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(_text(tester, 'A'), 'lu');
+    // Nor does a tap on the old list.
+    await tester.tap(_inList('Maria Rossi'));
+    await tester.pump();
+    expect(_text(tester, 'A'), 'lu');
     await tester.pump(const Duration(milliseconds: 200));
     await _settle(tester);
     expect(_inList('Luca Verdi'), findsOneWidget);
+  });
+
+  _onMac('the suggestions are for the address the caret is in: first, middle and last', (tester) async {
+    await _start(tester);
+    Future<void> at(String text, int caret) async {
+      await tester.tap(_field('A'));
+      tester.testTextInput.updateEditingValue(
+        TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: caret),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await _settle(tester);
+    }
+
+    await at('mar, lu', 3);
+    expect(_inList('Maria Rossi'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await _settle(tester);
+    expect(_text(tester, 'A'), 'Maria Rossi <maria@example.com>, lu');
+    expect(
+      tester.widget<TextField>(_field('A')).controller!.selection.baseOffset,
+      'Maria Rossi <maria@example.com>, '.length,
+    );
+
+    await at('ada@example.com, marc, lu', 'ada@example.com, mar'.length);
+    expect(_inList('Marco Bianchi'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await _settle(tester);
+    expect(_text(tester, 'A'), 'ada@example.com, Marco Bianchi <marco@example.com>, lu');
+
+    await at('mar, lu', 7);
+    expect(_inList('Luca Verdi'), findsOneWidget);
+    expect(_inList('Maria Rossi'), findsNothing);
+    // The caret moved back to «mar» after the list came: the list for «lu» closes, Enter does not write Luca there.
+    tester.testTextInput.updateEditingValue(
+      const TextEditingValue(text: 'mar, lu', selection: TextSelection.collapsed(offset: 2)),
+    );
+    await tester.pump();
+    expect(_open(tester), isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(_text(tester, 'A'), 'mar, lu');
   });
 
   _onMac('a tap chooses a suggestion and the focus stays in the field', (tester) async {

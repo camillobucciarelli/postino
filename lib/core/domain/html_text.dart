@@ -14,6 +14,8 @@ String htmlText(String html) {
   void walk(Node n) {
     if (n is Text) return out.write(n.data);
     if (n is! Element) return n.nodes.forEach(walk);
+    // Code, not text: a newsletter's CSS must not be what a search finds.
+    if (const {'style', 'script', 'title'}.contains(n.localName)) return;
     final block = _blocks.contains(n.localName);
     if (n.localName == 'br' || block) out.write('\n');
     n.nodes.forEach(walk);

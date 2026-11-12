@@ -3,6 +3,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
+import 'app/cerca_page.dart' as a10;
 import 'app/conflitti_page.dart' as a0;
 import 'app/impostazioni/[accountId]/etichette_page.dart' as a2;
 import 'app/impostazioni/dispositivo_page.dart' as a3;
@@ -34,3 +35,5 @@ Route b8Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a8.LabelPage());
 Route b9Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a9.AccountPage());
+Route b10Builder(BuildContext ctx, RouteSettings settings) =>
+    Routefly.defaultRouteBuilder(ctx, settings, const a10.SearchPage());

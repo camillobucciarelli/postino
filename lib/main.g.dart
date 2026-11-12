@@ -37,6 +37,7 @@ List<RouteEntity> get routes => [
     uri: Uri.parse('/posta/[accountId]'),
     routeBuilder: b9Builder,
   ),
+  RouteEntity(key: '/cerca', uri: Uri.parse('/cerca'), routeBuilder: b10Builder),
 ];
 
 const routePaths = (
@@ -60,4 +61,5 @@ const routePaths = (
       etichetta: (path: '/posta/[accountId]/etichetta', $labelId: '/posta/[accountId]/etichetta/[labelId]'),
     ),
   ),
+  cerca: '/cerca',
 );

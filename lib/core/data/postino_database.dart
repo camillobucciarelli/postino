@@ -24,7 +24,9 @@ import 'daos/message_embeddings_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
+import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'search_index.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
 import 'tables/conflicts_table.dart';
@@ -74,6 +76,7 @@ part 'postino_database.g.dart';
     OutboxDao,
     PostinoSettingsDao,
     MessageEmbeddingsDao,
+    SearchDao,
   ],
 )
 class PostinoDatabase(super.e) extends _$PostinoDatabase {
@@ -135,11 +138,15 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      // Not a drift table: the full-text index and its triggers (#205).
+      await createSearchIndex(this);
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(bodies);
@@ -257,6 +264,8 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
           );
         }
       }
+      // Last: it reads the columns of every step above (v7 split the sender).
+      if (from < 22) await createSearchIndex(this);
     },
   );
 

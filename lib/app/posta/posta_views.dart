@@ -26,7 +26,7 @@ import 'posta_routes.dart';
 
 /// The Posta unificata; [selected] is the Conversazione open beside it.
 Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) => PostinoAdaptiveLayout(
-  appBar: const UnifiedAppBar(),
+  appBar: const UnifiedAppBar(onSearch: openSearch),
   drawer: postaDrawer(),
   banners: [...postaBanners, conflictsBanner()],
   fab: WriteFab(cursor: cursor, onWrite: openDraft),
@@ -43,7 +43,10 @@ Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) => Pos
 Widget postaAccountView(String id, {(String, String)? selected, ListCursor? cursor}) => PostinoAdaptiveLayout(
   // A new Account is a new view: its streams start over.
   key: ValueKey(id),
-  appBar: AccountAppBar(accountId: id),
+  appBar: AccountAppBar(
+    accountId: id,
+    onSearch: () => openSearch(accountId: id),
+  ),
   drawer: postaDrawer(accountId: id),
   banners: [
     ...postaBanners,
@@ -62,7 +65,11 @@ Widget postaAccountView(String id, {(String, String)? selected, ListCursor? curs
 Widget postaLabelView(String accountId, String labelId, {(String, String)? selected, ListCursor? cursor}) =>
     PostinoAdaptiveLayout(
       key: ValueKey('$accountId/$labelId'),
-      appBar: AccountAppBar(accountId: accountId, labelId: labelId),
+      appBar: AccountAppBar(
+        accountId: accountId,
+        labelId: labelId,
+        onSearch: () => openSearch(accountId: accountId),
+      ),
       drawer: postaDrawer(accountId: accountId, labelId: labelId),
       banners: postaBanners,
       fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
@@ -78,7 +85,12 @@ Widget postaLabelView(String accountId, String labelId, {(String, String)? selec
 Widget postaDraftsView(String accountId, {(String, String)? selected, ListCursor? cursor}) => Builder(
   key: ValueKey('$accountId/$draftLabelId'),
   builder: (context) => PostinoAdaptiveLayout(
-    appBar: AccountAppBar(accountId: accountId, labelId: draftLabelId, labelName: context.t.bozze.title),
+    appBar: AccountAppBar(
+      accountId: accountId,
+      labelId: draftLabelId,
+      labelName: context.t.bozze.title,
+      onSearch: () => openSearch(accountId: accountId),
+    ),
     drawer: postaDrawer(accountId: accountId, labelId: draftLabelId),
     banners: postaBanners,
     fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
@@ -97,7 +109,12 @@ Widget postaDraftsView(String accountId, {(String, String)? selected, ListCursor
 Widget postaSentView(String accountId, {(String, String)? selected, ListCursor? cursor}) => Builder(
   key: ValueKey('$accountId/$sentLabelId'),
   builder: (context) => PostinoAdaptiveLayout(
-    appBar: AccountAppBar(accountId: accountId, labelId: sentLabelId, labelName: context.t.inviati.title),
+    appBar: AccountAppBar(
+      accountId: accountId,
+      labelId: sentLabelId,
+      labelName: context.t.inviati.title,
+      onSearch: () => openSearch(accountId: accountId),
+    ),
     drawer: postaDrawer(accountId: accountId, labelId: sentLabelId),
     banners: postaBanners,
     fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),

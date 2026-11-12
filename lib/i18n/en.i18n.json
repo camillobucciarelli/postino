@@ -260,6 +260,20 @@
       "other": "$n new messages"
     }
   },
+  "cerca": {
+    "open": "Search",
+    "title": "Search",
+    "field": "Search mail",
+    "scopeAll": "All Accounts",
+    "idleTitle": "Search your mail",
+    "idleBody": "Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase.",
+    "emptyTitle": "No results",
+    "emptyBody": "Try other words, or just the start of a word.",
+    "results": {
+      "one": "$n result",
+      "other": "$n results"
+    }
+  },
   "conflitti": {
     "bannerTitle": {
       "one": "$n conflict",

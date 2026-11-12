@@ -65,6 +65,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
+	@override late final _Translations$cerca$en cerca = _Translations$cerca$en._(_root);
 	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
 	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
 	@override late final _Translations$scorrimento$en scorrimento = _Translations$scorrimento$en._(_root);
@@ -423,6 +424,27 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String newMessages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
 		one: '${n} new message',
 		other: '${n} new messages',
+	);
+}
+
+// Path: cerca
+class _Translations$cerca$en extends Translations$cerca$it {
+	_Translations$cerca$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get open => 'Search';
+	@override String get title => 'Search';
+	@override String get field => 'Search mail';
+	@override String get scopeAll => 'All Accounts';
+	@override String get idleTitle => 'Search your mail';
+	@override String get idleBody => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase.';
+	@override String get emptyTitle => 'No results';
+	@override String get emptyBody => 'Try other words, or just the start of a word.';
+	@override String results({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} result',
+		other: '${n} results',
 	);
 }
 
@@ -812,6 +834,15 @@ extension on TranslationsEn {
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
 			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} new message', other: '${n} new messages', ), 
+			'cerca.open' => 'Search',
+			'cerca.title' => 'Search',
+			'cerca.field' => 'Search mail',
+			'cerca.scopeAll' => 'All Accounts',
+			'cerca.idleTitle' => 'Search your mail',
+			'cerca.idleBody' => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase.',
+			'cerca.emptyTitle' => 'No results',
+			'cerca.emptyBody' => 'Try other words, or just the start of a word.',
+			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} conflict', other: '${n} conflicts', ), 
 			'conflitti.bannerMessage' => 'You changed some messages offline, and they changed somewhere else too.',
 			'conflitti.open' => 'Review',

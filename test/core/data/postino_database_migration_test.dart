@@ -14,6 +14,11 @@ const _v4Bodies =
     'CREATE TABLE bodies (account_id TEXT NOT NULL, message_id TEXT NOT NULL, '
     'body TEXT NOT NULL, PRIMARY KEY (account_id, message_id))';
 
+/// The v5-v8 bodies table: HTML or text, no attachments yet.
+const _v5Bodies =
+    "CREATE TABLE bodies (account_id TEXT NOT NULL, message_id TEXT NOT NULL, body TEXT NOT NULL, "
+    "kind TEXT NOT NULL DEFAULT 'testo', PRIMARY KEY (account_id, message_id))";
+
 const _v4Messages =
     'CREATE TABLE messages (account_id TEXT NOT NULL, id TEXT NOT NULL, message_id TEXT NOT NULL, '
     'conversation_id TEXT NOT NULL, sender TEXT NOT NULL, recipients TEXT NOT NULL, '
@@ -51,6 +56,42 @@ void _backToV17(Database raw) => _backToV18(raw)
   ..execute(_v17LabelIntents);
 
 void main() {
+  test('v22 builds the full-text index of the messages and bodies already stored', () async {
+    final raw = sqlite3.openInMemory();
+    final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
+    await first.customSelect('SELECT 1').get();
+    await first.close();
+    raw
+      ..execute('DROP TRIGGER search_index_insert')
+      ..execute('DROP TRIGGER search_index_update')
+      ..execute('DROP TRIGGER search_index_delete')
+      ..execute('DROP TABLE search_index')
+      ..execute(
+        "INSERT INTO messages (account_id, id, message_id, conversation_id, sender, sender_name, recipients, subject, "
+        "snippet, date, is_read, is_starred) VALUES ('a1', 'm1', '<m1>', 't1', 'ada@example.test', 'Ada Lovelace', "
+        "'bruno@example.test', 'Fattura di ottobre', 'anteprima', 0, 0, 0)",
+      )
+      ..execute(
+        "INSERT INTO bodies (account_id, message_id, body, kind) VALUES ('a1', 'm1', '<p>Il <b>preventivo</b></p>', 'html')",
+      )
+      ..execute('PRAGMA user_version = 21');
+    final db = PostinoDatabase(NativeDatabase.opened(raw));
+    addTearDown(db.close);
+
+    String? found(String match) =>
+        raw.select(
+              'SELECT m.id FROM search_index JOIN messages m ON m.rowid = search_index.rowid WHERE search_index MATCH ?',
+              [match],
+            ).firstOrNull?['id']
+            as String?;
+    await db.customSelect('SELECT 1').get();
+    for (final word in ['fattura', 'lovelace', 'bruno', 'anteprima', 'preventivo']) {
+      expect(found(word), 'm1', reason: word);
+    }
+    expect(found('Pb'), isNull);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
+  });
+
   test('v21 adds the SMTP acceptance to the outbox, null for the rows queued before', () async {
     final raw = sqlite3.openInMemory();
     final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
@@ -67,7 +108,7 @@ void main() {
     addTearDown(db.close);
 
     expect((await db.select(db.outbox).getSingle()).smtpSentAt, isNull);
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v20 adds the Message-ID to the queue of Azioni, null for the voci queued before', () async {
@@ -84,7 +125,7 @@ void main() {
 
     final v = await db.select(db.intents).getSingle();
     expect((v.messageId, v.rfcMessageId), ('m1', null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v19 adds the expected value and the Conflitto of the Bozze, null for those stored before', () async {
@@ -104,7 +145,7 @@ void main() {
 
     final d = await db.select(db.drafts).getSingle();
     expect((d.messageId, d.pending, d.expected, d.conflict), ('<x>', true, null, null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v18 moves the read and Etichette queues into the queue of Azioni, expecting the opposite value', () async {
@@ -135,7 +176,7 @@ void main() {
     );
     expect(await db.select(db.conflicts).get(), isEmpty);
     expect(raw.select("SELECT name FROM sqlite_master WHERE name IN ('label_intents', 'intents_v17')"), isEmpty);
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v3 drops the Gmail system labels cached as Etichette, keeping user ones', () async {
@@ -203,7 +244,7 @@ void main() {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_syncCursors)
-      ..execute(_v4Bodies)
+      ..execute(_v5Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 5')
       ..execute("INSERT INTO accounts VALUES ('a1', 'a1@example.com', 'gmail', 0, 0, 'attivo')");
@@ -219,7 +260,7 @@ void main() {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_syncCursors)
-      ..execute(_v4Bodies)
+      ..execute(_v5Bodies)
       ..execute(_v4Messages)
       ..execute('PRAGMA user_version = 6');
     for (final (id, sender, recipients) in [
@@ -265,12 +306,15 @@ void main() {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_syncCursors)
-      ..execute(_v4Bodies)
+      ..execute(_v5Bodies)
       ..execute(_v4Messages)
       ..execute(
         "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
         "'me@example.com', 'Oggetto', 'Anteprima', 0, 0, 0)",
       )
+      // The columns v7 added: a v9 database has them.
+      ..execute('ALTER TABLE messages ADD COLUMN sender_name TEXT')
+      ..execute("ALTER TABLE messages ADD COLUMN cc TEXT NOT NULL DEFAULT ''")
       ..execute('PRAGMA user_version = 9');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -294,9 +338,12 @@ void main() {
     final raw = sqlite3.openInMemory()
       ..execute(_v3Accounts)
       ..execute(_syncCursors)
-      ..execute(_v4Bodies)
+      ..execute(_v5Bodies)
       ..execute(_v4Messages)
       ..execute("INSERT INTO sync_cursors VALUES ('a1', '123')")
+      // The columns v7 added: a v9 database has them.
+      ..execute('ALTER TABLE messages ADD COLUMN sender_name TEXT')
+      ..execute("ALTER TABLE messages ADD COLUMN cc TEXT NOT NULL DEFAULT ''")
       ..execute('PRAGMA user_version = 9');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
@@ -324,7 +371,7 @@ void main() {
     );
     expect(await db.select(db.messageEmbeddings).get(), hasLength(1));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v16 keeps the Impostazioni di Postino to upload, but older than any copy elsewhere', () async {
@@ -346,7 +393,7 @@ void main() {
     final row = await db.select(db.postinoSettings).getSingle();
     // updatedAt 0: a second device migrating later never overwrites what another device already synced.
     expect((row.dirty, row.deleted, row.updatedAt), (true, false, 0));
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v15 adds the Impostazioni di Postino, keeping what was there', () async {
@@ -366,7 +413,7 @@ void main() {
     await db.postinoSettingsDao.write('k', 'v', at: DateTime.utc(2026));
     expect(await db.postinoSettingsDao.read('k'), 'v');
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v14 adds the Etichette queue, keeping what was there', () async {
@@ -389,7 +436,7 @@ void main() {
     final row = (await db.intentsDao.pending('a1', now: 0)).single;
     expect((row.messageId, row.attribute, row.wanted, row.expected), ('m1', 'label:Label_12', 'true', 'false'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('v13 adds the outbox, keeping what was there', () async {
@@ -426,7 +473,7 @@ void main() {
     final row = (await db.outboxDao.due('a1', 1)).single;
     expect((row.failed, row.claimedUntil, row.conversationId), (false, null, 't'));
     expect((await db.select(db.syncCursors).getSingle()).cursor, '7');
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test(
@@ -435,7 +482,7 @@ void main() {
       final raw = sqlite3.openInMemory()
         ..execute(_v3Accounts)
         ..execute(_syncCursors)
-        ..execute(_v4Bodies)
+        ..execute(_v5Bodies)
         ..execute(_v4Messages)
         ..execute(
           "INSERT INTO messages VALUES ('a1', 'm1', '<m1>', 't', 'a@x.it', "
@@ -464,7 +511,7 @@ void main() {
       );
       final d = await db.select(db.drafts).getSingle();
       expect((d.inReplyTo, d.references, d.conversationId), ('<m1>', '<m1>', 't'));
-      expect(raw.select('PRAGMA user_version').first.values.first, 21);
+      expect(raw.select('PRAGMA user_version').first.values.first, 22);
     },
   );
 
@@ -492,7 +539,7 @@ void main() {
     final d = await db.select(db.drafts).getSingle();
     expect((d.messageId, d.body, d.updatedAt, d.pending), ('<x>', '<p>Ciao</p>', 7, true));
     expect((d.inReplyTo, d.references, d.conversationId, d.attachments), (null, null, null, null));
-    expect(raw.select('PRAGMA user_version').first.values.first, 21);
+    expect(raw.select('PRAGMA user_version').first.values.first, 22);
   });
 
   test('a new database keeps the cursors it saves', () async {

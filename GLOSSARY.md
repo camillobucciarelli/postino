@@ -44,6 +44,10 @@ _Avoid_: Etichetta intelligente, smart label
 L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi dopo l'attivazione, al massimo una per messaggio e solo se non ne ha già una scelta dall'utente.
 _Avoid_: Classificazione, smistamento automatico, tag automatici
 
+**Ricerca**:
+La ricerca nella posta, da un solo campo. Prima gira sul database locale con un indice full-text (parole che iniziano così, senza badare a maiuscole e accenti), restringendosi all'Account della vista da cui si apre; `da:`, `a:` e `oggetto:` (e `from:`, `to:`, `subject:`) cercano per mittente, destinatari e oggetto, le virgolette una frase esatta. Una riga per Conversazione.
+_Avoid_: Filtro, query
+
 **Stella**:
 Il segno che marca un messaggio come importante. Non è la stessa cosa di Posticipa.
 _Avoid_: Preferito, flag, importante

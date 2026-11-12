@@ -283,6 +283,14 @@
     "results": {
       "one": "$n result",
       "other": "$n results"
+    },
+    "provider": {
+      "searching": "Also searching $name…",
+      "unreachable": "Local results only: $name can't be reached",
+      "retry": "Press Enter in the field to try again.",
+      "more": "Show more",
+      "reconnect": "It needs to be reconnected: sign in again from the notice in the mail list.",
+      "later": "The provider asked for a pause: try again in a few minutes."
     }
   },
   "conflitti": {

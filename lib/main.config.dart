@@ -65,6 +65,7 @@ import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/provider_search_use_case.dart' as _i51;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
 import 'package:postino/core/domain/search_repository.dart' as _i71;
 import 'package:postino/core/domain/server_discovery.dart' as _i221;
@@ -367,6 +368,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i114.SettingsSyncAccountUseCase(
         gh<_i382.AccountsRepository>(),
         gh<_i307.SettingsRepository>(),
+      ),
+    );
+    gh.factory<_i51.ProviderSearchUseCase>(
+      () => _i51.ProviderSearchUseCase(
+        gh<_i382.AccountsRepository>(),
+        gh<_i705.MailSync>(),
       ),
     );
     return this;

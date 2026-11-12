@@ -12,7 +12,9 @@ import '../domain/mail_sync.dart';
 import '../domain/message.dart';
 import '../domain/outbox_repository.dart';
 import '../domain/platform_services.dart';
+import '../domain/provider_search_page.dart';
 import '../domain/result.dart';
+import '../domain/search_query.dart';
 import 'mail_store.dart';
 import 'sync/account_gate.dart';
 import 'sync/account_queue.dart';
@@ -70,7 +72,7 @@ class SyncEngine(
     _gate,
     _queue,
   );
-  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup);
+  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock);
   late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay);
   late final _triggers = SyncTriggers(
     _store,
@@ -161,6 +163,10 @@ class SyncEngine(
 
   @override
   Future<Result<void>> fetchBody(String accountId, String messageId) => _fetcher.fetchBody(accountId, messageId);
+
+  @override
+  Future<Result<ProviderSearchPage>> search(String accountId, SearchQuery query, {String? pageToken}) =>
+      _fetcher.search(accountId, query, pageToken: pageToken);
 
   @override
   Future<Result<AttachmentBytes>> fetchAttachment(

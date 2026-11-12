@@ -11,7 +11,9 @@ import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
+import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
+import '../../domain/search_query.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
@@ -21,6 +23,7 @@ import 'gmail_actions.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
+import 'gmail_search.dart';
 import 'google_client.dart';
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
@@ -223,6 +226,19 @@ class GmailProvider(
 
   @override
   Future<Result<Label>> createLabel(String name) => oauthGuard(() async => Ok(await _labels.create(name)));
+
+  @override
+  Future<Result<ProviderSearchPage>> search(SearchQuery query, {String? pageToken, Set<String> stored = const {}}) =>
+      oauthGuard(() async {
+        final page = await gmailSearch(
+          _gmail,
+          query,
+          pageToken: pageToken,
+          stored: stored,
+          fetch: (ids) async => [for (final (m, _) in (await _fetchAll(ids, full: (_) => false)).values.nonNulls) m],
+        );
+        return Ok(page);
+      });
 
   /// Adds the label [labelId] to message [messageId] (with [add] false, removes it); idempotent.
   /// [NotFoundFailure] when the message is gone.

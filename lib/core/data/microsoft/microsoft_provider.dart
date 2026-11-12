@@ -6,7 +6,9 @@ import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
+import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
+import '../../domain/search_query.dart';
 import '../../domain/send_limit.dart';
 import '../message_id_of.dart';
 import '../mime.dart';
@@ -147,6 +149,14 @@ class MicrosoftProvider(
 
   @override
   Stream<ChangeSignal> get changes => Stream.value(ChangeSignal.down);
+
+  // ponytail: no search on this Provider yet (#209): only the local results.
+  @override
+  Future<Result<ProviderSearchPage>> search(
+    SearchQuery query, {
+    String? pageToken,
+    Set<String> stored = const {},
+  }) async => const Ok(ProviderSearchPage());
 
   @override
   Future<Result<Label>> createLabel(String name) => oauthGuard(() async => Ok(await _folders.create(name)));

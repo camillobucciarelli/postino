@@ -1,0 +1,104 @@
+// The adapter on Android (#210), over a fake of the plugin's method channel: the group of each Account, the summary
+// that replaces only its Account's notifications, and the group that goes with its last child.
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/local_notifications.dart';
+import 'package:postino/core/data/notification_payload.dart';
+import 'package:postino/core/domain/mail_notification.dart';
+import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_target.dart';
+
+const _channel = MethodChannel('dexterous.com/flutter/local_notifications');
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  /// What the OS shows: id → groupKey.
+  late Map<int, String?> shown;
+  late List<int> cancels;
+  late LocalNotifications notifications;
+
+  MailNotification mail(String accountId, String conversationId) => MailNotification(
+    conversation: (accountId: accountId, conversationId: conversationId),
+    accountAddress: '$accountId@example.com',
+    sender: 'Ada',
+    subject: 'Oggetto',
+    preview: 'Anteprima',
+  );
+
+  setUp(() async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    AndroidFlutterLocalNotificationsPlugin.registerWith();
+    shown = {};
+    cancels = [];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (call) async {
+      final args = call.arguments;
+      switch (call.method) {
+        case 'initialize':
+          return true;
+        case 'show':
+          final map = args as Map;
+          shown[map['id'] as int] = (map['platformSpecifics'] as Map?)?['groupKey'] as String?;
+        case 'cancel':
+          final id = (args as Map)['id'] as int;
+          cancels.add(id);
+          shown.remove(id);
+        case 'getActiveNotifications':
+          return [
+            for (final MapEntry(:key, :value) in shown.entries) {'id': key, 'groupKey': value},
+          ];
+      }
+      return null;
+    });
+    notifications = LocalNotifications();
+    await notifications.start(channelName: 'Posta nuova', openLabel: 'Apri', newMessages: (n) => '$n nuovi messaggi');
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, null);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  test('each notification joins the group of its Account, with the group notification', () async {
+    await notifications.show(mail('a1', 't-a'));
+    await notifications.show(mail('a2', 't-b'));
+
+    expect(shown, {
+      notificationId((accountId: 'a1', conversationId: 't-a')): 'a1',
+      groupId('a1'): 'a1',
+      notificationId((accountId: 'a2', conversationId: 't-b')): 'a2',
+      groupId('a2'): 'a2',
+    });
+  });
+
+  test("the summary replaces its Account's notifications, not another Account's", () async {
+    await notifications.show(mail('a1', 't-a'));
+    await notifications.show(mail('a1', 't-b'));
+    await notifications.show(mail('a2', 't-c'));
+    await notifications.showSummary(const NewMailSummary(accountId: 'a1', accountAddress: 'a1@example.com', count: 11));
+
+    expect(shown.keys, {
+      summaryId('a1'),
+      groupId('a1'),
+      notificationId((accountId: 'a2', conversationId: 't-c')),
+      groupId('a2'),
+    });
+  });
+
+  test('cancelling the last child drops its group; one not shown is not cancelled', () async {
+    await notifications.show(mail('a1', 't-a'));
+    await notifications.show(mail('a1', 't-b'));
+
+    await notifications.cancel(const [
+      ConversationTarget((accountId: 'a1', conversationId: 't-a')),
+      ConversationTarget((accountId: 'a1', conversationId: 'never-shown')),
+    ]);
+    expect(shown.keys, {notificationId((accountId: 'a1', conversationId: 't-b')), groupId('a1')});
+    expect(cancels, [notificationId((accountId: 'a1', conversationId: 't-a'))]);
+
+    await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+    expect(shown, isEmpty);
+  });
+}

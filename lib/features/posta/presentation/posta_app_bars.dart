@@ -7,8 +7,13 @@ import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
-/// “Posta unificata”, with how many Accounts it merges.
-class const UnifiedAppBar({super.key}) extends StatefulWidget {
+/// The «Cerca» command of the bars of the Posta views (#205): the search opens over the view, scoped to its Account.
+List<PostinoMenuItem> searchCommand(BuildContext context, VoidCallback onSearch) => [
+  PostinoMenuItem(label: context.t.cerca.open, icon: PostinoIcons.search, onPressed: onSearch),
+];
+
+/// “Posta unificata”, with how many Accounts it merges; [onSearch] opens the search over all of them.
+class const UnifiedAppBar({super.key, required final VoidCallback onSearch}) extends StatefulWidget {
   @override
   State<UnifiedAppBar> createState() => _UnifiedAppBarState();
 }
@@ -17,6 +22,8 @@ class _UnifiedAppBarState() extends State<UnifiedAppBar> with AccountsSignal {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) => PostinoAppBar(
+      commands: searchCommand(context, widget.onSearch),
+      moreLabel: context.t.azioni.more,
       title: context.t.postaUnificata,
       subtitle: switch (accounts.value.value) {
         final list? => context.t.accountCount(n: list.length),
@@ -27,9 +34,14 @@ class _UnifiedAppBarState() extends State<UnifiedAppBar> with AccountsSignal {
 }
 
 /// Inside one Account: its mark and name; on an Etichetta ([labelId]) the Etichetta's name over the Account's
-/// ([labelName] for a folder with no Etichetta, the Bozze).
-class const AccountAppBar({super.key, required final String accountId, final String? labelId, final String? labelName})
-    extends StatefulWidget {
+/// ([labelName] for a folder with no Etichetta, the Bozze). [onSearch] opens the search over this Account.
+class const AccountAppBar({
+  super.key,
+  required final String accountId,
+  required final VoidCallback onSearch,
+  final String? labelId,
+  final String? labelName,
+}) extends StatefulWidget {
   @override
   State<AccountAppBar> createState() => _AccountAppBarState();
 }
@@ -50,6 +62,8 @@ class _AccountAppBarState() extends State<AccountAppBar> with AccountsSignal {
       final label = labels.value.value?.where((l) => l.id == widget.labelId).firstOrNull;
       final name = a?.name ?? '';
       return PostinoAppBar(
+        commands: searchCommand(context, widget.onSearch),
+        moreLabel: context.t.azioni.more,
         title: widget.labelId == null ? name : widget.labelName ?? label?.name ?? '',
         subtitle: widget.labelId == null ? context.t.postaInArrivo : name,
         account: a == null ? null : (color: PostinoAccountColor.values[a.color], initial: a.initial),

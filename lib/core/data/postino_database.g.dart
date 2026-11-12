@@ -6512,6 +6512,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final MessageEmbeddingsDao messageEmbeddingsDao = MessageEmbeddingsDao(
     this as PostinoDatabase,
   );
+  late final SearchDao searchDao = SearchDao(this as PostinoDatabase);
   late final ContactsDao contactsDao = ContactsDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>

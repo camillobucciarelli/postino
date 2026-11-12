@@ -35,10 +35,12 @@ import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
+import 'package:postino/core/data/search_store.dart' as _i934;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i27;
+import 'package:postino/core/data/sync/notification_cleanup.dart' as _i555;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -62,6 +64,7 @@ import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
+import 'package:postino/core/domain/search_repository.dart' as _i71;
 import 'package:postino/core/domain/server_discovery.dart' as _i221;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
@@ -214,6 +217,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i359.TrustedSendersRepository>(
       () => _i412.TrustedSendersStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i71.SearchRepository>(
+      () => _i934.SearchStore(gh<_i1028.PostinoDatabase>()),
+    );
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
@@ -257,20 +263,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i350.OpenConversation>(),
       ),
     );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i700.OutboxRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-        gh<_i27.NewMailNotifier>(),
-        gh<_i95.AutoLabeler>(),
-        gh<_i346.ErrorLog>(),
+    gh.lazySingleton<_i555.NotificationCleanup>(
+      () => _i555.NotificationCleanup(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i184.Notifications>(),
       ),
-    );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i311.SettingsSync>(
       () => _i311.SettingsSync(
@@ -285,6 +282,22 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
       ),
+    );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+        gh<_i27.NewMailNotifier>(),
+        gh<_i555.NotificationCleanup>(),
+        gh<_i95.AutoLabeler>(),
+        gh<_i346.ErrorLog>(),
+      ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
       () => _i812.ConversationLabelIntents(

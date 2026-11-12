@@ -258,7 +258,25 @@
     "permissionTitle": "Notifiche della posta nuova",
     "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
     "permissionAllow": "Continua",
-    "permissionLater": "Non ora"
+    "permissionLater": "Non ora",
+    "newMessages": {
+      "one": "$n nuovo messaggio",
+      "other": "$n nuovi messaggi"
+    }
+  },
+  "cerca": {
+    "open": "Cerca",
+    "title": "Cerca",
+    "field": "Cerca nella posta",
+    "scopeAll": "Tutti gli Account",
+    "idleTitle": "Cerca nella posta",
+    "idleBody": "Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase.",
+    "emptyTitle": "Nessun risultato",
+    "emptyBody": "Prova con altre parole o con l'inizio di una parola.",
+    "results": {
+      "one": "$n risultato",
+      "other": "$n risultati"
+    }
   },
   "conflitti": {
     "bannerTitle": {

@@ -58,6 +58,14 @@ void main() {
     expect(_rank(rows, 'mar'), ['Mario <mario@example.com>', 'Market <marketing@example.com>']);
   });
 
+  test('a message dated in the future counts as today, not as a huge weight', () {
+    final rows = [
+      for (var d = 0; d < 30; d++) _seen(to: ['mario@example.com'], daysAgo: d, sent: true),
+      _seen(sender: 'marketing@example.com', daysAgo: -365 * 70),
+    ];
+    expect(_rank(rows, 'm'), ['mario@example.com', 'marketing@example.com']);
+  });
+
   test('recency decays: the same exchanges a year ago weigh less than last week', () {
     final rows = [
       for (var i = 0; i < 3; i++) _seen(to: ['old@example.com'], daysAgo: 365 + i, sent: true),

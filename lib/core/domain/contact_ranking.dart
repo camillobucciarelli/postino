@@ -19,7 +19,8 @@ final _automatic = RegExp('no[-_.]?reply|do[-_.]?not[-_.]?reply|mailer-daemon', 
 
 /// The best [limit] Contatti in [rows] matching [prefix] (see `ContactsRepository.suggest`), leaving out the
 /// Accounts' [own] addresses (lowercase) and the automatic ones; an address in any case is one Contatto with the
-/// most recent name it had.
+/// most recent name it had. Every row of an address counts, whatever the prefix: [rows] should hold them all
+/// ([foundByName] says which ones a prefix filter on the rows can miss).
 List<Contact> rankContacts(
   Iterable<ContactSighting> rows, {
   required String prefix,
@@ -29,20 +30,45 @@ List<Contact> rankContacts(
 }) {
   final p = prefix.trim().toLowerCase();
   if (p.isEmpty) return const [];
+  final ranked = [
+    for (final e in _tally(rows, own, now).entries)
+      if (_matches(p, e.key, e.value.name)) e,
+  ]..sort((a, b) => b.value.score.compareTo(a.value.score));
+  return [for (final e in ranked.take(limit)) (name: e.value.name, address: e.key)];
+}
+
+/// The Contatti of [rows] matching [prefix] by a word of their name, not by their address: the rows that mention
+/// them without that name (a message sent to the bare address, an older name) do not contain the prefix. Best first.
+List<String> foundByName(
+  Iterable<ContactSighting> rows, {
+  required String prefix,
+  required Set<String> own,
+  required DateTime now,
+}) {
+  final p = prefix.trim().toLowerCase();
+  final named = [
+    for (final e in _tally(rows, own, now).entries)
+      if (!e.key.contains(p) && _matches(p, e.key, e.value.name)) e,
+  ]..sort((a, b) => b.value.score.compareTo(a.value.score));
+  return [for (final e in named) e.key];
+}
+
+Map<String, _Tally> _tally(Iterable<ContactSighting> rows, Set<String> own, DateTime now) {
   final found = <String, _Tally>{};
   void count(Mailbox m, ContactSighting r, {required bool sent}) {
     final address = m.address.toLowerCase();
     final at = address.indexOf('@');
     if (at <= 0 || own.contains(address) || _automatic.hasMatch(address.substring(0, at))) return;
-    final name = m.name;
-    if (!_matches(p, address, name)) return;
-    final weight = math.pow(0.5, now.difference(r.date).inMinutes / _halfLife.inMinutes).toDouble();
+    // A date in the future (an IMAP `Date` is the sender's word) counts as now, not as 2^(age / 30 days).
+    final age = math.max(0, now.difference(r.date).inMinutes);
+    final weight = math.pow(0.5, age / _halfLife.inMinutes).toDouble();
     final t = found[address] ??= _Tally();
     if (sent) {
       t.sent += weight;
     } else {
       t.received += weight;
     }
+    final name = m.name;
     if (name != null && (t.nameDate == null || r.date.isAfter(t.nameDate!))) {
       t
         ..name = name
@@ -51,16 +77,12 @@ List<Contact> rankContacts(
   }
 
   for (final r in rows) {
-    // A cheap test first: with a short prefix most lines are someone else.
-    if (r.sender.toLowerCase().contains(p) || (r.senderName?.toLowerCase().contains(p) ?? false)) {
-      count((name: r.senderName, address: r.sender), r, sent: false);
-    }
+    count((name: r.senderName, address: r.sender), r, sent: false);
     for (final line in r.recipients) {
-      if (line.toLowerCase().contains(p)) count(parseMailbox(line), r, sent: r.sent);
+      count(parseMailbox(line), r, sent: r.sent);
     }
   }
-  final ranked = found.entries.toList()..sort((a, b) => b.value.score.compareTo(a.value.score));
-  return [for (final e in ranked.take(limit)) (name: e.value.name, address: e.key)];
+  return found;
 }
 
 bool _matches(String p, String address, String? name) {

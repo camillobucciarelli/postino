@@ -33,8 +33,13 @@ class _RecipientFieldState() extends State<RecipientField> {
   List<Contact> _suggestions = const [];
   int _highlighted = 0;
 
-  /// Bumped by each lookup and by closing: an answer that arrives late is dropped.
+  /// Bumped by each keystroke and by closing: an answer that arrives late is dropped.
   int _lookup = 0;
+  Timer? _debounce;
+
+  /// The address the shown suggestions are for: Enter writes one only while it is still the one being written.
+  String _shownFor = '';
+  static const _wait = Duration(milliseconds: 150);
 
   @override
   void initState() {
@@ -46,24 +51,33 @@ class _RecipientFieldState() extends State<RecipientField> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _focus.dispose();
     super.dispose();
   }
 
-  // ponytail: one query per keystroke, no debounce: it answers in ~20 ms on 20.000 messages (contacts_store_test).
-  Future<void> _typed(String text) async {
+  /// One query once the typing pauses for [_wait] (#216): the shown suggestions stay meanwhile.
+  void _typed(String text) {
     widget.onChanged?.call(text);
     final token = recipientToken(text);
+    if (token.isEmpty) return _close();
+    _debounce?.cancel();
     final n = ++_lookup;
-    final found = token.isEmpty ? const <Contact>[] : await _contacts.suggest(token);
+    _debounce = Timer(_wait, () => unawaited(_suggest(token, n)));
+  }
+
+  Future<void> _suggest(String token, int n) async {
+    final found = await _contacts.suggest(token);
     if (!mounted || n != _lookup || !_focus.hasFocus) return;
     setState(() {
       _suggestions = found;
+      _shownFor = token;
       _highlighted = 0;
     });
   }
 
   void _close() {
+    _debounce?.cancel();
     _lookup++;
     if (_suggestions.isNotEmpty) setState(() => _suggestions = const []);
   }
@@ -88,9 +102,14 @@ class _RecipientFieldState() extends State<RecipientField> {
       case LogicalKeyboardKey.arrowUp:
         setState(() => _highlighted = (_highlighted - 1 + n) % n);
       // Cmd/Ctrl+Enter is Invia: it goes on to the composer.
+      // Typed on since the suggestions came: they are for another address.
       case LogicalKeyboardKey.enter || LogicalKeyboardKey.numpadEnter
-          when e is KeyDownEvent && !keys.isMetaPressed && !keys.isControlPressed:
+          when e is KeyDownEvent &&
+              !keys.isMetaPressed &&
+              !keys.isControlPressed &&
+              recipientToken(widget.controller.text) == _shownFor:
         _choose(_highlighted);
+      // Under PostinoListDetailLayout the Esc reaches PostinoSuggestions' dismiss action first; elsewhere it is this.
       case LogicalKeyboardKey.escape when e is KeyDownEvent:
         _close();
       default:
@@ -115,7 +134,7 @@ class _RecipientFieldState() extends State<RecipientField> {
         autofocus: widget.autofocus,
         keyboardType: TextInputType.emailAddress,
         semanticsHint: _suggestions.isEmpty ? null : count,
-        onChanged: (s) => unawaited(_typed(s)),
+        onChanged: _typed,
       ),
     );
   }

@@ -14,12 +14,13 @@ class ContactsStore(final PostinoDatabase _db, final Clock _clock) implements Co
     final p = prefix.trim();
     if (p.isEmpty) return const [];
     final dao = _db.contactsDao;
-    return rankContacts(
-      await dao.sightings(p),
-      prefix: p,
-      own: await dao.ownAddresses(),
-      now: _clock.now(),
-      limit: limit,
-    );
+    final own = await dao.ownAddresses();
+    final now = _clock.now();
+    final rows = await dao.sightings(p);
+    // Found by a word of the name: the messages to the bare address count too, and may carry a newer name. Only for
+    // the best [limit] of them, which bounds the second query (one LIKE per address and column).
+    final named = foundByName(rows.values, prefix: p, own: own, now: now);
+    if (named.isNotEmpty) rows.addAll(await dao.sightingsOf(named.take(limit).toList()));
+    return rankContacts(rows.values, prefix: p, own: own, now: now, limit: limit);
   }
 }

@@ -29,12 +29,21 @@ Mailbox parseMailbox(String s) {
 
 /// An address list header: commas inside quotes or `<...>` do not split it.
 List<Mailbox> parseMailboxes(String header) {
-  final parts = <String>[];
-  final current = StringBuffer();
+  final cuts = [-1, ...mailboxSeparators(header), header.length];
+  return [
+    for (var i = 0; i + 1 < cuts.length; i++)
+      if (header.substring(cuts[i] + 1, cuts[i + 1]) case final p when p.trim().isNotEmpty) parseMailbox(p),
+  ];
+}
+
+/// The indexes of the commas that split [header] into mailboxes: those outside quotes and `<...>`.
+List<int> mailboxSeparators(String header) {
+  final out = <int>[];
   var quoted = false;
   var angle = false;
   var escaped = false;
-  for (final ch in header.split('')) {
+  for (var i = 0; i < header.length; i++) {
+    final ch = header[i];
     if (escaped) {
       escaped = false;
     } else if (ch == r'\' && quoted) {
@@ -46,17 +55,10 @@ List<Mailbox> parseMailboxes(String header) {
     } else if (!quoted && ch == '>') {
       angle = false;
     } else if (ch == ',' && !quoted && !angle) {
-      parts.add('$current');
-      current.clear();
-      continue;
+      out.add(i);
     }
-    current.write(ch);
   }
-  parts.add('$current');
-  return [
-    for (final p in parts)
-      if (p.trim().isNotEmpty) parseMailbox(p),
-  ];
+  return out;
 }
 
 final _word = RegExp(r'=\?([^?\s]+)\?([BbQq])\?([^?\s]*)\?=');

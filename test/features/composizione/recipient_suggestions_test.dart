@@ -73,13 +73,14 @@ Future<void> _settle(WidgetTester tester) async {
 /// Types [text] in A as the keyboard would, firing onChanged.
 Future<void> _type(WidgetTester tester, String text) async {
   await tester.enterText(_field('A'), text);
+  await tester.pump(const Duration(milliseconds: 200)); // the debounce
   await _settle(tester);
 }
 
 Finder get _list => find.byType(PostinoSuggestions);
 
 /// [text] inside the suggestions (the list behind has the same names).
-Finder _s(String text) => find.descendant(of: _list, matching: find.text(text));
+Finder _inList(String text) => find.descendant(of: _list, matching: find.text(text));
 bool _open(WidgetTester tester) => tester.widget<PostinoSuggestions>(_list.first).suggestions.isNotEmpty;
 
 void main() {
@@ -88,10 +89,10 @@ void main() {
   ) async {
     await _start(tester);
     await _type(tester, 'mar');
-    expect(_s('Maria Rossi'), findsOneWidget);
-    expect(_s('marco@example.com'), findsOneWidget);
-    expect(_s('Luca Verdi'), findsNothing);
-    expect(tester.getTopLeft(_s('Maria Rossi')).dy, lessThan(tester.getTopLeft(_s('Marco Bianchi')).dy));
+    expect(_inList('Maria Rossi'), findsOneWidget);
+    expect(_inList('marco@example.com'), findsOneWidget);
+    expect(_inList('Luca Verdi'), findsNothing);
+    expect(tester.getTopLeft(_inList('Maria Rossi')).dy, lessThan(tester.getTopLeft(_inList('Marco Bianchi')).dy));
 
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await _settle(tester);
@@ -99,7 +100,7 @@ void main() {
     expect(_open(tester), isFalse);
 
     await _type(tester, '${_text(tester, 'A')}lu');
-    expect(_s('Luca Verdi'), findsOneWidget);
+    expect(_inList('Luca Verdi'), findsOneWidget);
   });
 
   _onMac('Down then Enter chooses the second; Up wraps to the last', (tester) async {
@@ -119,10 +120,22 @@ void main() {
     expect(_text(tester, 'A'), 'Marco Bianchi <marco@example.com>, ');
   });
 
+  _onMac('Enter right after typing on does not write the suggestion of the previous address', (tester) async {
+    await _start(tester);
+    await _type(tester, 'mar');
+    await tester.enterText(_field('A'), 'lu');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(_text(tester, 'A'), 'lu');
+    await tester.pump(const Duration(milliseconds: 200));
+    await _settle(tester);
+    expect(_inList('Luca Verdi'), findsOneWidget);
+  });
+
   _onMac('a tap chooses a suggestion and the focus stays in the field', (tester) async {
     await _start(tester);
     await _type(tester, 'lu');
-    await tester.tap(_s('Luca Verdi'));
+    await tester.tap(_inList('Luca Verdi'));
     await _settle(tester);
     expect(_text(tester, 'A'), 'Luca Verdi <luca@example.com>, ');
     expect(tester.widget<TextField>(_field('A')).focusNode!.hasFocus, isTrue);

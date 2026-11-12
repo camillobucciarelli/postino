@@ -1,4 +1,4 @@
-// PostinoSuggestions (#216): under its field, never focusable, text 200% without overflow, WCAG AA contrast.
+// PostinoSuggestions (#216): under its field, never focusable, text 200% without overflow (contrast: contrast_test).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -8,6 +8,8 @@ const _items = [
   (name: null, address: 'ada@example.com'),
   (name: 'Maria Rossi', address: 'maria@example.com'),
 ];
+
+final _focus = FocusNode();
 
 Widget _app({double scale = 1, ThemeData? theme, int highlighted = 0, ValueChanged<int>? onSelected}) => MaterialApp(
   theme: theme ?? PostinoTheme.light(),
@@ -23,18 +25,13 @@ Widget _app({double scale = 1, ThemeData? theme, int highlighted = 0, ValueChang
             onSelected: onSelected ?? (_) {},
             onDismiss: () {},
             countLabel: '3 suggerimenti',
-            child: PostinoComposerField(label: 'A', controller: TextEditingController()),
+            child: PostinoComposerField(label: 'A', controller: TextEditingController(), focusNode: _focus),
           ),
         ),
       ),
     ),
   ),
 );
-
-double _contrast(Color a, Color b) {
-  final (l1, l2) = (a.computeLuminance(), b.computeLuminance());
-  return (l1 > l2 ? l1 + 0.05 : l2 + 0.05) / (l1 > l2 ? l2 + 0.05 : l1 + 0.05);
-}
 
 void main() {
   testWidgets('the panel hangs under the field, as wide, and a tap chooses without taking the focus', (tester) async {
@@ -46,9 +43,12 @@ void main() {
     expect(panel.top, moreOrLessEquals(field.bottom));
     expect(panel.width, field.width);
 
+    _focus.requestFocus();
+    await tester.pump();
     await tester.tap(find.text('Maria Rossi'));
+    await tester.pump();
     expect(chosen, 2);
-    expect(FocusManager.instance.primaryFocus?.context?.widget, isNot(isA<GestureDetector>()));
+    expect(_focus.hasFocus, isTrue);
   });
 
   testWidgets('each suggestion is one node «Name, address»; the highlighted one is selected', (tester) async {
@@ -75,16 +75,5 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
     expect(find.text('maria@example.com', skipOffstage: false), findsOneWidget);
-  });
-
-  test('ink and ink-muted reach WCAG AA (4.5:1) on the panel and on the highlighted row, light and dark', () {
-    for (final theme in [PostinoTheme.light(), PostinoTheme.dark()]) {
-      final c = theme.extension<PostinoColors>()!;
-      for (final bg in [c.surfaceRaised, c.surfaceSelected]) {
-        for (final fg in [c.ink, c.inkMuted]) {
-          expect(_contrast(fg, bg), greaterThanOrEqualTo(4.5), reason: '${theme.brightness} $fg on $bg');
-        }
-      }
-    }
   });
 }

@@ -51,7 +51,14 @@ void main() {
     getIt
       ..unregister<Notifications>()
       ..registerSingleton<Notifications>(notifications);
-    await notifications.start(channelName: 'Posta nuova', openLabel: 'Apri', newMessages: (n) => '$n nuovi messaggi');
+    // As the WorkManager isolate starts them: not the app's, the buttons are not taken here (#211).
+    await notifications.start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n nuovi messaggi',
+      actionLabel: (a) => a.name,
+      onAction: null,
+    );
     final a = await h.addAccount('a1');
     await getIt<SyncEngine>().syncAll();
     a.deliver(msg('m2', conversationId: 't-2', subject: 'Dal background'));

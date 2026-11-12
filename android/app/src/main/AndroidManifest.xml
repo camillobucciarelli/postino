@@ -54,6 +54,11 @@
                 <data android:scheme="${microsoftAuthScheme}" />
             </intent-filter>
         </activity>
+        <!-- The buttons of a notification (#211): flutter_local_notifications runs them through this receiver, which
+             its own manifest does not declare. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

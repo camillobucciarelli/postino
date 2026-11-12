@@ -68,7 +68,20 @@ abstract interface class MailSync() {
   /// Applies [action] to [messageIds] here at once, and on the Provider now or when back online (ADR 0008); completes
   /// offline or Da ricollegare too, the Azione stays queued. With [hold] (the Annulla window, `undoWindow`) the voci
   /// are «trattenute»: they go to the Provider only once it ends, unless [cancelAction] takes them back first.
-  Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold});
+  /// Without [replay] (an isolate that does not own the sync, #211) they are queued and applied here only: the owner's
+  /// replay, or [replayActions] once owned, sends them; the queued voce keeps a sync's older batch from undoing them.
+  /// [replay] is for an Azione without [hold]: a held one always goes once its window ends.
+  Future<void> act(
+    String accountId,
+    Iterable<String> messageIds,
+    MailAction action, {
+    Duration? hold,
+    bool replay = true,
+  });
+
+  /// Sends the Account's queued Azioni to the Provider now, and only them: the Bozze and the outbox stay with the app
+  /// (#211, a notification's button in a background engine that owns the sync).
+  Future<void> replayActions(String accountId);
 
   /// Annulla of an [act] with `hold` still running: the voci leave the queue and the messages are as before here.
   /// False when nothing was still held (the window ended, or a later Azione replaced it).

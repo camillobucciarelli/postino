@@ -4,8 +4,10 @@ import 'package:postino/core/data/sync/new_mail_notifier.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/core/domain/open_conversation.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_mail_provider.dart';
@@ -27,7 +29,21 @@ void main() {
     await Harness.create();
     notifications = FakeNotifications();
     open = OpenConversation();
-    notifier = NewMailNotifier(getIt<MailStore>(), notifications, open);
+    notifier = NewMailNotifier(getIt<MailStore>(), notifications, open, getIt<SettingsRepository>());
+  });
+
+  test('a notification carries the buttons of the Azioni delle notifiche: the default, then the chosen ones', () async {
+    await notifier.notify(_a1, [msg('m1')]);
+    await getIt<SettingsRepository>().setNotificationActions((first: null, second: NotificationAction.delete));
+    await notifier.notify(_a1, [msg('m2')]);
+
+    expect(
+      [for (final n in notifications.shown) n.actions],
+      [
+        [NotificationAction.archive, NotificationAction.markRead],
+        [NotificationAction.delete],
+      ],
+    );
   });
 
   test('several new messages of one Conversazione in a batch out of order: the newest is notified, once', () async {

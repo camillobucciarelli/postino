@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/notification_payload.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 
 void main() {
@@ -11,6 +12,33 @@ void main() {
   test('the payload carries the Account of a summary and back', () {
     const target = AccountTarget('gmail:ada@example.com');
     expect(decodePayload(encodePayload(target)), target);
+  });
+
+  test('a button of a Conversazione is its Azione on it (#211)', () {
+    expect(decodeAction('["a1","t-a"]', 'archive'), (
+      conversation: (accountId: 'a1', conversationId: 't-a'),
+      action: NotificationAction.archive,
+    ));
+  });
+
+  test('a button that carries its own payload (Windows: payload and actionId are its arguments)', () {
+    final arguments = encodeAction((
+      conversation: (accountId: 'a1', conversationId: 't-a'),
+      action: NotificationAction.star,
+    ));
+    expect(decodeAction(arguments, arguments), (
+      conversation: (accountId: 'a1', conversationId: 't-a'),
+      action: NotificationAction.star,
+    ));
+    expect(decodePayload(arguments), isNull, reason: 'not a tap on the notification');
+    expect(decodeAction('["a1","t-a","snooze"]', null), isNull);
+  });
+
+  test('no button, an unknown one or a summary: no Azione', () {
+    expect(decodeAction('["a1","t-a"]', null), isNull);
+    expect(decodeAction('["a1","t-a"]', ''), isNull);
+    expect(decodeAction('["a1","t-a"]', 'snooze'), isNull);
+    expect(decodeAction('["a1"]', 'archive'), isNull);
   });
 
   test('the payload holds the ids only, never text of the mail', () {

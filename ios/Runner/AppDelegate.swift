@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import flutter_local_notifications
 import workmanager_apple
 
 @main
@@ -7,7 +8,6 @@ import workmanager_apple
   /// Background tasks begun for the outbox (#36), by identifier; ended once or at expiration.
   private var sendTasks = Set<Int>()
   private var backgroundChannel: FlutterMethodChannel?
-
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -24,6 +24,11 @@ import workmanager_apple
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    // A notification's button runs in a background engine (#211): it needs the plugins too (the database, the
+    // keychain, the network).
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { registry in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let channel = FlutterMethodChannel(
       name: "it.postino/background",

@@ -105,10 +105,11 @@ void main() {
     tester,
   ) async {
     await _start(tester);
-    // The back arrow, «Rimuovi» of the Account, then «Aggiungi Account»: the Accounts listed are not stops.
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    // The back arrow, the Impostazioni del dispositivo, «Rimuovi» of the Account, then «Aggiungi Account»: the
+    // Accounts listed are not stops.
+    for (var i = 0; i < 4; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    }
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
@@ -132,9 +133,10 @@ void main() {
       isSemantics(tooltip: name, isButton: true, isFocusable: true, hasTapAction: true),
     );
 
-    // From the keyboard: back arrow, then «Rimuovi» of the first Account.
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    // From the keyboard: back arrow, the Impostazioni del dispositivo, then «Rimuovi» of the first Account.
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    }
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.text("Rimuovere l'Account a1@example.com?"), findsOneWidget);

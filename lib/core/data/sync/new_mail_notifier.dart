@@ -5,15 +5,22 @@ import '../../domain/account.dart';
 import '../../domain/mail_notification.dart';
 import '../../domain/message.dart';
 import '../../domain/new_mail_summary.dart';
+import '../../domain/notification_action.dart';
 import '../../domain/notifications.dart';
 import '../../domain/open_conversation.dart';
+import '../../domain/settings_repository.dart';
 import '../mail_store.dart';
 
 /// Notifies the new mail an incremental sync brings (#39): the unread messages in the inbox that were not in the
 /// database before it, except those of the Conversazione on screen. The initial sync never notifies. One
 /// notification per Conversazione in the Account's group; past [summaryThreshold] messages one summary instead (#210).
 @lazySingleton
-class NewMailNotifier(final MailStore _store, final Notifications _notifications, final OpenConversation _open) {
+class NewMailNotifier(
+  final MailStore _store,
+  final Notifications _notifications,
+  final OpenConversation _open,
+  final SettingsRepository _settings,
+) {
   /// The messages of [messages] to notify; read before the batch is applied, which makes them all known.
   Future<List<Message>> fresh(String accountId, List<Message> messages) async => [
     for (final m in messages)
@@ -41,6 +48,7 @@ class NewMailNotifier(final MailStore _store, final Notifications _notifications
         ),
       );
     }
+    final actions = buttonsOf(await _settings.notificationActions());
     for (final m in newest.values) {
       await _safely(
         accountId,
@@ -54,6 +62,7 @@ class NewMailNotifier(final MailStore _store, final Notifications _notifications
             },
             subject: m.subject,
             preview: m.snippet,
+            actions: actions,
           ),
         ),
       );

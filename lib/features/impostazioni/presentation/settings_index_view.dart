@@ -1,12 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
-import '../../../core/domain/app_updater.dart';
-import '../../../core/domain/launch_at_login_use_case.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
@@ -44,18 +41,17 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
         title: context.t.impostazioni.title,
         onBack: widget.onBack,
         sections: [
-          // The device has the avvio al login (desktop) and the aggiornamenti (macOS): it shows where either exists.
-          if (GetIt.I<LaunchAtLoginUseCase>().supported || GetIt.I<AppUpdater>().supported)
-            PostinoSettingsSection(
-              title: context.t.impostazioni.deviceSection,
-              children: [
-                PostinoSettingsItem(
-                  key: const ValueKey('settings-device'),
-                  title: context.t.impostazioni.device,
-                  onTap: widget.onOpenDevice,
-                ),
-              ],
-            ),
+          // On every platform: the notifications are there everywhere (#211).
+          PostinoSettingsSection(
+            title: context.t.impostazioni.deviceSection,
+            children: [
+              PostinoSettingsItem(
+                key: const ValueKey('settings-device'),
+                title: context.t.impostazioni.device,
+                onTap: widget.onOpenDevice,
+              ),
+            ],
+          ),
           PostinoSettingsSection(
             title: context.t.accounts.section,
             children: [

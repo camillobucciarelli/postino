@@ -1,20 +1,34 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/mail_notification.dart';
 import '../domain/new_mail_summary.dart';
+import '../domain/notification_action.dart';
 import '../domain/notification_target.dart';
 import '../domain/notifications.dart';
+import 'notification_action_relay.dart';
+import 'notification_buttons.dart';
 import 'notification_payload.dart';
+
+/// Where a button tapped outside the app's isolate goes (iOS, Android run it in a background engine, #211): a top
+/// level `@pragma('vm:entry-point')` function of main.dart, the one place that wires the DI. Set before `start`.
+DidReceiveBackgroundNotificationResponseCallback? backgroundActionEntry;
+
+/// The few native lines that open Postino's notifications in the system settings (MainActivity, AppDelegate).
+const _settingsChannel = MethodChannel('it.postino/notification_settings');
 
 /// flutter_local_notifications (#39). Android, iOS and macOS: notifications, taps and cold start from a tap.
 /// Windows: toasts and taps (cold start only for an MSIX-packaged app). Linux: notifications and taps while the app
 /// runs (D-Bus), no cold start. Permission asked on iOS, macOS and Android 13+, not at [start].
 /// Grouped per Account (#210): Android's `groupKey` with a group notification titled with its address, the
 /// `threadIdentifier` on iOS and macOS; Windows and Linux have no native group.
+/// Up to two buttons (#211): in the app's isolate on macOS, Linux and Windows (which brings the app forward);
+/// in a background engine on iOS and Android, relayed to the app's isolate when it runs ([relayToApp]).
 @LazySingleton(as: Notifications, env: [Environment.prod])
 class LocalNotifications() implements Notifications {
   final _plugin = FlutterLocalNotificationsPlugin();
@@ -31,19 +45,30 @@ class LocalNotifications() implements Notifications {
   // ponytail: in memory, so there a summary after a restart leaves the earlier ones; Android, iOS and macOS list them.
   final _shown = <String, Set<int>>{};
 
+  ActionLabel _actionLabel = (action) => action.name;
+
+  /// The app's isolate takes the buttons the background engine runs while it lives.
+  ReceivePort? _relay;
+
   @override
   Future<NotificationTarget?> start({
     required String channelName,
     required String openLabel,
     required String Function(int count) newMessages,
+    required String Function(NotificationAction action) actionLabel,
+    required void Function(NotificationActionTap tap) onAction,
   }) async {
     _channelName = channelName;
     _newMessages = newMessages;
-    const darwin = DarwinInitializationSettings(
+    _actionLabel = actionLabel;
+    final darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestSoundPermission: false,
       requestBadgePermission: false,
+      notificationCategories: darwinCategories(actionLabel),
     );
+    _relay?.close();
+    _relay = listenForRelayedActions(onAction);
     await _plugin.initialize(
       settings: InitializationSettings(
         android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -57,16 +82,25 @@ class LocalNotifications() implements Notifications {
         ),
       ),
       onDidReceiveNotificationResponse: (r) {
+        if (decodeAction(r.payload, r.actionId) case final tap?) return onAction(tap);
         if (decodePayload(r.payload) case final target?) _taps.add(target);
       },
+      onDidReceiveBackgroundNotificationResponse: backgroundActionEntry,
     );
     final launch = await _plugin.getNotificationAppLaunchDetails();
-    return launch?.didNotificationLaunchApp ?? false ? decodePayload(launch!.notificationResponse?.payload) : null;
+    if (!(launch?.didNotificationLaunchApp ?? false)) return null;
+    final response = launch!.notificationResponse;
+    // A button that launched the app (Windows, macOS): its Azione, and the app opens where it would.
+    if (decodeAction(response?.payload, response?.actionId) case final tap?) {
+      onAction(tap);
+      return null;
+    }
+    return decodePayload(response?.payload);
   }
 
   @override
   Future<void> show(MailNotification notification) async {
-    final MailNotification(:conversation, :accountAddress, :sender, :subject, :preview) = notification;
+    final MailNotification(:conversation, :accountAddress, :sender, :subject, :preview, :actions) = notification;
     final body = [subject, preview].where((s) => s.isNotEmpty).join('\n');
     // One per Conversazione: a newer message replaces its notification.
     final id = notificationId(conversation);
@@ -75,7 +109,7 @@ class LocalNotifications() implements Notifications {
       title: sender,
       body: body,
       payload: encodePayload(ConversationTarget(conversation)),
-      notificationDetails: _details(conversation.accountId, body),
+      notificationDetails: _details(conversation.accountId, body, conversation: conversation, actions: actions),
     );
     (_shown[conversation.accountId] ??= {}).add(id);
     await _showGroup(conversation.accountId, accountAddress);
@@ -120,7 +154,8 @@ class LocalNotifications() implements Notifications {
         gone.add(id);
       }
     }
-    if (_android && gone.isNotEmpty) await _dropEmptyGroups(gone);
+    // Also when none was still shown: a button dismissed its notification itself, its group may be left empty.
+    if (_android && targets.isNotEmpty) await _dropEmptyGroups(gone);
   }
 
   @override
@@ -149,20 +184,43 @@ class LocalNotifications() implements Notifications {
     return granted ?? false;
   }
 
-  /// A notification of [accountId], in its group.
-  NotificationDetails _details(String accountId, String body) => NotificationDetails(
-    android: AndroidNotificationDetails(
-      'new_mail',
-      _channelName,
-      importance: Importance.high,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.email,
-      groupKey: accountId,
-      styleInformation: BigTextStyleInformation(body),
-    ),
-    iOS: DarwinNotificationDetails(threadIdentifier: accountId),
-    macOS: DarwinNotificationDetails(threadIdentifier: accountId),
-  );
+  @override
+  Future<void> openSystemSettings() async {
+    if (kIsWeb) return;
+    const mobileOrMac = {TargetPlatform.android, TargetPlatform.iOS, TargetPlatform.macOS};
+    if (mobileOrMac.contains(defaultTargetPlatform)) await _settingsChannel.invokeMethod<void>('open');
+  }
+
+  /// A notification of [accountId], in its group; with the buttons of [actions] on [conversation] (#211).
+  NotificationDetails _details(
+    String accountId,
+    String body, {
+    ConversationKey? conversation,
+    List<NotificationAction> actions = const [],
+  }) {
+    final darwin = DarwinNotificationDetails(
+      threadIdentifier: accountId,
+      categoryIdentifier: darwinCategoryOf(actions),
+    );
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'new_mail',
+        _channelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.email,
+        groupKey: accountId,
+        styleInformation: BigTextStyleInformation(body),
+        actions: androidButtons(actions, _actionLabel),
+      ),
+      iOS: darwin,
+      macOS: darwin,
+      linux: LinuxNotificationDetails(actions: linuxButtons(actions, _actionLabel)),
+      windows: conversation == null
+          ? null
+          : WindowsNotificationDetails(actions: windowsButtons(conversation, actions, _actionLabel)),
+    );
+  }
 
   /// Android only: the group notification of [accountId], titled with its address; silent, its children alert.
   Future<void> _showGroup(String accountId, String address) async {

@@ -1,0 +1,86 @@
+// The button of a notification (#211): its Azione on the Conversazione through the offline queue (ADR 0008), the real
+// engine over a fake Provider, then the notification goes.
+import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/conflict.dart';
+import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/core/domain/mail_action.dart';
+import 'package:postino/core/domain/mail_sync.dart';
+import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/notification_action.dart';
+import 'package:postino/core/domain/notification_action_use_case.dart';
+import 'package:postino/core/domain/notification_target.dart';
+import 'package:postino/main.dart';
+
+import '../../support/fake_mail_provider.dart';
+import '../../support/harness.dart';
+
+const _t = (accountId: 'a', conversationId: 't');
+
+void main() {
+  late Harness h;
+  late FakeMailProvider a;
+  late NotificationActionUseCase useCase;
+
+  Future<List<Message>> here() async => [
+    for (final m in await getIt<InboxRepository>().watchConversation('a', 't').first) m.message,
+  ];
+  Future<List<IntentRow>> queued() => getIt<PostinoDatabase>().select(getIt<PostinoDatabase>().intents).get();
+  Future<List<Conflict>> conflicts() => getIt<InboxRepository>().watchConflicts().first;
+
+  setUp(() async {
+    h = await Harness.create();
+    a = (await h.addAccount('a'))
+      ..deliver(msg('1', conversationId: 't', isRead: true))
+      ..deliver(msg('2', conversationId: 't'));
+    await getIt<MailSync>().syncAll();
+    h.notifications.visible['a'] = {const ConversationTarget(_t)};
+    useCase = getIt<NotificationActionUseCase>();
+  });
+
+  test('Archivia: the Conversazione is archived here and on the Provider, the notification goes', () async {
+    await useCase.run((conversation: _t, action: NotificationAction.archive));
+
+    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
+    expect({for (final c in a.actionCalls) c.$1}, {'1', '2'}, reason: 'the replay is tried at once');
+    expect(await queued(), isEmpty);
+    expect(h.notifications.visible['a'], isEmpty);
+  });
+
+  test('offline: archived here, the voci wait in the queue', () async {
+    a.goOffline();
+    await useCase.run((conversation: _t, action: NotificationAction.archive));
+
+    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
+    expect(await queued(), hasLength(2));
+  });
+
+  test('Da ricollegare: the Azione waits in the queue, no replay', () async {
+    await getIt<MailStore>().setStatus('a', AccountStatus.daRicollegare);
+    await useCase.run((conversation: _t, action: NotificationAction.markRead));
+
+    expect([for (final m in await here()) m.isRead], [true, true]);
+    expect(await queued(), isNotEmpty);
+    expect(a.actionCalls, isEmpty);
+  });
+
+  test('Stella: the messages are still unread, yet the notification goes', () async {
+    await useCase.run((conversation: _t, action: NotificationAction.star));
+
+    expect([for (final m in await here()) m.isStarred], [true, true]);
+    expect(h.notifications.visible['a'], isEmpty);
+  });
+
+  test('archived elsewhere already: no Conflitto, the value is the wanted one', () async {
+    a
+      ..changeElsewhere('1', placementAttribute, Placement.archive)
+      ..changeElsewhere('2', placementAttribute, Placement.archive);
+    await useCase.run((conversation: _t, action: NotificationAction.archive));
+
+    expect(await conflicts(), isEmpty);
+    expect(await queued(), isEmpty);
+    expect([for (final m in await here()) valueOf(m, placementAttribute)], [Placement.archive, Placement.archive]);
+  });
+}

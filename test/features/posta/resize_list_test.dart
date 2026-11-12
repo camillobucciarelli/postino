@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -54,6 +55,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
 
   @override
   Future<void> setSettingsSyncAccount(String? accountId) async {}
+
+  @override
+  Future<NotificationActions> notificationActions() async => notificationActionsDefault;
+
+  @override
+  Future<void> setNotificationActions(NotificationActions actions) async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {

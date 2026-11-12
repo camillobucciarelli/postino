@@ -119,8 +119,9 @@ void main() {
   testWidgets('from the keyboard: Enter opens, the ticked row has the focus, Enter picks, Esc closes', (tester) async {
     final h = await _start(tester);
     h.consent.address = 'a1@example.com';
-    // Focus order of the screen: the back arrow, «Rimuovi» of the two Accounts, «Aggiungi Account», then the entry.
-    for (var i = 0; i < 5; i++) {
+    // Focus order of the screen: the back arrow, the Impostazioni del dispositivo, «Rimuovi» of the two Accounts,
+    // «Aggiungi Account», then the entry.
+    for (var i = 0; i < 6; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     }
     await tester.pump();

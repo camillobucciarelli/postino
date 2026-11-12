@@ -34,6 +34,7 @@
 		5A9C1E2B7D3F40A1B2C3D407 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5A9C1E2B7D3F40A1B2C3D406 /* Sparkle */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */; };
+		8B2C3D4E5F60718293A4B5C7 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2C3D4E5F60718293A4B5C6 /* NotificationSettings.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +97,7 @@
 		9DBE4E5918A5D322490D08A4 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		AD21E12945A34E9A288D47D8 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
+		8B2C3D4E5F60718293A4B5C6 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
 		5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesMenuItem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -191,6 +193,7 @@
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */,
 				5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */,
+				8B2C3D4E5F60718293A4B5C6 /* NotificationSettings.swift */,
 				5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
@@ -445,6 +448,7 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */,
 				5A9C1E2B7D3F40A1B2C3D402 /* Updater.swift in Sources */,
+				8B2C3D4E5F60718293A4B5C7 /* NotificationSettings.swift in Sources */,
 				5A9C1E2B7D3F40A1B2C3D404 /* CheckForUpdatesMenuItem.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,

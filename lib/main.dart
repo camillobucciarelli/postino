@@ -4,6 +4,7 @@ import 'dart:ui' show DartPluginRegistrant;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' show NotificationResponse;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
 import 'package:get_it/get_it.dart';
@@ -14,12 +15,17 @@ import 'package:workmanager/workmanager.dart';
 import 'app/posta/posta_routes.dart' show openConversation;
 import 'core/data/background_send.dart';
 import 'core/data/error_log/uncaught_errors.dart';
+import 'core/data/local_notifications.dart' show backgroundActionEntry;
+import 'core/data/notification_action_relay.dart';
+import 'core/data/notification_payload.dart' show decodeAction;
 import 'core/data/postino_database.dart';
 import 'core/data/settings_sync.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
 import 'core/domain/launch_at_login_use_case.dart';
+import 'core/domain/notification_action.dart';
+import 'core/domain/notification_action_use_case.dart';
 import 'core/domain/notification_target.dart';
 import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
@@ -55,6 +61,30 @@ void sendOutboxDispatcher() {
   });
 }
 
+/// A button of a notification tapped outside the app's isolate (#211): iOS and Android run it in a background engine,
+/// even while the app is open. The app's isolate takes it when it lives; otherwise this isolate wires the app's DI
+/// (once: the engine stays for the next taps) and runs it here, through the offline queue.
+@pragma('vm:entry-point')
+Future<void> notificationActionDispatcher(NotificationResponse response) async {
+  final tap = decodeAction(response.payload, response.actionId);
+  if (tap == null) return;
+  try {
+    if (await relayToApp(tap)) return;
+    DartPluginRegistrant.ensureInitialized();
+    // Already wired where the DI exists (a test's).
+    await (_backgroundDependencies ??= getIt.isRegistered<NotificationActionUseCase>()
+        ? Future<void>.value()
+        : configureDependencies(environment: Environment.prod));
+    await getIt<NotificationActionUseCase>().run(tap);
+  } on Object catch (e) {
+    // The type only: the error may quote the message.
+    debugPrint('[notifiche] ${tap.conversation.accountId}: action failed, ${e.runtimeType}');
+  }
+}
+
+/// The DI of the background engine of [notificationActionDispatcher], wired at its first tap.
+Future<void>? _backgroundDependencies;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   captureUncaughtErrors(() => getIt.isRegistered<ErrorLog>() ? getIt<ErrorLog>() : null);
@@ -82,16 +112,39 @@ bool get _desktop =>
 /// Before `runApp` (#39): the notifications ready, and what the notification that launched the app opens.
 /// Failing keeps Postino from notifying, not from running.
 Future<NotificationTarget?> _startNotifications() async {
+  backgroundActionEntry = notificationActionDispatcher;
   try {
     return await getIt<Notifications>().start(
       channelName: t.notifiche.channel,
       openLabel: t.notifiche.open,
       newMessages: (n) => t.notifiche.newMessages(n: n),
+      actionLabel: (action) => switch (action) {
+        NotificationAction.archive => t.azioni.archive,
+        NotificationAction.markRead => t.azioni.markRead,
+        NotificationAction.star => t.azioni.star,
+        NotificationAction.delete => t.azioni.delete,
+      },
+      onAction: _runNotificationAction,
     );
   } on Object catch (e) {
     debugPrint('[notifiche] start: $e');
     return null;
   }
+}
+
+/// A button tapped in the app's isolate (#211). Windows has brought the app forward for it: the window, if hidden in
+/// the tray, comes too, then the Azione runs (the limit #28 accepts); macOS and Linux run it from the tray.
+void _runNotificationAction(NotificationActionTap tap) {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+    unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
+  }
+  unawaited(
+    getIt<NotificationActionUseCase>()
+        .run(tap)
+        .catchError(
+          (Object e) => debugPrint('[notifiche] ${tap.conversation.accountId}: action failed, ${e.runtimeType}'),
+        ),
+  );
 }
 
 /// Desktop (#38): the avvio al login on by default, then the tray. Neither failing keeps Postino from running.

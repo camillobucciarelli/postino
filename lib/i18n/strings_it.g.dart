@@ -582,6 +582,27 @@ class Translations$impostazioni$it {
 	/// it: 'Cerca subito una nuova versione di Postino.'
 	String get checkForUpdatesBody => 'Cerca subito una nuova versione di Postino.';
 
+	/// it: 'Notifiche'
+	String get notifications => 'Notifiche';
+
+	/// it: 'Consentite'
+	String get notificationsAllowed => 'Consentite';
+
+	/// it: 'Non consentite: la posta nuova arriva senza avviso.'
+	String get notificationsDenied => 'Non consentite: la posta nuova arriva senza avviso.';
+
+	/// it: 'Consenti'
+	String get notificationsAllow => 'Consenti';
+
+	/// it: 'Prima Azione della notifica'
+	String get notificationActionFirst => 'Prima Azione della notifica';
+
+	/// it: 'Seconda Azione della notifica'
+	String get notificationActionSecond => 'Seconda Azione della notifica';
+
+	/// it: 'Nessuna'
+	String get notificationActionNone => 'Nessuna';
+
 	/// it: 'Sincronizzazione'
 	String get syncSection => 'Sincronizzazione';
 
@@ -1332,6 +1353,13 @@ extension on Translations {
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
+			'impostazioni.notifications' => 'Notifiche',
+			'impostazioni.notificationsAllowed' => 'Consentite',
+			'impostazioni.notificationsDenied' => 'Non consentite: la posta nuova arriva senza avviso.',
+			'impostazioni.notificationsAllow' => 'Consenti',
+			'impostazioni.notificationActionFirst' => 'Prima Azione della notifica',
+			'impostazioni.notificationActionSecond' => 'Seconda Azione della notifica',
+			'impostazioni.notificationActionNone' => 'Nessuna',
 			'impostazioni.syncSection' => 'Sincronizzazione',
 			'impostazioni.syncTitle' => 'Sincronizza su…',
 			'impostazioni.syncNone' => 'Nessuno',

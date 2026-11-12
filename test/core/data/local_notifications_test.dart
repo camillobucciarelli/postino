@@ -8,6 +8,7 @@ import 'package:postino/core/data/local_notifications.dart';
 import 'package:postino/core/data/notification_payload.dart';
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 
 const _channel = MethodChannel('dexterous.com/flutter/local_notifications');
@@ -20,18 +21,26 @@ void main() {
   late List<int> cancels;
   late LocalNotifications notifications;
 
-  MailNotification mail(String accountId, String conversationId) => MailNotification(
-    conversation: (accountId: accountId, conversationId: conversationId),
-    accountAddress: '$accountId@example.com',
-    sender: 'Ada',
-    subject: 'Oggetto',
-    preview: 'Anteprima',
-  );
+  /// The buttons of each notification shown: id → action id → title.
+  late Map<int, Map<String, String>> buttons;
+  late List<NotificationActionTap> actions;
+  late List<NotificationTarget> taps;
+
+  MailNotification mail(String accountId, String conversationId, {List<NotificationAction> actions = const []}) =>
+      MailNotification(
+        conversation: (accountId: accountId, conversationId: conversationId),
+        accountAddress: '$accountId@example.com',
+        sender: 'Ada',
+        subject: 'Oggetto',
+        preview: 'Anteprima',
+        actions: actions,
+      );
 
   setUp(() async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     AndroidFlutterLocalNotificationsPlugin.registerWith();
     shown = {};
+    buttons = {};
     cancels = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (call) async {
       final args = call.arguments;
@@ -40,7 +49,12 @@ void main() {
           return true;
         case 'show':
           final map = args as Map;
-          shown[map['id'] as int] = (map['platformSpecifics'] as Map?)?['groupKey'] as String?;
+          final specifics = map['platformSpecifics'] as Map?;
+          shown[map['id'] as int] = specifics?['groupKey'] as String?;
+          buttons[map['id'] as int] = {
+            for (final a in (specifics?['actions'] as List?) ?? const [])
+              (a as Map)['id'] as String: a['title'] as String,
+          };
         case 'cancel':
           final id = (args as Map)['id'] as int;
           cancels.add(id);
@@ -52,8 +66,95 @@ void main() {
       }
       return null;
     });
+    actions = [];
+    taps = [];
     notifications = LocalNotifications();
-    await notifications.start(channelName: 'Posta nuova', openLabel: 'Apri', newMessages: (n) => '$n nuovi messaggi');
+    notifications.taps.listen(taps.add);
+    await notifications.start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n nuovi messaggi',
+      actionLabel: (a) => 'label-${a.name}',
+      onAction: actions.add,
+    );
+  });
+
+  /// The OS reporting a tap on the notification of [conversationId], on its button [actionId] when given.
+  Future<void> respond(String conversationId, {String? actionId}) async {
+    final call = MethodCall('didReceiveNotificationResponse', {
+      'notificationId': 1,
+      'actionId': actionId,
+      'payload': encodePayload(ConversationTarget((accountId: 'a1', conversationId: conversationId))),
+      'notificationResponseType': actionId == null ? 0 : 1,
+    });
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+      _channel.name,
+      const StandardMethodCodec().encodeMethodCall(call),
+      (_) {},
+    );
+    await pumpEventQueue();
+  }
+
+  test('a notification has the buttons of its Azioni, titled and in order (#211)', () async {
+    await notifications.show(mail('a1', 't-a', actions: const [NotificationAction.delete, NotificationAction.star]));
+
+    expect(buttons[notificationId((accountId: 'a1', conversationId: 't-a'))], {
+      'delete': 'label-delete',
+      'star': 'label-star',
+    });
+  });
+
+  test('a button runs its Azione on the Conversazione; a tap on the notification opens it', () async {
+    await respond('t-a', actionId: 'archive');
+    await respond('t-b');
+
+    expect(actions, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive)]);
+    expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+  });
+
+  test('iOS: the notification names a category registered at start with its buttons, for any choice', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    IOSFlutterLocalNotificationsPlugin.registerWith();
+    final categories = <String, List<String>>{};
+    String? category;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (call) async {
+      final args = call.arguments as Map?;
+      switch (call.method) {
+        case 'initialize':
+          for (final c in args!['notificationCategories'] as List) {
+            categories[(c as Map)['identifier'] as String] = [
+              for (final a in c['actions'] as List) (a as Map)['identifier'] as String,
+            ];
+          }
+          return true;
+        case 'show':
+          category = (args!['platformSpecifics'] as Map)['categoryIdentifier'] as String?;
+      }
+      return null;
+    });
+    final ios = LocalNotifications();
+    await ios.start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n',
+      actionLabel: (a) => a.name,
+      onAction: (_) {},
+    );
+
+    await ios.show(mail('a1', 't-a', actions: const [NotificationAction.star, NotificationAction.archive]));
+    expect(categories[category], ['star', 'archive']);
+    await ios.show(mail('a1', 't-a', actions: const [NotificationAction.delete]));
+    expect(categories[category], ['delete']);
+    await ios.show(mail('a1', 't-a'));
+    expect(category, isNull);
+  });
+
+  test('a button that dismissed its notification itself still takes the empty group away', () async {
+    await notifications.show(mail('a1', 't-a'));
+    shown.remove(notificationId((accountId: 'a1', conversationId: 't-a')));
+
+    await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-a'))]);
+    expect(shown, isEmpty);
   });
 
   tearDown(() {

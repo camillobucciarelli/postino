@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
@@ -56,6 +57,7 @@ void main() {
         sender: 'Ada Lovelace',
         subject: 'Cena',
         preview: 'Venerdì?',
+        actions: [NotificationAction.archive, NotificationAction.markRead],
       ),
     ]);
   });

@@ -16,6 +16,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
+import 'package:postino/core/data/contacts_store.dart' as _i863;
 import 'package:postino/core/data/desktop/app_updater_module.dart' as _i429;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
@@ -46,6 +47,7 @@ import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/auto_labels_repository.dart' as _i205;
 import 'package:postino/core/domain/connection_tester.dart' as _i967;
+import 'package:postino/core/domain/contacts_repository.dart' as _i787;
 import 'package:postino/core/domain/error_log.dart' as _i346;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
@@ -229,6 +231,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1028.PostinoDatabase>(),
         gh<_i398.Clock>(),
       ),
+    );
+    gh.lazySingleton<_i787.ContactsRepository>(
+      () =>
+          _i863.ContactsStore(gh<_i1028.PostinoDatabase>(), gh<_i398.Clock>()),
     );
     gh.lazySingleton<_i95.AutoLabeler>(
       () => _i95.AutoLabeler(

@@ -16,6 +16,7 @@ import 'daos/accounts_dao.dart';
 import 'daos/attributes_dao.dart';
 import 'daos/bodies_dao.dart';
 import 'daos/conflicts_dao.dart';
+import 'daos/contacts_dao.dart';
 import 'daos/device_settings_dao.dart';
 import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
@@ -74,6 +75,7 @@ part 'postino_database.g.dart';
     OutboxDao,
     PostinoSettingsDao,
     MessageEmbeddingsDao,
+    ContactsDao,
   ],
 )
 class PostinoDatabase(super.e) extends _$PostinoDatabase {

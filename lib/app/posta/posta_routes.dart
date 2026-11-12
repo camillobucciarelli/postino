@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:routefly/routefly.dart';
 
 import '../../main.dart' show routePaths;
@@ -60,3 +62,7 @@ void openConversation(String accountId, String conversationId) => Routefly.navig
     'conversationId': conversationId,
   }),
 );
+
+/// Opens the search over the Posta view (#205), in [accountId] only, or in every Account: back pops to the view.
+/// The Account goes as the route's argument: a pushed route does not carry its query string to `Routefly.query`.
+void openSearch({String? accountId}) => unawaited(Routefly.push<void>(routePaths.cerca, arguments: accountId));

@@ -43,6 +43,12 @@ class const MessageList({
   /// What an empty list says (the Bozze have their own); default: the inbox's.
   final String? emptyTitle,
   final String? emptyBody,
+
+  /// An icon for the empty state; default: the inbox's.
+  final PostinoIconData emptyIcon = PostinoIcons.check,
+
+  /// Called with the number of rows each time it changes (the search announces it); never during a build.
+  final ValueChanged<int>? onCount,
 }) extends StatefulWidget {
   @override
   State<MessageList> createState() => _MessageListState();
@@ -65,6 +71,7 @@ class _MessageListState() extends State<MessageList> {
   (String, String)? _cursor;
   List<InboxEntry>? _list;
   bool? _wasTwoPane;
+  int? _counted;
 
   /// The Etichette of each Account in the list, to name the ids of the rows; subscribed when a row first needs them.
   final _labels = <String, List<Label>>{};
@@ -102,6 +109,7 @@ class _MessageListState() extends State<MessageList> {
       ?..move = _move
       ..listFocused = _listFocused
       ..leave = _leave
+      ..focusRow = _focusCursorRow
       ..actOnRow = _actOnRow;
   }
 
@@ -131,6 +139,7 @@ class _MessageListState() extends State<MessageList> {
         ..move = null
         ..listFocused = null
         ..leave = null
+        ..focusRow = null
         ..actOnRow = null;
     }
     for (final n in _nodes.values) {
@@ -148,6 +157,11 @@ class _MessageListState() extends State<MessageList> {
 
   /// Focus on the list, and the list is in front (not under a full-page Conversazione).
   bool _listFocused() => _nodes.values.any((n) => n.hasFocus) && (_twoPane || widget.selected == null);
+
+  /// The focus goes to the cursor row (the first one in a list nobody has moved in).
+  void _focusCursorRow() {
+    if (_cursor != null) _reveal(_cursor!, 0);
+  }
 
   void _focusSoon() => WidgetsBinding.instance.addPostFrameCallback((_) {
     if (mounted && _cursor != null) _reveal(_cursor!, 0);
@@ -264,6 +278,10 @@ class _MessageListState() extends State<MessageList> {
       final swipeActions = swipes.value.value ?? swipeActionsDefault;
       _realign(list);
       _list = list;
+      if (list != null && list.length != _counted) {
+        _counted = list.length;
+        WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? widget.onCount?.call(list.length) : null);
+      }
       final t = context.t.list;
       final now = GetIt.I<Clock>().now();
       final inConflict = conflicts.value.value ?? const <(String, String)>{};
@@ -276,6 +294,7 @@ class _MessageListState() extends State<MessageList> {
         loadingLabel: t.loading,
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,
+        emptyIcon: widget.emptyIcon,
         itemBuilder: (context, i) {
           final InboxEntry(message: m, account: a, :count, :unread, :status) = list![i];
           final labels = [

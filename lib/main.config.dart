@@ -34,6 +34,7 @@ import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
+import 'package:postino/core/data/search_store.dart' as _i934;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
@@ -62,6 +63,7 @@ import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
+import 'package:postino/core/domain/search_repository.dart' as _i71;
 import 'package:postino/core/domain/server_discovery.dart' as _i221;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
@@ -213,6 +215,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i359.TrustedSendersRepository>(
       () => _i412.TrustedSendersStore(gh<_i1028.PostinoDatabase>()),
+    );
+    gh.lazySingleton<_i71.SearchRepository>(
+      () => _i934.SearchStore(gh<_i1028.PostinoDatabase>()),
     );
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),

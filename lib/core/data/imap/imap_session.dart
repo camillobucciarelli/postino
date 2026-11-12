@@ -49,6 +49,9 @@ class ImapSession(
   bool move = false;
   bool uidPlus = false;
 
+  /// PARTIAL (RFC 9394): `SEARCH RETURN (PARTIAL ...)` answers a window of the results, not all of them (#208).
+  bool partial = false;
+
   /// Runs [body] on the connection, after the commands queued before it. A connection that dropped while unused
   /// is opened again once; any error is thrown as [ImapFailed].
   Future<T> run<T>(Future<T> Function(ImapClient c) body) {
@@ -98,6 +101,7 @@ class ImapSession(
       specialUse = capabilities.contains('SPECIAL-USE');
       move = capabilities.contains('MOVE');
       uidPlus = capabilities.contains('UIDPLUS');
+      partial = capabilities.contains('PARTIAL');
       if (qresync) await c.enable(['QRESYNC']);
       return _client = c;
     } on Object catch (e) {

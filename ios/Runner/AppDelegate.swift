@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import workmanager_apple
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -13,6 +14,12 @@ import UIKit
   ) -> Bool {
     // flutter_local_notifications (#39): without it a tap that launches the app never reaches the plugin.
     UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+    // The sync in background (#213): the BGAppRefreshTask of workmanager runs Dart in an engine of its own, which needs
+    // the plugins, and its identifier (Info.plist) registered before the launch ends. Dart schedules it.
+    WorkmanagerPlugin.setPluginRegistrantCallback { registry in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
+    WorkmanagerPlugin.registerPeriodicTask(withIdentifier: "postino.sync", earliestBeginInSeconds: NSNumber(value: 15 * 60))
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

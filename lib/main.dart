@@ -41,7 +41,7 @@ Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
 }
 
-/// Android WorkManager entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
+/// WorkManager (Android) and BGTaskScheduler (iOS) entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
 /// Account (#36, [runOutboxTask]) or the periodic sync (#212, [runSyncTask]), whose notifications it prepares first.
 /// Its name stays: WorkManager keeps the callback handle across an update, and a send queued before it still finds it.
 @pragma('vm:entry-point')
@@ -60,7 +60,7 @@ void sendOutboxDispatcher() {
     if (!sync) return runOutboxTask(accountId!);
     LocaleSettings.useDeviceLocaleSync();
     await _startNotifications();
-    return runSyncTask();
+    return runSyncTask(budget: defaultTargetPlatform == TargetPlatform.iOS ? iosBudget : null);
   }, onTaskStopped: (task, _) => stopSyncTask());
 }
 
@@ -73,8 +73,9 @@ Future<void> main() async {
       'Figtree',
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212).
+  if (!kIsWeb && const {TargetPlatform.android, TargetPlatform.iOS}.contains(defaultTargetPlatform)) {
+    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212,
+    // iOS #213).
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);

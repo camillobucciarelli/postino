@@ -242,13 +242,19 @@ class SystemPeriodicSync() implements PeriodicSync {
 
   static bool get _android => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  /// iOS (#213): a BGAppRefreshTask, best effort: the system decides when, usually later than [every], never after a
+  /// force-quit. Its identifier is [task]; AppDelegate registers it.
+  static bool get _ios => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
   @override
   Future<void> schedule() async {
-    if (!_android) return;
+    if (!_android && !_ios) return;
     await Workmanager().registerPeriodicTask(
       task,
       task,
       frequency: every,
+      // iOS has no period: the earliest start of the next request, which the plugin renews after each run.
+      initialDelay: _ios ? every : null,
       constraints: Constraints(networkType: NetworkType.connected),
       // One task whatever the app starts: the one scheduled keeps its timing.
       existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
@@ -257,6 +263,6 @@ class SystemPeriodicSync() implements PeriodicSync {
 
   @override
   Future<void> cancel() async {
-    if (_android) await Workmanager().cancelByUniqueName(task);
+    if (_android || _ios) await Workmanager().cancelByUniqueName(task);
   }
 }

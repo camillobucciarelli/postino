@@ -56,7 +56,7 @@ void _backToV17(Database raw) => _backToV18(raw)
   ..execute(_v17LabelIntents);
 
 void main() {
-  test('v23 adds whether a message has attachments, unknown (null) for the rows stored before', () async {
+  test('v23 adds whether a message has attachments: from the stored bodies, else unknown (null)', () async {
     final raw = sqlite3.openInMemory();
     final first = PostinoDatabase(NativeDatabase.opened(raw, closeUnderlyingOnClose: false));
     await first.customSelect('SELECT 1').get();
@@ -67,11 +67,20 @@ void main() {
         "INSERT INTO messages (account_id, id, message_id, conversation_id, sender, recipients, subject, snippet, "
         "date, is_read, is_starred) VALUES ('a1', 'm1', '<m1>', 't1', 'ada@example.test', '', 'Oggetto', '', 0, 0, 0)",
       )
+      ..execute(
+        "INSERT INTO messages (account_id, id, message_id, conversation_id, sender, recipients, subject, snippet, "
+        "date, is_read, is_starred) VALUES ('a1', 'm2', '<m2>', 't2', 'ada@example.test', '', 'Con file', '', 0, 0, 0)",
+      )
+      ..execute(
+        "INSERT INTO bodies (account_id, message_id, body, kind, attachments) "
+        "VALUES ('a1', 'm2', 'x', 'testo', '[{\"id\":\"1\",\"name\":\"a.pdf\",\"size\":3}]')",
+      )
       ..execute('PRAGMA user_version = 22');
     final db = PostinoDatabase(NativeDatabase.opened(raw));
     addTearDown(db.close);
 
-    expect((await db.select(db.messages).getSingle()).hasAttachments, isNull);
+    final rows = {for (final r in await db.select(db.messages).get()) r.id: r.hasAttachments};
+    expect(rows, {'m1': null, 'm2': true}, reason: 'null unless a stored body already knew');
     expect(raw.select('PRAGMA user_version').first.values.first, 23);
   });
 

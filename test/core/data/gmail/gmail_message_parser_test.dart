@@ -80,5 +80,12 @@ void main() {
     expect(parseGmailMessage(metadata({'mimeType': 'multipart/mixed'})).hasAttachments, isTrue);
     expect(parseGmailMessage(metadata({'mimeType': 'multipart/alternative'})).hasAttachments, isFalse);
     expect(parseGmailMessage(metadata(const {})).hasAttachments, isNull);
+    // A lone attachment sits in the root payload, with no parts.
+    final lone = metadata({
+      'mimeType': 'application/pdf',
+      'filename': 'a.pdf',
+      'body': {'attachmentId': 'x', 'size': 3},
+    });
+    expect(parseGmailMessage(lone).hasAttachments, isTrue);
   });
 }

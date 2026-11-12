@@ -267,6 +267,13 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       // v23: whether a message has attachments, unknown (null) for the rows already stored (#206).
       if (from < 23 && !await _hasColumn('messages', 'has_attachments')) {
         await m.addColumn(messages, messages.hasAttachments);
+        // What the bodies stored already know (before v9 they kept no attachments).
+        if (await _hasColumn('bodies', 'attachments')) {
+          await customStatement(
+            'UPDATE messages SET has_attachments = json_array_length(b.attachments) > 0 FROM bodies b '
+            'WHERE b.account_id = messages.account_id AND b.message_id = messages.id AND b.attachments IS NOT NULL',
+          );
+        }
       }
       // Last: it reads the columns of every step above (v7 split the sender).
       if (from < 22) await createSearchIndex(this);

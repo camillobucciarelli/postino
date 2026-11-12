@@ -74,6 +74,9 @@ void main() {
 
     await sync('a0', [msg('m2', isRead: true)]);
     expect(await find('ha:allegato'), ['a0/m2'], reason: 'a sync that does not know does not erase it');
+
+    await sync('a0', [msg('m1', hasAttachments: true), msg('m2', hasAttachments: false)]);
+    expect(await find('ha:allegato'), ['a0/m2'], reason: 'a header guess does not undo what the stored body said');
   });
 
   test('days are the local ones, both ends included', () async {

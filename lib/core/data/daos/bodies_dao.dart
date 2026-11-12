@@ -23,6 +23,10 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     (t) => t.accountId.equals(accountId) & const CustomExpression('message_id NOT IN (SELECT id FROM snapshot_ids)'),
   );
 
+  /// The message takes the attachments its stored body knows (#206): a sync that only guesses does not undo them.
+  void correctHasAttachmentsIn(Batch b, String accountId, String messageId) =>
+      b.customStatement(_setHasAttachments, [accountId, messageId]);
+
   void deleteIn(Batch b, String accountId, String messageId) =>
       b.deleteWhere(bodies, (t) => t.accountId.equals(accountId) & t.messageId.equals(messageId));
 

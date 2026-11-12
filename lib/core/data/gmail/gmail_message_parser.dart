@@ -38,9 +38,12 @@ Message parseGmailMessage(Map<String, dynamic> j) {
     },
     references: (headers['references'] ?? '').trim().split(RegExp(r'\s+'))..removeWhere((r) => r.isEmpty),
     date: DateTime.fromMillisecondsSinceEpoch(int.parse(j['internalDate'] as String), isUtc: true),
-    // `format=full` has the parts: exact. `metadata` only the top-level type: `multipart/mixed` is a guess (#206).
-    hasAttachments: payload['parts'] != null
-        ? gmailAttachmentParts(payload).isNotEmpty
+    // The parts (`format=full`, or a lone attachment in the root) say it exactly; `metadata` only gives the top-level
+    // type, where `multipart/mixed` is a guess (#206).
+    hasAttachments: gmailAttachmentParts(payload).isNotEmpty
+        ? true
+        : payload['parts'] != null
+        ? false
         : payload['mimeType'] == null
         ? null
         : payload['mimeType'] == 'multipart/mixed',

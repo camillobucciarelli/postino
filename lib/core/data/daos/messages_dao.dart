@@ -116,6 +116,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
                 for (final l in m.labelIds)
                   MessageLabelsCompanion.insert(accountId: accountId, messageId: m.id, labelId: l),
               ]);
+            // A header-only guess does not undo what the body already said.
+            if (m.hasAttachments != null) bodiesDao.correctHasAttachmentsIn(b, accountId, m.id);
           }
           bodiesDao.upsertAllIn(b, accountId, batch.bodies);
           if (saveCursor) {

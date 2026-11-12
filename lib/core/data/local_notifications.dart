@@ -188,8 +188,9 @@ class LocalNotifications() implements Notifications {
         if (n.groupKey case final g? when n.id != groupId(g)) g,
     };
     for (final n in active) {
-      if (n.groupKey case final g? when n.id == groupId(g) && !withChildren.contains(g))
+      if (n.groupKey case final g? when n.id == groupId(g) && !withChildren.contains(g)) {
         await _plugin.cancel(id: n.id!);
+      }
     }
   }
 

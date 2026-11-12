@@ -61,7 +61,7 @@ void sendOutboxDispatcher() {
     LocaleSettings.useDeviceLocaleSync();
     await _startNotifications();
     return runSyncTask();
-  });
+  }, onTaskStopped: (task, _) => stopSyncTask());
 }
 
 Future<void> main() async {

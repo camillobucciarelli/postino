@@ -13,8 +13,13 @@ void main() {
   SyncOwner owner() =>
       SyncOwner(name: name, answerWithin: quick, syncWithin: const Duration(seconds: 5), retryEvery: quick);
 
-  setUp(() => IsolateNameServer.removePortNameMapping(name));
-  tearDown(() => IsolateNameServer.removePortNameMapping(name));
+  void clear() {
+    IsolateNameServer.removePortNameMapping(name);
+    IsolateNameServer.removePortNameMapping('$name.worker');
+  }
+
+  setUp(clear);
+  tearDown(clear);
 
   test('nobody owns: the first claims, a second does not and asks the owner to sync', () async {
     var asked = 0;
@@ -32,12 +37,73 @@ void main() {
     expect(await owner().tryClaim(), isTrue);
   });
 
-  test('a stale owner (its isolate gone, the name left behind) does not block: the name is taken over', () async {
+  test('an owner that does not answer (slow, or gone) keeps its name against a plain claim: false', () async {
+    final silent = RawReceivePort((Object? _) {});
+    addTearDown(silent.close);
+    IsolateNameServer.registerPortWithName(silent.sendPort, name);
+
+    expect(await owner().tryClaim(), isFalse);
+    expect(IsolateNameServer.lookupPortByName(name), silent.sendPort);
+  });
+
+  test(
+    'a silent background task (slow, maybe alive): the app never takes its name, it waits for the release',
+    () async {
+      final silent = RawReceivePort((Object? _) {});
+      addTearDown(silent.close);
+      IsolateNameServer.registerPortWithName(silent.sendPort, name);
+      IsolateNameServer.registerPortWithName(silent.sendPort, '$name.worker');
+      final app = owner();
+
+      expect(await app.tryClaim(takeOver: true), isFalse);
+      await Future<void>.delayed(quick * 3);
+      expect(await app.tryClaim(takeOver: true), isFalse);
+      expect(IsolateNameServer.lookupPortByName(name), silent.sendPort);
+
+      // Its release (the end of the task, or its stop callback).
+      clear();
+      expect(await app.tryClaim(takeOver: true), isTrue);
+    },
+  );
+
+  test(
+    'the background task marks itself before it takes the name; a task that finds the name taken leaves no mark',
+    () async {
+      final app = owner();
+      expect(await app.tryClaim(takeOver: true), isTrue);
+      expect(IsolateNameServer.lookupPortByName('$name.worker'), isNull);
+
+      expect(await owner().tryClaim(), isFalse);
+      expect(IsolateNameServer.lookupPortByName('$name.worker'), isNull);
+      expect(app.owns, isTrue);
+    },
+  );
+
+  test(
+    'another task\'s mark with the name free (it is taking it, or left the mark): the task skips, no loop',
+    () async {
+      final other = RawReceivePort();
+      addTearDown(other.close);
+      IsolateNameServer.registerPortWithName(other.sendPort, '$name.worker');
+      expect(await owner().tryClaim(), isFalse);
+    },
+  );
+
+  test('the background task marks its name; its release clears both', () async {
+    final task = owner();
+    expect(await task.tryClaim(), isTrue);
+    expect(IsolateNameServer.lookupPortByName('$name.worker'), IsolateNameServer.lookupPortByName(name));
+    task.release();
+    expect(IsolateNameServer.lookupPortByName('$name.worker'), isNull);
+    expect(IsolateNameServer.lookupPortByName(name), isNull);
+  });
+
+  test('the app takes over a name that does not answer (an engine Android destroyed)', () async {
     final dead = RawReceivePort();
     IsolateNameServer.registerPortWithName(dead.sendPort, name);
     dead.close();
 
-    expect(await owner().tryClaim(), isTrue);
+    expect(await owner().tryClaim(takeOver: true), isTrue);
   });
 
   test('claim waits for the background owner to release, then owns', () async {
@@ -60,7 +126,7 @@ void main() {
     await slow.tryClaim();
     IsolateNameServer.removePortNameMapping(name);
     final next = owner();
-    expect(await next.tryClaim(), isTrue);
+    expect(await next.tryClaim(takeOver: true), isTrue);
 
     expect(slow.owns, isFalse);
     expect(next.owns, isTrue);

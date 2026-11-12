@@ -2,11 +2,15 @@
 // app alive it leaves the sync to the app, and the app waits for a task running to end.
 import 'dart:async';
 import 'dart:io' show SocketException;
+import 'dart:isolate';
 import 'dart:ui' show IsolateNameServer;
+
+import 'package:drift/drift.dart' show TableUpdateQuery;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/background_sync.dart';
 import 'package:postino/core/data/mail_store.dart';
+import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/sync_owner.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
@@ -102,6 +106,41 @@ void main() {
     expect(a.syncCalls, greaterThan(calls));
   });
 
+  test('the app started while the task syncs: its streams read the database again only once the task ended', () async {
+    // A table no sync writes: only the refresh after external writes touches it.
+    final db = getIt<PostinoDatabase>();
+    var refreshes = 0;
+    final sub = db.tableUpdates(TableUpdateQuery.onTable(db.trustedSenders)).listen((_) => refreshes++);
+    addTearDown(sub.cancel);
+    final slow = a.hold = Completer<void>();
+    a.deliver(msg('2'));
+    final task = runSyncTask();
+    await pumpEventQueue();
+
+    engine.start();
+    addTearDown(engine.stop);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(refreshes, 0);
+
+    a.hold = null;
+    slow.complete();
+    await task;
+    await Future<void>.delayed(const Duration(seconds: 2));
+    expect(refreshes, greaterThan(0));
+  });
+
+  test('the app slow but alive (no answer in time): the task keeps off its name and does not sync', () async {
+    final slow = RawReceivePort((Object? _) {});
+    addTearDown(slow.close);
+    IsolateNameServer.registerPortWithName(slow.sendPort, syncOwnerName);
+    final calls = a.syncCalls;
+    a.deliver(msg('2'));
+
+    expect(await runSyncTask(answerWithin: const Duration(milliseconds: 50)), isTrue);
+    expect(a.syncCalls, calls);
+    expect(IsolateNameServer.lookupPortByName(syncOwnerName), slow.sendPort);
+  });
+
   test('the app started: the task finds it alive and asks it to sync', () async {
     engine.start();
     addTearDown(engine.stop);
@@ -115,7 +154,7 @@ void main() {
     expect([for (final n in h.notifications.shown) n.subject], ['Nuovo']);
   });
 
-  test('the app lost the name (a late answer let a task take it over): its next sync claims it back', () async {
+  test('the app lost the name (another engine took it over): its next sync claims it back', () async {
     engine.start();
     addTearDown(engine.stop);
     await pumpEventQueue();

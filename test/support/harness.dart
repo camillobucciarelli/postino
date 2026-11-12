@@ -85,6 +85,7 @@ class Harness._() {
     await getIt.reset();
     // An engine a previous test started and never stopped still owns the sync (#212): its port would answer.
     IsolateNameServer.removePortNameMapping(syncOwnerName);
+    IsolateNameServer.removePortNameMapping('$syncOwnerName.worker');
     final h = Harness._();
     getIt
       ..registerSingleton<PostinoDatabase>(PostinoDatabase.inMemory(), dispose: (db) => db.close())

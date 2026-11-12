@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
@@ -8,8 +9,9 @@ import '../../../i18n/strings.g.dart';
 import 'provider_search.dart';
 
 /// Where the search on the Providers stands (#207), above the results: «Cerco anche su…» while an Account
-/// is asked, «Risultati solo locali» for one not reachable (both live regions, their text selectable), and
-/// «Mostra altri» for the next page. Nothing before Invio.
+/// is asked, «Risultati solo locali» for one not reachable, «Mostrati i primi 1.000 risultati» for one whose
+/// Provider stopped at its cap (all live regions, their text selectable), and «Mostra altri» for the next page.
+/// Nothing before Invio.
 class const ProviderSearchStatus({super.key, required final ProviderSearch search}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SignalBuilder(
@@ -40,6 +42,16 @@ class const ProviderSearchStatus({super.key, required final ProviderSearch searc
               RateLimitFailure() => t.later,
               _ => t.retry,
             },
+          ),
+        for (final (a, n) in search.capped.value)
+          PostinoBanner(
+            key: ValueKey('tetto-${a.id}'),
+            tone: PostinoBannerTone.info,
+            account: mark(a),
+            title: t.capped(
+              n: NumberFormat.decimalPattern(Localizations.localeOf(context).toLanguageTag()).format(n),
+              name: a.name,
+            ),
           ),
         if (search.hasMore.value)
           Align(

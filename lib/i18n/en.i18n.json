@@ -287,6 +287,7 @@
     "provider": {
       "searching": "Also searching $name…",
       "unreachable": "Local results only: $name can't be reached",
+      "capped": "Showing the first $n results from $name",
       "retry": "Press Enter in the field to try again.",
       "more": "Show more",
       "reconnect": "It needs to be reconnected: sign in again from the notice in the mail list.",

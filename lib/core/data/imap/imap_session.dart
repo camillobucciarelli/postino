@@ -53,14 +53,15 @@ class ImapSession(
   bool partial = false;
 
   /// Runs [body] on the connection, after the commands queued before it. A connection that dropped while unused
-  /// is opened again once; any error is thrown as [ImapFailed].
-  Future<T> run<T>(Future<T> Function(ImapClient c) body) {
-    final run = _tail.then((_) => _run(body));
+  /// is opened again once; any error is thrown as [ImapFailed]. A new connection that is not logged in and read within
+  /// [setup] is dropped, an [OfflineFailure] (the sync waits as long as the commands do; a search has a deadline).
+  Future<T> run<T>(Future<T> Function(ImapClient c) body, {Duration? setup}) {
+    final run = _tail.then((_) => _run(body, setup));
     _tail = run.then<void>((_) {}, onError: (_) {});
     return run;
   }
 
-  Future<T> _run<T>(Future<T> Function(ImapClient c) body) async {
+  Future<T> _run<T>(Future<T> Function(ImapClient c) body, Duration? setup) async {
     if (_client case final c? when c.isConnected && c.isLoggedIn) {
       try {
         return await body(c);
@@ -71,7 +72,7 @@ class ImapSession(
         _client = null;
       }
     }
-    final c = await _open();
+    final c = await _open(setup);
     try {
       return await body(c);
     } on ImapFailed {
@@ -81,7 +82,7 @@ class ImapSession(
     }
   }
 
-  Future<ImapClient> _open() async {
+  Future<ImapClient> _open(Duration? setup) async {
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
     if (credentials == null) throw const ImapFailed(AuthFailure());
     final c = ImapClient(
@@ -90,7 +91,7 @@ class ImapSession(
       onBadCertificate: _onBadCertificate,
     );
     var atLogin = false;
-    try {
+    Future<void> setUp() async {
       await _connect(c, credentials.servers.imap);
       atLogin = true;
       await c.login(_user, credentials.password);
@@ -103,6 +104,10 @@ class ImapSession(
       uidPlus = capabilities.contains('UIDPLUS');
       partial = capabilities.contains('PARTIAL');
       if (qresync) await c.enable(['QRESYNC']);
+    }
+
+    try {
+      await (setup == null ? setUp() : setUp().timeout(setup));
       return _client = c;
     } on Object catch (e) {
       final failure = imapFailure(e, atLogin: atLogin, connected: c.isConnected);

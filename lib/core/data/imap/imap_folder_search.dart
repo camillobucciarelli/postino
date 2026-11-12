@@ -51,17 +51,23 @@ class ImapFolderSearch(
       if (const {FolderRole.inbox, FolderRole.sent, FolderRole.archive, FolderRole.user}.contains(f.role)) f,
   ];
 
-  /// One page over the folders [all] (of one LIST). Each folder runs on the session on its own: one that times out has
-  /// its connection dropped (the server still works on the command, which would hold every one after it) and the
-  /// next folder opens a new one.
-  Future<ProviderSearchPage> page(List<ImapFolder> all, SearchQuery query, String? token, Set<String> stored) async {
+  /// One page over the folders `list` gives. Every phase (the LIST, each folder, the lookup of the parents) runs on
+  /// the session through [_within], inside the 13 s budget: one that times out has its connection dropped and the next
+  /// opens a new one, with the results already collected kept.
+  Future<ProviderSearchPage> page(
+    Future<List<ImapFolder>> Function(ImapClient c) list,
+    SearchQuery query,
+    String? token,
+    Set<String> stored,
+  ) async {
+    final clock = Stopwatch()..start();
+    final all = await _within<List<ImapFolder>>(_budget, list);
     final resumes = _decode(token);
     final pending = <_Resume>[
       for (final f in searchable(all))
         if (resumes == null) (path: f.path, uidValidity: null, before: null) else ?resumes[f.path],
     ];
     final folders = {for (final f in all) f.path: f};
-    final clock = Stopwatch()..start();
     final found = <ImapParsed>[];
     final next = <_Resume>[];
     final slow = <String>{};
@@ -73,7 +79,7 @@ class ImapFolderSearch(
         break;
       }
       final limit = left < timeout ? left : timeout;
-      final done = await _session.run((c) => _guarded(c, folders[r.path]!, r, query, limit));
+      final done = await _folderWithin(limit, folders[r.path]!, r, query);
       if (done == null) continue;
       if (done.timedOut) {
         slow.add(r.path);
@@ -95,9 +101,10 @@ class ImapFolderSearch(
         if (!slow.contains(f.path)) f,
     ];
     final rest = _budget - clock.elapsed;
-    final related = await _session.run(
-      (c) =>
-          _bounded(c, rest < _minLookup ? _minLookup : rest, () => _related(c, lookup, found), const <ThreadInput>[]),
+    final related = await _within<List<ThreadInput>>(
+      rest < _minLookup ? _minLookup : rest,
+      (c) => _related(c, lookup, found),
+      onTimeout: () => const <ThreadInput>[],
     );
     final threaded = _thread(found, related)..sort((a, b) => b.date.compareTo(a.date));
     return ProviderSearchPage(
@@ -110,33 +117,48 @@ class ImapFolderSearch(
     );
   }
 
+  /// [body] on the session within [limit], the opening of a new connection included: the one place every phase of a
+  /// page goes through. What takes longer drops the connection (the server is still busy with it, nothing after it
+  /// would be answered) and is [onTimeout], or, without one, an [OfflineFailure].
+  Future<T> _within<T>(Duration limit, Future<T> Function(ImapClient c) body, {T Function()? onTimeout}) async {
+    ({T? value, bool slow}) done;
+    try {
+      // The timeout is a value, not a throw: the session would open a new connection and run [body] again.
+      done = await _session.run((c) async {
+        try {
+          return (value: await body(c).timeout(limit), slow: false);
+        } on Object catch (e) {
+          if (!_isTimeout(e)) rethrow;
+          await _drop(c);
+          return (value: null, slow: true);
+        }
+      }, setup: limit);
+    } on ImapFailed catch (e) {
+      // A connection that did not open in time, or at all.
+      if (e.failure is! OfflineFailure) rethrow;
+      done = (value: null, slow: true);
+    }
+    if (!done.slow) return done.value as T;
+    return onTimeout != null ? onTimeout() : throw const ImapFailed(OfflineFailure());
+  }
+
   /// [_folder] within [limit] (SELECT, SEARCH and FETCH together); null when the folder is gone or refuses the SEARCH:
   /// the others still answer.
   // ponytail: any refusal (a server without CHARSET UTF-8, `[LIMIT]`) leaves the folder out silently, never a RateLimitFailure.
-  Future<_Done?> _guarded(ImapClient c, ImapFolder f, _Resume r, SearchQuery query, Duration limit) async {
+  Future<_Done?> _folderWithin(Duration limit, ImapFolder f, _Resume r, SearchQuery query) async {
     try {
-      return await _folder(c, f, r, query, limit).timeout(limit);
+      return await _within<_Done?>(limit, (c) async {
+        try {
+          return await _folder(c, f, r, query, limit);
+        } on ImapException catch (e) {
+          if (!c.isConnected || _isTimeout(e)) rethrow;
+          return null;
+        }
+      });
     } on ImapFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
+      if (e.failure is OfflineFailure) return (messages: const <ImapParsed>[], more: null, timedOut: true);
       rethrow;
-    } on Object catch (e) {
-      if (_isTimeout(e)) {
-        await _drop(c);
-        return (messages: const <ImapParsed>[], more: null, timedOut: true);
-      }
-      if (e is! ImapException || !c.isConnected) rethrow;
-      return null;
-    }
-  }
-
-  /// [body] within [limit]; [onTimeout] (and the connection dropped) when it takes longer.
-  Future<T> _bounded<T>(ImapClient c, Duration limit, Future<T> Function() body, T onTimeout) async {
-    try {
-      return await body().timeout(limit);
-    } on Object catch (e) {
-      if (!_isTimeout(e)) rethrow;
-      await _drop(c);
-      return onTimeout;
     }
   }
 

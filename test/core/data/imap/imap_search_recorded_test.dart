@@ -31,10 +31,16 @@ class _Mailbox(
 
   /// INBOX's UID 1 answers a message that is not here: its parent is looked up.
   final bool reply = false,
+
+  /// After a SEARCH that never answers, the next connection's CAPABILITY does not either.
+  final bool stuckAfterwards = false,
 }) {
+  var _hung = false;
+
   var _selected = '';
 
   List<String> answer(String command) {
+    if (_hung && command.toUpperCase().startsWith('CAPABILITY')) return hang;
     if (basics(command, capabilities: capabilities, folders: _folders) case final b?) return b;
     final upper = command.toUpperCase();
     if (upper.startsWith('SELECT')) {
@@ -42,7 +48,10 @@ class _Mailbox(
       return ['* 1 EXISTS', '* OK [UIDVALIDITY 7] valid', '* OK [UIDNEXT 999] next', 'OK [READ-WRITE] done'];
     }
     if (upper.startsWith('UID SEARCH')) {
-      if (slow.contains(_selected)) return hang;
+      if (slow.contains(_selected)) {
+        _hung = stuckAfterwards;
+        return hang;
+      }
       final below = int.tryParse(RegExp(r'UID 1:(\d+)').firstMatch(command)?[1] ?? '');
       final found = [
         for (final u in uids[_selected] ?? const <int>[])
@@ -187,6 +196,23 @@ void main() {
     expect('Archive'.allMatches(selected), hasLength(1), reason: 'the search itself, not the lookup');
     expect(selected, isNot(contains('Trash')));
     expect(server.commands.where((c) => c.contains('Message-ID "<parent@example.com>"')), isNotEmpty);
+  });
+
+  test('a new connection that does not log in in time costs its folders, not the results already found', () async {
+    final (p, _) = await _setUp(
+      _Mailbox(
+        'IMAP4rev1',
+        {
+          'INBOX': [1],
+          'Archive': [2],
+          'Sent': [3],
+        },
+        slow: {'Archive'},
+        stuckAfterwards: true,
+      ),
+    );
+    final page = okValue(await p.search(_query));
+    expect(page.messages.map((m) => m.subject), ['Fattura 1']);
   });
 
   test('every folder slower than the timeout: not "no results" but OfflineFailure', () async {

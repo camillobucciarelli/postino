@@ -202,7 +202,7 @@ class ImapProvider(
     Set<String> stored = const {},
   }) async {
     if (imapSearchCriteria(query) == null) return const Ok(ProviderSearchPage());
-    return imapGuard(() async => _search.page(await _session.run(_list), query, pageToken, stored));
+    return imapGuard(() => _search.page(_list, query, pageToken, stored));
   }
 
   /// CREATE, idempotent on the name: a folder already there is returned.

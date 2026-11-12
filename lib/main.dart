@@ -20,7 +20,7 @@ import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
 import 'core/domain/launch_at_login_use_case.dart';
-import 'core/domain/mail_notification.dart';
+import 'core/domain/notification_target.dart';
 import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
@@ -79,11 +79,15 @@ bool get _desktop =>
     !kIsWeb &&
     const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform);
 
-/// Before `runApp` (#39): the notifications ready, and the Conversazione whose notification launched the app.
+/// Before `runApp` (#39): the notifications ready, and what the notification that launched the app opens.
 /// Failing keeps Postino from notifying, not from running.
-Future<ConversationKey?> _startNotifications() async {
+Future<NotificationTarget?> _startNotifications() async {
   try {
-    return await getIt<Notifications>().start(channelName: t.notifiche.channel, openLabel: t.notifiche.open);
+    return await getIt<Notifications>().start(
+      channelName: t.notifiche.channel,
+      openLabel: t.notifiche.open,
+      newMessages: (n) => t.notifiche.newMessages(n: n),
+    );
   } on Object catch (e) {
     debugPrint('[notifiche] start: $e');
     return null;
@@ -123,8 +127,9 @@ Future<void> _startDesktop() async {
 class const PostinoApp({
   super.key,
 
-  /// The Conversazione whose notification launched the app (cold start): it opens over the Posta unificata.
-  final ConversationKey? launch,
+  /// What the notification that launched the app opens (cold start): a Conversazione over the Posta unificata, or
+  /// the inbox of an Account (its summary, #210).
+  final NotificationTarget? launch,
 }) extends StatefulWidget {
   @override
   State<PostinoApp> createState() => _PostinoAppState();
@@ -132,7 +137,7 @@ class const PostinoApp({
 
 class _PostinoAppState() extends State<PostinoApp> {
   late final AppLifecycleListener _lifecycle;
-  StreamSubscription<ConversationKey>? _taps;
+  StreamSubscription<NotificationTarget>? _taps;
 
   /// Built once: routefly keeps its router in statics.
   late final RouterConfig<Object> _router = Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path)!;
@@ -145,10 +150,10 @@ class _PostinoAppState() extends State<PostinoApp> {
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
     _whenRouted(() {
       if (widget.launch case final launch?) _open(launch);
-      _taps = getIt<Notifications>().taps.listen((key) {
+      _taps = getIt<Notifications>().taps.listen((target) {
         // On desktop the window may be hidden in the tray.
         if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
-        _open(key);
+        _open(target);
       });
     });
   }
@@ -170,12 +175,17 @@ class _PostinoAppState() extends State<PostinoApp> {
     delegate.addListener(listener);
   }
 
-  /// Over the Posta unificata, whichever list was in front: its frame first, so Indietro comes back to it.
-  void _open(ConversationKey key) => unawaited(
-    Routefly.navigate(routePaths.posta.path)
-        .then((_) => WidgetsBinding.instance.endOfFrame)
-        .then((_) => openConversation(key.accountId, key.conversationId)),
-  );
+  /// A Conversazione over the Posta unificata, whichever list was in front: its frame first, so Indietro comes back
+  /// to it. An Account's summary opens its inbox, from where Indietro goes to the Posta unificata too (#210).
+  void _open(NotificationTarget target) => unawaited(switch (target) {
+    ConversationTarget(:final conversation) =>
+      Routefly.navigate(routePaths.posta.path)
+          .then((_) => WidgetsBinding.instance.endOfFrame)
+          .then((_) => openConversation(conversation.accountId, conversation.conversationId)),
+    AccountTarget(:final accountId) => Routefly.navigate(
+      routePaths.posta.$accountId.path.changes({'accountId': accountId}),
+    ),
+  });
 
   @override
   void dispose() {

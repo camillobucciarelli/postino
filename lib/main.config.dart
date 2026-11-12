@@ -38,6 +38,7 @@ import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i27;
+import 'package:postino/core/data/sync/notification_cleanup.dart' as _i555;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -206,6 +207,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i37.OutboxStore>(
       () => _i37.OutboxStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i555.NotificationCleanup>(
+      () => _i555.NotificationCleanup(
+        gh<_i385.MailStore>(),
+        gh<_i184.Notifications>(),
+      ),
+    );
     gh.lazySingleton<_i700.OutboxRepository>(
       () => mailStoreModule.outboxRepository(gh<_i37.OutboxStore>()),
     );
@@ -259,6 +266,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Connectivity>(),
         gh<_i398.BackgroundSender>(),
         gh<_i27.NewMailNotifier>(),
+        gh<_i555.NotificationCleanup>(),
         gh<_i95.AutoLabeler>(),
         gh<_i346.ErrorLog>(),
       ),

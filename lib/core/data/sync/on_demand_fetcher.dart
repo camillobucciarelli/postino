@@ -6,6 +6,7 @@ import '../../domain/result.dart';
 import '../mail_store.dart';
 import 'account_gate.dart';
 import 'account_queue.dart';
+import 'notification_cleanup.dart';
 import 'provider_factory.dart';
 import 'queue_replay.dart';
 
@@ -16,6 +17,7 @@ class OnDemandFetcher(
   final AccountGate _gate,
   final AccountQueue _queue,
   final QueueReplay _replay,
+  final NotificationCleanup _cleanup,
 ) {
   Future<Result<void>> openConversation(String accountId, String conversationId) async {
     final account = await _gate.find(accountId);
@@ -23,6 +25,8 @@ class OnDemandFetcher(
     final provider = providerFor(account);
     // Read here at once, offline too; the Provider hears it from the queue.
     await _store.markConversationRead(accountId, conversationId);
+    // Read here: its notification goes (#210).
+    await _cleanup.clean(accountId, {conversationId});
     // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
     // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
     final fetched = await _queue.run(accountId, () async {

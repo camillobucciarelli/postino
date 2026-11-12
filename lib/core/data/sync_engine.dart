@@ -20,6 +20,7 @@ import 'sync/auto_labeler.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
 import 'sync/new_mail_notifier.dart';
+import 'sync/notification_cleanup.dart';
 import 'sync/on_demand_fetcher.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
@@ -40,6 +41,7 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
   final NewMailNotifier _newMail,
+  final NotificationCleanup _cleanup,
   final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
@@ -63,8 +65,8 @@ class SyncEngine(
     _gate,
     _queue,
   );
-  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay);
-  late final _phase = SyncPhase(_store, _newMail, _labeler, _log, _gate, _replay);
+  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup);
+  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay);
   late final _triggers = SyncTriggers(
     _store,
     _clock,
@@ -204,12 +206,16 @@ class SyncEngine(
 
   @override
   Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold}) async {
+    // Applied here at once: a Conversazione left with nothing unread in the inbox loses its notification (#210).
+    final conversations = await _cleanup.conversationsOf(accountId, messageIds);
     if (hold == null) {
       await _store.queue(accountId, messageIds, action);
+      await _cleanup.clean(accountId, conversations);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
       return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
+    await _cleanup.clean(accountId, conversations);
     late final StreamSubscription<void> timer;
     timer = _clock.every(hold).listen((_) {
       _holdTimers.remove(timer);

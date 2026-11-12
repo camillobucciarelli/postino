@@ -11,6 +11,7 @@ import '../domain/mail_provider.dart';
 import '../domain/message.dart';
 import '../domain/outbox_repository.dart';
 import 'action_codec.dart';
+import 'daos/messages_dao_notifications.dart';
 import 'outbox_store.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
@@ -134,6 +135,17 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
       _db.bodiesDao.saveBody(accountId, messageId, body);
+
+  /// Of [conversationIds], those still unread in the inbox: their notification stays (#210).
+  Future<Set<String>> unreadInInbox(String accountId, Iterable<String> conversationIds) =>
+      _db.messagesDao.unreadInInbox(accountId, conversationIds);
+
+  /// Whether the Account's inbox still has an unread Conversazione: its summary stays (#210).
+  Future<bool> hasUnreadInInbox(String accountId) => _db.messagesDao.hasUnreadInInbox(accountId);
+
+  /// The Conversazioni of the stored messages [messageIds].
+  Future<Set<String>> conversationsOf(String accountId, Iterable<String> messageIds) =>
+      _db.messagesDao.conversationsOf(accountId, messageIds);
 
   /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008).
   Future<void> markConversationRead(String accountId, String conversationId) async =>

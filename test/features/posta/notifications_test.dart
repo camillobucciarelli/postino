@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -51,6 +52,7 @@ void main() {
     expect(h.notifications.shown, [
       const MailNotification(
         conversation: (accountId: notifiedAccount, conversationId: 't-b'),
+        accountAddress: '$notifiedAccount@example.com',
         sender: 'Ada Lovelace',
         subject: 'Cena',
         preview: 'Venerdì?',
@@ -108,25 +110,29 @@ void main() {
     expect(_notified(), ['t-b', 't-a']);
   });
 
-  testWidgets('the Conversazione open with the app in the tray or the background is notified', (tester) async {
-    await _start(tester);
-    await tester.tap(find.text('Primo'));
-    await tester.pumpAndSettle();
+  for (final away in [AppLifecycleState.hidden, AppLifecycleState.paused]) {
+    testWidgets('the Conversazione open with the app ${away.name} (tray, background) is notified', (tester) async {
+      await _start(tester);
+      await tester.tap(find.text('Primo'));
+      await tester.pumpAndSettle();
 
-    tester.binding
-      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
-      ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    gmail.deliver(msg('a2', conversationId: 't-a'));
-    await tester.pumpAndSettle();
-    expect(_notified(), ['t-a']);
+      tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      if (away == AppLifecycleState.paused) tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      gmail.deliver(msg('a2', conversationId: 't-a'));
+      await tester.pumpAndSettle();
+      expect(_notified(), ['t-a']);
 
-    tester.binding
-      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
-      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    gmail.deliver(msg('a3', conversationId: 't-a'));
-    await tester.pumpAndSettle();
-    expect(_notified(), ['t-a'], reason: 'back in front, on screen again');
-  });
+      if (away == AppLifecycleState.paused) tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      gmail.deliver(msg('a3', conversationId: 't-a'));
+      await tester.pumpAndSettle();
+      expect(_notified(), ['t-a'], reason: 'back in front, on screen again');
+    });
+  }
 
   testWidgets(
     'under a page pushed over it (Impostazioni) the open Conversazione is notified; a dialog does not hide it',
@@ -163,7 +169,7 @@ void main() {
       await _start(tester);
       expectUnified();
 
-      h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
+      h.notifications.tap(const ConversationTarget((accountId: notifiedAccount, conversationId: 't-a')));
       await tester.pumpAndSettle();
       expect(tester.widget<ConversationView>(find.byType(ConversationView)).conversationId, 't-a');
 
@@ -178,7 +184,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Posta unificata'), findsNothing);
 
-    h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
+    h.notifications.tap(const ConversationTarget((accountId: notifiedAccount, conversationId: 't-a')));
     await tester.pumpAndSettle();
     expect(find.byType(ConversationView), findsOneWidget);
 
@@ -188,7 +194,7 @@ void main() {
 
   testWidgets("the system's Indietro (Android) from a tapped notification goes to the Posta unificata", (tester) async {
     await _start(tester);
-    h.notifications.tap((accountId: notifiedAccount, conversationId: 't-a'));
+    h.notifications.tap(const ConversationTarget((accountId: notifiedAccount, conversationId: 't-a')));
     await tester.pumpAndSettle();
     expect(find.byType(ConversationView), findsOneWidget);
 

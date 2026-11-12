@@ -13,6 +13,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/intent_replayer.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
+import 'package:postino/core/data/sync/notification_cleanup.dart';
 import 'package:postino/core/data/sync/outbox_sender.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
@@ -229,6 +230,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     )..start();
@@ -475,6 +477,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );
@@ -701,6 +704,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );

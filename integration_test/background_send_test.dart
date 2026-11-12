@@ -24,6 +24,7 @@ import 'package:postino/core/data/platform_services.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
+import 'package:postino/core/data/sync/notification_cleanup.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
@@ -80,6 +81,7 @@ void main() {
           FakeConnectivity(),
           FakeBackgroundSender(),
           _notifier(store),
+          NotificationCleanup(store, FakeNotifications()),
           _labeler(),
           FakeErrorLog(),
         ),
@@ -109,6 +111,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      NotificationCleanup(store, FakeNotifications()),
       _labeler(),
       FakeErrorLog(),
     );
@@ -125,6 +128,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      NotificationCleanup(store, FakeNotifications()),
       _labeler(),
       FakeErrorLog(),
     )..start();

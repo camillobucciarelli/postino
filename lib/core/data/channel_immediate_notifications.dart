@@ -10,8 +10,8 @@ import '../domain/immediate_notifications.dart';
 /// engine, and with it this isolate's SyncEngine (IDLE, the 60 s poll), alive with Postino closed. Nothing elsewhere.
 @LazySingleton(as: ImmediateNotifications, env: [Environment.prod])
 class ChannelImmediateNotifications() implements ImmediateNotifications {
-  /// The runner's channel (`PostinoEngine.kt`): `start({channel, title, text})`, `stop`, `requestBatteryExemption`
-  /// → bool; from the runner `openUnified`.
+  /// The runner's channel (`PostinoEngine.kt`): `start({channel, title, text})`, `stop`, `requestBatteryExemption`;
+  /// from the runner `openUnified`.
   static const channel = MethodChannel('it.postino/immediate_notifications');
 
   late final StreamController<void> _opened = StreamController<void>.broadcast(
@@ -36,7 +36,7 @@ class ChannelImmediateNotifications() implements ImmediateNotifications {
 
   @override
   Future<void> requestBatteryExemption() async {
-    if (supported) await channel.invokeMethod<bool>('requestBatteryExemption');
+    if (supported) await channel.invokeMethod<void>('requestBatteryExemption');
   }
 
   @override

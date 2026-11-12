@@ -8,7 +8,9 @@
 // immediate on, swipe Postino away from the Recents, check `adb shell dumpsys activity services
 // com.cbucciarelli.postino` (ListeningService, `isForeground=true`, types=0x40000000) and that the process lives
 // (`adb shell pidof com.cbucciarelli.postino`); send yourself a Gmail and an IMAP message (seconds) and an Outlook.com
-// one (~60 s); tap the fixed notification: the Posta unificata opens. `adb reboot`: the fixed notification comes back.
+// one (~60 s); tap a mail notification: its Conversazione opens on the engine kept alive; tap the fixed notification:
+// the Posta unificata opens. `adb reboot`: the fixed notification comes back. Android 14 and 15: after an hour the
+// service still runs (`dumpsys`, no timeout).
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';

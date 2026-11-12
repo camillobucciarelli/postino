@@ -13,8 +13,7 @@ import 'device_settings_steps.dart';
 final _row = find.byKey(const ValueKey('immediate-notifications'));
 final _switch = find.descendant(of: _row, matching: find.byType(Switch));
 
-bool _switchOn(WidgetTester tester) =>
-    tester.widget<Switch>(find.descendant(of: _row, matching: find.byType(Switch))).value;
+bool _switchOn(WidgetTester tester) => tester.widget<Switch>(_switch).value;
 
 const _body =
     'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino '

@@ -23,6 +23,9 @@ class FakeImmediateNotifications() implements ImmediateNotifications {
   /// While set, a start throws it: the OS refused.
   Exception? failure;
 
+  /// While set, asking for the battery exemption throws it (no such dialog on the device).
+  Exception? exemptionFailure;
+
   final _opened = StreamController<void>.broadcast();
 
   /// The fixed notification tapped.
@@ -43,7 +46,10 @@ class FakeImmediateNotifications() implements ImmediateNotifications {
   }
 
   @override
-  Future<void> requestBatteryExemption() async => exemptionRequests++;
+  Future<void> requestBatteryExemption() async {
+    exemptionRequests++;
+    if (exemptionFailure case final f?) throw f;
+  }
 
   @override
   Stream<void> get opened => _opened.stream;

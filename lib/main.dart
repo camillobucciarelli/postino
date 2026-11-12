@@ -37,7 +37,7 @@ import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
 import 'design_system/tokens/postino_theme.dart';
-import 'features/impostazioni/presentation/immediate_notifications_row.dart' show listeningNotice;
+import 'features/impostazioni/presentation/listening_notice.dart';
 import 'features/impostazioni/presentation/notification_action_label.dart';
 import 'i18n/strings.g.dart';
 import 'main.config.dart';
@@ -125,9 +125,10 @@ Future<void> main() async {
   if (_desktop) unawaited(_startDesktop());
 }
 
-/// The Notifiche immediate on (#214): the service again at every start of the app's engine (killed by the system, or
-/// started by the service itself after a reboot), its notification in the current language. Failing leaves the
-/// periodic check (#212).
+/// The Notifiche immediate (#214) at every start of the app's engine (killed by the system, or started by the service
+/// itself after a reboot): the service again when on, its notification in the language of this start; stopped when
+/// off. Failing leaves the periodic check (#212).
+// ponytail: a language changed while the service keeps the engine shows from the next start of the engine.
 Future<void> _resumeImmediateNotifications() async {
   try {
     await getIt<ImmediateNotificationsUseCase>().resume(listeningNotice(t));

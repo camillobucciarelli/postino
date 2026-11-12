@@ -45,7 +45,10 @@ object PostinoEngine {
                             ListeningService.stop(app)
                             result.success(null)
                         }
-                        "requestBatteryExemption" -> result.success(BatteryExemption.request(app))
+                        "requestBatteryExemption" -> {
+                            BatteryExemption.request(app)
+                            result.success(null)
+                        }
                         else -> result.notImplemented()
                     }
                 } catch (e: Exception) {

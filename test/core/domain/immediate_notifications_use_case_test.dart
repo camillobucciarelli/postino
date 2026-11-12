@@ -21,10 +21,10 @@ void main() {
   });
   tearDown(() => db.close());
 
-  test('never chosen: off, and the start of the app starts nothing', () async {
+  test('never chosen: off, and the start of the app only makes sure the service is stopped', () async {
     expect(await useCase.isEnabled(), isFalse);
     await useCase.resume(notice);
-    expect(os.calls, isEmpty);
+    expect(os.calls, [false]);
   });
 
   test('on: the start of the app starts the service again, with the texts of now', () async {
@@ -39,7 +39,20 @@ void main() {
     await useCase.setEnabled(enabled: true, notice: notice);
     await useCase.setEnabled(enabled: false, notice: notice);
     await useCase.resume(notice);
-    expect(os.calls, [true, false]);
+    expect(os.calls, [true, false, false]);
+  });
+
+  test('the battery exemption failing: the service runs and the choice stays on', () async {
+    os.exemptionFailure = Exception('no dialog');
+    await useCase.setEnabled(enabled: true, notice: notice);
+    expect(os.running, isTrue);
+    expect(await settings.immediateNotifications(), isTrue);
+  });
+
+  test('the service left running by a choice not remembered: stopped at the next start', () async {
+    os.running = true;
+    await useCase.resume(notice);
+    expect(os.running, isFalse);
   });
 
   test('where unsupported a choice left in the database means nothing', () async {

@@ -3,14 +3,10 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../../core/domain/immediate_notifications.dart';
 import '../../../core/domain/immediate_notifications_use_case.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
-
-/// The texts of the fixed notification «Postino in ascolto» in the current language.
-ListeningNotice listeningNotice(Translations t) =>
-    (channel: t.notifiche.listeningChannel, title: t.notifiche.listeningTitle, text: t.notifiche.listeningText);
+import 'listening_notice.dart';
 
 /// Impostazioni del dispositivo › «Notifiche immediate» (#214, story 88 and 98): Android only, off by default, with
 /// its price in the description. On starts the service and asks for the battery exemption; off stops it.

@@ -10,16 +10,15 @@ import android.provider.Settings
 /// The esclusione dall'ottimizzazione batteria of the Notifiche immediate (#214): the network in Doze, and the
 /// service may start again from the background. The system's own «Consenti» dialog, one tap.
 object BatteryExemption {
-    /// True when Postino is already excluded; otherwise asks the system and returns false.
+    /// Asks the system, unless Postino is already excluded.
     // REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is a Play policy matter; Postino is sideloaded (#121).
     @SuppressLint("BatteryLife")
-    fun request(context: Context): Boolean {
+    fun request(context: Context) {
         val power = context.getSystemService(PowerManager::class.java)
-        if (power.isIgnoringBatteryOptimizations(context.packageName)) return true
+        if (power.isIgnoringBatteryOptimizations(context.packageName)) return
         context.startActivity(
             Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
-        return false
     }
 }

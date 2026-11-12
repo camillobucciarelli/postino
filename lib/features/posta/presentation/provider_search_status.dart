@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
+import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'provider_search.dart';
@@ -27,13 +28,18 @@ class const ProviderSearchStatus({super.key, required final ProviderSearch searc
             account: mark(a),
             title: t.searching(name: a.name),
           ),
-        for (final a in search.unreachable.value)
+        for (final (a, failure) in search.unreachable.value)
           PostinoBanner(
             key: ValueKey('non-raggiungibile-${a.id}'),
             tone: PostinoBannerTone.offline,
             account: mark(a),
             title: t.unreachable(name: a.name),
-            message: t.retry,
+            // Invio helps only when it was the network.
+            message: switch (failure) {
+              AuthFailure() => t.reconnect,
+              RateLimitFailure() => t.later,
+              _ => t.retry,
+            },
           ),
         if (search.hasMore.value)
           Align(

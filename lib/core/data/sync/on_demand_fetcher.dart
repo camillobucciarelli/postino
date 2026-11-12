@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/account.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
+import '../../domain/platform_services.dart';
 import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
 import '../../domain/search_query.dart';
@@ -21,6 +22,7 @@ class OnDemandFetcher(
   final AccountQueue _queue,
   final QueueReplay _replay,
   final NotificationCleanup _cleanup,
+  final Clock _clock,
 ) {
   Future<Result<void>> openConversation(String accountId, String conversationId) async {
     final account = await _gate.find(accountId);
@@ -101,22 +103,31 @@ class OnDemandFetcher(
     if (account == null || _gate.removed(accountId)) return const Err(NotFoundFailure());
     if (account.status != AccountStatus.attivo) return const Err(AuthFailure());
     if (_gate.paused(accountId)) return Err(RateLimitFailure(retryAfter: _gate.pausedUntil(accountId)));
-    // Outside the Account's queue: a search never waits behind a sync. Only messages not stored when it started are
-    // written, so a sync can hardly have a newer state of them.
-    // ponytail: a message the sync stores meanwhile may get an older state for one sync; apply in the queue if seen.
-    final found = await providerFor(account)
-        .search(query, pageToken: pageToken, stored: {...await _store.messageIds(accountId)});
-    if (_gate.removed(accountId)) return const Err(NotFoundFailure());
-    switch (found) {
-      case Ok(:final value):
-        await _store.applyPage(accountId, value.messages, const {});
-      case Err(failure: AuthFailure()):
-        await _store.setStatus(accountId, AccountStatus.daRicollegare);
-      case Err(failure: RateLimitFailure(:final retryAfter?)):
-        _gate.pause(accountId, retryAfter);
-      case Err():
-    }
-    return found;
+    // In the Account's queue, like an opened Conversazione: no sync can apply a deletion (of a message not stored
+    // yet, so a no-op) between the fetch and the write, which would bring the message back for good.
+    // ponytail: a search waits behind a running sync (an initial one may outlast its timeout); a cursor check if that hurts.
+    return _queue.run(accountId, () async {
+      if (_gate.removed(accountId)) return const Err(NotFoundFailure());
+      final stored = (await _store.messageIds(accountId)).toSet();
+      final found = await providerFor(account).search(query, pageToken: pageToken, stored: stored);
+      if (_gate.removed(accountId)) return const Err(NotFoundFailure());
+      switch (found) {
+        case Ok(:final value):
+          // Only those older than the sync window: a recent one is the sync's, which notifies it and runs the
+          // Etichettatura automatica; it joins the results once synced.
+          final before = _clock.now().subtract(syncWindow);
+          await _store.applyPage(accountId, [
+            for (final m in value.messages)
+              if (m.date.isBefore(before)) m,
+          ], const {});
+        case Err(failure: AuthFailure()):
+          await _store.setStatus(accountId, AccountStatus.daRicollegare);
+        case Err(failure: RateLimitFailure(:final retryAfter?)):
+          _gate.pause(accountId, retryAfter);
+        case Err():
+      }
+      return found;
+    });
   }
 
   /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.

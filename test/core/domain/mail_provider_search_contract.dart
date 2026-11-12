@@ -66,6 +66,8 @@ void mailProviderSearchContract(String name, CreateHarness create) {
       expect(await found(const SearchQuery(from: 'example', unread: true)), {'b'});
       expect(await found(const SearchQuery(from: 'example', starred: true)), {'b'});
       expect(await found(const SearchQuery(from: 'example')), {'a', 'b'});
+      await h.attach(h.idOf('a'), 'fattura.pdf', [1, 2, 3]);
+      expect(await found(const SearchQuery(from: 'example', hasAttachment: true)), {'a'});
     });
 
     test('a result comes with its Conversazione and Etichette, like the sync', () async {

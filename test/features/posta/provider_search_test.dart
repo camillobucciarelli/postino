@@ -152,16 +152,18 @@ void main() {
     expect(status['a1'], AccountStatus.daRicollegare);
   });
 
-  testWidgets('«Mostra altri» brings the next page; a button reached with Tab, pressed with Spazio', (tester) async {
+  testWidgets('«Mostra altri» brings the next page; a button reached with Tab, pressed with Spazio and Invio', (
+    tester,
+  ) async {
     final (_, a1, _) = await _start(tester);
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 5; i++) {
       a1.deliverOutsideWindow(msg('p$i', subject: 'Preventivo $i', date: DateTime.utc(2026, 3, 1 + i)));
     }
     await _type(tester, 'preventivo');
     await _enter(tester);
-    expect(_row('a1', 'p2'), findsOneWidget);
-    expect(_row('a1', 'p1'), findsOneWidget);
-    expect(_row('a1', 'p0'), findsNothing);
+    expect(_row('a1', 'p4'), findsOneWidget);
+    expect(_row('a1', 'p3'), findsOneWidget);
+    expect(_row('a1', 'p2'), findsNothing);
 
     final more = find.widgetWithText(TextButton, 'Mostra altri');
     expect(more, findsOneWidget);
@@ -174,7 +176,13 @@ void main() {
     }
     expect(focused(), isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await tester.pumpAndSettle();
+    await _settle(tester);
+    expect(_row('a1', 'p2'), findsOneWidget);
+    expect(_row('a1', 'p0'), findsNothing);
+    expect(focused(), isTrue, reason: 'the button stayed while its page loaded');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await _settle(tester);
     expect(_row('a1', 'p0'), findsOneWidget);
     expect(find.text('Mostra altri'), findsNothing, reason: 'the last page');
   });
@@ -185,7 +193,37 @@ void main() {
     await _enter(tester);
     expect(_row('a1', 'old-reply'), findsOneWidget);
     await _type(tester, 'affitto x');
+    expect(_row('a1', 'old-reply'), findsNothing, reason: 'not a find of «affitto x», nor a local match');
     await _type(tester, 'affitto');
     expect(_row('a1', 'old-reply'), findsOneWidget, reason: 'stored here now: the local search finds it');
   });
+
+  testWidgets('a refused login or a pause of the Provider is not offered Invio as a cure', (tester) async {
+    final (h, a1, a2) = await _start(tester);
+    a1.breakAuth();
+    a2.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await _type(tester, 'affitto');
+    await _enter(tester);
+    expect(find.textContaining('Va ricollegato'), findsOneWidget);
+    expect(find.textContaining('chiesto una pausa'), findsOneWidget);
+    expect(find.textContaining('Premi Invio'), findsNothing);
+  });
+
+  testWidgets('a recent message the Provider finds is left to the sync (which notifies it)', (tester) async {
+    final (h, a1, _) = await _start(tester);
+    a1.deliver(msg('new', subject: 'Contratto firmato, affitto', date: h.clock.now()), signal: false);
+    await _type(tester, 'affitto');
+    await _enter(tester);
+    final ids = await tester.runAsync(() => GetIt.I<MailStore>().messageIds('a1'));
+    expect(ids, isNot(contains('new')), reason: 'not stored by the search; provider_search_sync_test checks the sync');
+    expect(_row('a1', 'old-reply'), findsOneWidget);
+  });
+}
+
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 20; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
 }

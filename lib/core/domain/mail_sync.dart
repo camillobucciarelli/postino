@@ -93,9 +93,10 @@ abstract interface class MailSync() {
   /// before putting an Etichetta on all of it. [Err] offline or on a failed fetch.
   Future<Result<void>> completeConversation(String accountId, String conversationId);
 
-  /// One page of [query] on the Account's Provider (#207), from [pageToken] (null: the first). What it found and was
-  /// not here yet is stored like the messages of an opened Conversazione: no notification, no Etichettatura
-  /// automatica; it stays until the next initial sync. [AuthFailure] makes the Account Da ricollegare (a Da
+  /// One page of [query] on the Account's Provider (#207), from [pageToken] (null: the first), in the Account's
+  /// queue. What it found older than the sync window and not here yet is stored like the messages of an opened
+  /// Conversazione: no notification, no Etichettatura automatica; it stays until the next initial sync. A recent one
+  /// is left to the sync. [AuthFailure] makes the Account Da ricollegare (a Da
   /// ricollegare one is not asked), a rate limit pauses it; [NotFoundFailure] for an Account gone or being removed.
   Future<Result<ProviderSearchPage>> search(String accountId, SearchQuery query, {String? pageToken});
 }

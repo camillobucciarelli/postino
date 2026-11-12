@@ -36,7 +36,8 @@ Future<ProviderSearchPage> gmailSearch(
 /// Gmail's `q` for [query] (#207, `docs/research/ricerca-server-per-provider.md`); empty when there is nothing to
 /// look for. Every value the user typed is quoted, so it is never an operator (`in:spam`, `-x`, `OR`); a quote
 /// inside it, which Gmail cannot escape, becomes a space. The words of sender, recipients and subject each go on
-/// their own, as the local search reads them. The days are epoch seconds at the edges of the local day: Gmail reads
+/// their own, as the local search reads them; Gmail matches them as whole words, not as word beginnings like the
+/// local index (`fatt` does not find «fattura» there). The days are epoch seconds at the edges of the local day: Gmail reads
 /// `after:YYYY/MM/DD` in PST.
 String gmailQuery(SearchQuery query) {
   String quoted(String s) => '"${s.replaceAll('"', ' ').trim().replaceAll(RegExp(r'\s+'), ' ')}"';

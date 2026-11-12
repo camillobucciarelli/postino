@@ -611,6 +611,8 @@ class _Translations$cerca$provider$en extends Translations$cerca$provider$it {
 	@override String unreachable({required Object name}) => 'Local results only: ${name} can\'t be reached';
 	@override String get retry => 'Press Enter in the field to try again.';
 	@override String get more => 'Show more';
+	@override String get reconnect => 'It needs to be reconnected: sign in again from the notice in the mail list.';
+	@override String get later => 'The provider asked for a pause: try again in a few minutes.';
 }
 
 // Path: conflitti.values
@@ -861,6 +863,8 @@ extension on TranslationsEn {
 			'cerca.provider.unreachable' => ({required Object name}) => 'Local results only: ${name} can\'t be reached',
 			'cerca.provider.retry' => 'Press Enter in the field to try again.',
 			'cerca.provider.more' => 'Show more',
+			'cerca.provider.reconnect' => 'It needs to be reconnected: sign in again from the notice in the mail list.',
+			'cerca.provider.later' => 'The provider asked for a pause: try again in a few minutes.',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} conflict', other: '${n} conflicts', ), 
 			'conflitti.bannerMessage' => 'You changed some messages offline, and they changed somewhere else too.',
 			'conflitti.open' => 'Review',

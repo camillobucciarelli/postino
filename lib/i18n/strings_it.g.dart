@@ -1216,6 +1216,12 @@ class Translations$cerca$provider$it {
 
 	/// it: 'Mostra altri'
 	String get more => 'Mostra altri';
+
+	/// it: 'Va ricollegato: accedi di nuovo dall'avviso nella lista della posta.'
+	String get reconnect => 'Va ricollegato: accedi di nuovo dall\'avviso nella lista della posta.';
+
+	/// it: 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.'
+	String get later => 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.';
 }
 
 // Path: conflitti.values
@@ -1484,6 +1490,8 @@ extension on Translations {
 			'cerca.provider.unreachable' => ({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile',
 			'cerca.provider.retry' => 'Premi Invio nel campo per riprovare.',
 			'cerca.provider.more' => 'Mostra altri',
+			'cerca.provider.reconnect' => 'Va ricollegato: accedi di nuovo dall\'avviso nella lista della posta.',
+			'cerca.provider.later' => 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
 			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
 			'conflitti.open' => 'Vedi',

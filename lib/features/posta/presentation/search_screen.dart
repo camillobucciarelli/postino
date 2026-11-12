@@ -147,6 +147,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
               autofocus: true,
               onChanged: _changed,
               onSubmitted: _submit,
+              textInputAction: TextInputAction.search,
             ),
           ),
         ),

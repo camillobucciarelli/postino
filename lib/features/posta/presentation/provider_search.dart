@@ -13,8 +13,9 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
   /// The Accounts still being asked.
   final searching = signal<List<Account>>(const []);
 
-  /// The Accounts that did not answer the last time they were asked (offline, too slow, refused).
-  final unreachable = signal<List<Account>>(const []);
+  /// The Accounts that did not answer the last time they were asked, with why (offline or too slow, refused,
+  /// paused by the Provider).
+  final unreachable = signal<List<(Account, Failure)>>(const []);
 
   /// Whether some Account has a next page («Mostra altri»).
   final hasMore = signal(false);
@@ -54,7 +55,7 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
     if (_next.isEmpty || searching.value.isNotEmpty) return;
     final next = {..._next};
     _next.clear();
-    hasMore.value = false;
+    // The button stays while the page loads: the focus stays on it.
     await _ask(
       [for (final (a, _) in next.values) a],
       {for (final MapEntry(:key, :value) in next.entries) key: value.$2},
@@ -81,8 +82,8 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
     batch(() {
       searching.value = accounts;
       unreachable.value = [
-        for (final a in unreachable.value)
-          if (!accounts.contains(a)) a,
+        for (final u in unreachable.value)
+          if (!accounts.contains(u.$1)) u,
       ];
     });
     await for (final (:account, :result) in _useCase.search(accounts, query, pageTokens: tokens)) {
@@ -99,10 +100,10 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
               account.id: {...?found.value[account.id], ...value.conversationIds},
             };
             if (value.nextPageToken case final token?) _next[account.id] = (account, token);
-          case Err():
-            unreachable.value = [...unreachable.value, account];
+          case Err(:final failure):
+            unreachable.value = [...unreachable.value, (account, failure)];
         }
-        hasMore.value = _next.isNotEmpty && searching.value.isEmpty;
+        if (searching.value.isEmpty) hasMore.value = _next.isNotEmpty;
       });
     }
   }

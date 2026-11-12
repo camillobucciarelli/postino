@@ -1,4 +1,6 @@
 // The search on the Provider through the sync engine (#207): what it stores, and what it does on a failure.
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -67,6 +69,32 @@ void main() {
       isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<RateLimitFailure>()),
     );
     expect(a.searchCalls, hasLength(calls));
+  });
+
+  test('a recent message found is left to the sync, which notifies it and runs the Etichettatura', () async {
+    a.deliver(msg('r', subject: 'Fattura nuova', date: h.clock.now()), signal: false);
+    final page = switch (await engine().search('a', fattura)) {
+      Ok(:final value) => value,
+      Err(:final failure) => fail('$failure'),
+    };
+    expect(page.conversationIds, contains('t-r'));
+    expect(await GetIt.I<MailStore>().messageIds('a'), isNot(contains('r')));
+    expect(engine().autoLabeling, isEmpty, reason: 'a search runs no Etichettatura automatica');
+
+    await engine().syncAll();
+    expect(h.notifications.shown.map((n) => n.subject), ['Fattura nuova']);
+    expect(engine().autoLabeling, contains('a'), reason: 'the sync labels what it brings');
+  });
+
+  test('an Account removed while its search runs gets nothing written', () async {
+    final held = a.holdSearch = Completer<void>();
+    final search = engine().search('a', fattura);
+    await pumpEventQueue();
+    final removal = engine().removeAccount('a', () async {});
+    held.complete();
+    expect(await search, isA<Err<Object?>>().having((e) => e.failure, 'failure', isA<NotFoundFailure>()));
+    await removal;
+    expect(await GetIt.I<MailStore>().messageIds('a'), isNot(contains('old')));
   });
 
   test('an Account gone is NotFound', () async {

@@ -277,7 +277,9 @@
       "searching": "Cerco anche su $name…",
       "unreachable": "Risultati solo locali: $name non è raggiungibile",
       "retry": "Premi Invio nel campo per riprovare.",
-      "more": "Mostra altri"
+      "more": "Mostra altri",
+      "reconnect": "Va ricollegato: accedi di nuovo dall'avviso nella lista della posta.",
+      "later": "Il Provider ha chiesto una pausa: riprova tra qualche minuto."
     }
   },
   "conflitti": {

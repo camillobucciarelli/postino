@@ -19,6 +19,7 @@ import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/draft_html.dart';
+import 'recipient_field.dart';
 
 /// Writing a Bozza (#35): the Account it leaves from, A, Cc, Ccn, Oggetto and the rich editor. Opens the
 /// Bozza [messageId] (ours or another client's), or starts an empty one with that Message-ID; every edit
@@ -236,19 +237,14 @@ class _ComposerViewState() extends State<ComposerView> with AccountsSignal {
                       onSelected: (id) => setState(() => _from = id),
                     ),
                     fields: [
-                      for (final (label, c, first) in [
-                        (t.to, _to, true),
-                        (t.cc, _cc, false),
-                        (t.bcc, _bcc, false),
-                        (t.subject, _subject, false),
-                      ])
-                        PostinoComposerField(
+                      for (final (label, c) in [(t.to, _to), (t.cc, _cc), (t.bcc, _bcc)])
+                        RecipientField(
                           label: label,
                           controller: c,
-                          autofocus: first && !_saved,
-                          keyboardType: c == _subject ? TextInputType.text : TextInputType.emailAddress,
+                          autofocus: c == _to && !_saved,
                           onChanged: (_) => _save(),
                         ),
+                      PostinoComposerField(label: t.subject, controller: _subject, onChanged: (_) => _save()),
                       // The attachments a forward carries over (#37), read-only.
                       // ponytail: adding and removing attachments is #75.
                       if (_opened?.attachments case final atts? when atts.isNotEmpty)

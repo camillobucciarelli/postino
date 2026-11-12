@@ -140,7 +140,11 @@
     "sendFailed": "Sending failed: try again",
     "offlineAttachments": "You are offline: the forwarded attachments are not downloaded yet, try again online",
     "noRecipient": "Add at least one recipient",
-    "forwardedAttachments": "Attachments"
+    "forwardedAttachments": "Attachments",
+    "suggestions": {
+      "one": "$n suggestion",
+      "other": "$n suggestions"
+    }
   },
   "bozze": {
     "title": "Drafts",

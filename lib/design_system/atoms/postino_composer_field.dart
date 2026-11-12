@@ -28,6 +28,9 @@ class const PostinoComposerField({
 
   /// Widget a destra del campo (es. un'azione).
   final Widget? trailing,
+
+  /// Detto dallo screen reader dopo il nome del campo (es. «3 suggerimenti»).
+  final String? semanticsHint,
 }) extends StatefulWidget {
   /// Crea una riga di intestazione del compositore.
   this;
@@ -70,6 +73,7 @@ class _PostinoComposerFieldState() extends State<PostinoComposerField> {
                   children: [
                     Semantics(
                       label: widget.label,
+                      hint: widget.semanticsHint,
                       child: ExcludeSemantics(
                         child: Text(widget.label, style: PostinoText.label.copyWith(color: c.inkMuted)),
                       ),

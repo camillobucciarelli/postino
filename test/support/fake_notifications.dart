@@ -18,6 +18,9 @@ class FakeNotifications() implements Notifications {
   /// What the OS shows now, grouped per Account.
   final visible = <String, Set<NotificationTarget>>{};
 
+  /// While set, [show] waits for it.
+  Completer<void>? gate;
+
   /// How many of the next [show]s throw, as an OS refusing them would.
   int failures = 0;
 
@@ -63,6 +66,7 @@ class FakeNotifications() implements Notifications {
 
   @override
   Future<void> show(MailNotification notification) async {
+    await gate?.future;
     if (failures > 0) {
       failures--;
       throw StateError('notification refused');

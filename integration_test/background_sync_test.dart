@@ -1,4 +1,4 @@
-// Sync in background (#212). Run on an Android emulator.
+// Sync in background (#212, iOS #213). Run on an Android emulator or an iOS simulator.
 //
 // What this verifies: the WorkManager periodic task is scheduled once and cancelled (the platform round-trip), and
 // the task's body, on the real notifications plugin, turns a new message of the fake Provider into a notification
@@ -9,6 +9,10 @@
 // `adb shell cmd jobscheduler run -f com.cbucciarelli.postino <job id>` (the id from
 // `adb shell dumpsys jobscheduler com.cbucciarelli.postino`), and check the notification; tap it: the Conversazione
 // opens.
+// iOS (#213), same by hand: with Postino in the background (home, not swiped away) pause the app from Xcode or
+// `lldb` and run `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"postino.sync"]`
+// (the task of WorkManager launches the Dart side in its own engine): the notification appears and opens the
+// Conversazione. On a real iPhone the system decides when; only never after a force-quit.
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +33,7 @@ import '../test/support/harness.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final android = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  final ios = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   testWidgets('the periodic task: scheduled once, then cancelled', (tester) async {
     await Workmanager().initialize(sendOutboxDispatcher);
@@ -58,7 +63,7 @@ void main() {
     await getIt<SyncEngine>().syncAll();
     a.deliver(msg('m2', conversationId: 't-2', subject: 'Dal background'));
 
-    expect(await runSyncTask(), isTrue);
+    expect(await runSyncTask(budget: ios ? iosBudget : null), isTrue);
 
     final shown = await FlutterLocalNotificationsPlugin().getActiveNotifications();
     expect(
@@ -66,5 +71,5 @@ void main() {
       contains(const ConversationTarget((accountId: 'a1', conversationId: 't-2'))),
     );
     await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-2'))]);
-  }, skip: !android);
+  }, skip: !android && !ios);
 }

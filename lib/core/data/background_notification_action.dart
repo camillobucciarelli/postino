@@ -15,17 +15,16 @@ import 'sync/sync_owner.dart';
 // ponytail: a task already past its replay leaves the voce for the next run or the app's start; ask it to replay if seen.
 Future<void> runNotificationActionTask(NotificationActionTap tap, {Duration? answerWithin}) async {
   final accountId = tap.conversation.accountId;
+  final owner = answerWithin == null ? SyncOwner() : SyncOwner(answerWithin: answerWithin);
   try {
     await GetIt.I<NotificationActionUseCase>().run(tap, replay: false);
-    final owner = answerWithin == null ? SyncOwner() : SyncOwner(answerWithin: answerWithin);
-    if (!await owner.tryClaim()) return;
-    try {
-      await GetIt.I<MailSync>().replayActions(accountId);
-    } finally {
-      owner.release();
-    }
+    if (await owner.tryClaim()) await GetIt.I<MailSync>().replayActions(accountId);
   } on Object catch (e) {
     // The type only: the error may quote the message.
     debugPrint('[notifiche] $accountId: action failed, ${e.runtimeType}');
+  } finally {
+    // Before returning, as `runSyncTask`: the plugin may destroy the engine then (iOS), and a name left behind would
+    // keep the app and the next runs off the sync. Nothing when it did not own.
+    owner.release();
   }
 }

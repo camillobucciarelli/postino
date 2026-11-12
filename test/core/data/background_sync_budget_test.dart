@@ -66,6 +66,24 @@ void main() {
     expect(await getIt<MailStore>().cursor('a'), isNot(before));
   });
 
+  test('the app alive but slow to finish the sync it was asked: the budget ends the task and frees the name', () async {
+    final app = SyncOwner();
+    expect(await app.tryClaim(onAsked: () => Completer<void>().future), isTrue);
+    addTearDown(app.release);
+
+    expect(await runSyncTask(budget: const Duration(milliseconds: 200)), isTrue);
+  });
+
+  test('a budget that cut an Account off: the name is free when the task returns', () async {
+    a
+      ..hold = Completer<void>()
+      ..deliver(msg('2'));
+
+    expect(await runSyncTask(budget: const Duration(milliseconds: 200)), isTrue);
+
+    expect(await SyncOwner().tryClaim(), isTrue);
+  });
+
   test('on iOS the task skips the Etichettatura automatica, as on Android', () async {
     a.deliver(msg('2'));
     h.embedder.texts.clear();

@@ -6513,6 +6513,7 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
     this as PostinoDatabase,
   );
   late final SearchDao searchDao = SearchDao(this as PostinoDatabase);
+  late final ContactsDao contactsDao = ContactsDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

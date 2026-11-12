@@ -55,6 +55,12 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
   ),
   ('ink-muted text', (c) => c.inkMuted, [(c) => c.surface, (c) => c.surfaceGround], _text),
   (
+    'PostinoSuggestions address, on the panel and on the highlighted row',
+    (c) => c.inkMuted,
+    [(c) => c.surfaceRaised, (c) => c.surfaceSelected],
+    _text,
+  ),
+  (
     'ink-muted icons (IconButton, chevron, quote toggle)',
     (c) => c.inkMuted,
     [(c) => c.surface, (c) => c.surfacePressed],

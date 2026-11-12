@@ -30,6 +30,7 @@ Message parseGraphMessage(Map<String, dynamic> j, {required String labelId}) {
     subject: j['subject'] as String? ?? '',
     snippet: j['bodyPreview'] as String? ?? '',
     date: DateTime.parse(j['receivedDateTime'] as String).toUtc(),
+    hasAttachments: j['hasAttachments'] as bool?,
   );
 }
 

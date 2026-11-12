@@ -72,4 +72,31 @@ void main() {
     expect(p.message.labelIds, [sentLabelId]);
     expect((p.message.isRead, p.message.isStarred), (false, false));
   });
+
+  group('has attachments (#206)', () {
+    const head = 'From: ada@example.com\r\nSubject: Prova\r\nMIME-Version: 1.0\r\n';
+    const mixed =
+        '${head}Content-Type: multipart/mixed; boundary="b"\r\n\r\n'
+        '--b\r\nContent-Type: text/plain\r\n\r\nCiao\r\n'
+        '--b\r\nContent-Type: application/pdf; name="a.pdf"\r\nContent-Disposition: attachment; filename="a.pdf"\r\n'
+        'Content-Transfer-Encoding: base64\r\n\r\nQUJD\r\n--b--\r\n';
+    const mixedNoFile =
+        '${head}Content-Type: multipart/mixed; boundary="b"\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nCiao\r\n--b--\r\n';
+
+    bool? has(String raw, {bool withBody = false}) => parseImapMessage(
+      MimeMessage.parseFromText(raw),
+      id: 'INBOX/7/1',
+      labelId: inboxLabelId,
+      withBody: withBody,
+    ).message.hasAttachments;
+
+    test('the header alone guesses from multipart/mixed; the whole message knows', () {
+      expect(has(mixed), isTrue);
+      expect(has('${head}Content-Type: text/plain\r\n\r\nCiao'), isFalse);
+      expect(has('${head}Content-Type: multipart/alternative; boundary="b"\r\n\r\n--b--\r\n'), isFalse);
+      expect(has(mixed, withBody: true), isTrue);
+      expect(has(mixedNoFile), isTrue, reason: 'the guess');
+      expect(has(mixedNoFile, withBody: true), isFalse, reason: 'the body corrects it');
+    });
+  });
 }

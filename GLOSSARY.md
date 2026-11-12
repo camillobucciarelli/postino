@@ -45,7 +45,7 @@ L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi do
 _Avoid_: Classificazione, smistamento automatico, tag automatici
 
 **Ricerca**:
-La ricerca nella posta, da un solo campo. Prima gira sul database locale con un indice full-text (parole che iniziano così, senza badare a maiuscole e accenti), restringendosi all'Account della vista da cui si apre; `da:`, `a:` e `oggetto:` (e `from:`, `to:`, `subject:`) cercano per mittente, destinatari e oggetto, le virgolette una frase esatta. Una riga per Conversazione.
+La ricerca nella posta, da un solo campo. Prima gira sul database locale con un indice full-text (parole che iniziano così, senza badare a maiuscole e accenti), restringendosi all'Account della vista da cui si apre; `da:`, `a:` e `oggetto:` (e `from:`, `to:`, `subject:`) cercano per mittente, destinatari e oggetto, le virgolette una frase esatta. Gli stessi operatori restringono per criteri, anche senza testo: `è:nonletto`, `è:stella`, `ha:allegato`, `dopo:AAAA-MM-GG` e `prima:AAAA-MM-GG` (giorni locali, estremi compresi), `account:nome` (parte dell'indirizzo; più nomi sono alternative); in inglese `is:unread`, `is:starred`, `has:attachment`, `after:`, `before:`. Ogni criterio guarda la Conversazione: basta un suo messaggio che lo soddisfi. Un operatore senza ancora il valore si ignora, uno con un valore che non capisce (`dopo:ieri`) resta testo. Una riga per Conversazione.
 _Avoid_: Filtro, query
 
 **Stella**:

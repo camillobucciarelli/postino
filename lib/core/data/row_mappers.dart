@@ -25,6 +25,7 @@ Message messageOf(MessageRow r, [List<String> labelIds = const [inboxLabelId], S
   date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
   replyTo: r.replyTo,
   references: lines(r.references ?? ''),
+  hasAttachments: r.hasAttachments,
 );
 
 /// One row per Conversazione of [rows] (message, its Account and label ids), which come newest first: the first of

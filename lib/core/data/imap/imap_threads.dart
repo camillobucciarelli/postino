@@ -109,4 +109,5 @@ Message withConversation(Message m, String conversationId, {String? snippet}) =>
   date: m.date,
   replyTo: m.replyTo,
   references: m.references,
+  hasAttachments: m.hasAttachments,
 );

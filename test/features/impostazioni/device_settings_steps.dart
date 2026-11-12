@@ -10,8 +10,12 @@ import 'package:routefly/routefly.dart';
 import '../../support/harness.dart';
 
 /// The Impostazioni del dispositivo open, Italian, with no avvio al login nor updater (as on a phone); [permissionNeeded]
-/// as the fake OS says.
-Future<Harness> openPhoneDeviceSettings(WidgetTester tester, {bool permissionNeeded = false}) async {
+/// as the fake OS says; [android] with the Notifiche immediate (#214).
+Future<Harness> openPhoneDeviceSettings(
+  WidgetTester tester, {
+  bool permissionNeeded = false,
+  bool android = false,
+}) async {
   tester.view
     ..physicalSize = const Size(1200, 2400)
     ..devicePixelRatio = 1;
@@ -19,6 +23,7 @@ Future<Harness> openPhoneDeviceSettings(WidgetTester tester, {bool permissionNee
   final h = await Harness.create();
   h.launchAtLogin.supported = false;
   h.notifications.needed = permissionNeeded;
+  h.immediate.supported = android;
   // «Non ora» long ago: the explanation at the first Account does not come back (#39).
   await getIt<SettingsRepository>().setNotificationsAsked();
   await h.addAccount('a1');

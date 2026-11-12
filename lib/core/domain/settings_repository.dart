@@ -23,6 +23,12 @@ abstract interface class SettingsRepository() {
   /// Ricorda la scelta dell'avvio al login.
   Future<void> setLaunchAtLogin({required bool enabled});
 
+  /// The Notifiche immediate chosen on this device (#214); null before any choice (off).
+  Future<bool?> immediateNotifications();
+
+  /// Ricorda la scelta delle Notifiche immediate.
+  Future<void> setImmediateNotifications({required bool enabled});
+
   /// Whether this device already explained the notifications and offered the OS's permission (#39).
   Future<bool> notificationsAsked();
 

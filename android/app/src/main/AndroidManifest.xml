@@ -7,6 +7,12 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
+    <!-- Notifiche immediate (#214): the specialUse foreground service, its start after a reboot, and the system's
+         «Consenti» dialog for the esclusione dall'ottimizzazione batteria (sideloaded APK, no Play review, #121). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -59,6 +65,23 @@
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
+        <!-- Notifiche immediate (#214): keeps the app's engine, and its sync with IDLE, alive with Postino closed. -->
+        <service
+            android:name=".ListeningService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Email client keeping IMAP IDLE connections open, chosen by the user, to show new mail in real time; no push service is available for these accounts."/>
+        </service>
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

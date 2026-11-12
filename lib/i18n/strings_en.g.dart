@@ -314,6 +314,9 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+	@override String get immediateNotifications => 'Immediate notifications';
+	@override String get immediateNotificationsBody => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.';
+	@override String get immediateNotificationsFailed => 'The system did not start the immediate notifications. Try again.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
 	@override String get notifications => 'Notifications';
@@ -436,6 +439,9 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 		one: '${n} new message',
 		other: '${n} new messages',
 	);
+	@override String get listeningChannel => 'Postino listening';
+	@override String get listeningTitle => 'Postino is listening';
+	@override String get listeningText => 'New mail arrives in real time. Tap to open All inboxes.';
 }
 
 // Path: cerca
@@ -784,6 +790,9 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'impostazioni.immediateNotifications' => 'Immediate notifications',
+			'impostazioni.immediateNotificationsBody' => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.',
+			'impostazioni.immediateNotificationsFailed' => 'The system did not start the immediate notifications. Try again.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
 			'impostazioni.notifications' => 'Notifications',
@@ -869,6 +878,9 @@ extension on TranslationsEn {
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
 			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} new message', other: '${n} new messages', ), 
+			'notifiche.listeningChannel' => 'Postino listening',
+			'notifiche.listeningTitle' => 'Postino is listening',
+			'notifiche.listeningText' => 'New mail arrives in real time. Tap to open All inboxes.',
 			'cerca.open' => 'Search',
 			'cerca.title' => 'Search',
 			'cerca.field' => 'Search mail',

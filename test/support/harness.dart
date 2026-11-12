@@ -19,6 +19,7 @@ import 'package:postino/core/domain/connection_tester.dart';
 import 'package:postino/core/domain/embedding_models.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/google_consent.dart';
+import 'package:postino/core/domain/immediate_notifications.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/microsoft_consent.dart';
@@ -32,6 +33,7 @@ import 'package:postino/core/domain/text_embedder.dart';
 import 'package:postino/main.dart';
 
 import 'fake_google_consent.dart';
+import 'fake_immediate_notifications.dart';
 import 'fake_mail_provider.dart';
 import 'fake_mail_servers.dart';
 import 'fake_microsoft_consent.dart';
@@ -43,7 +45,7 @@ import 'fake_text_embedder.dart';
 
 /// Seam of the widget tests: real DB (in-memory SQLite), sync engine and DI wiring; fake Providers (an IMAP Account
 /// without one is offline), consent, autodiscovery, test connection, HTTP client, keychain, clock, network,
-/// links, Save As, report sharing, background sender, periodic sync, avvio al login, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
+/// links, Save As, report sharing, background sender, periodic sync, avvio al login, Notifiche immediate, notifications, model manager, embedding model and file system (the model download is the real one on the GGUF); the error log is the real
 /// one on that file system.
 class Harness._() {
   final consent = FakeGoogleConsent();
@@ -56,6 +58,7 @@ class Harness._() {
   final background = FakeBackgroundSender();
   final periodic = FakePeriodicSync();
   final launchAtLogin = FakeLaunchAtLogin();
+  final immediate = FakeImmediateNotifications();
   final updater = FakeAppUpdater();
   final notifications = FakeNotifications();
   final sharer = FakeReportSharer();
@@ -99,6 +102,7 @@ class Harness._() {
       ..registerSingleton<BackgroundSender>(h.background)
       ..registerSingleton<PeriodicSync>(h.periodic)
       ..registerSingleton<LaunchAtLogin>(h.launchAtLogin)
+      ..registerSingleton<ImmediateNotifications>(h.immediate)
       ..registerSingleton<AppUpdater>(h.updater)
       ..registerSingleton<Notifications>(h.notifications)
       ..registerSingleton<ErrorLog>(h.errorLog)

@@ -166,6 +166,9 @@
     "launchAtLogin": "Avvio al login",
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
     "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.",
+    "immediateNotifications": "Notifiche immediate",
+    "immediateNotificationsBody": "La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.",
+    "immediateNotificationsFailed": "Il sistema non ha avviato le Notifiche immediate. Riprova.",
     "checkForUpdates": "Cerca aggiornamenti",
     "checkForUpdatesBody": "Cerca subito una nuova versione di Postino.",
     "notifications": "Notifiche",
@@ -269,7 +272,10 @@
     "newMessages": {
       "one": "$n nuovo messaggio",
       "other": "$n nuovi messaggi"
-    }
+    },
+    "listeningChannel": "Postino in ascolto",
+    "listeningTitle": "Postino in ascolto",
+    "listeningText": "La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata."
   },
   "cerca": {
     "open": "Cerca",

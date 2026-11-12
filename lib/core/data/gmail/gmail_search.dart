@@ -37,7 +37,10 @@ Future<ProviderSearchPage> gmailSearch(
 /// look for. Every value the user typed is quoted, so it is never an operator (`in:spam`, `-x`, `OR`); a quote
 /// inside it, which Gmail cannot escape, becomes a space. The words of sender, recipients and subject each go on
 /// their own, as the local search reads them; Gmail matches them as whole words, not as word beginnings like the
-/// local index (`fatt` does not find «fattura» there). The days are epoch seconds at the edges of the local day: Gmail reads
+/// local index (`fatt` does not find «fattura» there). The criteria hold for one message, while the local search
+/// takes them per Conversazione (a read «Preventivo» answered by an unread reply): the Gmail API has no search over a
+/// whole thread.
+// ponytail: per-message criteria on the Provider; one query per criterion and an intersection if QA misses threads. The days are epoch seconds at the edges of the local day: Gmail reads
 /// `after:YYYY/MM/DD` in PST.
 String gmailQuery(SearchQuery query) {
   String quoted(String s) => '"${s.replaceAll('"', ' ').trim().replaceAll(RegExp(r'\s+'), ' ')}"';

@@ -26,6 +26,16 @@ class ProviderSearchUseCase(
   /// Legge gli Account e chiede ai loro Provider.
   this;
 
+  /// Whether [query] has something a Provider filters on: text or a criterion. One that only picks Accounts
+  /// (`account:`) would list their whole mailbox, which the local search already shows.
+  bool asksProviders(SearchQuery query) =>
+      query.hasText ||
+      query.after != null ||
+      query.before != null ||
+      query.unread == true ||
+      query.starred == true ||
+      query.hasAttachment == true;
+
   /// The Accounts [query] reaches, as the local search reads it: those of its `accountIds` (all when empty) whose
   /// address holds one of its `accountNames` (any when empty), attivo only; a Da ricollegare one is not asked.
   Future<List<Account>> accountsFor(SearchQuery query) async => [

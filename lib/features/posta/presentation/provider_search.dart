@@ -44,6 +44,7 @@ class ProviderSearch(final ProviderSearchUseCase _useCase) {
   /// Asks every attivo Account [query] reaches for its first page.
   Future<void> start(SearchQuery query) async {
     clear();
+    if (!_useCase.asksProviders(query)) return;
     _query = query;
     final run = _run;
     final accounts = await _useCase.accountsFor(query);

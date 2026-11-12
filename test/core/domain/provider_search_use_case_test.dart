@@ -58,5 +58,12 @@ void main() {
     expect(answers, ['c:ok', 'b:ok', 'slow:OfflineFailure']);
   });
 
+  test('a query that only picks Accounts does not go to the Providers', () {
+    final use = ProviderSearchUseCase(_Accounts(const []), _Sync(const {}));
+    expect(use.asksProviders(const SearchQuery(accountNames: ['anna'])), isFalse);
+    expect(use.asksProviders(const SearchQuery(unread: true, accountNames: ['anna'])), isTrue);
+    expect(use.asksProviders(const SearchQuery(terms: ['fattura'])), isTrue);
+  });
+
   test('the timeout of a page is 15 s', () => expect(providerSearchTimeout, const Duration(seconds: 15)));
 }

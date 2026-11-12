@@ -128,6 +128,46 @@ void main() {
     expect(_row('a2', 'n1'), findsOneWidget);
   });
 
+  testWidgets('the system Indietro closes the open Conversazione first; the search and its results stay', (
+    tester,
+  ) async {
+    await _start(tester, size: _phone);
+    await _openFromBar(tester);
+    await _type(tester, 'fattura');
+    await tester.tap(_row('a1', 'm1'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(_row('a1', 'm1'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing, reason: 'the second Indietro leaves the search');
+  });
+
+  testWidgets('on a narrow window `/` from an open Conversazione returns to the visible field', (tester) async {
+    await _start(tester, size: _phone);
+    await _openFromBar(tester);
+    await _type(tester, 'fattura');
+    await tester.tap(_row('a1', 'm1'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsOneWidget);
+
+    Focus.of(
+      tester.element(find.descendant(of: find.byType(ConversationView), matching: find.byType(PostinoFocusRing)).first),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.slash, character: '/');
+    await tester.pumpAndSettle();
+    expect(find.byType(ConversationView), findsNothing);
+    final fn = tester.widget<EditableText>(find.byType(EditableText)).focusNode;
+    expect(fn.hasFocus, isTrue);
+  });
+
   testWidgets('Esc empties the field, the second Esc leaves the search', (tester) async {
     await _start(tester);
     await _openFromBar(tester);

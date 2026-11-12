@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/message.dart' show spamLabelId;
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
 import '../tables/bodies_table.dart';
@@ -22,10 +23,15 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     final a = accounts;
     final labelIds = attachedDatabase.messagesDao.labelIds;
     // The hits are looked up once, not per row: a Conversazione is a hit if any of its messages is.
+    // Spam is in no view but its own (see the glossary): neither a hit nor a row of a Conversazione.
+    String notSpam(String row) =>
+        'NOT EXISTS (SELECT 1 FROM message_labels sl WHERE sl.account_id = $row.account_id AND sl.message_id = $row.id '
+        "AND sl.label_id = '$spamLabelId')";
     final hits = CustomExpression<bool>(
       '(messages.account_id, messages.conversation_id) IN (SELECT h.account_id, h.conversation_id FROM search_index '
-      "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match')",
-      watchedTables: [messages, bodies],
+      "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match' AND ${notSpam('h')}) "
+      'AND ${notSpam('messages')}',
+      watchedTables: [messages, bodies, messageLabels],
     );
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])

@@ -48,8 +48,27 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   @override
   void initState() {
     super.initState();
-    _cursor.search = _field.requestFocus;
+    _cursor.search = _focusField;
   }
+
+  /// `/`: the focus goes to the field. On a narrow window an open Conversazione covers it (the list is kept under
+  /// it, hidden): it closes first, so the field is on screen when it takes the focus.
+  void _focusField() {
+    if (_open != null && MediaQuery.sizeOf(context).width < PostinoSize.breakpointListDetail) {
+      setState(() => _open = null);
+      _focusWhenShown();
+    } else {
+      _field.requestFocus();
+    }
+  }
+
+  /// Two frames on: the list is back on stage, and has returned its own focus to the row just closed, so the field
+  /// has the last word.
+  void _focusWhenShown() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) => mounted ? _field.requestFocus() : null)
+      ..scheduleFrame();
+  });
 
   @override
   void dispose() {
@@ -151,33 +170,42 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) => PostaShortcuts(
-      cursor: _cursor,
-      // From a result with nothing open, Esc goes back to the field.
-      child: CallbackShortcuts(
-        bindings: {const SingleActivator(LogicalKeyboardKey.escape): _field.requestFocus},
-        child: Scaffold(
-          body: PostinoListDetailLayout(
-            list: _results(context),
-            detail: _open == null
-                ? null
-                : ConversationView(
-                    key: ValueKey('search-${_open!.$1}/${_open!.$2}'),
-                    accountId: _open!.$1,
-                    conversationId: _open!.$2,
-                    onBack: () => setState(() => _open = null),
-                    onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
-                    cursor: _cursor,
-                  ),
-            detailKey: _open,
-            empty: PostinoEmptyState(
-              title: context.t.conversazione.selectTitle,
-              body: context.t.conversazione.selectBody,
-              icon: PostinoIcons.inbox,
+    // The system's Indietro (Android) closes the open Conversazione first, like its own Indietro: the detail is
+    // drawn here, not pushed, so there is no page to pop; the results stay.
+    builder: (context) => BackButtonListener(
+      onBackButtonPressed: () async {
+        if (_open == null || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
+        setState(() => _open = null);
+        return true;
+      },
+      child: PostaShortcuts(
+        cursor: _cursor,
+        // From a result with nothing open, Esc goes back to the field.
+        child: CallbackShortcuts(
+          bindings: {const SingleActivator(LogicalKeyboardKey.escape): _field.requestFocus},
+          child: Scaffold(
+            body: PostinoListDetailLayout(
+              list: _results(context),
+              detail: _open == null
+                  ? null
+                  : ConversationView(
+                      key: ValueKey('search-${_open!.$1}/${_open!.$2}'),
+                      accountId: _open!.$1,
+                      conversationId: _open!.$2,
+                      onBack: () => setState(() => _open = null),
+                      onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
+                      cursor: _cursor,
+                    ),
+              detailKey: _open,
+              empty: PostinoEmptyState(
+                title: context.t.conversazione.selectTitle,
+                body: context.t.conversazione.selectBody,
+                icon: PostinoIcons.inbox,
+              ),
+              onClose: () => setState(() => _open = null),
+              resizeLabel: context.t.listWidth.label,
+              resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
             ),
-            onClose: () => setState(() => _open = null),
-            resizeLabel: context.t.listWidth.label,
-            resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
           ),
         ),
       ),

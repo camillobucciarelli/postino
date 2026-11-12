@@ -159,6 +159,19 @@ void main() {
     expect([for (final e in rows) e.count], [2, 1]);
   });
 
+  test('Spam is neither found nor part of a Conversazione found by its other messages', () async {
+    await sync('a1', [
+      msg('m1', subject: 'offerta', labelIds: [spamLabelId], date: DateTime.utc(2026, 3, 9)),
+      msg('m2', subject: 'offerta', conversationId: 'c2'),
+      msg('m3', subject: 'Re: ordine', conversationId: 'c2', date: DateTime.utc(2026, 3, 2)),
+      msg('m4', subject: 'ordine', conversationId: 'c2', labelIds: [spamLabelId], date: DateTime.utc(2026, 3, 8)),
+    ]);
+    expect(await find('offerta'), ['a1/m3'], reason: 'the Spam message is no hit; m2 hits, the row is its latest');
+    final rows = await search.watchLocal(parseSearchQuery('ordine')).first;
+    expect([for (final e in rows) e.message.id], ['m3'], reason: 'the latest row is not the Spam one');
+    expect(rows.single.count, 2);
+  });
+
   test('the Account scope narrows the search; none searches them all', () async {
     await sync('a1', [msg('m1', subject: 'orario')]);
     await sync('a2', [msg('m2', subject: 'orario')]);

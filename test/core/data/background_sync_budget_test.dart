@@ -84,6 +84,16 @@ void main() {
     expect(await SyncOwner().tryClaim(), isTrue);
   });
 
+  test('a batch applied when the budget ends still notifies before the task returns', () async {
+    final gate = h.notifications.gate = Completer<void>();
+    a.deliver(msg('2', subject: 'Per A'));
+    Timer(const Duration(milliseconds: 400), gate.complete);
+
+    expect(await runSyncTask(budget: const Duration(milliseconds: 200)), isTrue);
+
+    expect([for (final n in h.notifications.shown) n.subject], ['Per A']);
+  });
+
   test('on iOS the task skips the Etichettatura automatica, as on Android', () async {
     a.deliver(msg('2'));
     h.embedder.texts.clear();

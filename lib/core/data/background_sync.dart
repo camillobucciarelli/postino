@@ -27,6 +27,8 @@ Future<bool> _run(Duration? answerWithin, Duration? budget) async {
   try {
     // The budget covers the handshake with the app too. ponytail: real time here, the engine's clock for the starts.
     await (budget == null ? work() : work().timeout(budget, onTimeout: () {}));
+    // A batch already applied still notifies: its cursor moved, nothing would notify it later.
+    if (budget != null) await GetIt.I<SyncEngine>().commitsSettled();
   } on Object catch (e) {
     // The type only: the error may quote a message or a server's answer.
     debugPrint('[background] sync failed, ${e.runtimeType}');

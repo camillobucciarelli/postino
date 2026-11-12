@@ -143,6 +143,14 @@ class SyncEngine(
     return _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => sync(a, s)).done);
   }
 
+  /// Resolves once no sync is between applying a batch and its notifications (#213): short, local work, which the
+  /// background task's budget does not cut off, or the mail applied would never notify.
+  Future<void> commitsSettled() async {
+    while (_phase.committing.isNotEmpty) {
+      await Future.wait([..._phase.committing].map((c) => c.then<void>((_) {}, onError: (_) {})));
+    }
+  }
+
   Future<void> _poll() {
     _hold.ensure();
     return _eachActive((account) => _sync(account)?.done);

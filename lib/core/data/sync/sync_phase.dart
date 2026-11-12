@@ -30,6 +30,10 @@ class SyncPhase(
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   final autoLabeling = <String, Future<void>>{};
 
+  /// The syncs between the apply of a batch and the end of its notifications: the background task's budget (#213)
+  /// waits for them, as the engine is destroyed once it returns and the mail applied would never notify.
+  final committing = <Future<void>>{};
+
   /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two. Without
   /// [autoLabel] (the background task, #212) the new mail is left to the next sync's Etichettatura automatica.
   Future<void> run(Account account, Completer<void> synced, {bool autoLabel = true}) async {
@@ -84,15 +88,25 @@ class SyncPhase(
                 ...await _cleanup.conversationsOf(accountId, value.removedMessageIds),
               };
         // The cursor is saved here, from the complete batch: pages alone never save it.
-        await _store.applySync(accountId, value, fullSnapshot: full);
-        await _newMail.notify(account, fresh);
-        await _cleanup.clean(accountId, touched);
-        // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
-        if (!autoLabel) {
-          await _labeler.defer(accountId, unknown);
-        } else if (unknown.isNotEmpty || await _labeler.hasDeferred(accountId)) {
-          final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);
-          unawaited(autoLabeling[accountId] = run.then((queued) => queued ? _replay.ifActive(accountId) : null));
+        Future<void> commit() async {
+          await _store.applySync(accountId, value, fullSnapshot: full);
+          await _newMail.notify(account, fresh);
+          await _cleanup.clean(accountId, touched);
+          // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
+          if (!autoLabel) {
+            await _labeler.defer(accountId, unknown);
+          } else if (unknown.isNotEmpty || await _labeler.hasDeferred(accountId)) {
+            final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);
+            unawaited(autoLabeling[accountId] = run.then((queued) => queued ? _replay.ifActive(accountId) : null));
+          }
+        }
+
+        final committed = commit();
+        committing.add(committed);
+        try {
+          await committed;
+        } finally {
+          committing.remove(committed);
         }
         debugPrint(
           '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '

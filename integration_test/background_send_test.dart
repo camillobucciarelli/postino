@@ -17,6 +17,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/background_send.dart';
+import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
@@ -148,7 +149,11 @@ const _message = OutgoingMessage(
 );
 
 /// The engine's notifier, with notifications that are only recorded.
-NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotifications(), OpenConversation());
+NewMailNotifier _notifier(MailStore store) {
+  final db = PostinoDatabase.inMemory();
+  addTearDown(db.close);
+  return NewMailNotifier(store, FakeNotifications(), OpenConversation(), DeviceSettingsStore(db));
+}
 
 /// The notifications' cleanup, with notifications that are only recorded: no sync runs here.
 NotificationCleanup _cleanup() {

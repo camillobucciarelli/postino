@@ -146,11 +146,13 @@ void main() {
     expect(_switchOn(tester), isTrue);
   });
 
-  testWidgets('no device settings where there is no avvio al login (mobile)', (tester) async {
+  testWidgets('without the avvio al login (mobile) the device settings show, without its switch (#211)', (
+    tester,
+  ) async {
     final h = await _start(tester, supported: false);
-    await tester.tap(find.byKey(const ValueKey('drawer-impostazioni')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('settings-device')), findsNothing);
+    await _openSettings(tester);
+    expect(find.text('Impostazioni del dispositivo'), findsOneWidget);
+    expect(_row, findsNothing);
     expect(h.launchAtLogin.changes, isEmpty);
   });
 

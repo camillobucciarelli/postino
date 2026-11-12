@@ -3,6 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/domain/notification_action.dart';
 
 void main() {
   late PostinoDatabase db;
@@ -56,5 +57,18 @@ void main() {
     await store.setSettingsSyncAccount(null);
     await pumpEventQueue();
     expect(seen, [null, 'a1', null]);
+  });
+
+  test('the Azioni delle notifiche are Archivia and Segna come letto until chosen; «Nessuna» is kept (#211)', () async {
+    expect(await store.notificationActions(), (first: NotificationAction.archive, second: NotificationAction.markRead));
+    await store.setNotificationActions((first: NotificationAction.delete, second: null));
+    expect(await store.notificationActions(), (first: NotificationAction.delete, second: null));
+    await store.setNotificationActions((first: null, second: NotificationAction.star));
+    expect(await store.notificationActions(), (first: null, second: NotificationAction.star));
+  });
+
+  test('an unknown Azione delle notifiche reads as the default of its place', () async {
+    await db.deviceSettingsDao.write('notification_action_first', 'snooze');
+    expect((await store.notificationActions()).first, NotificationAction.archive);
   });
 }

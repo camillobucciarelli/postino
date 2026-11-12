@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../domain/mail_notification.dart';
+import '../domain/notification_action.dart';
 import '../domain/notification_target.dart';
 
 /// The payload of a notification: the ids of what it opens, never its content (#39). A Conversazione is
@@ -11,17 +12,42 @@ String encodePayload(NotificationTarget target) => jsonEncode(switch (target) {
 });
 
 /// What [payload] opens; null for anything [encodePayload] did not write.
-NotificationTarget? decodePayload(String? payload) {
+NotificationTarget? decodePayload(String? payload) => switch (_decode(payload)) {
+  [final String accountId, final String conversationId] => ConversationTarget((
+    accountId: accountId,
+    conversationId: conversationId,
+  )),
+  [final String accountId] => AccountTarget(accountId),
+  _ => null,
+};
+
+/// The Azione of the button [actionId] (its [NotificationAction] name) of the notification of [payload]; null for a
+/// tap on the notification itself, an unknown button, or one not on a Conversazione.
+/// Also a [payload] of [encodeAction], whatever [actionId] says.
+NotificationActionTap? decodeAction(String? payload, String? actionId) {
+  if (_decode(payload) case [final String accountId, final String conversationId, final String name]) {
+    return switch (_action(name)) {
+      final action? => (conversation: (accountId: accountId, conversationId: conversationId), action: action),
+      null => null,
+    };
+  }
+  return switch ((decodePayload(payload), _action(actionId))) {
+    (ConversationTarget(:final conversation), final action?) => (conversation: conversation, action: action),
+    _ => null,
+  };
+}
+
+/// A button that carries what it does, where the OS hands back one string for it (Windows' arguments):
+/// `[account, conversation, action]`.
+String encodeAction(NotificationActionTap tap) =>
+    jsonEncode([tap.conversation.accountId, tap.conversation.conversationId, tap.action.name]);
+
+NotificationAction? _action(String? name) => NotificationAction.values.asNameMap()[name];
+
+Object? _decode(String? payload) {
   if (payload == null) return null;
   try {
-    return switch (jsonDecode(payload)) {
-      [final String accountId, final String conversationId] => ConversationTarget((
-        accountId: accountId,
-        conversationId: conversationId,
-      )),
-      [final String accountId] => AccountTarget(accountId),
-      _ => null,
-    };
+    return jsonDecode(payload);
   } on FormatException catch (_) {
     return null;
   }

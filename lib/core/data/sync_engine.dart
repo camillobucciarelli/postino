@@ -133,8 +133,25 @@ class SyncEngine(
 
   /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
   /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
-  Future<void> syncInBackground() =>
-      _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => _phase.run(a, s, autoLabel: false)).done);
+  /// With a [budget] (iOS gives about 30 s, #213) an Account whose turn comes after it ran out is not started: those
+  /// that finished have their cursor saved (`applySync` is atomic), the others go on the next time.
+  Future<void> syncInBackground({Duration? budget}) {
+    final end = budget == null ? null : _clock.now().add(budget);
+    Future<void> sync(Account a, Completer<void> s) async {
+      if (end != null && !_clock.now().isBefore(end)) return;
+      await _phase.run(a, s, autoLabel: false);
+    }
+
+    return _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => sync(a, s)).done);
+  }
+
+  /// Resolves once no sync is between applying a batch and its notifications (#213): short, local work, which the
+  /// background task's budget does not cut off, or the mail applied would never notify.
+  Future<void> commitsSettled() async {
+    while (_phase.committing.isNotEmpty) {
+      await Future.wait([..._phase.committing].map((c) => c.then<void>((_) {}, onError: (_) {})));
+    }
+  }
 
   Future<void> _poll() {
     _hold.ensure();
@@ -231,13 +248,20 @@ class SyncEngine(
   }
 
   @override
-  Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold}) async {
+  Future<void> act(
+    String accountId,
+    Iterable<String> messageIds,
+    MailAction action, {
+    Duration? hold,
+    bool replay = true,
+  }) async {
     // Applied here at once: a Conversazione left with nothing unread in the inbox loses its notification (#210).
     final conversations = await _cleanup.conversationsOf(accountId, messageIds);
     if (hold == null) {
       await _store.queue(accountId, messageIds, action);
       _cleanInQueue(accountId, conversations);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
+      if (!replay) return;
       return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
@@ -254,6 +278,9 @@ class SyncEngine(
   /// In the Account's queue, after any sync running: its notifications and this cleanup never interleave.
   void _cleanInQueue(String accountId, Set<String> conversations) =>
       unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, conversations)));
+
+  @override
+  Future<void> replayActions(String accountId) => _replay.ifActive(accountId, actionsOnly: true);
 
   @override
   Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>

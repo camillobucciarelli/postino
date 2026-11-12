@@ -4,6 +4,7 @@ import 'dart:ui' show DartPluginRegistrant;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' show NotificationResponse;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
 import 'package:get_it/get_it.dart';
@@ -12,9 +13,13 @@ import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
+import 'core/data/background_notification_action.dart';
 import 'core/data/background_send.dart';
 import 'core/data/background_sync.dart';
 import 'core/data/error_log/uncaught_errors.dart';
+import 'core/data/local_notifications.dart' show backgroundActionEntry;
+import 'core/data/notification_action_relay.dart';
+import 'core/data/notification_payload.dart' show decodeAction;
 import 'core/data/platform_services.dart' show SystemPeriodicSync;
 import 'core/data/postino_database.dart';
 import 'core/data/settings_sync.dart';
@@ -23,11 +28,14 @@ import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
 import 'core/domain/launch_at_login_use_case.dart';
+import 'core/domain/notification_action.dart';
+import 'core/domain/notification_action_use_case.dart';
 import 'core/domain/notification_target.dart';
 import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
 import 'design_system/tokens/postino_theme.dart';
+import 'features/impostazioni/presentation/notification_action_label.dart';
 import 'i18n/strings.g.dart';
 import 'main.config.dart';
 import 'main.route.dart';
@@ -41,7 +49,7 @@ Future<void> configureDependencies({String? environment}) async {
   await getIt.init(environment: environment);
 }
 
-/// Android WorkManager entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
+/// WorkManager (Android) and BGTaskScheduler (iOS) entry point: a fresh isolate wires the app's DI, then by the task's name the outbox of an
 /// Account (#36, [runOutboxTask]) or the periodic sync (#212, [runSyncTask]), whose notifications it prepares first.
 /// Its name stays: WorkManager keeps the callback handle across an update, and a send queued before it still finds it.
 @pragma('vm:entry-point')
@@ -59,10 +67,38 @@ void sendOutboxDispatcher() {
     }
     if (!sync) return runOutboxTask(accountId!);
     LocaleSettings.useDeviceLocaleSync();
-    await _startNotifications();
-    return runSyncTask();
+    // Not the app: the buttons tapped meanwhile stay with the app or their own background engine (#211).
+    await _startNotifications(app: false);
+    return runSyncTask(budget: defaultTargetPlatform == TargetPlatform.iOS ? iosBudget : null);
   }, onTaskStopped: (task, _) => stopSyncTask());
 }
+
+/// A button of a notification tapped outside the app's isolate (#211): iOS and Android run it in a background engine,
+/// even while the app is open. The app's isolate takes it when it lives; otherwise this isolate wires the app's DI
+/// (once: the engine stays for the next taps) and runs it here, through the offline queue.
+@pragma('vm:entry-point')
+Future<void> notificationActionDispatcher(NotificationResponse response) async {
+  final tap = decodeAction(response.payload, response.actionId);
+  if (tap == null) return;
+  try {
+    if (await relayToApp(tap)) return;
+    DartPluginRegistrant.ensureInitialized();
+    // Already wired where the DI exists (a test's).
+    await (_backgroundDependencies ??= getIt.isRegistered<NotificationActionUseCase>()
+        ? Future<void>.value()
+        : configureDependencies(environment: Environment.prod));
+  } on Object catch (e) {
+    // A failed wiring is not kept: the next tap tries again on a clean DI.
+    _backgroundDependencies = null;
+    await getIt.reset();
+    debugPrint('[notifiche] ${tap.conversation.accountId}: background setup failed, ${e.runtimeType}');
+    return;
+  }
+  await runNotificationActionTask(tap);
+}
+
+/// The DI of the background engine of [notificationActionDispatcher], wired at its first tap.
+Future<void>? _backgroundDependencies;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,8 +109,9 @@ Future<void> main() async {
       'Figtree',
     ], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212).
+  if (!kIsWeb && const {TargetPlatform.android, TargetPlatform.iOS}.contains(defaultTargetPlatform)) {
+    // The outbox keeps going after the user leaves the app (#36), the new mail is checked while it is closed (#212,
+    // iOS #213).
     await Workmanager().initialize(sendOutboxDispatcher);
   }
   await configureDependencies(environment: Environment.prod);
@@ -89,17 +126,34 @@ bool get _desktop =>
     const {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}.contains(defaultTargetPlatform);
 
 /// Before `runApp` (#39): the notifications ready, and what the notification that launched the app opens.
-/// Failing keeps Postino from notifying, not from running.
-Future<NotificationTarget?> _startNotifications() async {
+/// Failing keeps Postino from notifying, not from running. Only the [app]'s isolate takes the notifications' buttons.
+Future<NotificationTarget?> _startNotifications({bool app = true}) async {
+  backgroundActionEntry = notificationActionDispatcher;
   try {
     return await getIt<Notifications>().start(
       channelName: t.notifiche.channel,
       openLabel: t.notifiche.open,
       newMessages: (n) => t.notifiche.newMessages(n: n),
+      actionLabel: (action) => notificationActionLabel(t, action),
+      onAction: app ? (tap) => unawaited(_runNotificationAction(tap)) : null,
     );
   } on Object catch (e) {
     debugPrint('[notifiche] start: $e');
     return null;
+  }
+}
+
+/// A button tapped in the app's isolate (#211). Windows has brought the app forward for it: the window, if hidden in
+/// the tray, comes too, then the Azione runs (the limit #28 accepts); macOS and Linux run it from the tray.
+Future<void> _runNotificationAction(NotificationActionTap tap) async {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+    await getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e'));
+  }
+  try {
+    await getIt<NotificationActionUseCase>().run(tap);
+  } on Object catch (e) {
+    // The type only: the error may quote the message.
+    debugPrint('[notifiche] ${tap.conversation.accountId}: action failed, ${e.runtimeType}');
   }
 }
 

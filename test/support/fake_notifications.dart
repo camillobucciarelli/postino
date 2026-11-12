@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/core/domain/notifications.dart';
 
@@ -16,6 +17,9 @@ class FakeNotifications() implements Notifications {
 
   /// What the OS shows now, grouped per Account.
   final visible = <String, Set<NotificationTarget>>{};
+
+  /// While set, [show] waits for it.
+  Completer<void>? gate;
 
   /// How many of the next [show]s throw, as an OS refusing them would.
   int failures = 0;
@@ -39,15 +43,30 @@ class FakeNotifications() implements Notifications {
         if (t case ConversationTarget(:final conversation)) conversation.conversationId,
   };
 
+  /// What [start] was given to run a button tapped while the app runs.
+  void Function(NotificationActionTap tap)? onAction;
+
+  /// How many times the system settings were opened.
+  int settingsOpened = 0;
+
   @override
   Future<NotificationTarget?> start({
     required String channelName,
     required String openLabel,
     required String Function(int count) newMessages,
-  }) async => launch;
+    required String Function(NotificationAction action) actionLabel,
+    required void Function(NotificationActionTap tap)? onAction,
+  }) async {
+    this.onAction = onAction;
+    return launch;
+  }
+
+  @override
+  Future<void> openSystemSettings() async => settingsOpened++;
 
   @override
   Future<void> show(MailNotification notification) async {
+    await gate?.future;
     if (failures > 0) {
       failures--;
       throw StateError('notification refused');
@@ -78,7 +97,10 @@ class FakeNotifications() implements Notifications {
   @override
   Future<bool> requestPermission() async {
     requests++;
-    needed = false;
-    return true;
+    needed = !grants;
+    return grants;
   }
+
+  /// Whether the OS allows them when asked; false as after a refusal, when it no longer asks.
+  bool grants = true;
 }

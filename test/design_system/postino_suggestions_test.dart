@@ -100,6 +100,50 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('when the composer scrolls the panel follows the field and moves above it near the keyboard', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 640)
+      ..devicePixelRatio = 1
+      ..viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.reset);
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: Scaffold(
+          body: ListView(
+            controller: scroll,
+            children: [
+              const SizedBox(height: 260),
+              PostinoSuggestions(
+                suggestions: _items,
+                highlighted: 0,
+                onSelected: (_) {},
+                onDismiss: () {},
+                countLabel: '3 suggerimenti',
+                child: PostinoComposerField(label: 'Ccn', controller: TextEditingController()),
+              ),
+              const SizedBox(height: 600),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    Rect field() => tester.getRect(find.byType(PostinoComposerField));
+    Rect panel() => tester.getRect(find.byType(Material).last);
+    // Just above the keyboard (340 px of window left): the panel opens above.
+    expect(panel().bottom, moreOrLessEquals(field().top));
+    scroll.jumpTo(250);
+    await tester.pump();
+    // Near the top now: it follows the field and goes under it.
+    expect(panel().top, moreOrLessEquals(field().bottom));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('at text 200% on a phone the rows grow and nothing overflows', (tester) async {
     tester.view
       ..physicalSize = const Size(320, 640)

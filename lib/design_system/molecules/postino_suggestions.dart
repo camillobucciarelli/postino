@@ -50,7 +50,6 @@ class const PostinoSuggestions({
 
 class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
   final _portal = OverlayPortalController();
-  final _link = LayerLink();
   final _scroll = ScrollController();
 
   @override
@@ -84,42 +83,39 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) => OverlayPortal(
-      controller: _portal,
-      overlayChildBuilder: (context) {
-        if (widget.suggestions.isEmpty) return const SizedBox.shrink();
-        final (:above, :height) = _room(context);
-        return CompositedTransformFollower(
-          link: _link,
-          targetAnchor: above ? Alignment.topLeft : Alignment.bottomLeft,
-          followerAnchor: above ? Alignment.bottomLeft : Alignment.topLeft,
-          showWhenUnlinked: false,
-          child: Align(
-            alignment: above ? Alignment.bottomLeft : Alignment.topLeft,
-            child: SizedBox(width: box.maxWidth, child: _panel(context, height)),
+  // The layout builder runs at every layout of the field: the panel follows it while the composer scrolls.
+  Widget build(BuildContext context) => OverlayPortal.overlayChildLayoutBuilder(
+    controller: _portal,
+    overlayChildBuilder: (context, info) {
+      if (widget.suggestions.isEmpty) return const SizedBox.shrink();
+      final field = MatrixUtils.transformRect(info.childPaintTransform, Offset.zero & info.childSize);
+      final (:above, :height) = _room(MediaQuery.of(context), field, info.overlaySize);
+      return Stack(
+        children: [
+          Positioned(
+            left: field.left,
+            width: field.width,
+            top: above ? null : field.bottom,
+            bottom: above ? info.overlaySize.height - field.top : null,
+            child: _panel(context, height),
           ),
-        );
-      },
-      child: Actions(
-        actions: {PostinoClearSelectionIntent: _Dismiss(() => widget.suggestions.isNotEmpty, () => widget.onDismiss())},
-        child: CompositedTransformTarget(link: _link, child: widget.child),
-      ),
+        ],
+      );
+    },
+    child: Actions(
+      actions: {PostinoClearSelectionIntent: _Dismiss(() => widget.suggestions.isNotEmpty, () => widget.onDismiss())},
+      child: widget.child,
     ),
   );
 
   static const _maxHeight = 360.0;
 
-  /// Where the panel fits, as the field was laid out in the last frame: under it, down to the keyboard (or the
-  /// window's bottom); above it when there is less room under it than three rows and more above (Cc and Ccn on a
-  /// phone with the keyboard open). Never behind the keyboard or the status bar; at least one row.
-  ({bool above, double height}) _room(BuildContext overlay) {
-    final field = context.findRenderObject() as RenderBox?;
-    if (field == null || !field.hasSize) return (above: false, height: _maxHeight);
-    final mq = MediaQuery.of(overlay);
-    final top = field.localToGlobal(Offset.zero).dy;
-    final below = mq.size.height - mq.viewInsets.bottom - PostinoSpacing.s2 - (top + field.size.height);
-    final over = top - mq.padding.top - PostinoSpacing.s2;
+  /// Where the panel fits next to the [field] (in the overlay): under it, down to the keyboard (or the window's
+  /// bottom); above it when there is less room under it than three rows and more above (Cc and Ccn on a phone with
+  /// the keyboard open). Never behind the keyboard or the status bar; at least one row.
+  static ({bool above, double height}) _room(MediaQueryData mq, Rect field, Size overlay) {
+    final below = overlay.height - mq.viewInsets.bottom - PostinoSpacing.s2 - field.bottom;
+    final over = field.top - mq.padding.top - PostinoSpacing.s2;
     final above = below < math.min(_maxHeight, 3 * PostinoSize.touchTargetAndroid) && over > below;
     return (above: above, height: (above ? over : below).clamp(PostinoSize.touchTargetAndroid, _maxHeight));
   }

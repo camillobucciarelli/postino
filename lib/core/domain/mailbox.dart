@@ -66,20 +66,21 @@ final _word = RegExp(r'=\?([^?\s]+)\?([BbQq])\?([^?\s]*)\?=');
 /// RFC 2047 encoded words (`=?UTF-8?B?...?=`, `=?ISO-8859-1?Q?...?=`) decoded; the blanks between two
 /// of them go. UTF-8, Latin-1 and ASCII; another charset is read as UTF-8.
 // ponytail: windows-1252 read as Latin-1 (differs only in 0x80–0x9F); a charset table if mojibake shows up.
-String decodeWords(String s) =>
-    s.replaceAllMapped(RegExp(r'(\?=)\s+(?==\?)'), (m) => m[1]!).replaceAllMapped(_word, (m) {
-      final List<int> bytes;
-      try {
-        bytes = m[2]!.toUpperCase() == 'B' ? base64.decode(base64.normalize(m[3]!)) : _quoted(m[3]!);
-      } on FormatException {
-        return m[0]!;
-      }
-      final charset = m[1]!.toLowerCase().split('*').first;
-      return switch (charset) {
-        'iso-8859-1' || 'latin1' || 'windows-1252' || 'us-ascii' => latin1.decode(bytes),
-        _ => utf8.decode(bytes, allowMalformed: true),
-      };
-    });
+String decodeWords(String s) => !s.contains('=?')
+    ? s // the common case, read for every Contatto suggested (#216): no regex
+    : s.replaceAllMapped(RegExp(r'(\?=)\s+(?==\?)'), (m) => m[1]!).replaceAllMapped(_word, (m) {
+        final List<int> bytes;
+        try {
+          bytes = m[2]!.toUpperCase() == 'B' ? base64.decode(base64.normalize(m[3]!)) : _quoted(m[3]!);
+        } on FormatException {
+          return m[0]!;
+        }
+        final charset = m[1]!.toLowerCase().split('*').first;
+        return switch (charset) {
+          'iso-8859-1' || 'latin1' || 'windows-1252' || 'us-ascii' => latin1.decode(bytes),
+          _ => utf8.decode(bytes, allowMalformed: true),
+        };
+      });
 
 List<int> _quoted(String s) {
   final out = <int>[];

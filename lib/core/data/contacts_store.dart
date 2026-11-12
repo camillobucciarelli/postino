@@ -17,8 +17,10 @@ class ContactsStore(final PostinoDatabase _db, final Clock _clock) implements Co
     final own = await dao.ownAddresses();
     final now = _clock.now();
     final rows = await dao.sightings(p);
-    // Found by a word of the name: the messages to the bare address count too, and may carry a newer name. Only for
-    // the best [limit] of them, which bounds the second query (one LIKE per address and column).
+    // Found by a word of the name: the messages to the bare address count too, and may carry a newer name.
+    // ponytail: only for the best [limit] of them by the first read, which bounds the second query (one LIKE per
+    // address and column); with more namesakes one whose weight is all in mail to the bare address can stay out.
+    // A table of Contatti (option (b) of #216) if that shows up.
     final named = foundByName(rows.values, prefix: p, own: own, now: now);
     if (named.isNotEmpty) rows.addAll(await dao.sightingsOf(named.take(limit).toList()));
     return rankContacts(rows.values, prefix: p, own: own, now: now, limit: limit);

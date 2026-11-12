@@ -149,16 +149,20 @@ void main() {
       ),
     );
     await store.suggest('p1'); // warm up: the first query compiles the statement
-    final times = <int>[];
+    // Each prefix three times, its median: a wall clock on a shared runner (tests run in parallel) has outliers
+    // the query does not. Every prefix within the threshold, a single letter matching all 20.000 too.
+    final times = <String, int>{};
     for (final prefix in ['p', 'pe', 'c1', 'team', 'persona 1']) {
-      final s = Stopwatch()..start();
-      final r = await store.suggest(prefix);
-      times.add(s.elapsedMilliseconds);
-      expect(r, isNotEmpty, reason: prefix);
+      final runs = <int>[];
+      for (var i = 0; i < 3; i++) {
+        final s = Stopwatch()..start();
+        expect(await store.suggest(prefix), isNotEmpty, reason: prefix);
+        runs.add(s.elapsedMilliseconds);
+      }
+      times[prefix] = (runs..sort())[1];
     }
     // ignore: avoid_print, the measure goes in the PR.
-    print('contacts suggest on 20000 messages: $times ms');
-    // The median: a wall clock on a shared runner (tests run in parallel) has outliers the query does not.
-    expect((times..sort())[times.length ~/ 2], lessThan(50));
+    print('contacts suggest on 20000 messages, median ms: $times');
+    expect(times.values.every((t) => t < 50), isTrue, reason: '$times');
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -85,17 +87,20 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) => OverlayPortal(
       controller: _portal,
-      overlayChildBuilder: (context) => widget.suggestions.isEmpty
-          ? const SizedBox.shrink()
-          : CompositedTransformFollower(
-              link: _link,
-              targetAnchor: Alignment.bottomLeft,
-              showWhenUnlinked: false,
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(width: box.maxWidth, child: _panel(context)),
-              ),
-            ),
+      overlayChildBuilder: (context) {
+        if (widget.suggestions.isEmpty) return const SizedBox.shrink();
+        final (:above, :height) = _room(context);
+        return CompositedTransformFollower(
+          link: _link,
+          targetAnchor: above ? Alignment.topLeft : Alignment.bottomLeft,
+          followerAnchor: above ? Alignment.bottomLeft : Alignment.topLeft,
+          showWhenUnlinked: false,
+          child: Align(
+            alignment: above ? Alignment.bottomLeft : Alignment.topLeft,
+            child: SizedBox(width: box.maxWidth, child: _panel(context, height)),
+          ),
+        );
+      },
       child: Actions(
         actions: {PostinoClearSelectionIntent: _Dismiss(() => widget.suggestions.isNotEmpty, () => widget.onDismiss())},
         child: CompositedTransformTarget(link: _link, child: widget.child),
@@ -103,7 +108,23 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
     ),
   );
 
-  Widget _panel(BuildContext context) {
+  static const _maxHeight = 360.0;
+
+  /// Where the panel fits, as the field was laid out in the last frame: under it, down to the keyboard (or the
+  /// window's bottom); above it when there is less room under it than three rows and more above (Cc and Ccn on a
+  /// phone with the keyboard open). Never behind the keyboard or the status bar; at least one row.
+  ({bool above, double height}) _room(BuildContext overlay) {
+    final field = context.findRenderObject() as RenderBox?;
+    if (field == null || !field.hasSize) return (above: false, height: _maxHeight);
+    final mq = MediaQuery.of(overlay);
+    final top = field.localToGlobal(Offset.zero).dy;
+    final below = mq.size.height - mq.viewInsets.bottom - PostinoSpacing.s2 - (top + field.size.height);
+    final over = top - mq.padding.top - PostinoSpacing.s2;
+    final above = below < math.min(_maxHeight, 3 * PostinoSize.touchTargetAndroid) && over > below;
+    return (above: above, height: (above ? over : below).clamp(PostinoSize.touchTargetAndroid, _maxHeight));
+  }
+
+  Widget _panel(BuildContext context, double maxHeight) {
     final c = context.pc;
     final s = widget.suggestions;
     // A tap here is inside the field: it keeps the focus (and its keyboard on a phone).
@@ -118,7 +139,7 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
         ),
         // At text 200% the rows grow: the panel scrolls, the highlighted row kept in view.
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 360),
+          constraints: BoxConstraints(maxHeight: maxHeight),
           child: SingleChildScrollView(
             controller: _scroll,
             padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s1),

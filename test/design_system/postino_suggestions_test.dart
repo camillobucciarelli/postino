@@ -11,14 +11,20 @@ const _items = [
 
 final _focus = FocusNode();
 
-Widget _app({double scale = 1, ThemeData? theme, int highlighted = 0, ValueChanged<int>? onSelected}) => MaterialApp(
+Widget _app({
+  Alignment at = Alignment.topCenter,
+  double scale = 1,
+  ThemeData? theme,
+  int highlighted = 0,
+  ValueChanged<int>? onSelected,
+}) => MaterialApp(
   theme: theme ?? PostinoTheme.light(),
   home: Builder(
     builder: (context) => MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale), disableAnimations: true),
       child: Scaffold(
         body: Align(
-          alignment: Alignment.topCenter,
+          alignment: at,
           child: PostinoSuggestions(
             suggestions: _items,
             highlighted: highlighted,
@@ -64,6 +70,34 @@ void main() {
       isSemantics(isButton: true, isSelected: false),
     );
     semantics.dispose();
+  });
+
+  testWidgets('with the keyboard open the panel stops above it and scrolls', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 640)
+      ..devicePixelRatio = 1
+      ..viewInsets = const FakeViewPadding(bottom: 480);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_app());
+    await tester.pump();
+    expect(tester.getRect(find.byType(Material).last).bottom, lessThanOrEqualTo(640 - 480));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('with little room under the field and the keyboard open the panel opens above it', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 640)
+      ..devicePixelRatio = 1
+      ..viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.reset);
+    // The field just above the keyboard, as Ccn on a phone.
+    await tester.pumpWidget(_app(at: Alignment.bottomCenter));
+    await tester.pump();
+    final field = tester.getRect(find.byType(PostinoComposerField));
+    final panel = tester.getRect(find.byType(Material).last);
+    expect(panel.bottom, lessThanOrEqualTo(field.top));
+    expect(panel.top, greaterThanOrEqualTo(0));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('at text 200% on a phone the rows grow and nothing overflows', (tester) async {

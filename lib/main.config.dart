@@ -207,12 +207,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i37.OutboxStore>(
       () => _i37.OutboxStore(gh<_i1028.PostinoDatabase>()),
     );
-    gh.lazySingleton<_i555.NotificationCleanup>(
-      () => _i555.NotificationCleanup(
-        gh<_i385.MailStore>(),
-        gh<_i184.Notifications>(),
-      ),
-    );
     gh.lazySingleton<_i700.OutboxRepository>(
       () => mailStoreModule.outboxRepository(gh<_i37.OutboxStore>()),
     );
@@ -258,6 +252,26 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i350.OpenConversation>(),
       ),
     );
+    gh.lazySingleton<_i555.NotificationCleanup>(
+      () => _i555.NotificationCleanup(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i184.Notifications>(),
+      ),
+    );
+    gh.lazySingleton<_i311.SettingsSync>(
+      () => _i311.SettingsSync(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+      ),
+    );
+    gh.factory<_i166.LaunchAtLoginUseCase>(
+      () => _i166.LaunchAtLoginUseCase(
+        gh<_i462.LaunchAtLogin>(),
+        gh<_i307.SettingsRepository>(),
+      ),
+    );
     gh.lazySingleton<_i893.SyncEngine>(
       () => _i893.SyncEngine(
         gh<_i385.MailStore>(),
@@ -273,20 +287,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
-    );
-    gh.lazySingleton<_i311.SettingsSync>(
-      () => _i311.SettingsSync(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-      ),
-    );
-    gh.factory<_i166.LaunchAtLoginUseCase>(
-      () => _i166.LaunchAtLoginUseCase(
-        gh<_i462.LaunchAtLogin>(),
-        gh<_i307.SettingsRepository>(),
-      ),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
       () => _i812.ConversationLabelIntents(

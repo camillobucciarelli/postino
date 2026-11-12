@@ -86,7 +86,9 @@ class LocalNotifications() implements Notifications {
     final NewMailSummary(:accountId, :accountAddress, :count) = summary;
     final ids = {...?_shown.remove(accountId)};
     for (final n in await _active() ?? const <ActiveNotification>[]) {
-      if (n.groupKey == accountId && n.id != groupId(accountId)) ids.add(n.id!);
+      // By group; by payload too (iOS, macOS) for those shown before the groups existed.
+      final ofAccount = n.groupKey == accountId || decodePayload(n.payload)?.accountId == accountId;
+      if (ofAccount && n.id != groupId(accountId)) ids.add(n.id!);
     }
     for (final id in ids) {
       await _plugin.cancel(id: id);
@@ -109,12 +111,16 @@ class LocalNotifications() implements Notifications {
       final list? => {for (final n in list) n.id},
       null => null,
     };
+    final gone = <int>{};
     for (final t in targets) {
       final id = idOf(t);
       _shown[t.accountId]?.remove(id);
-      if (active == null || active.contains(id)) await _plugin.cancel(id: id);
+      if (active == null || active.contains(id)) {
+        await _plugin.cancel(id: id);
+        gone.add(id);
+      }
     }
-    if (_android) await _dropEmptyGroups();
+    if (_android && gone.isNotEmpty) await _dropEmptyGroups(gone);
   }
 
   @override
@@ -180,9 +186,13 @@ class LocalNotifications() implements Notifications {
     );
   }
 
-  /// Android only: a group notification whose children are all gone goes too.
-  Future<void> _dropEmptyGroups() async {
-    final active = await _active() ?? const <ActiveNotification>[];
+  /// Android only: a group notification whose children are all gone goes too. [gone] were just cancelled: Android
+  /// cancels asynchronously, so the listing may still show them.
+  Future<void> _dropEmptyGroups(Set<int> gone) async {
+    final active = [
+      for (final n in await _active() ?? const <ActiveNotification>[])
+        if (!gone.contains(n.id)) n,
+    ];
     final withChildren = {
       for (final n in active)
         if (n.groupKey case final g? when n.id != groupId(g)) g,

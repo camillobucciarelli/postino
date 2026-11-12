@@ -33,7 +33,9 @@ void main() {
       notificationId((accountId: 'a1', conversationId: 't-a')),
     };
     expect(ids, hasLength(5));
-    expect(summaryId('a1'), summaryId('a1'));
+    // FNV-1a computed outside Dart, as above: the same summary and group after a restart.
+    expect(summaryId('a1'), 1559549067);
+    expect(groupId('a1'), 1232372138);
   });
 
   for (final payload in [null, '', 'not json', '{"a":1}', '[]', '[1]', '[1, 2]', '["a", "b", "c"]']) {

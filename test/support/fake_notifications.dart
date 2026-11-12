@@ -14,9 +14,6 @@ class FakeNotifications() implements Notifications {
   /// Every summary shown, in order.
   final summaries = <NewMailSummary>[];
 
-  /// Every cancel, in order.
-  final cancelled = <NotificationTarget>[];
-
   /// What the OS shows now, grouped per Account.
   final visible = <String, Set<NotificationTarget>>{};
 
@@ -68,7 +65,6 @@ class FakeNotifications() implements Notifications {
   @override
   Future<void> cancel(List<NotificationTarget> targets) async {
     for (final t in targets) {
-      cancelled.add(t);
       visible[t.accountId]?.remove(t);
     }
   }

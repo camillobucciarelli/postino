@@ -2,6 +2,7 @@
 // its inbox; the system's Indietro (Android) goes from there to the Posta unificata.
 import 'dart:async';
 
+import 'package:flutter/material.dart' show Drawer;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
@@ -12,6 +13,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/ui.dart';
 import 'notification_steps.dart';
 
 late Harness h;
@@ -63,6 +65,26 @@ void main() {
     expect(Routefly.currentUri.path, routePaths.posta.$accountId.path.changes({'accountId': notifiedAccount}));
     expect(find.text('Posta in arrivo'), findsOneWidget);
     expect(find.text('Primo'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expectUnified();
+  });
+
+  testWidgets("with the drawer open, the system's Indietro closes it first, then goes to the Posta unificata", (
+    tester,
+  ) async {
+    await _start(tester);
+    h.notifications.tap(const AccountTarget(notifiedAccount));
+    await tester.pumpAndSettle();
+    final inbox = routePaths.posta.$accountId.path.changes({'accountId': notifiedAccount});
+
+    await openDrawer(tester);
+    expect(find.byType(Drawer), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(Drawer), findsNothing);
+    expect(Routefly.currentUri.path, inbox);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();

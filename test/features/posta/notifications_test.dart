@@ -123,11 +123,14 @@ void main() {
       gmail.deliver(msg('a2', conversationId: 't-a'));
       await tester.pumpAndSettle();
       expect(_notified(), ['t-a']);
+      expect(h.notifications.visibleConversations, {'t-a'}, reason: 'not read off screen, so not cleaned up');
 
       if (away == AppLifecycleState.paused) tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
       tester.binding
         ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
         ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(h.notifications.visibleConversations, isEmpty, reason: 'back on screen, the reply is read');
       gmail.deliver(msg('a3', conversationId: 't-a'));
       await tester.pumpAndSettle();
       expect(_notified(), ['t-a'], reason: 'back in front, on screen again');

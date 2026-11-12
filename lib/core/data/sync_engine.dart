@@ -210,12 +210,12 @@ class SyncEngine(
     final conversations = await _cleanup.conversationsOf(accountId, messageIds);
     if (hold == null) {
       await _store.queue(accountId, messageIds, action);
-      await _cleanup.clean(accountId, conversations);
+      _cleanInQueue(accountId, conversations);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
       return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
-    await _cleanup.clean(accountId, conversations);
+    _cleanInQueue(accountId, conversations);
     late final StreamSubscription<void> timer;
     timer = _clock.every(hold).listen((_) {
       _holdTimers.remove(timer);
@@ -224,6 +224,10 @@ class SyncEngine(
     });
     _holdTimers.add(timer);
   }
+
+  /// In the Account's queue, after any sync running: its notifications and this cleanup never interleave.
+  void _cleanInQueue(String accountId, Set<String> conversations) =>
+      unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, conversations)));
 
   @override
   Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>

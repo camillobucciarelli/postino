@@ -81,7 +81,7 @@ void main() {
           FakeConnectivity(),
           FakeBackgroundSender(),
           _notifier(store),
-          NotificationCleanup(store, FakeNotifications()),
+          _cleanup(),
           _labeler(),
           FakeErrorLog(),
         ),
@@ -111,7 +111,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
-      NotificationCleanup(store, FakeNotifications()),
+      _cleanup(),
       _labeler(),
       FakeErrorLog(),
     );
@@ -128,7 +128,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
-      NotificationCleanup(store, FakeNotifications()),
+      _cleanup(),
       _labeler(),
       FakeErrorLog(),
     )..start();
@@ -149,6 +149,13 @@ const _message = OutgoingMessage(
 
 /// The engine's notifier, with notifications that are only recorded.
 NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotifications(), OpenConversation());
+
+/// The notifications' cleanup, with notifications that are only recorded: no sync runs here.
+NotificationCleanup _cleanup() {
+  final db = PostinoDatabase.inMemory();
+  addTearDown(db.close);
+  return NotificationCleanup(db, FakeNotifications());
+}
 
 /// The Etichettatura automatica, never at work here: the model is not ready.
 AutoLabeler _labeler() {

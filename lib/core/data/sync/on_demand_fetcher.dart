@@ -25,11 +25,11 @@ class OnDemandFetcher(
     final provider = providerFor(account);
     // Read here at once, offline too; the Provider hears it from the queue.
     await _store.markConversationRead(accountId, conversationId);
-    // Read here: its notification goes (#210).
-    await _cleanup.clean(accountId, {conversationId});
     // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
     // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
     final fetched = await _queue.run(accountId, () async {
+      // Read here: its notification goes (#210), in the queue so a sync's notifications never interleave.
+      await _cleanup.clean(accountId, {conversationId});
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
       final fetched = await _fetchConversation(accountId, provider, conversationId);

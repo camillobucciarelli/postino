@@ -17,6 +17,14 @@ mixin ConversationOnScreen<T extends StatefulWidget> on State<T> {
   /// A full page is pushed over its route.
   bool _covered = false;
 
+  /// Whether the Conversazione is on screen now.
+  bool get onScreen => _onScreen;
+  bool _onScreen = false;
+
+  /// The Conversazione came back on screen (the app in front again, the page over it gone): what arrived meanwhile
+  /// can be read now (#210).
+  void onScreenAgain() {}
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +55,10 @@ mixin ConversationOnScreen<T extends StatefulWidget> on State<T> {
       null || AppLifecycleState.resumed => true,
       _ => false,
     };
-    inFront && !_covered ? open.show(conversationKey) : open.hide(conversationKey);
+    final now = inFront && !_covered;
+    now ? open.show(conversationKey) : open.hide(conversationKey);
+    final again = now && !_onScreen;
+    _onScreen = now;
+    if (again) onScreenAgain();
   }
 }

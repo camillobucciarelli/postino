@@ -54,11 +54,13 @@ void main() {
 
   test('read here, archived here, or opened here: its notification goes at once', () async {
     await engine.act('a', ['1'], const MarkRead());
+    await pumpEventQueue();
     expect(visible(), {'t-2'});
 
     a.deliver(msg('3'));
     await engine.syncAll();
     await engine.act('a', ['3'], const Archive(), hold: const Duration(seconds: 5));
+    await pumpEventQueue();
     expect(visible(), {'t-2'}, reason: 'a held Azione is applied here at once');
 
     await engine.openConversation('a', 't-2');

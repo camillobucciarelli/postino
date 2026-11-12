@@ -421,6 +421,10 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String get permissionBody => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.';
 	@override String get permissionAllow => 'Continue';
 	@override String get permissionLater => 'Not now';
+	@override String newMessages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} new message',
+		other: '${n} new messages',
+	);
 }
 
 // Path: cerca
@@ -829,6 +833,7 @@ extension on TranslationsEn {
 			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
+			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} new message', other: '${n} new messages', ), 
 			'cerca.open' => 'Search',
 			'cerca.title' => 'Search',
 			'cerca.field' => 'Search mail',

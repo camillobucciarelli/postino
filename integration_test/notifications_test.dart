@@ -13,6 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:postino/core/data/local_notifications.dart';
 import 'package:postino/core/domain/mail_notification.dart';
+import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -31,7 +33,9 @@ void main() {
     (await h.addAccount('a1')).deliver(msg('a', subject: 'Dalla notifica'));
     LocaleSettings.setLocaleSync(AppLocale.it);
     await tester.pumpWidget(
-      TranslationProvider(child: const PostinoApp(launch: (accountId: 'a1', conversationId: 't-a'))),
+      TranslationProvider(
+        child: const PostinoApp(launch: ConversationTarget((accountId: 'a1', conversationId: 't-a'))),
+      ),
     );
     await tester.pumpAndSettle();
     expect(tester.widget<ConversationView>(find.byType(ConversationView)).conversationId, 't-a');
@@ -42,19 +46,37 @@ void main() {
     expect(find.byType(ConversationView), findsNothing);
   }, skip: !mobile);
 
-  testWidgets('smoke: the real plugin starts with no launch, and show and the permission check do not throw', (
-    tester,
-  ) async {
-    final notifications = LocalNotifications();
-    expect(await notifications.start(channelName: 'Posta nuova', openLabel: 'Apri'), isNull);
-    await notifications.show(
-      const MailNotification(
-        conversation: (accountId: 'a1', conversationId: 't-a'),
-        sender: 'Ada',
-        subject: 'Prova',
-        preview: 'Notifica di prova',
-      ),
-    );
-    await notifications.permissionNeeded();
-  }, skip: !mobile);
+  testWidgets(
+    'smoke: the real plugin starts with no launch; show, the summary, cancel and the permission check do not throw',
+    (tester) async {
+      final notifications = LocalNotifications();
+      expect(
+        await notifications.start(
+          channelName: 'Posta nuova',
+          openLabel: 'Apri',
+          newMessages: (n) => '$n nuovi messaggi',
+        ),
+        isNull,
+      );
+      await notifications.show(
+        const MailNotification(
+          conversation: (accountId: 'a1', conversationId: 't-a'),
+          accountAddress: 'a1@example.com',
+          sender: 'Ada',
+          subject: 'Prova',
+          preview: 'Notifica di prova',
+        ),
+      );
+      // #210: the summary replaces the Account's notifications, and the cleanup removes it.
+      await notifications.showSummary(
+        const NewMailSummary(accountId: 'a1', accountAddress: 'a1@example.com', count: 11),
+      );
+      await notifications.cancel(const [
+        ConversationTarget((accountId: 'a1', conversationId: 't-a')),
+        AccountTarget('a1'),
+      ]);
+      await notifications.permissionNeeded();
+    },
+    skip: !mobile,
+  );
 }

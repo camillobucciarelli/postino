@@ -254,7 +254,11 @@
     "permissionTitle": "Notifiche della posta nuova",
     "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
     "permissionAllow": "Continua",
-    "permissionLater": "Non ora"
+    "permissionLater": "Non ora",
+    "newMessages": {
+      "one": "$n nuovo messaggio",
+      "other": "$n nuovi messaggi"
+    }
   },
   "cerca": {
     "open": "Cerca",

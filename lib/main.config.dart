@@ -39,6 +39,7 @@ import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i27;
+import 'package:postino/core/data/sync/notification_cleanup.dart' as _i555;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -256,20 +257,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i350.OpenConversation>(),
       ),
     );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i700.OutboxRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-        gh<_i27.NewMailNotifier>(),
-        gh<_i95.AutoLabeler>(),
-        gh<_i346.ErrorLog>(),
+    gh.lazySingleton<_i555.NotificationCleanup>(
+      () => _i555.NotificationCleanup(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i184.Notifications>(),
       ),
-    );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i311.SettingsSync>(
       () => _i311.SettingsSync(
@@ -284,6 +276,22 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
       ),
+    );
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+        gh<_i27.NewMailNotifier>(),
+        gh<_i555.NotificationCleanup>(),
+        gh<_i95.AutoLabeler>(),
+        gh<_i346.ErrorLog>(),
+      ),
+    );
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
       () => _i812.ConversationLabelIntents(

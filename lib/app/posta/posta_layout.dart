@@ -13,6 +13,7 @@ import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
 import '../../features/segnalazione/presentation/crash_report_prompt.dart';
 import '../../i18n/strings.g.dart';
+import '../../main.dart' show routePaths;
 import '../report_problem.dart';
 import 'posta_routes.dart';
 import 'posta_views.dart';
@@ -157,12 +158,20 @@ class _PostaLayoutState() extends State<PostaLayout> {
       ),
     );
     // The system's Indietro (Android) closes the open Conversazione or Bozza like its own Indietro: the detail is
-    // drawn here, not pushed, so there is no page to pop (#39, a Conversazione opened from a notification).
+    // drawn here, not pushed, so there is no page to pop (#39, a Conversazione opened from a notification). From
+    // another list it goes to the Posta unificata (#210, an Account's inbox opened from its summary).
     return BackButtonListener(
       onBackButtonPressed: () async {
-        // A page pushed over it (Impostazioni) pops first.
-        if (detail == null || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
-        back();
+        // A page pushed over it (Impostazioni) pops first, an open drawer closes first.
+        final route = ModalRoute.of(context);
+        if (route != null && (!route.isCurrent || route.willHandlePopInternally)) return false;
+        if (detail != null) {
+          back();
+        } else if (list != routePaths.posta.path) {
+          unawaited(Routefly.navigate(routePaths.posta.path));
+        } else {
+          return false;
+        }
         return true;
       },
       child: shell,

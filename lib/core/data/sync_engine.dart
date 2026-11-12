@@ -133,8 +133,25 @@ class SyncEngine(
 
   /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
   /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
-  Future<void> syncInBackground() =>
-      _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => _phase.run(a, s, autoLabel: false)).done);
+  /// With a [budget] (iOS gives about 30 s, #213) an Account whose turn comes after it ran out is not started: those
+  /// that finished have their cursor saved (`applySync` is atomic), the others go on the next time.
+  Future<void> syncInBackground({Duration? budget}) {
+    final end = budget == null ? null : _clock.now().add(budget);
+    Future<void> sync(Account a, Completer<void> s) async {
+      if (end != null && !_clock.now().isBefore(end)) return;
+      await _phase.run(a, s, autoLabel: false);
+    }
+
+    return _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => sync(a, s)).done);
+  }
+
+  /// Resolves once no sync is between applying a batch and its notifications (#213): short, local work, which the
+  /// background task's budget does not cut off, or the mail applied would never notify.
+  Future<void> commitsSettled() async {
+    while (_phase.committing.isNotEmpty) {
+      await Future.wait([..._phase.committing].map((c) => c.then<void>((_) {}, onError: (_) {})));
+    }
+  }
 
   Future<void> _poll() {
     _hold.ensure();

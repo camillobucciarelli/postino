@@ -98,6 +98,13 @@ void main() {
     expect(await find('contratto'), ['a1/m2']);
     expect(await find('div'), isEmpty, reason: 'tags are not text');
     expect(await find('class'), isEmpty);
+    await sync(
+      'a1',
+      [msg('m4')],
+      bodies: {'m4': const MessageBody('<style>.x { color: red }</style><p>Ciao</p>', BodyKind.html)},
+    );
+    expect(await find('color'), isEmpty, reason: 'CSS is not text');
+    expect(await find('ciao'), ['a1/m4']);
   });
 
   test('a body saved later, and a message synced again, stay searchable', () async {

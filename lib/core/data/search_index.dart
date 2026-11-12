@@ -11,12 +11,12 @@ const _senderOf = "new.sender || ' ' || coalesce(new.sender_name, '')";
 const _recipientsOf = "new.recipients || ' ' || new.cc";
 
 /// The full-text index of the messages (#205): an FTS5 table whose rowid is the rowid of the message it indexes.
-/// `unicode61` ignores case and accents; the `prefix` indexes make the first letters typed fast.
+/// `unicode61` ignores case and accents; the `prefix` indexes make the first letters typed fast, from one.
 /// The triggers keep the columns of `messages` in step with every write, whoever makes it; the body is plain text
 /// only Dart can make from the HTML, so `indexBodySql` keeps that column.
 const searchIndexStatements = [
   'CREATE VIRTUAL TABLE search_index USING fts5($_columns, '
-      "tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')",
+      "tokenize = 'unicode61 remove_diacritics 2', prefix = '1 2 3')",
   'CREATE TRIGGER search_index_insert AFTER INSERT ON messages BEGIN '
       'INSERT OR REPLACE INTO search_index (rowid, $_columns) '
       "VALUES (new.rowid, new.subject, $_senderOf, $_recipientsOf, new.snippet, ''); END",

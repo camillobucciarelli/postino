@@ -29,7 +29,14 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   /// Deletes the Account and everything of it here, in one transaction (#174): messages, bodies, Etichette, Bozze,
   /// queued Azioni and Conflitti, outbox, embeddings. Nothing reaches the Provider. Its synced Impostazioni di Postino
   /// (the Etichette automatiche) become tombstones dated [at] (ADR 0016): the removal reaches every device.
-  Future<void> removeAccount(String accountId, {required DateTime at}) => _db.transaction(() async {
+  Future<void> removeAccount(String accountId, {required DateTime at}) async {
+    await _db.transaction(() => _removeAccountRows(accountId, at: at));
+    // The index entries went with the messages (triggers); after the commit, so the write lock is not held while
+    // the segments merge: this wipes them from the file.
+    await _db.searchDao.optimize();
+  }
+
+  Future<void> _removeAccountRows(String accountId, {required DateTime at}) async {
     await _db.postinoSettingsDao.tombstoneAccount(accountId, at: at);
     for (final delete in [
       _db.messagesDao.deleteByAccount,
@@ -44,9 +51,7 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
     ]) {
       await delete(accountId);
     }
-    // The index entries went with the messages (triggers); this wipes them from the file.
-    await _db.searchDao.optimize();
-  });
+  }
 
   /// Drops what the Account would still send to the Provider (queued Azioni, outbox) at once, ahead of the removal
   /// (#174): a send already running finds its next row gone and sends nothing more. The Bozze stay until the

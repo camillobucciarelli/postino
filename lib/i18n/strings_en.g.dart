@@ -316,6 +316,13 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
+	@override String get notifications => 'Notifications';
+	@override String get notificationsAllowed => 'Allowed';
+	@override String get notificationsDenied => 'Not allowed: new mail arrives without an alert.';
+	@override String get notificationsAllow => 'Allow';
+	@override String get notificationActionFirst => 'First notification action';
+	@override String get notificationActionSecond => 'Second notification action';
+	@override String get notificationActionNone => 'None';
 	@override String get syncSection => 'Sync';
 	@override String get syncTitle => 'Sync to…';
 	@override String get syncNone => 'None';
@@ -779,6 +786,13 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
+			'impostazioni.notifications' => 'Notifications',
+			'impostazioni.notificationsAllowed' => 'Allowed',
+			'impostazioni.notificationsDenied' => 'Not allowed: new mail arrives without an alert.',
+			'impostazioni.notificationsAllow' => 'Allow',
+			'impostazioni.notificationActionFirst' => 'First notification action',
+			'impostazioni.notificationActionSecond' => 'Second notification action',
+			'impostazioni.notificationActionNone' => 'None',
 			'impostazioni.syncSection' => 'Sync',
 			'impostazioni.syncTitle' => 'Sync to…',
 			'impostazioni.syncNone' => 'None',

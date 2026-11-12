@@ -1,3 +1,5 @@
+import 'notification_action.dart';
+
 /// The Impostazioni del dispositivo (ADR 0004): what this device remembers between runs.
 abstract interface class SettingsRepository() {
   /// Interfaccia: nessuno stato da costruire.
@@ -36,4 +38,10 @@ abstract interface class SettingsRepository() {
 
   /// Sceglie l'Account su cui sincronizzare le Impostazioni di Postino; null spegne la sincronizzazione.
   Future<void> setSettingsSyncAccount(String? accountId);
+
+  /// The Azioni delle notifiche (#211); [notificationActionsDefault] until chosen.
+  Future<NotificationActions> notificationActions();
+
+  /// Ricorda le Azioni delle notifiche; null in un posto è «Nessuna».
+  Future<void> setNotificationActions(NotificationActions actions);
 }

@@ -8,9 +8,12 @@ import '../../../core/domain/launch_at_login_use_case.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'escape_to_go_back.dart';
+import 'notification_actions_sections.dart';
+import 'notification_permission_row.dart';
 
-/// The Impostazioni del dispositivo (spec #28, story 98): the avvio al login, on desktop (#38), and «Cerca
-/// aggiornamenti» where Postino updates itself (macOS, #122).
+/// The Impostazioni del dispositivo (spec #28, story 98): the avvio al login, on desktop (#38), «Cerca
+/// aggiornamenti» where Postino updates itself (macOS, #122), then on every platform the «Notifiche» and the Azioni
+/// of a notification (#211).
 /// Esc and the back arrow call [onBack]; routing is the caller's.
 class const DeviceSettingsView({super.key, required final VoidCallback onBack}) extends StatefulWidget {
   @override
@@ -82,6 +85,8 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
                 subtitle: t.checkForUpdatesBody,
                 onTap: () => unawaited(_updater.checkForUpdates()),
               ),
+            const NotificationPermissionRow(),
+            const NotificationActionsSections(),
           ],
         ),
       ),

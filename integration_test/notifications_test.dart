@@ -14,6 +14,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:postino/core/data/local_notifications.dart';
 import 'package:postino/core/domain/mail_notification.dart';
 import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
@@ -55,6 +56,8 @@ void main() {
           channelName: 'Posta nuova',
           openLabel: 'Apri',
           newMessages: (n) => '$n nuovi messaggi',
+          actionLabel: (a) => a.name,
+          onAction: (_) {},
         ),
         isNull,
       );
@@ -65,6 +68,8 @@ void main() {
           sender: 'Ada',
           subject: 'Prova',
           preview: 'Notifica di prova',
+          // #211: with its buttons (a category on iOS).
+          actions: [NotificationAction.archive, NotificationAction.markRead],
         ),
       );
       // #210: the summary replaces the Account's notifications, and the cleanup removes it.

@@ -60,6 +60,7 @@ import 'package:postino/core/domain/mail_sync.dart' as _i705;
 import 'package:postino/core/domain/microsoft_consent.dart' as _i6;
 import 'package:postino/core/domain/model_download.dart' as _i96;
 import 'package:postino/core/domain/model_manager.dart' as _i689;
+import 'package:postino/core/domain/notification_action_use_case.dart' as _i927;
 import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
@@ -229,6 +230,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i27.NewMailNotifier>(
+      () => _i27.NewMailNotifier(
+        gh<_i385.MailStore>(),
+        gh<_i184.Notifications>(),
+        gh<_i350.OpenConversation>(),
+        gh<_i307.SettingsRepository>(),
+      ),
+    );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
     );
@@ -268,13 +277,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i96.ModelDownload>(),
       ),
     );
-    gh.lazySingleton<_i27.NewMailNotifier>(
-      () => _i27.NewMailNotifier(
-        gh<_i385.MailStore>(),
-        gh<_i184.Notifications>(),
-        gh<_i350.OpenConversation>(),
-      ),
-    );
     gh.lazySingleton<_i555.NotificationCleanup>(
       () => _i555.NotificationCleanup(
         gh<_i1028.PostinoDatabase>(),
@@ -310,6 +312,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i705.MailSync>(
       () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    );
+    gh.factory<_i927.NotificationActionUseCase>(
+      () => _i927.NotificationActionUseCase(
+        gh<_i705.MailSync>(),
+        gh<_i845.InboxRepository>(),
+        gh<_i184.Notifications>(),
+      ),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
       () => _i812.ConversationLabelIntents(

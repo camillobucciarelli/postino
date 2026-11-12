@@ -4,7 +4,9 @@ import 'action_outcome.dart';
 import 'draft_outcome.dart';
 import 'mail_action.dart';
 import 'message.dart';
+import 'provider_search_page.dart';
 import 'result.dart';
+import 'search_query.dart';
 
 /// What a sync returns: changes since the previous cursor (everything, for the initial sync).
 class const SyncBatch({
@@ -51,7 +53,6 @@ enum ChangeSignal() {
 const syncWindow = Duration(days: 90);
 
 /// The single adapter interface (ADR 0002), one instance per Account.
-// ponytail: Search joins the interface at step 6.
 abstract interface class MailProvider() {
   /// Interfaccia: nessuno stato da costruire.
   this;
@@ -117,4 +118,11 @@ abstract interface class MailProvider() {
 
   /// Creates the Etichetta [name]; idempotent on the name: one that already exists is returned, not duplicated.
   Future<Result<Label>> createLabel(String name);
+
+  /// Searches the whole mailbox on the Provider (#207), older than the sync window too, never Spam nor Cestino: one
+  /// page, newest first, from [pageToken] (null: the first). Every field of [query] is honoured (its `accountIds`
+  /// are the caller's): what the Provider cannot filter, the adapter filters on the results. A query with nothing
+  /// to look for is an empty page. The headers of the messages in [stored] (already here) are not fetched again:
+  /// only their Conversazione is in the page.
+  Future<Result<ProviderSearchPage>> search(SearchQuery query, {String? pageToken, Set<String> stored = const {}});
 }

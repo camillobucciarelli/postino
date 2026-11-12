@@ -21,7 +21,13 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   /// dates. Of every Account, or only of those in `accountIds`, or whose address holds one of `accountNames`.
   /// Grouping is the caller's. [match] holds only quoted letters and digits and the rest are numbers, so all is
   /// safe inside the SQL literal; the Account names are bound.
-  Stream<List<(AccountRow, MessageRow, List<String>)>> watchConversations(SearchQuery query, {String? match}) {
+  /// The Conversazioni of [found] (Account id to conversation ids: found on the Provider, #207) are hits too: the
+  /// Provider already applied the query to them.
+  Stream<List<(AccountRow, MessageRow, List<String>)>> watchConversations(
+    SearchQuery query, {
+    String? match,
+    Map<String, Set<String>> found = const {},
+  }) {
     final m = messages;
     final a = accounts;
     final labelIds = attachedDatabase.messagesDao.labelIds;
@@ -53,9 +59,13 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
         ),
     ];
     final hits = CustomExpression<bool>(conditions.join(' AND '), watchedTables: [messages, bodies, messageLabels]);
+    final onProvider = [
+      for (final MapEntry(key: account, value: ids) in found.entries)
+        if (ids.isNotEmpty) m.accountId.equals(account) & m.conversationId.isIn(ids),
+    ];
     final select = this.select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])
-      ..where(hits)
+      ..where(Expression.or([hits, ...onProvider]) & CustomExpression<bool>(notSpam('messages')))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (query.accountIds.isNotEmpty) select.where(m.accountId.isIn(query.accountIds));
     if (query.accountNames.isNotEmpty) {

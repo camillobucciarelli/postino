@@ -9,7 +9,9 @@ import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
+import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
+import '../../domain/search_query.dart';
 import '../message_id_of.dart';
 import '../mime.dart';
 import 'imap_actions.dart';
@@ -180,6 +182,14 @@ class ImapProvider(
       connect: _connect,
     );
   }
+
+  // ponytail: no search on this Provider yet (#208): only the local results.
+  @override
+  Future<Result<ProviderSearchPage>> search(
+    SearchQuery query, {
+    String? pageToken,
+    Set<String> stored = const {},
+  }) async => const Ok(ProviderSearchPage());
 
   /// CREATE, idempotent on the name: a folder already there is returned.
   @override

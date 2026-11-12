@@ -16,7 +16,9 @@ import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/provider_search_page.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
 import 'package:postino/core/domain/send_limit.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -511,4 +513,8 @@ class _TooBig(
       real.setConversationLabel(a, m, l, add: add);
   @override
   Future<Result<void>> completeConversation(String a, String c) => real.completeConversation(a, c);
+
+  @override
+  Future<Result<ProviderSearchPage>> search(String a, SearchQuery q, {String? pageToken}) =>
+      real.search(a, q, pageToken: pageToken);
 }

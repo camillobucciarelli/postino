@@ -280,7 +280,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
       ['sendMail'] => _sendMail(r),
       ['messages'] when r.method == 'POST' => _createDraft(r),
-      ['messages'] when q.containsKey(r'$search') => _searchAll(q),
+      ['messages'] when q.containsKey(r'$search') || _stateFilter(q) => _searchAll(q),
       ['messages'] => _find(q),
       ['mailFolders', final name, 'messages'] => _find(q, wellKnown: name),
       ['messages', final id, 'permanentDelete'] => _purge(id),
@@ -400,13 +400,21 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     });
   }
 
-  /// `$search` over every folder, Spam and Cestino too as Graph does, newest first, in pages of `$top` (the
-  /// contract reads one page: [_page] would end it at the Spam message the adapter drops).
+  /// A `$filter` on unread or Stella alone, without `$search`.
+  static bool _stateFilter(Map<String, String> q) => RegExp('^(isRead|flag/)').hasMatch(q[r'$filter'] ?? '');
+
+  /// `$search` (or the `$filter` of [_stateFilter]) over every folder, Spam and Cestino too as Graph does, newest
+  /// first, in pages of `$top` (the contract reads one page: [_page] would end it at the Spam message the adapter
+  /// drops).
   http.Response _searchAll(Map<String, String> q) {
     final page = int.parse(q[r'$top']!);
+    bool matches(Message m) => switch (q[r'$search']) {
+      final search? => graphSearchMatches(m, search, attached: _attachments[m.id] != null),
+      null => graphFilterMatches(m, q[r'$filter']!),
+    };
     final all = [
       for (final (m, folder) in _mailbox.values)
-        if (graphSearchMatches(m, q[r'$search']!, attached: _attachments[m.id] != null)) (m, folder),
+        if (matches(m)) (m, folder),
     ]..sort((a, b) => b.$1.date.compareTo(a.$1.date));
     final offset = int.tryParse(q[r'$skip'] ?? '') ?? 0;
     return graphJson({

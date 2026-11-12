@@ -8,34 +8,39 @@ import '../../../support/fake_mail_provider.dart' show msg;
 void main() {
   group('graphKql', () {
     test('each field, every value a phrase in escaped quotes, AND between them, one pair of quotes outside', () {
-      expect(graphKql(const SearchQuery(terms: ['fattura', 'marzo'])), r'"\"fattura\" AND \"marzo\""');
+      expect(graphKql(const SearchQuery(terms: ['fatt', 'marzo'])), r'"\"fatt*\" AND \"marzo*\""');
       expect(graphKql(const SearchQuery(phrase: 'totale  da pagare')), r'"\"totale da pagare\""');
-      expect(graphKql(const SearchQuery(from: 'Ada Rossi')), r'"from:\"Ada\" AND from:\"Rossi\""');
-      expect(graphKql(const SearchQuery(to: 'dario')), r'"(to:\"dario\" OR cc:\"dario\")"');
-      expect(graphKql(const SearchQuery(subject: 'riunione')), r'"subject:\"riunione\""');
-      expect(graphKql(const SearchQuery(terms: ['x'], hasAttachment: true)), r'"\"x\" AND hasAttachments:true"');
+      expect(graphKql(const SearchQuery(from: 'Ada Rossi')), r'"from:\"Ada*\" AND from:\"Rossi*\""');
+      expect(graphKql(const SearchQuery(to: 'dario')), r'"(to:\"dario*\" OR cc:\"dario*\")"');
+      expect(graphKql(const SearchQuery(subject: 'riunione')), r'"subject:\"riunione*\""');
+      expect(graphKql(const SearchQuery(terms: ['x'], hasAttachment: true)), r'"\"x*\" AND hasAttachments:true"');
     });
 
-    test('a quote or a backslash in the text cannot end the phrase: it is a space', () {
-      expect(graphKql(const SearchQuery(phrase: r'il "totale\ da')), r'"\"il totale da\""');
-      expect(graphKql(const SearchQuery(subject: r'a"b\c')), r'"subject:\"a\" AND subject:\"b\" AND subject:\"c\""');
+    test('a quote, a backslash or a star in the text cannot end the phrase or widen it: it is a space', () {
+      expect(graphKql(const SearchQuery(phrase: r'il "totale\ da*')), r'"\"il totale da\""', reason: 'whole');
+      expect(graphKql(const SearchQuery(subject: r'a"b\c')), r'"subject:\"a*\" AND subject:\"b*\" AND subject:\"c*\""');
       expect(graphKql(const SearchQuery(terms: ['"'])), '', reason: 'nothing left to look for');
     });
 
     test('an operator typed as text stays text', () {
-      expect(graphKql(const SearchQuery(terms: ['OR', 'from:ada'])), r'"\"OR\" AND \"from:ada\""');
+      expect(graphKql(const SearchQuery(terms: ['OR', 'from:ada'])), r'"\"OR*\" AND \"from:ada*\""');
     });
 
     test('the days widened by one each side, as KQL reads them in UTC', () {
       expect(
         graphKql(SearchQuery(terms: const ['x'], after: DateTime(2026, 3), before: DateTime(2026, 3, 31))),
-        r'"\"x\" AND received>=2026-02-28 AND received<=2026-04-01"',
+        r'"\"x*\" AND received>=2026-02-28 AND received<=2026-04-01"',
       );
     });
 
-    test('only unread or Stella: nothing Graph can look for', () {
+    test(r'only unread or Stella: no $search, a $filter', () {
       expect(graphKql(const SearchQuery(unread: true, starred: true)), '');
+      expect(
+        graphStateFilter(const SearchQuery(unread: true, starred: true)),
+        "isRead eq false and flag/flagStatus eq 'flagged'",
+      );
       expect(graphKql(const SearchQuery()), '');
+      expect(graphStateFilter(const SearchQuery()), '');
     });
   });
 

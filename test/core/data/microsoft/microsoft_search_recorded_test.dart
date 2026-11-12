@@ -1,7 +1,6 @@
 // The Graph search (#209) on the responses of test/fixtures/graph: no network.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:postino/core/data/microsoft/graph_kql.dart';
 import 'package:postino/core/data/microsoft/graph_message_parser.dart';
 import 'package:postino/core/data/microsoft/graph_search.dart';
 import 'package:postino/core/domain/message.dart';
@@ -33,7 +32,7 @@ void main() {
     final g = _graph();
     final page = okValue(await g.provider.search(_query));
     final first = _searches(g).single;
-    expect(first.queryParameters[r'$search'], graphKql(_query));
+    expect(first.queryParameters[r'$search'], r'"\"preventivo*\""');
     expect(first.queryParameters[r'$top'], '50');
     expect(first.queryParameters[r'$select'], graphMessageSelect);
     expect(first.queryParameters.containsKey(r'$filter'), isFalse, reason: r'$filter does not go with $search');
@@ -74,6 +73,38 @@ void main() {
     expect(page.nextPageToken, isNull);
   });
 
+  test('at most 4 Graph pages in one call: an empty page with the token, and the search goes on from there', () async {
+    // Every page is page 1 (nothing with a Stella) with a next link.
+    final g = RecordedGraph(
+      (r, path) => switch (path.split('/')) {
+        ['messages'] => graphFixture('search_page1'),
+        ['mailFolders', final name] when _wellKnown.contains(name) => graphFixture('folder_$name'),
+        ['mailFolders'] => graphFixture('folders'),
+        ['mailFolders', _, 'childFolders'] => graphFixture('folders_lavoro'),
+        _ => fail('unexpected ${r.method} $path'),
+      },
+    );
+    const starred = SearchQuery(terms: ['preventivo'], starred: true);
+    final page = okValue(await g.provider.search(starred));
+    expect(_searches(g), hasLength(4));
+    expect(page.messages, isEmpty);
+    expect(page.nextPageToken, startsWith('12 https://graph.microsoft.com/'));
+    okValue(await g.provider.search(starred, pageToken: page.nextPageToken));
+    expect(_searches(g), hasLength(8));
+    expect(_searches(g).last.queryParameters[r'$skip'], '50');
+  });
+
+  test(r'only unread asks with $filter, no $search and no cap', () async {
+    final g = _graph();
+    final page = okValue(await g.provider.search(const SearchQuery(unread: true)));
+    final first = _searches(g).first;
+    expect(first.queryParameters[r'$filter'], 'isRead eq false');
+    expect(first.queryParameters.containsKey(r'$search'), isFalse);
+    expect(page.messages.map((m) => m.id), [messageIdOf('s1')]);
+    final link = page.nextPageToken!.split(' ').last;
+    expect(okValue(await g.provider.search(const SearchQuery(unread: true), pageToken: '999 $link')).limit, isNull);
+  });
+
   test('the page that ends at 1.000 results says so', () async {
     final g = _graph();
     final link = okValue(await g.provider.search(_query)).nextPageToken!.split(' ').last;
@@ -93,7 +124,7 @@ void main() {
 
   test('nothing to look for asks Graph nothing', () async {
     final g = _graph();
-    expect(okValue(await g.provider.search(const SearchQuery(unread: true))).messages, isEmpty);
+    expect(okValue(await g.provider.search(const SearchQuery())).messages, isEmpty);
     expect(g.requests, isEmpty);
   });
 

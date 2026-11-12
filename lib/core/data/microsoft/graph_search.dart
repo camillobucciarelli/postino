@@ -20,25 +20,34 @@ class GraphSearch(final GraphHttp _graph, final GraphFolders _folders) {
   /// Graph pages read in one call while the local filters keep none: the next ones come with «Mostra altri».
   static const _maxPages = 4;
 
-  /// One page for [query] from [pageToken] (`<results seen> <@odata.nextLink>`, none: the first). Only messages
+  /// One page for [query] (`$search`, or `$filter` for only unread or Stella) from [pageToken] (`<results seen> <@odata.nextLink>`, none: the first). Only messages
   /// of a synced folder, never Spam nor Cestino (Graph lists them too), with the folder's Etichetta as the sync
   /// gives it; those in [stored] give only their Conversazione. The page that ends at [graphSearchLimit] says so.
   /// A token that is not one of these (a link to another host) is [NotFoundFailure].
   Future<ProviderSearchPage> page(SearchQuery query, {required String? pageToken, required Set<String> stored}) async {
     final kql = graphKql(query);
-    if (kql.isEmpty) return const ProviderSearchPage();
+    final filter = kql.isEmpty ? graphStateFilter(query) : '';
+    if (kql.isEmpty && filter.isEmpty) return const ProviderSearchPage();
     var (seen, link) = pageToken == null ? (0, null) : _decode(pageToken);
     Map<String, String>? synced;
     final messages = <Message>[];
     final conversations = <String>{};
     for (var pages = 1; ; pages++) {
       final r = link == null
-          ? await _graph.get('messages', query: {r'$search': kql, r'$top': '$_top', r'$select': graphMessageSelect})
+          ? await _graph.get(
+              'messages',
+              query: {
+                if (kql.isEmpty) r'$filter': filter else r'$search': kql,
+                r'$top': '$_top',
+                r'$select': graphMessageSelect,
+              },
+            )
           : await _graph.follow(link);
       final items = jsonObjects(r['value']).toList();
       seen += items.length;
       link = r['@odata.nextLink'] as String?;
       // The folders once per call, and only when something came: their Etichette as the sync has them.
+      // ponytail: the folder tree is walked again at every page asked; keep it across calls if the requests hurt.
       if (items.isNotEmpty) synced ??= {for (final f in await _folders.list()) f.id: f.labelId};
       for (final j in items) {
         final label = synced![j['parentFolderId']];
@@ -54,7 +63,7 @@ class GraphSearch(final GraphHttp _graph, final GraphFolders _folders) {
       messages: messages,
       conversationIds: conversations,
       nextPageToken: link == null ? null : '$seen $link',
-      limit: link == null && seen >= graphSearchLimit ? graphSearchLimit : null,
+      limit: kql.isNotEmpty && link == null && seen >= graphSearchLimit ? graphSearchLimit : null,
     );
   }
 

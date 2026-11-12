@@ -140,7 +140,11 @@
     "sendFailed": "Invio non riuscito: riprova",
     "offlineAttachments": "Sei offline: gli allegati dell'inoltro non sono ancora scaricati, riprova in rete",
     "noRecipient": "Aggiungi almeno un destinatario",
-    "forwardedAttachments": "Allegati"
+    "forwardedAttachments": "Allegati",
+    "suggestions": {
+      "one": "$n suggerimento",
+      "other": "$n suggerimenti"
+    }
   },
   "bozze": {
     "title": "Bozze",

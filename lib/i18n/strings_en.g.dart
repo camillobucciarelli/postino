@@ -268,6 +268,10 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get offlineAttachments => 'You are offline: the forwarded attachments are not downloaded yet, try again online';
 	@override String get noRecipient => 'Add at least one recipient';
 	@override String get forwardedAttachments => 'Attachments';
+	@override String suggestions({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} suggestion',
+		other: '${n} suggestions',
+	);
 }
 
 // Path: bozze
@@ -741,6 +745,7 @@ extension on TranslationsEn {
 			'composizione.offlineAttachments' => 'You are offline: the forwarded attachments are not downloaded yet, try again online',
 			'composizione.noRecipient' => 'Add at least one recipient',
 			'composizione.forwardedAttachments' => 'Attachments',
+			'composizione.suggestions' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} suggestion', other: '${n} suggestions', ), 
 			'bozze.title' => 'Drafts',
 			'bozze.emptyTitle' => 'No drafts',
 			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',

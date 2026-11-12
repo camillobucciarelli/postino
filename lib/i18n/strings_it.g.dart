@@ -504,6 +504,12 @@ class Translations$composizione$it {
 
 	/// it: 'Allegati'
 	String get forwardedAttachments => 'Allegati';
+
+	/// it: '(one) {$n suggerimento} (other) {$n suggerimenti}'
+	String suggestions({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} suggerimento',
+		other: '${n} suggerimenti',
+	);
 }
 
 // Path: bozze
@@ -1355,6 +1361,7 @@ extension on Translations {
 			'composizione.offlineAttachments' => 'Sei offline: gli allegati dell\'inoltro non sono ancora scaricati, riprova in rete',
 			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',
 			'composizione.forwardedAttachments' => 'Allegati',
+			'composizione.suggestions' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} suggerimento', other: '${n} suggerimenti', ), 
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',

@@ -36,6 +36,7 @@ export 'molecules/postino_popover.dart';
 export 'molecules/postino_settings_item.dart';
 export 'molecules/postino_settings_section.dart';
 export 'molecules/postino_snackbar.dart';
+export 'molecules/postino_suggestions.dart';
 export 'molecules/postino_swipe_row.dart';
 export 'molecules/postino_switch_row.dart';
 export 'molecules/postino_sync_status.dart';

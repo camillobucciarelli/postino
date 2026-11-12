@@ -12,10 +12,14 @@ class const ProviderSearchPage({
 
   /// Opaque to the core: the next page, null on the last one.
   final String? nextPageToken,
+
+  /// Set on the last page when the Provider stopped at its cap of results: only its first [limit] were looked at
+  /// (Graph's `$search`, 1.000, #209).
+  final int? limit,
 }) extends Equatable {
   /// Crea una pagina; senza argomenti è vuota e l'ultima.
   this;
 
   @override
-  List<Object?> get props => [messages, conversationIds, nextPageToken];
+  List<Object?> get props => [messages, conversationIds, nextPageToken, limit];
 }

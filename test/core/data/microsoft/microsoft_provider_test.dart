@@ -8,6 +8,7 @@ import '../../../support/fake_mail_provider.dart' show msg;
 import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/graph_harness.dart';
 import '../../domain/mail_provider_contract.dart';
+import '../../domain/mail_provider_search_contract.dart';
 
 void main() {
   mailProviderAuthContract('MicrosoftProvider', GraphHarness.new);
@@ -15,6 +16,7 @@ void main() {
   mailProviderLabelContract('MicrosoftProvider', GraphHarness.new);
   mailProviderAttachmentContract('MicrosoftProvider', GraphHarness.new);
   mailProviderActionContract('MicrosoftProvider', GraphHarness.new);
+  mailProviderSearchContract('MicrosoftProvider', GraphHarness.new);
 
   test('a message moved to another folder comes once, in the new folder, with the same id', () async {
     final h = GraphHarness()..deliver(msg('a'));

@@ -525,6 +525,9 @@ class FakeMailProvider() implements MailProvider {
   /// Every [search] that reached the Provider: (query, page token).
   final searchCalls = <(SearchQuery, String?)>[];
 
+  /// The cap of results the last page of [search] says it stopped at (Graph's 1.000); none when null.
+  int? searchLimit;
+
   /// While set, [search] answers only once it completes: a slow Provider.
   Completer<void>? holdSearch;
 
@@ -565,6 +568,7 @@ class FakeMailProvider() implements MailProvider {
         ],
         conversationIds: {for (final m in page) m.conversationId},
         nextPageToken: from + searchPageSize < all.length ? '${from + searchPageSize}' : null,
+        limit: from + searchPageSize < all.length ? null : searchLimit,
       ),
     );
   }

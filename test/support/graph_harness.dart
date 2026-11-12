@@ -14,6 +14,7 @@ import '../core/domain/mail_provider_contract.dart';
 import 'fake_platform.dart';
 import 'graph_mime.dart';
 import 'graph_recorded.dart';
+import 'graph_search_eval.dart';
 
 typedef _Folder = ({String name, String? parent, String? wellKnown});
 
@@ -279,6 +280,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
       ['mailFolders', final id, 'messages', 'delta'] => _messageDelta(id, q),
       ['sendMail'] => _sendMail(r),
       ['messages'] when r.method == 'POST' => _createDraft(r),
+      ['messages'] when q.containsKey(r'$search') => _searchAll(q),
       ['messages'] => _find(q),
       ['mailFolders', final name, 'messages'] => _find(q, wellKnown: name),
       ['messages', final id, 'permanentDelete'] => _purge(id),
@@ -394,6 +396,27 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
         '@odata.nextLink': Uri.https('graph.microsoft.com', '${graphApi}messages', {
           ...q,
           r'$skiptoken': '${offset + _page}',
+        }).toString(),
+    });
+  }
+
+  /// `$search` over every folder, Spam and Cestino too as Graph does, newest first, in pages of `$top` (the
+  /// contract reads one page: [_page] would end it at the Spam message the adapter drops).
+  http.Response _searchAll(Map<String, String> q) {
+    final page = int.parse(q[r'$top']!);
+    final all = [
+      for (final (m, folder) in _mailbox.values)
+        if (graphSearchMatches(m, q[r'$search']!, attached: _attachments[m.id] != null)) (m, folder),
+    ]..sort((a, b) => b.$1.date.compareTo(a.$1.date));
+    final offset = int.tryParse(q[r'$skip'] ?? '') ?? 0;
+    return graphJson({
+      'value': [
+        for (final (m, folder) in all.skip(offset).take(page)) _item(m, folder, '', _attachments[m.id] != null),
+      ],
+      if (offset + page < all.length)
+        '@odata.nextLink': Uri.https('graph.microsoft.com', '${graphApi}messages', {
+          ...q,
+          r'$skip': '${offset + page}',
         }).toString(),
     });
   }

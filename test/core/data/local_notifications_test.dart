@@ -30,6 +30,9 @@ void main() {
   /// What the OS says launched the app.
   Map<String, Object?>? launch;
 
+  /// Runs inside the plugin's `initialize`: what Android delivers there on a cold start.
+  Future<void> Function()? duringInitialize;
+
   MailNotification mail(String accountId, String conversationId, {List<NotificationAction> actions = const []}) =>
       MailNotification(
         conversation: (accountId: accountId, conversationId: conversationId),
@@ -47,10 +50,12 @@ void main() {
     buttons = {};
     cancels = [];
     launch = null;
+    duringInitialize = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (call) async {
       final args = call.arguments;
       switch (call.method) {
         case 'initialize':
+          await duringInitialize?.call();
           return true;
         case 'getNotificationAppLaunchDetails':
           return launch;
@@ -118,6 +123,53 @@ void main() {
     expect(actions, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive)]);
     expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
   });
+
+  test(
+    'a tap with nobody listening yet waits for the first listener (#214: the engine kept without the app)',
+    () async {
+      final headless = LocalNotifications();
+      await headless.start(
+        channelName: 'Posta nuova',
+        openLabel: 'Apri',
+        newMessages: (n) => '$n nuovi messaggi',
+        actionLabel: (a) => a.name,
+        onAction: actions.add,
+      );
+      await respond('t-late');
+      final late = <NotificationTarget>[];
+      headless.taps.listen(late.add);
+      await pumpEventQueue();
+      expect(late, [const ConversationTarget((accountId: 'a1', conversationId: 't-late'))]);
+    },
+  );
+
+  test(
+    'the tap that launched the app, delivered inside initialize, is the launch only: nothing for a listener',
+    () async {
+      final cold = LocalNotifications();
+      duringInitialize = () => respond('t-launch');
+      launch = {
+        'notificationLaunchedApp': true,
+        'notificationResponse': {
+          'notificationId': 1,
+          'payload': encodePayload(const ConversationTarget((accountId: 'a1', conversationId: 't-launch'))),
+          'notificationResponseType': 0,
+        },
+      };
+      final target = await cold.start(
+        channelName: 'Posta nuova',
+        openLabel: 'Apri',
+        newMessages: (n) => '$n nuovi messaggi',
+        actionLabel: (a) => a.name,
+        onAction: actions.add,
+      );
+      expect(target, const ConversationTarget((accountId: 'a1', conversationId: 't-launch')));
+      final late = <NotificationTarget>[];
+      cold.taps.listen(late.add);
+      await pumpEventQueue();
+      expect(late, isEmpty, reason: 'opened once, by the launch');
+    },
+  );
 
   test("a background task's start (#212) leaves the relayed buttons to the app's isolate", () async {
     await LocalNotifications().start(

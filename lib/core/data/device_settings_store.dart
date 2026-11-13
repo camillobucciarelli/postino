@@ -9,6 +9,7 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   static const _sidebar = 'sidebar_expanded';
   static const _listWidth = 'list_width';
   static const _launchAtLogin = 'launch_at_login';
+  static const _immediateNotifications = 'immediate_notifications';
   static const _notificationsAsked = 'notifications_asked';
   static const _settingsSyncAccount = 'settings_sync_account';
   static const _firstAction = 'notification_action_first';
@@ -37,6 +38,13 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   @override
   Future<void> setLaunchAtLogin({required bool enabled}) =>
       _db.deviceSettingsDao.write(_launchAtLogin, enabled.toString());
+
+  @override
+  Future<bool?> immediateNotifications() => _bool(_immediateNotifications);
+
+  @override
+  Future<void> setImmediateNotifications({required bool enabled}) =>
+      _db.deviceSettingsDao.write(_immediateNotifications, enabled.toString());
 
   @override
   Future<bool> notificationsAsked() async => await _bool(_notificationsAsked) ?? false;

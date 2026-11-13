@@ -583,6 +583,15 @@ class Translations$impostazioni$it {
 	/// it: 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.'
 	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
 
+	/// it: 'Notifiche immediate'
+	String get immediateNotifications => 'Notifiche immediate';
+
+	/// it: 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.'
+	String get immediateNotificationsBody => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.';
+
+	/// it: 'Il sistema non ha avviato le Notifiche immediate. Riprova.'
+	String get immediateNotificationsFailed => 'Il sistema non ha avviato le Notifiche immediate. Riprova.';
+
 	/// it: 'Cerca aggiornamenti'
 	String get checkForUpdates => 'Cerca aggiornamenti';
 
@@ -843,6 +852,15 @@ class Translations$notifiche$it {
 		one: '${n} nuovo messaggio',
 		other: '${n} nuovi messaggi',
 	);
+
+	/// it: 'Postino in ascolto'
+	String get listeningChannel => 'Postino in ascolto';
+
+	/// it: 'Postino in ascolto'
+	String get listeningTitle => 'Postino in ascolto';
+
+	/// it: 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.'
+	String get listeningText => 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.';
 }
 
 // Path: cerca
@@ -1430,6 +1448,9 @@ extension on Translations {
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'impostazioni.immediateNotifications' => 'Notifiche immediate',
+			'impostazioni.immediateNotificationsBody' => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.',
+			'impostazioni.immediateNotificationsFailed' => 'Il sistema non ha avviato le Notifiche immediate. Riprova.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
 			'impostazioni.notifications' => 'Notifiche',
@@ -1515,6 +1536,9 @@ extension on Translations {
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
 			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} nuovo messaggio', other: '${n} nuovi messaggi', ), 
+			'notifiche.listeningChannel' => 'Postino in ascolto',
+			'notifiche.listeningTitle' => 'Postino in ascolto',
+			'notifiche.listeningText' => 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.',
 			'cerca.open' => 'Cerca',
 			'cerca.title' => 'Cerca',
 			'cerca.field' => 'Cerca nella posta',

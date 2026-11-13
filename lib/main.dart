@@ -27,6 +27,8 @@ import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
+import 'core/domain/immediate_notifications.dart';
+import 'core/domain/immediate_notifications_use_case.dart';
 import 'core/domain/launch_at_login_use_case.dart';
 import 'core/domain/notification_action.dart';
 import 'core/domain/notification_action_use_case.dart';
@@ -35,6 +37,7 @@ import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
 import 'design_system/tokens/postino_theme.dart';
+import 'features/impostazioni/presentation/listening_notice.dart';
 import 'features/impostazioni/presentation/notification_action_label.dart';
 import 'i18n/strings.g.dart';
 import 'main.config.dart';
@@ -117,8 +120,21 @@ Future<void> main() async {
   await configureDependencies(environment: Environment.prod);
   LocaleSettings.useDeviceLocaleSync();
   final launch = await _startNotifications();
+  unawaited(_resumeImmediateNotifications());
   runApp(TranslationProvider(child: PostinoApp(launch: launch)));
   if (_desktop) unawaited(_startDesktop());
+}
+
+/// The Notifiche immediate (#214) at every start of the app's engine (killed by the system, or started by the service
+/// itself after a reboot): the service again when on, its notification in the language of this start; stopped when
+/// off. Failing leaves the periodic check (#212).
+// ponytail: a language changed while the service keeps the engine shows from the next start of the engine.
+Future<void> _resumeImmediateNotifications() async {
+  try {
+    await getIt<ImmediateNotificationsUseCase>().resume(listeningNotice(t));
+  } on Object catch (e) {
+    debugPrint('[notifiche] immediate: ${e.runtimeType}');
+  }
 }
 
 bool get _desktop =>
@@ -201,6 +217,7 @@ class const PostinoApp({
 class _PostinoAppState() extends State<PostinoApp> {
   late final AppLifecycleListener _lifecycle;
   StreamSubscription<NotificationTarget>? _taps;
+  StreamSubscription<void>? _listening;
 
   /// Built once: routefly keeps its router in statics.
   late final RouterConfig<Object> _router = Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path)!;
@@ -219,6 +236,10 @@ class _PostinoAppState() extends State<PostinoApp> {
         if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
         _open(target);
       });
+      // The fixed notification of the Notifiche immediate (#214).
+      _listening = getIt<ImmediateNotifications>().opened.listen(
+        (_) => unawaited(Routefly.navigate(routePaths.posta.path)),
+      );
     });
   }
 
@@ -254,6 +275,7 @@ class _PostinoAppState() extends State<PostinoApp> {
   @override
   void dispose() {
     unawaited(_taps?.cancel());
+    unawaited(_listening?.cancel());
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
     unawaited(getIt<SettingsSync>().stop());

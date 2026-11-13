@@ -26,6 +26,6 @@ Rasterizza con `rsvg-convert` se installato, altrimenti con `sips` (di serie su 
 
 Il fondo adattivo Android (`drawable/ic_launcher_background.xml`) e il verderame dello splash (`values/colors.xml`, `LaunchScreen.storyboard`) sono scritti a mano: se cambiano i colori in `assets/brand/`, aggiornarli.
 
-La pagina `docs/download/index.html` incorpora favicon e logo come data URI SVG (copia di `icon-small.svg` e `icon.svg`): se cambia il logo, rigenerare quelle due stringhe.
+Il sito (`docs/download/`) usa questi stessi file: `release.yml` (job `site`) pubblica `icon.svg` (logo) e `icon-small.svg` (favicon) in `brand/` sul bucket, senza copie.
 
 Splash: statico (marchio su verderame), senza animazione. macOS non ha launch screen.

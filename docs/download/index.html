@@ -1,85 +1,70 @@
 <!DOCTYPE html>
-<!-- Pubblicata come index.html alla radice del bucket da release.yml (job site); __VERSION__ è sostituito lì. Controllata da tool/release/download_check.sh. -->
+<!-- Pubblicata come index.html alla radice del bucket da release.yml (job download); __VERSION__ è sostituito lì.
+     Gemella inglese: en/index.html. Controllata da tool/release/download_check.sh. -->
 <html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scarica Postino</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' width='256' height='256'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%231f9a80'/%3E%3Cstop offset='1' stop-color='%230b5649'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='57' fill='url%28%23t%29'/%3E%3Cpath d='M40 128 L128 56 L216 128 Z' fill='%23e2ded4'/%3E%3Cg transform='rotate%28-5 128 128%29'%3E%3Crect x='76' y='76' width='104' height='112' rx='10' fill='%23fffdf8'/%3E%3Cpath d='M126 98 H164 M92 116 H166' fill='none' stroke='%23cdc8bb' stroke-width='8' stroke-linecap='round'/%3E%3Cpath d='M92 98 H118' fill='none' stroke='%23e0ab12' stroke-width='8' stroke-linecap='round'/%3E%3C/g%3E%3Cpath d='M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z' fill='%23fffdf8'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&amp;family=Figtree:wght@400;600;700&amp;display=swap">
-<style>
-  /* Token di lib/design_system/tokens (postino_colors.dart, postino_palette.dart, postino_metrics.dart, postino_text.dart). */
-  :root {
-    color-scheme: light dark;
-    --sfondo: #F4F2EC;          /* surfaceGround = pNeutral100 */
-    --superficie: #FFFFFF;      /* surfaceRaised = pNeutral0 */
-    --testo: #1C1C1A;           /* ink = pNeutral900 */
-    --testo-attenuato: #625E55; /* inkMuted = pNeutral600 */
-    --primario: #0E6456;        /* brand */
-    --primario-hover: #0B5649;  /* brandHover = pVerdigris800 */
-    --su-primario: #FFFFFF;     /* onBrand */
-    --bordo: #E2DED4;           /* borderSubtle = pNeutral200 */
-    --focus: #B0500A;           /* focusRing = pOrange700 */
-    --oro: #F0C419;             /* starFill = pGold400, solo decorativo */
-    --raggio-md: 0.75rem;       /* PostinoRadius.md 12 */
-    --raggio-lg: 1rem;          /* PostinoRadius.lg 16 */
-    --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s6: 1.5rem; --s8: 2rem;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --sfondo: #131312;          /* pNeutral950 */
-      --superficie: #242422;      /* pNeutral850 */
-      --testo: #F4F2EC;           /* pNeutral100 */
-      --testo-attenuato: #A6A093; /* pNeutral400 */
-      --primario: #79C9B3;        /* pVerdigris300 */
-      --primario-hover: #A9D9CB;  /* pVerdigris200 */
-      --su-primario: #0B231E;     /* pVerdigris950 */
-      --bordo: #2D2C29;           /* pNeutral800 */
-      --focus: #F2A65E;           /* pOrange300 */
-      --oro: #FFE02E;             /* pGold300 */
-    }
-  }
-  html { font-size: 100%; }
-  body { margin: 0 auto; padding: var(--s4); max-width: 40rem; background: var(--sfondo); color: var(--testo);
-         font-family: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; line-height: 1.625; }
-  h1 { font-family: Caprasimo, Georgia, serif; font-weight: 400; font-size: 2.125em; line-height: 1.2; margin: var(--s6) 0 var(--s3);
-       padding-bottom: var(--s3); border-bottom: 0.25rem solid var(--oro); overflow-wrap: anywhere; }
-  main { background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio-lg); padding: var(--s4) var(--s6) var(--s6); }
-  a { color: var(--primario); text-decoration: underline; overflow-wrap: anywhere; }
-  a:focus-visible { outline: 0.2em solid var(--focus); outline-offset: 0.2em; }
-  .versione { color: var(--testo-attenuato); font-weight: 600; }
-  .pulsanti { display: flex; flex-wrap: wrap; gap: var(--s3); margin: var(--s6) 0; }
-  a.pulsante { display: inline-block; box-sizing: border-box; min-height: 3rem; padding: 0.7em 1.25em; border-radius: var(--raggio-md);
-               background: var(--primario); color: var(--su-primario); font-weight: 700; text-decoration: none; }
-  a.pulsante:hover { background: var(--primario-hover); }
-  li { margin-bottom: var(--s2); }
-  .logo { display: block; margin-bottom: var(--s2); }
-</style>
+<title>Postino: la tua posta, tutta in un posto</title>
+<meta name="description" content="Postino è un client di posta per macOS e Android che riunisce Gmail, Outlook.com, iCloud e IMAP in una Posta unificata, con la posta cifrata sul dispositivo.">
+<link rel="alternate" hreflang="it" href="https://postino.camillobucciarelli.dev/index.html">
+<link rel="alternate" hreflang="en" href="https://postino.camillobucciarelli.dev/en/index.html">
+<link rel="icon" type="image/svg+xml" href="brand/icon-small.svg">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="barra">
+  <a href="en/index.html" hreflang="en" lang="en">English</a>
+  <a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a>
+</header>
 <main>
-<img class="logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' width='256' height='256'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%231f9a80'/%3E%3Cstop offset='1' stop-color='%230b5649'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='57' fill='url%28%23t%29'/%3E%3Cpath d='M40 128 L128 56 L216 128 Z' fill='%23e2ded4'/%3E%3Cg transform='rotate%28-5 128 128%29'%3E%3Crect x='76' y='76' width='104' height='112' rx='10' fill='%23fffdf8'/%3E%3Cpath d='M128 96 H164 M92 112 H168' fill='none' stroke='%23cdc8bb' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M92 96 H120' fill='none' stroke='%23e0ab12' stroke-width='5' stroke-linecap='round'/%3E%3C/g%3E%3Cpath d='M40 132 H216 V194 Q216 208 202 208 H54 Q40 208 40 194 Z' fill='%23000' fill-opacity='.22'/%3E%3Cpath d='M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z' fill='%23fffdf8'/%3E%3C/svg%3E" width="64" height="64" alt="">
-<h1>Scarica Postino</h1>
-
-<p>Postino è un client di posta che riunisce in un unico posto i tuoi Account email.</p>
+<img class="logo" src="brand/icon.svg" width="64" height="64" alt="">
+<h1>Postino</h1>
+<p>Un client di posta che riunisce tutti i tuoi Account email in un unico posto, veloce anche offline.</p>
 
 <p class="versione">Versione __VERSION__</p>
-
 <p class="pulsanti">
   <a class="pulsante" href="macos/__VERSION__/Postino-__VERSION__.dmg" download>Scarica per macOS (DMG)</a>
   <a class="pulsante" href="android/__VERSION__/Postino-__VERSION__.apk" download>Scarica per Android (APK)</a>
 </p>
 
+<h2>Cosa fa</h2>
+<h3>Posta unificata</h3>
+<p>Gmail, Outlook.com (Account Microsoft personali), iCloud e qualsiasi casella IMAP in un'unica Posta in arrivo, ordinata per data. Ogni Account ha il suo colore, così riconosci a colpo d'occhio da dove arriva un messaggio.</p>
+<h3>Offline e privata</h3>
+<p>La posta recente è salvata in un database cifrato sul tuo dispositivo: la leggi anche senza rete, e le Azioni (archivia, Stella, segna come letto…) partono quando la rete torna. Postino non ha un server suo per la posta: parla solo con i tuoi Provider. E blocca le immagini remote finché non scegli di vederle.</p>
+<h3>Ricerca</h3>
+<p>I risultati compaiono mentre scrivi, dalla posta sul dispositivo, con filtri per non letti, Stella, allegati, Account e date. Per la posta più vecchia la ricerca continua sul Provider.</p>
+<h3>Notifiche con Azioni</h3>
+<p>Le notifiche di posta nuova sono raggruppate per Account e hanno due pulsanti a tua scelta, ad esempio Archivia e Segna come letto.</p>
+<h3>Etichettatura automatica sul dispositivo</h3>
+<p>Attiva l'Etichettatura automatica su un'Etichetta, se vuoi con una descrizione, e Postino la assegna da solo ai messaggi nuovi che le somigliano. Il modello gira sul dispositivo: il contenuto dei messaggi non viene inviato a nessun servizio.</p>
+<h3>Impostazioni sincronizzate</h3>
+<p>Se lo attivi, Postino tiene allineati tra i tuoi dispositivi Account collegati, colori, Azioni a scorrimento ed Etichette automatiche, in uno spazio riservato all'app nel tuo Google Drive. Mai la posta, mai le password.</p>
+
+<h2>Scarica</h2>
 <p>Link stabili all'ultima versione:</p>
 <ul>
   <li><a href="macos/latest/Postino.dmg" download>Postino per macOS (DMG), ultima versione</a></li>
   <li><a href="android/latest/Postino.apk" download>Postino per Android (APK), ultima versione</a></li>
-  <li>iOS: in arrivo</li>
+  <li>iPhone e iPad: Postino si installa con TestFlight, su invito. Come ottenere l'invito è spiegato nella <a href="guida/index.html">Guida per gli invitati</a>.</li>
 </ul>
+<p>Requisiti, installazione e aggiornamenti passo per passo sono nella <a href="guida/index.html">Guida per gli invitati</a>.</p>
 
-<p>Requisiti, installazione e aggiornamenti sono nella <a href="guida/index.html">Guida per gli invitati</a>.</p>
+<h2>Domande frequenti</h2>
+<h3>Come apro Postino su macOS?</h3>
+<p>Apri il DMG e trascina Postino nella cartella Applicazioni. Al primo avvio macOS chiede conferma per un'app scaricata da Internet: scegli «Apri». L'app è firmata dallo sviluppatore e notarizzata da Apple.</p>
+<h3>Come installo l'APK su Android?</h3>
+<p>Scarica l'APK dal browser del telefono (non dal browser interno di un'altra app) e aprilo. Android ti chiede di consentire l'installazione da origini sconosciute per il browser o per l'app Files: consentila e completa l'installazione.</p>
+<h3>Come si aggiorna Postino?</h3>
+<p>Su macOS si aggiorna da solo: al secondo avvio ti chiede se cercare gli aggiornamenti in automatico, e puoi cercarli quando vuoi con «Cerca aggiornamenti…» nel menu Postino. Su Android scarica di nuovo l'APK da questa pagina e installalo sopra quello che hai: Account e posta restano.</p>
+<p>Per tutto il resto, dal collegamento di un Account Gmail alla Segnalazione di un problema, c'è la <a href="guida/index.html">Guida per gli invitati</a>.</p>
+
+<h2>Sostieni il progetto</h2>
+<p>Postino si scarica gratis. Se ti è utile puoi <a href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">offrirmi un caffè</a>.</p>
 </main>
+<footer>
+  <a href="privacy.html">Informativa sulla privacy</a>
+</footer>
 </body>
 </html>

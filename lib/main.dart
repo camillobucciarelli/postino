@@ -185,11 +185,20 @@ Future<void> _startDesktop() async {
       debugPrint('[desktop] avvio al login: $e');
     }
   }
+  // Started at login, the runner keeps the window hidden in the tray (#239); unknown reads as started by the user.
+  var hidden = false;
+  try {
+    hidden = await getIt<LaunchAtLoginUseCase>().launchedAtLogin();
+  } on Object catch (e) {
+    debugPrint('[desktop] avvio al login: $e');
+  }
   // The window exists and is shown after the first frame; the AppWindow resolves it then, before the tray exists.
-  await WidgetsBinding.instance.endOfFrame;
+  // A hidden window may draw no frame (frames stop while the app is hidden): it resolves now.
+  if (!hidden) await WidgetsBinding.instance.endOfFrame;
   try {
     final window = getIt<AppWindow>();
     await DesktopTray(window, getIt<SystemTray>()).start(
+      hidden: hidden,
       tooltip: t.appTitle,
       openLabel: t.tray.open,
       quitLabel: t.tray.quit,
@@ -222,6 +231,9 @@ class _PostinoAppState() extends State<PostinoApp> {
   StreamSubscription<NotificationTarget>? _taps;
   StreamSubscription<void>? _listening;
 
+  /// Completed after the frame that drew the Posta unificata.
+  final _routed = Completer<void>();
+
   /// Built once: routefly keeps its router in statics.
   late final RouterConfig<Object> _router = Routefly.routerConfig(routes: routes, initialPath: routePaths.posta.path)!;
 
@@ -233,22 +245,29 @@ class _PostinoAppState() extends State<PostinoApp> {
     getIt<AccountsSettingsMirror>().start();
     getIt<PeriodicSchedule>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
+    // Heard from the start: started at login (#239) the window is hidden and may draw no frame until shown, so the
+    // tap shows it first and opens its target once the Posta unificata is drawn.
+    _taps = getIt<Notifications>().taps.listen((target) {
+      // On desktop the window may be hidden in the tray.
+      if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
+      unawaited(
+        _routed.future.then((_) {
+          if (mounted) _open(target);
+        }),
+      );
+    });
     _whenRouted(() {
       if (widget.launch case final launch?) _open(launch);
-      _taps = getIt<Notifications>().taps.listen((target) {
-        // On desktop the window may be hidden in the tray.
-        if (_desktop) unawaited(getIt<AppWindow>().show().catchError((Object e) => debugPrint('[desktop] window: $e')));
-        _open(target);
-      });
       // The fixed notification of the Notifiche immediate (#214).
       _listening = getIt<ImmediateNotifications>().opened.listen(
         (_) => unawaited(Routefly.navigate(routePaths.posta.path)),
       );
+      _routed.complete();
     });
   }
 
   /// routefly has no initial stack (#8): the app starts on the Posta unificata, and [then] runs after the frame that
-  /// drew it, so a Conversazione opened from there comes back to it with Indietro. The taps before are not heard.
+  /// drew it, so a Conversazione opened from there comes back to it with Indietro.
   void _whenRouted(VoidCallback then) {
     final delegate = _router.routerDelegate;
     void drawn() => WidgetsBinding.instance.addPostFrameCallback((_) {

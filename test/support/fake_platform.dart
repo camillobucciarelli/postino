@@ -186,6 +186,12 @@ class FakeLaunchAtLogin() implements LaunchAtLogin {
     if (failure case final f?) throw f;
     this.enabled = enabled;
   }
+
+  /// Whether the OS started this run as a login item.
+  bool atLogin = false;
+
+  @override
+  Future<bool> launchedAtLogin() async => atLogin;
 }
 
 /// Counts the checks asked instead of showing Sparkle: [supported] false like a phone, until a test makes it a Mac.

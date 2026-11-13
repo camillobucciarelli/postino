@@ -12,4 +12,7 @@ abstract interface class LaunchAtLogin() {
 
   /// Registers (or removes) Postino as a login item; throws when the OS refuses.
   Future<void> setEnabled({required bool enabled});
+
+  /// Whether the avvio al login started this run (#239): then the window stays hidden in the tray.
+  Future<bool> launchedAtLogin();
 }

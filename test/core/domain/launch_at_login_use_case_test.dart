@@ -51,6 +51,23 @@ void main() {
     expect(os.enabled, isTrue);
   });
 
+  test('a run started at login is told apart from one started by the user, whatever the switch says (#239)', () async {
+    os.atLogin = true;
+    expect(await useCase.launchedAtLogin(), isTrue);
+    await useCase.setEnabled(enabled: false);
+    expect(await useCase.launchedAtLogin(), isTrue);
+    os.atLogin = false;
+    await useCase.setEnabled(enabled: true);
+    expect(await useCase.launchedAtLogin(), isFalse);
+  });
+
+  test('where the platform has none, every run is started by the user', () async {
+    os
+      ..supported = false
+      ..atLogin = true;
+    expect(await useCase.launchedAtLogin(), isFalse);
+  });
+
   test('nothing happens where the platform has none', () async {
     os.supported = false;
     await useCase.applyDefault();

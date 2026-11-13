@@ -1,5 +1,6 @@
 // Avvio al login on Linux (#38): an XDG autostart entry, starting Postino hidden in the tray (#239).
 
+import 'package:file/file.dart' show FileSystemException;
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/desktop/xdg_launch_at_login.dart';
@@ -70,6 +71,23 @@ void main() {
         ..writeAsStringSync(old);
       XdgLaunchAtLogin(entry, '/elsewhere/postino', const []).upgrade();
       expect(entry.readAsStringSync(), old);
+    });
+
+    test('a failed write leaves it as it was', () {
+      var full = false;
+      final disk = MemoryFileSystem(
+        opHandle: (path, op) {
+          if (full && op == FileSystemOp.write) throw const FileSystemException('ENOSPC');
+        },
+      );
+      final file = disk.file('/home/u/.config/autostart/postino.desktop')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(old);
+      full = true;
+      XdgLaunchAtLogin(file, '/opt/postino', const []).upgrade();
+      full = false;
+      expect(file.readAsStringSync(), old);
+      expect(disk.file('${file.path}.new').existsSync(), isFalse);
     });
 
     test('missing, nothing is written', () {

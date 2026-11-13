@@ -39,16 +39,20 @@ class XdgLaunchAtLogin(final File _entry, final String _executable, final List<S
   Future<bool> launchedAtLogin() async => _arguments.contains(hidden);
 
   /// An entry written before #239 (this executable without [hidden]) gets it; the rest of the entry, a desktop's
-  /// "off" included, stays. Failing leaves the entry as it was: it still starts Postino, with its window.
+  /// "off" included, stays. Written aside, then renamed over it: failing leaves the entry as it was, which still starts
+  /// Postino, with its window.
   void upgrade() {
+    final next = _entry.fileSystem.file('${_entry.path}.new');
     try {
       if (!_entry.existsSync()) return;
       final old = 'Exec=${_quoted(_executable)}';
       final lines = _entry.readAsLinesSync();
       if (!lines.contains(old)) return;
-      _entry.writeAsStringSync('${[for (final l in lines) l == old ? _exec : l].join('\n')}\n');
+      next
+        ..writeAsStringSync('${[for (final l in lines) l == old ? _exec : l].join('\n')}\n', flush: true)
+        ..renameSync(_entry.path);
     } on FileSystemException {
-      return;
+      if (next.existsSync()) next.deleteSync();
     }
   }
 

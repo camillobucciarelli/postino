@@ -37,6 +37,7 @@ void main() {
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     tester.view
       ..physicalSize = const Size(1280, 800)
       ..devicePixelRatio = 1;
@@ -53,6 +54,5 @@ void main() {
 
     expect(window.shown, 1);
     expect(tester.widget<ConversationView>(find.byType(ConversationView)).conversationId, 't-a');
-    debugDefaultTargetPlatformOverride = null;
   });
 }

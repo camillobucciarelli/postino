@@ -177,20 +177,21 @@ Future<void> _runNotificationAction(NotificationActionTap tap) async {
 
 /// Desktop (#38): the avvio al login on by default, then the tray. Neither failing keeps Postino from running.
 Future<void> _startDesktop() async {
-  final launchAtLogin = getIt<LaunchAtLoginUseCase>();
   // A debug run would register the debug build as the login item: there the switch works, the default does not.
   if (!kDebugMode) {
     try {
-      await launchAtLogin.applyDefault();
+      await getIt<LaunchAtLoginUseCase>().applyDefault();
     } on Object catch (e) {
       debugPrint('[desktop] avvio al login: $e');
     }
   }
   // Started at login, the runner keeps the window hidden in the tray (#239); unknown reads as started by the user.
-  final hidden = await launchAtLogin.launchedAtLogin().catchError((Object e) {
+  var hidden = false;
+  try {
+    hidden = await getIt<LaunchAtLoginUseCase>().launchedAtLogin();
+  } on Object catch (e) {
     debugPrint('[desktop] avvio al login: $e');
-    return false;
-  });
+  }
   // The window exists and is shown after the first frame; the AppWindow resolves it then, before the tray exists.
   // A hidden window may draw no frame (frames stop while the app is hidden): it resolves now.
   if (!hidden) await WidgetsBinding.instance.endOfFrame;

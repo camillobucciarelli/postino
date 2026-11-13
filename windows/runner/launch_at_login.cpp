@@ -35,7 +35,10 @@ std::wstring Path() {
 }
 
 // postino (#239): the Run value starts it hidden in the tray.
-std::wstring Command() { return Path() + L" --hidden"; }
+#define POSTINO_HIDDEN "--hidden"
+
+// A narrow literal next to a wide one reads as wide.
+std::wstring Command() { return Path() + L" " POSTINO_HIDDEN; }
 
 // The Run value, empty when there is none.
 std::wstring RunValue() {
@@ -114,7 +117,7 @@ LSTATUS SetEnabled(bool enabled) {
 
 bool LaunchedAtLogin() {
   const std::vector<std::string> arguments = GetCommandLineArguments();
-  return std::find(arguments.begin(), arguments.end(), "--hidden") !=
+  return std::find(arguments.begin(), arguments.end(), POSTINO_HIDDEN) !=
          arguments.end();
 }
 

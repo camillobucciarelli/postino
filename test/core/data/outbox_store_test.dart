@@ -53,10 +53,19 @@ void main() {
     await MailStore(
       db,
     ).addAccount(const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0));
-    await db.accountsDao.remove('a');
+    await db.accountsDao.deleteByAccount('a');
 
     expect(await OutboxStore(db).adoptDraft('a', _msg, updatedAt: 5), isFalse);
     expect(await db.select(db.drafts).get(), isEmpty);
+  });
+
+  test('a message queued after its Account was removed is not kept', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    final s = OutboxStore(db);
+
+    expect(await s.enqueueOutgoing('a', _msg, version: 1, raw: 'RAW', sendAfter: 10), isFalse);
+    expect(await s.hasOutgoing('a'), isFalse);
   });
 
   test('an enqueued message is read back and counts as outgoing', () async {

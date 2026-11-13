@@ -52,3 +52,6 @@ app.*.map.json
 
 # Firma locale macOS (#76)
 macos/Runner/Configs/Local.xcconfig
+
+# FVM Version Cache
+.fvm/

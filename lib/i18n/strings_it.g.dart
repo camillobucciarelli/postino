@@ -81,6 +81,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$selettoreEtichette$it selettoreEtichette = Translations$selettoreEtichette$it.internal(_root);
 	late final Translations$etichetteAutomatiche$it etichetteAutomatiche = Translations$etichetteAutomatiche$it.internal(_root);
 	late final Translations$notifiche$it notifiche = Translations$notifiche$it.internal(_root);
+	late final Translations$cerca$it cerca = Translations$cerca$it.internal(_root);
 	late final Translations$conflitti$it conflitti = Translations$conflitti$it.internal(_root);
 	late final Translations$azioni$it azioni = Translations$azioni$it.internal(_root);
 	late final Translations$scorrimento$it scorrimento = Translations$scorrimento$it.internal(_root);
@@ -132,6 +133,9 @@ class Translations$onboarding$it {
 	/// it: 'Collega Gmail'
 	String get connectGmail => 'Collega Gmail';
 
+	/// it: 'Collega Outlook'
+	String get connectOutlook => 'Collega Outlook';
+
 	/// it: 'Collega iCloud'
 	String get connectIcloud => 'Collega iCloud';
 
@@ -159,6 +163,9 @@ class Translations$daRicollegare$it {
 	/// it: 'Da ricollegare'
 	String get status => 'Da ricollegare';
 
+	/// it: 'Microsoft non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.'
+	String get microsoftMessage => 'Microsoft non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.';
+
 	/// it: 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.'
 	String get passwordMessage => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.';
 }
@@ -183,14 +190,20 @@ class Translations$connect$it {
 	/// it: 'Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.'
 	String get missingPermission => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.';
 
-	/// it: 'Hai scelto un altro account Google: per ricollegare $address scegli quell'account.'
-	String wrongAccount({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.';
+	/// it: 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.'
+	String get missingPermissionMicrosoft => 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.';
+
+	/// it: 'Hai scelto un altro account: per ricollegare $address scegli quell'account.'
+	String wrongAccount({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.';
 
 	/// it: 'Qualcosa è andato storto: riprova.'
 	String get failed => 'Qualcosa è andato storto: riprova.';
 
 	/// it: 'Questo Account è già collegato.'
 	String get alreadyConnected => 'Questo Account è già collegato.';
+
+	/// it: 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.'
+	String get workAccount => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.';
 }
 
 // Path: offline
@@ -477,8 +490,8 @@ class Translations$composizione$it {
 	/// it: 'Annulla'
 	String get undo => 'Annulla';
 
-	/// it: 'Il messaggio supera il limite di $mb MB di Gmail'
-	String tooLarge({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail';
+	/// it: 'Il messaggio supera il limite di $mb MB del Provider'
+	String tooLarge({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB del Provider';
 
 	/// it: 'Invio non riuscito: riprova'
 	String get sendFailed => 'Invio non riuscito: riprova';
@@ -491,6 +504,12 @@ class Translations$composizione$it {
 
 	/// it: 'Allegati'
 	String get forwardedAttachments => 'Allegati';
+
+	/// it: '(one) {$n suggerimento} (other) {$n suggerimenti}'
+	String suggestions({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} suggerimento',
+		other: '${n} suggerimenti',
+	);
 }
 
 // Path: bozze
@@ -564,11 +583,41 @@ class Translations$impostazioni$it {
 	/// it: 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.'
 	String get launchAtLoginFailed => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.';
 
+	/// it: 'Notifiche immediate'
+	String get immediateNotifications => 'Notifiche immediate';
+
+	/// it: 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.'
+	String get immediateNotificationsBody => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.';
+
+	/// it: 'Il sistema non ha avviato le Notifiche immediate. Riprova.'
+	String get immediateNotificationsFailed => 'Il sistema non ha avviato le Notifiche immediate. Riprova.';
+
 	/// it: 'Cerca aggiornamenti'
 	String get checkForUpdates => 'Cerca aggiornamenti';
 
 	/// it: 'Cerca subito una nuova versione di Postino.'
 	String get checkForUpdatesBody => 'Cerca subito una nuova versione di Postino.';
+
+	/// it: 'Notifiche'
+	String get notifications => 'Notifiche';
+
+	/// it: 'Consentite'
+	String get notificationsAllowed => 'Consentite';
+
+	/// it: 'Non consentite: la posta nuova arriva senza avviso.'
+	String get notificationsDenied => 'Non consentite: la posta nuova arriva senza avviso.';
+
+	/// it: 'Consenti'
+	String get notificationsAllow => 'Consenti';
+
+	/// it: 'Prima Azione della notifica'
+	String get notificationActionFirst => 'Prima Azione della notifica';
+
+	/// it: 'Seconda Azione della notifica'
+	String get notificationActionSecond => 'Seconda Azione della notifica';
+
+	/// it: 'Nessuna'
+	String get notificationActionNone => 'Nessuna';
 
 	/// it: 'Sincronizzazione'
 	String get syncSection => 'Sincronizzazione';
@@ -797,6 +846,62 @@ class Translations$notifiche$it {
 
 	/// it: 'Non ora'
 	String get permissionLater => 'Non ora';
+
+	/// it: '(one) {$n nuovo messaggio} (other) {$n nuovi messaggi}'
+	String newMessages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} nuovo messaggio',
+		other: '${n} nuovi messaggi',
+	);
+
+	/// it: 'Postino in ascolto'
+	String get listeningChannel => 'Postino in ascolto';
+
+	/// it: 'Postino in ascolto'
+	String get listeningTitle => 'Postino in ascolto';
+
+	/// it: 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.'
+	String get listeningText => 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.';
+}
+
+// Path: cerca
+class Translations$cerca$it {
+	Translations$cerca$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Cerca'
+	String get open => 'Cerca';
+
+	/// it: 'Cerca'
+	String get title => 'Cerca';
+
+	/// it: 'Cerca nella posta'
+	String get field => 'Cerca nella posta';
+
+	/// it: 'Tutti gli Account'
+	String get scopeAll => 'Tutti gli Account';
+
+	/// it: 'Cerca nella posta'
+	String get idleTitle => 'Cerca nella posta';
+
+	/// it: 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.'
+	String get idleBody => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.';
+
+	/// it: 'Nessun risultato'
+	String get emptyTitle => 'Nessun risultato';
+
+	/// it: 'Prova con altre parole o con l'inizio di una parola.'
+	String get emptyBody => 'Prova con altre parole o con l\'inizio di una parola.';
+
+	/// it: '(one) {$n risultato} (other) {$n risultati}'
+	String results({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${n} risultato',
+		other: '${n} risultati',
+	);
+
+	late final Translations$cerca$provider$it provider = Translations$cerca$provider$it.internal(_root);
 }
 
 // Path: conflitti
@@ -1027,6 +1132,9 @@ class Translations$passwordForm$it {
 
 	/// it: 'Per un indirizzo Gmail usa «Collega Gmail».'
 	String get useGmail => 'Per un indirizzo Gmail usa «Collega Gmail».';
+
+	/// it: 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».'
+	String get useMicrosoft => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».';
 }
 
 // Path: accounts
@@ -1054,6 +1162,27 @@ class Translations$accounts$it {
 
 	/// it: 'Microsoft'
 	String get microsoft => 'Microsoft';
+
+	/// it: 'Rimuovi l'Account $address'
+	String remove({required Object address}) => 'Rimuovi l\'Account ${address}';
+
+	/// it: 'Rimuovere l'Account $name?'
+	String removeTitle({required Object name}) => 'Rimuovere l\'Account ${name}?';
+
+	/// it: 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.'
+	String get removeMessage => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.';
+
+	/// it: 'Le modifiche non ancora inviate al server vanno perse.'
+	String get removeNote => 'Le modifiche non ancora inviate al server vanno perse.';
+
+	/// it: 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.'
+	String get removeGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.';
+
+	/// it: 'Rimuovi'
+	String get removeConfirm => 'Rimuovi';
+
+	/// it: 'Annulla'
+	String get removeCancel => 'Annulla';
 }
 
 // Path: etichetteAutomatiche.model
@@ -1113,6 +1242,36 @@ class Translations$etichetteAutomatiche$model$it {
 	String get confirmWait => 'Aspetta il Wi-Fi';
 }
 
+// Path: cerca.provider
+class Translations$cerca$provider$it {
+	Translations$cerca$provider$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Cerco anche su $name…'
+	String searching({required Object name}) => 'Cerco anche su ${name}…';
+
+	/// it: 'Risultati solo locali: $name non è raggiungibile'
+	String unreachable({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile';
+
+	/// it: 'Mostrati i primi $n risultati di $name'
+	String capped({required Object n, required Object name}) => 'Mostrati i primi ${n} risultati di ${name}';
+
+	/// it: 'Premi Invio nel campo per riprovare.'
+	String get retry => 'Premi Invio nel campo per riprovare.';
+
+	/// it: 'Mostra altri'
+	String get more => 'Mostra altri';
+
+	/// it: 'Va ricollegato: accedi di nuovo dall'avviso nella lista della posta.'
+	String get reconnect => 'Va ricollegato: accedi di nuovo dall\'avviso nella lista della posta.';
+
+	/// it: 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.'
+	String get later => 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.';
+}
+
 // Path: conflitti.values
 class Translations$conflitti$values$it {
 	Translations$conflitti$values$it.internal(this._root);
@@ -1169,20 +1328,24 @@ extension on Translations {
 			'etichette' => 'Etichette',
 			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',
+			'onboarding.connectOutlook' => 'Collega Outlook',
 			'onboarding.connectIcloud' => 'Collega iCloud',
 			'onboarding.connectImap' => 'Altro IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} è da ricollegare',
 			'daRicollegare.message' => 'Google non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'daRicollegare.signIn' => 'Accedi',
 			'daRicollegare.status' => 'Da ricollegare',
+			'daRicollegare.microsoftMessage' => 'Microsoft non accetta più l\'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'daRicollegare.passwordMessage' => 'Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi.',
 			'connect.title' => 'Collegamento non riuscito',
 			'connect.missingSetting' => ({required Object setting}) => 'Manca ${setting}: avvia Postino con --dart-define=${setting}=… (vedi README).',
 			'connect.offline' => 'Nessuna connessione: riprova quando sei online.',
 			'connect.missingPermission' => 'Serve l\'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.',
-			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google: per ricollegare ${address} scegli quell\'account.',
+			'connect.missingPermissionMicrosoft' => 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.',
+			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
 			'connect.alreadyConnected' => 'Questo Account è già collegato.',
+			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
 			'list.loading' => 'Caricamento dei messaggi',
@@ -1264,11 +1427,12 @@ extension on Translations {
 			'composizione.send' => 'Invia',
 			'composizione.queued' => 'In attesa d\'invio',
 			'composizione.undo' => 'Annulla',
-			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB di Gmail',
+			'composizione.tooLarge' => ({required Object mb}) => 'Il messaggio supera il limite di ${mb} MB del Provider',
 			'composizione.sendFailed' => 'Invio non riuscito: riprova',
 			'composizione.offlineAttachments' => 'Sei offline: gli allegati dell\'inoltro non sono ancora scaricati, riprova in rete',
 			'composizione.noRecipient' => 'Aggiungi almeno un destinatario',
 			'composizione.forwardedAttachments' => 'Allegati',
+			'composizione.suggestions' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} suggerimento', other: '${n} suggerimenti', ), 
 			'bozze.title' => 'Bozze',
 			'bozze.emptyTitle' => 'Nessuna bozza',
 			'bozze.emptyBody' => 'Le bozze che scrivi restano qui finché non le invii.',
@@ -1284,8 +1448,18 @@ extension on Translations {
 			'impostazioni.launchAtLogin' => 'Avvio al login',
 			'impostazioni.launchAtLoginBody' => 'Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.',
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
+			'impostazioni.immediateNotifications' => 'Notifiche immediate',
+			'impostazioni.immediateNotificationsBody' => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.',
+			'impostazioni.immediateNotificationsFailed' => 'Il sistema non ha avviato le Notifiche immediate. Riprova.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
+			'impostazioni.notifications' => 'Notifiche',
+			'impostazioni.notificationsAllowed' => 'Consentite',
+			'impostazioni.notificationsDenied' => 'Non consentite: la posta nuova arriva senza avviso.',
+			'impostazioni.notificationsAllow' => 'Consenti',
+			'impostazioni.notificationActionFirst' => 'Prima Azione della notifica',
+			'impostazioni.notificationActionSecond' => 'Seconda Azione della notifica',
+			'impostazioni.notificationActionNone' => 'Nessuna',
 			'impostazioni.syncSection' => 'Sincronizzazione',
 			'impostazioni.syncTitle' => 'Sincronizza su…',
 			'impostazioni.syncNone' => 'Nessuno',
@@ -1361,6 +1535,26 @@ extension on Translations {
 			'notifiche.permissionBody' => 'Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.',
 			'notifiche.permissionAllow' => 'Continua',
 			'notifiche.permissionLater' => 'Non ora',
+			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} nuovo messaggio', other: '${n} nuovi messaggi', ), 
+			'notifiche.listeningChannel' => 'Postino in ascolto',
+			'notifiche.listeningTitle' => 'Postino in ascolto',
+			'notifiche.listeningText' => 'La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata.',
+			'cerca.open' => 'Cerca',
+			'cerca.title' => 'Cerca',
+			'cerca.field' => 'Cerca nella posta',
+			'cerca.scopeAll' => 'Tutti gli Account',
+			'cerca.idleTitle' => 'Cerca nella posta',
+			'cerca.idleBody' => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.',
+			'cerca.emptyTitle' => 'Nessun risultato',
+			'cerca.emptyBody' => 'Prova con altre parole o con l\'inizio di una parola.',
+			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} risultato', other: '${n} risultati', ), 
+			'cerca.provider.searching' => ({required Object name}) => 'Cerco anche su ${name}…',
+			'cerca.provider.unreachable' => ({required Object name}) => 'Risultati solo locali: ${name} non è raggiungibile',
+			'cerca.provider.capped' => ({required Object n, required Object name}) => 'Mostrati i primi ${n} risultati di ${name}',
+			'cerca.provider.retry' => 'Premi Invio nel campo per riprovare.',
+			'cerca.provider.more' => 'Mostra altri',
+			'cerca.provider.reconnect' => 'Va ricollegato: accedi di nuovo dall\'avviso nella lista della posta.',
+			'cerca.provider.later' => 'Il Provider ha chiesto una pausa: riprova tra qualche minuto.',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} conflitto', other: '${n} conflitti', ), 
 			'conflitti.bannerMessage' => 'Hai cambiato dei messaggi offline e nel frattempo sono cambiati anche altrove.',
 			'conflitti.open' => 'Vedi',
@@ -1433,12 +1627,20 @@ extension on Translations {
 			'passwordForm.unreachable' => 'Server non raggiungibile: controlla la connessione, l\'host e la porta.',
 			'passwordForm.alreadyConnected' => 'Questo Account è già collegato.',
 			'passwordForm.useGmail' => 'Per un indirizzo Gmail usa «Collega Gmail».',
+			'passwordForm.useMicrosoft' => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».',
 			'accounts.section' => 'Account',
 			'accounts.add' => 'Aggiungi Account',
 			'accounts.gmail' => 'Gmail',
 			'accounts.icloud' => 'iCloud',
 			'accounts.imap' => 'IMAP',
 			'accounts.microsoft' => 'Microsoft',
+			'accounts.remove' => ({required Object address}) => 'Rimuovi l\'Account ${address}',
+			'accounts.removeTitle' => ({required Object name}) => 'Rimuovere l\'Account ${name}?',
+			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.',
+			'accounts.removeNote' => 'Le modifiche non ancora inviate al server vanno perse.',
+			'accounts.removeGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.',
+			'accounts.removeConfirm' => 'Rimuovi',
+			'accounts.removeCancel' => 'Annulla',
 			_ => null,
 		};
 	}

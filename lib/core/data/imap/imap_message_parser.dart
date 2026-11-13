@@ -47,6 +47,10 @@ ImapParsed parseImapMessage(MimeMessage mime, {required String id, required Stri
       _ => null,
     },
     references: _ids(header('references')),
+    // The whole message says it; the header alone only guesses from `multipart/mixed` (#206).
+    hasAttachments: body != null
+        ? body.attachments?.isNotEmpty
+        : mime.getHeaderContentType()?.mediaType.sub == MediaSubtype.multipartMixed,
   );
   return (message: message, inReplyTo: _ids(header('in-reply-to')).firstOrNull, body: body);
 }

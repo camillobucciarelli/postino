@@ -908,6 +908,20 @@ class $MessagesTable extends Messages
       'CHECK ("is_starred" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _hasAttachmentsMeta = const VerificationMeta(
+    'hasAttachments',
+  );
+  @override
+  late final GeneratedColumn<bool> hasAttachments = GeneratedColumn<bool>(
+    'has_attachments',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_attachments" IN (0, 1))',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     accountId,
@@ -926,6 +940,7 @@ class $MessagesTable extends Messages
     date,
     isRead,
     isStarred,
+    hasAttachments,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1054,6 +1069,15 @@ class $MessagesTable extends Messages
     } else if (isInserting) {
       context.missing(_isStarredMeta);
     }
+    if (data.containsKey('has_attachments')) {
+      context.handle(
+        _hasAttachmentsMeta,
+        hasAttachments.isAcceptableOrUnknown(
+          data['has_attachments']!,
+          _hasAttachmentsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1127,6 +1151,10 @@ class $MessagesTable extends Messages
         DriftSqlType.bool,
         data['${effectivePrefix}is_starred'],
       )!,
+      hasAttachments: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_attachments'],
+      ),
     );
   }
 
@@ -1163,6 +1191,10 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
   final int date;
   final bool isRead;
   final bool isStarred;
+
+  /// Whether the message has attachments; null until known (rows before v23, Providers that do not say): the
+  /// `has_attachments` of the Provider, or its structure, or the downloaded body, whichever came last (#206).
+  final bool? hasAttachments;
   const MessageRow({
     required this.accountId,
     required this.id,
@@ -1180,6 +1212,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     required this.date,
     required this.isRead,
     required this.isStarred,
+    this.hasAttachments,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1206,6 +1239,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     map['date'] = Variable<int>(date);
     map['is_read'] = Variable<bool>(isRead);
     map['is_starred'] = Variable<bool>(isStarred);
+    if (!nullToAbsent || hasAttachments != null) {
+      map['has_attachments'] = Variable<bool>(hasAttachments);
+    }
     return map;
   }
 
@@ -1233,6 +1269,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       date: Value(date),
       isRead: Value(isRead),
       isStarred: Value(isStarred),
+      hasAttachments: hasAttachments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hasAttachments),
     );
   }
 
@@ -1258,6 +1297,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       date: serializer.fromJson<int>(json['date']),
       isRead: serializer.fromJson<bool>(json['isRead']),
       isStarred: serializer.fromJson<bool>(json['isStarred']),
+      hasAttachments: serializer.fromJson<bool?>(json['hasAttachments']),
     );
   }
   @override
@@ -1280,6 +1320,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       'date': serializer.toJson<int>(date),
       'isRead': serializer.toJson<bool>(isRead),
       'isStarred': serializer.toJson<bool>(isStarred),
+      'hasAttachments': serializer.toJson<bool?>(hasAttachments),
     };
   }
 
@@ -1300,6 +1341,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     int? date,
     bool? isRead,
     bool? isStarred,
+    Value<bool?> hasAttachments = const Value.absent(),
   }) => MessageRow(
     accountId: accountId ?? this.accountId,
     id: id ?? this.id,
@@ -1317,6 +1359,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     date: date ?? this.date,
     isRead: isRead ?? this.isRead,
     isStarred: isStarred ?? this.isStarred,
+    hasAttachments: hasAttachments.present
+        ? hasAttachments.value
+        : this.hasAttachments,
   );
   MessageRow copyWithCompanion(MessagesCompanion data) {
     return MessageRow(
@@ -1344,6 +1389,9 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
       date: data.date.present ? data.date.value : this.date,
       isRead: data.isRead.present ? data.isRead.value : this.isRead,
       isStarred: data.isStarred.present ? data.isStarred.value : this.isStarred,
+      hasAttachments: data.hasAttachments.present
+          ? data.hasAttachments.value
+          : this.hasAttachments,
     );
   }
 
@@ -1365,7 +1413,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           ..write('snippet: $snippet, ')
           ..write('date: $date, ')
           ..write('isRead: $isRead, ')
-          ..write('isStarred: $isStarred')
+          ..write('isStarred: $isStarred, ')
+          ..write('hasAttachments: $hasAttachments')
           ..write(')'))
         .toString();
   }
@@ -1388,6 +1437,7 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
     date,
     isRead,
     isStarred,
+    hasAttachments,
   );
   @override
   bool operator ==(Object other) =>
@@ -1408,7 +1458,8 @@ class MessageRow extends DataClass implements Insertable<MessageRow> {
           other.snippet == this.snippet &&
           other.date == this.date &&
           other.isRead == this.isRead &&
-          other.isStarred == this.isStarred);
+          other.isStarred == this.isStarred &&
+          other.hasAttachments == this.hasAttachments);
 }
 
 class MessagesCompanion extends UpdateCompanion<MessageRow> {
@@ -1428,6 +1479,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
   final Value<int> date;
   final Value<bool> isRead;
   final Value<bool> isStarred;
+  final Value<bool?> hasAttachments;
   final Value<int> rowid;
   const MessagesCompanion({
     this.accountId = const Value.absent(),
@@ -1446,6 +1498,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     this.date = const Value.absent(),
     this.isRead = const Value.absent(),
     this.isStarred = const Value.absent(),
+    this.hasAttachments = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MessagesCompanion.insert({
@@ -1465,6 +1518,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     required int date,
     required bool isRead,
     required bool isStarred,
+    this.hasAttachments = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : accountId = Value(accountId),
        id = Value(id),
@@ -1494,6 +1548,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Expression<int>? date,
     Expression<bool>? isRead,
     Expression<bool>? isStarred,
+    Expression<bool>? hasAttachments,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1513,6 +1568,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       if (date != null) 'date': date,
       if (isRead != null) 'is_read': isRead,
       if (isStarred != null) 'is_starred': isStarred,
+      if (hasAttachments != null) 'has_attachments': hasAttachments,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1534,6 +1590,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     Value<int>? date,
     Value<bool>? isRead,
     Value<bool>? isStarred,
+    Value<bool?>? hasAttachments,
     Value<int>? rowid,
   }) {
     return MessagesCompanion(
@@ -1553,6 +1610,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
       date: date ?? this.date,
       isRead: isRead ?? this.isRead,
       isStarred: isStarred ?? this.isStarred,
+      hasAttachments: hasAttachments ?? this.hasAttachments,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1608,6 +1666,9 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
     if (isStarred.present) {
       map['is_starred'] = Variable<bool>(isStarred.value);
     }
+    if (hasAttachments.present) {
+      map['has_attachments'] = Variable<bool>(hasAttachments.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1633,6 +1694,7 @@ class MessagesCompanion extends UpdateCompanion<MessageRow> {
           ..write('date: $date, ')
           ..write('isRead: $isRead, ')
           ..write('isStarred: $isStarred, ')
+          ..write('hasAttachments: $hasAttachments, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6512,6 +6574,8 @@ abstract class _$PostinoDatabase extends GeneratedDatabase {
   late final MessageEmbeddingsDao messageEmbeddingsDao = MessageEmbeddingsDao(
     this as PostinoDatabase,
   );
+  late final SearchDao searchDao = SearchDao(this as PostinoDatabase);
+  late final ContactsDao contactsDao = ContactsDao(this as PostinoDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6963,6 +7027,7 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   required int date,
   required bool isRead,
   required bool isStarred,
+  Value<bool?> hasAttachments,
   Value<int> rowid,
 });
 typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
@@ -6982,6 +7047,7 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<int> date,
   Value<bool> isRead,
   Value<bool> isStarred,
+  Value<bool?> hasAttachments,
   Value<int> rowid,
 });
 
@@ -7071,6 +7137,11 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<bool> get isStarred => $composableBuilder(
     column: $table.isStarred,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasAttachments => $composableBuilder(
+    column: $table.hasAttachments,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7163,6 +7234,11 @@ class $$MessagesTableOrderingComposer
     column: $table.isStarred,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get hasAttachments => $composableBuilder(
+    column: $table.hasAttachments,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MessagesTableAnnotationComposer
@@ -7229,6 +7305,11 @@ class $$MessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get isStarred =>
       $composableBuilder(column: $table.isStarred, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasAttachments => $composableBuilder(
+    column: $table.hasAttachments,
+    builder: (column) => column,
+  );
 }
 
 class $$MessagesTableTableManager
@@ -7278,6 +7359,7 @@ class $$MessagesTableTableManager
                 Value<int> date = const Value.absent(),
                 Value<bool> isRead = const Value.absent(),
                 Value<bool> isStarred = const Value.absent(),
+                Value<bool?> hasAttachments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MessagesCompanion(
                 accountId: accountId,
@@ -7296,6 +7378,7 @@ class $$MessagesTableTableManager
                 date: date,
                 isRead: isRead,
                 isStarred: isStarred,
+                hasAttachments: hasAttachments,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7316,6 +7399,7 @@ class $$MessagesTableTableManager
                 required int date,
                 required bool isRead,
                 required bool isStarred,
+                Value<bool?> hasAttachments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MessagesCompanion.insert(
                 accountId: accountId,
@@ -7334,6 +7418,7 @@ class $$MessagesTableTableManager
                 date: date,
                 isRead: isRead,
                 isStarred: isStarred,
+                hasAttachments: hasAttachments,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

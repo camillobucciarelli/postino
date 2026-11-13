@@ -30,7 +30,7 @@ void main() {
   });
 
   test('save and adopt for an Account removed meanwhile write nothing and say so', () async {
-    await db.accountsDao.remove('a');
+    await db.accountsDao.deleteByAccount('a');
     expect(await db.draftsDao.save('a', _draft('<x>'), updatedAt: 10), isFalse);
     expect(await db.draftsDao.adopt('a', _draft('<y>'), updatedAt: 11), isFalse);
     expect(await db.select(db.drafts).get(), isEmpty);

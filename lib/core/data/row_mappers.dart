@@ -1,4 +1,5 @@
 import '../domain/account.dart';
+import '../domain/inbox_repository.dart' show InboxEntry;
 import '../domain/message.dart';
 import 'postino_database.dart';
 
@@ -24,7 +25,28 @@ Message messageOf(MessageRow r, [List<String> labelIds = const [inboxLabelId], S
   date: DateTime.fromMillisecondsSinceEpoch(r.date, isUtc: true),
   replyTo: r.replyTo,
   references: lines(r.references ?? ''),
+  hasAttachments: r.hasAttachments,
 );
+
+/// One row per Conversazione of [rows] (message, its Account and label ids), which come newest first: the first of
+/// each Conversazione is its latest message, and keeps the order.
+// ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
+List<InboxEntry> inboxEntriesOf(List<(AccountRow, MessageRow, List<String>)> rows) {
+  final groups = <(String, String), List<(AccountRow, MessageRow, List<String>)>>{};
+  for (final r in rows) {
+    (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
+  }
+  return [
+    for (final g in groups.values)
+      InboxEntry(
+        account: accountOf(g.first.$1),
+        // The Conversazione's labels: those of any of its messages.
+        message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
+        count: g.length,
+        unread: g.any((r) => !r.$2.isRead),
+      ),
+  ];
+}
 
 /// The addresses a row keeps one per line.
 List<String> lines(String s) => [

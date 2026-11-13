@@ -19,11 +19,14 @@ import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/send_limit.dart';
 
 import '../../../support/fake_mail_provider.dart' show copyOf;
 import '../../../support/fake_platform.dart';
+import '../../../support/gmail_query_eval.dart';
 import '../../../support/gmail_recorded.dart';
 import '../../domain/mail_provider_contract.dart';
+import '../../domain/mail_provider_search_contract.dart';
 
 /// Google as seen over HTTP: the token endpoint and a simulated Gmail API mailbox,
 /// shaped like the recorded responses.
@@ -200,7 +203,8 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
         for (final m in _mailbox.values)
           if ((q['labelIds'] == null || _labels(m).contains(q['labelIds'])) &&
               (!(q['q'] ?? '').startsWith('rfc822msgid:') ||
-                  'rfc822msgid:${m.messageId.replaceAll(RegExp('[<>]'), '')}' == q['q']))
+                  'rfc822msgid:${m.messageId.replaceAll(RegExp('[<>]'), '')}' == q['q']) &&
+              (!_isSearch(q['q']) || _searchMatches(m, q['q']!)))
             {'id': m.id, 'threadId': m.conversationId},
       ], q),
       ['messages', 'send'] => _send((jsonDecode(r.body) as Map<String, dynamic>)['raw'] as String),
@@ -257,6 +261,15 @@ class GmailHarness({String access = 'ya29.initial', Duration validFor = const Du
       _ => gmailFixture('not_found'),
     };
   }
+
+  /// A search of the user (#207), not the sync's window nor a Message-ID lookup.
+  static bool _isSearch(String? q) => q != null && !q.startsWith('rfc822msgid:') && !RegExp(r'^after:\d+$').hasMatch(q);
+
+  /// What Gmail's search finds, newest first as Gmail lists it; never Spam nor Cestino (`includeSpamTrash` false).
+  bool _searchMatches(Message m, String q) =>
+      !m.labelIds.contains(spamLabelId) &&
+      !m.labelIds.contains(trashLabelId) &&
+      gmailQueryMatches(m, q, attached: _attached.containsKey(m.id));
 
   http.Response _paged(String key, List<Object> all, Map<String, String> q, [Map<String, Object> extra = const {}]) {
     final from = int.parse(q['pageToken'] ?? '0');
@@ -399,6 +412,7 @@ void main() {
   mailProviderSendContract('GmailProvider', GmailHarness.new);
   mailProviderLabelContract('GmailProvider', GmailHarness.new);
   mailProviderActionContract('GmailProvider', GmailHarness.new);
+  mailProviderSearchContract('GmailProvider', GmailHarness.new);
 
   test('a 401 from Gmail refreshes the token once and retries', () async {
     final h = GmailHarness(access: 'ya29.stale');

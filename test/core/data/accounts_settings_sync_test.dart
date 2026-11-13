@@ -25,7 +25,7 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
   final keychain = FakeSecureStore();
   late final settings = DeviceSettingsStore(db);
   late final sync = SettingsSync(db, settings, clock, FakeConnectivity(), backendFor: (_) => backend);
-  late final mirror = AccountsSettingsMirror(db, keychain, settings, AccountsLock());
+  late final mirror = AccountsSettingsMirror(db, MailStore(db), keychain, settings, AccountsLock(), FakeAttachments());
 
   Future<void> start() async {
     await settings.setSettingsSyncAccount('a1');

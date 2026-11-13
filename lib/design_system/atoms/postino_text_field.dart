@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 import '../tokens/postino_icons.dart';
@@ -51,6 +52,9 @@ class const PostinoTextField({
 
   /// Chiamata con Invio (solo su una riga).
   final ValueChanged<String>? onSubmitted,
+
+  /// The keyboard's action key; «Fine» by default, «Cerca» for a search.
+  final TextInputAction? textInputAction,
 }) extends StatelessWidget {
   /// Crea il campo di testo.
   this;
@@ -95,7 +99,7 @@ class const PostinoTextField({
                 minLines: multiline ? 3 : 1,
                 maxLines: multiline ? null : 1,
                 keyboardType: multiline ? TextInputType.multiline : keyboardType ?? TextInputType.text,
-                textInputAction: multiline ? TextInputAction.newline : TextInputAction.done,
+                textInputAction: multiline ? TextInputAction.newline : textInputAction ?? TextInputAction.done,
                 style: PostinoText.preview.copyWith(color: c.ink),
                 decoration: InputDecoration(
                   isDense: true,

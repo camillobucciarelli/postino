@@ -7,7 +7,13 @@ import '../../domain/result.dart';
 import '../mail_store.dart';
 
 /// The Bozza to resume (#35): the local copy, or the Provider's when it is newer and nothing here waits to go.
-class DraftOpener(final MailStore _store, final OutboxRepository _outbox) {
+class DraftOpener(
+  final MailStore _store,
+  final OutboxRepository _outbox, {
+
+  /// The Account is being removed (#174): a download that ends then is not written.
+  required final bool Function(String accountId) _removed,
+}) {
   Future<Result<OutgoingMessage>> open(Account account, String messageId, MailProvider provider) async {
     // ponytail: no guard on a queued Message-ID; the Bozze list hides it (watchAll) and Inviati reopens through cancelSend.
     final accountId = account.id;
@@ -38,6 +44,7 @@ class DraftOpener(final MailStore _store, final OutboxRepository _outbox) {
     if (body == null) {
       switch (await provider.fetchBody(remote.message.id)) {
         case Ok(:final value):
+          if (_removed(accountId)) return const Err(NotFoundFailure());
           body = value;
           await _store.saveBody(accountId, remote.message.id, value);
         case Err(:final failure):
@@ -62,8 +69,9 @@ class DraftOpener(final MailStore _store, final OutboxRepository _outbox) {
         BodyKind.testo => plainToHtml(body.content),
       },
     );
-    // The Account removed while the body was downloading: no Bozza to open.
-    if (!await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch)) {
+    // The Account removed while the body was downloading, here or from another device: no Bozza to open.
+    if (_removed(accountId) ||
+        !await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch)) {
       return const Err(NotFoundFailure());
     }
     return Ok(draft);

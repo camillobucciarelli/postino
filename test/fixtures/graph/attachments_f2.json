@@ -1,0 +1,59 @@
+{
+  "status": 200,
+  "body": {
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "att-1",
+        "name": "Preventivo.pdf",
+        "contentType": "application/pdf",
+        "size": 19,
+        "isInline": false,
+        "contentId": null
+      },
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "att-2",
+        "name": "logo.png",
+        "contentType": "image/png",
+        "size": 4,
+        "isInline": true,
+        "contentId": "logo-1"
+      },
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "att-3",
+        "name": "",
+        "contentType": "application/pdf",
+        "size": 4,
+        "isInline": false,
+        "contentId": null
+      },
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "att-4",
+        "name": "vuoto.txt",
+        "contentType": "text/plain",
+        "size": 0,
+        "isInline": false,
+        "contentId": null
+      },
+      {
+        "@odata.type": "#microsoft.graph.itemAttachment",
+        "id": "att-5",
+        "name": "Re: cena",
+        "contentType": null,
+        "size": 20,
+        "isInline": false
+      },
+      {
+        "@odata.type": "#microsoft.graph.referenceAttachment",
+        "id": "att-6",
+        "name": "Foto vacanza",
+        "contentType": "text/plain",
+        "size": 0,
+        "isInline": false
+      }
+    ]
+  }
+}

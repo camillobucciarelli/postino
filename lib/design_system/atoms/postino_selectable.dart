@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 /// Esc over a selection: the first press clears it (the layout asks the focus for this intent

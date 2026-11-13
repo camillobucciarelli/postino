@@ -9,6 +9,8 @@ Finché l'app è aperta (mobile in primo piano, desktop aperto o nella tray) ogn
 
 Gli scope OAuth si allargano di conseguenza: per Gmail `https://mail.google.com/` (al posto di `gmail.modify`), per Microsoft `IMAP.AccessAsUser.All` in aggiunta a `Mail.ReadWrite` e `Mail.Send`, perché IDLE passa da IMAP.
 
+Eccezione per la v1 (decisione dell'owner sull'issue [#179](https://github.com/camillobucciarelli/postino/issues/179)): per gli Account Microsoft personali si chiedono solo `openid email offline_access User.Read Mail.ReadWrite Mail.Send`, **senza** `IMAP.AccessAsUser.All`. Microsoft sincronizza con il solo polling ogni 60 secondi, senza segnale IDLE; se servirà, lo scope si aggiunge con un nuovo consenso.
+
 La coda offline conserva intenti idempotenti (per esempio "assicurati che sia archiviato"), non operazioni. Ogni intento in coda salva anche il valore che il messaggio aveva quando è stato accodato; più intenti sullo stesso attributo dello stesso messaggio si fondono, vince l'ultimo. Al replay, se il Provider ha ancora quel valore (o già il valore voluto) l'intento si applica; se ha un valore diverso, cioè è stato modificato altrove, nasce un Conflitto: l'intento resta sospeso finché l'utente sceglie se tenere la propria modifica o quella del Provider. L'intento viene scartato in silenzio solo se il messaggio di destinazione non esiste più (Elimina quindi non genera mai Conflitti); i messaggi in coda si riconoscono dal Message-ID. Oltre ai Conflitti, solo un invio fallito viene mostrato all'utente.
 
 Quando un Provider rifiuta l'accesso a un Account (password cambiata, accesso revocato), l'Account diventa **Da ricollegare**: la sua sincronizzazione si ferma da sola, la posta resta leggibile e la coda attende. Un Banner nella sua posta in arrivo e un punto nell'AccountSwitcher portano ad accedere di nuovo.
@@ -23,5 +25,5 @@ Quando un Provider rifiuta l'accesso a un Account (password cambiata, accesso re
 ## Conseguenze
 
 - La schermata di consenso mostra scope più ampi.
-- Due connessioni per ogni Account Google o Microsoft (IDLE + API).
+- Due connessioni per ogni Account Google (IDLE + API); per Microsoft in v1 solo le chiamate a Graph, senza IDLE.
 - Il comportamento in background su mobile non cambia (ADR 0001).

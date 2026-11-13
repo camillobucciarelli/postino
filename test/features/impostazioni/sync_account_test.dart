@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,10 +120,11 @@ void main() {
   testWidgets('from the keyboard: Enter opens, the ticked row has the focus, Enter picks, Esc closes', (tester) async {
     final h = await _start(tester);
     h.consent.address = 'a1@example.com';
-    // Focus order of the screen: the back arrow, «Aggiungi Account», then the entry.
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    // Focus order of the screen: the back arrow, the Impostazioni del dispositivo, «Rimuovi» of the two Accounts,
+    // «Aggiungi Account», then the entry.
+    for (var i = 0; i < 6; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    }
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();

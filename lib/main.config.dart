@@ -18,6 +18,9 @@ import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/accounts_settings_mirror.dart' as _i400;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
+import 'package:postino/core/data/channel_immediate_notifications.dart'
+    as _i103;
+import 'package:postino/core/data/contacts_store.dart' as _i863;
 import 'package:postino/core/data/desktop/app_updater_module.dart' as _i429;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
@@ -25,19 +28,24 @@ import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
+import 'package:postino/core/data/gmail/google_revoke.dart' as _i960;
 import 'package:postino/core/data/imap/enough_connection_tester.dart' as _i782;
 import 'package:postino/core/data/imap/enough_server_discovery.dart' as _i26;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
 import 'package:postino/core/data/mail_store.dart' as _i385;
+import 'package:postino/core/data/microsoft/microsoft_consent.dart' as _i801;
 import 'package:postino/core/data/model_module.dart' as _i260;
 import 'package:postino/core/data/outbox_store.dart' as _i37;
 import 'package:postino/core/data/platform_services.dart' as _i524;
 import 'package:postino/core/data/postino_database.dart' as _i1028;
 import 'package:postino/core/data/report_sharer_module.dart' as _i439;
+import 'package:postino/core/data/search_store.dart' as _i934;
 import 'package:postino/core/data/settings_sync.dart' as _i311;
 import 'package:postino/core/data/swipe_actions_store.dart' as _i588;
 import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i27;
+import 'package:postino/core/data/sync/notification_cleanup.dart' as _i555;
+import 'package:postino/core/data/sync/periodic_schedule.dart' as _i190;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -46,19 +54,27 @@ import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
 import 'package:postino/core/domain/auto_labels_repository.dart' as _i205;
 import 'package:postino/core/domain/connection_tester.dart' as _i967;
+import 'package:postino/core/domain/contacts_repository.dart' as _i787;
 import 'package:postino/core/domain/error_log.dart' as _i346;
 import 'package:postino/core/domain/google_consent.dart' as _i902;
+import 'package:postino/core/domain/immediate_notifications.dart' as _i936;
+import 'package:postino/core/domain/immediate_notifications_use_case.dart'
+    as _i758;
 import 'package:postino/core/domain/inbox_repository.dart' as _i845;
 import 'package:postino/core/domain/launch_at_login.dart' as _i462;
 import 'package:postino/core/domain/launch_at_login_use_case.dart' as _i166;
 import 'package:postino/core/domain/mail_sync.dart' as _i705;
+import 'package:postino/core/domain/microsoft_consent.dart' as _i6;
 import 'package:postino/core/domain/model_download.dart' as _i96;
 import 'package:postino/core/domain/model_manager.dart' as _i689;
+import 'package:postino/core/domain/notification_action_use_case.dart' as _i927;
 import 'package:postino/core/domain/notifications.dart' as _i184;
 import 'package:postino/core/domain/open_conversation.dart' as _i350;
 import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
+import 'package:postino/core/domain/provider_search_use_case.dart' as _i51;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
+import 'package:postino/core/domain/search_repository.dart' as _i71;
 import 'package:postino/core/domain/server_discovery.dart' as _i221;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
@@ -101,6 +117,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i26.EnoughServerDiscovery(),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i936.ImmediateNotifications>(
+      () => _i103.ChannelImmediateNotifications(),
+      registerFor: {_prod},
+    );
     gh.singleton<_i398.Clock>(() => _i524.SystemClock(), registerFor: {_prod});
     gh.lazySingleton<_i398.BackgroundSender>(
       () => _i524.SystemBackgroundSender(),
@@ -128,6 +148,14 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i524.KeychainStore(),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i398.PeriodicSync>(
+      () => _i524.SystemPeriodicSync(),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i6.MicrosoftConsent>(
+      () => _i801.MicrosoftWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
+      registerFor: {_prod},
+    );
     gh.lazySingleton<_i739.SystemTray>(
       () => _i586.NativeSystemTray(),
       registerFor: {_prod},
@@ -143,6 +171,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i853.AppWindow>(
       () => _i634.NativeAppWindow(),
       registerFor: {_prod},
+    );
+    gh.lazySingleton<_i960.GoogleRevoke>(
+      () => _i960.GoogleRevoke(gh<_i519.Client>(), gh<_i398.Connectivity>()),
     );
     gh.singleton<_i902.GoogleConsent>(
       () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
@@ -205,11 +236,28 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i359.TrustedSendersRepository>(
       () => _i412.TrustedSendersStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i71.SearchRepository>(
+      () => _i934.SearchStore(gh<_i1028.PostinoDatabase>()),
+    );
     gh.lazySingleton<_i307.SettingsRepository>(
       () => _i207.DeviceSettingsStore(gh<_i1028.PostinoDatabase>()),
     );
+    gh.lazySingleton<_i27.NewMailNotifier>(
+      () => _i27.NewMailNotifier(
+        gh<_i385.MailStore>(),
+        gh<_i184.Notifications>(),
+        gh<_i350.OpenConversation>(),
+        gh<_i307.SettingsRepository>(),
+      ),
+    );
     gh.lazySingleton<_i845.InboxRepository>(
       () => mailStoreModule.inboxRepository(gh<_i385.MailStore>()),
+    );
+    gh.lazySingleton<_i190.PeriodicSchedule>(
+      () => _i190.PeriodicSchedule(
+        gh<_i385.MailStore>(),
+        gh<_i398.PeriodicSync>(),
+      ),
     );
     gh.lazySingleton<_i401.SwipeActionsRepository>(
       () => _i588.SwipeActionsStore(
@@ -217,11 +265,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
+    gh.factory<_i758.ImmediateNotificationsUseCase>(
+      () => _i758.ImmediateNotificationsUseCase(
+        gh<_i936.ImmediateNotifications>(),
+        gh<_i307.SettingsRepository>(),
+      ),
+    );
     gh.lazySingleton<_i205.AutoLabelsRepository>(
       () => _i452.AutoLabelsStore(
         gh<_i1028.PostinoDatabase>(),
         gh<_i398.Clock>(),
       ),
+    );
+    gh.lazySingleton<_i787.ContactsRepository>(
+      () =>
+          _i863.ContactsStore(gh<_i1028.PostinoDatabase>(), gh<_i398.Clock>()),
     );
     gh.lazySingleton<_i95.AutoLabeler>(
       () => _i95.AutoLabeler(
@@ -237,27 +295,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i96.ModelDownload>(),
       ),
     );
-    gh.lazySingleton<_i27.NewMailNotifier>(
-      () => _i27.NewMailNotifier(
-        gh<_i385.MailStore>(),
+    gh.lazySingleton<_i555.NotificationCleanup>(
+      () => _i555.NotificationCleanup(
+        gh<_i1028.PostinoDatabase>(),
         gh<_i184.Notifications>(),
-        gh<_i350.OpenConversation>(),
       ),
-    );
-    gh.lazySingleton<_i893.SyncEngine>(
-      () => _i893.SyncEngine(
-        gh<_i385.MailStore>(),
-        gh<_i700.OutboxRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i398.BackgroundSender>(),
-        gh<_i27.NewMailNotifier>(),
-        gh<_i95.AutoLabeler>(),
-        gh<_i346.ErrorLog>(),
-      ),
-    );
-    gh.lazySingleton<_i705.MailSync>(
-      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
     );
     gh.lazySingleton<_i311.SettingsSync>(
       () => _i311.SettingsSync(
@@ -273,26 +315,27 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i307.SettingsRepository>(),
       ),
     );
-    gh.lazySingleton<_i400.AccountsSettingsMirror>(
-      () => _i400.AccountsSettingsMirror(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.SecureStore>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i681.AccountsLock>(),
+    gh.lazySingleton<_i893.SyncEngine>(
+      () => _i893.SyncEngine(
+        gh<_i385.MailStore>(),
+        gh<_i700.OutboxRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i398.BackgroundSender>(),
+        gh<_i27.NewMailNotifier>(),
+        gh<_i555.NotificationCleanup>(),
+        gh<_i95.AutoLabeler>(),
+        gh<_i346.ErrorLog>(),
       ),
     );
-    gh.lazySingleton<_i382.AccountsRepository>(
-      () => _i413.AccountsService(
-        gh<_i385.MailStore>(),
-        gh<_i902.GoogleConsent>(),
-        gh<_i398.SecureStore>(),
-        gh<_i893.SyncEngine>(),
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i398.Clock>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i681.AccountsLock>(),
-        gh<_i221.ServerDiscovery>(),
-        gh<_i967.ConnectionTester>(),
+    gh.lazySingleton<_i705.MailSync>(
+      () => syncModule.mailSync(gh<_i893.SyncEngine>()),
+    );
+    gh.factory<_i927.NotificationActionUseCase>(
+      () => _i927.NotificationActionUseCase(
+        gh<_i705.MailSync>(),
+        gh<_i845.InboxRepository>(),
+        gh<_i184.Notifications>(),
       ),
     );
     gh.lazySingleton<_i812.ConversationLabelIntents>(
@@ -316,6 +359,23 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i696.AttachmentStorage>(),
       ),
     );
+    gh.lazySingleton<_i382.AccountsRepository>(
+      () => _i413.AccountsService(
+        gh<_i385.MailStore>(),
+        gh<_i902.GoogleConsent>(),
+        gh<_i6.MicrosoftConsent>(),
+        gh<_i398.SecureStore>(),
+        gh<_i893.SyncEngine>(),
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
+        gh<_i221.ServerDiscovery>(),
+        gh<_i967.ConnectionTester>(),
+        gh<_i960.GoogleRevoke>(),
+        gh<_i278.AttachmentRepository>(),
+      ),
+    );
     gh.factory<_i802.ReportProblemUseCase>(
       () => _i802.ReportProblemUseCase(
         gh<_i346.ErrorLog>(),
@@ -328,6 +388,22 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i114.SettingsSyncAccountUseCase(
         gh<_i382.AccountsRepository>(),
         gh<_i307.SettingsRepository>(),
+      ),
+    );
+    gh.factory<_i51.ProviderSearchUseCase>(
+      () => _i51.ProviderSearchUseCase(
+        gh<_i382.AccountsRepository>(),
+        gh<_i705.MailSync>(),
+      ),
+    );
+    gh.lazySingleton<_i400.AccountsSettingsMirror>(
+      () => _i400.AccountsSettingsMirror(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i385.MailStore>(),
+        gh<_i398.SecureStore>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
+        gh<_i278.AttachmentRepository>(),
       ),
     );
     return this;

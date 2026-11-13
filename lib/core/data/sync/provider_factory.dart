@@ -5,8 +5,8 @@ import '../../domain/mail_provider.dart';
 import '../gmail/gmail_provider.dart';
 import '../imap/imap_provider.dart';
 import '../imap/imap_session.dart';
-import '../imap/unsynced_provider.dart';
 import '../mail_store.dart';
+import '../microsoft/microsoft_provider.dart';
 
 /// Whether Postino APPENDs a sent message to Inviati on [provider] (#166): the generic IMAP servers do not file
 /// SMTP submissions themselves.
@@ -32,26 +32,30 @@ MailProvider providerFor(Account account) {
           g(),
           g(),
           messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
+          storedIds: () => g<MailStore>().messageIds(account.id),
           // Tests register one that never opens a socket: `flutter test` stops HTTP, not IMAP.
           connect: g.isRegistered<ImapConnector>() ? g<ImapConnector>() : connectImap,
           appendToSent: appendsToSent(account.provider),
         ),
-        // ponytail: no Microsoft adapter before step 5: it syncs nothing meanwhile.
-        ProviderKind.microsoft => const UnsyncedProvider(),
+        ProviderKind.microsoft => MicrosoftProvider(
+          account.id,
+          g(),
+          g(),
+          g(),
+          messageIdOf: (id) => g<MailStore>().rfcMessageId(account.id, id),
+        ),
       },
       instanceName: account.id,
+      // An IMAP adapter holds a connection (and IDLE): logged out when the Account is removed.
+      dispose: (p) => p is ImapProvider ? p.close() : null,
     );
   }
   return g<MailProvider>(instanceName: account.id);
 }
 
-/// Forgets the adapter of a removed Account, closing its IMAP session if it has one: the next [providerFor] of an
-/// Account with that id makes a new one.
-Future<void> releaseProvider(String accountId) async {
+/// Drops the adapter of the removed Account [accountId] (#174), closing its connection; the same Account connected
+/// again gets a new one.
+Future<void> forgetProvider(String accountId) async {
   final g = GetIt.I;
-  if (!g.isRegistered<MailProvider>(instanceName: accountId)) return;
-  await g.unregister<MailProvider>(
-    instanceName: accountId,
-    disposingFunction: (p) => p is ImapProvider ? p.close() : null,
-  );
+  if (g.isRegistered<MailProvider>(instanceName: accountId)) await g.unregister<MailProvider>(instanceName: accountId);
 }

@@ -1,0 +1,54 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(mailFolder)",
+    "value": [
+      {
+        "id": "folder-inbox",
+        "displayName": "Posta in arrivo",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-drafts",
+        "displayName": "Bozze",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-sentitems",
+        "displayName": "Posta inviata",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-deleteditems",
+        "displayName": "Posta eliminata",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-junkemail",
+        "displayName": "Posta indesiderata",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-outbox",
+        "displayName": "Posta in uscita",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-archive",
+        "displayName": "Archivio",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-lavoro",
+        "displayName": "Lavoro",
+        "parentFolderId": "folder-root"
+      },
+      {
+        "id": "folder-viaggi",
+        "displayName": "Viaggi",
+        "parentFolderId": "folder-root"
+      }
+    ],
+    "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/mailFolders/delta?$deltatoken=folders-delta-token-1"
+  }
+}

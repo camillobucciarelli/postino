@@ -1,6 +1,7 @@
 // WCAG 2.2 AA on the real tokens, light and dark: text 4.5:1, icons, borders and UI parts 3:1.
 // The colors are composited as the screen shows them: translucent tokens over their background,
 // the theme's focus, hover and pressed overlays over the rows they light up.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/tokens/postino_theme.dart';
@@ -54,6 +55,12 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
     _text,
   ),
   ('ink-muted text', (c) => c.inkMuted, [(c) => c.surface, (c) => c.surfaceGround], _text),
+  (
+    'PostinoSuggestions address, on the panel and on the highlighted row',
+    (c) => c.inkMuted,
+    [(c) => c.surfaceRaised, (c) => c.surfaceSelected],
+    _text,
+  ),
   (
     'ink-muted icons (IconButton, chevron, quote toggle)',
     (c) => c.inkMuted,

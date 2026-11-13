@@ -30,6 +30,12 @@ void main() {
     expect(hasReplyPrefix('Ricevuta'), isFalse);
   });
 
+  test('a Spam reply stays a Conversazione of its own, out of the inbox one it answers (#185)', () {
+    final root = msg('a', date: DateTime.utc(2026, 10));
+    final spam = msg('s', subject: 'Re: Oggetto', references: const ['<a@example.com>'], labelIds: const [spamLabelId]);
+    expect(_threads([_t(root), _t(spam, '<a@example.com>')]), {'a': '<a@example.com>', 's': 's'});
+  });
+
   test('a reply with References joins the root, whatever came in between', () {
     final root = msg('a', date: DateTime.utc(2026, 10));
     final reply = msg('b', subject: 'Re: Oggetto', references: const ['<a@example.com>', '<x@example.com>']);

@@ -65,6 +65,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$selettoreEtichette$en selettoreEtichette = _Translations$selettoreEtichette$en._(_root);
 	@override late final _Translations$etichetteAutomatiche$en etichetteAutomatiche = _Translations$etichetteAutomatiche$en._(_root);
 	@override late final _Translations$notifiche$en notifiche = _Translations$notifiche$en._(_root);
+	@override late final _Translations$cerca$en cerca = _Translations$cerca$en._(_root);
 	@override late final _Translations$conflitti$en conflitti = _Translations$conflitti$en._(_root);
 	@override late final _Translations$azioni$en azioni = _Translations$azioni$en._(_root);
 	@override late final _Translations$scorrimento$en scorrimento = _Translations$scorrimento$en._(_root);
@@ -103,6 +104,7 @@ class _Translations$onboarding$en extends Translations$onboarding$it {
 	// Translations
 	@override String get body => 'All your mailboxes in one place.';
 	@override String get connectGmail => 'Connect Gmail';
+	@override String get connectOutlook => 'Connect Outlook';
 	@override String get connectIcloud => 'Connect iCloud';
 	@override String get connectImap => 'Other IMAP';
 }
@@ -118,6 +120,7 @@ class _Translations$daRicollegare$en extends Translations$daRicollegare$it {
 	@override String get message => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
 	@override String get signIn => 'Sign in';
 	@override String get status => 'Needs signing in';
+	@override String get microsoftMessage => 'Microsoft no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.';
 	@override String get passwordMessage => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.';
 }
 
@@ -132,9 +135,11 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String missingSetting({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).';
 	@override String get offline => 'No connection: try again when you are online.';
 	@override String get missingPermission => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.';
-	@override String wrongAccount({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.';
+	@override String get missingPermissionMicrosoft => 'Permission to read and send your mail is required: try again and keep it ticked.';
+	@override String wrongAccount({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.';
 	@override String get failed => 'Something went wrong: try again.';
 	@override String get alreadyConnected => 'This Account is already connected.';
+	@override String get workAccount => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.';
 }
 
 // Path: offline
@@ -258,11 +263,15 @@ class _Translations$composizione$en extends Translations$composizione$it {
 	@override String get send => 'Send';
 	@override String get queued => 'Waiting to send';
 	@override String get undo => 'Undo';
-	@override String tooLarge({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit';
+	@override String tooLarge({required Object mb}) => 'The message exceeds the ${mb} MB limit of the Provider';
 	@override String get sendFailed => 'Sending failed: try again';
 	@override String get offlineAttachments => 'You are offline: the forwarded attachments are not downloaded yet, try again online';
 	@override String get noRecipient => 'Add at least one recipient';
 	@override String get forwardedAttachments => 'Attachments';
+	@override String suggestions({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} suggestion',
+		other: '${n} suggestions',
+	);
 }
 
 // Path: bozze
@@ -305,8 +314,18 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLogin => 'Launch at login';
 	@override String get launchAtLoginBody => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.';
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
+	@override String get immediateNotifications => 'Immediate notifications';
+	@override String get immediateNotificationsBody => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.';
+	@override String get immediateNotificationsFailed => 'The system did not start the immediate notifications. Try again.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
+	@override String get notifications => 'Notifications';
+	@override String get notificationsAllowed => 'Allowed';
+	@override String get notificationsDenied => 'Not allowed: new mail arrives without an alert.';
+	@override String get notificationsAllow => 'Allow';
+	@override String get notificationActionFirst => 'First notification action';
+	@override String get notificationActionSecond => 'Second notification action';
+	@override String get notificationActionNone => 'None';
 	@override String get syncSection => 'Sync';
 	@override String get syncTitle => 'Sync to…';
 	@override String get syncNone => 'None';
@@ -416,6 +435,35 @@ class _Translations$notifiche$en extends Translations$notifiche$it {
 	@override String get permissionBody => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.';
 	@override String get permissionAllow => 'Continue';
 	@override String get permissionLater => 'Not now';
+	@override String newMessages({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} new message',
+		other: '${n} new messages',
+	);
+	@override String get listeningChannel => 'Postino listening';
+	@override String get listeningTitle => 'Postino is listening';
+	@override String get listeningText => 'New mail arrives in real time. Tap to open All inboxes.';
+}
+
+// Path: cerca
+class _Translations$cerca$en extends Translations$cerca$it {
+	_Translations$cerca$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get open => 'Search';
+	@override String get title => 'Search';
+	@override String get field => 'Search mail';
+	@override String get scopeAll => 'All Accounts';
+	@override String get idleTitle => 'Search your mail';
+	@override String get idleBody => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.';
+	@override String get emptyTitle => 'No results';
+	@override String get emptyBody => 'Try other words, or just the start of a word.';
+	@override String results({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} result',
+		other: '${n} results',
+	);
+	@override late final _Translations$cerca$provider$en provider = _Translations$cerca$provider$en._(_root);
 }
 
 // Path: conflitti
@@ -519,6 +567,7 @@ class _Translations$passwordForm$en extends Translations$passwordForm$it {
 	@override String get unreachable => 'Server unreachable: check the connection, the host and the port.';
 	@override String get alreadyConnected => 'This Account is already connected.';
 	@override String get useGmail => 'For a Gmail address use «Connect Gmail».';
+	@override String get useMicrosoft => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».';
 }
 
 // Path: accounts
@@ -534,6 +583,13 @@ class _Translations$accounts$en extends Translations$accounts$it {
 	@override String get icloud => 'iCloud';
 	@override String get imap => 'IMAP';
 	@override String get microsoft => 'Microsoft';
+	@override String remove({required Object address}) => 'Remove the Account ${address}';
+	@override String removeTitle({required Object name}) => 'Remove the Account ${name}?';
+	@override String get removeMessage => 'The emails downloaded on this device are deleted; on the server they stay as they are.';
+	@override String get removeNote => 'Changes not yet sent to the server are lost.';
+	@override String get removeGmailNote => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.';
+	@override String get removeConfirm => 'Remove';
+	@override String get removeCancel => 'Cancel';
 }
 
 // Path: etichetteAutomatiche.model
@@ -559,6 +615,22 @@ class _Translations$etichetteAutomatiche$model$en extends Translations$etichette
 	@override String get dismiss => 'OK';
 	@override String confirmTitle({required Object size}) => 'Download ${size} over cellular?';
 	@override String get confirmWait => 'Wait for Wi-Fi';
+}
+
+// Path: cerca.provider
+class _Translations$cerca$provider$en extends Translations$cerca$provider$it {
+	_Translations$cerca$provider$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String searching({required Object name}) => 'Also searching ${name}…';
+	@override String unreachable({required Object name}) => 'Local results only: ${name} can\'t be reached';
+	@override String capped({required Object n, required Object name}) => 'Showing the first ${n} results from ${name}';
+	@override String get retry => 'Press Enter in the field to try again.';
+	@override String get more => 'Show more';
+	@override String get reconnect => 'It needs to be reconnected: sign in again from the notice in the mail list.';
+	@override String get later => 'The provider asked for a pause: try again in a few minutes.';
 }
 
 // Path: conflitti.values
@@ -599,20 +671,24 @@ extension on TranslationsEn {
 			'etichette' => 'Labels',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',
+			'onboarding.connectOutlook' => 'Connect Outlook',
 			'onboarding.connectIcloud' => 'Connect iCloud',
 			'onboarding.connectImap' => 'Other IMAP',
 			'daRicollegare.title' => ({required Object name}) => '${name} needs signing in again',
 			'daRicollegare.message' => 'Google no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
 			'daRicollegare.signIn' => 'Sign in',
 			'daRicollegare.status' => 'Needs signing in',
+			'daRicollegare.microsoftMessage' => 'Microsoft no longer accepts the sign-in. Mail stays readable but won\'t update until you sign in.',
 			'daRicollegare.passwordMessage' => 'The server no longer accepts the password. Your mail stays readable but won\'t update until you sign in.',
 			'connect.title' => 'Couldn\'t connect',
 			'connect.missingSetting' => ({required Object setting}) => '${setting} is missing: start Postino with --dart-define=${setting}=… (see README).',
 			'connect.offline' => 'No connection: try again when you are online.',
 			'connect.missingPermission' => 'Gmail access is required: try again and keep the permission to read and manage your mail ticked.',
-			'connect.wrongAccount' => ({required Object address}) => 'You picked a different Google account: to reconnect ${address}, pick that account.',
+			'connect.missingPermissionMicrosoft' => 'Permission to read and send your mail is required: try again and keep it ticked.',
+			'connect.wrongAccount' => ({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Something went wrong: try again.',
 			'connect.alreadyConnected' => 'This Account is already connected.',
+			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',
 			'list.loading' => 'Loading messages',
@@ -694,11 +770,12 @@ extension on TranslationsEn {
 			'composizione.send' => 'Send',
 			'composizione.queued' => 'Waiting to send',
 			'composizione.undo' => 'Undo',
-			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds Gmail\'s ${mb} MB limit',
+			'composizione.tooLarge' => ({required Object mb}) => 'The message exceeds the ${mb} MB limit of the Provider',
 			'composizione.sendFailed' => 'Sending failed: try again',
 			'composizione.offlineAttachments' => 'You are offline: the forwarded attachments are not downloaded yet, try again online',
 			'composizione.noRecipient' => 'Add at least one recipient',
 			'composizione.forwardedAttachments' => 'Attachments',
+			'composizione.suggestions' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} suggestion', other: '${n} suggestions', ), 
 			'bozze.title' => 'Drafts',
 			'bozze.emptyTitle' => 'No drafts',
 			'bozze.emptyBody' => 'Drafts you write stay here until you send them.',
@@ -714,8 +791,18 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLogin' => 'Launch at login',
 			'impostazioni.launchAtLoginBody' => 'Postino opens when you log in and stays in the tray, so mail keeps arriving.',
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
+			'impostazioni.immediateNotifications' => 'Immediate notifications',
+			'impostazioni.immediateNotificationsBody' => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.',
+			'impostazioni.immediateNotificationsFailed' => 'The system did not start the immediate notifications. Try again.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
+			'impostazioni.notifications' => 'Notifications',
+			'impostazioni.notificationsAllowed' => 'Allowed',
+			'impostazioni.notificationsDenied' => 'Not allowed: new mail arrives without an alert.',
+			'impostazioni.notificationsAllow' => 'Allow',
+			'impostazioni.notificationActionFirst' => 'First notification action',
+			'impostazioni.notificationActionSecond' => 'Second notification action',
+			'impostazioni.notificationActionNone' => 'None',
 			'impostazioni.syncSection' => 'Sync',
 			'impostazioni.syncTitle' => 'Sync to…',
 			'impostazioni.syncNone' => 'None',
@@ -791,6 +878,26 @@ extension on TranslationsEn {
 			'notifiche.permissionBody' => 'Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.',
 			'notifiche.permissionAllow' => 'Continue',
 			'notifiche.permissionLater' => 'Not now',
+			'notifiche.newMessages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} new message', other: '${n} new messages', ), 
+			'notifiche.listeningChannel' => 'Postino listening',
+			'notifiche.listeningTitle' => 'Postino is listening',
+			'notifiche.listeningText' => 'New mail arrives in real time. Tap to open All inboxes.',
+			'cerca.open' => 'Search',
+			'cerca.title' => 'Search',
+			'cerca.field' => 'Search mail',
+			'cerca.scopeAll' => 'All Accounts',
+			'cerca.idleTitle' => 'Search your mail',
+			'cerca.idleBody' => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.',
+			'cerca.emptyTitle' => 'No results',
+			'cerca.emptyBody' => 'Try other words, or just the start of a word.',
+			'cerca.results' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
+			'cerca.provider.searching' => ({required Object name}) => 'Also searching ${name}…',
+			'cerca.provider.unreachable' => ({required Object name}) => 'Local results only: ${name} can\'t be reached',
+			'cerca.provider.capped' => ({required Object n, required Object name}) => 'Showing the first ${n} results from ${name}',
+			'cerca.provider.retry' => 'Press Enter in the field to try again.',
+			'cerca.provider.more' => 'Show more',
+			'cerca.provider.reconnect' => 'It needs to be reconnected: sign in again from the notice in the mail list.',
+			'cerca.provider.later' => 'The provider asked for a pause: try again in a few minutes.',
 			'conflitti.bannerTitle' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} conflict', other: '${n} conflicts', ), 
 			'conflitti.bannerMessage' => 'You changed some messages offline, and they changed somewhere else too.',
 			'conflitti.open' => 'Review',
@@ -863,12 +970,20 @@ extension on TranslationsEn {
 			'passwordForm.unreachable' => 'Server unreachable: check the connection, the host and the port.',
 			'passwordForm.alreadyConnected' => 'This Account is already connected.',
 			'passwordForm.useGmail' => 'For a Gmail address use «Connect Gmail».',
+			'passwordForm.useMicrosoft' => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».',
 			'accounts.section' => 'Accounts',
 			'accounts.add' => 'Add Account',
 			'accounts.gmail' => 'Gmail',
 			'accounts.icloud' => 'iCloud',
 			'accounts.imap' => 'IMAP',
 			'accounts.microsoft' => 'Microsoft',
+			'accounts.remove' => ({required Object address}) => 'Remove the Account ${address}',
+			'accounts.removeTitle' => ({required Object name}) => 'Remove the Account ${name}?',
+			'accounts.removeMessage' => 'The emails downloaded on this device are deleted; on the server they stay as they are.',
+			'accounts.removeNote' => 'Changes not yet sent to the server are lost.',
+			'accounts.removeGmailNote' => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.',
+			'accounts.removeConfirm' => 'Remove',
+			'accounts.removeCancel' => 'Cancel',
 			_ => null,
 		};
 	}

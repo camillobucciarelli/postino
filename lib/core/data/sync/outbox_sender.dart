@@ -12,6 +12,7 @@ import '../../domain/message.dart';
 import '../../domain/outbox_repository.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
+import '../../domain/send_limit.dart';
 import '../daos/outbox_dao.dart';
 import '../mime.dart';
 
@@ -70,7 +71,10 @@ class OutboxSender(
     // Tags this preparation; random so it is unique across isolates too (collision odds 2^-31 per Message-ID).
     final version = Random.secure().nextInt(1 << 31);
     // The row is born now, without MIME: Bozze hides it, Inviati shows it and Annulla works while it is prepared.
-    await _outbox.enqueueOutgoing(accountId, message, version: version, raw: '', sendAfter: OutboxDao.preparing);
+    // The Account removed since it was read (here or from another device): nothing queued, nothing to send.
+    if (!await _outbox.enqueueOutgoing(accountId, message, version: version, raw: '', sendAfter: OutboxDao.preparing)) {
+      return const Err(NotFoundFailure());
+    }
     // The platform keeps the preparation and the send going if the user leaves now (a slow attachment download
     // would otherwise leave the row preparing); a refusal never fails the Invia. Held at every Invia: the platform
     // renews its protection (iOS replaces a task its expiration handler may have ended, Android appends work);
@@ -98,12 +102,12 @@ class OutboxSender(
         await _releaseIfEmpty(accountId);
         return Err(failure);
     }
-    // ponytail: the limit is Gmail's; per-Provider limits when other adapters arrive.
-    if (raw.length > gmailSendLimitBytes) {
-      _log.failure('send $accountId', const SizeLimitFailure(gmailSendLimitBytes));
+    // The Provider's limit; IMAP/SMTP has none here: the server's SIZE refuses it at submission.
+    if (sendLimitBytes(account.provider) case final limit? when raw.length > limit) {
+      _log.failure('send $accountId', SizeLimitFailure(limit));
       await _outbox.outgoingFailed(accountId, message.messageId, version: version);
       await _releaseIfEmpty(accountId);
-      return const Err(SizeLimitFailure(gmailSendLimitBytes));
+      return Err(SizeLimitFailure(limit));
     }
     // The window starts once the MIME is ready: a slow download never eats the user's Annulla time.
     final sendAfter = _clock.now().add(sendWindow);

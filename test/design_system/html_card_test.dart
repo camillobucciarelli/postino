@@ -2,6 +2,7 @@
 // ignore_for_file: missing_whitespace_between_adjacent_strings
 // PostinoHtmlCard (#47): the cartoncino in dark theme, wide newsletters scaled down, links.
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';

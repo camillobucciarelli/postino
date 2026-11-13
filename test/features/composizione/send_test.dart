@@ -5,19 +5,22 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/domain/conflict.dart';
 import 'package:postino/core/domain/draft_conflict.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/provider_search_page.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
+import 'package:postino/core/domain/send_limit.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -218,9 +221,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     final saved = held.saves;
     await _send(tester);
@@ -241,14 +243,29 @@ void main() {
     // ponytail: 37 MB put in the Quill document never lays out in a widget test (tried: it hangs); the engine's refusal of a real
     // oversized message is outbox_sync_test's, here the composer only has to show it.
     final real = GetIt.I<MailSync>();
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(_TooBig(real));
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(_TooBig(real));
     await _write(tester);
     await _send(tester);
-    expect(find.text('Il messaggio supera il limite di 35 MB di Gmail'), findsOneWidget);
+    expect(find.text('Il messaggio supera il limite di 35 MB del Provider'), findsOneWidget);
     expect(find.byType(PostinoComposerField), findsWidgets);
     expect(_undo, findsNothing);
+    await _afterWindow(tester);
+    expect(gmail.sent, isEmpty);
+  });
+
+  _onMac('a message over the Microsoft limit names the 3 MB, announced to the screen reader', (tester) async {
+    await _start(tester);
+    final real = GetIt.I<MailSync>();
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(_TooBig(real, limit: microsoftSendLimitBytes));
+    await _write(tester);
+    await _send(tester);
+    final limit = find.text('Il messaggio supera il limite di 3 MB del Provider');
+    expect(limit, findsOneWidget);
+    // A live region: the screen reader announces the refusal when it appears (ADR 0014).
+    final announced = find.byWidgetPredicate((w) => w is Semantics && w.properties.liveRegion == true);
+    expect(find.ancestor(of: limit, matching: announced), findsOneWidget);
     await _afterWindow(tester);
     expect(gmail.sent, isEmpty);
   });
@@ -257,9 +274,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));
@@ -276,9 +292,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true, oversize: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));
@@ -331,9 +346,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));
@@ -420,6 +434,9 @@ class _TooBig(
 
   /// With [delegate], the real engine gets a message over the limit: its preparation fails.
   final bool oversize = false,
+
+  /// The limit the refusal names.
+  final int limit = gmailSendLimitBytes,
 }) implements MailSync {
   int saves = 0;
 
@@ -439,7 +456,7 @@ class _TooBig(
       );
     }
     if (delegate) return real.send(a, m);
-    return const Err(SizeLimitFailure(gmailSendLimitBytes));
+    return Err(SizeLimitFailure(limit));
   }
 
   @override
@@ -475,8 +492,10 @@ class _TooBig(
   @override
   Future<Result<Label>> createLabel(String a, String name) => real.createLabel(a, name);
   @override
-  Future<void> act(String a, Iterable<String> m, MailAction action, {Duration? hold}) =>
-      real.act(a, m, action, hold: hold);
+  Future<void> act(String a, Iterable<String> m, MailAction action, {Duration? hold, bool replay = true}) =>
+      real.act(a, m, action, hold: hold, replay: replay);
+  @override
+  Future<void> replayActions(String a) => real.replayActions(a);
   @override
   Future<bool> cancelAction(String a, Iterable<String> m, MailAction action) => real.cancelAction(a, m, action);
   @override
@@ -491,4 +510,8 @@ class _TooBig(
       real.setConversationLabel(a, m, l, add: add);
   @override
   Future<Result<void>> completeConversation(String a, String c) => real.completeConversation(a, c);
+
+  @override
+  Future<Result<ProviderSearchPage>> search(String a, SearchQuery q, {String? pageToken}) =>
+      real.search(a, q, pageToken: pageToken);
 }

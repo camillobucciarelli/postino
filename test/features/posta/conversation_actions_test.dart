@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show kSecondaryButton;
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart' show MenuItemButton, Text;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';

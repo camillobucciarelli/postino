@@ -51,4 +51,10 @@ void main() {
       [2, 0],
     ]);
   });
+
+  test('saving the embedding of a message that is gone writes nothing (its Account removed, #174)', () async {
+    await db.messageEmbeddingsDao.save('gmail:gone@gmail.com', 'm1', 'model', [1, 0]);
+
+    expect(await db.select(db.messageEmbeddings).get(), isEmpty);
+  });
 }

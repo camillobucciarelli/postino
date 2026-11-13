@@ -6,8 +6,8 @@ import '../../domain/settings_backend.dart';
 import '../../domain/settings_document.dart';
 import '../../domain/settings_entry.dart';
 import '../../domain/settings_merge.dart';
+import '../oauth/oauth_guard.dart';
 import 'drive_http.dart';
-import 'google_failure.dart';
 
 /// The file of the Impostazioni di Postino in the hidden appDataFolder of an Account's Drive (ADR 0016),
 /// over [DriveHttp]: finding it, reading it, creating it and updating it.
@@ -22,7 +22,7 @@ class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
   String? _fileId;
 
   @override
-  Future<Result<String?>> read() => googleGuard(() async {
+  Future<Result<String?>> read() => oauthGuard(() async {
     final ids = await _find();
     if (ids.isEmpty) return const Ok(null);
     final contents = [for (final id in ids) (await _drive.send('GET', _media(id))).body];
@@ -31,7 +31,7 @@ class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
   });
 
   @override
-  Future<Result<void>> write(String json) => googleGuard(() async {
+  Future<Result<void>> write(String json) => oauthGuard(() async {
     if (_fileId ?? (await _find()).firstOrNull case final id?) {
       await _patch(id, json);
       return const Ok(null);

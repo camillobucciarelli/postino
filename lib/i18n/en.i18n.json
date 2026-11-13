@@ -19,6 +19,7 @@
   "onboarding": {
     "body": "All your mailboxes in one place.",
     "connectGmail": "Connect Gmail",
+    "connectOutlook": "Connect Outlook",
     "connectIcloud": "Connect iCloud",
     "connectImap": "Other IMAP"
   },
@@ -27,6 +28,7 @@
     "message": "Google no longer accepts the sign-in. Mail stays readable but won't update until you sign in.",
     "signIn": "Sign in",
     "status": "Needs signing in",
+    "microsoftMessage": "Microsoft no longer accepts the sign-in. Mail stays readable but won't update until you sign in.",
     "passwordMessage": "The server no longer accepts the password. Your mail stays readable but won't update until you sign in."
   },
   "connect": {
@@ -34,9 +36,11 @@
     "missingSetting": "$setting is missing: start Postino with --dart-define=$setting=… (see README).",
     "offline": "No connection: try again when you are online.",
     "missingPermission": "Gmail access is required: try again and keep the permission to read and manage your mail ticked.",
-    "wrongAccount": "You picked a different Google account: to reconnect $address, pick that account.",
+    "missingPermissionMicrosoft": "Permission to read and send your mail is required: try again and keep it ticked.",
+    "wrongAccount": "You picked a different account: to reconnect $address, pick that account.",
     "failed": "Something went wrong: try again.",
-    "alreadyConnected": "This Account is already connected."
+    "alreadyConnected": "This Account is already connected.",
+    "workAccount": "Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported."
   },
   "offline": {
     "title": "You're offline",
@@ -132,11 +136,15 @@
     "send": "Send",
     "queued": "Waiting to send",
     "undo": "Undo",
-    "tooLarge": "The message exceeds Gmail's $mb MB limit",
+    "tooLarge": "The message exceeds the $mb MB limit of the Provider",
     "sendFailed": "Sending failed: try again",
     "offlineAttachments": "You are offline: the forwarded attachments are not downloaded yet, try again online",
     "noRecipient": "Add at least one recipient",
-    "forwardedAttachments": "Attachments"
+    "forwardedAttachments": "Attachments",
+    "suggestions": {
+      "one": "$n suggestion",
+      "other": "$n suggestions"
+    }
   },
   "bozze": {
     "title": "Drafts",
@@ -158,8 +166,18 @@
     "launchAtLogin": "Launch at login",
     "launchAtLoginBody": "Postino opens when you log in and stays in the tray, so mail keeps arriving.",
     "launchAtLoginFailed": "The system did not accept the change. Try again, or check the login items in the system settings.",
+    "immediateNotifications": "Immediate notifications",
+    "immediateNotificationsBody": "New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.",
+    "immediateNotificationsFailed": "The system did not start the immediate notifications. Try again.",
     "checkForUpdates": "Check for updates",
     "checkForUpdatesBody": "Look for a new version of Postino now.",
+    "notifications": "Notifications",
+    "notificationsAllowed": "Allowed",
+    "notificationsDenied": "Not allowed: new mail arrives without an alert.",
+    "notificationsAllow": "Allow",
+    "notificationActionFirst": "First notification action",
+    "notificationActionSecond": "Second notification action",
+    "notificationActionNone": "None",
     "syncSection": "Sync",
     "syncTitle": "Sync to…",
     "syncNone": "None",
@@ -250,7 +268,37 @@
     "permissionTitle": "New mail notifications",
     "permissionBody": "Postino lets you know when a message arrives, with its sender, subject and preview. The system will ask for your permission.",
     "permissionAllow": "Continue",
-    "permissionLater": "Not now"
+    "permissionLater": "Not now",
+    "newMessages": {
+      "one": "$n new message",
+      "other": "$n new messages"
+    },
+    "listeningChannel": "Postino listening",
+    "listeningTitle": "Postino is listening",
+    "listeningText": "New mail arrives in real time. Tap to open All inboxes."
+  },
+  "cerca": {
+    "open": "Search",
+    "title": "Search",
+    "field": "Search mail",
+    "scopeAll": "All Accounts",
+    "idleTitle": "Search your mail",
+    "idleBody": "Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.",
+    "emptyTitle": "No results",
+    "emptyBody": "Try other words, or just the start of a word.",
+    "results": {
+      "one": "$n result",
+      "other": "$n results"
+    },
+    "provider": {
+      "searching": "Also searching $name…",
+      "unreachable": "Local results only: $name can't be reached",
+      "capped": "Showing the first $n results from $name",
+      "retry": "Press Enter in the field to try again.",
+      "more": "Show more",
+      "reconnect": "It needs to be reconnected: sign in again from the notice in the mail list.",
+      "later": "The provider asked for a pause: try again in a few minutes."
+    }
   },
   "conflitti": {
     "bannerTitle": {
@@ -335,7 +383,8 @@
     "serverNotFound": "Couldn't find the servers for this address: enter them below.",
     "unreachable": "Server unreachable: check the connection, the host and the port.",
     "alreadyConnected": "This Account is already connected.",
-    "useGmail": "For a Gmail address use «Connect Gmail»."
+    "useGmail": "For a Gmail address use «Connect Gmail».",
+    "useMicrosoft": "For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook»."
   },
   "accounts": {
     "section": "Accounts",
@@ -343,6 +392,13 @@
     "gmail": "Gmail",
     "icloud": "iCloud",
     "imap": "IMAP",
-    "microsoft": "Microsoft"
+    "microsoft": "Microsoft",
+    "remove": "Remove the Account $address",
+    "removeTitle": "Remove the Account $name?",
+    "removeMessage": "The emails downloaded on this device are deleted; on the server they stay as they are.",
+    "removeNote": "Changes not yet sent to the server are lost.",
+    "removeGmailNote": "Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.",
+    "removeConfirm": "Remove",
+    "removeCancel": "Cancel"
   }
 }

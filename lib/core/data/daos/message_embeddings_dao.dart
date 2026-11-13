@@ -17,15 +17,21 @@ part 'message_embeddings_dao.g.dart';
 class MessageEmbeddingsDao(super.attachedDatabase)
     extends DatabaseAccessor<PostinoDatabase>
     with _$MessageEmbeddingsDaoMixin {
-  Future<void> save(String accountId, String messageId, String modelId, List<double> vector) => into(messageEmbeddings)
-      .insertOnConflictUpdate(
-        MessageEmbeddingsCompanion.insert(
-          accountId: accountId,
-          messageId: messageId,
-          modelId: modelId,
-          vector: _bytes(vector),
-        ),
-      );
+  /// Nothing when the message is gone meanwhile (its Account removed, #174): checked in the same transaction.
+  Future<void> save(String accountId, String messageId, String modelId, List<double> vector) => transaction(() async {
+    final known = await (select(
+      messages,
+    )..where((t) => t.accountId.equals(accountId) & t.id.equals(messageId))).getSingleOrNull();
+    if (known == null) return;
+    await into(messageEmbeddings).insertOnConflictUpdate(
+      MessageEmbeddingsCompanion.insert(
+        accountId: accountId,
+        messageId: messageId,
+        modelId: modelId,
+        vector: _bytes(vector),
+      ),
+    );
+  });
 
   /// The vectors of [modelId] among the [limit] newest messages of the Account with the Etichetta [labelId].
   Future<List<List<double>>> examples(
@@ -81,6 +87,15 @@ class MessageEmbeddingsDao(super.attachedDatabase)
     ];
   }
 
+  /// The messages [ids] of the Account still in cache, with their body if downloaded: those a background sync left to
+  /// the Etichettatura automatica of the next one (#212). At most SQLite's 999 variables' worth.
+  Future<List<(MessageRow, BodyRow?)>> withBodies(String accountId, List<String> ids) async {
+    final query = select(messages).join([
+      leftOuterJoin(bodies, bodies.accountId.equalsExp(messages.accountId) & bodies.messageId.equalsExp(messages.id)),
+    ])..where(messages.accountId.equals(accountId) & messages.id.isIn(ids));
+    return [for (final r in await query.get()) (r.readTable(messages), r.readTableOrNull(bodies))];
+  }
+
   static Uint8List _bytes(List<double> v) {
     final out = ByteData(v.length * 4);
     for (var i = 0; i < v.length; i++) {
@@ -93,4 +108,8 @@ class MessageEmbeddingsDao(super.attachedDatabase)
     final data = ByteData.sublistView(bytes);
     return [for (var i = 0; i < bytes.length ~/ 4; i++) data.getFloat32(i * 4, Endian.little)];
   }
+
+  /// Removes the Account's message embeddings (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) =>
+      (delete(messageEmbeddings)..where((t) => t.accountId.equals(accountId))).go();
 }

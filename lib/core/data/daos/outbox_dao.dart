@@ -19,7 +19,12 @@ class OutboxDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       0;
 
   /// Queues the message; the same Message-ID replaces the row (a second Invia after an Annulla).
-  Future<void> enqueue(OutboxCompanion row) => into(outbox).insert(row, mode: InsertMode.insertOrReplace);
+  /// False, and nothing queued, when the Account is no longer here (removed meanwhile, ADR 0016).
+  Future<bool> enqueue(OutboxCompanion row) => transaction(() async {
+    if (!await attachedDatabase.accountsDao.exists(row.accountId.value)) return false;
+    await into(outbox).insert(row, mode: InsertMode.insertOrReplace);
+    return true;
+  });
 
   Future<OutboxRow?> byId(String accountId, String messageId) =>
       (select(outbox)..where((t) => _row(t, accountId, messageId))).getSingleOrNull();
@@ -90,4 +95,7 @@ class OutboxDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
 
   static Expression<bool> _row(Outbox t, String accountId, String messageId) =>
       t.accountId.equals(accountId) & t.messageId.equals(messageId);
+
+  /// Removes the Account's outbox entries (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(outbox)..where((t) => t.accountId.equals(accountId))).go();
 }

@@ -2,21 +2,21 @@ import '../../domain/action_outcome.dart';
 import '../../domain/mail_action.dart';
 import '../../domain/message.dart';
 import '../../domain/result.dart';
+import '../oauth/oauth_failed.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
-import 'google_failure.dart';
 
 /// The Azioni on Gmail (ADR 0008): Gmail has no conditional write, so the message is read once
 /// (`messages.get`, `format=minimal`), compared with the expected and the wanted value, and written
-/// only if needed: at most one call for the attribute. Failures are thrown as [GoogleFailed].
+/// only if needed: at most one call for the attribute. Failures are thrown as [OAuthFailed].
 class GmailActions(final GmailHttp _gmail, final GmailLabels _labels) {
   /// Applies [action] to [messageId]; [expected] null forces it. A message gone is [ActionMessageGone].
   Future<ActionOutcome> apply(String messageId, MailAction action, Object? expected) async {
     final Set<String> labels;
     try {
       labels = await _read(messageId);
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return const ActionMessageGone();
       rethrow;
     }
@@ -27,7 +27,7 @@ class GmailActions(final GmailHttp _gmail, final GmailLabels _labels) {
     if (expected != null && current != expected && action is! Delete) return ActionConflict(current);
     try {
       await _write(messageId, action, labels);
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       // Deleted between the read and the write.
       if (e.failure is NotFoundFailure) return const ActionMessageGone();
       rethrow;

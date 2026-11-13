@@ -4,8 +4,12 @@
 library;
 
 import 'dart:async';
+import 'dart:convert' show utf8;
 
+import 'package:enough_mail/enough_mail.dart' show MessageSequence;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/imap/imap_message_parser.dart' show parseImapMessageId;
+import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
@@ -14,6 +18,7 @@ import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_mail_provider.dart' show msg;
+import '../../../support/fake_platform.dart' show FakeClock;
 import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/greenmail_server.dart';
 import '../../../support/imap_harness.dart';
@@ -87,6 +92,85 @@ void main() {
       await store.applySync(h.accountId, next);
       final stored = await db.select(db.messages).get();
       expect(stored.map((m) => m.id), unorderedEquals([h.idOf('a'), h.idOf('b')]));
+    });
+
+    test('marked \\Deleted elsewhere and not expunged: gone, as if expunged (#185)', () async {
+      await h.deliver(msg('a'));
+      await h.deliver(msg('b'));
+      final first = okValue(await h.provider.initialSync());
+      await h.withClient((c) async {
+        await c.selectMailboxByPath('INBOX');
+        await c.uidMarkDeleted(MessageSequence.fromId(_uid(h.idOf('a')), isUid: true));
+      });
+      final next = okValue(await h.provider.incrementalSync(first.cursor));
+      expect(next.removedMessageIds, [h.idOf('a')]);
+      expect(next.messages, isEmpty);
+    });
+
+    test('\\Answered and \$Forwarded set elsewhere change nothing: no indicator shows them (#185)', () async {
+      await h.deliver(msg('a'));
+      final first = okValue(await h.provider.initialSync());
+      await h.withClient((c) async {
+        await c.selectMailboxByPath('INBOX');
+        await c.uidStore(MessageSequence.fromId(_uid(h.idOf('a')), isUid: true), [r'\Answered', r'$Forwarded']);
+      });
+      final next = okValue(await h.provider.incrementalSync(first.cursor));
+      expect(next.messages, isEmpty);
+      expect(next.removedMessageIds, isEmpty);
+    });
+
+    test('moved to Junk elsewhere: not deleted, it is Spam and out of the inbox (#185)', () async {
+      final db = PostinoDatabase.inMemory();
+      addTearDown(db.close);
+      final store = MailStore(db);
+      await store.addAccount(
+        Account(id: h.accountId, address: h.address, provider: ProviderKind.imap, color: 0, position: 0),
+      );
+      await h.deliver(msg('a'));
+      final first = okValue(await h.provider.initialSync());
+      await store.applySync(h.accountId, first, fullSnapshot: true);
+      await h.deliver(msg('a', labelIds: const [spamLabelId]));
+      final next = okValue(await h.provider.incrementalSync(first.cursor));
+      expect(h.idOf('a'), startsWith('Junk/'));
+      expect(next.messages.single.labelIds, [spamLabelId]);
+      await store.applySync(h.accountId, next);
+      expect(await store.messageIds(h.accountId), [h.idOf('a')]);
+      expect(await store.watchMessages(h.accountId, inboxLabelId).first, isEmpty);
+    });
+
+    test('a message of six months ago moved elsewhere shows in its new folder (#185)', () async {
+      await h.appendBytes('INBOX', _old('old'), at: DateTime.now().subtract(const Duration(days: 180)));
+      final first = okValue(await h.provider.initialSync());
+      expect(first.messages, isEmpty);
+      await h.deliver(msg('old', labelIds: const ['cartella:Viaggi']));
+      final next = okValue(await h.provider.incrementalSync(first.cursor));
+      expect(next.messages.map((m) => (m.id, m.messageId)), [(h.idOf('old'), '<old@example.com>')]);
+      expect(h.idOf('old'), startsWith('Viaggi/'));
+    });
+
+    test('read and starred elsewhere: followed on a stored message older than the window (#185)', () async {
+      final stored = <String>[];
+      final p = ImapProvider(
+        h.accountId,
+        h.address,
+        h.keychain,
+        FakeClock(DateTime.now().toUtc()),
+        onBadCertificate: (_) => true,
+        storedIds: () async => stored,
+      );
+      addTearDown(p.close);
+      await h.appendBytes('INBOX', _old('old'), at: DateTime.now().subtract(const Duration(days: 180)));
+      final first = okValue(await p.initialSync());
+      expect(first.messages, isEmpty);
+      // The whole Conversazione opened: the old message is in the cache.
+      stored.addAll([for (final m in okValue(await p.fetchConversation('<old@example.com>'))) m.id]);
+      await h.deliver(msg('old', isRead: true, isStarred: true));
+      final next = okValue(await p.incrementalSync(first.cursor));
+      expect(next.messages.map((m) => (m.id, m.isRead, m.isStarred)), [(stored.single, true, true)]);
+      // Followed from now on: unread again elsewhere, unread here.
+      await h.deliver(msg('old'));
+      final last = okValue(await p.incrementalSync(next.cursor));
+      expect(last.messages.map((m) => (m.id, m.isRead, m.isStarred)), [(stored.single, false, false)]);
     });
 
     test('an unreadable cursor is NotFound', () async {
@@ -200,3 +284,11 @@ void main() {
     expect(queue.current, ChangeSignal.changed);
   });
 }
+
+int _uid(String id) => parseImapMessageId(id)!.uid;
+
+/// An RFC 5322 message with Message-ID `<key@example.com>`; its INTERNALDATE is the one given to APPEND.
+List<int> _old(String key) => utf8.encode(
+  'From: bob@example.com\r\nTo: ada@example.com\r\nSubject: Vecchio\r\n'
+  'Date: Mon, 04 May 2026 10:00:00 +0000\r\nMessage-ID: <$key@example.com>\r\n\r\nOk\r\n',
+);

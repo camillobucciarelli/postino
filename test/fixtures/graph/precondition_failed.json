@@ -1,0 +1,14 @@
+{
+  "status": 412,
+  "body": {
+    "error": {
+      "code": "PreconditionFailed",
+      "message": "The If-Match value does not match the current change key.",
+      "innerError": {
+        "date": "2026-10-28T12:00:00",
+        "request-id": "00000000-0000-0000-0000-000000000000",
+        "client-request-id": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

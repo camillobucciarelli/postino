@@ -8,26 +8,35 @@ import '../domain/conflict.dart';
 import '../domain/draft_conflict.dart';
 import '../domain/error_log.dart';
 import '../domain/mail_action.dart';
-import '../domain/mail_provider.dart';
 import '../domain/mail_sync.dart';
 import '../domain/message.dart';
 import '../domain/outbox_repository.dart';
 import '../domain/platform_services.dart';
+import '../domain/provider_search_page.dart';
 import '../domain/result.dart';
+import '../domain/search_query.dart';
 import 'mail_store.dart';
+import 'sync/account_gate.dart';
+import 'sync/account_queue.dart';
 import 'sync/auto_labeler.dart';
 import 'sync/draft_opener.dart';
 import 'sync/intent_replayer.dart';
 import 'sync/new_mail_notifier.dart';
+import 'sync/notification_cleanup.dart';
+import 'sync/on_demand_fetcher.dart';
 import 'sync/outbox_sender.dart';
 import 'sync/provider_factory.dart';
+import 'sync/queue_replay.dart';
+import 'sync/sync_hold.dart';
+import 'sync/sync_owner.dart';
+import 'sync/sync_phase.dart';
+import 'sync/sync_triggers.dart';
 
-/// Polling period: the change signal watches only the inbox, so the poll also brings Bozze and the rest (ADR 0008).
-const pollEvery = Duration(seconds: 60);
+export 'sync/sync_triggers.dart' show pollEvery;
 
 /// Sync engine (ADR 0008): initial sync once per Account, then incremental from the saved cursor
 /// whenever the change signal fires, every [pollEvery], and when the network returns.
-/// The one queue per Account: the replayer and the sender only ever run inside [_serial].
+/// The one queue per Account: the replayer and the sender only ever run inside [AccountQueue].
 @lazySingleton
 class SyncEngine(
   final MailStore _store,
@@ -36,46 +45,48 @@ class SyncEngine(
   final Connectivity _connectivity,
   final BackgroundSender _background,
   final NewMailNotifier _newMail,
+  final NotificationCleanup _cleanup,
   final AutoLabeler _labeler,
   final ErrorLog _log,
 ) implements MailSync {
-  late final _intents = IntentReplayer(_store, _outboxStore, _clock, _log, pause: _pauseAccount);
-  late final _drafts = DraftOpener(_store, _outboxStore);
+  late final _gate = AccountGate(_store, _clock);
+  final _queue = AccountQueue();
 
-  /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through [_serial].
+  /// The app's hold on the sync, against the background task's (#212).
+  late final _hold = SyncHold(SyncOwner(), _queue, onAsked: syncAll, onOwned: _store.refreshAfterExternalWrites);
+  late final _drafts = DraftOpener(_store, _outboxStore, removed: _gate.removed);
+
+  /// Its Annulla invio tickers call back [flushOutbox]: the sends still go through the Account's queue.
   late final _outbox = OutboxSender(
     _outboxStore,
     _clock,
     _background,
     _log,
-    account: _account,
+    account: _gate.find,
     flushOutbox: flushOutbox,
-    pause: _pauseAccount,
+    pause: _gate.pause,
   );
-
-  void _pauseAccount(String id, DateTime until) => _pausedUntil[id] = until;
-
-  final _subs = <StreamSubscription<Object?>>[];
-  final _signals = <String, StreamSubscription<ChangeSignal>>{};
-
-  /// Accounts the Provider blocked until a given time: no sync before it.
-  final _pausedUntil = <String, DateTime>{};
-
-  /// Per Account, the tail of its serial queue: syncs, Conversazione hydrations and replays
-  /// run one after the other, so none applies a Provider answer older than one already applied.
-  final _tail = <String, Future<void>>{};
-
-  /// Per Account, the sync waiting in the queue: more requests join it instead of piling up.
-  /// `synced` completes at the end of its sync phase, before the Bozze and outbox go.
-  final _queuedSync = <String, _QueuedSync>{};
-
-  /// Per Account, the sync phase of the sync running now (finished once it reaches the Bozze and the outbox):
-  /// a pull-to-refresh waits for it instead of queuing another.
-  final _runningSync = <String, Future<void>>{};
+  late final _replay = QueueReplay(
+    IntentReplayer(_store, _outboxStore, _clock, _log, pause: _gate.pause, removed: _gate.removed),
+    _outbox,
+    _gate,
+    _queue,
+  );
+  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock);
+  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay);
+  late final _triggers = SyncTriggers(
+    _store,
+    _clock,
+    _connectivity,
+    syncAll: syncAll,
+    poll: _poll,
+    sync: (account) => _sync(account)?.done,
+    removalRunning: _gate.removalRunning,
+  );
 
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   @visibleForTesting
-  final autoLabeling = <String, Future<void>>{};
+  Map<String, Future<void>> get autoLabeling => _phase.autoLabeling;
 
   /// Per Account, the ticker that sends its Bozze once the edits pause.
   final _draftTimers = <String, StreamSubscription<void>>{};
@@ -83,92 +94,105 @@ class SyncEngine(
   /// The tickers that replay the «trattenute» Azioni once their Annulla window ends.
   final _holdTimers = <StreamSubscription<void>>{};
 
-  /// Starts listening to change signals, the poll and the network, then syncs everything.
+  /// Starts listening to change signals, the poll and the network, then syncs everything. Nothing goes to a Provider
+  /// before the app owns the sync: a background task syncing now ends first, and later asks the app instead (#212).
   void start() {
-    _subs
-      ..add(_store.watchAccounts().listen(_watchSignals))
-      ..add(_clock.every(pollEvery).listen((_) => _poll()))
-      ..add(
-        _connectivity.onChanged.listen((online) {
-          if (online) unawaited(syncAll());
-        }),
-      );
+    _hold.start();
+    _triggers.start();
     unawaited(syncAll());
   }
 
   Future<void> stop() async {
+    _hold.stop();
     await Future.wait([
-      for (final s in [..._subs, ..._signals.values, ..._draftTimers.values, ..._holdTimers]) s.cancel(),
+      _triggers.stop(),
+      for (final s in [..._draftTimers.values, ..._holdTimers]) s.cancel(),
       _outbox.stop(),
     ]);
-    _subs.clear();
-    _signals.clear();
     _draftTimers.clear();
     _holdTimers.clear();
   }
 
   @override
   Future<void> syncAll() async {
+    _hold.ensure();
+    // After the ownership: a background task syncing now has written all it will, so the streams read it (#212).
+    await _hold.owned;
     // On resume the WorkManager isolate may have sent (or refused) outbox rows: the streams read the file again.
     // ponytail: only when syncAll runs (start, resume, network back); a cross-isolate notification if a worker ever writes while in foreground.
     _store.refreshAfterExternalWrites();
-    await Future.wait([
-      for (final account in await _store.accounts())
-        // A Da ricollegare Account stops syncing until the user consents again.
-        if (account.status == AccountStatus.attivo) _sync(account)?.done ?? Future<void>.value(),
-    ]);
+    await _eachActive((account) => _sync(account)?.done);
   }
 
   @override
   Future<void> refresh() async {
+    await _hold.owned;
     _store.refreshAfterExternalWrites();
+    await _eachActive((account) => _queue.running(account.id) ?? _sync(account)?.synced);
+  }
+
+  /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
+  /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
+  /// With a [budget] (iOS gives about 30 s, #213) an Account whose turn comes after it ran out is not started: those
+  /// that finished have their cursor saved (`applySync` is atomic), the others go on the next time.
+  Future<void> syncInBackground({Duration? budget}) {
+    final end = budget == null ? null : _clock.now().add(budget);
+    Future<void> sync(Account a, Completer<void> s) async {
+      if (end != null && !_clock.now().isBefore(end)) return;
+      await _phase.run(a, s, autoLabel: false);
+    }
+
+    return _eachActive((a) => _gate.paused(a.id) ? null : _queue.sync(a.id, (s) => sync(a, s)).done);
+  }
+
+  /// Resolves once no sync is between applying a batch and its notifications (#213): short, local work, which the
+  /// background task's budget does not cut off, or the mail applied would never notify.
+  Future<void> commitsSettled() async {
+    while (_phase.committing.isNotEmpty) {
+      await Future.wait([..._phase.committing].map((c) => c.then<void>((_) {}, onError: (_) {})));
+    }
+  }
+
+  Future<void> _poll() {
+    _hold.ensure();
+    return _eachActive((account) => _sync(account)?.done);
+  }
+
+  /// Runs [op] for every attivo Account at once: a Da ricollegare Account stops syncing until the user consents again.
+  Future<void> _eachActive(Future<void>? Function(Account account) op) async {
     await Future.wait([
       for (final account in await _store.accounts())
-        if (account.status == AccountStatus.attivo)
-          _runningSync[account.id] ?? _sync(account)?.synced ?? Future<void>.value(),
+        if (account.status == AccountStatus.attivo) op(account) ?? Future<void>.value(),
     ]);
   }
 
-  @override
-  Future<Result<void>> openConversation(String accountId, String conversationId) async {
-    final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    final provider = providerFor(account);
-    // Read here at once, offline too; the Provider hears it from the queue.
-    await _store.markConversationRead(accountId, conversationId);
-    // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
-    // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
-    final fetched = await _serial(accountId, () async {
-      // Inviati and messages older than the sync window are not in the database yet.
-      // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
-      final fetched = await _fetchConversation(accountId, provider, conversationId);
-      if (fetched case Ok(:final value)) {
-        await _store.applyPage(accountId, value, const {});
-        await _store.markConversationRead(accountId, conversationId);
-      }
-      // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
-      await _replay(accountId, provider);
-      return fetched;
-    });
-    return switch (fetched) {
-      Ok() => const Ok(null),
-      Err(:final failure) => Err(failure),
-    };
-  }
+  /// Queues a sync of the Account; null while the Provider's pause holds.
+  QueuedSync? _sync(Account account) =>
+      _gate.paused(account.id) ? null : _queue.sync(account.id, (synced) => _phase.run(account, synced));
 
   @override
-  Future<Result<void>> fetchBody(String accountId, String messageId) async {
-    final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    switch (await providerFor(account).fetchBody(messageId)) {
-      case Ok(:final value):
-        await _store.saveBody(accountId, messageId, value);
-        return const Ok(null);
-      case Err(:final failure):
-        debugPrint('[sync] $accountId: body $messageId failed, $failure');
-        return Err(failure);
-    }
-  }
+  Future<Result<void>> openConversation(String accountId, String conversationId) =>
+      _fetcher.openConversation(accountId, conversationId);
+
+  @override
+  Future<Result<void>> completeConversation(String accountId, String conversationId) =>
+      _fetcher.completeConversation(accountId, conversationId);
+
+  @override
+  Future<Result<void>> fetchBody(String accountId, String messageId) => _fetcher.fetchBody(accountId, messageId);
+
+  @override
+  Future<Result<ProviderSearchPage>> search(String accountId, SearchQuery query, {String? pageToken}) =>
+      _fetcher.search(accountId, query, pageToken: pageToken);
+
+  @override
+  Future<Result<AttachmentBytes>> fetchAttachment(
+    String accountId,
+    String messageId,
+    String attachmentId, {
+    void Function(double done)? onProgress,
+    Future<void>? cancel,
+  }) => _fetcher.fetchAttachment(accountId, messageId, attachmentId, onProgress: onProgress, cancel: cancel);
 
   @override
   Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
@@ -185,9 +209,7 @@ class SyncEngine(
   @override
   Future<void> flushDrafts(String accountId) async {
     await _draftTimers.remove(accountId)?.cancel();
-    if (await _activeAccount(accountId) case final account?) {
-      await _serial(accountId, () => _replay(accountId, providerFor(account), flush: true));
-    }
+    await _replay.ifActive(accountId, flush: true);
   }
 
   @override
@@ -200,59 +222,66 @@ class SyncEngine(
   /// and go with the first replay after it (the next poll or sync); so do those of a Da ricollegare Account.
   @override
   Future<void> flushOutbox(String accountId) async {
-    if (await _activeAccount(accountId) case final account?) {
-      await _serial(accountId, () => _replay(accountId, providerFor(account), outboxOnly: true));
-    }
+    await _replay.ifActive(accountId, outboxOnly: true);
   }
 
   @override
   Future<Result<OutgoingMessage>> openDraft(String accountId, String messageId) async {
-    final account = await _account(accountId);
+    final account = await _gate.find(accountId);
     if (account == null) return const Err(NotFoundFailure());
     return _drafts.open(account, messageId, providerFor(account));
   }
 
   @override
-  Future<Result<AttachmentBytes>> fetchAttachment(
-    String accountId,
-    String messageId,
-    String attachmentId, {
-    void Function(double done)? onProgress,
-    Future<void>? cancel,
-  }) async {
-    final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    return providerFor(account).fetchAttachment(messageId, attachmentId, onProgress: onProgress, cancel: cancel);
-  }
-
-  @override
   Future<Result<Label>> createLabel(String accountId, String name) async {
-    final account = await _account(accountId);
+    final account = await _gate.find(accountId);
     if (account == null) return const Err(NotFoundFailure());
     // In the Account's queue: a sync that read the list before the creation cannot drop it afterwards.
-    return _serial(accountId, () async {
+    return _queue.run(accountId, () async {
+      // Its removal started while this waited in the queue (#174): nothing is created on the Provider.
+      if (_gate.removed(accountId)) return const Err(NotFoundFailure());
       final created = await providerFor(account).createLabel(name);
-      if (created case Ok(:final value)) await _store.saveLabel(accountId, value);
+      if (created case Ok(:final value) when !_gate.removed(accountId)) {
+        await _store.saveLabel(accountId, value);
+      }
       return created;
     });
   }
 
   @override
-  Future<void> act(String accountId, Iterable<String> messageIds, MailAction action, {Duration? hold}) async {
+  Future<void> act(
+    String accountId,
+    Iterable<String> messageIds,
+    MailAction action, {
+    Duration? hold,
+    bool replay = true,
+  }) async {
+    // Applied here at once: a Conversazione left with nothing unread in the inbox loses its notification (#210).
+    final conversations = await _cleanup.conversationsOf(accountId, messageIds);
     if (hold == null) {
       await _store.queue(accountId, messageIds, action);
+      _cleanInQueue(accountId, conversations);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
-      return _replayIfActive(accountId);
+      if (!replay) return;
+      return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
+    _cleanInQueue(accountId, conversations);
     late final StreamSubscription<void> timer;
     timer = _clock.every(hold).listen((_) {
       _holdTimers.remove(timer);
       unawaited(timer.cancel());
-      unawaited(_replayIfActive(accountId));
+      unawaited(_replay.ifActive(accountId));
     });
     _holdTimers.add(timer);
   }
+
+  /// In the Account's queue, after any sync running: its notifications and this cleanup never interleave.
+  void _cleanInQueue(String accountId, Set<String> conversations) =>
+      unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, conversations)));
+
+  @override
+  Future<void> replayActions(String accountId) => _replay.ifActive(accountId, actionsOnly: true);
 
   @override
   Future<bool> cancelAction(String accountId, Iterable<String> messageIds, MailAction action) =>
@@ -261,7 +290,7 @@ class SyncEngine(
   @override
   Future<void> resolveConflict(Conflict conflict, {required bool keepMine}) async {
     if (await _store.resolveConflict(conflict, keepMine: keepMine) && keepMine) {
-      await _replayIfActive(conflict.accountId);
+      await _replay.ifActive(conflict.accountId);
     }
   }
 
@@ -284,202 +313,26 @@ class SyncEngine(
     required bool add,
   }) => act(accountId, messageIds, add ? ApplyLabel(labelId) : RemoveLabel(labelId));
 
-  @override
-  Future<Result<void>> completeConversation(String accountId, String conversationId) async {
-    final account = await _account(accountId);
-    if (account == null) return const Err(NotFoundFailure());
-    final provider = providerFor(account);
-    // Unlike openConversation it does not mark the Conversazione read.
-    final fetched = await _serial(accountId, () async {
-      final fetched = await _fetchConversation(accountId, provider, conversationId);
-      if (fetched case Ok(:final value)) await _store.applyPage(accountId, value, const {});
-      return fetched;
-    });
-    return switch (fetched) {
-      Ok() => const Ok(null),
-      Err(:final failure) => Err(failure),
-    };
-  }
-
-  Future<Account?> _account(String id) async => (await _store.accounts()).where((a) => a.id == id).firstOrNull;
-
-  /// The Account if its queue may go to the Provider now: not paused, not Da ricollegare (it waits for the reconnection).
-  Future<Account?> _activeAccount(String id) async {
-    if (_paused(id)) return null;
-    final account = await _account(id);
-    return account?.status == AccountStatus.attivo ? account : null;
-  }
-
-  /// Runs [op] after everything already queued for the Account; a failure does not block the queue.
-  Future<T> _serial<T>(String accountId, Future<T> Function() op) {
-    final run = (_tail[accountId] ?? Future<void>.value()).then((_) => op());
-    _tail[accountId] = run.then<void>((_) {}, onError: (_) {});
-    return run;
-  }
-
-  /// Sends the offline queue (ADR 0008): the intents and Bozze, then the due outbox entries.
-  /// With [outboxOnly] only the outbox goes (the 10 s timer and the WorkManager isolate): Bozze uploads
-  /// have no cross-isolate claim, so they stay with their own timers and the sync's replay.
-  /// Called only from inside the Account's serial queue.
-  Future<void> _replay(String accountId, MailProvider provider, {bool flush = false, bool outboxOnly = false}) async {
-    // A send ahead of this one in the queue may have just paused the Account.
-    if (_paused(accountId)) return;
-    if (!outboxOnly) await _intents.replay(accountId, provider, flush: flush);
-    // The replay may have just paused it (a rate-limited Etichetta): no send before the deadline.
-    if (_paused(accountId)) return;
-    await _outbox.sendDue(accountId, provider);
-  }
-
-  Future<void> _poll() async {
-    await Future.wait([
-      for (final account in await _store.accounts())
-        if (account.status == AccountStatus.attivo) _sync(account)?.done ?? Future<void>.value(),
-    ]);
-  }
-
-  /// One change-signal subscription per attivo Account.
-  void _watchSignals(List<Account> accounts) {
-    final attivi = {
-      for (final a in accounts)
-        if (a.status == AccountStatus.attivo) a.id: a,
-    };
-    for (final id in _signals.keys.toList()) {
-      if (!attivi.containsKey(id)) {
-        unawaited(_signals.remove(id)!.cancel());
-      }
-    }
-    for (final a in attivi.values) {
-      if (_signals.containsKey(a.id)) continue;
-      _signals[a.id] = providerFor(a).changes.listen((signal) {
-        switch (signal) {
-          // Up: whatever changed while it was down.
-          case ChangeSignal.up || ChangeSignal.changed:
-            unawaited(_sync(a)?.done);
-          case ChangeSignal.down:
-        }
-      });
-    }
-  }
-
-  /// Queues a sync of the Account; requests made before it starts share it, a request while it runs queues another.
-  /// Null while the Provider's pause holds.
-  _QueuedSync? _sync(Account account) {
-    final id = account.id;
-    if (_paused(id)) return null;
-    if (_queuedSync[id] case final queued?) return queued;
-    final synced = Completer<void>();
-    // A failure reaches the callers through `done` too: with no pull listening it is not reported twice.
-    synced.future.ignore();
-    final done = _serial(id, () {
-      _queuedSync.remove(id);
-      _runningSync[id] = synced.future;
-      return _syncOnce(account, synced);
-    });
-    return _queuedSync[id] = (done: done, synced: synced.future);
-  }
-
-  /// The whole Conversazione from the Provider, unless the Account's pause holds; a rate limit pauses it.
-  Future<Result<List<Message>>> _fetchConversation(String id, MailProvider provider, String conversationId) async {
-    if (_paused(id)) return Err(RateLimitFailure(retryAfter: _pausedUntil[id]));
-    final fetched = await provider.fetchConversation(conversationId);
-    if (fetched case Err(failure: RateLimitFailure(:final retryAfter?))) _pauseAccount(id, retryAfter);
-    return fetched;
-  }
-
-  /// True while the Provider's pause holds; a lapsed pause is forgotten.
-  bool _paused(String id) {
-    if (_pausedUntil[id] case final until?) {
-      if (_clock.now().isBefore(until)) return true;
-      _pausedUntil.remove(id);
-    }
-    return false;
-  }
-
-  /// Sends the Account's queue, in its turn, unless it may not go to the Provider now.
-  Future<void> _replayIfActive(String accountId) async {
-    if (await _activeAccount(accountId) case final account?) {
-      await _serial(accountId, () => _replay(accountId, providerFor(account)));
-    }
-  }
-
-  /// The Azioni, the sync, then the Bozze and the outbox; [synced] completes before these last two.
-  Future<void> _syncOnce(Account account, Completer<void> synced) async {
-    final accountId = account.id;
+  /// Rimozione dell'Account (#174): stops its change signal (IDLE) and Bozze ticker, runs [delete] in its queue
+  /// after whatever already runs there, then drops its adapter. A sync queued meanwhile finds no Account and stops.
+  Future<void> removeAccount(String accountId, Future<void> Function() delete) async {
+    _gate.removalStarted(accountId);
+    _triggers.forget(accountId);
+    await _draftTimers.remove(accountId)?.cancel();
+    // Not behind the queue: a replay running or queued there must not send the Azioni the user gave up.
     try {
-      final provider = providerFor(account);
-      try {
-        // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
-        if (!_paused(accountId)) await _intents.replayActions(accountId, provider);
-        if (!_paused(accountId)) await _syncPhase(accountId, provider);
-        synced.complete();
-      } catch (e, s) {
-        synced.completeError(e, s);
-        rethrow;
-      } finally {
-        // After the sync phase, failed too: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox
-        // attachments. Not once the sync made the Account Da ricollegare: its queue waits (ADR 0008).
-        if (await _activeAccount(accountId) != null) {
-          await _intents.replayDrafts(accountId, provider);
-          if (!_paused(accountId)) await _outbox.sendDue(accountId, provider);
-        }
-      }
-    } finally {
-      // Only now: a pull during the replay joins this finished sync phase instead of queuing one behind the uploads.
-      unawaited(_runningSync.remove(accountId));
-      if (!synced.isCompleted) synced.complete();
+      await _store.dropQueue(accountId);
+      await _queue.run(accountId, delete);
+    } catch (_) {
+      // Not removed after all: the Account works again (its dropped queue stays dropped).
+      _gate.removalFailed(accountId);
+      rethrow;
     }
-  }
-
-  Future<void> _syncPhase(String accountId, MailProvider provider) async {
-    final cursor = await _store.cursor(accountId);
-    var full = cursor == null;
-    Future<Result<SyncBatch>> initial() {
-      debugPrint('[sync] $accountId: initial sync start');
-      return provider.initialSync(onPage: (messages, bodies) => _store.applyPage(accountId, messages, bodies));
-    }
-
-    if (!full) debugPrint('[sync] $accountId: incremental sync start');
-    var result = full ? await initial() : await provider.incrementalSync(cursor);
-    if (result case Err(failure: NotFoundFailure())) {
-      // Expired cursor: start over.
-      full = true;
-      result = await initial();
-    }
-    switch (result) {
-      case Ok(:final value):
-        // Before the apply, which makes every message known; the initial sync notifies nothing (#39).
-        // ponytail: a sync redone for an expired cursor notifies nothing either; diff against the database if that loses mail.
-        final unknown = full ? const <Message>[] : await _store.unknown(accountId, value.messages);
-        final fresh = await _newMail.fresh(accountId, unknown);
-        // The cursor is saved here, from the complete batch: pages alone never save it.
-        await _store.applySync(accountId, value, fullSnapshot: full);
-        await _newMail.notify(accountId, fresh);
-        // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.
-        if (unknown.isNotEmpty) {
-          final run = _labeler.queueAutoLabels(accountId, unknown, value.bodies);
-          unawaited(autoLabeling[accountId] = run.then((queued) => queued ? _replayIfActive(accountId) : null));
-        }
-        debugPrint(
-          '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
-          '${value.messages.length} messages, ${value.removedMessageIds.length} removed',
-        );
-      case Err(:final failure):
-        debugPrint('[sync] $accountId: failed, $failure');
-        _log.failure('sync $accountId', failure);
-        if (failure case RateLimitFailure(:final retryAfter?)) {
-          _pauseAccount(accountId, retryAfter);
-          debugPrint('[sync] $accountId: paused until $retryAfter');
-        }
-        // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
-        if (failure is AuthFailure) {
-          await _store.setStatus(accountId, AccountStatus.daRicollegare);
-        }
-    }
+    _gate.removalDone(accountId);
+    // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
+    unawaited(forgetProvider(accountId));
   }
 }
-
-/// A queued sync: `done` when its whole slot ends, `synced` at the end of its sync phase.
-typedef _QueuedSync = ({Future<void> done, Future<void> synced});
 
 @module
 abstract class SyncModule() {

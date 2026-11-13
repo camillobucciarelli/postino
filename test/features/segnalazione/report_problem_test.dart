@@ -1,6 +1,7 @@
 // Segnala un problema (#117): from the drawer and the `p` key, without an Account (the system share sheet), and the
 // Dialog offered after a crash.
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

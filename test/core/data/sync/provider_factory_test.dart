@@ -70,9 +70,8 @@ void main() {
       final h = await Harness.create();
       final server = await RecordedImapServer.start((c) => basics(c, capabilities: 'IMAP4rev1')!);
       addTearDown(server.stop);
-      getIt
-        ..unregister<ImapConnector>()
-        ..registerSingleton<ImapConnector>(plainConnector);
+      await getIt.unregister<ImapConnector>();
+      getIt.registerSingleton<ImapConnector>(plainConnector);
       const imap = Account(
         id: 'imap:ada@example.org',
         address: 'ada@example.org',
@@ -91,6 +90,10 @@ void main() {
       ]);
       await getIt<AccountsSettingsMirror>().reconcile();
 
+      // The logout runs after the removal, without holding it.
+      for (var i = 0; i < 100 && !server.commands.contains('LOGOUT'); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
       expect(server.commands, contains('LOGOUT'));
     });
   });

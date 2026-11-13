@@ -19,6 +19,14 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Future<String?> cursor(String accountId) async =>
       (await (select(syncCursors)..where((t) => t.accountId.equals(accountId))).getSingleOrNull())?.cursor;
 
+  /// The Provider ids of the Account's messages in cache.
+  Future<List<String>> ids(String accountId) =>
+      (selectOnly(messages)
+            ..addColumns([messages.id])
+            ..where(messages.accountId.equals(accountId)))
+          .map((r) => r.read(messages.id)!)
+          .get();
+
   /// True when the Account has the message with Provider id [id] in cache.
   Future<bool> exists(String accountId, String id) async =>
       (await (select(messages)
@@ -80,34 +88,36 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
               ..upsertAllIn(b, accountId, labels);
           }
           for (final m in batch.messages) {
+            final row = MessagesCompanion.insert(
+              accountId: accountId,
+              id: m.id,
+              messageId: m.messageId,
+              conversationId: m.conversationId,
+              sender: m.from,
+              senderName: Value(m.fromName),
+              recipients: m.to.join('\n'),
+              cc: Value(m.cc.join('\n')),
+              bcc: Value(m.bcc.join('\n')),
+              replyTo: Value(m.replyTo),
+              references: Value(m.references.join('\n')),
+              subject: m.subject,
+              snippet: m.snippet,
+              date: m.date.millisecondsSinceEpoch,
+              isRead: m.isRead,
+              isStarred: m.isStarred,
+              // Unknown does not erase what a body or an earlier sync already said.
+              hasAttachments: Value.absentIfNull(m.hasAttachments),
+            );
             b
-              ..insert(
-                messages,
-                MessagesCompanion.insert(
-                  accountId: accountId,
-                  id: m.id,
-                  messageId: m.messageId,
-                  conversationId: m.conversationId,
-                  sender: m.from,
-                  senderName: Value(m.fromName),
-                  recipients: m.to.join('\n'),
-                  cc: Value(m.cc.join('\n')),
-                  bcc: Value(m.bcc.join('\n')),
-                  replyTo: Value(m.replyTo),
-                  references: Value(m.references.join('\n')),
-                  subject: m.subject,
-                  snippet: m.snippet,
-                  date: m.date.millisecondsSinceEpoch,
-                  isRead: m.isRead,
-                  isStarred: m.isStarred,
-                ),
-                mode: InsertMode.insertOrReplace,
-              )
+              // An upsert, not a replace: the row keeps its rowid, which is the id of its entry in the search index.
+              ..insert(messages, row, onConflict: DoUpdate((_) => row))
               ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(m.id))
               ..insertAll(messageLabels, [
                 for (final l in m.labelIds)
                   MessageLabelsCompanion.insert(accountId: accountId, messageId: m.id, labelId: l),
               ]);
+            // A header-only guess does not undo what the body already said.
+            if (m.hasAttachments != null) bodiesDao.correctHasAttachmentsIn(b, accountId, m.id);
           }
           bodiesDao.upsertAllIn(b, accountId, batch.bodies);
           if (saveCursor) {
@@ -187,17 +197,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
       ),
     ])..where(t.accountId.equalsExp(m.accountId) & t.conversationId.equalsExp(m.conversationId));
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
-      ..addColumns([_labelIds])
+      ..addColumns([labelIds])
       ..where(existsQuery(withLabel))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (accountId != null) query.where(m.accountId.equals(accountId));
     return query.watch().map(
-      (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m), r.read(_labelIds)?.split('\n') ?? const [])],
+      (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m), r.read(labelIds)?.split('\n') ?? const [])],
     );
   }
 
   /// The label ids of a `messages` row, one per line.
-  CustomExpression<String> get _labelIds => CustomExpression<String>(
+  CustomExpression<String> get labelIds => CustomExpression<String>(
     '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
     'WHERE l.account_id = messages.account_id AND l.message_id = messages.id)',
     watchedTables: [messageLabels],
@@ -208,7 +218,6 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Stream<List<(MessageRow, BodyRow?, List<String>)>> watchConversation(String accountId, String conversationId) {
     final m = messages;
     final b = bodies;
-    final labelIds = _labelIds;
     final query = select(m).join([leftOuterJoin(b, b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id))])
       ..addColumns([labelIds])
       ..where(m.accountId.equals(accountId) & m.conversationId.equals(conversationId))
@@ -224,10 +233,10 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Stream<(MessageRow, List<String>)?> watchOne(String accountId, String messageId) {
     final m = messages;
     final query = select(m).join([])
-      ..addColumns([_labelIds])
+      ..addColumns([labelIds])
       ..where(m.accountId.equals(accountId) & m.id.equals(messageId));
     return query.watchSingleOrNull().map(
-      (r) => r == null ? null : (r.readTable(m), r.read(_labelIds)?.split('\n') ?? const <String>[]),
+      (r) => r == null ? null : (r.readTable(m), r.read(labelIds)?.split('\n') ?? const <String>[]),
     );
   }
 
@@ -263,5 +272,12 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
           ..addColumns([l.accountId, l.labelId])
           ..where(existsQuery(unreadInConversation));
     return query.watch().map((rows) => {for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!)});
+  }
+
+  /// Removes the Account's messages, their labels and sync cursor (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) async {
+    await (delete(messages)..where((t) => t.accountId.equals(accountId))).go();
+    await (delete(messageLabels)..where((t) => t.accountId.equals(accountId))).go();
+    await (delete(syncCursors)..where((t) => t.accountId.equals(accountId))).go();
   }
 }

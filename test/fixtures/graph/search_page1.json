@@ -1,0 +1,108 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/messages(id,internetMessageId,conversationId,parentFolderId,isRead,flag,from,replyTo,toRecipients,ccRecipients,bccRecipients,subject,bodyPreview,receivedDateTime,hasAttachments)",
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADs1\"",
+        "id": "msg-s1",
+        "receivedDateTime": "2026-05-04T09:12:00Z",
+        "hasAttachments": true,
+        "internetMessageId": "<s1@mail.example.com>",
+        "subject": "Preventivo tetto",
+        "bodyPreview": "Il preventivo per il tetto è in allegato.",
+        "isRead": false,
+        "conversationId": "conv-s1",
+        "parentFolderId": "folder-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADs2\"",
+        "id": "msg-s2",
+        "receivedDateTime": "2026-05-03T18:40:00Z",
+        "hasAttachments": false,
+        "internetMessageId": "<s2@mail.example.com>",
+        "subject": "Re: Preventivo tetto",
+        "bodyPreview": "Il preventivo per il tetto è in allegato.",
+        "isRead": true,
+        "conversationId": "conv-s1",
+        "parentFolderId": "folder-inbox",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        }
+      },
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADs3\"",
+        "id": "msg-s3",
+        "receivedDateTime": "2026-05-02T07:00:00Z",
+        "hasAttachments": false,
+        "internetMessageId": "<s3@mail.example.com>",
+        "subject": "Preventivo gratuito!!!",
+        "bodyPreview": "Il preventivo per il tetto è in allegato.",
+        "isRead": false,
+        "conversationId": "conv-s3",
+        "parentFolderId": "folder-junkemail",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Offerte",
+            "address": "offerte@spam.example.net"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "notFlagged"
+        }
+      }
+    ],
+    "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/messages?%24search=%22%5C%22preventivo%5C%22%22&%24top=50&%24select=id%2CinternetMessageId%2CconversationId%2CparentFolderId%2CisRead%2Cflag%2Cfrom%2CreplyTo%2CtoRecipients%2CccRecipients%2CbccRecipients%2Csubject%2CbodyPreview%2CreceivedDateTime%2ChasAttachments&%24skip=50"
+  }
+}

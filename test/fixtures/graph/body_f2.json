@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "id": "msg-f2",
+    "hasAttachments": true,
+    "body": {
+      "contentType": "html",
+      "content": "<html><body><p>Preventivo in allegato.</p><img src=\"cid:logo-1\"></body></html>"
+    }
+  }
+}

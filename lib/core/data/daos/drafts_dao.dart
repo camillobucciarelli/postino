@@ -270,4 +270,7 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       updateKind: UpdateKind.delete,
     );
   });
+
+  /// Removes the Account's Bozze (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(drafts)..where((t) => t.accountId.equals(accountId))).go();
 }

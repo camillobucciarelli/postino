@@ -4,13 +4,18 @@ import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/domain/app_updater.dart';
+import '../../../core/domain/immediate_notifications_use_case.dart';
 import '../../../core/domain/launch_at_login_use_case.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'escape_to_go_back.dart';
+import 'immediate_notifications_row.dart';
+import 'notification_actions_sections.dart';
+import 'notification_permission_row.dart';
 
-/// The Impostazioni del dispositivo (spec #28, story 98): the avvio al login, on desktop (#38), and «Cerca
-/// aggiornamenti» where Postino updates itself (macOS, #122).
+/// The Impostazioni del dispositivo (spec #28, story 98): the avvio al login, on desktop (#38), «Cerca
+/// aggiornamenti» where Postino updates itself (macOS, #122), then on every platform the «Notifiche», the Notifiche
+/// immediate on Android (#214) and the Azioni of a notification (#211).
 /// Esc and the back arrow call [onBack]; routing is the caller's.
 class const DeviceSettingsView({super.key, required final VoidCallback onBack}) extends StatefulWidget {
   @override
@@ -20,6 +25,7 @@ class const DeviceSettingsView({super.key, required final VoidCallback onBack}) 
 class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
   final _launchAtLogin = GetIt.I<LaunchAtLoginUseCase>();
   final _updater = GetIt.I<AppUpdater>();
+  final _immediate = GetIt.I<ImmediateNotificationsUseCase>().supported;
 
   /// What the OS says; null while it is asked (the switch waits disabled).
   bool? _enabled;
@@ -82,6 +88,9 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
                 subtitle: t.checkForUpdatesBody,
                 onTap: () => unawaited(_updater.checkForUpdates()),
               ),
+            const NotificationPermissionRow(),
+            if (_immediate) const ImmediateNotificationsRow(),
+            const NotificationActionsSections(),
           ],
         ),
       ),

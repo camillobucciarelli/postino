@@ -88,7 +88,7 @@ void main() {
     // Positions with a gap, as after a removal: a count would collide with the last one.
     await h.addAccount('a1');
     await h.addAccount('a2');
-    await getIt<PostinoDatabase>().accountsDao.remove('a1');
+    await getIt<PostinoDatabase>().accountsDao.deleteByAccount('a1');
     h.providerFor('gmail:ada@gmail.com');
 
     await getIt<AccountsRepository>().connectGmail();
@@ -158,7 +158,8 @@ void main() {
     ]);
 
     // The mirror is deleting the credentials when the OAuth of a reconnection comes back.
-    final gate = h.keychain.deleteGate = Completer<void>();
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
     final removal = getIt<AccountsSettingsMirror>().reconcile();
     await pumpEventQueue();
     final reconnection = getIt<AccountsRepository>().connectGmail(loginHint: 'ada@gmail.com');
@@ -249,7 +250,7 @@ void _driveTests() {
       final grant = getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com');
       await pumpEventQueue();
       await h.keychain.delete('oauth:gmail:ada@gmail.com');
-      await getIt<PostinoDatabase>().accountsDao.remove('gmail:ada@gmail.com');
+      await getIt<PostinoDatabase>().accountsDao.deleteByAccount('gmail:ada@gmail.com');
       gate.complete();
 
       expect(((await grant) as Err).failure, isA<NotFoundFailure>());

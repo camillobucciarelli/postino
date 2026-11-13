@@ -19,6 +19,7 @@
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",
     "connectGmail": "Collega Gmail",
+    "connectOutlook": "Collega Outlook",
     "connectIcloud": "Collega iCloud",
     "connectImap": "Altro IMAP"
   },
@@ -27,6 +28,7 @@
     "message": "Google non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.",
     "signIn": "Accedi",
     "status": "Da ricollegare",
+    "microsoftMessage": "Microsoft non accetta più l'accesso. La posta resta leggibile ma non si aggiorna finché non accedi.",
     "passwordMessage": "Il server non accetta più la password. La posta resta leggibile ma non si aggiorna finché non accedi."
   },
   "connect": {
@@ -34,9 +36,11 @@
     "missingSetting": "Manca $setting: avvia Postino con --dart-define=$setting=… (vedi README).",
     "offline": "Nessuna connessione: riprova quando sei online.",
     "missingPermission": "Serve l'accesso a Gmail: riprova e lascia spuntato il permesso per leggere e gestire la posta.",
-    "wrongAccount": "Hai scelto un altro account Google: per ricollegare $address scegli quell'account.",
+    "missingPermissionMicrosoft": "Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.",
+    "wrongAccount": "Hai scelto un altro account: per ricollegare $address scegli quell'account.",
     "failed": "Qualcosa è andato storto: riprova.",
-    "alreadyConnected": "Questo Account è già collegato."
+    "alreadyConnected": "Questo Account è già collegato.",
+    "workAccount": "Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati."
   },
   "offline": {
     "title": "Sei offline",
@@ -132,11 +136,15 @@
     "send": "Invia",
     "queued": "In attesa d'invio",
     "undo": "Annulla",
-    "tooLarge": "Il messaggio supera il limite di $mb MB di Gmail",
+    "tooLarge": "Il messaggio supera il limite di $mb MB del Provider",
     "sendFailed": "Invio non riuscito: riprova",
     "offlineAttachments": "Sei offline: gli allegati dell'inoltro non sono ancora scaricati, riprova in rete",
     "noRecipient": "Aggiungi almeno un destinatario",
-    "forwardedAttachments": "Allegati"
+    "forwardedAttachments": "Allegati",
+    "suggestions": {
+      "one": "$n suggerimento",
+      "other": "$n suggerimenti"
+    }
   },
   "bozze": {
     "title": "Bozze",
@@ -158,8 +166,18 @@
     "launchAtLogin": "Avvio al login",
     "launchAtLoginBody": "Postino si apre quando accedi al computer e resta nella tray, così la posta continua ad arrivare.",
     "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.",
+    "immediateNotifications": "Notifiche immediate",
+    "immediateNotificationsBody": "La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.",
+    "immediateNotificationsFailed": "Il sistema non ha avviato le Notifiche immediate. Riprova.",
     "checkForUpdates": "Cerca aggiornamenti",
     "checkForUpdatesBody": "Cerca subito una nuova versione di Postino.",
+    "notifications": "Notifiche",
+    "notificationsAllowed": "Consentite",
+    "notificationsDenied": "Non consentite: la posta nuova arriva senza avviso.",
+    "notificationsAllow": "Consenti",
+    "notificationActionFirst": "Prima Azione della notifica",
+    "notificationActionSecond": "Seconda Azione della notifica",
+    "notificationActionNone": "Nessuna",
     "syncSection": "Sincronizzazione",
     "syncTitle": "Sincronizza su…",
     "syncNone": "Nessuno",
@@ -250,7 +268,37 @@
     "permissionTitle": "Notifiche della posta nuova",
     "permissionBody": "Postino ti avvisa quando arriva un messaggio, con mittente, oggetto e anteprima. Il sistema ti chiederà il permesso.",
     "permissionAllow": "Continua",
-    "permissionLater": "Non ora"
+    "permissionLater": "Non ora",
+    "newMessages": {
+      "one": "$n nuovo messaggio",
+      "other": "$n nuovi messaggi"
+    },
+    "listeningChannel": "Postino in ascolto",
+    "listeningTitle": "Postino in ascolto",
+    "listeningText": "La posta nuova arriva in tempo reale. Tocca per aprire la Posta unificata."
+  },
+  "cerca": {
+    "open": "Cerca",
+    "title": "Cerca",
+    "field": "Cerca nella posta",
+    "scopeAll": "Tutti gli Account",
+    "idleTitle": "Cerca nella posta",
+    "idleBody": "Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.",
+    "emptyTitle": "Nessun risultato",
+    "emptyBody": "Prova con altre parole o con l'inizio di una parola.",
+    "results": {
+      "one": "$n risultato",
+      "other": "$n risultati"
+    },
+    "provider": {
+      "searching": "Cerco anche su $name…",
+      "unreachable": "Risultati solo locali: $name non è raggiungibile",
+      "capped": "Mostrati i primi $n risultati di $name",
+      "retry": "Premi Invio nel campo per riprovare.",
+      "more": "Mostra altri",
+      "reconnect": "Va ricollegato: accedi di nuovo dall'avviso nella lista della posta.",
+      "later": "Il Provider ha chiesto una pausa: riprova tra qualche minuto."
+    }
   },
   "conflitti": {
     "bannerTitle": {
@@ -335,7 +383,8 @@
     "serverNotFound": "Non ho trovato i server di questo indirizzo: inseriscili qui sotto.",
     "unreachable": "Server non raggiungibile: controlla la connessione, l'host e la porta.",
     "alreadyConnected": "Questo Account è già collegato.",
-    "useGmail": "Per un indirizzo Gmail usa «Collega Gmail»."
+    "useGmail": "Per un indirizzo Gmail usa «Collega Gmail».",
+    "useMicrosoft": "Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook»."
   },
   "accounts": {
     "section": "Account",
@@ -343,6 +392,13 @@
     "gmail": "Gmail",
     "icloud": "iCloud",
     "imap": "IMAP",
-    "microsoft": "Microsoft"
+    "microsoft": "Microsoft",
+    "remove": "Rimuovi l'Account $address",
+    "removeTitle": "Rimuovere l'Account $name?",
+    "removeMessage": "Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.",
+    "removeNote": "Le modifiche non ancora inviate al server vanno perse.",
+    "removeGmailNote": "Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.",
+    "removeConfirm": "Rimuovi",
+    "removeCancel": "Annulla"
   }
 }

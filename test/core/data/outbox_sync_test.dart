@@ -8,12 +8,12 @@ import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/background_send.dart';
 import 'package:postino/core/data/daos/outbox_dao.dart';
 import 'package:postino/core/data/mail_store.dart';
-import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/intent_replayer.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
+import 'package:postino/core/data/sync/notification_cleanup.dart';
 import 'package:postino/core/data/sync/outbox_sender.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/attachment_repository.dart';
@@ -23,6 +23,7 @@ import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/send_limit.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
@@ -229,6 +230,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     )..start();
@@ -475,6 +477,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );
@@ -701,6 +704,7 @@ void main() {
       GetIt.I<Connectivity>(),
       GetIt.I<BackgroundSender>(),
       GetIt.I<NewMailNotifier>(),
+      GetIt.I<NotificationCleanup>(),
       GetIt.I<AutoLabeler>(),
       GetIt.I<ErrorLog>(),
     );

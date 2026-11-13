@@ -25,20 +25,6 @@ class AccountsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     AccountsCompanion(address: Value(a.address), color: Value(a.color), position: Value(a.position)),
   );
 
-  /// Removes the Account and every local datum of it (each table with an `account_id`), in one transaction.
-  Future<void> remove(String id) => transaction(() async {
-    for (final t in attachedDatabase.allTables) {
-      if (!t.columnsByName.containsKey('account_id')) continue;
-      await customUpdate(
-        'DELETE FROM ${t.actualTableName} WHERE account_id = ?',
-        variables: [Variable(id)],
-        updates: {t},
-        updateKind: UpdateKind.delete,
-      );
-    }
-    await (delete(accounts)..where((t) => t.id.equals(id))).go();
-  });
-
   /// Whether the Account [id] is here.
   Future<bool> exists(String id) async =>
       await (select(accounts)..where((t) => t.id.equals(id))).getSingleOrNull() != null;
@@ -53,4 +39,7 @@ class AccountsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   Future<List<AccountRow>> byPosition() => _byPosition().get();
 
   Stream<List<AccountRow>> watchByPosition() => _byPosition().watch();
+
+  /// Removes the Account's own row (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(accounts)..where((t) => t.id.equals(accountId))).go();
 }

@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "id": "msg-f3",
+    "hasAttachments": false,
+    "body": {
+      "contentType": "text",
+      "content": "Solo testo."
+    }
+  }
+}

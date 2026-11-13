@@ -13,6 +13,9 @@ import 'package:postino/core/domain/platform_services.dart';
 /// line is a status (`OK`, `NO`, `BAD`), it goes out tagged; otherwise a tagged `OK` closes the answer.
 typedef ImapScript = List<String> Function(String command);
 
+/// What [ImapScript] returns for a command the server never answers (a slow SEARCH): the client times out.
+const hang = ['<hang>'];
+
 /// Plain TCP on 127.0.0.1: the adapter reaches it through [plainConnector], never with a password over a network.
 class RecordedImapServer._(final ServerSocket _socket, final ImapScript _script) {
   /// Every command received, without its tag, in order.
@@ -46,6 +49,7 @@ class RecordedImapServer._(final ServerSocket _socket, final ImapScript _script)
       final command = line.substring(space + 1);
       commands.add(command);
       final answer = [..._script(command)];
+      if (answer.length == 1 && answer.first == hang.first) return;
       final status = answer.isNotEmpty && RegExp('^(OK|NO|BAD)( |\$)').hasMatch(answer.last)
           ? answer.removeLast()
           : 'OK done';

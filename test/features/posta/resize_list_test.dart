@@ -3,10 +3,12 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -41,6 +43,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
   Future<void> setLaunchAtLogin({required bool enabled}) async {}
 
   @override
+  Future<bool?> immediateNotifications() async => null;
+
+  @override
+  Future<void> setImmediateNotifications({required bool enabled}) async {}
+
+  @override
   Future<bool> notificationsAsked() async => true;
 
   @override
@@ -54,6 +62,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
 
   @override
   Future<void> setSettingsSyncAccount(String? accountId) async {}
+
+  @override
+  Future<NotificationActions> notificationActions() async => notificationActionsDefault;
+
+  @override
+  Future<void> setNotificationActions(NotificationActions actions) async {}
 }
 
 Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}) async {
@@ -66,9 +80,8 @@ Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}
     ..deliver(msg('x', subject: 'Da uno'))
     ..deliver(msg('y', subject: 'Da due'));
   final settings = _FakeSettings(stored);
-  getIt
-    ..unregister<SettingsRepository>()
-    ..registerSingleton<SettingsRepository>(settings);
+  await getIt.unregister<SettingsRepository>();
+  getIt.registerSingleton<SettingsRepository>(settings);
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   unawaited(Routefly.navigate(routePaths.posta.path));

@@ -7,8 +7,8 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
 /// Once per device, with an Account (#39): says what the notifications show, then lets the OS ask. Nothing where the
-/// OS need not ask (Windows, Linux, Android before 13) or already allowed them; «Non ora» is not asked again.
-// ponytail: no way back to it from Postino after «Non ora» (the system settings are); a switch in the Impostazioni at step 7.
+/// OS need not ask (Windows, Linux, Android before 13) or already allowed them; «Non ora» is not asked again here:
+/// the row «Notifiche» of the Impostazioni del dispositivo asks again (#211).
 Future<void> askNotificationPermission(BuildContext context) async {
   final notifications = GetIt.I<Notifications>();
   final settings = GetIt.I<SettingsRepository>();

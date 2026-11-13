@@ -1,6 +1,7 @@
 // UI dei Conflitti delle Bozze (#149): banner, le due versioni affiancate, «La tua» / «Del Provider».
 import 'dart:async';
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -1,13 +1,16 @@
 import 'dart:async';
-import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/account.dart';
 import '../domain/accounts_repository.dart';
+import '../domain/attachment_repository.dart';
 import '../domain/connection_tester.dart';
 import '../domain/google_consent.dart';
 import '../domain/mail_servers.dart';
+import '../domain/microsoft_consent.dart';
+import '../domain/oauth_grant.dart';
 import '../domain/password_provider.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
@@ -15,9 +18,10 @@ import '../domain/server_discovery.dart';
 import '../domain/settings_repository.dart';
 import 'account_settings_json.dart';
 import 'accounts_lock.dart';
-import 'gmail/gmail_tokens.dart';
+import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
+import 'oauth/oauth_tokens.dart';
 import 'postino_database.dart';
 import 'sync_engine.dart';
 
@@ -25,6 +29,7 @@ import 'sync_engine.dart';
 class AccountsService(
   final MailStore _store,
   final GoogleConsent _consent,
+  final MicrosoftConsent _microsoft,
   final SecureStore _keychain,
   final SyncEngine _sync,
   final PostinoDatabase _db,
@@ -33,14 +38,31 @@ class AccountsService(
   final AccountsLock _lock,
   final ServerDiscovery _discovery,
   final ConnectionTester _tester,
+  final GoogleRevoke _revoke,
+  final AttachmentRepository _attachments,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
 
   @override
-  Future<Result<Account>> connectGmail({String? loginHint}) async {
-    final GoogleGrant grant;
-    switch (await _consent.run(loginHint: loginHint)) {
+  Future<Result<Account>> connectGmail({String? loginHint}) =>
+      _connectOAuth(ProviderKind.gmail, loginHint, () => _consent.run(loginHint: loginHint));
+
+  @override
+  Future<Result<Account>> connectMicrosoft({String? loginHint}) =>
+      _connectOAuth(ProviderKind.microsoft, loginHint, () => _microsoft.run(loginHint: loginHint));
+
+  /// The consent of an OAuth Provider, then the Account it names.
+  Future<Result<Account>> _connectOAuth(
+    ProviderKind provider,
+    String? loginHint,
+    Future<Result<OAuthGrant>> Function() consent,
+  ) async {
+    // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
+    // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
+    await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
+    final OAuthGrant grant;
+    switch (await consent()) {
       case Err(:final failure):
         return Err(failure);
       case Ok(:final value):
@@ -49,13 +71,19 @@ class AccountsService(
     if (loginHint != null && normalizedAddress(loginHint) != normalizedAddress(grant.address)) {
       return Err(WrongAccountFailure(loginHint));
     }
-    // Gmail addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
+    // Addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
     final address = normalizedAddress(grant.address);
-    final id = accountIdOf(ProviderKind.gmail, address);
-    // Under the lock: a removal of the same Account in flight never deletes these credentials.
+    final id = accountIdOf(provider, address);
+    // Removed while the user was on the Provider's page: its revocation would end this grant too, so the consent is
+    // to run again once it is over.
+    if (_removals[id] case final removing?) {
+      await removing.catchError((Object _) {});
+      return const Err(CancelledFailure());
+    }
+    // Under the lock: a removal of the same Account from another device in flight never deletes these credentials.
     final account = await _lock.run(() async {
-      await GmailTokens.of(grant).write(_keychain, id);
-      return _save(id, address, ProviderKind.gmail);
+      await OAuthTokens.of(grant).write(_keychain, id);
+      return _save(id, address, provider);
     });
     unawaited(_sync.syncAll());
     return Ok(account);
@@ -71,8 +99,14 @@ class AccountsService(
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
     final normalized = normalizedAddress(address);
-    final provider = passwordProviderFor(normalized);
-    if (provider == null) return const Err(UseGmailFailure());
+    // An IMAP Account saved before the Microsoft button (an Outlook.com address) still reconnects with its password.
+    final legacy = (await _store.accounts()).any((a) => a.id == accountIdOf(ProviderKind.imap, normalized));
+    final provider = passwordProviderFor(normalized) ?? (legacy ? const PasswordProvider(ProviderKind.imap) : null);
+    if (provider == null) {
+      return Err(
+        oauthProviderFor(normalized) == ProviderKind.microsoft ? const UseMicrosoftFailure() : const UseGmailFailure(),
+      );
+    }
     final id = accountIdOf(provider.kind, normalized);
     final known = (await _store.accounts()).where((a) => a.id == id).firstOrNull;
     // The same address through another Provider is another Account (ADR 0016): only this one, attivo, is refused.
@@ -87,7 +121,9 @@ class AccountsService(
         return Err(failure);
       case Ok():
     }
-    // The user closed the form while the servers answered: nothing is written.
+    await _removals[id]?.catchError((Object _) {});
+    // The user closed the form while the servers answered, or while a removal of the same Account ended: nothing
+    // is written.
     if (cancelled) return const Err(CancelledFailure());
     final account = await _lock.run(() async {
       // Closed while waiting for the lock too: still nothing written.
@@ -114,8 +150,8 @@ class AccountsService(
       address: address,
       provider: provider,
       color: known?.color ?? all.length % accountColorCount,
-      // After the last one: a count would collide once Accounts are removed or arrive from another device.
-      position: known?.position ?? (all.isEmpty ? 0 : all.map((a) => a.position).reduce(max) + 1),
+      // After the last one: a removal leaves a gap, never a duplicate, an Account from another device too.
+      position: known?.position ?? all.fold<int>(-1, (m, a) => a.position > m ? a.position : m) + 1,
     );
     await _store.addAccount(account);
     final key = accountSettingsKey(id);
@@ -138,12 +174,57 @@ class AccountsService(
         return Err(failure);
       case Ok(:final value):
         if (normalizedAddress(value.address) != account.address) return Err(WrongAccountFailure(account.address));
-        // Under the lock, the Account checked again: one removed during the consent gets no credentials.
+        // Removed while the user was on Google's page (#174), here or on another device: no tokens for it, and
+        // nothing to choose. Checked again under the lock, so a removal from another device cannot run in between.
+        if (_removals.containsKey(accountId)) return const Err(NotFoundFailure());
         return _lock.run(() async {
           if (!await _db.accountsDao.exists(account.id)) return const Err(NotFoundFailure());
-          await GmailTokens.of(value).write(_keychain, account.id);
+          await OAuthTokens.of(value).write(_keychain, account.id);
           return const Ok(null);
         });
+    }
+  }
+
+  /// The removals running, by Account: a connection of the same Account waits for its credential cleanup.
+  final _removals = <String, Future<void>>{};
+
+  @override
+  Future<void> remove(String accountId) {
+    // A second «Rimuovi» of the same Account while the first runs joins it: one cleanup, one entry to wait for.
+    if (_removals[accountId] case final running?) return running;
+    final run = _removals[accountId] = _remove(accountId);
+    run.whenComplete(() {
+      if (identical(_removals[accountId], run)) _removals.remove(accountId)?.ignore();
+    }).ignore();
+    return run;
+  }
+
+  Future<void> _remove(String accountId) async {
+    final account = (await _store.accounts()).where((a) => a.id == accountId).firstOrNull;
+    if (account == null) return;
+    // First: from here nothing of the Account goes to the Provider, whatever the keychain below takes.
+    await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
+    // Still there (they go last); a keychain that does not answer never blocks the removal.
+    final tokens = await OAuthTokens.read(_keychain, accountId).catchError((Object _) => null);
+    // The Impostazioni di Postino no longer have a Drive to sync on.
+    if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
+    // that cannot be emptied never stops the revocation nor the keychain cleanup.
+    try {
+      await _attachments.clear();
+    } on Object catch (e) {
+      debugPrint('[accounts] $accountId: attachment cache not cleared, ${e.runtimeType}');
+    }
+    // Only a Google token goes to Google; Microsoft's is not revoked in v1 (the grant stays in the user's account).
+    if (tokens != null && account.provider == ProviderKind.gmail) await _revoke.revoke(tokens.refresh);
+    // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
+    // that refuses one never leaves the other.
+    for (final delete in [OAuthTokens.delete, PasswordCredentials.delete]) {
+      try {
+        await delete(_keychain, accountId);
+      } on Object catch (e) {
+        debugPrint('[accounts] $accountId: keychain delete failed, ${e.runtimeType}');
+      }
     }
   }
 }

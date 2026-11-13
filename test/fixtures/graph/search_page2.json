@@ -1,0 +1,41 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('ada%40outlook.com')/messages(id,internetMessageId,conversationId,parentFolderId,isRead,flag,from,replyTo,toRecipients,ccRecipients,bccRecipients,subject,bodyPreview,receivedDateTime,hasAttachments)",
+    "value": [
+      {
+        "@odata.type": "#microsoft.graph.message",
+        "@odata.etag": "W/\"CQAAABYAAADs4\"",
+        "id": "msg-s4",
+        "receivedDateTime": "2025-11-20T15:30:00Z",
+        "hasAttachments": false,
+        "internetMessageId": "<s4@mail.example.com>",
+        "subject": "Preventivo hotel",
+        "bodyPreview": "Il preventivo per il tetto è in allegato.",
+        "isRead": true,
+        "conversationId": "conv-s4",
+        "parentFolderId": "folder-viaggi",
+        "replyTo": [],
+        "from": {
+          "emailAddress": {
+            "name": "Bruno Verdi",
+            "address": "bruno@example.com"
+          }
+        },
+        "toRecipients": [
+          {
+            "emailAddress": {
+              "name": "Ada Lovelace",
+              "address": "ada@outlook.com"
+            }
+          }
+        ],
+        "ccRecipients": [],
+        "bccRecipients": [],
+        "flag": {
+          "flagStatus": "flagged"
+        }
+      }
+    ]
+  }
+}

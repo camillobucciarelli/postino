@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_focus_ring.dart';
@@ -19,6 +20,10 @@ class const PostinoChoiceRow({
 
   /// Chiamata quando l'utente la sceglie.
   required final VoidCallback onSelected,
+
+  /// Il gruppo, letto dallo screen reader prima di [label] quando la pagina ne ha più d'uno
+  /// («Prima Azione della notifica, Archivia»).
+  final String? group,
 }) extends StatelessWidget {
   /// Crea la riga di scelta.
   this;
@@ -31,6 +36,8 @@ class const PostinoChoiceRow({
         button: true,
         inMutuallyExclusiveGroup: true,
         checked: selected,
+        // Merged before the row's text.
+        label: group,
         child: Material(
           color: c.surface,
           child: InkWell(

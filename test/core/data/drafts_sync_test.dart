@@ -225,7 +225,7 @@ void main() {
       final hold = a.holdBody = Completer<void>();
       final opening = engine.openDraft('a', '<y@example.com>');
       await pumpEventQueue();
-      await GetIt.I<PostinoDatabase>().accountsDao.remove('a');
+      await GetIt.I<PostinoDatabase>().accountsDao.deleteByAccount('a');
       a.holdBody = null;
       hold.complete();
 
@@ -235,7 +235,7 @@ void main() {
   );
 
   test('a save for an Account removed meanwhile keeps nothing and sends nothing', () async {
-    await GetIt.I<PostinoDatabase>().accountsDao.remove('a');
+    await GetIt.I<PostinoDatabase>().accountsDao.deleteByAccount('a');
     final tickers = h.clock.everyCalls;
     await engine.saveDraft('a', _draft(id));
     // No debounce armed for a Bozza that was not kept.

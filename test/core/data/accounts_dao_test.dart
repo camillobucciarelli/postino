@@ -32,22 +32,4 @@ void main() {
     final r = (await db.accountsDao.byPosition()).single;
     expect((r.address, r.color, r.position, r.status), ('new@example.com', 5, 3, AccountStatus.daRicollegare));
   });
-
-  test('remove takes the Account and its local mail, and leaves the other Accounts alone', () async {
-    for (final id in ['a', 'b']) {
-      await db.accountsDao.upsert(_a(id));
-      await db.customStatement("INSERT INTO labels VALUES ('$id', 'L1', 'L1', 'etichetta')");
-      await db.customStatement("INSERT INTO sync_cursors (account_id, cursor) VALUES ('$id', '7')");
-      await db.messageEmbeddingsDao.save(id, 'm1', 'model', [0.5]);
-    }
-    await db.accountsDao.remove('a');
-
-    expect((await db.accountsDao.byPosition()).map((r) => r.id), ['b']);
-    for (final t in db.allTables) {
-      if (!t.columnsByName.containsKey('account_id')) continue;
-      final ids = await db.customSelect('SELECT account_id FROM ${t.actualTableName}').get();
-      expect(ids.map((r) => r.read<String>('account_id')), everyElement('b'), reason: t.actualTableName);
-    }
-    expect(await db.select(db.labels).get(), hasLength(1));
-  });
 }

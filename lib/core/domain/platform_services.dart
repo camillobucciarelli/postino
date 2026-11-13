@@ -9,7 +9,7 @@ abstract interface class SecureStore() {
   /// Salva `value` sotto `key`.
   Future<void> write(String key, String value);
 
-  /// Toglie `key`, se c'è.
+  /// Cancella `key`; nulla se manca.
   Future<void> delete(String key);
 }
 
@@ -71,4 +71,17 @@ abstract interface class BackgroundSender() {
 
   /// Called when the Account's outbox is empty again.
   Future<void> release(String accountId);
+}
+
+/// The check for new mail while Postino is closed (#212): Android's WorkManager periodic task, nothing elsewhere
+/// (iOS is #213, desktop keeps its process).
+abstract interface class PeriodicSync() {
+  /// Interfaccia: nessuno stato da costruire.
+  this;
+
+  /// Schedules the check; scheduling it again keeps the one there.
+  Future<void> schedule();
+
+  /// Cancels the check: no Account left.
+  Future<void> cancel();
 }

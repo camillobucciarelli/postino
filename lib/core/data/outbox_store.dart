@@ -77,7 +77,7 @@ class OutboxStore(final PostinoDatabase _db) implements OutboxRepository {
 
   // --- Outbox (#36) ---
   @override
-  Future<void> enqueueOutgoing(
+  Future<bool> enqueueOutgoing(
     String accountId,
     OutgoingMessage message, {
     required int version,

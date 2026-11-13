@@ -1,3 +1,5 @@
+import 'notification_action.dart';
+
 /// The Impostazioni del dispositivo (ADR 0004): what this device remembers between runs.
 abstract interface class SettingsRepository() {
   /// Interfaccia: nessuno stato da costruire.
@@ -21,6 +23,12 @@ abstract interface class SettingsRepository() {
   /// Ricorda la scelta dell'avvio al login.
   Future<void> setLaunchAtLogin({required bool enabled});
 
+  /// The Notifiche immediate chosen on this device (#214); null before any choice (off).
+  Future<bool?> immediateNotifications();
+
+  /// Ricorda la scelta delle Notifiche immediate.
+  Future<void> setImmediateNotifications({required bool enabled});
+
   /// Whether this device already explained the notifications and offered the OS's permission (#39).
   Future<bool> notificationsAsked();
 
@@ -36,4 +44,10 @@ abstract interface class SettingsRepository() {
 
   /// Sceglie l'Account su cui sincronizzare le Impostazioni di Postino; null spegne la sincronizzazione.
   Future<void> setSettingsSyncAccount(String? accountId);
+
+  /// The Azioni delle notifiche (#211); [notificationActionsDefault] until chosen.
+  Future<NotificationActions> notificationActions();
+
+  /// Ricorda le Azioni delle notifiche; null in un posto è «Nessuna».
+  Future<void> setNotificationActions(NotificationActions actions);
 }

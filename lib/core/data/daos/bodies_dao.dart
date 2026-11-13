@@ -2,9 +2,17 @@ import 'package:drift/drift.dart';
 
 import '../../domain/message.dart';
 import '../postino_database.dart';
+import '../search_index.dart';
 import '../tables/bodies_table.dart';
 
 part 'bodies_dao.g.dart';
+
+/// The downloaded body knows better than the sync whether a message has attachments (#206): the message takes the
+/// body's answer, and keeps its own when the body does not know them (null).
+const _setHasAttachments =
+    'UPDATE messages SET has_attachments = json_array_length(b.attachments) > 0 FROM bodies b '
+    'WHERE messages.account_id = ?1 AND messages.id = ?2 AND b.account_id = ?1 AND b.message_id = ?2 '
+    'AND b.attachments IS NOT NULL';
 
 /// Downloaded message bodies. The `*In` methods add to a [Batch] of the caller's transaction (ADR 0008).
 @DriftAccessor(tables: [Bodies])
@@ -15,15 +23,30 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     (t) => t.accountId.equals(accountId) & const CustomExpression('message_id NOT IN (SELECT id FROM snapshot_ids)'),
   );
 
+  /// The message takes the attachments its stored body knows (#206): a sync that only guesses does not undo them.
+  void correctHasAttachmentsIn(Batch b, String accountId, String messageId) =>
+      b.customStatement(_setHasAttachments, [accountId, messageId]);
+
   void deleteIn(Batch b, String accountId, String messageId) =>
       b.deleteWhere(bodies, (t) => t.accountId.equals(accountId) & t.messageId.equals(messageId));
 
-  void upsertAllIn(Batch b, String accountId, Map<String, MessageBody> all) => b.insertAll(bodies, [
-    for (final MapEntry(:key, :value) in all.entries) _companion(accountId, key, value),
-  ], mode: InsertMode.insertOrReplace);
+  /// Each body goes to the search index too (#205), after its message: the caller adds the messages first.
+  void upsertAllIn(Batch b, String accountId, Map<String, MessageBody> all) {
+    b.insertAll(bodies, [
+      for (final MapEntry(:key, :value) in all.entries) _companion(accountId, key, value),
+    ], mode: InsertMode.insertOrReplace);
+    for (final MapEntry(:key, :value) in all.entries) {
+      b
+        ..customStatement(indexBodySql, [accountId, key, searchableText(value)])
+        ..customStatement(_setHasAttachments, [accountId, key]);
+    }
+  }
 
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
-      into(bodies).insert(_companion(accountId, messageId, body), mode: InsertMode.insertOrReplace);
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) => transaction(() async {
+    await into(bodies).insert(_companion(accountId, messageId, body), mode: InsertMode.insertOrReplace);
+    await customStatement(indexBodySql, [accountId, messageId, searchableText(body)]);
+    await customStatement(_setHasAttachments, [accountId, messageId]);
+  });
 
   BodiesCompanion _companion(String accountId, String messageId, MessageBody body) => BodiesCompanion.insert(
     accountId: accountId,
@@ -32,4 +55,7 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     kind: Value(body.kind),
     attachments: Value(body.attachments),
   );
+
+  /// Removes the Account's message bodies (Rimozione di un Account, #174).
+  Future<void> deleteByAccount(String accountId) => (delete(bodies)..where((t) => t.accountId.equals(accountId))).go();
 }

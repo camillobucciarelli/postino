@@ -4,7 +4,7 @@ import '../../domain/mail_servers.dart';
 import '../../domain/platform_services.dart';
 
 /// Password and servers of an iCloud or IMAP Account: they live only in the keychain, never in the database nor
-/// in the log (like GmailTokens). The user name is the Account's address.
+/// in the log (like OAuthTokens). The user name is the Account's address.
 class const PasswordCredentials({required final String password, required final ServerSettings servers}) {
   static String _key(String accountId) => 'password:$accountId';
 

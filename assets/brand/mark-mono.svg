@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<defs><mask id="m"><rect width="256" height="124" fill="#fff"/><path d="M128 96 H164 M92 112 H168 M92 96 H120" stroke="#000" stroke-width="5" stroke-linecap="round"/></mask></defs>
+<path d="M40 128 L128 56 L216 128 Z" fill="#000" fill-opacity=".5"/>
+<g transform="rotate(-5 128 128)"><rect x="76" y="76" width="104" height="112" rx="10" fill="#000" mask="url(#m)"/></g>
+<path d="M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z" fill="#000"/>
+</svg>

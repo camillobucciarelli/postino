@@ -21,6 +21,8 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: ServerNotFoundFailure()) => 'server-not-found',
   Err(failure: AlreadyConnectedFailure()) => 'already-connected',
   Err(failure: UseGmailFailure()) => 'use-gmail',
+  Err(failure: UseMicrosoftFailure()) => 'use-microsoft',
+  Err(failure: WorkAccountFailure()) => 'work-account',
 };
 
 void main() {
@@ -44,5 +46,7 @@ void main() {
     expect(describe(const Err(ServerNotFoundFailure())), 'server-not-found');
     expect(describe(const Err(AlreadyConnectedFailure())), 'already-connected');
     expect(describe(const Err(UseGmailFailure())), 'use-gmail');
+    expect(describe(const Err(UseMicrosoftFailure())), 'use-microsoft');
+    expect(describe(const Err(WorkAccountFailure())), 'work-account');
   });
 }

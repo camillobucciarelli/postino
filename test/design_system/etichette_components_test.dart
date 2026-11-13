@@ -1,6 +1,7 @@
 // The components of the Etichette (#107): one golden each (light and dark × text 100% and 200%) and the guidelines.
 import 'dart:async';
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:postino/design_system/design_system.dart';
 

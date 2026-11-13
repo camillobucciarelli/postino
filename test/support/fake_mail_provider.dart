@@ -9,7 +9,11 @@ import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/provider_search_page.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
+
+import 'fake_search_match.dart';
 
 Message msg(
   String id, {
@@ -26,6 +30,7 @@ Message msg(
   String? conversationId,
   String? replyTo,
   List<String> references = const [],
+  bool? hasAttachments,
 }) => Message(
   id: id,
   messageId: '<$id@example.com>',
@@ -42,6 +47,7 @@ Message msg(
   date: date ?? DateTime.utc(2026),
   replyTo: replyTo,
   references: references,
+  hasAttachments: hasAttachments,
 );
 
 /// In-memory Provider: tests simulate incoming mail, changes elsewhere, offline, AuthFailure and a lost change signal.
@@ -511,6 +517,60 @@ class FakeMailProvider() implements MailProvider {
       deliver(changed);
     }
     return const Ok(ActionApplied());
+  }
+
+  /// Results per page of [search]: small, so the pages show.
+  int searchPageSize = 2;
+
+  /// Every [search] that reached the Provider: (query, page token).
+  final searchCalls = <(SearchQuery, String?)>[];
+
+  /// The cap of results the last page of [search] says it stopped at (Graph's 1.000); none when null.
+  int? searchLimit;
+
+  /// While set, [search] answers only once it completes: a slow Provider.
+  Completer<void>? holdSearch;
+
+  /// Every message, those outside the sync window too, newest first; never Spam nor Cestino. The page token is the
+  /// offset of the next result.
+  @override
+  Future<Result<ProviderSearchPage>> search(
+    SearchQuery query, {
+    String? pageToken,
+    Set<String> stored = const {},
+  }) async {
+    searchCalls.add((query, pageToken));
+    await holdSearch?.future;
+    if (_failure case final f?) return Err(f);
+    // Nothing the Provider filters on (the Accounts are the caller's): nothing to look for.
+    if (!query.hasText &&
+        query.after == null &&
+        query.before == null &&
+        query.unread != true &&
+        query.starred != true &&
+        query.hasAttachment != true) {
+      return const Ok(ProviderSearchPage());
+    }
+    final all = [
+      for (final m in [..._messages.values, ..._old.values])
+        if (!m.labelIds.contains(spamLabelId) &&
+            !m.labelIds.contains(trashLabelId) &&
+            fakeSearchMatches(m, query, attached: bodies[m.id]?.attachments?.isNotEmpty ?? false))
+          m,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    final from = int.parse(pageToken ?? '0');
+    final page = all.skip(from).take(searchPageSize).toList();
+    return Ok(
+      ProviderSearchPage(
+        messages: [
+          for (final m in page)
+            if (!stored.contains(m.id)) m,
+        ],
+        conversationIds: {for (final m in page) m.conversationId},
+        nextPageToken: from + searchPageSize < all.length ? '${from + searchPageSize}' : null,
+        limit: from + searchPageSize < all.length ? null : searchLimit,
+      ),
+    );
   }
 }
 

@@ -98,6 +98,8 @@ class _PasswordAccountFormState() extends State<_PasswordAccountForm> {
           navigator.pop(true);
         case Err(failure: UseGmailFailure()):
           _addressError = t.useGmail;
+        case Err(failure: UseMicrosoftFailure()):
+          _addressError = t.useMicrosoft;
         case Err(failure: AlreadyConnectedFailure()):
           _addressError = t.alreadyConnected;
         case Err(failure: AuthFailure()):

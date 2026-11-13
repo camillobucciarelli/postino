@@ -41,6 +41,14 @@ abstract class ContractHarness() {
   /// The Conversazione the adapter gives `msg(key)` delivered on its own.
   String conversationOf(String key) => 't-$key';
 
+  /// The message delivered as `msg(key)` as the Provider has it now, found by its Message-ID (Archivia and Elimina
+  /// may move it, and its id changes). By default the one the sync hands out; an adapter that does not sync the
+  /// folder a message ends in (Cestino) reads it another way.
+  Future<Message> current(String key) async => switch (await provider.initialSync()) {
+    Ok(:final value) => value.messages.singleWhere((m) => m.messageId == '<$key@example.com>'),
+    Err(:final failure) => fail('expected Ok, got $failure'),
+  };
+
   /// The id of the Etichetta `Viaggi` every mailbox starts with, and the kind of a created one.
   String get viaggiId => 'Label_12';
   LabelKind get createdKind => LabelKind.etichetta;
@@ -474,9 +482,7 @@ void mailProviderActionContract(String name, CreateHarness create) {
     late ContractHarness h;
     _harness(create, (x) => h = x);
 
-    // By Message-ID: Archivia and Elimina may move the message, and its id changes.
-    Future<Message> now(String key) async =>
-        _ok(await h.provider.initialSync()).messages.singleWhere((m) => m.messageId == '<$key@example.com>');
+    Future<Message> now(String key) => h.current(key);
 
     test('the expected value: applied', () async {
       await h.deliver(msg('a'));

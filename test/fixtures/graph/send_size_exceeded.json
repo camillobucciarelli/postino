@@ -1,0 +1,13 @@
+{
+  "status": 400,
+  "body": {
+    "error": {
+      "code": "ErrorMessageSizeExceeded",
+      "message": "The message exceeds the maximum supported size.",
+      "innerError": {
+        "date": "2026-10-28T12:00:00",
+        "request-id": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

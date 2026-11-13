@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/data/gmail/google_consent.dart';
-import 'package:postino/core/domain/google_consent.dart';
+import 'package:postino/core/domain/oauth_grant.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -53,7 +53,7 @@ void main() {
   test('consent with PKCE, then the code is exchanged for the tokens and the address', () async {
     final r = await consent().run(loginHint: 'ada@gmail.com');
 
-    final grant = (r as Ok<GoogleGrant>).value;
+    final grant = (r as Ok<OAuthGrant>).value;
     expect(grant.address, 'ada@gmail.com');
     expect(grant.accessToken, 'ya29.granted');
     expect(grant.refreshToken, '1//granted');
@@ -135,7 +135,7 @@ void main() {
     token = 'token_exchange_drive';
     final r = await consent().run(loginHint: 'ada@gmail.com', drive: true);
 
-    expect(r, isA<Ok<GoogleGrant>>());
+    expect(r, isA<Ok<OAuthGrant>>());
     final q = opened.queryParameters;
     expect(
       q['scope']!.split(' '),

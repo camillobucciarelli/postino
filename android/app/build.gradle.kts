@@ -15,9 +15,18 @@ val googleClientId = (project.findProperty("dart-defines") as String? ?: "")
     ?.substringAfter("=")
     ?.removeSuffix(".apps.googleusercontent.com")
 
+// Microsoft OAuth callback scheme: msal<client ID>, from --dart-define=MICROSOFT_CLIENT_ID (never committed).
+val microsoftClientId = (project.findProperty("dart-defines") as String? ?: "")
+    .split(",")
+    .filter { it.isNotEmpty() }
+    .map { String(Base64.getDecoder().decode(it)) }
+    .firstOrNull { it.startsWith("MICROSOFT_CLIENT_ID=") }
+    ?.substringAfter("=")
+
 android {
     namespace = "com.cbucciarelli.postino"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications 23 e androidx.core 1.19 compilano contro le API 37; il target resta quello di Flutter.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -42,6 +51,8 @@ android {
         versionName = flutter.versionName
         manifestPlaceholders["googleAuthScheme"] =
             googleClientId?.let { "com.googleusercontent.apps.$it" } ?: "com.cbucciarelli.postino.oauth"
+        manifestPlaceholders["microsoftAuthScheme"] =
+            microsoftClientId?.let { "msal$it" } ?: "com.cbucciarelli.postino.microsoft"
         // llamadart has no armeabi-v7a runtime (ADR 0015): ship only 64-bit ABIs.
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }

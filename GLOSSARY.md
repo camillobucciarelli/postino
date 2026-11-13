@@ -44,9 +44,17 @@ _Avoid_: Etichetta intelligente, smart label
 L'assegnazione, sul dispositivo, di un'Etichetta automatica ai messaggi nuovi dopo l'attivazione, al massimo una per messaggio e solo se non ne ha già una scelta dall'utente.
 _Avoid_: Classificazione, smistamento automatico, tag automatici
 
+**Ricerca**:
+La ricerca nella posta, da un solo campo. Prima gira sul database locale con un indice full-text (parole che iniziano così, senza badare a maiuscole e accenti), restringendosi all'Account della vista da cui si apre; `da:`, `a:` e `oggetto:` (e `from:`, `to:`, `subject:`) cercano per mittente, destinatari e oggetto, le virgolette una frase esatta. Gli stessi operatori restringono per criteri, anche senza testo: `è:nonletto`, `è:stella`, `ha:allegato`, `dopo:AAAA-MM-GG` e `prima:AAAA-MM-GG` (giorni locali, estremi compresi), `account:nome` (parte dell'indirizzo; più nomi sono alternative); in inglese `is:unread`, `is:starred`, `has:attachment`, `after:`, `before:`. Ogni criterio guarda la Conversazione: basta un suo messaggio che lo soddisfi. Un operatore senza ancora il valore si ignora, uno con un valore che non capisce (`dopo:ieri`) resta testo. Una riga per Conversazione.
+_Avoid_: Filtro, query
+
 **Stella**:
 Il segno che marca un messaggio come importante. Non è la stessa cosa di Posticipa.
 _Avoid_: Preferito, flag, importante
+
+**Spam**:
+L'Etichetta di sistema dei messaggi indesiderati: su Gmail l'etichetta `SPAM`, sui Provider IMAP la cartella Junk. Un messaggio Spam non compare nella posta in arrivo né in altre viste; spostarlo nello Spam da un altro client gli cambia Etichetta, non lo cancella.
+_Avoid_: Junk, posta indesiderata
 
 **Posticipa**:
 Nascondere un messaggio fino a un momento scelto, dopo il quale torna nella posta in arrivo. Il messaggio esce dalla posta in arrivo anche sul Provider e attende nell'Etichetta **Posticipati**, così tutti i dispositivi e la webmail restano d'accordo.

@@ -26,7 +26,7 @@ void main() {
     await store.addAccount(
       const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
     );
-    await db.accountsDao.remove('a');
+    await db.accountsDao.deleteByAccount('a');
 
     await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')]));
     await store.applyPage('a', [msg('2')], const {});

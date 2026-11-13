@@ -24,7 +24,7 @@ void main() {
     await pumpEventQueue();
 
     final db = getIt<PostinoDatabase>();
-    await db.accountsDao.remove('a');
+    await db.accountsDao.deleteByAccount('a');
     provider.hold = null;
     hold.complete();
     await (sync, flush).wait;

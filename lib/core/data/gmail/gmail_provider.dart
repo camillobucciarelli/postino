@@ -11,19 +11,20 @@ import '../../domain/mail_action.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
+import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
+import '../../domain/search_query.dart';
 import '../imap/imap_idle.dart';
 import '../json_objects.dart';
 import '../mime.dart';
+import '../oauth/oauth_failed.dart';
+import '../oauth/oauth_guard.dart';
 import 'gmail_actions.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
+import 'gmail_search.dart';
 import 'google_client.dart';
-import 'google_failure.dart';
-
-/// Headers of the last [syncWindow] are synced (ADR 0003).
-const syncWindow = Duration(days: 90);
 
 /// Gmail adapter (ADR 0002): one per Account, tokens from the keychain.
 class GmailProvider(
@@ -52,13 +53,13 @@ class GmailProvider(
   static const _page = 100;
 
   @override
-  Future<Result<void>> refreshAuth() => googleGuard(() async {
+  Future<Result<void>> refreshAuth() => oauthGuard(() async {
     await _gmail.refreshAuth();
     return const Ok(null);
   });
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => googleGuard(() async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => oauthGuard(() async {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
     final cursor = (await _gmail.get('profile'))['historyId'] as String;
     final labels = await _labels.list();
@@ -84,7 +85,7 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<SyncBatch>> incrementalSync(String cursor) => googleGuard(() async {
+  Future<Result<SyncBatch>> incrementalSync(String cursor) => oauthGuard(() async {
     final changed = <String>{};
     final deleted = <String>{};
     var latest = cursor;
@@ -138,7 +139,7 @@ class GmailProvider(
       _idle(host: 'imap.gmail.com', user: _address, accessToken: () async => (await _gmail.validTokens()).access);
 
   @override
-  Future<Result<MessageBody>> fetchBody(String messageId) => googleGuard(() async {
+  Future<Result<MessageBody>> fetchBody(String messageId) => oauthGuard(() async {
     final j = await _gmail.get('messages/$messageId', query: {'format': 'full'});
     return Ok(
       await _body(messageId, j['payload'] as Map<String, dynamic>? ?? const {}) ??
@@ -147,14 +148,14 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<List<Message>>> fetchConversation(String conversationId) => googleGuard(() async {
+  Future<Result<List<Message>>> fetchConversation(String conversationId) => oauthGuard(() async {
     final j = await _gmail.get('threads/$conversationId', query: {'format': 'metadata', 'metadataHeaders': _headers});
     return Ok([for (final m in j['messages'] as List? ?? const []) parseGmailMessage(m as Map<String, dynamic>)]);
   });
 
   @override
   Future<Result<ActionOutcome>> applyAction(String messageId, MailAction action, {Object? expected}) =>
-      googleGuard(() async => Ok(await _actions.apply(messageId, action, expected)));
+      oauthGuard(() async => Ok(await _actions.apply(messageId, action, expected)));
 
   /// [attachmentId] is the part id ([gmailAttachments]): the message comes first, then the part's data,
   /// inline or (nearly always) by Gmail's own attachmentId, which changes from one fetch to the next.
@@ -164,12 +165,12 @@ class GmailProvider(
     String attachmentId, {
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) => googleGuard(() async {
+  }) => oauthGuard(() async {
     final j = await _gmail.get('messages/$messageId', query: {'format': 'full'}, cancel: cancel);
     final part = gmailAttachmentParts(j['payload'] as Map<String, dynamic>? ?? const {})
         .where((p) => p['partId'] == attachmentId)
         .firstOrNull;
-    if (part == null) throw const GoogleFailed(NotFoundFailure());
+    if (part == null) throw const OAuthFailed(NotFoundFailure());
     final body = part['body'] as Map;
     // An empty file has neither.
     if (body['data'] == null && body['attachmentId'] == null) {
@@ -198,7 +199,7 @@ class GmailProvider(
     String? threadId,
     bool submitted = false,
     Future<void> Function()? onSubmitted,
-  }) => googleGuard(() async {
+  }) => oauthGuard(() async {
     final bare = messageId.replaceAll(RegExp('[<>]'), '');
     String? id;
     if (bare.isNotEmpty) {
@@ -224,11 +225,24 @@ class GmailProvider(
   });
 
   @override
-  Future<Result<Label>> createLabel(String name) => googleGuard(() async => Ok(await _labels.create(name)));
+  Future<Result<Label>> createLabel(String name) => oauthGuard(() async => Ok(await _labels.create(name)));
+
+  @override
+  Future<Result<ProviderSearchPage>> search(SearchQuery query, {String? pageToken, Set<String> stored = const {}}) =>
+      oauthGuard(() async {
+        final page = await gmailSearch(
+          _gmail,
+          query,
+          pageToken: pageToken,
+          stored: stored,
+          fetch: (ids) async => [for (final (m, _) in (await _fetchAll(ids, full: (_) => false)).values.nonNulls) m],
+        );
+        return Ok(page);
+      });
 
   /// Adds the label [labelId] to message [messageId] (with [add] false, removes it); idempotent.
   /// [NotFoundFailure] when the message is gone.
-  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => googleGuard(() async {
+  Future<Result<void>> setLabel(String messageId, String labelId, {required bool add}) => oauthGuard(() async {
     await _labels.set(messageId, labelId, add: add);
     return const Ok(null);
   });
@@ -242,12 +256,12 @@ class GmailProvider(
   /// has no conditional write (#149). One gone (a 404: deleted, or sent, elsewhere) is [NotFoundFailure].
   @override
   Future<Result<DraftOutcome>> saveDraft(OutgoingMessage draft, {required bool isNew, String? expected}) =>
-      googleGuard(() async {
+      oauthGuard(() async {
         final raw = switch (await renderMimeFetching(draft, _clock.now(), fetchAttachment)) {
           Ok(:final value) => value,
           // Never NotFound: the sync engine would drop the Bozza; it stays pending and is retried.
-          Err(failure: NotFoundFailure()) => throw const GoogleFailed(UnexpectedFailure('forwarded attachment gone')),
-          Err(:final failure) => throw GoogleFailed(failure),
+          Err(failure: NotFoundFailure()) => throw const OAuthFailed(UnexpectedFailure('forwarded attachment gone')),
+          Err(:final failure) => throw OAuthFailed(failure),
         };
         final message = {
           'raw': base64Url.encode(utf8.encode(raw)),
@@ -262,7 +276,7 @@ class GmailProvider(
         final String id;
         try {
           id = await _draftId(draft.messageId);
-        } on GoogleFailed catch (e) {
+        } on OAuthFailed catch (e) {
           if (!isNew || e.failure is! NotFoundFailure) rethrow;
           await create();
           return const Ok(DraftSaved());
@@ -286,7 +300,7 @@ class GmailProvider(
   }
 
   @override
-  Future<Result<void>> deleteDraft(String messageId) => googleGuard(() async {
+  Future<Result<void>> deleteDraft(String messageId) => oauthGuard(() async {
     await _gmail.send('DELETE', 'drafts/${await _draftId(messageId)}');
     _draftIds.remove(messageId);
     return const Ok(null);
@@ -298,10 +312,10 @@ class GmailProvider(
   Future<String> _draftId(String messageId) async {
     if (_draftIds[messageId] case final id?) return id;
     // An empty `rfc822msgid:` would match any draft.
-    if (messageId.isEmpty) throw const GoogleFailed(NotFoundFailure());
+    if (messageId.isEmpty) throw const OAuthFailed(NotFoundFailure());
     final r = await _gmail.get('drafts', query: {'q': 'rfc822msgid:${messageId.replaceAll(RegExp('[<>]'), '')}'});
     final id = jsonObjects(r['drafts']).firstOrNull?['id'] as String?;
-    if (id == null) throw const GoogleFailed(NotFoundFailure());
+    if (id == null) throw const OAuthFailed(NotFoundFailure());
     return _draftIds[messageId] = id;
   }
 
@@ -343,7 +357,7 @@ class GmailProvider(
         'messages/$id',
         query: {'format': full ? 'full' : 'metadata', if (!full) 'metadataHeaders': _headers},
       );
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }
@@ -351,7 +365,7 @@ class GmailProvider(
     if (!full) return (message, null);
     try {
       return (message, await _body(id, j['payload'] as Map<String, dynamic>? ?? const {}));
-    } on GoogleFailed catch (e) {
+    } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;
       rethrow;
     }

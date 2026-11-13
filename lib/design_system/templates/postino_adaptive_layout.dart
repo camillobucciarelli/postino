@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:postino/design_system/templates/postino_list_detail_layout.dart' show PostinoListDetailLayout;
 

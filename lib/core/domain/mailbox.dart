@@ -29,12 +29,21 @@ Mailbox parseMailbox(String s) {
 
 /// An address list header: commas inside quotes or `<...>` do not split it.
 List<Mailbox> parseMailboxes(String header) {
-  final parts = <String>[];
-  final current = StringBuffer();
+  final cuts = [-1, ...mailboxSeparators(header), header.length];
+  return [
+    for (var i = 0; i + 1 < cuts.length; i++)
+      if (header.substring(cuts[i] + 1, cuts[i + 1]) case final p when p.trim().isNotEmpty) parseMailbox(p),
+  ];
+}
+
+/// The indexes of the commas that split [header] into mailboxes: those outside quotes and `<...>`.
+List<int> mailboxSeparators(String header) {
+  final out = <int>[];
   var quoted = false;
   var angle = false;
   var escaped = false;
-  for (final ch in header.split('')) {
+  for (var i = 0; i < header.length; i++) {
+    final ch = header[i];
     if (escaped) {
       escaped = false;
     } else if (ch == r'\' && quoted) {
@@ -46,17 +55,10 @@ List<Mailbox> parseMailboxes(String header) {
     } else if (!quoted && ch == '>') {
       angle = false;
     } else if (ch == ',' && !quoted && !angle) {
-      parts.add('$current');
-      current.clear();
-      continue;
+      out.add(i);
     }
-    current.write(ch);
   }
-  parts.add('$current');
-  return [
-    for (final p in parts)
-      if (p.trim().isNotEmpty) parseMailbox(p),
-  ];
+  return out;
 }
 
 final _word = RegExp(r'=\?([^?\s]+)\?([BbQq])\?([^?\s]*)\?=');
@@ -64,20 +66,21 @@ final _word = RegExp(r'=\?([^?\s]+)\?([BbQq])\?([^?\s]*)\?=');
 /// RFC 2047 encoded words (`=?UTF-8?B?...?=`, `=?ISO-8859-1?Q?...?=`) decoded; the blanks between two
 /// of them go. UTF-8, Latin-1 and ASCII; another charset is read as UTF-8.
 // ponytail: windows-1252 read as Latin-1 (differs only in 0x80–0x9F); a charset table if mojibake shows up.
-String decodeWords(String s) =>
-    s.replaceAllMapped(RegExp(r'(\?=)\s+(?==\?)'), (m) => m[1]!).replaceAllMapped(_word, (m) {
-      final List<int> bytes;
-      try {
-        bytes = m[2]!.toUpperCase() == 'B' ? base64.decode(base64.normalize(m[3]!)) : _quoted(m[3]!);
-      } on FormatException {
-        return m[0]!;
-      }
-      final charset = m[1]!.toLowerCase().split('*').first;
-      return switch (charset) {
-        'iso-8859-1' || 'latin1' || 'windows-1252' || 'us-ascii' => latin1.decode(bytes),
-        _ => utf8.decode(bytes, allowMalformed: true),
-      };
-    });
+String decodeWords(String s) => !s.contains('=?')
+    ? s // the common case, read for every Contatto suggested (#216): no regex
+    : s.replaceAllMapped(RegExp(r'(\?=)\s+(?==\?)'), (m) => m[1]!).replaceAllMapped(_word, (m) {
+        final List<int> bytes;
+        try {
+          bytes = m[2]!.toUpperCase() == 'B' ? base64.decode(base64.normalize(m[3]!)) : _quoted(m[3]!);
+        } on FormatException {
+          return m[0]!;
+        }
+        final charset = m[1]!.toLowerCase().split('*').first;
+        return switch (charset) {
+          'iso-8859-1' || 'latin1' || 'windows-1252' || 'us-ascii' => latin1.decode(bytes),
+          _ => utf8.decode(bytes, allowMalformed: true),
+        };
+      });
 
 List<int> _quoted(String s) {
   final out = <int>[];

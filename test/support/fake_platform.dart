@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:postino/core/domain/app_updater.dart';
+import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
@@ -10,8 +11,13 @@ class FakeSecureStore() implements SecureStore {
 
   /// While set, every read throws it: a locked keychain, access denied.
   Exception? failure;
+
+  /// While set, every read waits for it: a keychain prompt the user has not answered yet.
+  Future<void>? readGate;
+
   @override
   Future<String?> read(String key) async {
+    await readGate;
     if (failure case final f?) throw f;
     return values[key];
   }
@@ -25,14 +31,14 @@ class FakeSecureStore() implements SecureStore {
   /// The deletes asked for, failed ones included.
   var deletes = 0;
 
-  /// While set, every delete waits for it before removing.
-  Completer<void>? deleteGate;
+  /// While set, every delete waits for it: a slow keychain.
+  Future<void>? deleteGate;
 
   @override
   Future<void> delete(String key) async {
     deletes++;
+    await deleteGate;
     if (deleteFailure case final f?) throw f;
-    await deleteGate?.future;
     values.remove(key);
   }
 }
@@ -130,6 +136,27 @@ class FakeBackgroundSender() implements BackgroundSender {
   Future<void> release(String accountId) async => releases.add(accountId);
 }
 
+/// The platform's periodic task (#212): like WorkManager's unique work, scheduling it again keeps the one there.
+class FakePeriodicSync() implements PeriodicSync {
+  bool scheduled = false;
+
+  /// How many times the task was really registered, not kept.
+  int registrations = 0;
+
+  /// Every call of [schedule], kept or not.
+  int calls = 0;
+
+  @override
+  Future<void> schedule() async {
+    calls++;
+    if (!scheduled) registrations++;
+    scheduled = true;
+  }
+
+  @override
+  Future<void> cancel() async => scheduled = false;
+}
+
 /// The OS's login items, in memory: [supported] false like a phone, until a test makes it a desktop.
 class FakeLaunchAtLogin() implements LaunchAtLogin {
   @override
@@ -188,4 +215,15 @@ class FakeErrorLog() implements ErrorLog {
 
   @override
   Future<bool> takeCrashMark() async => false;
+}
+
+/// An attachment cache that only counts how often it is emptied; downloads are not expected.
+class FakeAttachments() implements AttachmentRepository {
+  var clears = 0;
+
+  @override
+  Future<void> clear() async => clears++;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
 }

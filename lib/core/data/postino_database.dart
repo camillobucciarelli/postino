@@ -17,6 +17,7 @@ import 'daos/accounts_dao.dart';
 import 'daos/attributes_dao.dart';
 import 'daos/bodies_dao.dart';
 import 'daos/conflicts_dao.dart';
+import 'daos/contacts_dao.dart';
 import 'daos/device_settings_dao.dart';
 import 'daos/drafts_dao.dart';
 import 'daos/intents_dao.dart';
@@ -25,8 +26,10 @@ import 'daos/message_embeddings_dao.dart';
 import 'daos/messages_dao.dart';
 import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
+import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
 import 'row_mappers.dart';
+import 'search_index.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
 import 'tables/conflicts_table.dart';
@@ -76,6 +79,8 @@ part 'postino_database.g.dart';
     OutboxDao,
     PostinoSettingsDao,
     MessageEmbeddingsDao,
+    SearchDao,
+    ContactsDao,
   ],
 )
 class PostinoDatabase(super.e) extends _$PostinoDatabase {
@@ -137,11 +142,15 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      // Not a drift table: the full-text index and its triggers (#205).
+      await createSearchIndex(this);
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(bodies);
@@ -240,8 +249,8 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       if (from >= 13 && from < 21 && !await _hasColumn('outbox', 'smtp_sent_at')) {
         await m.addColumn(outbox, outbox.smtpSentAt);
       }
-      if (from < 22) {
-        // The Accounts already here join the synced voci (ADR 0016) as the voci written before the sync did:
+      if (from < 24) {
+        // v24: the Accounts already here join the synced voci (ADR 0016) as the voci written before the sync did:
         // to upload, but older than any copy elsewhere (updatedAt 0), so they never overwrite a synced one.
         for (final r in await select(accounts).get()) {
           await into(postinoSettings).insert(
@@ -276,6 +285,20 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
           );
         }
       }
+      // v23: whether a message has attachments, unknown (null) for the rows already stored (#206).
+      if (from < 23 && !await _hasColumn('messages', 'has_attachments')) {
+        await m.addColumn(messages, messages.hasAttachments);
+        // What the bodies stored already know (before v9 they kept no attachments).
+        if (await _hasColumn('bodies', 'attachments')) {
+          await customStatement(
+            'UPDATE messages SET has_attachments = json_array_length(b.attachments) > 0 FROM bodies b '
+            'WHERE b.account_id = messages.account_id AND b.message_id = messages.id AND b.attachments IS NOT NULL',
+          );
+        }
+      }
+      // Last: it reads the columns of every step above (v7 split the sender). By name too: a v22 of the #142 branch
+      // (the Account voci) came before it, and lacks it.
+      if (from < 22 || !await _hasColumn('search_index', 'subject')) await createSearchIndex(this);
     },
   );
 

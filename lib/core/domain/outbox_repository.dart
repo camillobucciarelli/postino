@@ -70,7 +70,8 @@ abstract interface class OutboxRepository() {
 
   // --- Outbox (#36) ---
   /// Queues [message] with its rendered MIME [raw]; it goes once [sendAfter] (ms since epoch, UTC) has passed.
-  Future<void> enqueueOutgoing(
+  /// False, and nothing queued, when its Account was removed meanwhile.
+  Future<bool> enqueueOutgoing(
     String accountId,
     OutgoingMessage message, {
     required int version,

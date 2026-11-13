@@ -39,7 +39,7 @@ void main() {
     db = PostinoDatabase.inMemory();
     keychain = FakeSecureStore();
     settings = DeviceSettingsStore(db);
-    mirror = AccountsSettingsMirror(db, keychain, settings, AccountsLock());
+    mirror = AccountsSettingsMirror(db, MailStore(db), keychain, settings, AccountsLock(), FakeAttachments());
   });
   tearDown(() async {
     await mirror.stop();
@@ -218,7 +218,15 @@ void main() {
     void onFakeTime(void Function(FakeAsync time, PostinoDatabase db, AccountsSettingsMirror m) body) =>
         fakeAsync((time) {
           final db = PostinoDatabase.inMemory();
-          final m = AccountsSettingsMirror(db, keychain, DeviceSettingsStore(db), AccountsLock(), retryAfter: base);
+          final m = AccountsSettingsMirror(
+            db,
+            MailStore(db),
+            keychain,
+            DeviceSettingsStore(db),
+            AccountsLock(),
+            FakeAttachments(),
+            retryAfter: base,
+          );
           keychain.deleteFailure = Exception('keychain bloccato');
           _now(time, db.accountsDao.upsert(_ada));
           _now(time, db.postinoSettingsDao.applyRemote([_remoteTombstone(_ada)]));

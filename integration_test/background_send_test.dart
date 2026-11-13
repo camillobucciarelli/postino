@@ -17,6 +17,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/background_send.dart';
+import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/mime.dart';
 import 'package:postino/core/data/outbox_store.dart';
@@ -24,6 +25,7 @@ import 'package:postino/core/data/platform_services.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync/auto_labeler.dart';
 import 'package:postino/core/data/sync/new_mail_notifier.dart';
+import 'package:postino/core/data/sync/notification_cleanup.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
@@ -80,6 +82,7 @@ void main() {
           FakeConnectivity(),
           FakeBackgroundSender(),
           _notifier(store),
+          _cleanup(),
           _labeler(),
           FakeErrorLog(),
         ),
@@ -109,6 +112,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      _cleanup(),
       _labeler(),
       FakeErrorLog(),
     );
@@ -125,6 +129,7 @@ void main() {
       FakeConnectivity(),
       FakeBackgroundSender(),
       _notifier(store),
+      _cleanup(),
       _labeler(),
       FakeErrorLog(),
     )..start();
@@ -144,7 +149,18 @@ const _message = OutgoingMessage(
 );
 
 /// The engine's notifier, with notifications that are only recorded.
-NewMailNotifier _notifier(MailStore store) => NewMailNotifier(store, FakeNotifications(), OpenConversation());
+NewMailNotifier _notifier(MailStore store) {
+  final db = PostinoDatabase.inMemory();
+  addTearDown(db.close);
+  return NewMailNotifier(store, FakeNotifications(), OpenConversation(), DeviceSettingsStore(db));
+}
+
+/// The notifications' cleanup, with notifications that are only recorded: no sync runs here.
+NotificationCleanup _cleanup() {
+  final db = PostinoDatabase.inMemory();
+  addTearDown(db.close);
+  return NotificationCleanup(db, FakeNotifications());
+}
 
 /// The Etichettatura automatica, never at work here: the model is not ready.
 AutoLabeler _labeler() {

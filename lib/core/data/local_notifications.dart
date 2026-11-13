@@ -45,6 +45,8 @@ class LocalNotifications() implements Notifications {
   NotificationTarget? _pending;
 
   /// Set once [start] read the launch: from then on a tap is not the launch.
+  // ponytail: a tap on an older notification in the second a restarted service's engine spends in [start] is still
+  // dropped (the app opens on the Posta unificata); buffer during [start] too, minus the launch, if it is ever seen.
   var _started = false;
 
   String _channelName = 'Postino';

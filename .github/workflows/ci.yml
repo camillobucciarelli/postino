@@ -109,7 +109,8 @@ jobs:
   # per non ritardarli sull'unico runner.
   mutation:
     needs: [check, android, apple]
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    # Le PR arrivano col dispatch sul loro branch (#246); su main non gira.
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     steps:
@@ -122,11 +123,10 @@ jobs:
           have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
           test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       - run: flutter pub get
-      # Al più 60 mutanti (~10 minuti sul runner con i widget test).
+      # Al più 60 mutanti (~10 minuti sul runner con i widget test). Base: origin/main, quindi i file cambiati dal
+      # merge-base (`origin/main...HEAD`), come in locale.
       - name: Mutation test
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: dart run tool/mutation/run.dart --base="$BASE" --max-mutants=60
+        run: dart run tool/mutation/run.dart --base=origin/main --max-mutants=60
       - uses: actions/upload-artifact@v4
         if: always()
         with:

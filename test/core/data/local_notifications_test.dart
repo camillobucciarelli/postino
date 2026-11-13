@@ -388,12 +388,25 @@ void main() {
     expect(summaryPosts, hasLength(1), reason: 'the same count is not posted again');
   });
 
-  test('a notification shown but never listed (Android blocked it) does not count in a later summary', () async {
+  test('a post not listed yet counts in the next summary for a while, then no longer (Android blocked it)', () async {
+    var time = DateTime.utc(2026, 11, 13, 9);
+    notifications.now = () => time;
     lagging.add(notificationId('a1', 'm1'));
     await notify('a1', ['m1']);
     await notify('a1', ['m2']);
+    expect(summaryTitle('a1'), '2 nuovi messaggi', reason: 'Android posts asynchronously');
 
-    expect(summaryTitle('a1'), isNull, reason: 'one message listed: no summary');
+    time = time.add(const Duration(seconds: 11));
+    await notify('a1', ['m3']);
+    expect(summaryTitle('a1'), '2 nuovi messaggi', reason: 'm1 never showed: m2 and m3');
+  });
+
+  test('a post not listed yet is cancelled too, as Android may still show it', () async {
+    lagging.add(notificationId('a1', 'm1'));
+    await notify('a1', ['m1']);
+
+    await notifications.cancel('a1', ['m1']);
+    expect(cancels, [notificationId('a1', 'm1')]);
   });
 
   test('two cancels in a row while Android still lists the first: the summary goes with the last', () async {

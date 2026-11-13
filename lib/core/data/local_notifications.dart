@@ -56,6 +56,16 @@ class LocalNotifications() implements Notifications {
   /// so they do not count in a summary until a listing confirms them gone.
   final _cancelled = <int>{};
 
+  /// Android: the notifications this isolate posted that no listing showed yet, with when. Android posts
+  /// asynchronously: they are cancelled like the listed ones, and count in a summary for [_pendingFor] at most, so a
+  /// post Android never showed (blocked, past its cap) does not count for long.
+  final _posted = <int, ({String accountId, DateTime at})>{};
+  static const _pendingFor = Duration(seconds: 10);
+
+  /// The time of [_posted]; tests move it.
+  @visibleForTesting
+  DateTime Function() now = DateTime.now;
+
   ActionLabel _actionLabel = (action) => action.name;
 
   /// The app's isolate takes the buttons the background engine runs while it lives.
@@ -131,7 +141,9 @@ class LocalNotifications() implements Notifications {
       payload: encodePayload(ConversationTarget(conversation)),
       notificationDetails: _details(conversation, body, actions),
     );
+    if (!_android) return;
     _cancelled.remove(id);
+    _posted[id] = (accountId: accountId, at: now());
   }
 
   @override
@@ -150,13 +162,16 @@ class LocalNotifications() implements Notifications {
     if (ids.isEmpty) return;
     // Where the OS lists them, only the shown ones: a sync may touch many messages without a notification.
     final active = switch (await _active()) {
-      final list? => {for (final n in list) n.id},
+      final list? => {for (final n in list) n.id, ..._posted.keys},
       null => null,
     };
     for (final id in ids) {
       if (active == null || active.contains(id)) {
         await _plugin.cancel(id: id);
-        if (_android) _cancelled.add(id);
+        if (_android) {
+          _cancelled.add(id);
+          _posted.remove(id);
+        }
       }
     }
     // Also when none was still shown: a button dismissed its notification itself, the summary may be left behind.
@@ -226,7 +241,8 @@ class LocalNotifications() implements Notifications {
   /// its subtext, is the one it shows already when not given. Posted only when N changed: Android sheds the updates
   /// past a few per second.
   // ponytail: from two down to one it stays, «1 nuovo messaggio»: cancelling a summary takes its children with it.
-  // ponytail: a post Android refuses (past 50 shown per app) still counts in [coming] until the next listing.
+  // ponytail: a post Android refuses (past 50 shown per app) still counts in [coming], and in [_posted] for
+  // [_pendingFor]; a summary posted meanwhile keeps that count until the next show or cancel.
   Future<void> _summarize(String accountId, {String? address, Set<int> coming = const {}}) async {
     final summaryId = groupId(accountId);
     ActiveNotification? summary;
@@ -241,8 +257,14 @@ class LocalNotifications() implements Notifications {
         children.add(n.id!);
       }
     }
-    // Those no longer listed are gone for good.
+    // Those no longer listed are gone for good; those listed are no longer pending, nor the ones pending too long.
     _cancelled.retainAll(listed);
+    final at = now();
+    _posted.removeWhere((id, p) => listed.contains(id) || at.difference(p.at) > _pendingFor);
+    children.addAll([
+      for (final MapEntry(key: id, value: p) in _posted.entries)
+        if (p.accountId == accountId) id,
+    ]);
     final count = children.length;
     if (count == 0) {
       if (summary != null) await _plugin.cancel(id: summaryId);

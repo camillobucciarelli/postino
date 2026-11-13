@@ -55,9 +55,10 @@ void main() {
     expect([for (final n in notifications.shown) n.subject], ['Prima', 'Seconda', 'Terza']);
     expect({for (final n in notifications.shown) notificationId('a1', n.messageId)}, hasLength(3));
     expect(notifications.visible['a1'], hasLength(3));
-    final (account, ids) = notifications.summarized.single;
-    expect(account, 'a1', reason: "the Account's summary once, before the notifications");
+    final (account, ids, shownBefore) = notifications.summarized.single;
+    expect(account, 'a1', reason: "the Account's summary once");
     expect(ids, ['m1', 'm2', 'm3']);
+    expect(shownBefore, 0, reason: 'before the notifications: Android sheds the updates after a burst');
   });
 
   test('on the same date the order does not depend on the batch order', () async {

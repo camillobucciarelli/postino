@@ -3,6 +3,7 @@
 // The cold start is in notification_cold_start_test.dart: it needs routefly's statics fresh.
 import 'dart:async';
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart' show showDialog;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';

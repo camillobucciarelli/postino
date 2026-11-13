@@ -4,6 +4,7 @@
 // ponytail: the design system fonts are not bundled yet, so goldens render with the test font.
 // The grid and the guidelines: test/support/golden_grid.dart.
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';

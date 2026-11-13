@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -79,9 +80,8 @@ Future<_FakeSettings> _start(WidgetTester tester, double width, {double? stored}
     ..deliver(msg('x', subject: 'Da uno'))
     ..deliver(msg('y', subject: 'Da due'));
   final settings = _FakeSettings(stored);
-  getIt
-    ..unregister<SettingsRepository>()
-    ..registerSingleton<SettingsRepository>(settings);
+  await getIt.unregister<SettingsRepository>();
+  getIt.registerSingleton<SettingsRepository>(settings);
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   unawaited(Routefly.navigate(routePaths.posta.path));

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart' show NotificationResponse;
@@ -294,6 +295,7 @@ class _PostinoAppState() extends State<PostinoApp> {
       supportedLocales: AppLocaleUtils.supportedLocales,
       // quill's: without them a tap on a link in the editor throws.
       localizationsDelegates: const [
+        // ignore: deprecated_member_use
         ...GlobalMaterialLocalizations.delegates,
         ...FlutterQuillLocalizations.localizationsDelegates,
       ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:postino/design_system/organisms/postino_thread_message.dart' show PostinoThreadMessage;

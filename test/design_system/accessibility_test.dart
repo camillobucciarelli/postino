@@ -1,5 +1,6 @@
 // #53: every interactive component shows the focus ring when it has keyboard focus;
 // at text 200% lists, headers and components wrap instead of cutting, and nothing overflows.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';

@@ -1,5 +1,6 @@
 // Impostazioni del dispositivo › «Notifiche» (#211): the permission as the fake OS says, and «Consenti».
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

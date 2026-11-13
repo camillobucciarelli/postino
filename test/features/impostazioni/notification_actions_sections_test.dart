@@ -1,6 +1,7 @@
 // Impostazioni del dispositivo › the Azioni of a notification (#211), where there is no avvio al login (iOS, Android)
 // too.
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

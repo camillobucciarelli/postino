@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -220,9 +221,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     final saved = held.saves;
     await _send(tester);
@@ -243,9 +243,8 @@ void main() {
     // ponytail: 37 MB put in the Quill document never lays out in a widget test (tried: it hangs); the engine's refusal of a real
     // oversized message is outbox_sync_test's, here the composer only has to show it.
     final real = GetIt.I<MailSync>();
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(_TooBig(real));
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(_TooBig(real));
     await _write(tester);
     await _send(tester);
     expect(find.text('Il messaggio supera il limite di 35 MB del Provider'), findsOneWidget);
@@ -258,9 +257,8 @@ void main() {
   _onMac('a message over the Microsoft limit names the 3 MB, announced to the screen reader', (tester) async {
     await _start(tester);
     final real = GetIt.I<MailSync>();
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(_TooBig(real, limit: microsoftSendLimitBytes));
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(_TooBig(real, limit: microsoftSendLimitBytes));
     await _write(tester);
     await _send(tester);
     final limit = find.text('Il messaggio supera il limite di 3 MB del Provider');
@@ -276,9 +274,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));
@@ -295,9 +292,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true, oversize: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));
@@ -350,9 +346,8 @@ void main() {
     await _start(tester);
     final hold = Completer<void>();
     final held = _TooBig(GetIt.I<MailSync>(), hold: hold, delegate: true);
-    GetIt.I
-      ..unregister<MailSync>()
-      ..registerSingleton<MailSync>(held);
+    await GetIt.I.unregister<MailSync>();
+    GetIt.I.registerSingleton<MailSync>(held);
     await _write(tester);
     await _send(tester);
     await tester.tap(find.byTooltip('Chiudi'));

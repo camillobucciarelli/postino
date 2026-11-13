@@ -1,6 +1,7 @@
 // «Collega Outlook» (#179): onboarding, «Aggiungi Account», each error, the keyboard, the banner Da ricollegare, and
 // the Microsoft addresses of «Altro IMAP».
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

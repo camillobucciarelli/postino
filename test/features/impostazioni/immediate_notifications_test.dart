@@ -1,6 +1,7 @@
 // Impostazioni del dispositivo › Notifiche immediate (#214): Android only, off by default; on starts the fake service
 // and asks for the battery exemption, off stops it, the choice stays in the Impostazioni del dispositivo. The fixed
 // notification opens the Posta unificata.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

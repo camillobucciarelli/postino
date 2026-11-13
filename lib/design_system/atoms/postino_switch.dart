@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 /// An on/off switch, colored by the theme's `switchTheme` (`switch-track-*`, `switch-thumb-*`); it exposes `toggled`.

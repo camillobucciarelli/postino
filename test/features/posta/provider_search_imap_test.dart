@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert' show utf8;
 
 import 'package:enough_mail/enough_mail.dart' show DateCodec;
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

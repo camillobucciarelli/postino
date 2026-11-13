@@ -50,9 +50,8 @@ void main() {
   ) async {
     final h = await Harness.create();
     final notifications = LocalNotifications();
-    getIt
-      ..unregister<Notifications>()
-      ..registerSingleton<Notifications>(notifications);
+    await getIt.unregister<Notifications>();
+    getIt.registerSingleton<Notifications>(notifications);
     await notifications.start(
       channelName: 'Posta nuova',
       openLabel: 'Apri',

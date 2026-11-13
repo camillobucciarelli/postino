@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mutazioni sicure per `mutation_test` (sostituisce il set builtin): vedi docs/agents/mutation-test.md.
+     Gli operatori binari hanno gli spazi attorno: `dart format` li mette sempre, i generici (`List<int>`) no. -->
+<mutations version="1.2">
+  <rules>
+    <literal text=" &amp;&amp; " id="and"><mutation text=" || "/></literal>
+    <literal text=" || " id="or"><mutation text=" &amp;&amp; "/></literal>
+    <literal text=" == " id="eq"><mutation text=" != "/></literal>
+    <literal text=" != " id="neq"><mutation text=" == "/></literal>
+    <literal text=" &lt;= " id="leq"><mutation text=" &lt; "/></literal>
+    <literal text=" &gt;= " id="geq"><mutation text=" &gt; "/></literal>
+    <literal text=" &lt; " id="lt"><mutation text=" &lt;= "/></literal>
+    <literal text=" &gt; " id="gt"><mutation text=" &gt;= "/></literal>
+    <literal text=" + " id="add"><mutation text=" - "/></literal>
+    <literal text=" - " id="sub"><mutation text=" + "/></literal>
+    <literal text=" * " id="mul"><mutation text=" + "/></literal>
+    <regex pattern="\btrue\b" id="true"><mutation text="false"/></regex>
+    <regex pattern="\bfalse\b" id="false"><mutation text="true"/></regex>
+    <regex pattern="([\s(])!([a-zA-Z_(])" id="not"><mutation text="$1$2"/></regex>
+    <regex pattern="(\sif \()((?:(?! case ).)*?)(\) \{|\) return)" id="if"><mutation text="$1!($2)$3"/></regex>
+    <regex pattern="(\s)return;" id="return"><mutation text="$1;"/></regex>
+  </rules>
+  <exclude>
+    <token begin="//" end="\n"/>
+    <token begin="import &apos;" end="&apos;;"/>
+    <token begin="export &apos;" end="&apos;;"/>
+    <token begin="part &apos;" end="&apos;;"/>
+    <token begin="part of &apos;" end="&apos;;"/>
+    <regex pattern="/[*].*?[*]/" dotAll="true"/>
+    <!-- String literals on one line, interpolated too (SQL in `customStatement`, keys, messages). -->
+    <regex pattern="&quot;[^&quot;\n]*&quot;"/>
+    <regex pattern="&apos;[^&apos;\n]*&apos;"/>
+    <!-- Loop headers on one line: across lines a collection-for (no brace) would run on to the next `) {`. -->
+    <regex pattern="\sfor \([^\n]*?\) \{"/>
+    <regex pattern="\swhile \([^\n]*?\) \{"/>
+  </exclude>
+  <threshold failure="0"/>
+</mutations>

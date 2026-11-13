@@ -45,6 +45,8 @@ jobs:
   # a fix to the guide alone needs no new version. With it go the website's files that name no version (docs/download,
   # checked by download_check.sh, and the brand icons): fonts and icons first, then style.css (the guide's too), then
   # the privacy pages. R2 serves no directory index, so every link names its file (privacy.html, en/index.html).
+  # en/privacy.html links to en/index.html, which only `download` publishes: a manual run that stops at `version`
+  # before the first release with this site leaves that link dangling until the release.
   site:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
@@ -70,32 +72,32 @@ jobs:
               exit 0
             fi
           fi
-          site() { tool/release/r2_upload.sh "docs/download/$1" "$1" "$2" "${3:-public, max-age=300}"; }
+          upload() { tool/release/r2_upload.sh "docs/download/$1" "$1" "$2" "${3:-public, max-age=300}"; }
           # A font never changes under the same name (style.css says so): a year of cache.
           for font in docs/download/fonts/*.woff2; do
-            site "fonts/${font##*/}" font/woff2 'public, max-age=31536000, immutable'
+            upload "fonts/${font##*/}" font/woff2 'public, max-age=31536000, immutable'
           done
-          for license in docs/download/fonts/*-OFL.txt; do site "fonts/${license##*/}" 'text/plain; charset=utf-8'; done
+          for license in docs/download/fonts/*-OFL.txt; do upload "fonts/${license##*/}" 'text/plain; charset=utf-8'; done
           # Logo and favicon straight from the brand sources (docs/brand-icone.md), no copy in docs/download.
           for icon in icon.svg icon-small.svg; do
             tool/release/r2_upload.sh "assets/brand/$icon" "brand/$icon" image/svg+xml 'public, max-age=300'
           done
-          site style.css 'text/css; charset=utf-8'
-          site privacy.html 'text/html; charset=utf-8'
-          site en/privacy.html 'text/html; charset=utf-8'
+          upload style.css 'text/css; charset=utf-8'
+          upload privacy.html 'text/html; charset=utf-8'
+          upload en/privacy.html 'text/html; charset=utf-8'
           tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
           echo "- Privacy: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}privacy.html" >> "$GITHUB_STEP_SUMMARY"
           echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
 
   # The product page (#173) goes up as index.html at the bucket root and en/index.html, with __VERSION__ replaced; its
-  # stylesheet, fonts and privacy pages come from `site`. It waits for `macos` and `android` (a skipped or failed job
-  # skips this one), so it never names a version whose files are not up yet nor moves the "latest" links ahead of them.
+  # stylesheet, fonts and privacy pages come from `site`, so it waits for that too (`site` succeeds, doing nothing, on
+  # a tag that is not the highest). It waits for `macos` and `android` (a skipped or failed job skips this one), so it never names a version whose files are not up yet nor moves the "latest" links ahead of them.
   # Its main buttons point to the versioned files of this very run: a manual run publishes those but never moves
   # "latest" (only tag pushes do), so the "latest" links are only the secondary ones. The root `/` itself is served by a
   # Cloudflare Transform Rule (Rewrite URL: path exactly `/` -> static `/index.html`), set by hand by the owner in the
   # dashboard, outside this repo: without it only /index.html works.
   download:
-    needs: [version, macos, android]
+    needs: [version, macos, android, site]
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:

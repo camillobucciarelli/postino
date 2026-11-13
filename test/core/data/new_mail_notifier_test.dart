@@ -55,6 +55,9 @@ void main() {
     expect([for (final n in notifications.shown) n.subject], ['Prima', 'Seconda', 'Terza']);
     expect({for (final n in notifications.shown) notificationId('a1', n.messageId)}, hasLength(3));
     expect(notifications.visible['a1'], hasLength(3));
+    final (account, ids) = notifications.summarized.single;
+    expect(account, 'a1', reason: "the Account's summary once, before the notifications");
+    expect(ids, ['m1', 'm2', 'm3']);
   });
 
   test('on the same date the order does not depend on the batch order', () async {
@@ -90,6 +93,14 @@ void main() {
 
     expect(notifications.shown, hasLength(10));
     expect(notifications.visibleConversations, isNot(contains('t')));
+    expect(notifications.summarized.single.$2, isNot(contains('o1')));
+  });
+
+  test('nothing to notify: no summary either', () async {
+    open.show((accountId: 'a1', conversationId: 't'));
+    await notifier.notify(_a1, [msg('o1', conversationId: 't')]);
+
+    expect(notifications.summarized, isEmpty);
   });
 
   test('a notification the OS refuses does not stop the next ones', () async {

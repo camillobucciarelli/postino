@@ -52,9 +52,9 @@ class LocalNotifications() implements Notifications {
   String _channelName = 'Postino';
   String Function(int count) _newMessages = (count) => '$count';
 
-  /// Android, per Account: the notifications this isolate posted that no listing showed yet. Android posts
-  /// asynchronously, so the listing right after a show may miss one, and the count of the summary with it.
-  final _unlisted = <String, Set<int>>{};
+  /// Android: the notifications this isolate cancelled that a listing still showed. Android cancels asynchronously,
+  /// so they do not count in a summary until a listing confirms them gone.
+  final _cancelled = <int>{};
 
   ActionLabel _actionLabel = (action) => action.name;
 
@@ -131,9 +131,17 @@ class LocalNotifications() implements Notifications {
       payload: encodePayload(ConversationTarget(conversation)),
       notificationDetails: _details(conversation, body, actions),
     );
+    _cancelled.remove(id);
+  }
+
+  @override
+  Future<void> summarize(String accountId, String accountAddress, List<String> messageIds) async {
     if (!_android) return;
-    (_unlisted[accountId] ??= {}).add(id);
-    await _summarize(accountId, address: accountAddress);
+    await _summarize(
+      accountId,
+      address: accountAddress,
+      coming: {for (final m in messageIds) notificationId(accountId, m)},
+    );
   }
 
   @override
@@ -142,18 +150,17 @@ class LocalNotifications() implements Notifications {
     if (ids.isEmpty) return;
     // Where the OS lists them, only the shown ones: a sync may touch many messages without a notification.
     final active = switch (await _active()) {
-      final list? => {for (final n in list) n.id, ...?_unlisted[accountId]},
+      final list? => {for (final n in list) n.id},
       null => null,
     };
-    final gone = <int>{};
     for (final id in ids) {
       if (active == null || active.contains(id)) {
         await _plugin.cancel(id: id);
-        gone.add(id);
+        if (_android) _cancelled.add(id);
       }
     }
     // Also when none was still shown: a button dismissed its notification itself, the summary may be left behind.
-    if (_android) await _summarize(accountId, gone: gone);
+    if (_android) await _summarize(accountId);
   }
 
   @override
@@ -214,35 +221,39 @@ class LocalNotifications() implements Notifications {
     );
   }
 
-  /// Android only: the group summary «N nuovi messaggi» of [accountId], N the notifications shown in its group; none
-  /// for one alone, and it goes with the last. Silent: its children alert. [address], its subtext, is the one it
-  /// shows already when not given. [gone] were just cancelled: Android cancels asynchronously, so the listing may still
-  /// show them.
+  /// Android only: the group summary «N nuovi messaggi» of [accountId], N the notifications shown in its group and the
+  /// [coming] ones about to be; none for one alone, and it goes with the last. Silent: its children alert. [address],
+  /// its subtext, is the one it shows already when not given. Posted only when N changed: Android sheds the updates
+  /// past a few per second.
   // ponytail: from two down to one it stays, «1 nuovo messaggio»: cancelling a summary takes its children with it.
-  Future<void> _summarize(String accountId, {String? address, Set<int> gone = const {}}) async {
-    final unlisted = (_unlisted[accountId] ??= {})..removeAll(gone);
+  // ponytail: a post Android refuses (past 50 shown per app) still counts in [coming] until the next listing.
+  Future<void> _summarize(String accountId, {String? address, Set<int> coming = const {}}) async {
     final summaryId = groupId(accountId);
     ActiveNotification? summary;
+    final children = {...coming};
     final listed = <int>{};
     for (final n in await _active() ?? const <ActiveNotification>[]) {
-      if (n.groupKey != accountId || gone.contains(n.id)) continue;
+      listed.add(n.id!);
+      if (n.groupKey != accountId) continue;
       if (n.id == summaryId) {
         summary = n;
-      } else {
-        listed.add(n.id!);
+      } else if (!_cancelled.contains(n.id)) {
+        children.add(n.id!);
       }
     }
-    unlisted.removeAll(listed);
-    final count = listed.length + unlisted.length;
+    // Those no longer listed are gone for good.
+    _cancelled.retainAll(listed);
+    final count = children.length;
     if (count == 0) {
       if (summary != null) await _plugin.cancel(id: summaryId);
       return;
     }
     final subText = address ?? summary?.body;
-    if (subText == null || (count < 2 && summary == null)) return;
+    final title = _newMessages(count);
+    if (subText == null || (count < 2 && summary == null) || summary?.title == title) return;
     await _plugin.show(
       id: summaryId,
-      title: _newMessages(count),
+      title: title,
       body: subText,
       payload: encodePayload(AccountTarget(accountId)),
       notificationDetails: NotificationDetails(

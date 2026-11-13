@@ -27,7 +27,8 @@ class NewMailNotifier(
   ];
 
   /// Shows a notification for each of [messages] (from [fresh]) but those of the Conversazione on screen, oldest
-  /// first: the batch comes in no order (Gmail fills it as its fetches complete), and the newest goes on top.
+  /// first: the batch comes in no order (Gmail fills it as its fetches complete), and the newest goes on top. The
+  /// Account's summary goes first, once: Android sheds the updates that follow a burst of posts.
   Future<void> notify(Account account, List<Message> messages) async {
     final accountId = account.id;
     final notified = [
@@ -36,6 +37,10 @@ class NewMailNotifier(
     ]..sort(_byDate);
     if (notified.isEmpty) return;
     final actions = buttonsOf(await _settings.notificationActions());
+    await _safely(
+      accountId,
+      () => _notifications.summarize(accountId, account.address, [for (final m in notified) m.id]),
+    );
     for (final m in notified) {
       await _safely(
         accountId,
@@ -58,9 +63,9 @@ class NewMailNotifier(
   }
 
   /// A notification the OS refuses does not stop the next ones nor the sync.
-  static Future<void> _safely(String accountId, Future<void> Function() show) async {
+  static Future<void> _safely(String accountId, Future<void> Function() post) async {
     try {
-      await show();
+      await post();
     } on Object catch (e) {
       // The type only: the error may quote the message.
       debugPrint('[notifiche] $accountId: show failed, ${e.runtimeType}');

@@ -73,6 +73,13 @@ class FakeNotifications() implements Notifications {
     (visible[notification.conversation.accountId] ??= {})[notification.messageId] = notification.conversation;
   }
 
+  /// Every [summarize], in order: the Account and the messages about to be shown.
+  final summarized = <(String, List<String>)>[];
+
+  @override
+  Future<void> summarize(String accountId, String accountAddress, List<String> messageIds) async =>
+      summarized.add((accountId, messageIds));
+
   @override
   Future<void> cancel(String accountId, Iterable<String> messageIds) async {
     for (final id in messageIds) {

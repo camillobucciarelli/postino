@@ -26,6 +26,10 @@ abstract interface class Notifications() {
   /// launches the app.
   Future<void> show(MailNotification notification);
 
+  /// Before [show]ing the notifications of [messageIds], new messages of [accountId] at [accountAddress]: the summary
+  /// «N nuovi messaggi» of the Account's group, counting them too (Android, from two on); nothing elsewhere.
+  Future<void> summarize(String accountId, String accountAddress, List<String> messageIds);
+
   /// Removes the notifications of the messages [messageIds] of [accountId] that are shown; the group's summary
   /// follows (Android).
   Future<void> cancel(String accountId, Iterable<String> messageIds);

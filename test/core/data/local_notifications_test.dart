@@ -24,7 +24,13 @@ void main() {
 
   /// Shown, yet not listed yet: Android posts asynchronously.
   late Set<int> lagging;
+
+  /// While set, a cancelled notification stays listed: Android cancels asynchronously.
+  var deferCancels = false;
   late List<int> cancels;
+
+  /// Every post of the summary of a1.
+  late List<String?> summaryPosts;
   late LocalNotifications notifications;
 
   /// The buttons of each notification shown: id → action id → title.
@@ -59,6 +65,8 @@ void main() {
     shown = {};
     texts = {};
     lagging = {};
+    deferCancels = false;
+    summaryPosts = [];
     buttons = {};
     cancels = [];
     launch = null;
@@ -77,6 +85,7 @@ void main() {
           final id = map['id'] as int;
           shown[id] = specifics?['groupKey'] as String?;
           texts[id] = (title: map['title'] as String?, body: map['body'] as String?);
+          if (id == groupId('a1')) summaryPosts.add(map['title'] as String?);
           buttons[id] = {
             for (final a in (specifics?['actions'] as List?) ?? const [])
               (a as Map)['id'] as String: a['title'] as String,
@@ -84,11 +93,12 @@ void main() {
         case 'cancel':
           final id = (args as Map)['id'] as int;
           cancels.add(id);
-          shown.remove(id);
+          if (!deferCancels) shown.remove(id);
         case 'getActiveNotifications':
           return [
             for (final MapEntry(:key, :value) in shown.entries)
-              if (!lagging.contains(key)) {'id': key, 'groupKey': value, 'body': texts[key]?.body},
+              if (!lagging.contains(key))
+                {'id': key, 'groupKey': value, 'title': texts[key]?.title, 'body': texts[key]?.body},
           ];
       }
       return null;
@@ -124,6 +134,7 @@ void main() {
   }
 
   test('a notification has the buttons of its Azioni, titled and in order (#211)', () async {
+    await notifications.summarize('a1', 'a1@example.com', ['m1', 'm2']);
     await notifications.show(mail('a1', 'm1', actions: const [NotificationAction.delete, NotificationAction.star]));
     await notifications.show(mail('a1', 'm2', actions: const [NotificationAction.delete, NotificationAction.star]));
 
@@ -343,13 +354,20 @@ void main() {
   String? summaryTitle(String accountId) =>
       shown.containsKey(groupId(accountId)) ? texts[groupId(accountId)]?.title : null;
 
+  /// As the notifier does: the Account's summary first, then its new messages.
+  Future<void> notify(String accountId, List<String> messageIds) async {
+    await notifications.summarize(accountId, '$accountId@example.com', messageIds);
+    for (final m in messageIds) {
+      await notifications.show(mail(accountId, m));
+    }
+  }
+
   test('one notification per message in the group of its Account; the summary from the second on (#238)', () async {
-    await notifications.show(mail('a1', 'm1'));
+    await notify('a1', ['m1']);
     expect(shown, {notificationId('a1', 'm1'): 'a1'}, reason: 'one message alone: no summary');
 
-    await notifications.show(mail('a1', 'm2'));
-    await notifications.show(mail('a1', 'm3'));
-    await notifications.show(mail('a2', 'b1'));
+    await notify('a1', ['m2', 'm3']);
+    await notify('a2', ['b1']);
 
     expect(shown, {
       notificationId('a1', 'm1'): 'a1',
@@ -362,20 +380,44 @@ void main() {
     expect(texts[groupId('a1')]?.body, 'a1@example.com');
   });
 
-  test('a message not listed yet (Android posts asynchronously) still counts', () async {
-    lagging.add(notificationId('a1', 'm1'));
-    await notifications.show(mail('a1', 'm1'));
-    await notifications.show(mail('a1', 'm2'));
+  test('a burst: the summary posted once, ahead of its messages (Android sheds the updates after a burst)', () async {
+    await notify('a1', ['m1', 'm2', 'm3', 'm4', 'm5', 'm6']);
 
-    expect(summaryTitle('a1'), '2 nuovi messaggi');
+    expect(summaryPosts, ['6 nuovi messaggi']);
+    await notifications.cancel('a1', ['never-shown']);
+    expect(summaryPosts, hasLength(1), reason: 'the same count is not posted again');
+  });
+
+  test('a notification shown but never listed (Android blocked it) does not count in a later summary', () async {
+    lagging.add(notificationId('a1', 'm1'));
+    await notify('a1', ['m1']);
+    await notify('a1', ['m2']);
+
+    expect(summaryTitle('a1'), isNull, reason: 'one message listed: no summary');
+  });
+
+  test('two cancels in a row while Android still lists the first: the summary goes with the last', () async {
+    await notify('a1', ['m1', 'm2']);
+    deferCancels = true;
+
+    await notifications.cancel('a1', ['m1']);
+    await notifications.cancel('a1', ['m2']);
+
+    expect(cancels.last, groupId('a1'));
+  });
+
+  test('a cancel with no summary listed posts none: it has no address for it', () async {
+    await notify('a1', ['m1', 'm2', 'm3']);
+    lagging.add(groupId('a1'));
+    summaryPosts.clear();
+
+    await notifications.cancel('a1', ['m3']);
+    expect(summaryPosts, isEmpty);
   });
 
   test('a message cancelled: its notification goes and the summary counts down; the last takes it away', () async {
-    for (final m in ['m1', 'm2', 'm3']) {
-      await notifications.show(mail('a1', m));
-    }
-    await notifications.show(mail('a2', 'b1'));
-    await notifications.show(mail('a2', 'b2'));
+    await notify('a1', ['m1', 'm2', 'm3']);
+    await notify('a2', ['b1', 'b2']);
 
     await notifications.cancel('a1', ['m1', 'never-shown']);
     expect(cancels, [notificationId('a1', 'm1')], reason: 'one not shown is not cancelled');
@@ -391,8 +433,7 @@ void main() {
   });
 
   test('a button that dismissed its notifications itself still takes the empty summary away', () async {
-    await notifications.show(mail('a1', 'm1'));
-    await notifications.show(mail('a1', 'm2'));
+    await notify('a1', ['m1', 'm2']);
     shown
       ..remove(notificationId('a1', 'm1'))
       ..remove(notificationId('a1', 'm2'));

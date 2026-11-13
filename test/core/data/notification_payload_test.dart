@@ -49,7 +49,6 @@ void main() {
   test('the notification id is the same in every run, per message (#238)', () {
     // FNV-1a computed outside Dart: an Object.hash would differ between processes, so between two starts.
     expect(notificationId('a1', 'm1'), 100827275);
-    expect(notificationId('a1', 'm1'), notificationId('a1', 'm1'));
     expect(notificationId('a1', 'm2'), isNot(100827275));
     expect(notificationId('a2', 'm1'), isNot(100827275));
   });

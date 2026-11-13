@@ -14,7 +14,7 @@ class const MailNotification({
   /// The message: its own notification.
   required final String messageId,
 
-  /// The address of its Account: the title of the Account's group (#210).
+  /// The address of its Account: the subtext of the Account's group summary (Android).
   required final String accountAddress,
 
   /// The sender's display name, or its address without one.

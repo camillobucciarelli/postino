@@ -11,7 +11,19 @@ const _rules = 'tool/mutation/rules.xml';
 /// The score (percent) under which a run fails, in CI too: 0 until the real numbers are known (#235).
 const _threshold = '0';
 
+/// The checkout lock, held in a global so it stays reachable (an unreachable handle can be finalized, closing
+/// the descriptor and releasing the lock mid-run) and closed only after the last source is restored.
+RandomAccessFile? _lock;
+
 Future<void> main(List<String> args) async {
+  try {
+    await _mutationRun(args);
+  } finally {
+    _lock?.closeSync();
+  }
+}
+
+Future<void> _mutationRun(List<String> args) async {
   final opts = {
     for (final a in args)
       if (RegExp(r'^--([a-z-]+)=(.*)$').firstMatch(a) case final m?) m.group(1)!: m.group(2)!,
@@ -50,10 +62,13 @@ Future<void> main(List<String> args) async {
 
   Directory(out).createSync(recursive: true);
   // One run at a time per checkout: a second one would read the first one's mutant as the original.
-  // ponytail: non-blocking exclusive lock, released when the process exits; throws if another run holds it.
+  // ponytail: non-blocking exclusive lock; throws if another run holds it.
+  final lock = File('.dart_tool/mutation.lock').openSync(mode: FileMode.write);
   try {
-    File('.dart_tool/mutation.lock').openSync(mode: FileMode.write).lockSync();
+    lock.lockSync();
+    _lock = lock;
   } on FileSystemException {
+    lock.closeSync();
     stderr.writeln('Un altro mutation test gira già su questo checkout.');
     exitCode = 1;
     return;

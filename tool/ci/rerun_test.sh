@@ -26,9 +26,9 @@ EOF
 chmod +x "$dir/bin/gh"
 
 sha=$(printf 'a%.0s' {1..40})
-job() { # job <status> <conclusion> <gate step conclusion or "">
-  jq -nc --arg s "$1" --arg c "$2" --arg g "$3" \
-    '{status: $s, conclusion: (if $c == "" then null else $c end),
+job() { # job <status> <conclusion> <gate step conclusion or ""> [name, default check]
+  jq -nc --arg s "$1" --arg c "$2" --arg g "$3" --arg n "${4:-check}" \
+    '{name: $n, status: $s, conclusion: (if $c == "" then null else $c end),
       steps: (if $g == "" then [] else [{name: "Codex gate", conclusion: $g}] end)}'
 }
 run() { jq -nc --arg s "$1" '{status: $s, jobs: $ARGS.positional}' --jsonargs "${@:2}"; }
@@ -46,6 +46,9 @@ broken=$(job completed failure success)
 expect 'run rerun 42' "$(run completed "$gated" "$gated" "$gated")"
 expect '' "$(run completed "$built" "$built" "$built")"
 expect '' "$(run completed "$broken" "$built" "$built")"
+# mutation has no gate: its real failure, or its long run, never restarts anything.
+expect '' "$(run completed "$built" "$built" "$built" "$(job completed failure '' mutation)")"
+expect '' "$(run in_progress "$built" "$built" "$built" "$(job in_progress '' '' mutation)")"
 expect '' "$(run queued "$(job queued '' '')" "$(job queued '' '')")"
 expect 'run cancel 42,run rerun 42' "$(run in_progress "$gated" "$(job queued '' '')")" "$(run completed "$gated" "$(job completed cancelled '')")"
 # A job inside its gate is waited for: it fails on comments read before the approval, then the run is restarted.

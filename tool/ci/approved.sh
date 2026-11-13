@@ -10,17 +10,19 @@ head=${2:?usage: approved.sh <comments.json> <head sha>}
 rc=0
 found=$("$(dirname "$0")/approval.sh" "$comments" "$head") || rc=$?
 [ "$rc" -le 1 ] || exit "$rc"
-ok=1
+# The first approval wins; a failed permission lookup only matters when nothing approves.
+result=1
 while read -r kind login; do
   case $kind in
-    codex) echo "Codex ok on $head"; ok=0 ;;
+    codex) echo "Codex ok on $head"; exit 0 ;;
     manual)
-      [[ $login =~ ^[A-Za-z0-9-]+$ ]] || { echo "not a user login: $login" >&2; exit 2; }
-      permission=$(gh api "repos/$REPO/collaborators/$login/permission" --jq .permission) || exit 2
+      [[ $login =~ ^[A-Za-z0-9-]+$ ]] || { echo "not a user login: $login" >&2; result=2; continue; }
+      permission=$(gh api "repos/$REPO/collaborators/$login/permission" --jq .permission) \
+        || { echo "permission of $login unreadable" >&2; result=2; continue; }
       case $permission in
-        admin | maintain | write) echo "ci-ok on $head by $login ($permission)"; ok=0 ;;
+        admin | maintain | write) echo "ci-ok on $head by $login ($permission)"; exit 0 ;;
         *) echo "ci-ok by $login ignored: permission $permission" ;;
       esac ;;
   esac
 done <<< "$found"
-exit "$ok"
+exit "$result"

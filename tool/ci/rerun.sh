@@ -18,12 +18,14 @@ id=$(gh run list -R "$REPO" --workflow ci.yml --event pull_request --branch "$br
   --json databaseId --jq '.[0].databaseId // empty')
 [ -n "$id" ] || { echo "no pull_request run of ci.yml for $branch at $sha"; exit 0; }
 
+# Only the gated jobs: a mutation failure is real, never a gate stop.
+gated='(.name == "check" or .name == "android" or .name == "apple")'
 gate='any(.steps[]?; .name == "Codex gate" and .conclusion == "success")'
 # Prints "<run status> <jobs failed at the gate> <jobs still before or in the gate>".
 state() {
   gh run view -R "$REPO" "$id" --json status,jobs --jq "[.status,
-    ([.jobs[] | select(.conclusion == \"failure\" and ($gate | not))] | length),
-    ([.jobs[] | select(.status == \"in_progress\" and ($gate | not))] | length)] | join(\" \")"
+    ([.jobs[] | select($gated and .conclusion == \"failure\" and ($gate | not))] | length),
+    ([.jobs[] | select($gated and .status == \"in_progress\" and ($gate | not))] | length)] | join(\" \")"
 }
 for _ in $(seq 60); do
   read -r status failed gating <<< "$(state)"

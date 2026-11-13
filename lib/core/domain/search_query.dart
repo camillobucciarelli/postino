@@ -39,6 +39,10 @@ class const SearchQuery({
 
   /// Gli id degli Account in cui cercare, decisi dal chiamante (la vista da cui si apre la ricerca); vuoto: tutti.
   final Set<String> accountIds = const {},
+
+  /// L'Etichetta della vista da cui si apre la ricerca, decisa dal chiamante (mai scritta dall'utente): solo
+  /// `trashLabelId` conta. Con il Cestino si cercano solo i suoi messaggi; altrimenti il Cestino è escluso.
+  final String? labelId,
 }) extends Equatable {
   /// Crea una ricerca; senza argomenti è vuota.
   this;
@@ -70,6 +74,24 @@ class const SearchQuery({
     hasAttachment: hasAttachment,
     accountNames: accountNames,
     accountIds: ids,
+    labelId: labelId,
+  );
+
+  /// La stessa ricerca ristretta all'Etichetta [id].
+  SearchQuery inLabel(String? id) => SearchQuery(
+    terms: terms,
+    phrase: phrase,
+    from: from,
+    to: to,
+    subject: subject,
+    after: after,
+    before: before,
+    unread: unread,
+    starred: starred,
+    hasAttachment: hasAttachment,
+    accountNames: accountNames,
+    accountIds: accountIds,
+    labelId: id,
   );
 
   @override
@@ -86,5 +108,6 @@ class const SearchQuery({
     hasAttachment,
     accountNames,
     accountIds,
+    labelId,
   ];
 }

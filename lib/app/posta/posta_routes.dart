@@ -64,5 +64,7 @@ void openConversation(String accountId, String conversationId) => Routefly.navig
 );
 
 /// Opens the search over the Posta view (#205), in [accountId] only, or in every Account: back pops to the view.
-/// The Account goes as the route's argument: a pushed route does not carry its query string to `Routefly.query`.
-void openSearch({String? accountId}) => unawaited(Routefly.push<void>(routePaths.cerca, arguments: accountId));
+/// The scope goes as the route's argument: a pushed route does not carry its query string to `Routefly.query`.
+/// [labelId] is the Etichetta of the view, passed only for the Cestino: it searches the Cestino alone.
+void openSearch({String? accountId, String? labelId}) =>
+    unawaited(Routefly.push<void>(routePaths.cerca, arguments: (accountId, labelId)));

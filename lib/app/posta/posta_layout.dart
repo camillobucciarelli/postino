@@ -36,6 +36,9 @@ class _PostaLayoutState() extends State<PostaLayout> {
   /// The Account of the list shown (null: the Posta unificata): what `/` searches in.
   String? _accountId;
 
+  /// The Etichetta of the list shown, null for the Posta unificata and an Account's inbox.
+  String? _labelId;
+
   /// What the keyboard shortcuts move: the list in front plugs itself in.
   final _cursor = ListCursor();
 
@@ -54,7 +57,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
     super.initState();
     _cursor.reportProblem = reportProblem;
     // The Account of the list in front, read when the key is pressed.
-    _cursor.search = () => openSearch(accountId: _accountId);
+    _cursor.search = () => openSearch(accountId: _accountId, labelId: _labelId);
   }
 
   @override
@@ -70,6 +73,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
     );
     if (detail == null) _list = list;
     _accountId = accountId;
+    _labelId = labelId;
     void back() => Routefly.navigate(list);
     // Invia: the composer closes and the Snackbar of Annulla invio shows under this layout's messenger (the
     // app's: PostaLayout outlives the composer in both layouts), so it survives the detail going away.

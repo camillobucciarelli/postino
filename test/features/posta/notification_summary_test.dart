@@ -2,6 +2,7 @@
 // its inbox; the system's Indietro (Android) goes from there to the Posta unificata.
 import 'dart:async';
 
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart' show Drawer;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';

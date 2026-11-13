@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:postino/design_system/molecules/postino_message_details_panel.dart' show PostinoMessageDetailsPanel;
 

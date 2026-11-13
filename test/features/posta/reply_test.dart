@@ -5,6 +5,7 @@ import 'dart:async';
 // composer keeps the reply headers and the forwarded attachments on every save.
 
 import 'package:flutter/foundation.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';

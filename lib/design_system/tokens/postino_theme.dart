@@ -1,5 +1,7 @@
 // postino_theme.dart — costruisce ThemeData dai token. Scritto a mano, usa postino_tokens.dart.
+// ignore: deprecated_member_use
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 import 'postino_tokens.dart';

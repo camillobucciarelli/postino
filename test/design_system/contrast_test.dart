@@ -1,6 +1,7 @@
 // WCAG 2.2 AA on the real tokens, light and dark: text 4.5:1, icons, borders and UI parts 3:1.
 // The colors are composited as the screen shows them: translucent tokens over their background,
 // the theme's focus, hover and pressed overlays over the rows they light up.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/tokens/postino_theme.dart';

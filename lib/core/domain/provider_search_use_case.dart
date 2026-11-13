@@ -21,6 +21,8 @@ typedef ProviderAnswer = ({Account account, Result<ProviderSearchPage> result});
 class ProviderSearchUseCase(
   final AccountsRepository _accounts,
   final MailSync _sync, {
+
+  /// How long one page of one Account may take: [providerSearchTimeout], shorter in the tests.
   @ignoreParam final Duration timeout = providerSearchTimeout,
 }) {
   /// Legge gli Account e chiede ai loro Provider.

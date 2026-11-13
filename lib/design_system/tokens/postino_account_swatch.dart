@@ -1,4 +1,5 @@
 // Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 /// Le tre tinte di un colore account in un tema.

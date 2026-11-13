@@ -1,4 +1,5 @@
 // Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 /// Scala tipografica (come KeyVault): Caprasimo per i titoli, Figtree per il testo, monospace di sistema per header grezzi. Il colore viene dal tema.

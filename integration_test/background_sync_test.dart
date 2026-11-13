@@ -48,9 +48,8 @@ void main() {
   testWidgets('the task turns a new message into a notification that opens its Conversazione', (tester) async {
     final h = await Harness.create();
     final notifications = LocalNotifications();
-    getIt
-      ..unregister<Notifications>()
-      ..registerSingleton<Notifications>(notifications);
+    await getIt.unregister<Notifications>();
+    getIt.registerSingleton<Notifications>(notifications);
     // As the WorkManager isolate starts them: not the app's, the buttons are not taken here (#211).
     await notifications.start(
       channelName: 'Posta nuova',

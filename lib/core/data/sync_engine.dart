@@ -256,17 +256,17 @@ class SyncEngine(
     Duration? hold,
     bool replay = true,
   }) async {
-    // Applied here at once: a Conversazione left with nothing unread in the inbox loses its notification (#210).
-    final conversations = await _cleanup.conversationsOf(accountId, messageIds);
+    // Applied here at once: a message no longer unread in the inbox loses its notification (#238).
+    final touched = messageIds.toSet();
     if (hold == null) {
       await _store.queue(accountId, messageIds, action);
-      _cleanInQueue(accountId, conversations);
+      _cleanInQueue(accountId, touched);
       // One replay for all of them: with a rate limit each would wait out the transport's backoff again.
       if (!replay) return;
       return _replay.ifActive(accountId);
     }
     await _store.queue(accountId, messageIds, action, heldUntil: _clock.now().add(hold));
-    _cleanInQueue(accountId, conversations);
+    _cleanInQueue(accountId, touched);
     late final StreamSubscription<void> timer;
     timer = _clock.every(hold).listen((_) {
       _holdTimers.remove(timer);
@@ -277,8 +277,8 @@ class SyncEngine(
   }
 
   /// In the Account's queue, after any sync running: its notifications and this cleanup never interleave.
-  void _cleanInQueue(String accountId, Set<String> conversations) =>
-      unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, conversations)));
+  void _cleanInQueue(String accountId, Set<String> messageIds) =>
+      unawaited(_queue.run(accountId, () => _cleanup.clean(accountId, messageIds)));
 
   @override
   Future<void> replayActions(String accountId) => _replay.ifActive(accountId, actionsOnly: true);

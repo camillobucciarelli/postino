@@ -33,8 +33,8 @@ class OnDemandFetcher(
     // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
     // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
     final fetched = await _queue.run(accountId, () async {
-      // Read here: its notification goes (#210), in the queue so a sync's notifications never interleave.
-      await _cleanup.clean(accountId, {conversationId});
+      // Read here: its messages' notifications go (#238), in the queue so a sync's notifications never interleave.
+      await _cleanup.cleanConversation(accountId, conversationId);
       // Inviati and messages older than the sync window are not in the database yet.
       // ponytail: refetched on every opening (one request); remember complete Conversazioni if the quota ever matters.
       final fetched = await _fetchConversation(accountId, provider, conversationId);

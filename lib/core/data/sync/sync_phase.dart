@@ -88,14 +88,9 @@ class SyncPhase(
         // ponytail: a sync redone for an expired cursor notifies nothing either; diff against the database if that loses mail.
         final unknown = full ? const <Message>[] : await _store.unknown(accountId, value.messages);
         final fresh = await _newMail.fresh(accountId, unknown);
-        // The Conversazioni the batch touched, the removed messages' before the apply drops them (#210).
+        // The messages the batch touched, the removed ones too (#238).
         // ponytail: a sync redone from scratch cleans nothing; the next incremental one catches up.
-        final touched = full
-            ? const <String>{}
-            : {
-                for (final m in value.messages) m.conversationId,
-                ...await _cleanup.conversationsOf(accountId, value.removedMessageIds),
-              };
+        final touched = full ? const <String>{} : {for (final m in value.messages) m.id, ...value.removedMessageIds};
         // The cursor is saved here, from the complete batch: pages alone never save it.
         Future<void> commit() async {
           // Removed meanwhile (from another device too, ADR 0016): no notification for mail that is not here.

@@ -1,22 +1,21 @@
 import 'dart:async';
 
 import 'package:postino/core/domain/mail_notification.dart';
-import 'package:postino/core/domain/new_mail_summary.dart';
 import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/core/domain/notifications.dart';
 
 /// Records every notification instead of showing it; [tap] stands for a tap on one while the app runs. [visible] is
-/// what the OS would show now: per Account (its group), the notifications by what they open.
+/// what the OS would show now: per Account (its group), the notifications by message, with the Conversazione they open.
 class FakeNotifications() implements Notifications {
   /// Every notification shown, in order.
   final shown = <MailNotification>[];
 
-  /// Every summary shown, in order.
-  final summaries = <NewMailSummary>[];
+  /// What the OS shows now, grouped per Account: message id → its Conversazione.
+  final visible = <String, Map<String, ConversationKey>>{};
 
-  /// What the OS shows now, grouped per Account.
-  final visible = <String, Set<NotificationTarget>>{};
+  /// The messages with a notification on screen, of every Account.
+  Set<String> get visibleMessages => {for (final group in visible.values) ...group.keys};
 
   /// While set, [show] waits for it.
   Completer<void>? gate;
@@ -39,8 +38,7 @@ class FakeNotifications() implements Notifications {
   /// The Conversazioni with a notification on screen, of every Account.
   Set<String> get visibleConversations => {
     for (final group in visible.values)
-      for (final t in group)
-        if (t case ConversationTarget(:final conversation)) conversation.conversationId,
+      for (final c in group.values) c.conversationId,
   };
 
   /// What [start] was given to run a button tapped while the app runs.
@@ -72,19 +70,20 @@ class FakeNotifications() implements Notifications {
       throw StateError('notification refused');
     }
     shown.add(notification);
-    (visible[notification.conversation.accountId] ??= {}).add(ConversationTarget(notification.conversation));
+    (visible[notification.conversation.accountId] ??= {})[notification.messageId] = notification.conversation;
   }
 
-  @override
-  Future<void> showSummary(NewMailSummary summary) async {
-    summaries.add(summary);
-    visible[summary.accountId] = {AccountTarget(summary.accountId)};
-  }
+  /// Every [summarize], in order: the Account, the messages about to be shown, and how many were [shown] before it.
+  final summarized = <(String, List<String>, int)>[];
 
   @override
-  Future<void> cancel(List<NotificationTarget> targets) async {
-    for (final t in targets) {
-      visible[t.accountId]?.remove(t);
+  Future<void> summarize(String accountId, String accountAddress, List<String> messageIds) async =>
+      summarized.add((accountId, messageIds, shown.length));
+
+  @override
+  Future<void> cancel(String accountId, Iterable<String> messageIds) async {
+    for (final id in messageIds) {
+      visible[accountId]?.remove(id);
     }
   }
 

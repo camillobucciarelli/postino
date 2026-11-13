@@ -29,9 +29,23 @@ DidReceiveBackgroundNotificationResponseCallback? backgroundActionEntry;
 class LocalNotifications() implements Notifications {
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  /// Broadcast: a tap before anyone listens is dropped, so the one Android delivers inside `initialize()` on a cold
-  /// start never reaches a router that does not exist yet; that launch comes from [start].
-  final _taps = StreamController<NotificationTarget>.broadcast();
+  /// Broadcast: a tap during [start] is dropped, so the one Android delivers inside `initialize()` on a cold start
+  /// never reaches a router that does not exist yet; that launch comes from [start]. A tap after [start] with nobody
+  /// listening yet waits for the first listener ([_pending]).
+  late final StreamController<NotificationTarget> _taps = StreamController.broadcast(
+    onListen: () {
+      final pending = _pending;
+      _pending = null;
+      if (pending != null) scheduleMicrotask(() => _taps.add(pending));
+    },
+  );
+
+  /// The last tap after [start] while nobody listened: the engine kept by the Notifiche immediate (#214) started
+  /// without the app on screen, so the Activity a tap opens hands it over before the router listens.
+  NotificationTarget? _pending;
+
+  /// Set once [start] read the launch: from then on a tap is not the launch.
+  var _started = false;
 
   String _channelName = 'Postino';
   String Function(int count) _newMessages = (count) => '$count';
@@ -80,11 +94,15 @@ class LocalNotifications() implements Notifications {
       ),
       onDidReceiveNotificationResponse: (r) {
         if (decodeAction(r.payload, r.actionId) case final tap?) return onAction?.call(tap);
-        if (decodePayload(r.payload) case final target?) _taps.add(target);
+        if (decodePayload(r.payload) case final target?) {
+          if (_taps.hasListener) return _taps.add(target);
+          if (_started) _pending = target;
+        }
       },
       onDidReceiveBackgroundNotificationResponse: backgroundActionEntry,
     );
     final launch = await _plugin.getNotificationAppLaunchDetails();
+    _started = true;
     if (!(launch?.didNotificationLaunchApp ?? false)) return null;
     final response = launch!.notificationResponse;
     // A button that launched the app (Windows, macOS): its Azione, and the app opens where it would.

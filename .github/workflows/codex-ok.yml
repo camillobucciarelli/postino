@@ -1,0 +1,50 @@
+name: Codex ok
+
+# All'ok sul commit di testa di una PR (ricevuta pulita di Codex o `ci-ok <sha>`) rilancia la run `pull_request` di
+# ci.yml di quel commit, così i check restano della PR (#246). Il cancello di ci.yml rilegge da sé i commenti: qui si
+# evitano solo i rerun inutili. Gira dal branch di default col token del repo: niente checkout del codice della PR,
+# l'evento è input non fidato (solo via env e file, mai ${{ }} dentro run:), decide tool/ci/codex_ok.sh.
+# Segnale di Codex: il commento-ricevuta, creato una volta per review pulita (con rilievi la ricevuta sta in una
+# review, altro evento). Il commento `codex-review-state:v1` viene modificato più volte: rerun doppi.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  rerun-ci:
+    # Filtro grezzo per non accendere il job a ogni commento; la decisione vera (permesso di scrittura letto dall'API
+    # per `ci-ok`) è in codex_ok.sh.
+    if: >-
+      github.event.issue.pull_request && (
+        (github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
+         contains(github.event.comment.body, '<!-- codex-review-receipt:v1 -->')) ||
+        (startsWith(github.event.comment.body, 'ci-ok ') &&
+         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
+    # Hosted: pochi secondi (~1 minuto fatturato per ok). Sull'unico self-hosted aspetterebbe la coda.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Solo tool/ci dal branch di default (github.sha di issue_comment), mai la PR.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tool/ci
+          persist-credentials: false
+      - name: Decide e rilancia
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          gh api "repos/$REPO/pulls/$PR" > "$RUNNER_TEMP/pr.json"
+          # Uscita 1 = non rilanciare; altri codici = errore vero, il job fallisce.
+          rc=0
+          head=$(tool/ci/codex_ok.sh "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/pr.json") || rc=$?
+          [ "$rc" -le 1 ] || exit "$rc"
+          [ "$rc" -eq 0 ] || exit 0
+          read -r sha branch <<< "$head"
+          tool/ci/rerun.sh "$sha" "$branch"

@@ -68,7 +68,7 @@ Widget postaLabelView(String accountId, String labelId, {(String, String)? selec
       appBar: AccountAppBar(
         accountId: accountId,
         labelId: labelId,
-        onSearch: () => openSearch(accountId: accountId),
+        onSearch: () => openSearch(accountId: accountId, labelId: labelId),
       ),
       drawer: postaDrawer(accountId: accountId, labelId: labelId),
       banners: postaBanners,

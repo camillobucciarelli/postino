@@ -880,6 +880,9 @@ class Translations$cerca$it {
 	/// it: 'Cerca nella posta'
 	String get field => 'Cerca nella posta';
 
+	/// it: 'Cerca nel Cestino'
+	String get fieldTrash => 'Cerca nel Cestino';
+
 	/// it: 'Tutti gli Account'
 	String get scopeAll => 'Tutti gli Account';
 
@@ -1542,6 +1545,7 @@ extension on Translations {
 			'cerca.open' => 'Cerca',
 			'cerca.title' => 'Cerca',
 			'cerca.field' => 'Cerca nella posta',
+			'cerca.fieldTrash' => 'Cerca nel Cestino',
 			'cerca.scopeAll' => 'Tutti gli Account',
 			'cerca.idleTitle' => 'Cerca nella posta',
 			'cerca.idleBody' => 'Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.',

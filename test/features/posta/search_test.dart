@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/message.dart' show trashLabelId;
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -258,5 +259,48 @@ void main() {
     // Emptying the field goes back to nothing.
     await _type(tester, '');
     expect(find.text('Nessun risultato'), findsNothing);
+  });
+
+  group('the Cestino (#236)', () {
+    /// a1 with a message in the Cestino and one outside, both with the word «tariffa».
+    Future<FakeMailProvider> startWithTrash(WidgetTester tester) async {
+      tester.view
+        ..physicalSize = _desktop
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create();
+      final a1 = (await h.addAccount('a1'))
+        ..deliver(msg('t1', subject: 'Tariffa vecchia', labelIds: [trashLabelId]))
+        ..deliver(msg('m1', subject: 'Tariffa nuova'));
+      LocaleSettings.setLocaleSync(AppLocale.it);
+      await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+      unawaited(Routefly.navigate(routePaths.posta.path));
+      await tester.pumpAndSettle();
+      return a1;
+    }
+
+    testWidgets('from the Posta unificata the Cestino is not searched', (tester) async {
+      await startWithTrash(tester);
+      await _openFromBar(tester);
+      await _type(tester, 'tariffa');
+      expect(_row('a1', 'm1'), findsOneWidget);
+      expect(_row('a1', 't1'), findsNothing);
+    });
+
+    testWidgets('from the Cestino only its messages, the field says so, and the Provider is not asked', (tester) async {
+      final handle = tester.ensureSemantics();
+      final a1 = await startWithTrash(tester);
+      unawaited(Routefly.navigate('/posta/a1/etichetta/$trashLabelId'));
+      await tester.pumpAndSettle();
+      await _openFromBar(tester);
+      expect(tester.getSemantics(find.byType(TextField)).label, 'Cerca nel Cestino');
+      await _type(tester, 'tariffa');
+      expect(_row('a1', 't1'), findsOneWidget);
+      expect(_row('a1', 'm1'), findsNothing);
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(a1.searchCalls, isEmpty);
+      handle.dispose();
+    });
   });
 }

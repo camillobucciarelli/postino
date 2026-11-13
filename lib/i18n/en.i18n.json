@@ -281,6 +281,7 @@
     "open": "Search",
     "title": "Search",
     "field": "Search mail",
+    "fieldTrash": "Search the Trash",
     "scopeAll": "All Accounts",
     "idleTitle": "Search your mail",
     "idleBody": "Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.",

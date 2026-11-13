@@ -454,6 +454,7 @@ class _Translations$cerca$en extends Translations$cerca$it {
 	@override String get open => 'Search';
 	@override String get title => 'Search';
 	@override String get field => 'Search mail';
+	@override String get fieldTrash => 'Search the Trash';
 	@override String get scopeAll => 'All Accounts';
 	@override String get idleTitle => 'Search your mail';
 	@override String get idleBody => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.';
@@ -885,6 +886,7 @@ extension on TranslationsEn {
 			'cerca.open' => 'Search',
 			'cerca.title' => 'Search',
 			'cerca.field' => 'Search mail',
+			'cerca.fieldTrash' => 'Search the Trash',
 			'cerca.scopeAll' => 'All Accounts',
 			'cerca.idleTitle' => 'Search your mail',
 			'cerca.idleBody' => 'Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.',

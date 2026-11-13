@@ -8,8 +8,9 @@
 # pill, no HTML parser errors (xmllint's HTML4 parser, so the HTML5 header/main/footer are the tags it may not know).
 # Product pages: download, guide and privacy links. Every page and the guide: every link and url() leads to a file
 # here, to assets/brand, to the guide or to a released download, the site's own absolute URLs included; nothing is
-# loaded from elsewhere (no script, inline style, srcset, @import, single-quoted link) and no host but buymeacoffee.com
-# (only as a link, with its rel) and the site's own is named in an attribute. A typo stops the release before anything is published.
+# loaded from elsewhere (no script, inline style, srcset, @import, single-quoted link) and no host is named in an
+# attribute but the site's own and those of the external links below (only as those links, with their rel). The only
+# mail link is the guide's contact, and on the site only in the privacy pages. A typo stops the release before anything is published.
 # Usage: download_check.sh [site dir] [guide]
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -20,6 +21,8 @@ ok=1
 fail() { echo "$1"; ok=0; }
 has() { grep -qF -- "$2" "$1" || fail "$1: missing $2"; }
 bmc='href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"'
+# The external links the site may have: Buy me a coffee and Google's policy for the Limited Use statement.
+external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.com/terms/api-services-user-data-policy)
 
 page() { # <file> <lang> <twin's lang> <twin, relative> <site root, relative>
   has "$dir/$1" "<html lang=\"$2\">"
@@ -37,7 +40,7 @@ product() { # <file> <site root, relative>
   done
   has "$dir/$1" 'href="privacy.html"'
 }
-links() { # <file> <its path on the bucket> [mailto: when allowed]
+links() { # <file> <its path on the bucket> [the mail link allowed there]
   local base path url host
   base=$(dirname "$2")
   if grep -nE "<script|<style|<iframe|<object|<embed|[[:space:]]style=|srcset=|@import|(href|src)='" "$1"; then
@@ -47,16 +50,23 @@ links() { # <file> <its path on the bucket> [mailto: when allowed]
   # one, as the Gmail scope does in the privacy policy.
   while read -r host; do
     case $host in
-      buymeacoffee.com | "$site") ;;
-      *) fail "$1: names the host $host" ;;
+      "$site") ;;
+      *)
+        local allowed=0 u
+        for u in "${external[@]}"; do
+          [ "$u" != "${u#https://"$host"/}" ] || continue
+          allowed=1
+          [ "$(grep -o "//$host" "$1" | wc -l)" = "$(grep -oF "href=\"$u\" rel=\"noopener noreferrer\"" "$1" | wc -l)" ] ||
+            fail "$1: $host other than as a link to $u with rel=\"noopener noreferrer\""
+        done
+        [ "$allowed" = 1 ] || fail "$1: names the host $host"
+        ;;
     esac
   done < <(grep -oE '="[^"]*"' "$1" | grep -oE '//[A-Za-z0-9.-]+' | sed 's|^//||' | sort -u)
-  [ "$(grep -o 'buymeacoffee\.com' "$1" | wc -l)" = "$(grep -oF "$bmc" "$1" | wc -l)" ] ||
-    fail "$1: buymeacoffee.com other than as a link with rel=\"noopener noreferrer\""
   while read -r url; do
     case $url in
-      https://buymeacoffee.com/camillobucciarelli) continue ;;
-      mailto:*) [ "${3:-}" = mailto: ] || fail "$1: mail link $url"; continue ;;
+      https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy) continue ;;
+      mailto:*) [ "$url" = "${3:-}" ] || fail "$1: mail link $url"; continue ;;
       "https://$site/"*) path=${url#https://"$site"/} ;;
       *:* | //*) fail "$1: external or unknown link $url"; continue ;;
       *) path="$base/$url"; path=${path#./}; path=${path/#en\/..\//}; path=${path/#guida\/..\//} ;;
@@ -79,8 +89,16 @@ product index.html ''
 product en/index.html ../
 has "$dir/privacy.html" 'href="index.html"'
 has "$dir/en/privacy.html" 'href="index.html"'
-for f in index.html en/index.html privacy.html en/privacy.html; do links "$dir/$f" "$f"; done
-links "$guide" guida/index.html mailto:
+# The privacy contact is the address the guide already publishes, and only that.
+contact=$(grep -oE 'mailto:[^"]+' "$guide" | sort -u)
+[ "$(printf '%s\n' "$contact" | grep -c .)" = 1 ] || fail "$guide: not exactly one mail address: $contact"
+for f in index.html en/index.html; do links "$dir/$f" "$f"; done
+for f in privacy.html en/privacy.html; do
+  links "$dir/$f" "$f" "$contact"
+  has "$dir/$f" "<a href=\"$contact\">${contact#mailto:}</a>"
+  has "$dir/$f" 'href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"'
+done
+links "$guide" guida/index.html "$contact"
 has "$guide" '<link rel="stylesheet" href="../style.css">'
 # Published as they are: a placeholder there would show.
 for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/style.css" "$guide"; do

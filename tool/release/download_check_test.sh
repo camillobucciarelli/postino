@@ -1,7 +1,8 @@
 #!/bin/bash
 # Self-check of download_check.sh, run by ci.yml: the real site passes, and each kind of slip fails: something loaded
 # from a third party (link, script, inline style, srcset, single-quoted attribute, @import, a Buy me a coffee widget),
-# a link to a missing file (relative or absolute on the site's host), Buy me a coffee without its rel or gone, wrong
+# a link to a missing file (relative or absolute on the site's host), Buy me a coffee or Google's policy without their
+# rel, another page of an allowed host, a mail link other than the guide's privacy contact, wrong
 # lang, missing switch to the twin, lost download or footer link, missing font or license, a placeholder on a page
 # published as it is, broken markup, and the same slips in the guide.
 set -euo pipefail
@@ -44,6 +45,11 @@ fails "privacy link of the product page" en/index.html 's|<a href="privacy.html"
 fails "back link of the privacy page" privacy.html 's|<a href="index.html">|<a href="en/index.html">|'
 fails "placeholder on a page published as it is" privacy.html 's|13 novembre 2026|__VERSION__|'
 fails "broken markup" privacy.html 's|</ul>|</strong></ul>|'
+fails "policy link without rel" en/privacy.html 's|policy" rel="noopener noreferrer">|policy">|'
+fails "other page of the policy host" privacy.html 's|api-services-user-data-policy"|other-page"|'
+fails "privacy contact other than the guide's" privacy.html 's|mailto:camillo@bucciarelli.dev|mailto:privacy@example.com|'
+fails "privacy contact gone" en/privacy.html 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|'
+fails "mail link on the product page" index.html 's|<footer>|<footer><a href="mailto:camillo@bucciarelli.dev">x</a>|'
 fails "guide with a third-party font" guide 's|</head>|<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree"></head>|'
 fails "guide with a missing stylesheet" guide 's|href="../style.css"|href="../stile.css"|'
 echo "download_check.sh ok"

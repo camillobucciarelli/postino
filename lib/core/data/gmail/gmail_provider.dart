@@ -20,6 +20,7 @@ import '../mime.dart';
 import '../oauth/oauth_failed.dart';
 import '../oauth/oauth_guard.dart';
 import 'gmail_actions.dart';
+import 'gmail_cursor.dart';
 import 'gmail_http.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
@@ -61,7 +62,7 @@ class GmailProvider(
   @override
   Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => oauthGuard(() async {
     // The cursor comes first: what changes while listing is replayed by the next incremental sync.
-    final cursor = (await _gmail.get('profile'))['historyId'] as String;
+    final historyId = (await _gmail.get('profile'))['historyId'] as String;
     final labels = await _labels.list();
     final after = _clock.now().subtract(syncWindow).millisecondsSinceEpoch ~/ 1000;
     final ids = await _list({'q': 'after:$after'});
@@ -69,29 +70,37 @@ class GmailProvider(
     // Page by page: each one is handed over (and stored) before the next is fetched.
     // ponytail: a retry refetches pages already stored; skip stored ids if big mailboxes keep failing late.
     final fetched = <String, (Message, MessageBody?)?>{};
+    final failed = <String, Failure>{};
     for (var i = 0; i < ids.length; i += _page) {
       final page = await _fetchAll(ids.skip(i).take(_page), full: inbox.contains);
-      fetched.addAll(page);
-      await onPage?.call([for (final (m, _) in page.values.nonNulls) m], _inboxBodies(page));
+      fetched.addAll(page.fetched);
+      failed.addAll(page.failed);
+      await onPage?.call([for (final (m, _) in page.fetched.values.nonNulls) m], _inboxBodies(page.fetched));
     }
+    // ponytail: a message left behind by the very first sync (none stored yet) comes with an incremental one, which may
+    // notify it although it is old (#39); mark those retries as quiet if that is ever seen.
+    final cursor = GmailCursor(historyId).after(historyId, settled: const [], failed: failed.keys, now: _clock.now());
     return Ok(
       SyncBatch(
-        cursor: cursor,
+        cursor: cursor.encode(),
         labels: labels,
         messages: [for (final (m, _) in fetched.values.nonNulls) m],
         bodies: _inboxBodies(fetched),
+        deferredMessageIds: failed.keys.toList(),
+        deferred: failed.values.firstOrNull,
       ),
     );
   });
 
   @override
   Future<Result<SyncBatch>> incrementalSync(String cursor) => oauthGuard(() async {
+    final was = GmailCursor.decode(cursor);
     final changed = <String>{};
     final deleted = <String>{};
-    var latest = cursor;
+    var latest = was.historyId;
     String? page;
     do {
-      final r = await _gmail.get('history', query: {'startHistoryId': cursor, 'pageToken': ?page});
+      final r = await _gmail.get('history', query: {'startHistoryId': was.historyId, 'pageToken': ?page});
       // In order, so each message ends in its last state.
       for (final h in jsonObjects(r['history'])) {
         for (final kind in ['messagesAdded', 'labelsAdded', 'labelsRemoved']) {
@@ -110,14 +119,21 @@ class GmailProvider(
       latest = r['historyId'] as String? ?? latest;
       page = r['nextPageToken'] as String?;
     } while (page != null);
+    // The messages an earlier sync left behind once their wait is over (#252); not before, even if changed again.
+    final due = was.due(_clock.now()).toSet();
+    changed
+      ..removeWhere((id) => was.retries.containsKey(id) && !due.contains(id))
+      ..addAll(due);
     // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
-    final fetched = await _fetchAll(changed, full: (_) => true);
+    final (:fetched, :failed) = await _fetchAll(changed, full: (_) => true);
     // The history does not record label changes: the whole list comes every time.
     // ponytail: one more GET (1 quota unit) per poll; a labels-only refresh every few polls if quota ever matters.
     final labels = await _labels.list();
+    // From the end of the downloads: a long batch does not leave its retries already due.
+    final next = was.after(latest, settled: {...fetched.keys, ...deleted}, failed: failed.keys, now: _clock.now());
     return Ok(
       SyncBatch(
-        cursor: latest,
+        cursor: next.encode(),
         labels: labels,
         messages: [for (final (m, _) in fetched.values.nonNulls) m],
         // Gone by the time it was fetched: removed as well.
@@ -127,6 +143,11 @@ class GmailProvider(
             if (value == null) key,
         ],
         bodies: _inboxBodies(fetched),
+        deferredMessageIds: failed.keys.toList(),
+        deferred: [
+          for (final MapEntry(:key, :value) in failed.entries)
+            if (!was.retries.containsKey(key)) value,
+        ].firstOrNull,
       ),
     );
   });
@@ -235,7 +256,12 @@ class GmailProvider(
           query,
           pageToken: pageToken,
           stored: stored,
-          fetch: (ids) async => [for (final (m, _) in (await _fetchAll(ids, full: (_) => false)).values.nonNulls) m],
+          fetch: (ids) async {
+            final (:fetched, :failed) = await _fetchAll(ids, full: (_) => false);
+            // A search page is whole or fails: no cursor would retry what it left out.
+            if (failed.values.firstOrNull case final f?) throw OAuthFailed(f);
+            return [for (final (m, _) in fetched.values.nonNulls) m];
+          },
         );
         return Ok(page);
       });
@@ -333,21 +359,32 @@ class GmailProvider(
     return ids;
   }
 
-  /// Fetches [ids], [_chunk] at a time; null for a message gone in the meantime.
+  /// Fetches [ids], [_chunk] at a time: null for a message gone in the meantime, in `failed` one that did not come
+  /// (a stall, a 5xx, an answer it cannot read: #252). A refused login, a rate limit or no network stops them all:
+  /// only a request stuck on its own is left behind, never a whole mailbox the network dropped.
   /// [full] says which ones come with their body.
-  Future<Map<String, (Message, MessageBody?)?>> _fetchAll(
+  Future<({Map<String, (Message, MessageBody?)?> fetched, Map<String, Failure> failed})> _fetchAll(
     Iterable<String> ids, {
     required bool Function(String id) full,
   }) async {
-    final out = <String, (Message, MessageBody?)?>{};
+    final fetched = <String, (Message, MessageBody?)?>{};
+    final failed = <String, Failure>{};
     final all = ids.toList();
     for (var i = 0; i < all.length; i += _chunk) {
       if (i > 0) await _sleep(_pace);
       await Future.wait([
-        for (final id in all.skip(i).take(_chunk)) _fetch(id, full: full(id)).then((m) => out[id] = m),
+        for (final id in all.skip(i).take(_chunk))
+          oauthGuard(() async => Ok(await _fetch(id, full: full(id)))).then(
+            (r) => switch (r) {
+              Ok(:final value) => fetched[id] = value,
+              Err(failure: final f && (AuthFailure() || RateLimitFailure() || OfflineFailure(stalled: false))) =>
+                throw OAuthFailed(f),
+              Err(failure: final f) => failed[id] = f,
+            },
+          ),
       ]);
     }
-    return out;
+    return (fetched: fetched, failed: failed);
   }
 
   Future<(Message, MessageBody?)?> _fetch(String id, {required bool full}) async {

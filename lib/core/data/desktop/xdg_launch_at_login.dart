@@ -2,8 +2,13 @@ import 'package:file/file.dart';
 
 import '../../domain/launch_at_login.dart';
 
-/// Linux: an XDG autostart entry, `$XDG_CONFIG_HOME/autostart/postino.desktop` ([_entry]), starting [_executable].
-class XdgLaunchAtLogin(final File _entry, final String _executable) implements LaunchAtLogin {
+/// Linux: an XDG autostart entry, `$XDG_CONFIG_HOME/autostart/postino.desktop` ([_entry]), starting [_executable]
+/// with [hidden] (#239); [_arguments] is this run's command line.
+class XdgLaunchAtLogin(final File _entry, final String _executable, final List<String> _arguments)
+    implements LaunchAtLogin {
+  /// What the entry passes: the window stays hidden in the tray (`linux/runner/my_application.cc`).
+  static const hidden = '--hidden';
+
   /// What a desktop writes to turn the entry off without deleting it (GNOME: the second).
   static const _off = {'Hidden=true', 'X-GNOME-Autostart-enabled=false'};
 
@@ -25,10 +30,33 @@ class XdgLaunchAtLogin(final File _entry, final String _executable) implements L
       '[Desktop Entry]\n'
       'Type=Application\n'
       'Name=Postino\n'
-      'Exec=${_quoted(_executable)}\n'
+      '$_exec\n'
       'X-GNOME-Autostart-enabled=true\n',
     );
   }
+
+  @override
+  Future<bool> launchedAtLogin() async => _arguments.contains(hidden);
+
+  /// An entry written before #239 (this executable without [hidden]) gets it; the rest of the entry, a desktop's
+  /// "off" included, stays. Written aside, then renamed over it: failing leaves the entry as it was, which still starts
+  /// Postino, with its window.
+  void upgrade() {
+    final next = _entry.fileSystem.file('${_entry.path}.new');
+    try {
+      if (!_entry.existsSync()) return;
+      final old = 'Exec=${_quoted(_executable)}';
+      final lines = _entry.readAsLinesSync();
+      if (!lines.contains(old)) return;
+      next
+        ..writeAsStringSync('${[for (final l in lines) l == old ? _exec : l].join('\n')}\n', flush: true)
+        ..renameSync(_entry.path);
+    } on FileSystemException {
+      if (next.existsSync()) next.deleteSync();
+    }
+  }
+
+  String get _exec => 'Exec=${_quoted(_executable)} $hidden';
 
   /// Exec quoting (`"`, `` ` ``, `$`, `\` escaped inside double quotes; `%` doubled, or it reads as a field code),
   /// then the file's own escape of `\`.

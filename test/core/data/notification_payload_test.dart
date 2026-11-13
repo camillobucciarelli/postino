@@ -46,24 +46,22 @@ void main() {
     expect(encodePayload(const AccountTarget('a1')), '["a1"]');
   });
 
-  test('the notification id is the same in every run, per Conversazione', () {
-    // FNV-1a computed outside Dart: an Object.hash would differ between processes.
-    expect(notificationId((accountId: 'a1', conversationId: 't-a')), 877480721);
-    expect(notificationId((accountId: 'a1', conversationId: 't-b')), isNot(877480721));
+  test('the notification id is the same in every run, per message (#238)', () {
+    // FNV-1a computed outside Dart: an Object.hash would differ between processes, so between two starts.
+    expect(notificationId('a1', 'm1'), 100827275);
+    expect(notificationId('a1', 'm2'), isNot(100827275));
+    expect(notificationId('a2', 'm1'), isNot(100827275));
   });
 
-  test("an Account's summary and group have their own ids, apart from its Conversazioni and from other Accounts", () {
-    final ids = {
-      summaryId('a1'),
-      groupId('a1'),
-      summaryId('a2'),
-      groupId('a2'),
-      notificationId((accountId: 'a1', conversationId: 't-a')),
-    };
-    expect(ids, hasLength(5));
-    // FNV-1a computed outside Dart, as above: the same summary and group after a restart.
-    expect(summaryId('a1'), 1559549067);
+  test("an Account's group summary has its own id, never one of its messages'", () {
+    // FNV-1a computed outside Dart, as above: the same group after a restart, and after the update from #210.
     expect(groupId('a1'), 1232372138);
+    expect(groupId('a2'), isNot(groupId('a1')));
+    final ids = {for (var i = 0; i < 1000; i++) notificationId('a1', 'm$i')};
+    expect(ids, hasLength(1000));
+    expect(ids, isNot(contains(groupId('a1'))));
+    // A message id whose FNV-1a is the group's (found by brute force outside Dart): it moves aside.
+    expect(notificationId('a1', 'ff4y4x'), groupId('a1') ^ 1);
   });
 
   for (final payload in [null, '', 'not json', '{"a":1}', '[]', '[1]', '[1, 2]', '["a", "b", "c"]']) {

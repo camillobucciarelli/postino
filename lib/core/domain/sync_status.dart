@@ -34,11 +34,17 @@ class const SyncStatus({
   }
 
   /// An [OfflineFailure] while the device says it is online is a blip until it repeats this many times: more is a
-  /// sync that never gets through (#252), which the user is told about as a failure, not as being offline.
+  /// sync that never gets through (#252), which the user is told about as a failure, not as being offline. The same
+  /// streak goes in the error log (`SyncPhase.failuresToLog`).
   static const offlineFailuresToShow = 3;
 
-  /// Whether the user is told the sync failed (the device online: offline is told apart before this).
-  bool get failed => failure != null && (failure is! OfflineFailure || failures >= offlineFailuresToShow);
+  /// Whether the user is told the sync failed (the device online: offline is told apart before this). A stalled
+  /// request ([OfflineFailure.stalled]: the Provider took it, then stopped answering) is no blip of the network.
+  bool get failed => switch (failure) {
+    null => false,
+    OfflineFailure(:final stalled) => stalled || failures >= offlineFailuresToShow,
+    _ => true,
+  };
 
   @override
   List<Object?> get props => [running, syncedAt, failure, failures];

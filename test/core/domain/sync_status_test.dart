@@ -18,6 +18,10 @@ void main() {
       expect(const SyncStatus(failure: OfflineFailure(), failures: SyncStatus.offlineFailuresToShow).failed, isTrue);
     });
 
+    test('a stalled request at once: the network is there (#252)', () {
+      expect(const SyncStatus(failure: OfflineFailure(stalled: true), failures: 1).failed, isTrue);
+    });
+
     test('nothing failed', () => expect(SyncStatus(syncedAt: t1).failed, isFalse));
   });
 

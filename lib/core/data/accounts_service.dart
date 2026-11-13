@@ -23,7 +23,11 @@ import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'oauth/oauth_tokens.dart';
 import 'postino_database.dart';
+import 'settings_sync.dart';
 import 'sync_engine.dart';
+
+/// How long the removal of the Account di sincronizzazione waits for its tombstones to reach Drive.
+const _uploadWait = Duration(seconds: 15);
 
 @LazySingleton(as: AccountsRepository)
 class AccountsService(
@@ -40,6 +44,7 @@ class AccountsService(
   final ConnectionTester _tester,
   final GoogleRevoke _revoke,
   final AttachmentRepository _attachments,
+  final SettingsSync _settingsSync,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -80,11 +85,15 @@ class AccountsService(
       await removing.catchError((Object _) {});
       return const Err(CancelledFailure());
     }
+    final removals = _removalsStarted[id];
     // Under the lock: a removal of the same Account from another device in flight never deletes these credentials.
     final account = await _lock.run(() async {
+      // Removed here while waiting for the lock: as above.
+      if (_removalsStarted[id] != removals) return null;
       await OAuthTokens.of(grant).write(_keychain, id);
       return _save(id, address, provider);
     });
+    if (account == null) return const Err(CancelledFailure());
     unawaited(_sync.syncAll());
     return Ok(account);
   }
@@ -125,9 +134,10 @@ class AccountsService(
     // The user closed the form while the servers answered, or while a removal of the same Account ended: nothing
     // is written.
     if (cancelled) return const Err(CancelledFailure());
+    final removals = _removalsStarted[id];
     final account = await _lock.run(() async {
-      // Closed while waiting for the lock too: still nothing written.
-      if (cancelled) return null;
+      // Closed, or the Account removed here, while waiting for the lock: still nothing written.
+      if (cancelled || _removalsStarted[id] != removals) return null;
       await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
       return _save(id, normalized, provider.kind);
     });
@@ -188,10 +198,15 @@ class AccountsService(
   /// The removals running, by Account: a connection of the same Account waits for its credential cleanup.
   final _removals = <String, Future<void>>{};
 
+  /// How many removals of each Account started: a connection that saw no removal before waiting for the lock writes
+  /// nothing if one started meanwhile.
+  final _removalsStarted = <String, int>{};
+
   @override
   Future<void> remove(String accountId) {
     // A second «Rimuovi» of the same Account while the first runs joins it: one cleanup, one entry to wait for.
     if (_removals[accountId] case final running?) return running;
+    _removalsStarted.update(accountId, (n) => n + 1, ifAbsent: () => 1);
     final run = _removals[accountId] = _remove(accountId);
     run.whenComplete(() {
       if (identical(_removals[accountId], run)) _removals.remove(accountId)?.ignore();
@@ -206,8 +221,14 @@ class AccountsService(
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
     // Still there (they go last); a keychain that does not answer never blocks the removal.
     final tokens = await OAuthTokens.read(_keychain, accountId).catchError((Object _) => null);
-    // The Impostazioni di Postino no longer have a Drive to sync on.
-    if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    if (await _settings.settingsSyncAccount() == accountId) {
+      // Its tombstones go up first, while its credentials are still here (ADR 0016): else the other devices never
+      // see the removal. Offline or failed, they stay dirty until another Account is chosen for the sync.
+      // ponytail: at most _uploadWait, so «Rimuovi» never hangs on Drive.
+      await _settingsSync.syncNow().timeout(_uploadWait, onTimeout: () {});
+      // The Impostazioni di Postino no longer have a Drive to sync on.
+      await _settings.setSettingsSyncAccount(null);
+    }
     // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
     // that cannot be emptied never stops the revocation nor the keychain cleanup.
     try {

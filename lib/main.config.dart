@@ -359,6 +359,16 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i696.AttachmentStorage>(),
       ),
     );
+    gh.lazySingleton<_i400.AccountsSettingsMirror>(
+      () => _i400.AccountsSettingsMirror(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i385.MailStore>(),
+        gh<_i398.SecureStore>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
+        gh<_i278.AttachmentRepository>(),
+      ),
+    );
     gh.lazySingleton<_i382.AccountsRepository>(
       () => _i413.AccountsService(
         gh<_i385.MailStore>(),
@@ -374,6 +384,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i967.ConnectionTester>(),
         gh<_i960.GoogleRevoke>(),
         gh<_i278.AttachmentRepository>(),
+        gh<_i311.SettingsSync>(),
       ),
     );
     gh.factory<_i802.ReportProblemUseCase>(
@@ -394,16 +405,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i51.ProviderSearchUseCase(
         gh<_i382.AccountsRepository>(),
         gh<_i705.MailSync>(),
-      ),
-    );
-    gh.lazySingleton<_i400.AccountsSettingsMirror>(
-      () => _i400.AccountsSettingsMirror(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i385.MailStore>(),
-        gh<_i398.SecureStore>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i681.AccountsLock>(),
-        gh<_i278.AttachmentRepository>(),
       ),
     );
     return this;

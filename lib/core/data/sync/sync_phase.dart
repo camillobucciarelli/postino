@@ -89,7 +89,8 @@ class SyncPhase(
               };
         // The cursor is saved here, from the complete batch: pages alone never save it.
         Future<void> commit() async {
-          await _store.applySync(accountId, value, fullSnapshot: full);
+          // Removed meanwhile (from another device too, ADR 0016): no notification for mail that is not here.
+          if (!await _store.applySync(accountId, value, fullSnapshot: full)) return;
           await _newMail.notify(account, fresh);
           await _cleanup.clean(accountId, touched);
           // Not awaited: its replay goes through the Account's queue, which this sync holds until it ends.

@@ -182,6 +182,23 @@ void main() {
     expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
+  test('the Account removed here while the reconnection waits for the lock: nothing is written', () async {
+    await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    await getIt<MailStore>().setStatus('icloud:ada@icloud.com', AccountStatus.daRicollegare);
+    final busy = Completer<void>();
+    final held = getIt<AccountsLock>().run(() => busy.future);
+    final pending = accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    await pumpEventQueue();
+
+    await accounts.remove('icloud:ada@icloud.com');
+    busy.complete();
+    await held;
+
+    expect(_failure(await pending), isA<CancelledFailure>());
+    expect(h.keychain.values.keys.where((k) => k.contains('ada@icloud.com')), isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+  });
+
   test('cancelled while the servers answer, nothing is written', () async {
     final cancel = Completer<void>();
     h.connection.gate = Completer<void>();

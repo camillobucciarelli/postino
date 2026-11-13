@@ -28,7 +28,8 @@ void main() {
     );
     await db.accountsDao.deleteByAccount('a');
 
-    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')]));
+    // False: the sync notifies nothing for it.
+    expect(await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')])), isFalse);
     await store.applyPage('a', [msg('2')], const {});
     await store.saveBody('a', '1', const MessageBody('Ciao', BodyKind.testo));
     await store.saveLabel('a', const Label(id: 'L1', name: 'L1', kind: LabelKind.etichetta));

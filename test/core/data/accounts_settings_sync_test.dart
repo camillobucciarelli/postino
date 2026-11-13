@@ -13,6 +13,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/settings_sync.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/fake_platform.dart';
@@ -283,5 +284,31 @@ void main() {
         expect(await getIt<PostinoDatabase>().postinoSettingsDao.readRow(key), before);
       },
     );
+  });
+
+  test('«Rimuovi» of the sync Account uploads its tombstone before the sync goes off', () async {
+    final file = FakeSettingsBackend();
+    final h = await Harness.create();
+    await getIt.unregister<SettingsSync>();
+    getIt.registerLazySingleton<SettingsSync>(
+      () => SettingsSync(
+        getIt<PostinoDatabase>(),
+        getIt<SettingsRepository>(),
+        h.clock,
+        h.connectivity,
+        backendFor: (_) => file,
+      ),
+    );
+    h.providerFor('gmail:ada@gmail.com');
+    await getIt<AccountsRepository>().connectGmail();
+    await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:ada@gmail.com');
+    await getIt<SettingsSync>().syncNow();
+    expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', false));
+
+    h.clock.advance(const Duration(minutes: 1));
+    await getIt<AccountsRepository>().remove('gmail:ada@gmail.com');
+
+    expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
+    expect(await getIt<SettingsRepository>().settingsSyncAccount(), isNull);
   });
 }

@@ -1,0 +1,77 @@
+/* Stile del sito (#173 e seguenti): pagine prodotto it/en, privacy e guida per gli invitati. Pubblicato come
+   style.css alla radice del bucket da release.yml (job site); controllato da tool/release/download_check.sh. */
+
+/* Font serviti dal bucket, nessuna richiesta a terzi. Solo il sottoinsieme latin (basta per italiano e inglese):
+   un carattere fuori copertura cade sul font di sistema. Licenze OFL accanto ai file. Se un file cambia, cambia
+   anche il nome: il bucket lo serve con cache di un anno. */
+@font-face { font-family: Caprasimo; font-style: normal; font-weight: 400; font-display: swap;
+             src: url(fonts/caprasimo-latin.woff2) format("woff2"); }
+@font-face { font-family: Figtree; font-style: normal; font-weight: 400 700; font-display: swap;
+             src: url(fonts/figtree-latin.woff2) format("woff2"); }
+
+/* Token di lib/design_system/tokens (postino_colors.dart, postino_palette.dart, postino_metrics.dart). */
+:root {
+  color-scheme: light dark;
+  --sfondo: #F4F2EC;          /* surfaceGround = pNeutral100 */
+  --superficie: #FFFFFF;      /* surfaceRaised = pNeutral0 */
+  --testo: #1C1C1A;           /* ink = pNeutral900 */
+  --testo-attenuato: #625E55; /* inkMuted = pNeutral600 */
+  --primario: #0E6456;        /* brand */
+  --primario-hover: #0B5649;  /* brandHover = pVerdigris800 */
+  --su-primario: #FFFFFF;     /* onBrand */
+  --bordo: #E2DED4;           /* borderSubtle = pNeutral200 */
+  --bordo-forte: #7F7A6E;     /* borderStrong = pNeutral500 */
+  --focus: #B0500A;           /* focusRing = pOrange700 */
+  --oro: #F0C419;             /* starFill = pGold400, solo decorativo */
+  --raggio-md: 0.75rem;       /* PostinoRadius.md 12 */
+  --raggio-lg: 1rem;          /* PostinoRadius.lg 16 */
+  --s1: 0.25rem; --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s6: 1.5rem; --s8: 2rem;
+  --tocco: 2.75rem;           /* PostinoMetrics.touchTargetIos 44 */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sfondo: #131312;          /* pNeutral950 */
+    --superficie: #242422;      /* pNeutral850 */
+    --testo: #F4F2EC;           /* pNeutral100 */
+    --testo-attenuato: #A6A093; /* pNeutral400 */
+    --primario: #79C9B3;        /* pVerdigris300 */
+    --primario-hover: #A9D9CB;  /* pVerdigris200 */
+    --su-primario: #0B231E;     /* pVerdigris950 */
+    --bordo: #2D2C29;           /* pNeutral800 */
+    --focus: #F2A65E;           /* pOrange300 */
+    --oro: #FFE02E;             /* pGold300 */
+  }
+}
+
+html { font-size: 100%; }
+body { margin: 0 auto; padding: var(--s4); max-width: 44rem; background: var(--sfondo); color: var(--testo);
+       font-family: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; line-height: 1.625; overflow-wrap: break-word; }
+h1, h2 { font-family: Caprasimo, Georgia, serif; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere; }
+h1 { font-size: 2.125em; margin: var(--s4) 0 var(--s3); padding-bottom: var(--s3); border-bottom: 0.25rem solid var(--oro); }
+h2 { font-size: 1.5em; margin: var(--s8) 0 var(--s3); }
+h3 { font-size: 1.15em; margin: var(--s6) 0 var(--s2); }
+main { background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio-lg); padding: var(--s4); }
+@media (min-width: 40rem) { main { padding: var(--s4) var(--s6) var(--s6); } }
+a { color: var(--primario); text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+a:hover { color: var(--primario-hover); }
+a:focus-visible { outline: 0.2em solid var(--focus); outline-offset: 0.2em; border-radius: 0.25rem; }
+li { margin-bottom: var(--s2); }
+code { background: var(--sfondo); border: 1px solid var(--bordo); border-radius: 0.25rem; padding: 0 var(--s1); font-size: 0.95em; }
+
+/* Barra in alto: cambio lingua a sinistra, pillola «Buy me a coffee» a destra. */
+.barra { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s3); margin-bottom: var(--s3); }
+.barra a { display: inline-flex; align-items: center; gap: var(--s2); box-sizing: border-box; min-height: var(--tocco); min-width: var(--tocco);
+           padding: var(--s2) var(--s3); }
+a.sponsor { color: var(--testo); font-weight: 600; text-decoration: none; border: 1px solid var(--bordo-forte);
+            border-radius: 999px; background: var(--superficie); }
+a.sponsor:hover { color: var(--primario); border-color: var(--primario); }
+a.sponsor:focus-visible { border-radius: 999px; }
+
+.logo { display: block; margin-top: var(--s2); }
+.versione { color: var(--testo-attenuato); font-weight: 600; }
+.pulsanti { display: flex; flex-wrap: wrap; gap: var(--s3); margin: var(--s6) 0; }
+a.pulsante { display: inline-block; box-sizing: border-box; min-height: 3rem; padding: 0.7em 1.25em; border-radius: var(--raggio-md);
+             background: var(--primario); color: var(--su-primario); font-weight: 700; text-decoration: none; }
+a.pulsante:hover { background: var(--primario-hover); color: var(--su-primario); }
+footer { margin-top: var(--s4); padding: 0 var(--s2); color: var(--testo-attenuato); }
+footer a { display: inline-block; min-height: var(--tocco); line-height: var(--tocco); }

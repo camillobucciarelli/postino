@@ -2,7 +2,8 @@ name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
 # `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `site` publishes the
-# invitees' guide (#123) and `download` the download page (#173, after `macos` and `android`) next to them.
+# invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
+# `android`) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
@@ -41,14 +42,17 @@ jobs:
   # serves no directory index, so the stable link is guida/index.html. A tag moves it only when it is the highest
   # version, like the "latest" downloads; a manual run (from main) always publishes it. No `needs: version`: a manual
   # run of an already released version stops there (and so do the platform jobs), while the guide still goes out, so
-  # a fix to the guide alone needs no new version.
+  # a fix to the guide alone needs no new version. With it go the website's files that name no version (docs/download,
+  # checked by download_check.sh, and the brand icons): fonts and icons first, then style.css (the guide's too), then
+  # the privacy pages. R2 serves no directory index, so every link names its file (privacy.html, en/index.html).
   site:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - run: tool/release/guide_check.sh
-      - name: Upload the guide to R2
+      - run: tool/release/download_check.sh
+      - name: Upload the guide and the website's static files to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -66,15 +70,30 @@ jobs:
               exit 0
             fi
           fi
+          site() { tool/release/r2_upload.sh "docs/download/$1" "$1" "$2" "${3:-public, max-age=300}"; }
+          # A font never changes under the same name (style.css says so): a year of cache.
+          for font in docs/download/fonts/*.woff2; do
+            site "fonts/${font##*/}" font/woff2 'public, max-age=31536000, immutable'
+          done
+          for license in docs/download/fonts/*-OFL.txt; do site "fonts/${license##*/}" 'text/plain; charset=utf-8'; done
+          # Logo and favicon straight from the brand sources (docs/brand-icone.md), no copy in docs/download.
+          for icon in icon.svg icon-small.svg; do
+            tool/release/r2_upload.sh "assets/brand/$icon" "brand/$icon" image/svg+xml 'public, max-age=300'
+          done
+          site style.css 'text/css; charset=utf-8'
+          site privacy.html 'text/html; charset=utf-8'
+          site en/privacy.html 'text/html; charset=utf-8'
           tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
+          echo "- Privacy: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}privacy.html" >> "$GITHUB_STEP_SUMMARY"
           echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
 
-  # The download page (#173) goes up as index.html at the bucket root, with __VERSION__ replaced. It waits for `macos`
-  # and `android` (a skipped or failed job skips this one), so it never names a version whose files are not up yet nor
-  # moves the "latest" links ahead of them. Its main buttons point to the versioned files of this very run: a manual run
-  # publishes those but never moves "latest" (only tag pushes do), so the "latest" links are only the secondary ones. The root `/` itself is served by a Cloudflare Transform Rule (Rewrite URL:
-  # path exactly `/` -> static `/index.html`), set by hand by the owner in the dashboard, outside this repo: without it
-  # only /index.html works.
+  # The product page (#173) goes up as index.html at the bucket root and en/index.html, with __VERSION__ replaced; its
+  # stylesheet, fonts and privacy pages come from `site`. It waits for `macos` and `android` (a skipped or failed job
+  # skips this one), so it never names a version whose files are not up yet nor moves the "latest" links ahead of them.
+  # Its main buttons point to the versioned files of this very run: a manual run publishes those but never moves
+  # "latest" (only tag pushes do), so the "latest" links are only the secondary ones. The root `/` itself is served by a
+  # Cloudflare Transform Rule (Rewrite URL: path exactly `/` -> static `/index.html`), set by hand by the owner in the
+  # dashboard, outside this repo: without it only /index.html works.
   download:
     needs: [version, macos, android]
     runs-on: [self-hosted, macOS, ARM64]
@@ -98,10 +117,12 @@ jobs:
               exit 0
             fi
           fi
-          mkdir -p build
-          sed "s/__VERSION__/$version/g" docs/download/index.html > build/download.html
-          tool/release/r2_upload.sh build/download.html index.html 'text/html; charset=utf-8' 'public, max-age=300'
-          echo "- Download: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}index.html" >> "$GITHUB_STEP_SUMMARY"
+          for page in index.html en/index.html; do
+            mkdir -p "build/site/$(dirname "$page")"
+            sed "s/__VERSION__/$version/g" "docs/download/$page" > "build/site/$page"
+            tool/release/r2_upload.sh "build/site/$page" "$page" 'text/html; charset=utf-8' 'public, max-age=300'
+            echo "- Download: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$page" >> "$GITHUB_STEP_SUMMARY"
+          done
 
   macos:
     needs: version

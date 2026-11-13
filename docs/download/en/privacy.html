@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!-- Pubblicata come en/privacy.html nel bucket da release.yml (job site). Gemella italiana: ../privacy.html, che fa
+     testo per i riscontri nel codice (elenco nella PR): cambiando l'una, cambiare anche l'altra. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postino: privacy policy</title>
+<link rel="alternate" hreflang="it" href="https://postino.camillobucciarelli.dev/privacy.html">
+<link rel="alternate" hreflang="en" href="https://postino.camillobucciarelli.dev/en/privacy.html">
+<link rel="icon" type="image/svg+xml" href="../brand/icon-small.svg">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="barra">
+  <a href="../privacy.html" hreflang="it" lang="it">Italiano</a>
+  <a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a>
+</header>
+<main>
+<h1>Privacy policy</h1>
+<p>Last updated: 13 November 2026. It covers the Postino app (macOS, Android, iOS) and this website.</p>
+
+<h2>In short</h2>
+<ul>
+  <li>Postino has no mail server of its own: the app talks directly to the providers you connect (Google, Microsoft, iCloud, your IMAP server).</li>
+  <li>Your mail and credentials stay on your device, encrypted.</li>
+  <li>The app has no analytics, no ads, no automatic error collection and no push notifications from a server.</li>
+  <li>The developer receives data only if you send them a problem report yourself.</li>
+</ul>
+
+<h2>Where your data stays</h2>
+<ul>
+  <li><strong>Mail.</strong> Headers, message text, labels, drafts and outgoing messages are stored in a database on your device, encrypted with SQLCipher. The key is generated at random on first launch and kept in the system keychain (Keychain on macOS and iOS, Keystore on Android).</li>
+  <li><strong>Attachments.</strong> The ones you download sit in an encrypted cache on your device, with a separate key in the keychain. When you open an attachment in another app, Postino writes a plain copy to a temporary folder and deletes it later.</li>
+  <li><strong>Credentials.</strong> Google and Microsoft access tokens and the passwords of iCloud and IMAP accounts are in the system keychain and go only to the provider they belong to.</li>
+  <li><strong>Backups on Android.</strong> Postino's data is excluded from cloud backup and from transfer to a new phone.</li>
+</ul>
+
+<h2>Who the app talks to</h2>
+<ul>
+  <li><strong>Google</strong>, for Gmail accounts: sign-in with Google's consent (accounts.google.com, oauth2.googleapis.com), reading and sending mail with the Gmail API (gmail.googleapis.com) and a connection to imap.gmail.com used only to learn when new mail arrives. Postino asks Google for full access to your mail (<code>https://mail.google.com/</code>) and for your email address. When you remove the account, Postino revokes its access at Google.</li>
+  <li><strong>Microsoft</strong>, personal accounts only (Outlook.com, Hotmail, Live): sign-in with Microsoft's consent (login.microsoftonline.com) and mail through Microsoft Graph (graph.microsoft.com). Permissions requested: read and change mail, send mail, basic profile and ongoing access. When you remove the account the authorization stays in your Microsoft account: you can revoke it in your Microsoft account settings.</li>
+  <li><strong>iCloud and other IMAP/SMTP servers</strong>: the servers you enter. For an IMAP account whose servers you do not enter, Postino looks them up: it asks <code>autoconfig.</code> followed by your address's domain for its configuration (the request includes your email address), looks up the domain's mail server with Google's DNS service (dns.google.com), checks Thunderbird's public configuration database (autoconfig.thunderbird.net) with the domain only, and tries to connect to the domain's most common server names.</li>
+  <li><strong>Google Drive</strong>, only if you turn on synced settings and choose a Gmail account for syncing. Postino asks for access to the app's own hidden folder only (<code>drive.appdata</code>), not to your files, and saves there one file with: the automatic labels configuration, swipe actions and, for each connected account, its address, provider, colour and position. Never mail, passwords or tokens.</li>
+  <li><strong>Hugging Face</strong> (huggingface.co), only when you first turn on automatic labelling: Postino downloads the model that then runs on your device. Message content does not leave the device.</li>
+  <li><strong>Updates on macOS</strong>: Postino reads the list of versions from postino.camillobucciarelli.dev, the developer's website, and downloads updates from there; on the second launch it asks whether to do so automatically. On Android and iOS the app does not look for updates by itself.</li>
+  <li><strong>Remote images</strong>: blocked by default. If you choose to show them, for one message or always for a trusted sender, your device downloads them from the servers named in the message, which can thus tell that you opened it.</li>
+  <li><strong>Links</strong>: open in the system browser.</li>
+</ul>
+
+<h2>Notifications</h2>
+<p>Notifications are created on your device: Postino checks for mail in the background (on Android about every 15 minutes, or in real time with immediate notifications; on iOS when the system allows it) and uses no push notification service.</p>
+
+<h2>Error log and problem reports</h2>
+<p>Postino keeps an encrypted, size-limited error log on your device; tokens and passwords are removed before writing. The log never leaves the device by itself. If you choose “Report a problem”, or accept the offer after a crash, Postino prepares a draft addressed to the developer with the log in its text: you read it and decide whether to send it. If you have not connected an account yet, Postino lets you share the log file through the system share sheet.</p>
+
+<h2>Removing an account</h2>
+<p>When you remove an account, Postino deletes from your device its mail, drafts, outgoing messages, automatic labelling data and credentials, and empties the attachment cache. Nothing changes at the provider: your mail stays where it is.</p>
+
+<h2>This website</h2>
+<p>These pages use no cookies, analytics or third-party content: even the fonts are served from here. The website and the downloads are hosted on Cloudflare.</p>
+</main>
+<footer>
+  <a href="index.html">Back to the Postino page</a>
+</footer>
+</body>
+</html>

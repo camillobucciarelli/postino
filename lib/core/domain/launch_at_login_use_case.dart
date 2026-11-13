@@ -19,6 +19,10 @@ class LaunchAtLoginUseCase(final LaunchAtLogin _os, final SettingsRepository _se
     await setEnabled(enabled: true);
   }
 
+  /// Whether the avvio al login started this run (#239), whatever the switch says now. Unknown reads as a launch
+  /// by the user: the window shows.
+  Future<bool> launchedAtLogin() async => _os.supported && await _os.launchedAtLogin();
+
   /// Whether the OS starts Postino at login now.
   Future<bool> isEnabled() => _os.isEnabled();
 

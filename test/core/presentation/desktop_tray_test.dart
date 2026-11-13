@@ -114,5 +114,35 @@ void main() {
     tray.failure = StateError('no tray');
     await expectLater(start(), throwsStateError);
     expect(window.intercepting, isFalse);
+    expect(calls, isEmpty);
+  });
+
+  test('started hidden at login (#239), the tray keeps the window hidden', () async {
+    await desktop.start(
+      tooltip: 'Postino',
+      openLabel: 'Apri Postino',
+      quitLabel: 'Esci',
+      beforeQuit: () async {},
+      hidden: true,
+    );
+    expect(calls, isEmpty);
+    tray.choose(TrayCommand.open);
+    await pumpEventQueue();
+    expect(calls, ['show']);
+  });
+
+  test('started hidden at login without a tray, the window shows: nothing else could bring it back', () async {
+    tray.failure = StateError('no tray');
+    await expectLater(
+      desktop.start(
+        tooltip: 'Postino',
+        openLabel: 'Apri Postino',
+        quitLabel: 'Esci',
+        beforeQuit: () async {},
+        hidden: true,
+      ),
+      throwsStateError,
+    );
+    expect(calls, ['show']);
   });
 }

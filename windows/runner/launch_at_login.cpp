@@ -4,9 +4,13 @@
 #include <flutter/standard_method_codec.h>
 #include <windows.h>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <variant>
+#include <vector>
+
+#include "utils.h"
 
 namespace {
 
@@ -18,7 +22,7 @@ constexpr wchar_t kApprovedKey[] =
     L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
 
 // The running executable, quoted: the Run value is a command line.
-std::wstring Command() {
+std::wstring Path() {
   std::wstring path(MAX_PATH, L'\0');
   DWORD length = 0;
   while ((length = GetModuleFileNameW(nullptr, path.data(),
@@ -30,14 +34,49 @@ std::wstring Command() {
   return L"\"" + path + L"\"";
 }
 
-// On only when the Run value starts this very executable (an install moved
-// elsewhere reads as off) and Task Manager has not turned it off.
-bool IsEnabled() {
+// postino (#239): the Run value starts it hidden in the tray.
+std::wstring Command() { return Path() + L" --hidden"; }
+
+// The Run value, empty when there is none.
+std::wstring RunValue() {
   wchar_t value[4 * MAX_PATH];
   DWORD size = sizeof(value);
-  if (RegGetValueW(HKEY_CURRENT_USER, kRunKey, kValueName, RRF_RT_REG_SZ,
-                   nullptr, value, &size) != ERROR_SUCCESS ||
-      _wcsicmp(value, Command().c_str()) != 0) {
+  return RegGetValueW(HKEY_CURRENT_USER, kRunKey, kValueName, RRF_RT_REG_SZ,
+                      nullptr, value, &size) == ERROR_SUCCESS
+             ? std::wstring(value)
+             : std::wstring();
+}
+
+LSTATUS WriteRunValue(HKEY key) {
+  const std::wstring command = Command();
+  return RegSetValueExW(
+      key, kValueName, 0, REG_SZ,
+      reinterpret_cast<const BYTE*>(command.c_str()),
+      static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+}
+
+// A value written before #239 (this executable alone) gets the argument; Task
+// Manager's on/off, kept apart under the same name, stays as it is. Only a
+// value of the old form is written, so once: Microsoft asks a program started
+// from Run not to keep writing the key while it runs.
+void UpgradeRunValue() {
+  if (_wcsicmp(RunValue().c_str(), Path().c_str()) != 0) return;
+  HKEY key;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, kRunKey, 0, KEY_SET_VALUE, &key) !=
+      ERROR_SUCCESS) {
+    return;
+  }
+  WriteRunValue(key);
+  RegCloseKey(key);
+}
+
+// On only when the Run value starts this very executable, with the argument
+// or without (written before #239; an install moved elsewhere reads as off),
+// and Task Manager has not turned it off.
+bool IsEnabled() {
+  const std::wstring value = RunValue();
+  if (_wcsicmp(value.c_str(), Command().c_str()) != 0 &&
+      _wcsicmp(value.c_str(), Path().c_str()) != 0) {
     return false;
   }
   BYTE approved[12];
@@ -54,11 +93,7 @@ LSTATUS SetEnabled(bool enabled) {
                                    KEY_SET_VALUE, nullptr, &key, nullptr);
   if (status != ERROR_SUCCESS) return status;
   if (enabled) {
-    const std::wstring command = Command();
-    status = RegSetValueExW(
-        key, kValueName, 0, REG_SZ,
-        reinterpret_cast<const BYTE*>(command.c_str()),
-        static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+    status = WriteRunValue(key);
     // Turning it on here also undoes an earlier "off" from Task Manager.
     if (status == ERROR_SUCCESS) {
       const LSTATUS approved =
@@ -77,7 +112,14 @@ LSTATUS SetEnabled(bool enabled) {
 
 }  // namespace
 
+bool LaunchedAtLogin() {
+  const std::vector<std::string> arguments = GetCommandLineArguments();
+  return std::find(arguments.begin(), arguments.end(), "--hidden") !=
+         arguments.end();
+}
+
 void RegisterLaunchAtLogin(flutter::BinaryMessenger* messenger) {
+  UpgradeRunValue();
   // Lives as long as the process: the engine keeps calling its handler.
   static std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       channel;
@@ -88,7 +130,9 @@ void RegisterLaunchAtLogin(flutter::BinaryMessenger* messenger) {
       [](const flutter::MethodCall<flutter::EncodableValue>& call,
          std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
              result) {
-        if (call.method_name() == "isEnabled") {
+        if (call.method_name() == "launchedAtLogin") {
+          result->Success(flutter::EncodableValue(LaunchedAtLogin()));
+        } else if (call.method_name() == "isEnabled") {
           result->Success(flutter::EncodableValue(IsEnabled()));
         } else if (call.method_name() == "setEnabled") {
           const auto* enabled = std::get_if<bool>(call.arguments());

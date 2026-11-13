@@ -42,7 +42,8 @@ jobs:
           rc=0
           branch=$(tool/ci/codex_ok.sh "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/pr.json") || rc=$?
           if [ "$rc" -eq 0 ]; then
-            gh workflow run ci.yml --repo "$REPO" --ref "$branch"
+            sha=$(jq -r .head.sha "$RUNNER_TEMP/pr.json")
+            gh workflow run ci.yml --repo "$REPO" --ref "$branch" -f pr="$PR" -f sha="$sha"
             echo "CI lanciata su \`$branch\`" >> "$GITHUB_STEP_SUMMARY"
           elif [ "$rc" -ne 1 ]; then
             exit "$rc"

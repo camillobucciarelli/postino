@@ -1,11 +1,18 @@
 name: CI
 
 # Sulle PR niente `pull_request`: la lancia codex-ok.yml con workflow_dispatch sul branch quando Codex non trova
-# rilievi sul commit di testa (#246), o a mano: `gh workflow run ci.yml --ref <branch>`.
+# rilievi sul commit di testa (#246), o a mano: `gh workflow run ci.yml --ref <branch> -f pr=<numero>`.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Numero della PR: si testa il merge con main (refs/pull/N/merge), come faceva pull_request'
+        type: number
+      sha:
+        description: 'Commit recensito da Codex: la run fallisce se il branch nel frattempo è andato avanti'
+        type: string
 
 permissions:
   contents: read
@@ -21,6 +28,17 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
+          fetch-depth: 2
+      - name: PR commit
+        env:
+          PR: ${{ inputs.pr }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
+          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
+            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -63,6 +81,17 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
+          fetch-depth: 2
+      - name: PR commit
+        env:
+          PR: ${{ inputs.pr }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
+          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
+            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -87,6 +116,17 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
+          fetch-depth: 2
+      - name: PR commit
+        env:
+          PR: ${{ inputs.pr }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
+          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
+            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

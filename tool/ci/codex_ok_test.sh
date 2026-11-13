@@ -26,6 +26,15 @@ skips() {
   if tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" > /dev/null 2>&1; then echo "should skip: $1 | $2"; exit 1; fi
 }
 
+# A broken input is an error (exit 2), never a silent "no launch" (exit 1).
+errors() {
+  event .; pr "$1"
+  if [ -n "${2:-}" ]; then printf '%s' "$2" > "$dir/pr.json"; fi
+  local rc=0
+  tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" > /dev/null 2>&1 || rc=$?
+  [ "$rc" -eq 2 ] || { echo "should error (rc=$rc): $1 ${2:-}"; exit 1; }
+}
+
 launches . .
 launches '.comment.body |= sub("4cdb814d89"; "4cdb814d898b3b3c22f464f39d8cae61a8a7b5cd")' .
 skips '.comment.user.login = "someone"' .
@@ -41,4 +50,6 @@ skips . '.state = "closed"'
 skips . '.head.repo.full_name = "fork/r"'
 skips . '.head.repo = null'
 skips . '.number = 8'
+errors '.head.sha = null'
+errors . '{"number": 7, "state": "op'
 echo "codex_ok.sh ok"

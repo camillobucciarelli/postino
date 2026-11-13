@@ -1,44 +1,38 @@
 name: CI
 
-# Sulle PR niente `pull_request`: la lancia codex-ok.yml con workflow_dispatch sul branch quando Codex non trova
-# rilievi sul commit di testa (#246), o a mano: `gh workflow run ci.yml --ref <branch> -f pr=<numero>`.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
-    inputs:
-      pr:
-        description: 'Numero della PR: si testa il merge con main (refs/pull/N/merge), come faceva pull_request'
-        type: number
-      sha:
-        description: 'Commit recensito da Codex: la run fallisce se il branch nel frattempo è andato avanti'
-        type: string
 
+# pull-requests: read per il cancello di Codex, che legge i commenti della PR.
 permissions:
   contents: read
+  pull-requests: read
 
-# Una sola runner self-hosted: le run superate di un branch di PR non devono accodarsi; quelle di main sì.
+# Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
-          fetch-depth: 2
-      - name: PR commit
+      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
+      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
+      - name: Codex gate
         env:
-          PR: ${{ inputs.pr }}
-          SHA: ${{ inputs.sha }}
-        run: |
-          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
-          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
-            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: tool/ci/gate.sh
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -74,24 +68,25 @@ jobs:
       - run: tool/release/r2_unreleased_test.sh
       - run: tool/release/ios_export_options_test.sh
       - run: tool/release/guide_check_test.sh
+      - run: tool/ci/approval_test.sh
       - run: tool/ci/codex_ok_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
-          fetch-depth: 2
-      - name: PR commit
+      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
+      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
+      - name: Codex gate
         env:
-          PR: ${{ inputs.pr }}
-          SHA: ${{ inputs.sha }}
-        run: |
-          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
-          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
-            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: tool/ci/gate.sh
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -109,8 +104,7 @@ jobs:
   # per non ritardarli sull'unico runner.
   mutation:
     needs: [check, android, apple]
-    # Le PR arrivano col dispatch sul loro branch (#246); su main non gira.
-    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     steps:
@@ -123,10 +117,11 @@ jobs:
           have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
           test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       - run: flutter pub get
-      # Al più 60 mutanti (~10 minuti sul runner con i widget test). Base: origin/main, quindi i file cambiati dal
-      # merge-base (`origin/main...HEAD`), come in locale.
+      # Al più 60 mutanti (~10 minuti sul runner con i widget test).
       - name: Mutation test
-        run: dart run tool/mutation/run.dart --base=origin/main --max-mutants=60
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: dart run tool/mutation/run.dart --base="$BASE" --max-mutants=60
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -142,20 +137,20 @@ jobs:
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the
     # runner's PATH (~/fvm/versions/stable), no flutter-action.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.pr && format('refs/pull/{0}/merge', inputs.pr) || '' }}
-          fetch-depth: 2
-      - name: PR commit
+      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
+      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
+      - name: Codex gate
         env:
-          PR: ${{ inputs.pr }}
-          SHA: ${{ inputs.sha }}
-        run: |
-          test -z "$SHA" || test "$SHA" = "$GITHUB_SHA" || { echo "::error::branch moved past the reviewed $SHA"; exit 1; }
-          case "$PR" in ''|0) ;; *) test "$(git rev-parse HEAD^2)" = "$GITHUB_SHA" \
-            || { echo "::error::refs/pull/$PR/merge does not merge $GITHUB_SHA"; exit 1; } ;; esac
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: tool/ci/gate.sh
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

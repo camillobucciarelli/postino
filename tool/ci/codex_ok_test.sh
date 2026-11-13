@@ -1,5 +1,5 @@
 #!/bin/bash
-# Self-check of codex_ok.sh, run by ci.yml: only Codex's clean receipt on the open, same-repo PR head launches CI.
+# Self-check of codex_ok.sh, run by ci.yml: only an approval of the open, same-repo PR head restarts CI.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 dir=$(mktemp -d)
@@ -18,8 +18,8 @@ pr() {
 }
 launches() {
   event "$1"; pr "$2"
-  [ "$(tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" 2> /dev/null)" = feat/x ] \
-    || { echo "should launch: $1 | $2"; exit 1; }
+  [ "$(tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" 2> /dev/null)" = "$head" ] \
+    || { echo "should restart: $1 | $2"; exit 1; }
 }
 skips() {
   event "$1"; pr "$2"
@@ -37,9 +37,10 @@ errors() {
 
 launches . .
 launches '.comment.body |= sub("4cdb814d89"; "4cdb814d898b3b3c22f464f39d8cae61a8a7b5cd")' .
+launches '.comment = {body: "ci-ok 4cdb814", user: {login: "dev", type: "User"}}' .
+skips '.comment = {body: "ci-ok b805158", user: {login: "dev", type: "User"}}' .
 skips '.comment.user.login = "someone"' .
 skips '.comment.user.type = "User"' .
-skips '.comment.user.login = "chatgpt-codex-connector"' .
 skips '.action = "edited"' .
 skips 'del(.issue.pull_request)' .
 skips '.comment.body |= sub("Didn.t find any major issues"; "Found 2 issues")' .

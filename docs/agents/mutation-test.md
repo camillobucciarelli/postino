@@ -26,7 +26,7 @@ Costo: circa 4 secondi a mutante su un M-series più un'esecuzione dei test per 
 
 Job `mutation` sul runner `postino-mac`. **Non** è un check richiesto.
 
-- Sulle PR: job `mutation` in `ci.yml`, nelle run `workflow_dispatch` su un branch diverso da `main` (lanciate all'ok di Codex o a mano, #246), dopo `check`, `android` e `apple` (`needs`), così non ritarda i check richiesti sul runner condiviso. Solo i file modificati dal merge-base con `origin/main`, al più 60 mutanti, `timeout-minutes: 30`. Senza file mutabili finisce subito con successo.
+- Sulle PR: job `mutation` in `ci.yml`, dopo `check`, `android` e `apple` (`needs`), così non ritarda i check richiesti sul runner condiviso. Solo i file modificati, al più 60 mutanti, `timeout-minutes: 30`. Senza file mutabili finisce subito con successo.
 - A mano, workflow `.github/workflows/mutation.yml` (Actions › Mutation › Run workflow): `path` (default `lib/`) e `max-mutants` (default 0, tutti), `timeout-minutes: 420`.
 - Report nel summary del job e nell'artifact `mutation-report`.
 - Soglia: `_threshold` in `tool/mutation/run.dart`, un solo punto per locale e CI, oggi `0` (il job fallisce solo per errori dello strumento). Una run che non misura nulla non applica la soglia.

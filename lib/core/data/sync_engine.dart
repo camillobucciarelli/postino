@@ -73,7 +73,7 @@ class SyncEngine(
     _queue,
   );
   late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock);
-  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay);
+  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay, _connectivity);
   late final _triggers = SyncTriggers(
     _store,
     _clock,

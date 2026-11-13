@@ -61,9 +61,18 @@ final class const MissingPermissionFailure() extends Failure {
 }
 
 /// No network, or the Provider is unreachable.
-final class const OfflineFailure() extends Failure {
-  /// Crea il fallimento.
+final class const OfflineFailure({
+  /// Which request did not get through and how (#252), for the error log: never ids, addresses nor URLs.
+  final String? detail,
+
+  /// The Provider took the request, then stopped answering (#252): the network is there, this request is stuck.
+  final bool stalled = false,
+}) extends Failure {
+  /// Crea il fallimento; [detail] e [stalled] sono opzionali.
   this;
+
+  @override
+  String toString() => detail == null ? 'OfflineFailure' : 'OfflineFailure($detail)';
 }
 
 /// The message, attachment or draft does not exist on the Provider.

@@ -79,4 +79,51 @@ void main() {
     await GetIt.I<SyncEngine>().syncAll();
     expect(await h.errorLog.read(), isEmpty);
   });
+
+  group('a sync that keeps failing offline (#252)', () {
+    Future<void> failTimes(int n) async {
+      for (var i = 0; i < n; i++) {
+        await GetIt.I<SyncEngine>().syncAll();
+      }
+    }
+
+    test('with the network up, the third failure in a row ends up in the log, once', () async {
+      a.goOffline();
+      await failTimes(2);
+      expect(await h.errorLog.read(), isEmpty, reason: 'a failure or two may just be the network');
+      await failTimes(4);
+      final log = await h.errorLog.read();
+      expect(log, contains('[sync gmail, 3 di fila] OfflineFailure'));
+      expect('di fila'.allMatches(log), hasLength(1), reason: 'once per streak, not at every poll');
+    });
+
+    test('a sync that works ends the streak: the next one is logged again', () async {
+      a.goOffline();
+      await failTimes(3);
+      a.goOnline();
+      await failTimes(1);
+      a.goOffline();
+      await failTimes(3);
+      expect('di fila'.allMatches(await h.errorLog.read()), hasLength(2));
+    });
+
+    test('with the device offline, nothing', () async {
+      a.goOffline();
+      h.connectivity.online = false;
+      await failTimes(5);
+      expect(await h.errorLog.read(), isEmpty);
+    });
+  });
+
+  test('messages a sync left behind end up in the log, with the reason', () async {
+    await GetIt.I<SyncEngine>().syncAll();
+    a
+      ..deliver(msg('1'))
+      ..deferred = const OfflineFailure(detail: 'GET messages/*: no answer', stalled: true);
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(
+      await h.errorLog.read(),
+      contains('[sync gmail, messaggi rimandati] OfflineFailure(GET messages/*: no answer)'),
+    );
+  });
 }

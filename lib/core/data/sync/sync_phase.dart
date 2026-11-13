@@ -6,6 +6,7 @@ import '../../domain/account.dart';
 import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
+import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import '../mail_store.dart';
 import 'account_gate.dart';
@@ -26,7 +27,15 @@ class SyncPhase(
   final ErrorLog _log,
   final AccountGate _gate,
   final QueueReplay _replay,
+  final Connectivity _connectivity,
 ) {
+  /// Syncs of an Account failed in a row, offline ones too, before the streak goes in the log (#252): one or two
+  /// may be the network, more with the device online is a sync that never gets through.
+  static const failuresToLog = 3;
+
+  /// Per Account, its syncs failed in a row and whether this streak is in the log already.
+  final _streaks = <String, ({int failed, bool logged})>{};
+
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   final autoLabeling = <String, Future<void>>{};
 
@@ -102,6 +111,10 @@ class SyncPhase(
           }
         }
 
+        _streaks.remove(accountId);
+        if (value.deferred case final deferred? when _connectivity.isOnline) {
+          _log.record(deferred, context: 'sync ${account.provider.name}, messaggi rimandati');
+        }
         final committed = commit();
         committing.add(committed);
         try {
@@ -116,6 +129,13 @@ class SyncPhase(
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
         _log.failure('sync $accountId', failure);
+        final streak = _streaks[accountId] ?? (failed: 0, logged: false);
+        final failed = streak.failed + 1;
+        // An OfflineFailure alone is left out (no network is not an error); a streak of them with the network up is.
+        final log = failure is OfflineFailure && !streak.logged && failed >= failuresToLog && _connectivity.isOnline;
+        // The Provider, not the Account: its id is the address (#252).
+        if (log) _log.record(failure, context: 'sync ${account.provider.name}, $failed di fila');
+        _streaks[accountId] = (failed: failed, logged: streak.logged || log);
         if (failure case RateLimitFailure(:final retryAfter?)) {
           _gate.pause(accountId, retryAfter);
           debugPrint('[sync] $accountId: paused until $retryAfter');

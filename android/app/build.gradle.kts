@@ -25,7 +25,8 @@ val microsoftClientId = (project.findProperty("dart-defines") as String? ?: "")
 
 android {
     namespace = "com.cbucciarelli.postino"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications 23 e androidx.core 1.19 compilano contro le API 37; il target resta quello di Flutter.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

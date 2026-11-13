@@ -29,9 +29,12 @@ bool FlutterWindow::OnCreate() {
   RegisterLaunchAtLogin(flutter_controller_->engine()->messenger());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
-  });
+  // postino (#239): started at login, the window stays hidden in the tray.
+  if (!LaunchedAtLogin()) {
+    flutter_controller_->engine()->SetNextFrameCallback([&]() {
+      this->Show();
+    });
+  }
 
   // Flutter can complete the first frame before the "show window" callback is
   // registered. The following call ensures a frame is pending to ensure the

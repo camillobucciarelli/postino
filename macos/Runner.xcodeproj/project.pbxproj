@@ -31,6 +31,7 @@
 		42AC7ACA6738ACDB1B9E5D0D /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 590D4E703F09CB9E8037C4C7 /* Pods_Runner.framework */; };
 		5A9C1E2B7D3F40A1B2C3D402 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */; };
 		5A9C1E2B7D3F40A1B2C3D404 /* CheckForUpdatesMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */; };
+		7B1D2E3F4A5B6C7D8E9F0A02 /* MailMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1D2E3F4A5B6C7D8E9F0A01 /* MailMenu.swift */; };
 		5A9C1E2B7D3F40A1B2C3D407 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5A9C1E2B7D3F40A1B2C3D406 /* Sparkle */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */; };
@@ -97,6 +98,7 @@
 		AD21E12945A34E9A288D47D8 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesMenuItem.swift; sourceTree = "<group>"; };
+		7B1D2E3F4A5B6C7D8E9F0A01 /* MailMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailMenu.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -192,6 +194,7 @@
 				7A1B2C3D4E5F60718293A4B5 /* LaunchAtLogin.swift */,
 				5A9C1E2B7D3F40A1B2C3D401 /* Updater.swift */,
 				5A9C1E2B7D3F40A1B2C3D403 /* CheckForUpdatesMenuItem.swift */,
+				7B1D2E3F4A5B6C7D8E9F0A01 /* MailMenu.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -446,6 +449,7 @@
 				7A1B2C3D4E5F60718293A4B6 /* LaunchAtLogin.swift in Sources */,
 				5A9C1E2B7D3F40A1B2C3D402 /* Updater.swift in Sources */,
 				5A9C1E2B7D3F40A1B2C3D404 /* CheckForUpdatesMenuItem.swift in Sources */,
+				7B1D2E3F4A5B6C7D8E9F0A02 /* MailMenu.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);

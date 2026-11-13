@@ -123,7 +123,18 @@ void main() {
     );
     final r = await oauthGuard(() async => Ok(await t.gmail.get('profile')));
     expect((r as Err).failure, isA<OfflineFailure>());
+    expect(
+      '${(r as Err).failure}',
+      'OfflineFailure(GET profile: answer stalled at HTTP 200)',
+      reason: 'which request, and where',
+    );
     await (sent as http.AbortableRequest).abortTrigger!.timeout(const Duration(seconds: 1));
+  });
+
+  test('no network says which request, never the URL', () async {
+    final t = _gmail((r) async => throw http.ClientException('Failed host lookup', r.url));
+    final r = await oauthGuard(() async => Ok(await t.gmail.get('messages/18f3a2b4c5d6e7f9', query: {'q': 'from:x'})));
+    expect('${(r as Err).failure}', 'OfflineFailure(GET messages/*: ClientException)');
   });
 
   test('a permanent 429 is retried 5 times, then a RateLimitFailure', () async {

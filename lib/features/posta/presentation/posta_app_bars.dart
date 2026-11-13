@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -6,9 +9,20 @@ import '../../../core/domain/inbox_repository.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'refresh_mail.dart';
 
-/// The «Cerca» command of the bars of the Posta views (#205): the search opens over the view, scoped to its Account.
+/// The commands of the bars of the Posta views: from `breakpoint-expanded` «Aggiorna» (#251), with its shortcut in
+/// the tooltip, the phone has the pull-to-refresh; then «Cerca» (#205), the search over the view, scoped to its
+/// Account.
 List<PostinoMenuItem> searchCommand(BuildContext context, VoidCallback onSearch) => [
+  if (MediaQuery.sizeOf(context).width >= PostinoSize.breakpointExpanded)
+    PostinoMenuItem(
+      key: const ValueKey('refresh'),
+      label: context.t.syncStatus.refresh,
+      icon: PostinoIcons.refresh,
+      shortcut: defaultTargetPlatform == TargetPlatform.macOS ? '⌘R' : 'Ctrl+R',
+      onPressed: () => unawaited(refreshMail(context)),
+    ),
   PostinoMenuItem(label: context.t.cerca.open, icon: PostinoIcons.search, onPressed: onSearch),
 ];
 

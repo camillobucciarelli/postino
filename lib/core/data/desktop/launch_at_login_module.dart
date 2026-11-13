@@ -20,7 +20,9 @@ abstract class LaunchAtLoginModule() {
             const LocalFileSystem().file('${_xdgConfigHome()}/autostart/postino.desktop'),
             // An AppImage runs from a mount that changes at every start: the image itself is what to start.
             Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable,
-          ),
+            // This run's command line: the entry's `--hidden` reaches the Dart side only as the entrypoint's.
+            const LocalFileSystem().file('/proc/self/cmdline').readAsStringSync().split('\u0000'),
+          )..upgrade(),
           _ => const _Unsupported(),
         };
 
@@ -39,4 +41,7 @@ class const _Unsupported() implements LaunchAtLogin {
 
   @override
   Future<void> setEnabled({required bool enabled}) async {}
+
+  @override
+  Future<bool> launchedAtLogin() async => false;
 }

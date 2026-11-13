@@ -54,6 +54,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
+	@override late final _Translations$syncStatus$en syncStatus = _Translations$syncStatus$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
 	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
 	@override late final _Translations$composizione$en composizione = _Translations$composizione$en._(_root);
@@ -151,6 +152,30 @@ class _Translations$offline$en extends Translations$offline$it {
 	// Translations
 	@override String get title => 'You\'re offline';
 	@override String get message => 'Mail will update when the network is back.';
+}
+
+// Path: syncStatus
+class _Translations$syncStatus$en extends Translations$syncStatus$it {
+	_Translations$syncStatus$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get running => 'Syncing…';
+	@override String get now => 'Updated just now';
+	@override String minutesAgo({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Updated ${n} minute ago',
+		other: 'Updated ${n} minutes ago',
+	);
+	@override String at({required Object time}) => 'Updated at ${time}';
+	@override String on({required Object date}) => 'Updated on ${date}';
+	@override String get offline => 'Offline';
+	@override String offlineAt({required Object time}) => 'Offline · updated at ${time}';
+	@override String offlineOn({required Object date}) => 'Offline · updated on ${date}';
+	@override String get failed => 'Couldn\'t update';
+	@override String get retry => 'Retry';
+	@override String get refresh => 'Refresh mail';
+	@override String get done => 'Mail updated';
 }
 
 // Path: list
@@ -692,6 +717,18 @@ extension on TranslationsEn {
 			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',
+			'syncStatus.running' => 'Syncing…',
+			'syncStatus.now' => 'Updated just now',
+			'syncStatus.minutesAgo' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Updated ${n} minute ago', other: 'Updated ${n} minutes ago', ), 
+			'syncStatus.at' => ({required Object time}) => 'Updated at ${time}',
+			'syncStatus.on' => ({required Object date}) => 'Updated on ${date}',
+			'syncStatus.offline' => 'Offline',
+			'syncStatus.offlineAt' => ({required Object time}) => 'Offline · updated at ${time}',
+			'syncStatus.offlineOn' => ({required Object date}) => 'Offline · updated on ${date}',
+			'syncStatus.failed' => 'Couldn\'t update',
+			'syncStatus.retry' => 'Retry',
+			'syncStatus.refresh' => 'Refresh mail',
+			'syncStatus.done' => 'Mail updated',
 			'list.loading' => 'Loading messages',
 			'list.emptyTitle' => 'Nothing new',
 			'list.emptyBody' => 'Messages show up here as they arrive.',

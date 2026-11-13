@@ -22,11 +22,11 @@ Un file, una responsabilità; SOLID; clean architecture (ADR 0006) con le regole
 
 ### Merge delle PR
 
-Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). `check`, `android` e `apple` girano sul runner self-hosted `postino-mac`. I build hosted `linux` e `windows` girano solo a mano (`workflow_dispatch`) per risparmiare minuti Actions: vederli saltati è normale. La regola è imposta anche da un ruleset su `main`.
+Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). `check`, `android` e `apple` girano sul runner self-hosted `postino-mac`. Sulle PR `ci.yml` parte a ogni push ma il passo «Codex gate» (`tool/ci/gate.sh`) fa fallire i tre job in pochi secondi, prima di Flutter, finché il commit di testa non è approvato (#246): fallire e non saltare, perché un check richiesto saltato conta come verde. Approva la testa la ricevuta di Codex «Didn't find any major issues» con `**Reviewed commit:**` uguale alla testa; a mano, se Codex non risponde (limite d'uso, nessuna ricevuta), un commento `ci-ok <sha della testa>` di un collaboratore con permesso di scrittura (letto dall'API, non dal testo). All'approvazione `.github/workflows/codex-ok.yml` rilancia la run `pull_request` di quel commit (`tool/ci/rerun.sh`); se non parte, `gh run rerun <id>` a mano. Una PR da fork che non modifica `ci.yml` fallisce al primo passo invece di saltare i check; contro una che lo modifica protegge solo l'impostazione del repo sui workflow delle PR da fork. Flusso: push → `@codex review` → ok di Codex → CI rilanciata → merge a check verdi. Ogni push successivo va riapprovato. La regola è imposta anche da un ruleset su `main`.
 
 ### Review prima del push
 
-Prima di aprire una PR o di pushare su una PR esegui la skill `supermatt:code-review` rispetto a `origin/main` con il peer di `docs/agents/cross-model.json` e correggi i finding fondati: ogni finding di Codex su GitHub costa un giro push/review/CI. Dopo ogni push su PR pronta commenta `@codex review` (Codex resta il controllo finale).
+Prima di aprire una PR o di pushare su una PR esegui la skill `supermatt:code-review` rispetto a `origin/main` con il peer di `docs/agents/cross-model.json` e correggi i finding fondati: ogni finding di Codex su GitHub costa un giro push/review/CI. Dopo ogni push su PR pronta commenta `@codex review` (Codex resta il controllo finale): senza il suo ok sul commit di testa la CI della PR si ferma al cancello.
 
 ### Mutation test
 

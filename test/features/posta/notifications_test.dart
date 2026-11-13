@@ -54,6 +54,7 @@ void main() {
     expect(h.notifications.shown, [
       const MailNotification(
         conversation: (accountId: notifiedAccount, conversationId: 't-b'),
+        messageId: 'b',
         accountAddress: '$notifiedAccount@example.com',
         sender: 'Ada Lovelace',
         subject: 'Cena',

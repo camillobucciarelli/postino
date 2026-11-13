@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:injectable/injectable.dart';
 import 'package:window_manager/window_manager.dart';
@@ -13,13 +15,24 @@ import '../../domain/app_window.dart';
 class NativeAppWindow() implements AppWindow {
   final Window _window = _resolve();
 
-  /// Like nativeapi_flutter's DropRegion: the active window, else the app's only one.
+  /// Like nativeapi_flutter's DropRegion: the active window, else the app's only one. Windows lists neither while
+  /// the window is hidden (started at login, #239; getAll lists the visible windows of every app): there the
+  /// runner's, by its class and title (`windows/runner/main.cpp`).
   static Window _resolve() {
     const manager = WindowManager.instance;
     if (manager.getCurrent() case final current?) return current;
+    if (Platform.isWindows) return _runnerWindow() ?? (throw StateError('no window'));
     final all = manager.getAll();
     return all.length == 1 ? all.single : throw StateError('no window');
   }
+
+  static Window? _runnerWindow() {
+    final hwnd = _findWindow(_wide('FLUTTER_RUNNER_WIN32_WINDOW').address, _wide('postino').address);
+    return hwnd == nullptr ? null : Window.createWithNativeWindow(hwnd);
+  }
+
+  /// A NUL-terminated UTF-16 string, as Win32 takes it.
+  static Uint16List _wide(String s) => Uint16List.fromList([...s.codeUnits, 0]);
 
   @override
   Stream<void> interceptClose() {
@@ -49,3 +62,7 @@ class NativeAppWindow() implements AppWindow {
   @override
   Future<void> quit() async => exit(0);
 }
+
+/// Win32's FindWindowW, from user32.dll, which the runner has loaded: resolved in the process, at the first call.
+@Native<Pointer<Void> Function(Pointer<Uint16>, Pointer<Uint16>)>(symbol: 'FindWindowW', isLeaf: true)
+external Pointer<Void> _findWindow(Pointer<Uint16> className, Pointer<Uint16> windowName);

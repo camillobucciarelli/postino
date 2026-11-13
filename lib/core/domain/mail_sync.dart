@@ -5,6 +5,7 @@ import 'message.dart';
 import 'provider_search_page.dart';
 import 'result.dart';
 import 'search_query.dart';
+import 'sync_status.dart';
 
 /// What the UI may ask of the sync engine: it still reads only from the database (ADR 0003).
 abstract interface class MailSync() {
@@ -16,7 +17,11 @@ abstract interface class MailSync() {
 
   /// Pull-to-refresh: joins the sync each attivo Account is already running (or has queued) instead of queuing
   /// another, and completes at the end of its sync phase; the Bozze and the outbox keep going in the background.
-  Future<void> refresh();
+  /// True when every attivo Account's sync went through («Aggiorna», #251).
+  Future<bool> refresh();
+
+  /// Where each Account's sync stands, by Account id (#251): now, then at every change. In memory only.
+  Stream<Map<String, SyncStatus>> watchSyncStatus();
 
   /// Marks the Conversazione read (locally at once, on the Provider now or when back online)
   /// and downloads its messages missing from the database (Inviati, older than 90 days);

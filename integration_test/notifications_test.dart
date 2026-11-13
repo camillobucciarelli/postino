@@ -13,7 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:postino/core/data/local_notifications.dart';
 import 'package:postino/core/domain/mail_notification.dart';
-import 'package:postino/core/domain/new_mail_summary.dart';
 import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -47,41 +46,37 @@ void main() {
     expect(find.byType(ConversationView), findsNothing);
   }, skip: !mobile);
 
-  testWidgets(
-    'smoke: the real plugin starts with no launch; show, the summary, cancel and the permission check do not throw',
-    (tester) async {
-      final notifications = LocalNotifications();
-      expect(
-        await notifications.start(
-          channelName: 'Posta nuova',
-          openLabel: 'Apri',
-          newMessages: (n) => '$n nuovi messaggi',
-          actionLabel: (a) => a.name,
-          onAction: (_) {},
-        ),
-        isNull,
-      );
+  testWidgets('smoke: the real plugin starts with no launch; show, cancel and the permission check do not throw', (
+    tester,
+  ) async {
+    final notifications = LocalNotifications();
+    expect(
+      await notifications.start(
+        channelName: 'Posta nuova',
+        openLabel: 'Apri',
+        newMessages: (n) => '$n nuovi messaggi',
+        actionLabel: (a) => a.name,
+        onAction: (_) {},
+      ),
+      isNull,
+    );
+    // #238: two messages of a Conversazione, two notifications (and the group summary on Android).
+    for (final id in ['m1', 'm2']) {
       await notifications.show(
-        const MailNotification(
+        MailNotification(
           conversation: (accountId: 'a1', conversationId: 't-a'),
+          messageId: id,
           accountAddress: 'a1@example.com',
           sender: 'Ada',
           subject: 'Prova',
           preview: 'Notifica di prova',
           // #211: with its buttons (a category on iOS).
-          actions: [NotificationAction.archive, NotificationAction.markRead],
+          actions: const [NotificationAction.archive, NotificationAction.markRead],
         ),
       );
-      // #210: the summary replaces the Account's notifications, and the cleanup removes it.
-      await notifications.showSummary(
-        const NewMailSummary(accountId: 'a1', accountAddress: 'a1@example.com', count: 11),
-      );
-      await notifications.cancel(const [
-        ConversationTarget((accountId: 'a1', conversationId: 't-a')),
-        AccountTarget('a1'),
-      ]);
-      await notifications.permissionNeeded();
-    },
-    skip: !mobile,
-  );
+    }
+    // The cleanup removes them, and the summary with the last.
+    await notifications.cancel('a1', ['m1', 'm2']);
+    await notifications.permissionNeeded();
+  }, skip: !mobile);
 }

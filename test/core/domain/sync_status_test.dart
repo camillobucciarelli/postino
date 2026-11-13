@@ -23,13 +23,13 @@ void main() {
 
   group('merge, the Posta unificata', () {
     test('running while any runs; synced at the oldest sync', () {
-      final s = SyncStatus.merge([
-        SyncStatus(syncedAt: t2),
-        SyncStatus(running: true, syncedAt: t1),
-        const SyncStatus(),
-      ]);
+      final s = SyncStatus.merge([SyncStatus(syncedAt: t2), SyncStatus(running: true, syncedAt: t1)]);
       expect(s.running, isTrue);
       expect(s.syncedAt, t1);
+    });
+
+    test('no time while one Account has not synced yet', () {
+      expect(SyncStatus.merge([SyncStatus(syncedAt: t2), const SyncStatus()]).syncedAt, isNull);
     });
 
     test('failed while any failed, with its failure', () {

@@ -30,7 +30,12 @@ class SyncStatusBoard(final Clock _clock) {
     final s = _all[accountId] ?? const SyncStatus();
     _set(accountId, switch ((failure, synced)) {
       (null, true) => SyncStatus(syncedAt: _clock.now()),
-      (final f?, _) => SyncStatus(syncedAt: s.syncedAt, failure: f, failures: s.failures + 1),
+      // An error already shown stays until a sync works: an OfflineFailure after it does not hide it.
+      (final f?, _) => SyncStatus(
+        syncedAt: s.syncedAt,
+        failure: f is OfflineFailure && s.failed ? s.failure : f,
+        failures: s.failures + 1,
+      ),
       (null, false) => SyncStatus(syncedAt: s.syncedAt, failure: s.failure, failures: s.failures),
     });
   }

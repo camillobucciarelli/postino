@@ -78,6 +78,7 @@ class _SyncStatusRowState() extends State<SyncStatusRow> with AccountsSignal {
         key: const ValueKey('sync-status'),
         state: state,
         label: label,
+        spinning: !pulling.value,
         retryLabel: t.syncStatus.retry,
         onRetry: state == PostinoSyncState.error ? () => unawaited(refreshMail(context)) : null,
       );

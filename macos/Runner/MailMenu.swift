@@ -28,7 +28,8 @@ enum MailMenu {
 
   private final class Target: NSObject {
     @objc func refresh(_ sender: Any?) {
-      MailMenu.channel?.invokeMethod("refresh", arguments: nil)
+      // true for Cmd+R: Flutter, which gets the key first, left it (a text field), so Dart ignores it.
+      MailMenu.channel?.invokeMethod("refresh", arguments: NSApp.currentEvent?.type == .keyDown)
     }
   }
 }

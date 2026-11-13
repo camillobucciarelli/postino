@@ -3,6 +3,6 @@ abstract interface class AppMenu() {
   /// Interfaccia: nessuno stato da costruire.
   this;
 
-  /// «Aggiorna» (Cmd+R) chosen from the menu.
+  /// «Aggiorna» clicked in the menu; its Cmd+R goes through the Posta shortcuts.
   Stream<void> get refresh;
 }

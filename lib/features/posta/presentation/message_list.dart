@@ -290,7 +290,7 @@ class _MessageListState() extends State<MessageList> {
         controller: _scroll,
         loading: list == null,
         itemCount: list?.length ?? 0,
-        onRefresh: () => refreshMail(context),
+        onRefresh: () => refreshMail(context, pull: true),
         loadingLabel: t.loading,
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,

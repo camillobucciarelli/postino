@@ -39,6 +39,9 @@ class const PostinoSyncStatus({
   /// Solo l'icona, per la sidebar.
   final bool compact = false,
 
+  /// In `syncing`, whether the icon turns: still while another indicator (the pull-to-refresh) shows the same work.
+  final bool spinning = true,
+
   /// Nome del pulsante che riprova, mostrato con [onRetry].
   final String retryLabel = '',
 
@@ -59,7 +62,9 @@ class const PostinoSyncStatus({
       PostinoSyncState.reconnect => (PostinoIcons.key, c.warning),
     };
     Widget icon = PostinoIcon(glyph, size: PostinoSize.iconSm, color: color, label: compact ? label : null);
-    if (state == PostinoSyncState.syncing && !MediaQuery.disableAnimationsOf(context)) icon = _Spinning(child: icon);
+    if (state == PostinoSyncState.syncing && spinning && !MediaQuery.disableAnimationsOf(context)) {
+      icon = _Spinning(child: icon);
+    }
     if (compact) return icon;
     final retry = onRetry;
     return ConstrainedBox(

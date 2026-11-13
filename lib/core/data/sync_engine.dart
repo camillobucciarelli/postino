@@ -135,9 +135,18 @@ class SyncEngine(
       for (final a in await _store.accounts())
         if (a.status == AccountStatus.attivo) a,
     ];
-    await Future.wait([for (final a in active) _queue.running(a.id) ?? _sync(a)?.synced ?? Future<void>.value()]);
-    // A paused Account was not synced: its last failure (the rate limit) stays.
-    return active.every((a) => _status.of(a.id)?.failure == null);
+    await Future.wait([for (final a in active) _join(a) ?? _sync(a)?.synced ?? Future<void>.value()]);
+    // A paused Account was not synced (the Provider's rate limit, also from a search): not «aggiornata».
+    return active.every((a) => !_gate.paused(a.id) && _status.of(a.id)?.failure == null);
+  }
+
+  /// The sync phase running now, to wait for instead of queuing another; not one that already failed while the slot
+  /// still sends the outbox («Riprova» must try again, behind those uploads).
+  Future<void>? _join(Account account) {
+    final running = _queue.running(account.id);
+    final status = _status.of(account.id);
+    if (running == null || status == null || status.running || status.failure == null) return running;
+    return null;
   }
 
   @override

@@ -146,6 +146,18 @@ void main() {
       expect(_announced(tester), ['Posta aggiornata']);
       semantics.dispose();
     });
+
+    testWidgets('the menu\'s Cmd+R is left to the Posta shortcuts: in a text field it does nothing', (tester) async {
+      await _start(tester, const Size(1280, 800));
+      final before = _gmail.syncCalls;
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        ChannelAppMenu.channel.name,
+        ChannelAppMenu.channel.codec.encodeMethodCall(const MethodCall('refresh', true)),
+        (_) {},
+      );
+      await tester.pumpAndSettle();
+      expect(_gmail.syncCalls, before);
+    });
   });
 
   group('phone', () {
@@ -154,6 +166,21 @@ void main() {
       expect(find.text('Aggiornato adesso'), findsOneWidget);
       expect(find.byKey(const ValueKey('refresh')), findsNothing);
       expect(find.byTooltip(RegExp(_refresh)), findsNothing);
+    });
+
+    testWidgets('during a pull-to-refresh the row says it runs, its icon still: the pull shows its own', (
+      tester,
+    ) async {
+      await _start(tester, const Size(390, 844));
+      _gmail.hold = Completer<void>();
+      await tester.fling(find.byKey(const ValueKey('row-a1-a')), const Offset(0, 400), 1000);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(_status(tester).state, PostinoSyncState.syncing);
+      expect(_status(tester).spinning, isFalse);
+      _gmail.hold!.complete();
+      await tester.pumpAndSettle();
+      expect(_status(tester).state, PostinoSyncState.ok);
     });
 
     testWidgets('offline: «Offline · aggiornato alle», not an error', (tester) async {

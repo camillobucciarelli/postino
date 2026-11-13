@@ -3,13 +3,23 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:postino/core/data/sync/outbox_sender.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/mail_sync.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/sync_status.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+
+const _message = OutgoingMessage(
+  messageId: '<m@example.com>',
+  from: 'a@example.com',
+  to: ['b@example.com'],
+  subject: 's',
+  body: 'x',
+);
 
 void main() {
   late Harness h;
@@ -60,6 +70,55 @@ void main() {
     expect(last(), SyncStatus(syncedAt: h.clock.now()));
   });
 
+  test('an error shown stays until a sync works: an OfflineFailure after it does not hide it', () async {
+    await engine.syncAll();
+    a.rateLimit();
+    await engine.syncAll();
+    expect(last()?.failed, isTrue);
+    a
+      ..rateLimit(on: false)
+      ..goOffline();
+    await engine.syncAll();
+    expect(last()?.failed, isTrue);
+    a.goOnline();
+    await engine.syncAll();
+    expect(last()?.failed, isFalse);
+  });
+
+  test('refresh is no success while the Provider\'s pause keeps an Account from syncing', () async {
+    await engine.syncAll();
+    a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+    await engine.syncAll();
+    a.rateLimit(on: false);
+    final before = a.syncCalls;
+    expect(await engine.refresh(), isFalse);
+    expect(a.syncCalls, before, reason: 'paused: not even tried');
+  });
+
+  test('«Riprova» while a failed sync still sends the outbox syncs again, behind the send', () async {
+    // The initial sync: its answer comes after [hold], offline by then.
+    a.hold = Completer<void>();
+    final running = engine.syncAll();
+    await pumpEventQueue();
+    await engine.send('a', _message);
+    h.clock.advance(sendWindow);
+    a
+      ..holdSend = Completer<void>()
+      ..goOffline();
+    a.hold!.complete();
+    await pumpEventQueue();
+    expect(last()?.failure, isA<OfflineFailure>());
+    expect(a.sendCalls, 1, reason: 'the slot is sending the outbox');
+
+    a.goOnline();
+    final calls = a.syncCalls;
+    final retry = engine.refresh();
+    a.holdSend!.complete();
+    expect(await retry, isTrue);
+    expect(a.syncCalls, calls + 1);
+    await running;
+  });
+
   test('a refused access fails at once', () async {
     a.breakAuth();
     await engine.syncAll();
@@ -84,6 +143,7 @@ void main() {
     final running = engine.syncAll();
     await pumpEventQueue();
     final refresh = engine.refresh();
+    await pumpEventQueue();
     a.goOffline();
     a.hold!.complete();
     await running;

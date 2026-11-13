@@ -20,14 +20,14 @@ class const SyncStatus({
   this;
 
   /// Several Accounts (the Posta unificata) as one: running while any runs, failed while any failed, synced at the
-  /// oldest of their syncs, the time by which all of them were current.
+  /// oldest of their syncs, the time by which all of them were current (none while one has not synced yet).
   factory SyncStatus.merge(Iterable<SyncStatus> all) {
     final list = all.toList();
     final failed = list.where((s) => s.failed).firstOrNull;
-    final times = [for (final s in list) ?s.syncedAt]..sort();
+    final times = [for (final s in list) s.syncedAt];
     return SyncStatus(
       running: list.any((s) => s.running),
-      syncedAt: times.firstOrNull,
+      syncedAt: times.contains(null) ? null : ([...times.nonNulls]..sort()).firstOrNull,
       failure: failed?.failure,
       failures: failed?.failures ?? 0,
     );

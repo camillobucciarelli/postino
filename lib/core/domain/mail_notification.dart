@@ -5,10 +5,14 @@ import 'notification_action.dart';
 /// A Conversazione of an Account: what a notification opens.
 typedef ConversationKey = ({String accountId, String conversationId});
 
-/// The notification of a new message (#39): who sent it, its subject and preview; tapping it opens [conversation].
+/// The notification of a new message (#39), one per message (#238): who sent it, its subject and preview; tapping it
+/// opens [conversation].
 class const MailNotification({
   /// The Conversazione the message belongs to.
   required final ConversationKey conversation,
+
+  /// The message: its own notification.
+  required final String messageId,
 
   /// The address of its Account: the title of the Account's group (#210).
   required final String accountAddress,
@@ -29,5 +33,5 @@ class const MailNotification({
   this;
 
   @override
-  List<Object?> get props => [conversation, accountAddress, sender, subject, preview, actions];
+  List<Object?> get props => [conversation, messageId, accountAddress, sender, subject, preview, actions];
 }

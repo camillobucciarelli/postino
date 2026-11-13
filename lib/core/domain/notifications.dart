@@ -1,17 +1,16 @@
 import 'mail_notification.dart';
-import 'new_mail_summary.dart';
 import 'notification_action.dart';
 import 'notification_target.dart';
 
-/// The OS's notifications (#39): flutter_local_notifications in core/data, a fake in tests. Grouped per Account
-/// (#210) where the OS groups them.
+/// The OS's notifications (#39): flutter_local_notifications in core/data, a fake in tests. One per message (#238),
+/// grouped per Account where the OS groups them.
 abstract interface class Notifications() {
   /// Interfaccia: nessuno stato da costruire.
   this;
 
   /// Prepares the notifications, in `main()` before `runApp`: [channelName] names them in the system settings
-  /// (Android), [openLabel] is their default action (Linux), [newMessages] the text of a [NewMailSummary] of that
-  /// many, [actionLabel] the title of a button (#211). [onAction] runs a button tapped in this isolate: while the app
+  /// (Android), [openLabel] is their default action (Linux), [newMessages] the title of an Account's group summary of
+  /// that many messages (Android), [actionLabel] the title of a button (#211). [onAction] runs a button tapped in this isolate: while the app
   /// runs, on every platform; the one that launched the app too. Null where this isolate is not the app's (a
   /// background task, #212): the buttons are not taken here. Returns what the notification that launched the app
   /// opens (cold start), null otherwise.
@@ -23,15 +22,13 @@ abstract interface class Notifications() {
     required void Function(NotificationActionTap tap)? onAction,
   });
 
-  /// Shows [notification], in place of the one of its Conversazione; a tap on it comes back through [taps], or
-  /// through [start] when it launches the app.
+  /// Shows [notification], in its Account's group; a tap on it comes back through [taps], or through [start] when it
+  /// launches the app.
   Future<void> show(MailNotification notification);
 
-  /// Shows [summary] in place of every notification of its Account.
-  Future<void> showSummary(NewMailSummary summary);
-
-  /// Removes the notifications of [targets] that are shown: a Conversazione's, or an Account's summary.
-  Future<void> cancel(List<NotificationTarget> targets);
+  /// Removes the notifications of the messages [messageIds] of [accountId] that are shown; the group's summary
+  /// follows (Android).
+  Future<void> cancel(String accountId, Iterable<String> messageIds);
 
   /// The taps on a notification while the app runs.
   Stream<NotificationTarget> get taps;

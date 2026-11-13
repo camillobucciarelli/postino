@@ -8,7 +8,6 @@ import 'package:postino/core/data/local_notifications.dart';
 import 'package:postino/core/data/notification_action_relay.dart';
 import 'package:postino/core/data/notification_payload.dart';
 import 'package:postino/core/domain/mail_notification.dart';
-import 'package:postino/core/domain/new_mail_summary.dart';
 import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 
@@ -19,6 +18,12 @@ void main() {
 
   /// What the OS shows: id → groupKey.
   late Map<int, String?> shown;
+
+  /// The title and body each notification was last shown with.
+  late Map<int, ({String? title, String? body})> texts;
+
+  /// Shown, yet not listed yet: Android posts asynchronously.
+  late Set<int> lagging;
   late List<int> cancels;
   late LocalNotifications notifications;
 
@@ -33,20 +38,27 @@ void main() {
   /// Runs inside the plugin's `initialize`: what Android delivers there on a cold start.
   Future<void> Function()? duringInitialize;
 
-  MailNotification mail(String accountId, String conversationId, {List<NotificationAction> actions = const []}) =>
-      MailNotification(
-        conversation: (accountId: accountId, conversationId: conversationId),
-        accountAddress: '$accountId@example.com',
-        sender: 'Ada',
-        subject: 'Oggetto',
-        preview: 'Anteprima',
-        actions: actions,
-      );
+  MailNotification mail(
+    String accountId,
+    String messageId, {
+    String conversationId = 't',
+    List<NotificationAction> actions = const [],
+  }) => MailNotification(
+    conversation: (accountId: accountId, conversationId: conversationId),
+    messageId: messageId,
+    accountAddress: '$accountId@example.com',
+    sender: 'Ada',
+    subject: 'Oggetto',
+    preview: 'Anteprima',
+    actions: actions,
+  );
 
   setUp(() async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     AndroidFlutterLocalNotificationsPlugin.registerWith();
     shown = {};
+    texts = {};
+    lagging = {};
     buttons = {};
     cancels = [];
     launch = null;
@@ -62,8 +74,10 @@ void main() {
         case 'show':
           final map = args as Map;
           final specifics = map['platformSpecifics'] as Map?;
-          shown[map['id'] as int] = specifics?['groupKey'] as String?;
-          buttons[map['id'] as int] = {
+          final id = map['id'] as int;
+          shown[id] = specifics?['groupKey'] as String?;
+          texts[id] = (title: map['title'] as String?, body: map['body'] as String?);
+          buttons[id] = {
             for (final a in (specifics?['actions'] as List?) ?? const [])
               (a as Map)['id'] as String: a['title'] as String,
           };
@@ -73,7 +87,8 @@ void main() {
           shown.remove(id);
         case 'getActiveNotifications':
           return [
-            for (final MapEntry(:key, :value) in shown.entries) {'id': key, 'groupKey': value},
+            for (final MapEntry(:key, :value) in shown.entries)
+              if (!lagging.contains(key)) {'id': key, 'groupKey': value, 'body': texts[key]?.body},
           ];
       }
       return null;
@@ -109,12 +124,12 @@ void main() {
   }
 
   test('a notification has the buttons of its Azioni, titled and in order (#211)', () async {
-    await notifications.show(mail('a1', 't-a', actions: const [NotificationAction.delete, NotificationAction.star]));
+    await notifications.show(mail('a1', 'm1', actions: const [NotificationAction.delete, NotificationAction.star]));
+    await notifications.show(mail('a1', 'm2', actions: const [NotificationAction.delete, NotificationAction.star]));
 
-    expect(buttons[notificationId((accountId: 'a1', conversationId: 't-a'))], {
-      'delete': 'label-delete',
-      'star': 'label-star',
-    });
+    expect(buttons[groupId('a1')], isEmpty, reason: 'the summary has none');
+    expect(buttons[notificationId('a1', 'm1')], buttons[notificationId('a1', 'm2')]);
+    expect(buttons[notificationId('a1', 'm1')], {'delete': 'label-delete', 'star': 'label-star'});
   });
 
   test('macOS: a button runs its Azione on the Conversazione; a tap on the notification opens it', () async {
@@ -320,57 +335,69 @@ void main() {
     expect(category, isNull);
   });
 
-  test('a button that dismissed its notification itself still takes the empty group away', () async {
-    await notifications.show(mail('a1', 't-a'));
-    shown.remove(notificationId((accountId: 'a1', conversationId: 't-a')));
-
-    await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-a'))]);
-    expect(shown, isEmpty);
-  });
-
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_channel, null);
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('each notification joins the group of its Account, with the group notification', () async {
-    await notifications.show(mail('a1', 't-a'));
-    await notifications.show(mail('a2', 't-b'));
+  String? summaryTitle(String accountId) =>
+      shown.containsKey(groupId(accountId)) ? texts[groupId(accountId)]?.title : null;
+
+  test('one notification per message in the group of its Account; the summary from the second on (#238)', () async {
+    await notifications.show(mail('a1', 'm1'));
+    expect(shown, {notificationId('a1', 'm1'): 'a1'}, reason: 'one message alone: no summary');
+
+    await notifications.show(mail('a1', 'm2'));
+    await notifications.show(mail('a1', 'm3'));
+    await notifications.show(mail('a2', 'b1'));
 
     expect(shown, {
-      notificationId((accountId: 'a1', conversationId: 't-a')): 'a1',
+      notificationId('a1', 'm1'): 'a1',
+      notificationId('a1', 'm2'): 'a1',
+      notificationId('a1', 'm3'): 'a1',
       groupId('a1'): 'a1',
-      notificationId((accountId: 'a2', conversationId: 't-b')): 'a2',
-      groupId('a2'): 'a2',
+      notificationId('a2', 'b1'): 'a2',
     });
+    expect(summaryTitle('a1'), '3 nuovi messaggi');
+    expect(texts[groupId('a1')]?.body, 'a1@example.com');
   });
 
-  test("the summary replaces its Account's notifications, not another Account's", () async {
-    await notifications.show(mail('a1', 't-a'));
-    await notifications.show(mail('a1', 't-b'));
-    await notifications.show(mail('a2', 't-c'));
-    await notifications.showSummary(const NewMailSummary(accountId: 'a1', accountAddress: 'a1@example.com', count: 11));
+  test('a message not listed yet (Android posts asynchronously) still counts', () async {
+    lagging.add(notificationId('a1', 'm1'));
+    await notifications.show(mail('a1', 'm1'));
+    await notifications.show(mail('a1', 'm2'));
 
-    expect(shown.keys, {
-      summaryId('a1'),
-      groupId('a1'),
-      notificationId((accountId: 'a2', conversationId: 't-c')),
-      groupId('a2'),
-    });
+    expect(summaryTitle('a1'), '2 nuovi messaggi');
   });
 
-  test('cancelling the last child drops its group; one not shown is not cancelled', () async {
-    await notifications.show(mail('a1', 't-a'));
-    await notifications.show(mail('a1', 't-b'));
+  test('a message cancelled: its notification goes and the summary counts down; the last takes it away', () async {
+    for (final m in ['m1', 'm2', 'm3']) {
+      await notifications.show(mail('a1', m));
+    }
+    await notifications.show(mail('a2', 'b1'));
+    await notifications.show(mail('a2', 'b2'));
 
-    await notifications.cancel(const [
-      ConversationTarget((accountId: 'a1', conversationId: 't-a')),
-      ConversationTarget((accountId: 'a1', conversationId: 'never-shown')),
-    ]);
-    expect(shown.keys, {notificationId((accountId: 'a1', conversationId: 't-b')), groupId('a1')});
-    expect(cancels, [notificationId((accountId: 'a1', conversationId: 't-a'))]);
+    await notifications.cancel('a1', ['m1', 'never-shown']);
+    expect(cancels, [notificationId('a1', 'm1')], reason: 'one not shown is not cancelled');
+    expect(summaryTitle('a1'), '2 nuovi messaggi');
+    expect(texts[groupId('a1')]?.body, 'a1@example.com', reason: 'the address it showed');
 
-    await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+    await notifications.cancel('a1', ['m2']);
+    expect(summaryTitle('a1'), '1 nuovi messaggi', reason: 'cancelling a summary would take its child with it');
+
+    await notifications.cancel('a1', ['m3']);
+    expect(shown.keys, {notificationId('a2', 'b1'), notificationId('a2', 'b2'), groupId('a2')});
+    expect(summaryTitle('a2'), '2 nuovi messaggi', reason: "another Account's group is left alone");
+  });
+
+  test('a button that dismissed its notifications itself still takes the empty summary away', () async {
+    await notifications.show(mail('a1', 'm1'));
+    await notifications.show(mail('a1', 'm2'));
+    shown
+      ..remove(notificationId('a1', 'm1'))
+      ..remove(notificationId('a1', 'm2'));
+
+    await notifications.cancel('a1', ['m1', 'm2']);
     expect(shown, isEmpty);
   });
 }

@@ -6,7 +6,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/mail_notification.dart';
-import '../domain/new_mail_summary.dart';
 import '../domain/notification_action.dart';
 import '../domain/notification_target.dart';
 import '../domain/notifications.dart';
@@ -21,8 +20,9 @@ DidReceiveBackgroundNotificationResponseCallback? backgroundActionEntry;
 /// flutter_local_notifications (#39). Android, iOS and macOS: notifications, taps and cold start from a tap.
 /// Windows: toasts and taps (cold start only for an MSIX-packaged app). Linux: notifications and taps while the app
 /// runs (D-Bus), no cold start. Permission asked on iOS, macOS and Android 13+, not at [start].
-/// Grouped per Account (#210): Android's `groupKey` with a group notification titled with its address, the
-/// `threadIdentifier` on iOS and macOS; Windows and Linux have no native group.
+/// One notification per message, grouped per Account (#238): Android's `groupKey` with a group summary «N nuovi
+/// messaggi» from two messages on, the `threadIdentifier` on iOS and macOS (the system writes their summary); Windows
+/// and Linux have no native group, nor a summary.
 /// Up to two buttons (#211): in the app's isolate on macOS, Linux and Windows (which brings the app forward);
 /// in a background engine on iOS and Android, relayed to the app's isolate when it runs ([relayToApp]).
 @LazySingleton(as: Notifications, env: [Environment.prod])
@@ -52,10 +52,9 @@ class LocalNotifications() implements Notifications {
   String _channelName = 'Postino';
   String Function(int count) _newMessages = (count) => '$count';
 
-  /// Per Account, the notifications shown by this run: where the OS cannot list its own (Windows, Linux), the ones a
-  /// summary replaces.
-  // ponytail: in memory, so there a summary after a restart leaves the earlier ones; Android, iOS and macOS list them.
-  final _shown = <String, Set<int>>{};
+  /// Android, per Account: the notifications this isolate posted that no listing showed yet. Android posts
+  /// asynchronously, so the listing right after a show may miss one, and the count of the summary with it.
+  final _unlisted = <String, Set<int>>{};
 
   ActionLabel _actionLabel = (action) => action.name;
 
@@ -120,62 +119,41 @@ class LocalNotifications() implements Notifications {
 
   @override
   Future<void> show(MailNotification notification) async {
-    final MailNotification(:conversation, :accountAddress, :sender, :subject, :preview, :actions) = notification;
+    final MailNotification(:conversation, :messageId, :accountAddress, :sender, :subject, :preview, :actions) =
+        notification;
+    final accountId = conversation.accountId;
     final body = [subject, preview].where((s) => s.isNotEmpty).join('\n');
-    // One per Conversazione: a newer message replaces its notification.
-    final id = notificationId(conversation);
+    final id = notificationId(accountId, messageId);
     await _plugin.show(
       id: id,
       title: sender,
       body: body,
       payload: encodePayload(ConversationTarget(conversation)),
-      notificationDetails: _details(conversation.accountId, body, conversation: conversation, actions: actions),
+      notificationDetails: _details(conversation, body, actions),
     );
-    (_shown[conversation.accountId] ??= {}).add(id);
-    await _showGroup(conversation.accountId, accountAddress);
+    if (!_android) return;
+    (_unlisted[accountId] ??= {}).add(id);
+    await _summarize(accountId, address: accountAddress);
   }
 
   @override
-  Future<void> showSummary(NewMailSummary summary) async {
-    final NewMailSummary(:accountId, :accountAddress, :count) = summary;
-    final ids = {...?_shown.remove(accountId)};
-    for (final n in await _active() ?? const <ActiveNotification>[]) {
-      // By group; by payload too (iOS, macOS) for those shown before the groups existed.
-      final ofAccount = n.groupKey == accountId || decodePayload(n.payload)?.accountId == accountId;
-      if (ofAccount && n.id != groupId(accountId)) ids.add(n.id!);
-    }
-    for (final id in ids) {
-      await _plugin.cancel(id: id);
-    }
-    final title = _newMessages(count);
-    await _plugin.show(
-      id: summaryId(accountId),
-      title: title,
-      body: accountAddress,
-      payload: encodePayload(AccountTarget(accountId)),
-      notificationDetails: _details(accountId, accountAddress),
-    );
-    await _showGroup(accountId, accountAddress);
-  }
-
-  @override
-  Future<void> cancel(List<NotificationTarget> targets) async {
-    // Where the OS lists them, only the shown ones: a sync may touch many Conversazioni without a notification.
+  Future<void> cancel(String accountId, Iterable<String> messageIds) async {
+    final ids = {for (final m in messageIds) notificationId(accountId, m)};
+    if (ids.isEmpty) return;
+    // Where the OS lists them, only the shown ones: a sync may touch many messages without a notification.
     final active = switch (await _active()) {
-      final list? => {for (final n in list) n.id},
+      final list? => {for (final n in list) n.id, ...?_unlisted[accountId]},
       null => null,
     };
     final gone = <int>{};
-    for (final t in targets) {
-      final id = idOf(t);
-      _shown[t.accountId]?.remove(id);
+    for (final id in ids) {
       if (active == null || active.contains(id)) {
         await _plugin.cancel(id: id);
         gone.add(id);
       }
     }
-    // Also when none was still shown: a button dismissed its notification itself, its group may be left empty.
-    if (_android && targets.isNotEmpty) await _dropEmptyGroups(gone);
+    // Also when none was still shown: a button dismissed its notification itself, the summary may be left behind.
+    if (_android) await _summarize(accountId, gone: gone);
   }
 
   @override
@@ -211,13 +189,9 @@ class LocalNotifications() implements Notifications {
     if (mobileOrMac.contains(defaultTargetPlatform)) await _plugin.openAppNotificationSettings();
   }
 
-  /// A notification of [accountId], in its group; with the buttons of [actions] on [conversation] (#211).
-  NotificationDetails _details(
-    String accountId,
-    String body, {
-    ConversationKey? conversation,
-    List<NotificationAction> actions = const [],
-  }) {
+  /// A message's notification, in the group of its [conversation]'s Account; with the buttons of [actions] (#211).
+  NotificationDetails _details(ConversationKey conversation, String body, List<NotificationAction> actions) {
+    final accountId = conversation.accountId;
     final darwin = DarwinNotificationDetails(
       threadIdentifier: accountId,
       categoryIdentifier: darwinCategoryOf(actions),
@@ -236,19 +210,40 @@ class LocalNotifications() implements Notifications {
       iOS: darwin,
       macOS: darwin,
       linux: LinuxNotificationDetails(actions: linuxButtons(actions, _actionLabel)),
-      windows: conversation == null
-          ? null
-          : WindowsNotificationDetails(actions: windowsButtons(conversation, actions, _actionLabel)),
+      windows: WindowsNotificationDetails(actions: windowsButtons(conversation, actions, _actionLabel)),
     );
   }
 
-  /// Android only: the group notification of [accountId], titled with its address; silent, its children alert.
-  Future<void> _showGroup(String accountId, String address) async {
-    if (!_android) return;
+  /// Android only: the group summary «N nuovi messaggi» of [accountId], N the notifications shown in its group; none
+  /// for one alone, and it goes with the last. Silent: its children alert. [address], its subtext, is the one it
+  /// shows already when not given. [gone] were just cancelled: Android cancels asynchronously, so the listing may still
+  /// show them.
+  // ponytail: from two down to one it stays, «1 nuovo messaggio»: cancelling a summary takes its children with it.
+  Future<void> _summarize(String accountId, {String? address, Set<int> gone = const {}}) async {
+    final unlisted = (_unlisted[accountId] ??= {})..removeAll(gone);
+    final summaryId = groupId(accountId);
+    ActiveNotification? summary;
+    final listed = <int>{};
+    for (final n in await _active() ?? const <ActiveNotification>[]) {
+      if (n.groupKey != accountId || gone.contains(n.id)) continue;
+      if (n.id == summaryId) {
+        summary = n;
+      } else {
+        listed.add(n.id!);
+      }
+    }
+    unlisted.removeAll(listed);
+    final count = listed.length + unlisted.length;
+    if (count == 0) {
+      if (summary != null) await _plugin.cancel(id: summaryId);
+      return;
+    }
+    final subText = address ?? summary?.body;
+    if (subText == null || (count < 2 && summary == null)) return;
     await _plugin.show(
-      id: groupId(accountId),
-      title: address,
-      body: address,
+      id: summaryId,
+      title: _newMessages(count),
+      body: subText,
       payload: encodePayload(AccountTarget(accountId)),
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
@@ -258,28 +253,10 @@ class LocalNotifications() implements Notifications {
           groupKey: accountId,
           setAsGroupSummary: true,
           groupAlertBehavior: GroupAlertBehavior.children,
-          subText: address,
+          subText: subText,
         ),
       ),
     );
-  }
-
-  /// Android only: a group notification whose children are all gone goes too. [gone] were just cancelled: Android
-  /// cancels asynchronously, so the listing may still show them.
-  Future<void> _dropEmptyGroups(Set<int> gone) async {
-    final active = [
-      for (final n in await _active() ?? const <ActiveNotification>[])
-        if (!gone.contains(n.id)) n,
-    ];
-    final withChildren = {
-      for (final n in active)
-        if (n.groupKey case final g? when n.id != groupId(g)) g,
-    };
-    for (final n in active) {
-      if (n.groupKey case final g? when n.id == groupId(g) && !withChildren.contains(g)) {
-        await _plugin.cancel(id: n.id!);
-      }
-    }
   }
 
   /// The notifications the OS shows now; null where it cannot list them by Account.

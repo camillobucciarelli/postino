@@ -1,12 +1,12 @@
-// The summary «N nuovi messaggi» (#210): more than 10 new messages in a sync notify the Account once, and a tap opens
-// its inbox; the system's Indietro (Android) goes from there to the Posta unificata.
+// One notification per message under the summary «N nuovi messaggi» (#238): its text, and a tap on it opens the
+// Account's inbox; the system's Indietro (Android) goes from there to the Posta unificata.
 import 'dart:async';
 
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart' show Drawer;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:postino/core/domain/new_mail_summary.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -36,17 +36,20 @@ Future<void> _start(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('12 new messages in one sync: one summary of the Account, no single notification', (tester) async {
+  testWidgets('3 new messages in a Conversazione and 2 in another: 5 notifications; one read elsewhere goes (#238)', (
+    tester,
+  ) async {
     await _start(tester);
-    for (var i = 0; i < 12; i++) {
-      gmail.deliver(msg('n$i'), signal: i == 11);
+    for (var i = 0; i < 5; i++) {
+      gmail.deliver(msg('n$i', conversationId: i < 3 ? 't-x' : 't-y'), signal: i == 4);
     }
     await tester.pumpAndSettle();
+    expect(h.notifications.shown, hasLength(5));
+    expect(h.notifications.visibleMessages, {'n0', 'n1', 'n2', 'n3', 'n4'});
 
-    expect(h.notifications.shown, isEmpty);
-    expect(h.notifications.summaries, [
-      const NewMailSummary(accountId: notifiedAccount, accountAddress: '$notifiedAccount@example.com', count: 12),
-    ]);
+    gmail.changeElsewhere('n1', readAttribute, true);
+    await tester.pumpAndSettle();
+    expect(h.notifications.visibleMessages, {'n0', 'n2', 'n3', 'n4'}, reason: 'its Conversazione is still unread');
   });
 
   test('the text of the summary, with its plural', () {
@@ -55,6 +58,7 @@ void main() {
     expect(t.notifiche.newMessages(n: 1), '1 nuovo messaggio');
     LocaleSettings.setLocaleSync(AppLocale.en);
     expect(t.notifiche.newMessages(n: 11), '11 new messages');
+    expect(t.notifiche.newMessages(n: 1), '1 new message');
   });
 
   testWidgets("a tap on the summary opens the Account's inbox; the system's Indietro goes to the Posta unificata", (

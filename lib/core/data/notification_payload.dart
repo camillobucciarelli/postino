@@ -1,11 +1,10 @@
 import 'dart:convert';
 
-import '../domain/mail_notification.dart';
 import '../domain/notification_action.dart';
 import '../domain/notification_target.dart';
 
-/// The payload of a notification: the ids of what it opens, never its content (#39). A Conversazione is
-/// `[account, conversation]`, an Account's summary `[account]` (#210).
+/// The payload of a notification: the ids of what it opens, never its content (#39). A message's notification opens
+/// its Conversazione, `[account, conversation]`; an Account's group summary `[account]` (#210).
 String encodePayload(NotificationTarget target) => jsonEncode(switch (target) {
   ConversationTarget(:final conversation) => [conversation.accountId, conversation.conversationId],
   AccountTarget(:final accountId) => [accountId],
@@ -53,21 +52,16 @@ Object? _decode(String? payload) {
   }
 }
 
-/// The notification id of [key], the same in every run (`Object.hash` is seeded per process): a newer message
-/// replaces its Conversazione's notification also after a restart.
-int notificationId(ConversationKey key) => _fnv('${key.accountId}\u0000${key.conversationId}');
+/// The notification id of the message [messageId] (#238), the same in every run (`Object.hash` is seeded per process):
+/// a later sync, or another isolate, finds it to take it away. Never its Account's [groupId].
+int notificationId(String accountId, String messageId) {
+  final id = _fnv('$accountId\u0000$messageId');
+  return id == groupId(accountId) ? id ^ 1 : id;
+}
 
-/// The id of the summary «N nuovi messaggi» of [accountId]: a later summary replaces it.
-int summaryId(String accountId) => _fnv('summary\u0000$accountId');
-
-/// The id of the group notification of [accountId] (Android), titled with its address.
+/// The id of the group summary «N nuovi messaggi» of [accountId] (Android), the same as before #238: an update
+/// replaces the group notification of an earlier version.
 int groupId(String accountId) => _fnv('group\u0000$accountId');
-
-/// The id of the notification of [target].
-int idOf(NotificationTarget target) => switch (target) {
-  ConversationTarget(:final conversation) => notificationId(conversation),
-  AccountTarget(:final accountId) => summaryId(accountId),
-};
 
 /// 32-bit FNV-1a, kept to a positive 31-bit int.
 int _fnv(String s) {

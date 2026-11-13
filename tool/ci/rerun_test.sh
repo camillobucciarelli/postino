@@ -16,6 +16,7 @@ case "\$1 \$2" in
       || { echo "unexpected gh \$*" >&2; exit 3; }
     cat "$dir/id" ;;
   "run view")
+    echo >> "$dir/views"
     state=\$(head -1 "$dir/states")
     [ "\$(wc -l < "$dir/states")" -le 1 ] || sed -i.bak 1d "$dir/states"
     jq -r "\${@: -1}" <<< "\$state" ;;
@@ -56,6 +57,12 @@ expect 'run cancel 42,run rerun 42' "$(run in_progress "$(job in_progress '' '')
   "$(run in_progress "$gated" "$(job queued '' '')")" "$(run completed "$gated" "$(job completed cancelled '')")"
 # ...or it passes on the approval and nothing is restarted.
 expect '' "$(run in_progress "$(job in_progress '' '')")" "$(run in_progress "$(job in_progress '' success)")"
+# A job stuck in its gate is not waited for past the cap (24 polls): codex-ok.yml holds the only runner meanwhile.
+echo 42 > "$dir/id"; run in_progress "$(job in_progress '' '')" > "$dir/states"; : > "$dir/calls"; : > "$dir/views"
+! PATH="$dir/bin:$PATH" REPO=o/r WAIT_SECONDS=0 tool/ci/rerun.sh "$sha" feat/x > /dev/null 2>&1 \
+  || { echo "rerun.sh with a job stuck in the gate succeeded"; exit 1; }
+[ ! -s "$dir/calls" ] && [ "$(wc -l < "$dir/views")" -eq 24 ] \
+  || { echo "rerun.sh with a job stuck in the gate: $(wc -l < "$dir/views") polls, calls '$(paste -sd, "$dir/calls")'"; exit 1; }
 : > "$dir/id"; : > "$dir/calls"
 PATH="$dir/bin:$PATH" REPO=o/r tool/ci/rerun.sh "$sha" feat/x > /dev/null
 [ ! -s "$dir/calls" ] || { echo "rerun.sh without a run restarted something"; exit 1; }

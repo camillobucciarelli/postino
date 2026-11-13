@@ -5,6 +5,7 @@
 # - No job failed at the gate: nothing (jobs not started yet read the approval themselves).
 # - Some job failed at the gate: cancel the run if still going, then rerun it whole.
 # Reruns keep the PR association, so the ruleset counts their checks. Used by codex-ok.yml; by hand too.
+# Each wait is capped at `polls` (24) polls, 2 minutes by default: codex-ok.yml holds the only self-hosted runner meanwhile.
 # Env: REPO (owner/name), GH_TOKEN or a gh login with actions: write; WAIT_SECONDS (default 5).
 # Usage: rerun.sh <head sha> <head branch>
 set -euo pipefail
@@ -12,6 +13,7 @@ sha=${1:?usage: rerun.sh <head sha> <head branch>}
 branch=${2:?usage: rerun.sh <head sha> <head branch>}
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo "not a full sha: $sha" >&2; exit 2; }
 pause=${WAIT_SECONDS:-5}
+polls=24
 
 # The branch tells apart two PRs whose heads are the same commit.
 id=$(gh run list -R "$REPO" --workflow ci.yml --event pull_request --branch "$branch" --commit "$sha" --limit 1 \
@@ -27,7 +29,7 @@ state() {
     ([.jobs[] | select($gated and .conclusion == \"failure\" and ($gate | not))] | length),
     ([.jobs[] | select($gated and .status == \"in_progress\" and ($gate | not))] | length)] | join(\" \")"
 }
-for _ in $(seq 60); do
+for _ in $(seq "$polls"); do
   read -r status failed gating <<< "$(state)"
   [ "$gating" -gt 0 ] || break
   sleep "$pause"
@@ -37,7 +39,7 @@ done
 
 if [ "$status" != completed ]; then
   gh run cancel -R "$REPO" "$id"
-  for _ in $(seq 60); do
+  for _ in $(seq "$polls"); do
     read -r status failed gating <<< "$(state)"
     [ "$status" = completed ] && break
     sleep "$pause"

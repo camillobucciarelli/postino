@@ -6,6 +6,8 @@ name: Codex ok
 # l'evento è input non fidato (solo via env e file, mai ${{ }} dentro run:), decide tool/ci/codex_ok.sh.
 # Segnale di Codex: il commento-ricevuta, creato una volta per review pulita (con rilievi la ricevuta sta in una
 # review, altro evento). Il commento `codex-review-state:v1` viene modificato più volte: rerun doppi.
+# Gira sull'unico runner self-hosted `postino-mac`, macchina persistente: presuppone il repo privato (commentano solo i
+# collaboratori). Su un repo pubblico un `issue_comment` su self-hosted va rivalutato.
 on:
   issue_comment:
     types: [created]
@@ -14,6 +16,10 @@ permissions:
   actions: write
   contents: read
   pull-requests: read
+
+# Niente `concurrency`: una run in attesa nel gruppo viene sostituita dalla successiva, anche da un commento scartato
+# dal filtro o da un ok su un commit vecchio, e l'ok valido andrebbe perso. Due ok sulla stessa PR girano in fila: il
+# secondo trova la run già rilanciata e non fa nulla.
 
 jobs:
   rerun-ci:
@@ -25,8 +31,11 @@ jobs:
          contains(github.event.comment.body, '<!-- codex-review-receipt:v1 -->')) ||
         (startsWith(github.event.comment.body, 'ci-ok ') &&
          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
-    # Hosted: pochi secondi (~1 minuto fatturato per ok). Sull'unico self-hosted aspetterebbe la coda.
-    runs-on: ubuntu-latest
+    # Il filtro sopra è valutato da GitHub prima di assegnare un runner: i commenti scartati non lo occupano.
+    # Sull'unico runner aspetta in coda dietro i job in corso; nessun blocco circolare: mentre gira lui nessun job di
+    # ci.yml è in corso, quindi rerun.sh non aspetta nessuno e rilancia la run fallita al cancello.
+    runs-on: [self-hosted, macOS, ARM64]
+    # Conta solo dopo l'assegnazione del runner, non la coda: copre le due attese di rerun.sh (2 minuti l'una).
     timeout-minutes: 10
     steps:
       # Solo tool/ci dal branch di default (github.sha di issue_comment), mai la PR.

@@ -66,13 +66,11 @@ class AccountsService(
     // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
     // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
     await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
-    final OAuthGrant grant;
-    switch (await consent()) {
-      case Err(:final failure):
-        return Err(failure);
-      case Ok(:final value):
-        grant = value;
-    }
+    // ponytail: not a `final grant;` assigned in a switch: captured by the lock's closure below, it crashes the AOT
+    // compiler of Dart 3.14 (linearscan.cc, `flutter build ios`).
+    final consented = await consent();
+    if (consented case Err(:final failure)) return Err(failure);
+    final grant = (consented as Ok<OAuthGrant>).value;
     if (loginHint != null && normalizedAddress(loginHint) != normalizedAddress(grant.address)) {
       return Err(WrongAccountFailure(loginHint));
     }

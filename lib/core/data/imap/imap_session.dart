@@ -97,11 +97,18 @@ class ImapSession(
     );
     _opening = c;
     var atLogin = false;
+    // Closed meanwhile (the Account removed, #191): this connection is not kept, and no LOGIN goes after it.
+    void stillWanted() {
+      if (closes != _closes) throw const ImapFailed(OfflineFailure());
+    }
+
     Future<void> setUp() async {
       await _connect(c, credentials.servers.imap);
+      stillWanted();
       atLogin = true;
       await c.login(_user, credentials.password);
       atLogin = false;
+      stillWanted();
       final capabilities = {for (final x in await c.capability()) x.name.toUpperCase()};
       qresync = capabilities.contains('QRESYNC');
       condstore = qresync || capabilities.contains('CONDSTORE');
@@ -114,8 +121,7 @@ class ImapSession(
 
     try {
       await (setup == null ? setUp() : setUp().timeout(setup));
-      // Closed meanwhile (the Account removed, #191): this login is not kept.
-      if (closes != _closes) throw const ImapFailed(OfflineFailure());
+      stillWanted();
       return _client = c;
     } on Object catch (e) {
       // A close cuts the connection: what the login then throws is no refusal of the credentials.

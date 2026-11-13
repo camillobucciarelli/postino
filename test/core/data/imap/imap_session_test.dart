@@ -45,20 +45,47 @@ void main() {
     release.complete();
 
     await expectLater(run, throwsA(isA<ImapFailed>()));
-    expect(logins(), lessThanOrEqualTo(1));
     // Not left logged in: the next command logs in again.
+    final before = logins();
     expect(await session.run((_) async => 'again'), 'again');
-    expect(logins(), 2);
+    expect(logins(), before + 1);
+  });
+
+  test('closed while connecting: no LOGIN is sent afterwards, even if the server then stalls', () async {
+    await start((c) => c.startsWith('CAPABILITY') ? hang : basics(c, capabilities: 'IMAP4rev1')!);
+    final connecting = Completer<void>();
+    final release = Completer<void>();
+    final session = ImapSession(
+      _id,
+      'ada@example.org',
+      keychain,
+      connect: (c, s) async {
+        connecting.complete();
+        await release.future;
+        await plainConnector(c, s);
+      },
+    );
+    final run = session.run((_) async => 'ran');
+    await connecting.future;
+
+    await session.close();
+    release.complete();
+
+    // Without the check before LOGIN the session logs in and waits on CAPABILITY for ImapSession.timeout.
+    await expectLater(run.timeout(const Duration(seconds: 10)), throwsA(isA<ImapFailed>()));
+    expect(logins(), 0);
   });
 
   test('closed while the server has not answered LOGIN: the session is dropped, not left waiting', () async {
-    await start((c) => c.startsWith('LOGIN') ? hang : basics(c, capabilities: 'IMAP4rev1')!);
+    final login = Completer<void>();
+    await start((c) {
+      if (!c.startsWith('LOGIN')) return basics(c, capabilities: 'IMAP4rev1')!;
+      login.complete();
+      return hang;
+    });
     final session = ImapSession(_id, 'ada@example.org', keychain, connect: plainConnector);
     final run = session.run((_) async => 'ran');
-    for (var i = 0; i < 100 && logins() == 0; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
-    expect(logins(), 1);
+    await login.future;
 
     await session.close();
 

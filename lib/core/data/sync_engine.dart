@@ -217,11 +217,12 @@ class SyncEngine(
 
   @override
   Future<bool> saveDraft(String accountId, OutgoingMessage draft) async {
-    // The Account removed, or its removal started (its delete takes the Bozza with it, #191): nothing kept, so
-    // nothing to send later nor to open. Checked after the write too: a removal may start while it runs.
+    // The Account removed, or its removal started (its delete would take the Bozza with it, #191): nothing kept,
+    // so nothing to send later nor to open.
+    // ponytail: not checked again after the write: a removal that then failed would leave a Bozza nobody opened
+    // (and an edit of an existing one must never be deleted); one starting mid-write deletes the row itself.
     if (_gate.removed(accountId) ||
-        !await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch) ||
-        _gate.removed(accountId)) {
+        !await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch)) {
       return false;
     }
     // Swapped with no await in between: two saves in a row must not both keep a timer.

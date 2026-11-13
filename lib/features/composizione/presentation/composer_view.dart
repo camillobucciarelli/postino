@@ -198,7 +198,7 @@ class _ComposerViewState() extends State<ComposerView> with AccountsSignal {
     PostinoSenderOption option(Account a) => (
       id: a.id,
       mark: (color: PostinoAccountColor.values[a.color], initial: a.initial),
-      address: accountLabel(context, a, _accounts),
+      name: accountLabel(context, a, _accounts),
     );
     final senders = _accounts.map(option).toList();
     final mac = defaultTargetPlatform == TargetPlatform.macOS;

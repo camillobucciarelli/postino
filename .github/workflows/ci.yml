@@ -76,6 +76,35 @@ jobs:
           dart run build_runner build
       - run: flutter build apk --debug
 
+  # Mutation test dei file Dart della PR (docs/agents/mutation-test.md). Non richiesto; parte dopo i check richiesti
+  # per non ritardarli sull'unico runner.
+  mutation:
+    needs: [check, android, apple]
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      - run: flutter pub get
+      # Al più 60 mutanti (~10 minuti sul runner con i widget test).
+      - name: Mutation test
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: dart run tool/mutation/run.dart --base="$BASE" --max-mutants=60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: build/mutation/
+          if-no-files-found: ignore
+
   # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
   # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
   # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history

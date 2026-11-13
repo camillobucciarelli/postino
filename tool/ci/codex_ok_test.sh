@@ -4,6 +4,18 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
+# Stub gh for the permission of a `ci-ok` author: dev can write, guest can only read.
+mkdir "$dir/bin"
+cat > "$dir/bin/gh" << 'EOF'
+#!/bin/bash
+case "$*" in
+  "api repos/o/r/collaborators/dev/permission --jq .permission") echo write ;;
+  "api repos/o/r/collaborators/guest/permission --jq .permission") echo read ;;
+  *) echo "unexpected gh $*" >&2; exit 3 ;;
+esac
+EOF
+chmod +x "$dir/bin/gh"
+export PATH="$dir/bin:$PATH" REPO=o/r
 
 head=4cdb814d898b3b3c22f464f39d8cae61a8a7b5cd
 receipt=$'<!-- codex-review-receipt:v1 -->\n\nCodex Review: Didn\'t find any major issues. Swish!\n\n**Reviewed commit:** `4cdb814d89`\n'
@@ -18,7 +30,7 @@ pr() {
 }
 launches() {
   event "$1"; pr "$2"
-  [ "$(tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" 2> /dev/null)" = "$head" ] \
+  [ "$(tool/ci/codex_ok.sh "$dir/event.json" "$dir/pr.json" 2> /dev/null)" = "$head feat/x" ] \
     || { echo "should restart: $1 | $2"; exit 1; }
 }
 skips() {
@@ -38,6 +50,7 @@ errors() {
 launches . .
 launches '.comment.body |= sub("4cdb814d89"; "4cdb814d898b3b3c22f464f39d8cae61a8a7b5cd")' .
 launches '.comment = {body: "ci-ok 4cdb814", user: {login: "dev", type: "User"}}' .
+skips '.comment = {body: "ci-ok 4cdb814", user: {login: "guest", type: "User"}}' .
 skips '.comment = {body: "ci-ok b805158", user: {login: "dev", type: "User"}}' .
 skips '.comment.user.login = "someone"' .
 skips '.comment.user.type = "User"' .

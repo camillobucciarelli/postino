@@ -20,6 +20,10 @@ key="$work/AuthKey.p8"
 auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID"
   -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
 
+# The runner is shared: the user's trustd agent may still cache a keychain search list from another job (keychain_create.sh
+# changes it), and codesign at export would then fail with errSecInternalComponent. launchd restarts it on demand.
+pkill -U "$(id -u)" -x trustd || [ $? -eq 1 ] # 1: no agent running
+
 mkdir -p "$out"
 archive="$work/Runner.xcarchive"
 # The project's DEVELOPMENT_TEAM is the author's personal one: the real team is forced here.

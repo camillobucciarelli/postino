@@ -69,4 +69,8 @@ LI=ios/Runner/Assets.xcassets/LaunchImage.imageset
 png "$B/mark.svg" 128 "$LI/LaunchImage.png"
 png "$B/mark.svg" 256 "$LI/LaunchImage@2x.png"
 png "$B/mark.svg" 384 "$LI/LaunchImage@3x.png"
+# Tray desktop: macOS template (silhouette nera con alfa, 36 px = 18 pt @2x, la barra dei menu la colora);
+# Windows e Linux a colori, 64 px (il sistema scala alla misura del tray).
+png "$B/mark-mono.svg" 36 assets/tray/tray_icon_template.png
+png "$B/icon.svg" 64 assets/tray/tray_icon.png
 echo "Icone e splash rigenerate da $B"

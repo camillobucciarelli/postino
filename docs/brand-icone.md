@@ -22,6 +22,7 @@ Rasterizza con `rsvg-convert` se installato, altrimenti con `sips` (di serie su 
 - iOS: `AppIcon.png`, `AppIcon-dark.png`, `AppIcon-tinted.png` (1024, senza alfa, a tutto campo: la maschera la mette iOS) e `LaunchImage*.png`.
 - macOS: `app_icon_16…1024.png`. Il tile occupa 824/1024 al centro (griglia Big Sur) con margine trasparente; `rx 57/256` coincide già con la squircle di macOS.
 - Android: `ic_launcher.png` (legacy), `ic_launcher_foreground.png` e `ic_launcher_monochrome.png` (marchio al 30% della tela 108 dp, dentro la zona sicura di 66 dp), `drawable-*/splash_mark.png`.
+- Tray desktop (#257): `assets/tray/tray_icon_template.png` (macOS, 36 px = 18 pt @2x, silhouette nera con alfa da `mark-mono.svg`, caricata come *template image*: la barra dei menu la colora per tema chiaro/scuro e stato evidenziato; `icon-small.svg` non serve, la silhouette è già leggibile) e `assets/tray/tray_icon.png` (Windows e Linux, 64 px a colori da `icon.svg`; nativeapi carica un solo bitmap e lo scala alla misura del tray, quindi niente `.ico` multi-risoluzione).
 
 Il fondo adattivo Android (`drawable/ic_launcher_background.xml`) e il verderame dello splash (`values/colors.xml`, `LaunchScreen.storyboard`) sono scritti a mano: se cambiano i colori in `assets/brand/`, aggiornarli.
 

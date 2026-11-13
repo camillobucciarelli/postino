@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.2.0+2
+version: 1.2.1+2
 
 environment:
   sdk: ^3.14.0
@@ -116,8 +116,9 @@ flutter:
 
   assets:
     - assets/fonts/OFL.txt
-    # The desktop tray's icon (#38): the app icon for now.
+    # The desktop tray's icon (#38): the logo, in colour (Windows, Linux) or as a template (macOS), see docs/brand-icone.md.
     - assets/tray/tray_icon.png
+    - assets/tray/tray_icon_template.png
 
   fonts:
     - family: Caprasimo

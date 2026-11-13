@@ -91,12 +91,13 @@ void main() {
     );
   });
 
-  /// The OS reporting a tap on the notification of [conversationId], on its button [actionId] when given.
-  Future<void> respond(String conversationId, {String? actionId}) async {
+  /// The OS reporting a tap on the notification of [conversationId], on its button [actionId] when given; [payload]
+  /// in place of the notification's own.
+  Future<void> respond(String conversationId, {String? actionId, String? payload}) async {
     final call = MethodCall('didReceiveNotificationResponse', {
       'notificationId': 1,
       'actionId': actionId,
-      'payload': encodePayload(ConversationTarget((accountId: 'a1', conversationId: conversationId))),
+      'payload': payload ?? encodePayload(ConversationTarget((accountId: 'a1', conversationId: conversationId))),
       'notificationResponseType': actionId == null ? 0 : 1,
     });
     await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
@@ -116,12 +117,37 @@ void main() {
     });
   });
 
-  test('a button runs its Azione on the Conversazione; a tap on the notification opens it', () async {
+  test('macOS: a button runs its Azione on the Conversazione; a tap on the notification opens it', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    MacOSFlutterLocalNotificationsPlugin.registerWith();
+    final macos = LocalNotifications();
+    final macTaps = <NotificationTarget>[];
+    macos.taps.listen(macTaps.add);
+    await macos.start(
+      channelName: 'Posta nuova',
+      openLabel: 'Apri',
+      newMessages: (n) => '$n',
+      actionLabel: (a) => a.name,
+      onAction: actions.add,
+    );
+
     await respond('t-a', actionId: 'archive');
+    await respond('t-c', payload: encodeAction(_star('t-c')));
     await respond('t-b');
 
-    expect(actions, [(conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive)]);
-    expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+    expect(actions, [
+      (conversation: (accountId: 'a1', conversationId: 't-a'), action: NotificationAction.archive),
+      _star('t-c'),
+    ]);
+    expect(macTaps, [const ConversationTarget((accountId: 'a1', conversationId: 't-b'))]);
+  });
+
+  test("Android: the app's isolate never runs an Azione, its buttons run in the background engine", () async {
+    await respond('t-a', actionId: 'archive');
+    await respond('t-b', payload: encodeAction(_star('t-b')));
+
+    expect(actions, isEmpty, reason: "any app can send these to the exported Activity");
+    expect(taps, [const ConversationTarget((accountId: 'a1', conversationId: 't-a'))], reason: 'it opens, like a tap');
   });
 
   test(
@@ -186,7 +212,9 @@ void main() {
     expect(actions, [tap], reason: 'the app started in setUp still takes it');
   });
 
-  test('a button that launched the app runs its Azione, and the app opens on nothing in particular', () async {
+  test('macOS: a button that launched the app runs its Azione, and the app opens on nothing in particular', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    MacOSFlutterLocalNotificationsPlugin.registerWith();
     final payload = encodePayload(const ConversationTarget((accountId: 'a1', conversationId: 't-a')));
     launch = {
       'notificationLaunchedApp': true,
@@ -225,6 +253,34 @@ void main() {
       reason: 'a tap on the notification itself opens its Conversazione',
     );
     expect(launched, hasLength(1));
+  });
+
+  test('Android: a launch with a button runs no Azione, it opens its Conversazione', () async {
+    Future<NotificationTarget?> launchWith(String? actionId, String payload) {
+      launch = {
+        'notificationLaunchedApp': true,
+        'notificationResponse': {
+          'notificationId': 1,
+          'actionId': actionId,
+          'payload': payload,
+          'notificationResponseType': 1,
+        },
+      };
+      return LocalNotifications().start(
+        channelName: 'Posta nuova',
+        openLabel: 'Apri',
+        newMessages: (n) => '$n',
+        actionLabel: (a) => a.name,
+        onAction: actions.add,
+      );
+    }
+
+    expect(
+      await launchWith('delete', encodePayload(const ConversationTarget((accountId: 'a1', conversationId: 't-a')))),
+      const ConversationTarget((accountId: 'a1', conversationId: 't-a')),
+    );
+    expect(await launchWith(null, encodeAction(_star('t-b'))), isNull);
+    expect(actions, isEmpty);
   });
 
   test('iOS: the notification names a category registered at start with its buttons, for any choice', () async {
@@ -318,3 +374,6 @@ void main() {
     expect(shown, isEmpty);
   });
 }
+
+NotificationActionTap _star(String conversationId) =>
+    (conversation: (accountId: 'a1', conversationId: conversationId), action: NotificationAction.star);

@@ -95,7 +95,9 @@ class LocalNotifications() implements Notifications {
         ),
       ),
       onDidReceiveNotificationResponse: (r) {
-        if (decodeAction(r.payload, r.actionId) case final tap?) return onAction?.call(tap);
+        // Never an Azione on Android: the exported MainActivity takes this response from any app's Intent extras;
+        // its real buttons run in the background engine ([backgroundActionEntry]). A spoofed one opens, like a tap.
+        if (decodeAction(r.payload, r.actionId) case final tap? when !_android) return onAction?.call(tap);
         if (decodePayload(r.payload) case final target?) {
           if (_taps.hasListener) return _taps.add(target);
           if (_started) _pending = target;
@@ -107,8 +109,9 @@ class LocalNotifications() implements Notifications {
     _started = true;
     if (!(launch?.didNotificationLaunchApp ?? false)) return null;
     final response = launch!.notificationResponse;
-    // A button that launched the app (Windows, macOS): its Azione, and the app opens where it would.
-    if (decodeAction(response?.payload, response?.actionId) case final tap?) {
+    // A button that launched the app (Windows, macOS): its Azione, and the app opens where it would. Not on Android,
+    // where the launch Intent's extras can come from any app (see the response handler above).
+    if (decodeAction(response?.payload, response?.actionId) case final tap? when !_android) {
       onAction?.call(tap);
       return null;
     }

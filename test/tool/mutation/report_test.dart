@@ -61,13 +61,17 @@ void main() {
       ],
       threshold: 0,
       withoutTests: ['lib/c.dart'],
+      tooManyTests: ['lib/main.dart (70 test)'],
       redBaseline: [],
       errors: [],
+      sampling: '3 mutanti su 9 candidati',
     );
     expect(report, contains('**Punteggio 33.3%** su 3 mutanti'));
     expect(report, contains('| `lib/a.dart` | 1 | 0 | 1 | 1 | 1 | 33.3% |'));
     expect(report, contains("| `lib/a.dart:12` | eq | `if (a <= b && c == 'x') return;` |"));
     expect(report, contains('**Senza test corrispondente** (1):'));
+    expect(report, contains('**Importati da troppi test, non misurati** (1):'));
+    expect(report, contains('Campionamento: 3 mutanti su 9 candidati'));
     expect(report, isNot(contains('Errori dello strumento')));
   });
 }

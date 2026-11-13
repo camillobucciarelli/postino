@@ -30,8 +30,9 @@
     <!-- String literals on one line, interpolated too (SQL in `customStatement`, keys, messages). -->
     <regex pattern="&quot;[^&quot;\n]*&quot;"/>
     <regex pattern="&apos;[^&apos;\n]*&apos;"/>
-    <regex pattern="\sfor \(.*?\) \{" dotAll="true"/>
-    <regex pattern="\swhile \(.*?\) \{" dotAll="true"/>
+    <!-- Loop headers on one line: across lines a collection-for (no brace) would run on to the next `) {`. -->
+    <regex pattern="\sfor \([^\n]*?\) \{"/>
+    <regex pattern="\swhile \([^\n]*?\) \{"/>
   </exclude>
   <threshold failure="0"/>
 </mutations>

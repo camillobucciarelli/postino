@@ -18,6 +18,7 @@ void main() {
       'test/features/a_test.dart': "import 'package:postino/core/domain/reply.dart';",
       'test/features/c_test.dart': "import 'package:postino/core/domain/message.dart';",
       'test/features/b_test.dart': "import 'package:postino/core/domain/message.dart';",
+      'test/architecture_test.dart': "const paths = [\n  'package:postino/core/domain/message.dart',\n];",
     };
     expect(testsFor('lib/core/domain/reply.dart', tests), ['test/core/domain/reply_test.dart']);
     expect(testsFor('lib/core/domain/message.dart', tests), ['test/features/b_test.dart', 'test/features/c_test.dart']);

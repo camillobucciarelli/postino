@@ -14,10 +14,11 @@ List<String> testsFor(String source, Map<String, String> tests) {
   final relative = source.substring('lib/'.length);
   final twin = 'test/${relative.substring(0, relative.length - '.dart'.length)}_test.dart';
   if (tests.containsKey(twin)) return [twin];
-  final import = "'package:postino/$relative'";
+  // An import directive, not the URI quoted as data (architecture_test.dart lists paths).
+  final import = RegExp("^import 'package:postino/${RegExp.escape(relative)}'", multiLine: true);
   return [
     for (final MapEntry(:key, :value) in tests.entries)
-      if (value.contains(import)) key,
+      if (import.hasMatch(value)) key,
   ]..sort();
 }
 

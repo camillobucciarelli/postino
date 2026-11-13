@@ -1,9 +1,8 @@
 name: Mutation
 
-# Mutation test (docs/agents/mutation-test.md): on a PR only the Dart files it changes, by hand the whole lib/
-# (or the paths in `path`). Not a required check.
+# Mutation test a mano (docs/agents/mutation-test.md): tutta lib/ o i percorsi in `path`. Sulle PR gira il job
+# `mutation` di ci.yml, solo sui file modificati.
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       path:
@@ -17,35 +16,26 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
-env:
-  # Punteggio minimo (percentuale) sotto cui il job fallisce: 0 finché non si sono visti i numeri reali.
-  MUTATION_THRESHOLD: '0'
+  group: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   mutation:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 720 }}
+    # Tutta lib/ dura ~5 ore (stima in docs/agents/mutation-test.md).
+    timeout-minutes: 420
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
       - run: flutter pub get
       - name: Mutation test
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
           TARGET: ${{ inputs.path }}
           MAX_MUTANTS: ${{ inputs.max-mutants }}
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            # Una PR: al più 60 mutanti (~10 minuti sul runner con i widget test).
-            dart run tool/mutation/run.dart --base="$BASE" --max-mutants=60 --threshold="$MUTATION_THRESHOLD"
-          else
-            dart run tool/mutation/run.dart --path="$TARGET" --max-mutants="$MAX_MUTANTS" --threshold="$MUTATION_THRESHOLD"
-          fi
+        run: dart run tool/mutation/run.dart --path="$TARGET" --max-mutants="$MAX_MUTANTS"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

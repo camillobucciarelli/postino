@@ -8,6 +8,9 @@ import 'targets.dart';
 
 const _rules = 'tool/mutation/rules.xml';
 
+/// The score (percent) under which a run fails, in CI too: 0 until the real numbers are known (#235).
+const _threshold = '0';
+
 Future<void> main(List<String> args) async {
   final opts = {
     for (final a in args)
@@ -16,7 +19,7 @@ Future<void> main(List<String> args) async {
   final base = opts['base'];
   final prefix = opts['path'] ?? 'lib/';
   final budget = int.parse(opts['max-mutants'] ?? '0');
-  final threshold = double.parse(opts['threshold'] ?? '0');
+  final threshold = double.parse(opts['threshold'] ?? _threshold);
   final timeout = int.parse(opts['timeout'] ?? '120');
   final out = opts['out'] ?? 'build/mutation';
   final flutter = opts['flutter'] ?? 'flutter';
@@ -46,9 +49,28 @@ Future<void> main(List<String> args) async {
   ];
 
   Directory(out).createSync(recursive: true);
+  // One run at a time per checkout: a second one would read the first one's mutant as the original.
+  // ponytail: non-blocking exclusive lock, released when the process exits; throws if another run holds it.
+  try {
+    File('.dart_tool/mutation.lock').openSync(mode: FileMode.write).lockSync();
+  } on FileSystemException {
+    stderr.writeln('Un altro mutation test gira già su questo checkout.');
+    exitCode = 1;
+    return;
+  }
   final errors = <String>[];
   final redBaseline = <String>[];
   final results = <FileResult>[];
+  String report(String? sampling) => renderReport(
+    results: results,
+    threshold: threshold,
+    withoutTests: withoutTests,
+    tooManyTests: tooManyTests,
+    redBaseline: redBaseline,
+    errors: errors,
+    sampling: sampling,
+  );
+  if (tested.isEmpty) return _finish(out, report(null), failed: false);
 
   // Dry run: lists every candidate mutant without running tests, to sample them under the budget.
   final dryInput = _input('$out/dry.xml', tested, {}, 'true', timeout);
@@ -82,6 +104,7 @@ Future<void> main(List<String> args) async {
     ], Duration(seconds: timeout * 3));
     if (!green) {
       redBaseline.add(file);
+      File('$out/report.md').writeAsStringSync(report(sampling));
       continue;
     }
     final original = File(file).readAsStringSync();
@@ -96,25 +119,20 @@ Future<void> main(List<String> args) async {
       errors.add('$file: mutation_test è uscito con $exit');
       continue;
     }
-    final report = File('$out/$slug/mutation-test.xunit.xml');
+    final xunit = File('$out/$slug/mutation-test.xunit.xml');
     results.add((
       file: file,
       tests: testsOf[file]!,
-      mutants: report.existsSync() ? parseXunit(report.readAsStringSync()) : [],
+      mutants: xunit.existsSync() ? parseXunit(xunit.readAsStringSync()) : [],
     ));
+    // Partial report after every file: a job that times out still uploads what it measured.
+    File('$out/report.md').writeAsStringSync(report(sampling));
   }
 
-  final reached = score([for (final r in results) ...r.mutants]) ?? 100;
-  final markdown = renderReport(
-    results: results,
-    threshold: threshold,
-    withoutTests: withoutTests,
-    tooManyTests: tooManyTests,
-    redBaseline: redBaseline,
-    errors: errors,
-    sampling: sampling,
-  );
-  final belowThreshold = reached < threshold;
+  // Nothing measured skips the gate instead of passing it.
+  final reached = score([for (final r in results) ...r.mutants]);
+  final markdown = report(sampling);
+  final belowThreshold = reached != null && reached < threshold;
   await _finish(
     out,
     belowThreshold ? '$markdown\nPunteggio sotto la soglia.\n' : markdown,
@@ -162,7 +180,7 @@ Future<int> _guarded(String file, String original, Process child) async {
       signal.watch().listen((_) async {
         child.kill(ProcessSignal.sigint);
         await child.exitCode.timeout(
-          const Duration(seconds: 20),
+          const Duration(seconds: 5),
           onTimeout: () {
             child.kill(ProcessSignal.sigkill);
             return -1;

@@ -22,11 +22,11 @@ Un file, una responsabilità; SOLID; clean architecture (ADR 0006) con le regole
 
 ### Merge delle PR
 
-Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). `check`, `android` e `apple` girano sul runner self-hosted `postino-mac`. I build hosted `linux` e `windows` girano solo a mano (`workflow_dispatch`) per risparmiare minuti Actions: vederli saltati è normale. La regola è imposta anche da un ruleset su `main`.
+Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). `check`, `android` e `apple` girano sul runner self-hosted `postino-mac`. Sulle PR non partono a ogni push: le lancia `.github/workflows/codex-ok.yml` (`workflow_dispatch` di `ci.yml` sul branch) quando Codex commenta la ricevuta «Didn't find any major issues» sul commit di testa (#246). Flusso: push → `@codex review` → la CI parte da sola all'ok di Codex → merge a check verdi. Se Codex non risponde (limite d'uso, nessuna ricevuta) la CI si lancia a mano: `gh workflow run ci.yml --ref <branch>`. Una PR aperta prima di #246, dopo il merge di `origin/main`, riceve la CI solo così. I build hosted `linux` e `windows` girano solo a mano (`workflow_dispatch`) per risparmiare minuti Actions: vederli saltati è normale. La regola è imposta anche da un ruleset su `main`.
 
 ### Review prima del push
 
-Prima di aprire una PR o di pushare su una PR esegui la skill `supermatt:code-review` rispetto a `origin/main` con il peer di `docs/agents/cross-model.json` e correggi i finding fondati: ogni finding di Codex su GitHub costa un giro push/review/CI. Dopo ogni push su PR pronta commenta `@codex review` (Codex resta il controllo finale).
+Prima di aprire una PR o di pushare su una PR esegui la skill `supermatt:code-review` rispetto a `origin/main` con il peer di `docs/agents/cross-model.json` e correggi i finding fondati: ogni finding di Codex su GitHub costa un giro push/review/CI. Dopo ogni push su PR pronta commenta `@codex review` (Codex resta il controllo finale): senza il suo ok sul commit di testa la CI della PR non parte.
 
 ### Accessibilità
 

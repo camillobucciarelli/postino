@@ -1,23 +1,23 @@
 name: CI
 
+# Sulle PR niente `pull_request`: la lancia codex-ok.yml con workflow_dispatch sul branch quando Codex non trova
+# rilievi sul commit di testa (#246), o a mano: `gh workflow run ci.yml --ref <branch>`.
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
+# Una sola runner self-hosted: le run superate di un branch di PR non devono accodarsi; quelle di main sì.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:
     # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
@@ -56,10 +56,10 @@ jobs:
       - run: tool/release/r2_unreleased_test.sh
       - run: tool/release/ios_export_options_test.sh
       - run: tool/release/guide_check_test.sh
+      - run: tool/ci/codex_ok_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
@@ -84,7 +84,6 @@ jobs:
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the
     # runner's PATH (~/fvm/versions/stable), no flutter-action.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4

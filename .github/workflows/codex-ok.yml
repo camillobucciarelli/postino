@@ -1,0 +1,49 @@
+name: Codex ok
+
+# Lancia ci.yml sul branch di una PR quando Codex la recensisce senza rilievi sul commit di testa (#246).
+# Gira dal branch di default col token del repo: niente checkout del codice della PR, l'evento è input non fidato
+# (solo via env e file, mai ${{ }} dentro run:), decide tool/ci/codex_ok.sh.
+# Segnale: il commento-ricevuta, creato una volta per review pulita (con rilievi la ricevuta sta in una review, altro
+# evento). Il commento `codex-review-state:v1` ha lo sha completo ma viene modificato più volte: lanci doppi.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  launch-ci:
+    # Filtro grezzo per non accendere il job a ogni commento; la decisione vera è in codex_ok.sh.
+    if: >-
+      github.event.issue.pull_request &&
+      github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
+      contains(github.event.comment.body, '<!-- codex-review-receipt:v1 -->')
+    # Hosted: pochi secondi (~1 minuto fatturato per review pulita). Sull'unico self-hosted aspetterebbe la coda e
+    # poi la CI si riaccoderebbe in fondo.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Solo tool/ci dal branch di default (github.sha di issue_comment), mai la PR.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tool/ci
+          persist-credentials: false
+      - name: Decide e lancia
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          gh api "repos/$REPO/pulls/$PR" > "$RUNNER_TEMP/pr.json"
+          # Uscita 1 = non lanciare; altri codici = errore vero, il job fallisce.
+          rc=0
+          branch=$(tool/ci/codex_ok.sh "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/pr.json") || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            gh workflow run ci.yml --repo "$REPO" --ref "$branch"
+            echo "CI lanciata su \`$branch\`" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$rc" -ne 1 ]; then
+            exit "$rc"
+          fi

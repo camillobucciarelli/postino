@@ -61,11 +61,14 @@ final class const MissingPermissionFailure() extends Failure {
 }
 
 /// No network, or the Provider is unreachable.
-final class const OfflineFailure([
+final class const OfflineFailure({
   /// Which request did not get through and how (#252), for the error log: never ids, addresses nor URLs.
   final String? detail,
-]) extends Failure {
-  /// Crea il fallimento; [detail] è opzionale.
+
+  /// The Provider took the request, then stopped answering (#252): the network is there, this request is stuck.
+  final bool stalled = false,
+}) extends Failure {
+  /// Crea il fallimento; [detail] e [stalled] sono opzionali.
   this;
 
   @override

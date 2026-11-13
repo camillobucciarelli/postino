@@ -140,6 +140,18 @@ void main() {
       expect(await db.draftsDao.byId('a', '<x@example.com>'), isNull);
     });
 
+    test('keeps a Bozza whose message a full snapshot left behind (#252), until its retry', () async {
+      await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
+      await db.draftsDao.synced('a', '<x@example.com>', 10, 'f');
+      await sync([
+        msg('x', labelIds: const ['DRAFT']),
+      ]);
+      await db.draftsDao.reconcile('a');
+      await db.messagesDao.applySync('a', const SyncBatch(cursor: '2', deferredMessageIds: ['x']), fullSnapshot: true);
+      await db.draftsDao.reconcile('a');
+      expect(await db.draftsDao.byId('a', '<x@example.com>'), isNotNull);
+    });
+
     test('keeps a Bozza edited locally, and one never acknowledged by the Provider', () async {
       await db.draftsDao.save('a', _draft('<x@example.com>'), updatedAt: 10);
       await db.draftsDao.save('a', _draft('<y@example.com>'), updatedAt: 10);

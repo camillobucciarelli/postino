@@ -89,12 +89,12 @@ class GmailHttp(
       }
     } on TimeoutException catch (e) {
       // Which request stalled, and where (#252): the error log has nothing else to tell a stall from no network.
-      throw OAuthFailed(OfflineFailure('$request: ${e.message}'));
+      throw OAuthFailed(OfflineFailure(detail: '$request: ${e.message}', stalled: true));
     } on http.RequestAbortedException {
       rethrow;
     } on http.ClientException catch (e) {
       // The type only: the message of a ClientException may carry the URL, query included.
-      throw OAuthFailed(OfflineFailure('$request: ${e.runtimeType}'));
+      throw OAuthFailed(OfflineFailure(detail: '$request: ${e.runtimeType}'));
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;
     // batchModify answers with an empty body.
@@ -117,9 +117,9 @@ class GmailHttp(
       400 when RegExp('too large|size limit', caseSensitive: false).hasMatch(r.body) => const SizeLimitFailure(
         gmailSendLimitBytes,
       ),
-      400 => RejectedFailure('Gmail ${gmailRequestKind(path)}: ${_errorMessage(r.body)}'),
+      400 => RejectedFailure('Gmail $request: ${_errorMessage(r.body)}'),
       _ when googleRateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
-      _ => UnexpectedFailure('Gmail ${gmailRequestKind(path)}: HTTP ${r.statusCode}'),
+      _ => UnexpectedFailure('Gmail $request: HTTP ${r.statusCode}'),
     });
   }
 

@@ -57,8 +57,9 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
         final bodiesDao = attachedDatabase.bodiesDao;
         await this.batch((b) {
           if (fullSnapshot) {
-            for (final m in batch.messages) {
-              b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [m.id]);
+            // Left behind by the sync (#252): the stored copy stays until its retry, its Bozza too.
+            for (final id in [for (final m in batch.messages) m.id, ...batch.deferredMessageIds]) {
+              b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [id]);
             }
             b
               ..deleteWhere(

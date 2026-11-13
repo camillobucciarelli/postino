@@ -112,7 +112,9 @@ class SyncPhase(
         }
 
         _streaks.remove(accountId);
-        if (value.deferred case final deferred?) _log.record(deferred, context: 'sync $accountId, messaggi rimandati');
+        if (value.deferred case final deferred? when _connectivity.isOnline) {
+          _log.record(deferred, context: 'sync ${account.provider.name}, messaggi rimandati');
+        }
         final committed = commit();
         committing.add(committed);
         try {
@@ -131,7 +133,8 @@ class SyncPhase(
         final failed = streak.failed + 1;
         // An OfflineFailure alone is left out (no network is not an error); a streak of them with the network up is.
         final log = failure is OfflineFailure && !streak.logged && failed >= failuresToLog && _connectivity.isOnline;
-        if (log) _log.record(failure, context: 'sync $accountId, $failed di fila');
+        // The Provider, not the Account: its id is the address (#252).
+        if (log) _log.record(failure, context: 'sync ${account.provider.name}, $failed di fila');
         _streaks[accountId] = (failed: failed, logged: streak.logged || log);
         if (failure case RateLimitFailure(:final retryAfter?)) {
           _gate.pause(accountId, retryAfter);

@@ -93,7 +93,7 @@ void main() {
       expect(await h.errorLog.read(), isEmpty, reason: 'a failure or two may just be the network');
       await failTimes(4);
       final log = await h.errorLog.read();
-      expect(log, contains('[sync a, 3 di fila] OfflineFailure'));
+      expect(log, contains('[sync gmail, 3 di fila] OfflineFailure'));
       expect('di fila'.allMatches(log), hasLength(1), reason: 'once per streak, not at every poll');
     });
 
@@ -119,8 +119,11 @@ void main() {
     await GetIt.I<SyncEngine>().syncAll();
     a
       ..deliver(msg('1'))
-      ..deferred = const OfflineFailure('GET messages/*: no answer');
+      ..deferred = const OfflineFailure(detail: 'GET messages/*: no answer', stalled: true);
     await GetIt.I<SyncEngine>().syncAll();
-    expect(await h.errorLog.read(), contains('[sync a, messaggi rimandati] OfflineFailure(GET messages/*: no answer)'));
+    expect(
+      await h.errorLog.read(),
+      contains('[sync gmail, messaggi rimandati] OfflineFailure(GET messages/*: no answer)'),
+    );
   });
 }

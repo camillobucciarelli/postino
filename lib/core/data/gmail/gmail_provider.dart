@@ -77,14 +77,16 @@ class GmailProvider(
       failed.addAll(page.failed);
       await onPage?.call([for (final (m, _) in page.fetched.values.nonNulls) m], _inboxBodies(page.fetched));
     }
-    // A message left behind is missing from the snapshot, so a copy stored here goes until its retry brings it back.
-    final cursor = const GmailCursor('').after(historyId, settled: const [], failed: failed.keys, now: _clock.now());
+    // ponytail: a message left behind by the very first sync (none stored yet) comes with an incremental one, which may
+    // notify it although it is old (#39); mark those retries as quiet if that is ever seen.
+    final cursor = GmailCursor(historyId).after(historyId, settled: const [], failed: failed.keys, now: _clock.now());
     return Ok(
       SyncBatch(
         cursor: cursor.encode(),
         labels: labels,
         messages: [for (final (m, _) in fetched.values.nonNulls) m],
         bodies: _inboxBodies(fetched),
+        deferredMessageIds: failed.keys.toList(),
         deferred: failed.values.firstOrNull,
       ),
     );
@@ -117,15 +119,18 @@ class GmailProvider(
       latest = r['historyId'] as String? ?? latest;
       page = r['nextPageToken'] as String?;
     } while (page != null);
-    final now = _clock.now();
-    // The messages an earlier sync left behind, once their wait is over (#252).
-    changed.addAll(was.due(now));
+    // The messages an earlier sync left behind once their wait is over (#252); not before, even if changed again.
+    final due = was.due(_clock.now()).toSet();
+    changed
+      ..removeWhere((id) => was.retries.containsKey(id) && !due.contains(id))
+      ..addAll(due);
     // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
     final (:fetched, :failed) = await _fetchAll(changed, full: (_) => true);
     // The history does not record label changes: the whole list comes every time.
     // ponytail: one more GET (1 quota unit) per poll; a labels-only refresh every few polls if quota ever matters.
     final labels = await _labels.list();
-    final next = was.after(latest, settled: {...fetched.keys, ...deleted}, failed: failed.keys, now: now);
+    // From the end of the downloads: a long batch does not leave its retries already due.
+    final next = was.after(latest, settled: {...fetched.keys, ...deleted}, failed: failed.keys, now: _clock.now());
     return Ok(
       SyncBatch(
         cursor: next.encode(),
@@ -138,7 +143,11 @@ class GmailProvider(
             if (value == null) key,
         ],
         bodies: _inboxBodies(fetched),
-        deferred: failed.values.firstOrNull,
+        deferredMessageIds: failed.keys.toList(),
+        deferred: [
+          for (final MapEntry(:key, :value) in failed.entries)
+            if (!was.retries.containsKey(key)) value,
+        ].firstOrNull,
       ),
     );
   });
@@ -351,7 +360,8 @@ class GmailProvider(
   }
 
   /// Fetches [ids], [_chunk] at a time: null for a message gone in the meantime, in `failed` one that did not come
-  /// (a stall, a 5xx, an answer it cannot read: #252). A refused login or a rate limit stops them all.
+  /// (a stall, a 5xx, an answer it cannot read: #252). A refused login, a rate limit or no network stops them all:
+  /// only a request stuck on its own is left behind, never a whole mailbox the network dropped.
   /// [full] says which ones come with their body.
   Future<({Map<String, (Message, MessageBody?)?> fetched, Map<String, Failure> failed})> _fetchAll(
     Iterable<String> ids, {
@@ -367,7 +377,8 @@ class GmailProvider(
           oauthGuard(() async => Ok(await _fetch(id, full: full(id)))).then(
             (r) => switch (r) {
               Ok(:final value) => fetched[id] = value,
-              Err(failure: final f && (AuthFailure() || RateLimitFailure())) => throw OAuthFailed(f),
+              Err(failure: final f && (AuthFailure() || RateLimitFailure() || OfflineFailure(stalled: false))) =>
+                throw OAuthFailed(f),
               Err(failure: final f) => failed[id] = f,
             },
           ),

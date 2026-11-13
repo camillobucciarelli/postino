@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/search_query.dart';
 
 import '../../../support/fake_platform.dart';
 import '../../../support/gmail_recorded.dart';
@@ -21,6 +22,12 @@ class _Mailbox(final List<String> ids) {
   final broken = <String, String>{};
   var history = 'ok';
 
+  /// How long each message download takes on [clock].
+  var tick = Duration.zero;
+
+  /// History records touching these ids again (a label changed elsewhere).
+  final touched = <String>[];
+
   late final provider = GmailProvider(
     gmailAccount,
     gmailKeychain(),
@@ -29,7 +36,10 @@ class _Mailbox(final List<String> ids) {
       if (path.startsWith('messages/')) {
         final id = path.substring('messages/'.length);
         fetched.add(id);
+        clock.advance(tick);
         switch (broken[id]) {
+          case 'offline':
+            throw http.ClientException('Failed host lookup');
           case 'stall':
             return Completer<http.StreamedResponse>().future;
           case final status?:
@@ -51,7 +61,7 @@ class _Mailbox(final List<String> ids) {
         'history' => gmailJson({
           'historyId': '200',
           'history': [
-            for (final id in ids)
+            for (final id in [...ids, ...touched])
               {
                 'id': '150',
                 'messagesAdded': [
@@ -108,12 +118,12 @@ void main() {
     expect(_ids(again), isEmpty, reason: 'still stalling');
     g.fetched.clear();
     g.clock.advance(const Duration(minutes: 1));
-    okValue(await g.provider.incrementalSync(again.cursor));
+    final waiting = okValue(await g.provider.incrementalSync(again.cursor));
     expect(g.fetched, isEmpty, reason: 'the second wait is twice the first');
 
     g.broken.clear();
     g.clock.advance(const Duration(minutes: 1));
-    final done = okValue(await g.provider.incrementalSync(again.cursor));
+    final done = okValue(await g.provider.incrementalSync(waiting.cursor));
     expect(_ids(done), ['b']);
     expect(done.deferred, isNull);
     expect(done.cursor, '200', reason: 'nothing left to retry: the bare historyId');
@@ -124,7 +134,7 @@ void main() {
     final batch = okValue(await g.provider.incrementalSync('100'));
     expect(_ids(batch), ['a']);
     expect(batch.deferred, isA<UnexpectedFailure>());
-    expect('${batch.deferred}', allOf(contains('messages/*'), contains('503'), isNot(contains('18f3a2b4c5d6e7f9'))));
+    expect('${batch.deferred}', 'UnexpectedFailure(Gmail GET messages/*: HTTP 503)', reason: 'never a message id');
   });
 
   test('a message left behind and gone meanwhile is removed and leaves the cursor', () async {
@@ -161,6 +171,7 @@ void main() {
     expect(stored..sort(), ['a', 'c']);
     expect(batch.deferred, isA<OfflineFailure>());
     expect('${batch.deferred}', 'OfflineFailure(GET messages/*: no answer)', reason: 'which request, never its id');
+    expect(batch.deferredMessageIds, ['b'], reason: 'the stored copy stays out of the snapshot removal');
     g
       ..ids.clear()
       ..broken.clear()
@@ -169,5 +180,58 @@ void main() {
     final next = okValue(await g.provider.incrementalSync(batch.cursor));
     expect(g.fetched, ['b']);
     expect(_ids(next), ['b']);
+  });
+
+  test('no network mid-batch is not a stall: the sync stops, nothing is deferred', () async {
+    final g = _Mailbox(['a', 'b', 'c'])..broken['b'] = 'offline';
+    expect(await g.provider.incrementalSync('100'), isErr<OfflineFailure>());
+  });
+
+  test('a message waiting for its retry is not fetched when the history touches it again', () async {
+    final g = _Mailbox(['a', 'b'])..broken['b'] = 'stall';
+    final first = okValue(await g.provider.incrementalSync('100'));
+    g
+      ..ids.clear()
+      ..touched.add('b')
+      ..fetched.clear();
+    final next = okValue(await g.provider.incrementalSync(first.cursor));
+    expect(g.fetched, isEmpty, reason: 'its backoff holds');
+    g
+      ..touched.clear()
+      ..clock.advance(const Duration(minutes: 1));
+    okValue(await g.provider.incrementalSync(next.cursor));
+    expect(g.fetched, ['b'], reason: 'still retried once due');
+  });
+
+  test('a message failing again says why only the first time: the log is not filled every hour', () async {
+    final g = _Mailbox(['a', 'b'])..broken['b'] = 'stall';
+    final first = okValue(await g.provider.incrementalSync('100'));
+    expect(first.deferred, isNotNull);
+    g
+      ..ids.clear()
+      ..clock.advance(const Duration(minutes: 1));
+    final again = okValue(await g.provider.incrementalSync(first.cursor));
+    expect(g.fetched.where((id) => id == 'b'), hasLength(2));
+    expect(again.deferred, isNull);
+  });
+
+  test('the wait starts when the batch ends, not before its downloads', () async {
+    final g = _Mailbox([for (var i = 0; i < 6; i++) 'm$i'])
+      ..broken['m0'] = 'stall'
+      // Each download takes 30 s: the batch ends minutes after it started.
+      ..tick = const Duration(seconds: 30);
+    final first = okValue(await g.provider.incrementalSync('100'));
+    g
+      ..tick = Duration.zero
+      ..ids.clear()
+      ..fetched.clear()
+      ..clock.advance(const Duration(seconds: 59));
+    okValue(await g.provider.incrementalSync(first.cursor));
+    expect(g.fetched, isEmpty, reason: 'a minute after the batch ended, not after it started');
+  });
+
+  test('a search with a message that does not come fails whole', () async {
+    final g = _Mailbox(['a', 'b'])..broken['b'] = '503';
+    expect(await g.provider.search(const SearchQuery(terms: ['x'])), isErr<UnexpectedFailure>());
   });
 }

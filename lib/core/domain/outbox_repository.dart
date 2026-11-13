@@ -31,10 +31,12 @@ abstract interface class OutboxRepository() {
 
   // --- Bozze (#35) ---
   /// Salva o aggiorna la copia locale della Bozza, in attesa di arrivare al Provider.
-  Future<void> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
+  /// False, and nothing kept, when its Account was removed meanwhile.
+  Future<bool> saveDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// A Bozza as the Provider has it (another client's, or edited elsewhere), kept here as already synced.
-  Future<void> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
+  /// False, and nothing kept, when its Account was removed meanwhile.
+  Future<bool> adoptDraft(String accountId, OutgoingMessage draft, {required int updatedAt});
 
   /// La copia locale della Bozza, se c'è.
   Future<LocalDraft?> localDraft(String accountId, String messageId);
@@ -68,7 +70,8 @@ abstract interface class OutboxRepository() {
 
   // --- Outbox (#36) ---
   /// Queues [message] with its rendered MIME [raw]; it goes once [sendAfter] (ms since epoch, UTC) has passed.
-  Future<void> enqueueOutgoing(
+  /// False, and nothing queued, when its Account was removed meanwhile.
+  Future<bool> enqueueOutgoing(
     String accountId,
     OutgoingMessage message, {
     required int version,

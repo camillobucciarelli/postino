@@ -13,7 +13,9 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:http/http.dart' as _i519;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:postino/core/data/accounts_lock.dart' as _i681;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
+import 'package:postino/core/data/accounts_settings_mirror.dart' as _i400;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
 import 'package:postino/core/data/channel_immediate_notifications.dart'
@@ -109,6 +111,7 @@ extension GetItInjectableX on _i174.GetIt {
     final databaseModule = _$DatabaseModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
+    gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
     gh.lazySingleton<_i221.ServerDiscovery>(
       () => _i26.EnoughServerDiscovery(),
@@ -356,6 +359,16 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i696.AttachmentStorage>(),
       ),
     );
+    gh.lazySingleton<_i400.AccountsSettingsMirror>(
+      () => _i400.AccountsSettingsMirror(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i385.MailStore>(),
+        gh<_i398.SecureStore>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
+        gh<_i278.AttachmentRepository>(),
+      ),
+    );
     gh.lazySingleton<_i382.AccountsRepository>(
       () => _i413.AccountsService(
         gh<_i385.MailStore>(),
@@ -363,12 +376,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i6.MicrosoftConsent>(),
         gh<_i398.SecureStore>(),
         gh<_i893.SyncEngine>(),
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i681.AccountsLock>(),
         gh<_i221.ServerDiscovery>(),
         gh<_i967.ConnectionTester>(),
         gh<_i960.GoogleRevoke>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i398.Clock>(),
         gh<_i278.AttachmentRepository>(),
+        gh<_i311.SettingsSync>(),
       ),
     );
     gh.factory<_i802.ReportProblemUseCase>(

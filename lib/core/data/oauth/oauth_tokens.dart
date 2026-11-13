@@ -24,6 +24,7 @@ class const OAuthTokens({
     );
   }
 
+  /// Forgets the tokens of [accountId]: the Account was removed.
   static Future<void> delete(SecureStore keychain, String accountId) => keychain.delete(_key(accountId));
 
   Future<void> write(SecureStore keychain, String accountId) => keychain.write(

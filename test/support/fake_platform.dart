@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:postino/core/domain/app_updater.dart';
+import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
@@ -27,11 +28,15 @@ class FakeSecureStore() implements SecureStore {
   /// While set, every delete throws it.
   Exception? deleteFailure;
 
+  /// The deletes asked for, failed ones included.
+  var deletes = 0;
+
   /// While set, every delete waits for it: a slow keychain.
   Future<void>? deleteGate;
 
   @override
   Future<void> delete(String key) async {
+    deletes++;
     await deleteGate;
     if (deleteFailure case final f?) throw f;
     values.remove(key);
@@ -45,8 +50,12 @@ class FakeClock(var DateTime current) implements Clock {
   @override
   DateTime now() => current;
 
+  /// How many tickers were asked for: a debounce armed, a poll started.
+  var everyCalls = 0;
+
   @override
   Stream<void> every(Duration period) {
+    everyCalls++;
     // ignore: close_sinks, the listener's cancel removes the ticker.
     late final StreamController<void> c;
     final elapsed = [Duration.zero];
@@ -206,4 +215,15 @@ class FakeErrorLog() implements ErrorLog {
 
   @override
   Future<bool> takeCrashMark() async => false;
+}
+
+/// An attachment cache that only counts how often it is emptied; downloads are not expected.
+class FakeAttachments() implements AttachmentRepository {
+  var clears = 0;
+
+  @override
+  Future<void> clear() async => clears++;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
 }

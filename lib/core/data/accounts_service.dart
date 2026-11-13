@@ -16,11 +16,18 @@ import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/server_discovery.dart';
 import '../domain/settings_repository.dart';
+import 'account_settings_json.dart';
+import 'accounts_lock.dart';
 import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'oauth/oauth_tokens.dart';
+import 'postino_database.dart';
+import 'settings_sync.dart';
 import 'sync_engine.dart';
+
+/// How long the removal of the Account di sincronizzazione waits for its tombstones to reach Drive.
+const _uploadWait = Duration(seconds: 15);
 
 @LazySingleton(as: AccountsRepository)
 class AccountsService(
@@ -29,12 +36,15 @@ class AccountsService(
   final MicrosoftConsent _microsoft,
   final SecureStore _keychain,
   final SyncEngine _sync,
+  final PostinoDatabase _db,
+  final Clock _clock,
+  final SettingsRepository _settings,
+  final AccountsLock _lock,
   final ServerDiscovery _discovery,
   final ConnectionTester _tester,
   final GoogleRevoke _revoke,
-  final SettingsRepository _settings,
-  final Clock _clock,
   final AttachmentRepository _attachments,
+  final SettingsSync _settingsSync,
 ) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
@@ -56,29 +66,34 @@ class AccountsService(
     // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
     // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
     await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
-    final OAuthGrant grant;
-    switch (await consent()) {
-      case Err(:final failure):
-        return Err(failure);
-      case Ok(:final value):
-        grant = value;
-    }
-    if (loginHint != null && loginHint.trim().toLowerCase() != grant.address.trim().toLowerCase()) {
+    // ponytail: not a `final grant;` assigned in a switch: captured by the lock's closure below, it crashes the AOT
+    // compiler of Dart 3.14 (linearscan.cc, `flutter build ios`).
+    final consented = await consent();
+    if (consented case Err(:final failure)) return Err(failure);
+    final grant = (consented as Ok<OAuthGrant>).value;
+    if (loginHint != null && normalizedAddress(loginHint) != normalizedAddress(grant.address)) {
       return Err(WrongAccountFailure(loginHint));
     }
-    // ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.
     // Addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
-    final address = grant.address.trim().toLowerCase();
-    final id = '${provider.name}:$address';
-    if (await _connectedElsewhere(id, address)) return const Err(AlreadyConnectedFailure());
+    final address = normalizedAddress(grant.address);
+    final id = accountIdOf(provider, address);
     // Removed while the user was on the Provider's page: its revocation would end this grant too, so the consent is
     // to run again once it is over.
     if (_removals[id] case final removing?) {
       await removing.catchError((Object _) {});
       return const Err(CancelledFailure());
     }
-    await OAuthTokens.of(grant).write(_keychain, id);
-    return Ok(await _save(id, address, provider));
+    final removals = _removalsStarted[id];
+    // Under the lock: a removal of the same Account from another device in flight never deletes these credentials.
+    final account = await _lock.run(() async {
+      // Removed here while waiting for the lock: as above.
+      if (_removalsStarted[id] != removals) return null;
+      await OAuthTokens.of(grant).write(_keychain, id);
+      return _save(id, address, provider);
+    });
+    if (account == null) return const Err(CancelledFailure());
+    unawaited(_sync.syncAll());
+    return Ok(account);
   }
 
   @override
@@ -90,21 +105,21 @@ class AccountsService(
   }) async {
     var cancelled = false;
     unawaited(cancel?.then((_) => cancelled = true));
-    final normalized = address.trim().toLowerCase();
+    final normalized = normalizedAddress(address);
     // An IMAP Account saved before the Microsoft button (an Outlook.com address) still reconnects with its password.
-    final legacy = (await _store.accounts()).any((a) => a.id == 'imap:$normalized');
+    final legacy = (await _store.accounts()).any((a) => a.id == accountIdOf(ProviderKind.imap, normalized));
     final provider = passwordProviderFor(normalized) ?? (legacy ? const PasswordProvider(ProviderKind.imap) : null);
     if (provider == null) {
       return Err(
         oauthProviderFor(normalized) == ProviderKind.microsoft ? const UseMicrosoftFailure() : const UseGmailFailure(),
       );
     }
-    final id = '${provider.kind.name}:$normalized';
+    final id = accountIdOf(provider.kind, normalized);
     final known = (await _store.accounts()).where((a) => a.id == id).firstOrNull;
-    if (known?.status == AccountStatus.attivo || await _connectedElsewhere(id, normalized)) {
-      return const Err(AlreadyConnectedFailure());
-    }
-    // A reconnection keeps the servers the Account was saved with.
+    // The same address through another Provider is another Account (ADR 0016): only this one, attivo, is refused.
+    if (known?.status == AccountStatus.attivo) return const Err(AlreadyConnectedFailure());
+    // A reconnection keeps the servers the Account was saved with; one arrived from another device has none here
+    // (they are not in the synced voce, ADR 0016), so the preset or the discovery finds them.
     final saved = known == null ? null : (await PasswordCredentials.read(_keychain, id))?.servers;
     final chosen = servers ?? saved ?? provider.preset ?? await _discovery.discover(normalized);
     if (chosen == null) return const Err(ServerNotFoundFailure());
@@ -117,17 +132,25 @@ class AccountsService(
     // The user closed the form while the servers answered, or while a removal of the same Account ended: nothing
     // is written.
     if (cancelled) return const Err(CancelledFailure());
-    await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
-    return Ok(await _save(id, normalized, provider.kind));
+    final removals = _removalsStarted[id];
+    final account = await _lock.run(() async {
+      // Closed, or the Account removed here, while waiting for the lock: still nothing written.
+      if (cancelled || _removalsStarted[id] != removals) return null;
+      await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
+      return _save(id, normalized, provider.kind);
+    });
+    if (account == null) return const Err(CancelledFailure());
+    unawaited(_sync.syncAll());
+    return Ok(account);
   }
 
-  /// True when another Account than [id] has [address]: the same mailbox (a Google Workspace one, say) through
-  /// another Provider would be a second Account.
-  Future<bool> _connectedElsewhere(String id, String address) async =>
-      (await _store.accounts()).any((a) => a.address == address && a.id != id);
-
-  /// Writes the Account [id] as attivo, keeping the color and position it had, then syncs.
-  Future<Account> _save(String id, String address, ProviderKind provider) async {
+  /// The Account here, attivo, and its synced voce (ADR 0016), in one transaction: the AccountsSettingsMirror sees
+  /// both or neither. A known Account (da ricollegare, maybe from another device) keeps color and position, and its
+  /// voce is written only if it says something else, so a reconnection does not move the voce's updatedAt.
+  /// With the sync off (the onboarding comes before «Sincronizza su…») a new voce is one written before the sync:
+  /// the copy of another device wins over its default color and position. With the sync on it is stamped now, so
+  /// an older tombstone does not remove an Account just connected on purpose.
+  Future<Account> _save(String id, String address, ProviderKind provider) => _db.transaction(() async {
     final all = await _store.accounts();
     final known = all.where((a) => a.id == id).firstOrNull;
     final account = Account(
@@ -135,13 +158,20 @@ class AccountsService(
       address: address,
       provider: provider,
       color: known?.color ?? all.length % accountColorCount,
-      // After the last one: a removal leaves a gap, never a duplicate.
+      // After the last one: a removal leaves a gap, never a duplicate, an Account from another device too.
       position: known?.position ?? all.fold<int>(-1, (m, a) => a.position > m ? a.position : m) + 1,
     );
     await _store.addAccount(account);
-    unawaited(_sync.syncAll());
+    final key = accountSettingsKey(id);
+    final voce = decodeAccountSettings(id, await _db.postinoSettingsDao.read(key));
+    if (voce != null && sameAccountSettings(voce, account)) return account;
+    final json = encodeAccountSettings(account);
+    final syncOff = await _settings.settingsSyncAccount() == null;
+    if (!syncOff || !await _db.postinoSettingsDao.writeBeforeSync(key, json)) {
+      await _db.postinoSettingsDao.write(key, json, at: _clock.now());
+    }
     return account;
-  }
+  });
 
   @override
   Future<Result<void>> grantDriveAccess(String accountId) async {
@@ -151,23 +181,30 @@ class AccountsService(
       case Err(:final failure):
         return Err(failure);
       case Ok(:final value):
-        if (value.address.trim().toLowerCase() != account.address) return Err(WrongAccountFailure(account.address));
-        // Removed while the user was on Google's page (#174): no tokens for it, and nothing to choose.
-        if (_removals.containsKey(accountId) || !(await _store.accounts()).any((a) => a.id == accountId)) {
-          return const Err(NotFoundFailure());
-        }
-        await OAuthTokens.of(value).write(_keychain, account.id);
-        return const Ok(null);
+        if (normalizedAddress(value.address) != account.address) return Err(WrongAccountFailure(account.address));
+        // Removed while the user was on Google's page (#174), here or on another device: no tokens for it, and
+        // nothing to choose. Checked again under the lock, so a removal from another device cannot run in between.
+        if (_removals.containsKey(accountId)) return const Err(NotFoundFailure());
+        return _lock.run(() async {
+          if (!await _db.accountsDao.exists(account.id)) return const Err(NotFoundFailure());
+          await OAuthTokens.of(value).write(_keychain, account.id);
+          return const Ok(null);
+        });
     }
   }
 
   /// The removals running, by Account: a connection of the same Account waits for its credential cleanup.
   final _removals = <String, Future<void>>{};
 
+  /// How many removals of each Account started: a connection that saw no removal before waiting for the lock writes
+  /// nothing if one started meanwhile.
+  final _removalsStarted = <String, int>{};
+
   @override
   Future<void> remove(String accountId) {
     // A second «Rimuovi» of the same Account while the first runs joins it: one cleanup, one entry to wait for.
     if (_removals[accountId] case final running?) return running;
+    _removalsStarted.update(accountId, (n) => n + 1, ifAbsent: () => 1);
     final run = _removals[accountId] = _remove(accountId);
     run.whenComplete(() {
       if (identical(_removals[accountId], run)) _removals.remove(accountId)?.ignore();
@@ -182,8 +219,14 @@ class AccountsService(
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
     // Still there (they go last); a keychain that does not answer never blocks the removal.
     final tokens = await OAuthTokens.read(_keychain, accountId).catchError((Object _) => null);
-    // The Impostazioni di Postino no longer have a Drive to sync on.
-    if (await _settings.settingsSyncAccount() == accountId) await _settings.setSettingsSyncAccount(null);
+    if (await _settings.settingsSyncAccount() == accountId) {
+      // Its tombstones go up first, while its credentials are still here (ADR 0016): else the other devices never
+      // see the removal. Offline or failed, they stay dirty until another Account is chosen for the sync.
+      // ponytail: at most _uploadWait, so «Rimuovi» never hangs on Drive.
+      await _settingsSync.syncNow().timeout(_uploadWait, onTimeout: () {});
+      // The Impostazioni di Postino no longer have a Drive to sync on.
+      await _settings.setSettingsSyncAccount(null);
+    }
     // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
     // that cannot be emptied never stops the revocation nor the keychain cleanup.
     try {

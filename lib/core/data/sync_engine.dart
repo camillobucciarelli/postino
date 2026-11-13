@@ -196,7 +196,8 @@ class SyncEngine(
 
   @override
   Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
-    await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch);
+    // The Account removed meanwhile: nothing kept, so nothing to send later.
+    if (!await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch)) return;
     // Swapped with no await in between: two saves in a row must not both keep a timer.
     final old = _draftTimers.remove(accountId);
     _draftTimers[accountId] = _clock.every(draftDebounce).listen((_) => unawaited(flushDrafts(accountId)));

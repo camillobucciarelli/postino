@@ -167,7 +167,7 @@ final class const ServerNotFoundFailure() extends Failure {
   this;
 }
 
-/// The address is already an attivo Account: connecting it again would change nothing.
+/// The Account (same Provider and address) is already attivo: connecting it again would change nothing.
 final class const AlreadyConnectedFailure() extends Failure {
   /// Crea il fallimento.
   this;

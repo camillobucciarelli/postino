@@ -199,8 +199,8 @@ class Translations$connect$it {
 	/// it: 'Qualcosa è andato storto: riprova.'
 	String get failed => 'Qualcosa è andato storto: riprova.';
 
-	/// it: 'Questo indirizzo è già collegato come un altro Account.'
-	String get alreadyConnected => 'Questo indirizzo è già collegato come un altro Account.';
+	/// it: 'Questo Account è già collegato.'
+	String get alreadyConnected => 'Questo Account è già collegato.';
 
 	/// it: 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.'
 	String get workAccount => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.';
@@ -1344,7 +1344,7 @@ extension on Translations {
 			'connect.missingPermissionMicrosoft' => 'Servono i permessi per leggere e inviare la posta: riprova e lasciali spuntati.',
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
-			'connect.alreadyConnected' => 'Questo indirizzo è già collegato come un altro Account.',
+			'connect.alreadyConnected' => 'Questo Account è già collegato.',
 			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',

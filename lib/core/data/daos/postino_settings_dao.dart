@@ -26,7 +26,7 @@ class PostinoSettingsDao(super.attachedDatabase)
 
   /// The live voci whose key starts with [prefix], now and after each change.
   Stream<List<PostinoSettingRow>> watchPrefix(String prefix) =>
-      (select(postinoSettings)..where((t) => t.key.like('$prefix%') & t.deleted.not())).watch();
+      (_prefix(prefix)..where((t) => t.deleted.not())).watch();
 
   /// Writes the voce here, to upload; a null [value] writes a tombstone instead of deleting the row.
   /// Stamped [at], or just after the copy it replaces if that is later (a clock behind, a remote copy ahead):
@@ -45,12 +45,29 @@ class PostinoSettingsDao(super.attachedDatabase)
     );
   });
 
+  /// Writes [value] as a voce written before the sync (ADR 0016): to upload, but older than any copy elsewhere
+  /// (updatedAt 0, no device), so a synced copy wins over it. Only when [key] has no row here, tombstone included:
+  /// false, and nothing written, otherwise.
+  Future<bool> writeBeforeSync(String key, String value) => transaction(() async {
+    if (await _row(key) != null) return false;
+    await into(
+      postinoSettings,
+    ).insert(PostinoSettingsCompanion.insert(key: key, value: Value(value), updatedAt: 0, deviceId: '', dirty: true));
+    return true;
+  });
+
   /// Tombstones for every synced voce of [accountId], present here or not: the removal reaches every device.
   Future<void> tombstoneAccount(String accountId, {required DateTime at}) => transaction(() async {
     for (final key in accountSettingKeys(accountId)) {
       await write(key, null, at: at);
     }
   });
+
+  /// The rows whose key starts with [prefix], tombstones included, now and after each change.
+  Stream<List<PostinoSettingRow>> watchPrefixWithTombstones(String prefix) => _prefix(prefix).watch();
+
+  /// The rows whose key starts with [prefix], tombstones included.
+  Future<List<PostinoSettingRow>> readPrefixWithTombstones(String prefix) => _prefix(prefix).get();
 
   /// Every voce, tombstones included.
   Future<List<SettingsEntry>> entries() async => [for (final r in await select(postinoSettings).get()) _entry(r)];
@@ -96,6 +113,10 @@ class PostinoSettingsDao(super.attachedDatabase)
 
   SimpleSelectStatement<$PostinoSettingsTable, PostinoSettingRow> _live(String key) =>
       select(postinoSettings)..where((t) => t.key.equals(key) & t.deleted.not());
+
+  // ponytail: substr, not LIKE, so a `_` or `%` in the prefix is literal.
+  SimpleSelectStatement<$PostinoSettingsTable, PostinoSettingRow> _prefix(String prefix) =>
+      select(postinoSettings)..where((t) => t.key.substr(1, prefix.length).equals(prefix));
 
   Future<PostinoSettingRow?> _row(String key) =>
       (select(postinoSettings)..where((t) => t.key.equals(key))).getSingleOrNull();

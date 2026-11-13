@@ -39,7 +39,7 @@
     "missingPermissionMicrosoft": "Permission to read and send your mail is required: try again and keep it ticked.",
     "wrongAccount": "You picked a different account: to reconnect $address, pick that account.",
     "failed": "Something went wrong: try again.",
-    "alreadyConnected": "This address is already connected as another Account.",
+    "alreadyConnected": "This Account is already connected.",
     "workAccount": "Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported."
   },
   "offline": {

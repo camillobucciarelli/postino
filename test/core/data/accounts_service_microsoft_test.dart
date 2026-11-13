@@ -69,7 +69,7 @@ void main() {
     expect((await getIt<MailStore>().accounts()).map((a) => a.id), [_id]);
   });
 
-  test('an address already connected with another Provider is AlreadyConnected, nothing written', () async {
+  test('an address already connected with another Provider is another Account beside it (ADR 0016)', () async {
     await getIt<MailStore>().addAccount(
       const Account(
         id: 'imap:ada@outlook.com',
@@ -79,12 +79,11 @@ void main() {
         position: 0,
       ),
     );
-    final before = Map.of(h.keychain.values);
 
     final r = await accounts.connectMicrosoft();
 
-    expect(_failure(r), isA<AlreadyConnectedFailure>());
-    expect(h.keychain.values, before);
+    expect((r as Ok<Account>).value.id, _id);
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@outlook.com', _id]);
   });
 
   test('reconnecting with another identity is WrongAccount, nothing written', () async {

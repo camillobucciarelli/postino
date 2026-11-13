@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
@@ -207,5 +208,53 @@ void main() {
 
     expect(find.text('Le modifiche non ancora inviate al server vanno perse.'), findsOneWidget);
     expect(find.textContaining('revoca'), findsNothing);
+  });
+
+  testWidgets('the same address with two Providers is two Accounts, each with its Provider for VoiceOver', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1200, 1600)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create();
+    final store = getIt<MailStore>();
+    for (final (i, p) in [ProviderKind.gmail, ProviderKind.imap].indexed) {
+      h.providerFor('${p.name}:ada@acme.com');
+      await store.addAccount(
+        Account(id: '${p.name}:ada@acme.com', address: 'ada@acme.com', provider: p, color: i, position: i),
+      );
+    }
+    // A third Account, with an address of its own.
+    h.providerFor('gmail:bob@acme.com');
+    await store.addAccount(
+      const Account(
+        id: 'gmail:bob@acme.com',
+        address: 'bob@acme.com',
+        provider: ProviderKind.gmail,
+        color: 2,
+        position: 2,
+      ),
+    );
+    LocaleSettings.setLocaleSync(AppLocale.it);
+    await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+    unawaited(Routefly.navigate(routePaths.posta.path));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('drawer-impostazioni')));
+    await tester.pumpAndSettle();
+
+    for (final (id, provider) in [('gmail:ada@acme.com', 'Gmail'), ('imap:ada@acme.com', 'IMAP')]) {
+      final row = find.descendant(
+        of: find.byKey(ValueKey('settings-account-$id')),
+        matching: find.text('ada@acme.com'),
+      );
+      expect(tester.getSemantics(row).label, 'ada@acme.com\n$provider');
+    }
+    // The sections of each Account read apart too.
+    expect(find.text('ADA@ACME.COM · GMAIL'), findsOneWidget);
+    expect(find.text('ADA@ACME.COM · IMAP'), findsOneWidget);
+    // An address of its own needs no Provider in its section's title.
+    expect(find.text('BOB@ACME.COM'), findsOneWidget);
+    expect(find.textContaining('BOB@ACME.COM ·'), findsNothing);
   });
 }

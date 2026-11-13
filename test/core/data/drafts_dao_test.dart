@@ -1,6 +1,7 @@
 // The Bozze table (#35): local save, the synced mark, and the reconciliation with the Provider's Bozze folder.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
 
@@ -18,9 +19,22 @@ OutgoingMessage _draft(String messageId, {String body = '<p>Ciao</p>'}) => Outgo
 
 void main() {
   late PostinoDatabase db;
-  setUp(() {
+  setUp(() async {
     db = PostinoDatabase.inMemory();
     addTearDown(db.close);
+    for (final id in ['a', 'b']) {
+      await db.accountsDao.upsert(
+        Account(id: id, address: '$id@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
+      );
+    }
+  });
+
+  test('save and adopt for an Account removed meanwhile write nothing and say so', () async {
+    await db.accountsDao.deleteByAccount('a');
+    expect(await db.draftsDao.save('a', _draft('<x>'), updatedAt: 10), isFalse);
+    expect(await db.draftsDao.adopt('a', _draft('<y>'), updatedAt: 11), isFalse);
+    expect(await db.select(db.drafts).get(), isEmpty);
+    expect(await db.draftsDao.save('b', _draft('<z>'), updatedAt: 12), isTrue);
   });
 
   test('save and adopt keep the reply headers, the Conversazione and the forwarded attachments (#37)', () async {

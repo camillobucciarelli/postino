@@ -71,7 +71,10 @@ class OutboxSender(
     // Tags this preparation; random so it is unique across isolates too (collision odds 2^-31 per Message-ID).
     final version = Random.secure().nextInt(1 << 31);
     // The row is born now, without MIME: Bozze hides it, Inviati shows it and Annulla works while it is prepared.
-    await _outbox.enqueueOutgoing(accountId, message, version: version, raw: '', sendAfter: OutboxDao.preparing);
+    // The Account removed since it was read (here or from another device): nothing queued, nothing to send.
+    if (!await _outbox.enqueueOutgoing(accountId, message, version: version, raw: '', sendAfter: OutboxDao.preparing)) {
+      return const Err(NotFoundFailure());
+    }
     // The platform keeps the preparation and the send going if the user leaves now (a slow attachment download
     // would otherwise leave the row preparing); a refusal never fails the Invia. Held at every Invia: the platform
     // renews its protection (iOS replaces a task its expiration handler may have ended, Android appends work);

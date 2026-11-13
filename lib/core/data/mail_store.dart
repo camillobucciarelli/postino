@@ -30,14 +30,20 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   /// queued Azioni and Conflitti, outbox, embeddings. Nothing reaches the Provider. Its synced Impostazioni di Postino
   /// (the Etichette automatiche) become tombstones dated [at] (ADR 0016): the removal reaches every device.
   Future<void> removeAccount(String accountId, {required DateTime at}) async {
-    await _db.transaction(() => _removeAccountRows(accountId, at: at));
-    // The index entries went with the messages (triggers); after the commit, so the write lock is not held while
-    // the segments merge: this wipes them from the file.
-    await _db.searchDao.optimize();
+    await _db.transaction(() async {
+      await _db.postinoSettingsDao.tombstoneAccount(accountId, at: at);
+      await deleteAccountRows(accountId);
+    });
+    await optimizeSearch();
   }
 
-  Future<void> _removeAccountRows(String accountId, {required DateTime at}) async {
-    await _db.postinoSettingsDao.tombstoneAccount(accountId, at: at);
+  /// The index entries went with the messages (triggers); after the commit of a removal, so the write lock is not
+  /// held while the segments merge: this wipes them from the file.
+  Future<void> optimizeSearch() => _db.searchDao.optimize();
+
+  /// Deletes the Account and everything of it here, as [removeAccount] does, but writes no tombstone: for a removal
+  /// that came from another device (ADR 0016). The caller holds the transaction.
+  Future<void> deleteAccountRows(String accountId) async {
     for (final delete in [
       _db.messagesDao.deleteByAccount,
       _db.bodiesDao.deleteByAccount,
@@ -84,21 +90,28 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   ];
 
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
-  Future<void> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false}) async {
+  /// Nothing is written for an Account removed meanwhile (ADR 0016): a sync in flight does not bring its mail back.
+  /// False, and nothing written, when it was removed.
+  Future<bool> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false}) => _db.transaction(() async {
+    if (!await _db.accountsDao.exists(accountId)) return false;
     await _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
     // ponytail: only here, a page of Conversazione says nothing about the Bozze. A window remains if the Gmail
     // history does not list the new DRAFT yet: the acknowledged row goes, and comes back with the next sync.
     await _db.draftsDao.reconcile(accountId);
-  }
+    return true;
+  });
 
   /// A page of the initial sync: stored right away, without touching the cursor.
-  Future<void> applyPage(String accountId, List<Message> messages, Map<String, MessageBody> bodies) async {
-    await _db.messagesDao.applySync(
-      accountId,
-      SyncBatch(cursor: '', messages: messages, bodies: bodies),
-      saveCursor: false,
-    );
-  }
+  /// Nothing, as in [applySync], for an Account removed meanwhile.
+  Future<void> applyPage(String accountId, List<Message> messages, Map<String, MessageBody> bodies) =>
+      _db.transaction(() async {
+        if (!await _db.accountsDao.exists(accountId)) return;
+        await _db.messagesDao.applySync(
+          accountId,
+          SyncBatch(cursor: '', messages: messages, bodies: bodies),
+          saveCursor: false,
+        );
+      });
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() => _entries(null, inboxLabelId);
@@ -122,8 +135,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Stream<Message?> watchMessage(String accountId, String messageId) =>
       _db.messagesDao.watchOne(accountId, messageId).map((r) => r == null ? null : messageOf(r.$1, r.$2));
 
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) =>
-      _db.bodiesDao.saveBody(accountId, messageId, body);
+  /// Nothing, as in [applySync], for an Account removed meanwhile.
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) => _db.transaction(() async {
+    if (await _db.accountsDao.exists(accountId)) await _db.bodiesDao.saveBody(accountId, messageId, body);
+  });
 
   /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008).
   Future<void> markConversationRead(String accountId, String conversationId) async =>
@@ -228,7 +243,10 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.draftsDao.resolve(c.accountId, c.messageId, keepMine: keepMine);
 
   /// An Etichetta just created on the Provider, listed before the next sync brings it.
-  Future<void> saveLabel(String accountId, Label label) => _db.labelsDao.upsert(accountId, label);
+  /// Nothing, as in [applySync], for an Account removed meanwhile.
+  Future<void> saveLabel(String accountId, Label label) => _db.transaction(() async {
+    if (await _db.accountsDao.exists(accountId)) await _db.labelsDao.upsert(accountId, label);
+  });
 
   @override
   Stream<List<Message>> watchDrafts(String accountId) => _db.draftsDao
@@ -244,26 +262,29 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   @override
   Stream<List<OutgoingEntry>> watchOutbox(String accountId) => Stream.fromFuture(addressOf(_db, accountId)).asyncExpand(
-    (from) => _db.outboxDao
-        .watch(accountId)
-        .map(
-          (rows) => [
-            for (final r in rows)
-              OutgoingEntry(
-                message: OutgoingMessage(
-                  messageId: r.messageId,
-                  from: from,
-                  to: lines(r.recipients),
-                  cc: lines(r.cc),
-                  bcc: lines(r.bcc),
-                  subject: r.subject,
-                  body: r.body,
-                ),
-                sendAfter: r.sendAfter,
-                failed: r.failed,
+    // The Account removed meanwhile: an empty outbox.
+    (from) => from == null
+        ? Stream.value(const <OutgoingEntry>[])
+        : _db.outboxDao
+              .watch(accountId)
+              .map(
+                (rows) => [
+                  for (final r in rows)
+                    OutgoingEntry(
+                      message: OutgoingMessage(
+                        messageId: r.messageId,
+                        from: from,
+                        to: lines(r.recipients),
+                        cc: lines(r.cc),
+                        bcc: lines(r.bcc),
+                        subject: r.subject,
+                        body: r.body,
+                      ),
+                      sendAfter: r.sendAfter,
+                      failed: r.failed,
+                    ),
+                ],
               ),
-          ],
-        ),
   );
 
   @override

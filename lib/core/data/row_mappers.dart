@@ -57,6 +57,6 @@ List<String> lines(String s) => [
 /// A stored body with its attachments.
 MessageBody bodyOf(BodyRow b) => MessageBody(b.body, b.kind, attachments: b.attachments);
 
-/// The address of an Account of this database.
-Future<String> addressOf(PostinoDatabase db, String accountId) async =>
-    (await db.accountsDao.byPosition()).firstWhere((a) => a.id == accountId).address;
+/// The address of an Account of this database; null once it is removed (ADR 0016), a sync in flight included.
+Future<String?> addressOf(PostinoDatabase db, String accountId) async =>
+    (await db.accountsDao.byPosition()).where((a) => a.id == accountId).firstOrNull?.address;

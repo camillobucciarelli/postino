@@ -61,5 +61,12 @@ class const Account({
   List<Object?> get props => [id, address, provider, color, position, status];
 }
 
+/// An address as Postino keeps it: trimmed and lowercase, as mail addresses are case-insensitive.
+String normalizedAddress(String address) => address.trim().toLowerCase();
+
+// ponytail: id = provider:address, so the same mailbox is the same Account; a separate uuid if addresses ever change.
+/// The id of the Account at [address] on [provider].
+String accountIdOf(ProviderKind provider, String address) => '${provider.name}:${normalizedAddress(address)}';
+
 /// Colors of the Account palette, assigned in turn to new Accounts.
 const accountColorCount = 8;

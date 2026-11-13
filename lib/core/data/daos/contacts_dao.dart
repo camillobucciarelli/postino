@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../domain/contact_ranking.dart';
 import '../../domain/message.dart' show sentLabelId;
@@ -21,11 +22,25 @@ class ContactsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   // ponytail: LIKE folds ASCII case only, so a non-ASCII prefix («él») skips the filter and reads the newest
   // messages; a table of Contatti (option (b) of #216) if those names go missing.
   Future<Map<int, ContactSighting>> sightings(String prefix) {
-    if (prefix.runes.any((r) => r > 0x7f)) return _select('', const []);
+    final (where, args) = _byPrefix(prefix);
+    return _select(where, args);
+  }
+
+  (String, List<String>) _byPrefix(String prefix) {
+    if (prefix.runes.any((r) => r > 0x7f)) return ('', const []);
     final like = _like(prefix);
-    return _select('WHERE m.sender LIKE ? ESCAPE \'\\\' OR m.sender_name LIKE ? ESCAPE \'\\\' OR $_lines', [
-      for (var i = 0; i < 5; i++) like,
-    ]);
+    return (
+      'WHERE m.sender LIKE ? ESCAPE \'\\\' OR m.sender_name LIKE ? ESCAPE \'\\\' OR $_lines',
+      [for (var i = 0; i < 5; i++) like],
+    );
+  }
+
+  /// The SQLite query plan of [sightings], one line per step: what the tests check, instead of a wall clock.
+  @visibleForTesting
+  Future<List<String>> sightingsPlan(String prefix) async {
+    final (where, args) = _byPrefix(prefix);
+    final rows = await customSelect('EXPLAIN QUERY PLAN ${_sql(where)}', variables: _variables(args)).get();
+    return [for (final r in rows) r.read<String>('detail')];
   }
 
   /// The messages from or to one of [addresses] (lowercase).
@@ -44,17 +59,22 @@ class ContactsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   static String _like(String s) => '%${s.replaceAllMapped(RegExp(r'[\\%_]'), (m) => '\\${m[0]}')}%';
 
-  Future<Map<int, ContactSighting>> _select(String where, List<String> args) async {
-    final rows = await customSelect(
+  static String _sql(String where) =>
       'SELECT m.rowid AS row, m.sender, m.sender_name, m.recipients, m.cc, m.bcc, m.date, '
       'EXISTS (SELECT 1 FROM message_labels l WHERE l.account_id = m.account_id AND l.message_id = m.id '
       'AND l.label_id = ?) AS sent '
-      'FROM messages m $where ORDER BY m.date DESC LIMIT ?',
-      variables: [
-        Variable.withString(sentLabelId),
-        for (final a in args) Variable.withString(a),
-        Variable.withInt(_cap),
-      ],
+      'FROM messages m $where ORDER BY m.date DESC LIMIT ?';
+
+  static List<Variable> _variables(List<String> args) => [
+    Variable.withString(sentLabelId),
+    for (final a in args) Variable.withString(a),
+    Variable.withInt(_cap),
+  ];
+
+  Future<Map<int, ContactSighting>> _select(String where, List<String> args) async {
+    final rows = await customSelect(
+      _sql(where),
+      variables: _variables(args),
       readsFrom: {messages, messageLabels},
     ).get();
     List<String> lines(QueryRow r, String column) =>

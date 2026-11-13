@@ -24,12 +24,16 @@ class const SyncBatch({
 
   /// Bodies downloaded with the sync, by Provider-side message id: the inbox ones (ADR 0003).
   final Map<String, MessageBody> bodies = const {},
+
+  /// Why some changed messages could not be downloaded (#252): the cursor keeps them for a later sync. Null when
+  /// none were left behind.
+  final Failure? deferred,
 }) extends Equatable {
   /// Crea un batch; senza argomenti le liste sono vuote e le Etichette non lette.
   this;
 
   @override
-  List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies];
+  List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies, deferred];
 }
 
 /// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.

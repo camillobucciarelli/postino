@@ -8,7 +8,8 @@ import 'postino_account_mark.dart';
 import 'postino_focus_ring.dart';
 import 'postino_icon.dart';
 
-/// One Account a message can leave from.
+/// One Account a message can leave from; `address` is what the row and the menu show and read out (the address,
+/// with the Provider when two Accounts share it).
 typedef PostinoSenderOption = ({String id, PostinoAccountRef mark, String address});
 
 /// The «Da» row of the composer: the sender's mark and address, a menu with the other Accounts on tap;

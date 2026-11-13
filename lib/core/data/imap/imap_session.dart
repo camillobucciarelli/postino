@@ -37,6 +37,10 @@ class ImapSession(
   ImapClient? _client;
   Future<void> _tail = Future.value();
 
+  /// The client logging in now, and how many times [close] ran: a close during a login drops that login (#191).
+  ImapClient? _opening;
+  var _closes = 0;
+
   /// CONDSTORE (RFC 7162) is announced after the login; [qresync] too, and it is then enabled.
   /// iCloud announces neither before the login (`ricerca-server-per-provider.md` §3): read only after it.
   bool condstore = false;
@@ -83,6 +87,7 @@ class ImapSession(
   }
 
   Future<ImapClient> _open(Duration? setup) async {
+    final closes = _closes;
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
     if (credentials == null) throw const ImapFailed(AuthFailure());
     final c = ImapClient(
@@ -90,6 +95,7 @@ class ImapSession(
       defaultWriteTimeout: timeout,
       onBadCertificate: _onBadCertificate,
     );
+    _opening = c;
     var atLogin = false;
     Future<void> setUp() async {
       await _connect(c, credentials.servers.imap);
@@ -108,16 +114,25 @@ class ImapSession(
 
     try {
       await (setup == null ? setUp() : setUp().timeout(setup));
+      // Closed meanwhile (the Account removed, #191): this login is not kept.
+      if (closes != _closes) throw const ImapFailed(OfflineFailure());
       return _client = c;
     } on Object catch (e) {
-      final failure = imapFailure(e, atLogin: atLogin, connected: c.isConnected);
+      // A close cuts the connection: what the login then throws is no refusal of the credentials.
+      final failure = closes != _closes
+          ? const OfflineFailure()
+          : imapFailure(e, atLogin: atLogin, connected: c.isConnected);
       unawaited(_quietly(c.disconnect));
       throw ImapFailed(failure);
+    } finally {
+      if (identical(_opening, c)) _opening = null;
     }
   }
 
-  /// Logs out, best effort; the next [run] opens a new connection.
+  /// Logs out, best effort, and drops a login in flight; the next [run] opens a new connection.
   Future<void> close() async {
+    _closes++;
+    if (_opening case final opening?) unawaited(_quietly(opening.disconnect));
     final c = _client;
     _client = null;
     if (c == null) return;

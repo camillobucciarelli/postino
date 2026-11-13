@@ -33,7 +33,8 @@ abstract interface class MailSync() {
 
   /// Keeps the Bozza here at once (every edit) and on the Provider after a pause in the edits,
   /// or when back online / reconnected; the same Message-ID updates the same Bozza.
-  Future<void> saveDraft(String accountId, OutgoingMessage draft);
+  /// False when nothing is kept: the Account is removed or its removal started (#191), so there is no Bozza to open.
+  Future<bool> saveDraft(String accountId, OutgoingMessage draft);
 
   /// Sends the Account's pending Bozze to the Provider now (on leaving the composition);
   /// completes offline or Da ricollegare too, the Bozze stay queued.

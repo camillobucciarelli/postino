@@ -11,6 +11,7 @@ import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/model_download.dart';
 import '../../../core/domain/model_download_state.dart';
+import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../core/presentation/model_download_banner.dart';
 import '../../../core/presentation/model_download_confirm.dart';
@@ -61,7 +62,8 @@ class _AutoLabelsViewState() extends State<AutoLabelsView> with AccountsSignal {
     child: SignalBuilder(
       builder: (context) {
         final t = context.t.etichetteAutomatiche;
-        final account = (accounts.value.value ?? const <Account>[]).where((a) => a.id == widget.accountId).firstOrNull;
+        final all = accounts.value.value ?? const <Account>[];
+        final account = all.where((a) => a.id == widget.accountId).firstOrNull;
         final labels = [
           for (final l in _labels.value.value ?? const <Label>[])
             if (l.kind == LabelKind.etichetta) l,
@@ -69,7 +71,7 @@ class _AutoLabelsViewState() extends State<AutoLabelsView> with AccountsSignal {
         final config = _config.value.value ?? const <String, AutoLabel>{};
         return PostinoSettingsPage(
           title: t.title,
-          subtitle: account == null ? null : t.page(account: account.name),
+          subtitle: account == null ? null : t.page(account: accountLabel(context, account, all)),
           account: account == null
               ? null
               : (color: PostinoAccountColor.values[account.color], initial: account.initial),

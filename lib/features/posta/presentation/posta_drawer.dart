@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/message.dart';
+import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
@@ -59,6 +60,7 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
       final etichette = labels.value.value ?? const <Label>[];
       final folders = unread.value.value ?? const <(String, String)>{};
       String? unreadLabel({required bool any}) => any ? t.list.unread : null;
+      final all = accounts.value.value ?? const <Account>[];
       return PostinoNavigationDrawer(
         sections: [
           PostinoDrawerSection(
@@ -76,10 +78,10 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
           PostinoDrawerSection(
             title: t.account,
             items: [
-              for (final a in accounts.value.value ?? const <Account>[]) ...[
+              for (final a in all) ...[
                 PostinoDrawerItem(
                   key: ValueKey('account-${a.id}'),
-                  label: a.name,
+                  label: accountLabel(context, a, all),
                   account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
                   active: a.id == open && widget.labelId == null,
                   unreadLabel: unreadLabel(any: folders.contains((a.id, inboxLabelId))),

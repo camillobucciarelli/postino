@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
+import 'package:postino/core/domain/report_sharer.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/features/composizione/domain/draft_html.dart';
 import 'package:postino/features/segnalazione/domain/problem_report_config.dart';
@@ -8,6 +12,18 @@ import 'package:postino/features/segnalazione/domain/report_problem_use_case.dar
 import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
+
+/// The Accounts as read just before one of them was removed.
+class _Stale(final List<Account> _accounts) extends Fake implements AccountsRepository {
+  @override
+  Stream<List<Account>> watchAccounts() => Stream.value(_accounts);
+}
+
+Account _account(String id, int position) =>
+    Account(id: id, address: '$id@example.com', provider: ProviderKind.gmail, color: 0, position: position);
+
+ReportProblemUseCase _reading(List<Account> accounts) =>
+    ReportProblemUseCase(getIt<ErrorLog>(), _Stale(accounts), getIt<MailSync>(), getIt<ReportSharer>());
 
 Future<OutgoingMessage> _saved((String, String) draft) async =>
     ((await getIt<MailSync>().openDraft(draft.$1, draft.$2)) as Ok<OutgoingMessage>).value;
@@ -73,6 +89,25 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(await getIt<ReportProblemUseCase>().start(subject: 'S', intro: 'I'), isNull);
+    expect(h.sharer.shared.single.$2, problemReportFileName);
+  });
+
+  test('the first Account removed before the save: the Bozza goes from the next one, never orphan (#191)', () async {
+    await h.addAccount('a1');
+    h.errorLog.record('boom');
+    await Future<void>.delayed(Duration.zero);
+
+    final draft = await _reading([_account('gone', 0), _account('a1', 1)]).start(subject: 'S', intro: 'I');
+
+    expect(draft!.$1, 'a1');
+    expect((await _saved(draft)).from, 'a1@example.com');
+  });
+
+  test('every Account removed before the save: the log is shared, no Bozza to open (#191)', () async {
+    h.errorLog.record('boom');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(await _reading([_account('gone', 0)]).start(subject: 'S', intro: 'I'), isNull);
     expect(h.sharer.shared.single.$2, problemReportFileName);
   });
 }

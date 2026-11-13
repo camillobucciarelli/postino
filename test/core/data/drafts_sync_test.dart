@@ -390,4 +390,18 @@ void main() {
     final opened = await engine.openDraft('a', id) as Ok<OutgoingMessage>;
     expect(opened.value.attachments, hasLength(1));
   });
+
+  test('a Bozza saved for an Account removed or being removed is not kept, and the caller is told (#191)', () async {
+    expect(await engine.saveDraft('a', _draft(id)), isTrue);
+
+    final deleting = Completer<void>();
+    final removal = engine.removeAccount('a', () => deleting.future);
+    // The removal started, its delete not run yet: nothing to open afterwards.
+    expect(await engine.saveDraft('a', _draft('<y@example.com>')), isFalse);
+    deleting.complete();
+    await removal;
+    await GetIt.I<MailStore>().deleteAccountRows('a');
+
+    expect(await engine.saveDraft('a', _draft('<z@example.com>')), isFalse);
+  });
 }

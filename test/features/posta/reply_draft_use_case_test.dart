@@ -15,10 +15,13 @@ import '../../support/fake_mail_provider.dart' show msg;
 
 const _account = Account(id: 'a1', address: 'a1@example.com', provider: ProviderKind.gmail, color: 0, position: 0);
 
-/// fetchBody answers [fetched] (or fails without it); saveDraft records the Bozza.
+/// fetchBody answers [fetched] (or fails without it); saveDraft records the Bozza unless told not to keep it.
 class _Sync(final _Inbox inbox, {final MessageBody? fetched}) extends Fake implements MailSync {
   final fetches = <String>[];
   final drafts = <OutgoingMessage>[];
+
+  /// False: the Account was removed before the save, nothing is kept.
+  var keeps = true;
 
   @override
   Future<Result<void>> fetchBody(String accountId, String messageId) async {
@@ -30,7 +33,10 @@ class _Sync(final _Inbox inbox, {final MessageBody? fetched}) extends Fake imple
   }
 
   @override
-  Future<void> saveDraft(String accountId, OutgoingMessage draft) async => drafts.add(draft);
+  Future<bool> saveDraft(String accountId, OutgoingMessage draft) async {
+    if (keeps) drafts.add(draft);
+    return keeps;
+  }
 }
 
 class _Inbox(var List<ConversationMessage> rows) extends Fake implements InboxRepository {
@@ -147,6 +153,14 @@ void main() {
     given(fetched: const MessageBody('Porto il vino', BodyKind.testo));
     await source(ReplyKind.reply);
     await source(ReplyKind.forward);
+    expect(sync.drafts, isEmpty);
+  });
+
+  test('the Account removed before the save: no Bozza id to open (#191)', () async {
+    given(lastBody: const MessageBody('Alle 20', BodyKind.testo));
+    final s = await source(ReplyKind.reply);
+    sync.keeps = false;
+    expect(await useCase.save(_account, s), isNull);
     expect(sync.drafts, isEmpty);
   });
 }

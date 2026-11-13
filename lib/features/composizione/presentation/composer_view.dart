@@ -15,6 +15,7 @@ import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/result.dart';
+import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
@@ -194,8 +195,11 @@ class _ComposerViewState() extends State<ComposerView> with AccountsSignal {
     final t = context.t.composizione;
     final controller = _controller;
     final narrow = MediaQuery.sizeOf(context).width < PostinoSize.breakpointListDetail;
-    PostinoSenderOption option(Account a) =>
-        (id: a.id, mark: (color: PostinoAccountColor.values[a.color], initial: a.initial), address: a.address);
+    PostinoSenderOption option(Account a) => (
+      id: a.id,
+      mark: (color: PostinoAccountColor.values[a.color], initial: a.initial),
+      address: accountLabel(context, a, _accounts),
+    );
     final senders = _accounts.map(option).toList();
     final mac = defaultTargetPlatform == TargetPlatform.macOS;
     return PostinoSinglePaneLayout(

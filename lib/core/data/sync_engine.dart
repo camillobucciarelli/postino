@@ -216,13 +216,19 @@ class SyncEngine(
   }) => _fetcher.fetchAttachment(accountId, messageId, attachmentId, onProgress: onProgress, cancel: cancel);
 
   @override
-  Future<void> saveDraft(String accountId, OutgoingMessage draft) async {
-    // The Account removed meanwhile: nothing kept, so nothing to send later.
-    if (!await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch)) return;
+  Future<bool> saveDraft(String accountId, OutgoingMessage draft) async {
+    // The Account removed, or its removal started (its delete takes the Bozza with it, #191): nothing kept, so
+    // nothing to send later nor to open. Checked after the write too: a removal may start while it runs.
+    if (_gate.removed(accountId) ||
+        !await _outboxStore.saveDraft(accountId, draft, updatedAt: _clock.now().millisecondsSinceEpoch) ||
+        _gate.removed(accountId)) {
+      return false;
+    }
     // Swapped with no await in between: two saves in a row must not both keep a timer.
     final old = _draftTimers.remove(accountId);
     _draftTimers[accountId] = _clock.every(draftDebounce).listen((_) => unawaited(flushDrafts(accountId)));
     await old?.cancel();
+    return true;
   }
 
   /// Sends the Account's pending Bozze at once. While the Provider's pause holds they stay

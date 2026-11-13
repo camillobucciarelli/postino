@@ -46,6 +46,23 @@
     "title": "You're offline",
     "message": "Mail will update when the network is back."
   },
+  "syncStatus": {
+    "running": "Syncing…",
+    "now": "Updated just now",
+    "minutesAgo": {
+      "one": "Updated $n minute ago",
+      "other": "Updated $n minutes ago"
+    },
+    "at": "Updated at $time",
+    "on": "Updated on $date",
+    "offline": "Offline",
+    "offlineAt": "Offline · updated at $time",
+    "offlineOn": "Offline · updated on $date",
+    "failed": "Couldn't update",
+    "retry": "Retry",
+    "refresh": "Refresh mail",
+    "done": "Mail updated"
+  },
   "list": {
     "loading": "Loading messages",
     "emptyTitle": "Nothing new",
@@ -281,6 +298,7 @@
     "open": "Search",
     "title": "Search",
     "field": "Search mail",
+    "fieldTrash": "Search the Trash",
     "scopeAll": "All Accounts",
     "idleTitle": "Search your mail",
     "idleBody": "Type a word, or use from:, to: and subject: for sender, recipients and subject. Quotes search for a phrase. Narrow down with is:unread, is:starred, has:attachment, after:2026-01-31, before:2026-02-28 and account:name.",

@@ -74,15 +74,27 @@ class GmailHttp(
     Future<http.Response> send(String token) =>
         _attempt(method, url, access = token, payload, cancel, expected, onProgress);
 
-    var r = await _auth.authorized(send);
-    // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
-    for (var n = 0; googleRateLimited(r) && n < _retries; n++) {
-      final after = int.tryParse(r.headers['retry-after'] ?? '');
-      final wait = after != null
-          ? Duration(seconds: min(after, _maxWait))
-          : Duration(milliseconds: (min(1 << n, _maxWait) * 1000 * (1 + _random.nextDouble() / 4)).round());
-      await _sleep(wait);
-      r = await send(access);
+    final request = '$method ${gmailRequestKind(path)}';
+    http.Response r;
+    try {
+      r = await _auth.authorized(send);
+      // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
+      for (var n = 0; googleRateLimited(r) && n < _retries; n++) {
+        final after = int.tryParse(r.headers['retry-after'] ?? '');
+        final wait = after != null
+            ? Duration(seconds: min(after, _maxWait))
+            : Duration(milliseconds: (min(1 << n, _maxWait) * 1000 * (1 + _random.nextDouble() / 4)).round());
+        await _sleep(wait);
+        r = await send(access);
+      }
+    } on TimeoutException catch (e) {
+      // Which request stalled, and where (#252): the error log has nothing else to tell a stall from no network.
+      throw OAuthFailed(OfflineFailure(detail: '$request: ${e.message}', stalled: true));
+    } on http.RequestAbortedException {
+      rethrow;
+    } on http.ClientException catch (e) {
+      // The type only: the message of a ClientException may carry the URL, query included.
+      throw OAuthFailed(OfflineFailure(detail: '$request: ${e.runtimeType}'));
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;
     // batchModify answers with an empty body.
@@ -90,7 +102,7 @@ class GmailHttp(
     if (googleRateLimited(r)) {
       // Never the Authorization header or the query: only method, path, status and the start of the body.
       debugPrint(
-        '[gmail] rate limited: $method $path ${r.statusCode} '
+        '[gmail] rate limited: $request ${r.statusCode} '
         '${r.body.length > 300 ? r.body.substring(0, 300) : r.body}',
       );
     }
@@ -105,9 +117,9 @@ class GmailHttp(
       400 when RegExp('too large|size limit', caseSensitive: false).hasMatch(r.body) => const SizeLimitFailure(
         gmailSendLimitBytes,
       ),
-      400 => RejectedFailure('Gmail $path: ${_errorMessage(r.body)}'),
+      400 => RejectedFailure('Gmail $request: ${_errorMessage(r.body)}'),
       _ when googleRateLimited(r) => RateLimitFailure(retryAfter: _retryAfter(r)),
-      _ => UnexpectedFailure('Gmail $path: HTTP ${r.statusCode}'),
+      _ => UnexpectedFailure('Gmail $request: HTTP ${r.statusCode}'),
     });
   }
 
@@ -123,8 +135,9 @@ class GmailHttp(
     void Function(double done)? onProgress,
   ) async {
     final abort = Completer<void>();
+    http.StreamedResponse? r;
     try {
-      final r = await _dispatch(
+      r = await _dispatch(
         method,
         url,
         access,
@@ -134,7 +147,8 @@ class GmailHttp(
       return await _readBody(r, expected, onProgress);
     } on TimeoutException {
       abort.complete();
-      rethrow;
+      // Where it stalled: before the answer began, or in the middle of its body.
+      throw TimeoutException(r == null ? 'no answer' : 'answer stalled at HTTP ${r.statusCode}');
     }
   }
 
@@ -194,3 +208,22 @@ class GmailHttp(
 @visibleForTesting
 Duration sendTimeout(int bodyBytes, [Duration stall = const Duration(seconds: 30)]) =>
     stall + Duration(milliseconds: bodyBytes ~/ 50);
+
+/// The words of the Gmail API paths this app calls; any other segment is an id (a message's, a draft's, a label's).
+const _pathWords = {
+  'messages',
+  'history',
+  'labels',
+  'profile',
+  'attachments',
+  'drafts',
+  'threads',
+  'send',
+  'modify',
+  'trash',
+};
+
+/// [path] with its ids as `*` (`messages/<id>/attachments/<id>` is `messages/*/attachments/*`): which request it is,
+/// for the error log, never which message.
+@visibleForTesting
+String gmailRequestKind(String path) => [for (final s in path.split('/')) _pathWords.contains(s) ? s : '*'].join('/');

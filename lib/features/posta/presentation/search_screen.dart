@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
+import '../../../core/domain/message.dart' show trashLabelId;
 import '../../../core/domain/provider_search_use_case.dart';
 import '../../../core/domain/search_query.dart';
 import '../../../core/domain/search_query_parser.dart';
@@ -22,6 +23,8 @@ import 'provider_search_status.dart';
 /// The search of the Posta (#205): one field, the results below it as the Conversazioni of any list, updated while
 /// the user types; Invio searches the Providers too (#207), whose finds join the results. [accountId] narrows it to
 /// that Account (the view it was opened from); null searches all.
+/// [labelId] is the Etichetta of that view when it is the Cestino: the results are then its messages, and only the
+/// local index is searched (the Providers never search the Cestino).
 /// A result opens beside the list, or over it on a narrow window, and back returns to the results.
 /// `/` puts the focus in the field, Esc clears it and then leaves ([onBack]), Freccia giù goes to the results.
 /// Routing is the caller's: [onBack], and [onOpenDraft] for the composer of a Bozza a Rispondi just saved.
@@ -30,6 +33,7 @@ class const SearchScreen({
   required final VoidCallback onBack,
   required final void Function(String accountId, String messageId) onOpenDraft,
   final String? accountId,
+  final String? labelId,
 }) extends StatefulWidget {
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -41,6 +45,8 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   final _cursor = ListCursor();
   Timer? _debounce;
   final _providers = ProviderSearch(GetIt.I<ProviderSearchUseCase>());
+
+  bool get _inTrash => widget.labelId == trashLabelId;
 
   /// What the results show; the list is rebuilt for each new one.
   SearchQuery _query = const SearchQuery();
@@ -95,7 +101,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
     if (!mounted) return;
     final query = parseSearchQuery(text);
     final scope = widget.accountId;
-    final scoped = scope == null ? query : query.inAccounts({scope});
+    final scoped = (scope == null ? query : query.inAccounts({scope})).inLabel(_inTrash ? trashLabelId : null);
     if (scoped == _query) return;
     // What the Providers found was for the old text.
     _providers.clear();
@@ -109,6 +115,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
   void _submit(String text) {
     _debounce?.cancel();
     _apply(text);
+    if (_inTrash) return;
     // The query as the local search reads it (#206): each adapter translates its fields, the Accounts are chosen here.
     if (!_query.isEmpty) unawaited(_providers.start(_query));
   }
@@ -141,7 +148,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
               const SingleActivator(LogicalKeyboardKey.arrowDown): () => _cursor.focusRow?.call(),
             },
             child: PostinoTextField(
-              label: t.field,
+              label: _inTrash ? t.fieldTrash : t.field,
               icon: PostinoIcons.search,
               controller: _text,
               focusNode: _field,

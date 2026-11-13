@@ -80,6 +80,6 @@ void main() {
     await service.stop();
     expect(await _shownWithin(const Duration(seconds: 5), (s) => s.every((n) => n.id != _listeningId)), isTrue);
     await engine.stop();
-    await notifications.cancel(const [target]);
+    await notifications.cancel('a1', ['m2']);
   }, skip: !android);
 }

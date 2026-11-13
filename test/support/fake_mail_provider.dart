@@ -74,6 +74,9 @@ class FakeMailProvider() implements MailProvider {
   int pageSize = 1000;
   int? failAfterPages;
 
+  /// Set, every incremental sync says it left messages behind for this reason (#252).
+  Failure? deferred;
+
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
 
@@ -327,6 +330,7 @@ class FakeMailProvider() implements MailProvider {
             if (e.$2 == null) e.$3,
         ],
         bodies: _inboxBodies(messages),
+        deferred: deferred,
       );
     });
     await hold?.future;

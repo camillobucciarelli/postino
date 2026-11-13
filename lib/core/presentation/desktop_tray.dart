@@ -10,11 +10,13 @@ class DesktopTray(final AppWindow _window, final SystemTray _tray) {
   final _subscriptions = <StreamSubscription<Object?>>[];
 
   /// Puts the icon in the tray, then keeps the window from closing. [beforeQuit] runs before «Esci» ends the process.
+  /// A window [hidden] at launch (#239) is shown when the tray fails, or nothing could bring it back.
   Future<void> start({
     required String tooltip,
     required String openLabel,
     required String quitLabel,
     required Future<void> Function() beforeQuit,
+    bool hidden = false,
   }) async {
     _subscriptions.add(
       _tray.commands.listen(
@@ -24,7 +26,12 @@ class DesktopTray(final AppWindow _window, final SystemTray _tray) {
         }),
       ),
     );
-    await _tray.show(tooltip: tooltip, openLabel: openLabel, quitLabel: quitLabel);
+    try {
+      await _tray.show(tooltip: tooltip, openLabel: openLabel, quitLabel: quitLabel);
+    } on Object {
+      if (hidden) await _window.show();
+      rethrow;
+    }
     _subscriptions.add(_window.interceptClose().listen((_) => unawaited(_window.hide())));
   }
 

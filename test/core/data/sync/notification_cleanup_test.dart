@@ -1,9 +1,8 @@
-// Pulizia delle notifiche (#210): on the seam of the fake Provider, with the real database and sync engine. A
-// notification goes once its Conversazione has nothing unread in the inbox, changed elsewhere or here.
+// Pulizia delle notifiche (#238): on the seam of the fake Provider, with the real database and sync engine. A
+// message's notification goes once it is no longer unread in the inbox, changed elsewhere or here.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/mail_action.dart';
-import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/main.dart';
 
 import '../../../support/fake_mail_provider.dart';
@@ -67,22 +66,29 @@ void main() {
     expect(visible(), isEmpty);
   });
 
-  test("the summary goes once the Account's inbox has nothing unread", () async {
-    a.deliver(msg('old', isRead: true));
-    for (var i = 0; i < 11; i++) {
-      a.deliver(msg('n$i'));
-    }
+  test('two messages of one Conversazione, one read elsewhere: only its notification goes (#238)', () async {
+    a
+      ..deliver(msg('3', conversationId: 't-3'))
+      ..deliver(msg('4', conversationId: 't-3'));
     await engine.syncAll();
-    expect(h.notifications.visible['a'], {const AccountTarget('a')});
+    expect(h.notifications.visibleMessages, {'1', '2', '3', '4'});
 
-    for (final id in ['1', '2', '0', for (var i = 0; i < 10; i++) 'n$i']) {
-      a.changeElsewhere(id, readAttribute, true);
-    }
+    a.changeElsewhere('3', readAttribute, true);
     await engine.syncAll();
-    expect(h.notifications.visible['a'], {const AccountTarget('a')}, reason: 'n10 is still unread');
+    expect(h.notifications.visibleMessages, {'1', '2', '4'}, reason: 'the Conversazione is still unread, 4 too');
 
-    a.changeElsewhere('n10', readAttribute, true);
+    await engine.act('a', ['4'], const MarkRead());
+    await pumpEventQueue();
+    expect(h.notifications.visibleMessages, {'1', '2'});
+  });
+
+  test('opened here: the notifications of all its messages go', () async {
+    a
+      ..deliver(msg('3', conversationId: 't-3'))
+      ..deliver(msg('4', conversationId: 't-3'));
     await engine.syncAll();
-    expect(h.notifications.visible['a'], isEmpty);
+
+    await engine.openConversation('a', 't-3');
+    expect(h.notifications.visibleMessages, {'1', '2'});
   });
 }

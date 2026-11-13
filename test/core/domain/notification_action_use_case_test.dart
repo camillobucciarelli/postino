@@ -11,7 +11,6 @@ import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/notification_action.dart';
 import 'package:postino/core/domain/notification_action_use_case.dart';
-import 'package:postino/core/domain/notification_target.dart';
 import 'package:postino/core/domain/outbox_repository.dart';
 import 'package:postino/main.dart';
 
@@ -44,7 +43,7 @@ void main() {
       ..deliver(msg('1', conversationId: 't', isRead: true))
       ..deliver(msg('2', conversationId: 't'));
     await getIt<MailSync>().syncAll();
-    h.notifications.visible['a'] = {const ConversationTarget(_t)};
+    h.notifications.visible['a'] = {'1': _t, '2': _t};
     useCase = getIt<NotificationActionUseCase>();
   });
 

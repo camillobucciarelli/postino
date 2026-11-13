@@ -22,6 +22,7 @@ import 'package:postino/core/data/channel_immediate_notifications.dart'
     as _i103;
 import 'package:postino/core/data/contacts_store.dart' as _i863;
 import 'package:postino/core/data/desktop/app_updater_module.dart' as _i429;
+import 'package:postino/core/data/desktop/channel_app_menu.dart' as _i249;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
 import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
@@ -49,6 +50,7 @@ import 'package:postino/core/data/sync/periodic_schedule.dart' as _i190;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
+import 'package:postino/core/domain/app_menu.dart' as _i247;
 import 'package:postino/core/domain/app_updater.dart' as _i833;
 import 'package:postino/core/domain/app_window.dart' as _i853;
 import 'package:postino/core/domain/attachment_repository.dart' as _i278;
@@ -113,6 +115,7 @@ extension GetItInjectableX on _i174.GetIt {
     final syncModule = _$SyncModule();
     gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
+    gh.lazySingleton<_i247.AppMenu>(() => _i249.ChannelAppMenu());
     gh.lazySingleton<_i221.ServerDiscovery>(
       () => _i26.EnoughServerDiscovery(),
       registerFor: {_prod},

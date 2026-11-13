@@ -18,6 +18,7 @@ import '../../features/posta/presentation/outbox_entries.dart';
 import '../../features/posta/presentation/posta_app_bars.dart';
 import '../../features/posta/presentation/posta_drawer.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
+import '../../features/posta/presentation/sync_status_row.dart';
 import '../../features/posta/presentation/write_fab.dart';
 import '../../i18n/strings.g.dart';
 import '../../main.dart' show routePaths;
@@ -28,7 +29,7 @@ import 'posta_routes.dart';
 Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) => PostinoAdaptiveLayout(
   appBar: const UnifiedAppBar(onSearch: openSearch),
   drawer: postaDrawer(),
-  banners: [...postaBanners, conflictsBanner()],
+  banners: [const SyncStatusRow(), ...postaBanners, conflictsBanner()],
   fab: WriteFab(cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchUnifiedInbox(),
@@ -49,6 +50,7 @@ Widget postaAccountView(String id, {(String, String)? selected, ListCursor? curs
   ),
   drawer: postaDrawer(accountId: id),
   banners: [
+    SyncStatusRow(accountId: id),
     ...postaBanners,
     conflictsBanner(accountId: id),
   ],
@@ -68,10 +70,13 @@ Widget postaLabelView(String accountId, String labelId, {(String, String)? selec
       appBar: AccountAppBar(
         accountId: accountId,
         labelId: labelId,
-        onSearch: () => openSearch(accountId: accountId),
+        onSearch: () => openSearch(accountId: accountId, labelId: labelId),
       ),
       drawer: postaDrawer(accountId: accountId, labelId: labelId),
-      banners: postaBanners,
+      banners: [
+        SyncStatusRow(accountId: accountId),
+        ...postaBanners,
+      ],
       fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
       body: MessageList(
         watch: (r) => r.watchMessages(accountId, labelId),
@@ -92,7 +97,10 @@ Widget postaDraftsView(String accountId, {(String, String)? selected, ListCursor
       onSearch: () => openSearch(accountId: accountId),
     ),
     drawer: postaDrawer(accountId: accountId, labelId: draftLabelId),
-    banners: postaBanners,
+    banners: [
+      SyncStatusRow(accountId: accountId),
+      ...postaBanners,
+    ],
     fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
     body: MessageList(
       watch: (r) => draftEntries(accountId, r),
@@ -116,7 +124,10 @@ Widget postaSentView(String accountId, {(String, String)? selected, ListCursor? 
       onSearch: () => openSearch(accountId: accountId),
     ),
     drawer: postaDrawer(accountId: accountId, labelId: sentLabelId),
-    banners: postaBanners,
+    banners: [
+      SyncStatusRow(accountId: accountId),
+      ...postaBanners,
+    ],
     fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
     body: MessageList(
       watch: (r) => sentEntries(
@@ -173,7 +184,7 @@ Widget postaConversationView(
   cursor: cursor,
 );
 
-/// On top of every list: offline, then the Accounts Da ricollegare.
+/// On top of every list, under its sync status: offline, then the Accounts Da ricollegare.
 const postaBanners = <Widget>[OfflineBanner(), ReconnectBanners(), ModelDownloadBanner()];
 
 /// The «N conflitti» Banner of the Posta unificata, or of one Account's inbox: «Vedi» opens the Conflitti it counts.

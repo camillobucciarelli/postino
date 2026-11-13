@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import '../../domain/message.dart' show spamLabelId;
+import '../../domain/message.dart' show spamLabelId, trashLabelId;
 import '../../domain/search_query.dart';
 import '../postino_database.dart';
 import '../tables/accounts_table.dart';
@@ -35,17 +35,23 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     String notSpam(String row) =>
         'NOT EXISTS (SELECT 1 FROM message_labels sl WHERE sl.account_id = $row.account_id AND sl.message_id = $row.id '
         "AND sl.label_id = '$spamLabelId')";
-    // The Conversazioni having a (not Spam) message with [where].
+    // Only the search from the Cestino has the messages of the Cestino as results; every other leaves them out, as Spam.
+    final inTrash = query.labelId == trashLabelId;
+    String trashed(String row) =>
+        '${inTrash ? '' : 'NOT '}EXISTS (SELECT 1 FROM message_labels tl WHERE tl.account_id = $row.account_id '
+        "AND tl.message_id = $row.id AND tl.label_id = '$trashLabelId')";
+    String visible(String row) => '${notSpam(row)} AND ${trashed(row)}';
+    // The Conversazioni having a visible message with [where].
     String having(String where) =>
         '(messages.account_id, messages.conversation_id) IN (SELECT h.account_id, h.conversation_id FROM messages h '
-        'WHERE ${notSpam('h')} AND $where)';
+        'WHERE ${visible('h')} AND $where)';
     int dayStart(DateTime d) => DateTime(d.year, d.month, d.day).millisecondsSinceEpoch;
     final (after, before) = (query.after, query.before);
     final conditions = [
-      notSpam('messages'),
+      visible('messages'),
       if (match != null)
         '(messages.account_id, messages.conversation_id) IN (SELECT h.account_id, h.conversation_id FROM search_index '
-            "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match' AND ${notSpam('h')})",
+            "JOIN messages h ON h.rowid = search_index.rowid WHERE search_index MATCH '$match' AND ${visible('h')})",
       if (query.unread ?? false) having('h.is_read = 0'),
       if (query.starred ?? false) having('h.is_starred = 1'),
       if (query.hasAttachment ?? false) having('h.has_attachments = 1'),
@@ -65,7 +71,7 @@ class SearchDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     ];
     final select = this.select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])
-      ..where(Expression.or([hits, ...onProvider]) & CustomExpression<bool>(notSpam('messages')))
+      ..where(Expression.or([hits, ...onProvider]) & CustomExpression<bool>(visible('messages')))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (query.accountIds.isNotEmpty) select.where(m.accountId.isIn(query.accountIds));
     if (query.accountNames.isNotEmpty) {

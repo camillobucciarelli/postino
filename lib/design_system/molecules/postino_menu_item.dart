@@ -15,6 +15,9 @@ class const PostinoMenuItem({
 
   /// For the tests, on the item's button.
   final Key? key,
+
+  /// Its keyboard shortcut («⌘R»): the tooltip of a command shown as an icon button says it.
+  final String? shortcut,
 }) {
   /// Crea una voce di menu.
   this;

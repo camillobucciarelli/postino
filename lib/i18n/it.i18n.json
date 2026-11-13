@@ -46,6 +46,23 @@
     "title": "Sei offline",
     "message": "La posta si aggiornerà al ritorno della rete."
   },
+  "syncStatus": {
+    "running": "Sincronizzazione in corso…",
+    "now": "Aggiornato adesso",
+    "minutesAgo": {
+      "one": "Aggiornato $n minuto fa",
+      "other": "Aggiornato $n minuti fa"
+    },
+    "at": "Aggiornato alle $time",
+    "on": "Aggiornato il $date",
+    "offline": "Offline",
+    "offlineAt": "Offline · aggiornato alle $time",
+    "offlineOn": "Offline · aggiornato il $date",
+    "failed": "Aggiornamento non riuscito",
+    "retry": "Riprova",
+    "refresh": "Aggiorna la posta",
+    "done": "Posta aggiornata"
+  },
   "list": {
     "loading": "Caricamento dei messaggi",
     "emptyTitle": "Niente di nuovo",
@@ -281,6 +298,7 @@
     "open": "Cerca",
     "title": "Cerca",
     "field": "Cerca nella posta",
+    "fieldTrash": "Cerca nel Cestino",
     "scopeAll": "Tutti gli Account",
     "idleTitle": "Cerca nella posta",
     "idleBody": "Scrivi una parola, o usa da:, a: e oggetto: per mittente, destinatari e oggetto. Le virgolette cercano una frase. Restringi con è:nonletto, è:stella, ha:allegato, dopo:2026-01-31, prima:2026-02-28 e account:nome.",

@@ -69,6 +69,6 @@ void main() {
       shown.map((n) => decodePayload(n.payload)),
       contains(const ConversationTarget((accountId: 'a1', conversationId: 't-2'))),
     );
-    await notifications.cancel(const [ConversationTarget((accountId: 'a1', conversationId: 't-2'))]);
+    await notifications.cancel('a1', ['m2']);
   }, skip: !android && !ios);
 }

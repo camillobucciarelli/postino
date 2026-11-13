@@ -56,7 +56,8 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
         for u in "${external[@]}"; do
           [ "$u" != "${u#https://"$host"/}" ] || continue
           allowed=1
-          [ "$(grep -o "//$host" "$1" | wc -l)" = "$(grep -oF "href=\"$u\" rel=\"noopener noreferrer\"" "$1" | wc -l)" ] ||
+          [ "$(grep -oE '="[^"]*"' "$1" | grep -c "//$host" || true)" = \
+            "$(grep -oE "<a( class=\"[a-z]+\")? href=\"$u\" rel=\"noopener noreferrer\"" "$1" | wc -l | tr -d ' ')" ] ||
             fail "$1: $host other than as a link to $u with rel=\"noopener noreferrer\""
         done
         [ "$allowed" = 1 ] || fail "$1: names the host $host"
@@ -90,7 +91,7 @@ product en/index.html ../
 has "$dir/privacy.html" 'href="index.html"'
 has "$dir/en/privacy.html" 'href="index.html"'
 # The privacy contact is the address the guide already publishes, and only that.
-contact=$(grep -oE 'mailto:[^"]+' "$guide" | sort -u)
+contact=$(grep -oE 'mailto:[^"]+' "$guide" | sort -u || true)
 [ "$(printf '%s\n' "$contact" | grep -c .)" = 1 ] || fail "$guide: not exactly one mail address: $contact"
 for f in index.html en/index.html; do links "$dir/$f" "$f"; done
 for f in privacy.html en/privacy.html; do

@@ -46,10 +46,12 @@ fails "back link of the privacy page" privacy.html 's|<a href="index.html">|<a h
 fails "placeholder on a page published as it is" privacy.html 's|13 novembre 2026|__VERSION__|'
 fails "broken markup" privacy.html 's|</ul>|</strong></ul>|'
 fails "policy link without rel" en/privacy.html 's|policy" rel="noopener noreferrer">|policy">|'
+fails "policy URL on a link element" en/privacy.html 's|</head>|<link href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"></head>|'
 fails "other page of the policy host" privacy.html 's|api-services-user-data-policy"|other-page"|'
 fails "privacy contact other than the guide's" privacy.html 's|mailto:camillo@bucciarelli.dev|mailto:privacy@example.com|'
 fails "privacy contact gone" en/privacy.html 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|'
 fails "mail link on the product page" index.html 's|<footer>|<footer><a href="mailto:camillo@bucciarelli.dev">x</a>|'
+fails "guide without its mail address" guide 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|g; s|mailto:||g'
 fails "guide with a third-party font" guide 's|</head>|<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree"></head>|'
 fails "guide with a missing stylesheet" guide 's|href="../style.css"|href="../stile.css"|'
 echo "download_check.sh ok"

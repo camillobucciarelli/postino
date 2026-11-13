@@ -6,7 +6,6 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
-import '../../../core/domain/mail_sync.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/platform_services.dart';
 import '../../../core/domain/swipe_actions.dart';
@@ -17,6 +16,7 @@ import 'act_on_conversation.dart';
 import 'conversation_actions.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
+import 'refresh_mail.dart';
 import 'row_keep_alive.dart';
 import 'row_menu.dart';
 import 'row_swipe.dart';
@@ -290,7 +290,7 @@ class _MessageListState() extends State<MessageList> {
         controller: _scroll,
         loading: list == null,
         itemCount: list?.length ?? 0,
-        onRefresh: GetIt.I<MailSync>().refresh,
+        onRefresh: () => refreshMail(context, pull: true),
         loadingLabel: t.loading,
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,

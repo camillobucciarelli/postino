@@ -49,6 +49,9 @@ abstract final class PostinoMotion() {
   /// Ciclo del riflesso dello skeleton. Flutter: Duration(milliseconds: 1200).
   static const Duration skeleton = Duration(milliseconds: 1200);
 
+  /// Un giro dell’icona di SyncStatus mentre la sincronizzazione è in corso; ferma con le animazioni ridotte.
+  static const Duration syncSpin = Duration(milliseconds: 1000);
+
   /// Tempo in cui “Annulla” resta disponibile (invio, archivia, elimina): 10 s, mostrati in conto alla rovescia nella PostinoSnackbar. Flutter: SnackBar.duration.
   static const Duration undoWindow = Duration(seconds: 10);
 

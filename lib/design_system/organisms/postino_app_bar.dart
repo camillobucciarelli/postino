@@ -75,7 +75,7 @@ class const PostinoAppBar({
         final shown = slots >= commands.length ? commands.length : (slots - 1).clamp(0, commands.length);
         final trailing = [
           for (final c in commands.take(shown))
-            PostinoIconButton(icon: c.icon!, label: c.label, onPressed: c.onPressed, key: c.key),
+            PostinoIconButton(icon: c.icon!, label: c.label, onPressed: c.onPressed, shortcut: c.shortcut, key: c.key),
           if (shown < commands.length) PostinoMenu(label: moreLabel, items: commands.skip(shown).toList()),
           ...actions,
         ];

@@ -13,6 +13,7 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
     LaunchAtLogin.register(with: flutterViewController.engine.binaryMessenger)
     Updater.register(with: flutterViewController.engine.binaryMessenger)
+    MailMenu.register(with: flutterViewController.engine.binaryMessenger)
 
     super.awakeFromNib()
   }

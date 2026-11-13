@@ -116,8 +116,9 @@ flutter:
 
   assets:
     - assets/fonts/OFL.txt
-    # The desktop tray's icon (#38): the app icon for now.
+    # The desktop tray's icon (#38): the logo, in colour (Windows, Linux) or as a template (macOS), see docs/brand-icone.md.
     - assets/tray/tray_icon.png
+    - assets/tray/tray_icon_template.png
 
   fonts:
     - family: Caprasimo

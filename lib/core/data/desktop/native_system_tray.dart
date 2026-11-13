@@ -10,7 +10,9 @@ import '../../domain/system_tray.dart';
 /// The tray icon through tray_manager's native API (nativeapi).
 @LazySingleton(as: SystemTray, env: [Environment.prod])
 class NativeSystemTray() implements SystemTray {
+  // macOS wants a monochrome template image, the others the coloured logo (docs/brand-icone.md).
   static const _asset = 'assets/tray/tray_icon.png';
+  static const _templateAsset = 'assets/tray/tray_icon_template.png';
 
   final _commands = StreamController<TrayCommand>.broadcast();
 
@@ -27,7 +29,8 @@ class NativeSystemTray() implements SystemTray {
       throw StateError('no StatusNotifierWatcher');
     }
     final icon = TrayIcon.create() ?? (throw StateError('no tray icon'));
-    final image = ImageAsset.fromAsset(_asset) ?? (throw StateError('no tray image'));
+    final isMac = defaultTargetPlatform == TargetPlatform.macOS;
+    final image = ImageAsset.fromAsset(isMac ? _templateAsset : _asset) ?? (throw StateError('no tray image'));
     final menu = Menu.create() ?? (throw StateError('no tray menu'));
     final open = _item(openLabel, TrayCommand.open);
     final quit = _item(quitLabel, TrayCommand.quit);
@@ -37,6 +40,8 @@ class NativeSystemTray() implements SystemTray {
       ..addItem(quit);
     icon
       ..icon = image
+      // macOS: the template is tinted by the menu bar (light, dark, highlighted); the PNG is 36 px, the 18 pt default @2x.
+      ..isIconTemplate = isMac
       ..setTooltip(tooltip)
       ..setContextMenu(menu)
       // macOS: a click opens the menu, like every menu bar item. Windows: a click opens the window, the right

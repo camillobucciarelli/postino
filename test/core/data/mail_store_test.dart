@@ -19,6 +19,33 @@ Future<MailStore> _store() async {
 }
 
 void main() {
+  test('a sync result for an Account removed meanwhile writes nothing', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    final store = MailStore(db);
+    await store.addAccount(
+      const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
+    );
+    await db.accountsDao.deleteByAccount('a');
+
+    // False: the sync notifies nothing for it.
+    expect(await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')])), isFalse);
+    await store.applyPage('a', [msg('2')], const {});
+    await store.saveBody('a', '1', const MessageBody('Ciao', BodyKind.testo));
+    await store.saveLabel('a', const Label(id: 'L1', name: 'L1', kind: LabelKind.etichetta));
+
+    for (final t in db.allTables) {
+      if (!t.columnsByName.containsKey('account_id')) continue;
+      expect(await db.customSelect('SELECT * FROM ${t.actualTableName}').get(), isEmpty, reason: t.actualTableName);
+    }
+  });
+
+  test('the outbox of a removed Account is empty, not an error', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    expect(await MailStore(db).watchOutbox('a').first, isEmpty);
+  });
+
   test('sender name, To, Cc and labels are stored and read back in the Conversazione', () async {
     final store = await _store();
     await store.applySync(

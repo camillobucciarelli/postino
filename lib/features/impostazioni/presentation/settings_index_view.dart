@@ -82,7 +82,7 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
           const SyncAccountSection(),
           for (final a in accounts.value.value ?? const <Account>[])
             PostinoSettingsSection(
-              title: a.name,
+              title: _sectionTitle(context, a, accounts.value.value!),
               children: [
                 PostinoSettingsItem(
                   key: ValueKey('settings-auto-labels-${a.id}'),
@@ -111,6 +111,11 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
     ),
   );
 }
+
+/// The Account's name, with its Provider when another Account has the same address (ADR 0016): two sections must
+/// not read the same.
+String _sectionTitle(BuildContext context, Account a, List<Account> all) =>
+    all.where((b) => b.address == a.address).length > 1 ? '${a.name} · ${_providerName(context, a.provider)}' : a.name;
 
 String _providerName(BuildContext context, ProviderKind p) => switch (p) {
   ProviderKind.gmail => context.t.accounts.gmail,

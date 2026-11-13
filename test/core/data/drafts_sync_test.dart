@@ -1,5 +1,7 @@
 // Bozze (#35): local save on every edit, the Provider hears it after the debounce or at once on leaving,
 // nothing is lost offline or while Da ricollegare, and what was sent or deleted elsewhere is dropped in silence.
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
@@ -213,6 +215,35 @@ void main() {
     h.clock.advance(draftDebounce);
     await pumpEventQueue();
     expect(a.draftCalls, [(id, true)]);
+  });
+
+  test(
+    'openDraft of a Bozza whose Account is removed during the body download is not found, and keeps nothing',
+    () async {
+      a.deliverDraft(_draft('<y@example.com>', body: '<p>Da altrove</p>'));
+      await engine.syncAll();
+      final hold = a.holdBody = Completer<void>();
+      final opening = engine.openDraft('a', '<y@example.com>');
+      await pumpEventQueue();
+      await GetIt.I<PostinoDatabase>().accountsDao.deleteByAccount('a');
+      a.holdBody = null;
+      hold.complete();
+
+      expect((await opening as Err).failure, isA<NotFoundFailure>());
+      expect(await GetIt.I<PostinoDatabase>().select(GetIt.I<PostinoDatabase>().drafts).get(), isEmpty);
+    },
+  );
+
+  test('a save for an Account removed meanwhile keeps nothing and sends nothing', () async {
+    await GetIt.I<PostinoDatabase>().accountsDao.deleteByAccount('a');
+    final tickers = h.clock.everyCalls;
+    await engine.saveDraft('a', _draft(id));
+    // No debounce armed for a Bozza that was not kept.
+    expect(h.clock.everyCalls, tickers);
+    h.clock.advance(draftDebounce * 2);
+    await pumpEventQueue();
+    expect(a.draftCalls, isEmpty);
+    expect(await row(), isNull);
   });
 
   test('openDraft of a plain-text Bozza keeps its line breaks and paragraphs, escaped', () async {

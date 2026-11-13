@@ -23,6 +23,51 @@ Future<OutboxStore> _store() async {
 }
 
 void main() {
+  test('the local Bozza of an Account removed meanwhile reads as none', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    // A row left by a writer that raced the removal.
+    await db
+        .into(db.drafts)
+        .insert(
+          DraftsCompanion.insert(
+            accountId: 'a',
+            messageId: 'm1',
+            recipients: '',
+            cc: '',
+            bcc: '',
+            subject: 's',
+            body: 'b',
+            updatedAt: 5,
+            pending: true,
+            synced: false,
+            remoteKnown: false,
+          ),
+        );
+    expect(await OutboxStore(db).localDraft('a', 'm1'), isNull);
+  });
+
+  test('a Bozza adopted after its Account was removed is not kept', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    await MailStore(
+      db,
+    ).addAccount(const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0));
+    await db.accountsDao.deleteByAccount('a');
+
+    expect(await OutboxStore(db).adoptDraft('a', _msg, updatedAt: 5), isFalse);
+    expect(await db.select(db.drafts).get(), isEmpty);
+  });
+
+  test('a message queued after its Account was removed is not kept', () async {
+    final db = PostinoDatabase.inMemory();
+    addTearDown(db.close);
+    final s = OutboxStore(db);
+
+    expect(await s.enqueueOutgoing('a', _msg, version: 1, raw: 'RAW', sendAfter: 10), isFalse);
+    expect(await s.hasOutgoing('a'), isFalse);
+  });
+
   test('an enqueued message is read back and counts as outgoing', () async {
     final s = await _store();
     expect(await s.hasOutgoing('a'), isFalse);

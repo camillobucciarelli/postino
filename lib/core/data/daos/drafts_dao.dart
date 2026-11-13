@@ -20,8 +20,10 @@ const _inFolder =
 class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase> with _$DraftsDaoMixin {
   /// Writes the content and marks the Bozza pending; the synced and remoteKnown marks stay.
   /// [updatedAt] is also the version the ack matches, so it is bumped past the previous save's when the clock has not moved.
+  /// False, and nothing written, when the Account is no longer here (removed meanwhile, ADR 0016).
   // ponytail: a version in the timestamp, no revision column; a clock set back keeps counting up from the last save.
-  Future<void> save(String accountId, OutgoingMessage draft, {required int updatedAt}) => transaction(() async {
+  Future<bool> save(String accountId, OutgoingMessage draft, {required int updatedAt}) => transaction(() async {
+    if (!await attachedDatabase.accountsDao.exists(accountId)) return false;
     final prev = (await byId(accountId, draft.messageId))?.updatedAt;
     if (prev != null && updatedAt <= prev) updatedAt = prev + 1;
     final content = DraftsCompanion(
@@ -57,31 +59,37 @@ class DraftsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       ),
       onConflict: DoUpdate((_) => content),
     );
+    return true;
   });
 
   /// A Bozza taken over from the Provider (another client's, or a newer version of one here with nothing
   /// pending): already synced, nothing pending, its content the expected one (#149); it replaces the local row.
-  Future<void> adopt(String accountId, OutgoingMessage draft, {required int updatedAt}) => into(drafts).insert(
-    DraftsCompanion.insert(
-      accountId: accountId,
-      messageId: draft.messageId,
-      recipients: draft.to.join('\n'),
-      cc: draft.cc.join('\n'),
-      bcc: draft.bcc.join('\n'),
-      subject: draft.subject,
-      body: draft.body,
-      inReplyTo: Value(draft.inReplyTo),
-      references: Value(_references(draft)),
-      conversationId: Value(draft.conversationId),
-      attachments: Value(draft.attachments),
-      updatedAt: updatedAt,
-      pending: false,
-      synced: true,
-      remoteKnown: true,
-      expected: Value(DraftContent.of(draft).fingerprint),
-    ),
-    mode: InsertMode.insertOrReplace,
-  );
+  /// False, and nothing written, when the Account is no longer here (removed meanwhile, ADR 0016).
+  Future<bool> adopt(String accountId, OutgoingMessage draft, {required int updatedAt}) => transaction(() async {
+    if (!await attachedDatabase.accountsDao.exists(accountId)) return false;
+    await into(drafts).insert(
+      DraftsCompanion.insert(
+        accountId: accountId,
+        messageId: draft.messageId,
+        recipients: draft.to.join('\n'),
+        cc: draft.cc.join('\n'),
+        bcc: draft.bcc.join('\n'),
+        subject: draft.subject,
+        body: draft.body,
+        inReplyTo: Value(draft.inReplyTo),
+        references: Value(_references(draft)),
+        conversationId: Value(draft.conversationId),
+        attachments: Value(draft.attachments),
+        updatedAt: updatedAt,
+        pending: false,
+        synced: true,
+        remoteKnown: true,
+        expected: Value(DraftContent.of(draft).fingerprint),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+    return true;
+  });
 
   static String? _references(OutgoingMessage d) => d.references.isEmpty ? null : d.references.join('\n');
 

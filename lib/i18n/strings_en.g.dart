@@ -138,7 +138,7 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String get missingPermissionMicrosoft => 'Permission to read and send your mail is required: try again and keep it ticked.';
 	@override String wrongAccount({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.';
 	@override String get failed => 'Something went wrong: try again.';
-	@override String get alreadyConnected => 'This address is already connected as another Account.';
+	@override String get alreadyConnected => 'This Account is already connected.';
 	@override String get workAccount => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.';
 }
 
@@ -687,7 +687,7 @@ extension on TranslationsEn {
 			'connect.missingPermissionMicrosoft' => 'Permission to read and send your mail is required: try again and keep it ticked.',
 			'connect.wrongAccount' => ({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Something went wrong: try again.',
-			'connect.alreadyConnected' => 'This address is already connected as another Account.',
+			'connect.alreadyConnected' => 'This Account is already connected.',
 			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',

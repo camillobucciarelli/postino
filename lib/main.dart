@@ -14,6 +14,7 @@ import 'package:routefly/routefly.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app/posta/posta_routes.dart' show openConversation;
+import 'core/data/accounts_settings_mirror.dart';
 import 'core/data/background_notification_action.dart';
 import 'core/data/background_send.dart';
 import 'core/data/background_sync.dart';
@@ -195,6 +196,7 @@ Future<void> _startDesktop() async {
       beforeQuit: () async {
         await getIt<SyncEngine>().stop();
         await getIt<SettingsSync>().stop();
+        await getIt<AccountsSettingsMirror>().stop();
         await getIt<PostinoDatabase>().close();
       },
     );
@@ -228,6 +230,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     super.initState();
     getIt<SyncEngine>().start();
     getIt<SettingsSync>().start();
+    getIt<AccountsSettingsMirror>().start();
     getIt<PeriodicSchedule>().start();
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
     _whenRouted(() {
@@ -280,6 +283,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     _lifecycle.dispose();
     unawaited(getIt<SyncEngine>().stop());
     unawaited(getIt<SettingsSync>().stop());
+    unawaited(getIt<AccountsSettingsMirror>().stop());
     unawaited(getIt<PeriodicSchedule>().stop());
     super.dispose();
   }

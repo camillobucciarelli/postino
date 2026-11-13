@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/accounts_settings_mirror.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_entry.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
@@ -77,6 +83,113 @@ void main() {
     expect(h.keychain.values.keys, ['oauth:gmail:ada@gmail.com']);
   });
 
+  test('a new Account goes after the last one and writes its synced voce', () async {
+    final h = await Harness.create();
+    // Positions with a gap, as after a removal: a count would collide with the last one.
+    await h.addAccount('a1');
+    await h.addAccount('a2');
+    await getIt<PostinoDatabase>().accountsDao.deleteByAccount('a1');
+    h.providerFor('gmail:ada@gmail.com');
+
+    await getIt<AccountsRepository>().connectGmail();
+
+    final ada = (await getIt<MailStore>().accounts()).last;
+    expect((ada.id, ada.position), ('gmail:ada@gmail.com', 2));
+    final voce = await getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com');
+    expect(jsonDecode(voce!.value!), {'address': 'ada@gmail.com', 'provider': 'gmail', 'color': 1, 'position': 2});
+    expect(voce.dirty, isTrue);
+  });
+
+  test('a new Account with the sync on is stamped now, with the sync off before any synced copy', () async {
+    final h = await Harness.create();
+    h
+      ..providerFor('gmail:ada@gmail.com')
+      ..providerFor('gmail:bob@gmail.com');
+    final dao = getIt<PostinoDatabase>().postinoSettingsDao;
+    await getIt<AccountsRepository>().connectGmail();
+    final off = await dao.readRow('accounts/gmail:ada@gmail.com');
+    expect((off!.updatedAt, off.deviceId, off.dirty), (0, '', true));
+
+    await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:ada@gmail.com');
+    h.consent.address = 'bob@gmail.com';
+    await getIt<AccountsRepository>().connectGmail();
+    final on = await dao.readRow('accounts/gmail:bob@gmail.com');
+    expect((on!.updatedAt, on.dirty), (h.clock.now().millisecondsSinceEpoch, true));
+  });
+
+  test('reconnecting an Account whose voce says something else writes it again, newer and to upload', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    final accounts = getIt<AccountsRepository>();
+    await accounts.connectGmail();
+    final db = getIt<PostinoDatabase>();
+    await db.postinoSettingsDao.markClean(await db.postinoSettingsDao.entries());
+    final before = (await db.postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com'))!;
+    final ada = (await getIt<MailStore>().accounts()).single;
+    await db.accountsDao.updateSettings(
+      Account(id: ada.id, address: ada.address, provider: ada.provider, color: 5, position: ada.position),
+    );
+
+    h.clock.advance(const Duration(minutes: 1));
+    await accounts.connectGmail(loginHint: 'ada@gmail.com');
+
+    final after = (await db.postinoSettingsDao.readRow('accounts/gmail:ada@gmail.com'))!;
+    expect((jsonDecode(after.value!) as Map<String, dynamic>)['color'], 5);
+    expect(after.updatedAt, greaterThan(before.updatedAt));
+    expect(after.dirty, isTrue);
+  });
+
+  test('a reconnection while the same Account is being removed ends with Account and tokens, or neither', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    await getIt<AccountsRepository>().connectGmail();
+    // Its first mail sync over.
+    await pumpEventQueue();
+    final db = getIt<PostinoDatabase>();
+    // A tombstone from another device, newer than the voce here.
+    await db.postinoSettingsDao.applyRemote([
+      SettingsEntry(
+        key: 'accounts/gmail:ada@gmail.com',
+        value: null,
+        updatedAt: h.clock.now().millisecondsSinceEpoch + 1000,
+        deviceId: 'z',
+        deleted: true,
+      ),
+    ]);
+
+    // The mirror is deleting the credentials when the OAuth of a reconnection comes back.
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
+    final removal = getIt<AccountsSettingsMirror>().reconcile();
+    await pumpEventQueue();
+    final reconnection = getIt<AccountsRepository>().connectGmail(loginHint: 'ada@gmail.com');
+    await pumpEventQueue();
+    gate.complete();
+    await removal;
+    // The removal forgot the Account's adapter: the fake again, before the reconnection's sync asks for it.
+    h.providerFor('gmail:ada@gmail.com');
+    await reconnection;
+
+    final accounts = await getIt<MailStore>().accounts();
+    final tokens = h.keychain.values.containsKey('oauth:gmail:ada@gmail.com');
+    expect(accounts.isNotEmpty, tokens, reason: 'never an Account without its tokens');
+    expect(accounts.single.status, AccountStatus.attivo);
+  });
+
+  test('reconnecting with nothing changed leaves the synced voce as it was', () async {
+    final h = await Harness.create();
+    h.providerFor('gmail:ada@gmail.com');
+    final accounts = getIt<AccountsRepository>();
+    await accounts.connectGmail();
+    final dao = getIt<PostinoDatabase>().postinoSettingsDao;
+    final before = await dao.readRow('accounts/gmail:ada@gmail.com');
+
+    h.clock.advance(const Duration(minutes: 1));
+    await accounts.connectGmail(loginHint: 'ada@gmail.com');
+
+    expect(await dao.readRow('accounts/gmail:ada@gmail.com'), before);
+  });
+
   test('onboarding with a mixed-case address creates a lowercase id', () async {
     final h = await Harness.create();
     h.providerFor('gmail:ada@gmail.com');
@@ -128,6 +241,20 @@ void _driveTests() {
 
       expect(h.keychain.values, before);
       expect((await getIt<MailStore>().accounts()).single.status, AccountStatus.attivo);
+    });
+
+    test('an Account removed during the Drive consent is not found and gets no credentials', () async {
+      final h = await connected();
+      final gate = Completer<void>();
+      h.consent.gate = gate.future;
+      final grant = getIt<AccountsRepository>().grantDriveAccess('gmail:ada@gmail.com');
+      await pumpEventQueue();
+      await h.keychain.delete('oauth:gmail:ada@gmail.com');
+      await getIt<PostinoDatabase>().accountsDao.deleteByAccount('gmail:ada@gmail.com');
+      gate.complete();
+
+      expect(((await grant) as Err).failure, isA<NotFoundFailure>());
+      expect(h.keychain.values.keys, isNot(contains('oauth:gmail:ada@gmail.com')));
     });
 
     test('an unknown Account is not found, and Drive is not asked', () async {

@@ -11,6 +11,7 @@ import '../domain/error_log.dart';
 import '../domain/mailbox.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
+import 'account_settings_json.dart';
 import 'attachment_crypto.dart';
 import 'daos/accounts_dao.dart';
 import 'daos/attributes_dao.dart';
@@ -27,6 +28,7 @@ import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
 import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'row_mappers.dart';
 import 'search_index.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
@@ -140,7 +142,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   }
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -239,12 +241,29 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         await m.addColumn(drafts, drafts.conflict);
       }
       // Before v18 the queue was just created above, with it; a database taken back to v18 or v19 may hold it already.
-      if (from >= 18 && from < 20 && !await _hasColumn('intents', 'rfc_message_id')) {
+      // Up to v21: a v20 of the #142 branch (the Account voci) came before this column, and lacks it.
+      if (from >= 18 && from < 22 && !await _hasColumn('intents', 'rfc_message_id')) {
         await m.addColumn(intents, intents.rfcMessageId);
       }
       // Before v13 the outbox was just created above, with it.
       if (from >= 13 && from < 21 && !await _hasColumn('outbox', 'smtp_sent_at')) {
         await m.addColumn(outbox, outbox.smtpSentAt);
+      }
+      if (from < 24) {
+        // v24: the Accounts already here join the synced voci (ADR 0016) as the voci written before the sync did:
+        // to upload, but older than any copy elsewhere (updatedAt 0), so they never overwrite a synced one.
+        for (final r in await select(accounts).get()) {
+          await into(postinoSettings).insert(
+            PostinoSettingsCompanion.insert(
+              key: accountSettingsKey(r.id),
+              value: Value(encodeAccountSettings(accountOf(r))),
+              updatedAt: 0,
+              deviceId: '',
+              dirty: true,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
       }
       if (from < 7) {
         await m.addColumn(messages, messages.senderName);
@@ -277,8 +296,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
           );
         }
       }
-      // Last: it reads the columns of every step above (v7 split the sender).
-      if (from < 22) await createSearchIndex(this);
+      // Last: it reads the columns of every step above (v7 split the sender). By name too: a v22 of the #142 branch
+      // (the Account voci) came before it, and lacks it.
+      if (from < 22 || !await _hasColumn('search_index', 'subject')) await createSearchIndex(this);
     },
   );
 

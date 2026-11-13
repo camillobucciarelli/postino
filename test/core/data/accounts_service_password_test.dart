@@ -1,8 +1,11 @@
 // Password Accounts (#162): iCloud preset, IMAP autodiscovery or manual servers, test connection, keychain only.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/account_settings_json.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -13,6 +16,7 @@ import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/password_provider.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
@@ -64,6 +68,31 @@ void main() {
     }
   });
 
+  group('the synced voce (ADR 0016), as connectWithPassword writes it', () {
+    Future<PostinoSettingRow?> voce(String id) => getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/$id');
+
+    test('iCloud, with the sync off: before the sync, without servers nor password', () async {
+      await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+
+      final v = (await voce('icloud:ada@icloud.com'))!;
+      expect(jsonDecode(v.value!), {'address': 'ada@icloud.com', 'provider': 'icloud', 'color': 0, 'position': 0});
+      expect((v.updatedAt, v.deviceId, v.dirty), (0, '', true));
+      expect(decodeAccountSettings('icloud:ada@icloud.com', v.value), isNotNull);
+    });
+
+    test('IMAP, with the sync on: stamped now', () async {
+      await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:x@gmail.com');
+      h.discovery.servers['ada@fastmail.com'] = _fastmail;
+      await accounts.connectWithPassword('ada@fastmail.com', 'app-password-1');
+
+      final v = (await voce('imap:ada@fastmail.com'))!;
+      expect(jsonDecode(v.value!), {'address': 'ada@fastmail.com', 'provider': 'imap', 'color': 0, 'position': 0});
+      expect((v.updatedAt, v.dirty), (h.clock.now().millisecondsSinceEpoch, true));
+      expect(v.value, isNot(contains('imap.fastmail.com')), reason: 'no server in the voce');
+      expect(decodeAccountSettings('imap:ada@fastmail.com', v.value), isNotNull);
+    });
+  });
+
   test('another address is IMAP with the discovered servers', () async {
     h.discovery.servers['ada@fastmail.com'] = _fastmail;
 
@@ -107,7 +136,7 @@ void main() {
     expect(_failure(again), isA<AlreadyConnectedFailure>());
   });
 
-  test('a mailbox already connected with Gmail is not added again over IMAP', () async {
+  test('the same address with Gmail and over IMAP is two Accounts (ADR 0016)', () async {
     h.providerFor('gmail:ada@company.com');
     h.consent.address = 'ada@company.com';
     await accounts.connectGmail();
@@ -115,21 +144,59 @@ void main() {
 
     final r = await accounts.connectWithPassword('ada@company.com', 'app-password-1');
 
-    expect(_failure(r), isA<AlreadyConnectedFailure>());
-    expect(h.connection.tested, isEmpty);
+    expect((r as Ok<Account>).value.id, 'imap:ada@company.com');
+    expect((await getIt<MailStore>().accounts()).map((a) => (a.id, a.status)), [
+      ('gmail:ada@company.com', AccountStatus.attivo),
+      ('imap:ada@company.com', AccountStatus.attivo),
+    ]);
   });
 
-  test('a mailbox already connected over IMAP is not added again with Gmail; no token is written', () async {
+  test('the same address over IMAP and then with Gmail is two Accounts too', () async {
     h.discovery.servers['ada@company.com'] = _fastmail;
     await accounts.connectWithPassword('ada@company.com', 'app-password-1');
-    h.consent.address = 'ada@company.com';
-    final keychainBefore = Map.of(h.keychain.values);
+    h
+      ..providerFor('gmail:ada@company.com')
+      ..consent.address = 'ada@company.com';
 
     final r = await accounts.connectGmail();
 
-    expect(_failure(r), isA<AlreadyConnectedFailure>());
-    expect(h.keychain.values, keychainBefore);
-    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com']);
+    expect((r as Ok<Account>).value.id, 'gmail:ada@company.com');
+    expect(h.keychain.values.keys, containsAll(['password:imap:ada@company.com', 'oauth:gmail:ada@company.com']));
+    expect((await getIt<MailStore>().accounts()).map((a) => a.id), ['imap:ada@company.com', 'gmail:ada@company.com']);
+  });
+
+  test('cancelled while waiting for the Accounts lock, nothing is written', () async {
+    final busy = Completer<void>();
+    final held = getIt<AccountsLock>().run(() => busy.future);
+    final cancel = Completer<void>();
+    final pending = accounts.connectWithPassword('ada@icloud.com', 'app-password-1', cancel: cancel.future);
+    await pumpEventQueue();
+
+    cancel.complete();
+    await pumpEventQueue();
+    busy.complete();
+    await held;
+
+    expect(_failure(await pending), isA<CancelledFailure>());
+    expect(h.keychain.values, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+  });
+
+  test('the Account removed here while the reconnection waits for the lock: nothing is written', () async {
+    await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    await getIt<MailStore>().setStatus('icloud:ada@icloud.com', AccountStatus.daRicollegare);
+    final busy = Completer<void>();
+    final held = getIt<AccountsLock>().run(() => busy.future);
+    final pending = accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+    await pumpEventQueue();
+
+    await accounts.remove('icloud:ada@icloud.com');
+    busy.complete();
+    await held;
+
+    expect(_failure(await pending), isA<CancelledFailure>());
+    expect(h.keychain.values.keys.where((k) => k.contains('ada@icloud.com')), isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
   test('cancelled while the servers answer, nothing is written', () async {

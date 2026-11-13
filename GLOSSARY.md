@@ -7,7 +7,7 @@ Client di posta personale multi-account: riunisce in un unico posto le caselle e
 ### Caselle
 
 **Account**:
-Una casella di posta collegata dall'utente, identificata da un indirizzo email e dal suo Provider. Ogni Account ha un proprio colore.
+Una casella di posta collegata dall'utente, identificata da un indirizzo email e dal suo Provider: lo stesso indirizzo con due Provider sono due Account. Ogni Account ha un proprio colore.
 _Avoid_: Profilo, utente, casella
 
 **Provider**:

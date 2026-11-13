@@ -69,8 +69,11 @@ class DraftOpener(
         BodyKind.testo => plainToHtml(body.content),
       },
     );
-    if (_removed(accountId)) return const Err(NotFoundFailure());
-    await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch);
+    // The Account removed while the body was downloading, here or from another device: no Bozza to open.
+    if (_removed(accountId) ||
+        !await _outbox.adoptDraft(accountId, draft, updatedAt: remote.message.date.millisecondsSinceEpoch)) {
+      return const Err(NotFoundFailure());
+    }
     return Ok(draft);
   }
 }

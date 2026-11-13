@@ -114,8 +114,9 @@ class AccountsSettingsMirror(
         final local = here[id];
         if (row.deleted) {
           if (local == null) {
-            // Removed here already (or never here): the sync cannot run on it.
-            if (id == syncAccount) await _settings.setSettingsSyncAccount(null);
+            // Removed here already (or never here): the sync cannot run on it. Not while the tombstone is dirty: a
+            // removal here is uploading it with this very sync, and turns the sync off itself once done.
+            if (id == syncAccount && !row.dirty) await _settings.setSettingsSyncAccount(null);
             continue;
           }
           // Uploading the tombstone of the sync Account needs its credentials: removed here once in the file, else the

@@ -129,11 +129,20 @@ void main() {
     expect(await settings.settingsSyncAccount(), isNull);
   });
 
-  test('a tombstone for the sync Account already gone here turns the sync off', () async {
+  test('an uploaded tombstone for the sync Account already gone here turns the sync off', () async {
+    await settings.setSettingsSyncAccount(_ada.id);
+    await db.postinoSettingsDao.applyRemote([
+      SettingsEntry(key: accountSettingsKey(_ada.id), value: null, updatedAt: 1, deviceId: 'z', deleted: true),
+    ]);
+    await mirror.reconcile();
+    expect(await settings.settingsSyncAccount(), isNull);
+  });
+
+  test('a dirty tombstone for the sync Account gone here keeps the sync: the removal here is uploading it', () async {
     await settings.setSettingsSyncAccount(_ada.id);
     await db.postinoSettingsDao.tombstoneAccount(_ada.id, at: _t);
     await mirror.reconcile();
-    expect(await settings.settingsSyncAccount(), isNull);
+    expect(await settings.settingsSyncAccount(), _ada.id);
   });
 
   test('removing another Account leaves the sync on', () async {

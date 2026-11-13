@@ -12,6 +12,7 @@ class AppDelegate: FlutterAppDelegate {
       reason: "Postino sincronizza la posta anche con la finestra chiusa")
     super.applicationDidFinishLaunching(notification)
     CheckForUpdatesMenuItem.install(in: NSApp.mainMenu)
+    MailMenu.install(in: NSApp.mainMenu)
   }
 
   // postino (#38): closing the window leaves Postino in the menu bar; «Esci» (or Cmd+Q) ends it.

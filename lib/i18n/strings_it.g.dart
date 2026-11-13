@@ -70,6 +70,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
+	late final Translations$syncStatus$it syncStatus = Translations$syncStatus$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
 	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
 	late final Translations$composizione$it composizione = Translations$composizione$it.internal(_root);
@@ -219,6 +220,54 @@ class Translations$offline$it {
 
 	/// it: 'La posta si aggiornerà al ritorno della rete.'
 	String get message => 'La posta si aggiornerà al ritorno della rete.';
+}
+
+// Path: syncStatus
+class Translations$syncStatus$it {
+	Translations$syncStatus$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Sincronizzazione in corso…'
+	String get running => 'Sincronizzazione in corso…';
+
+	/// it: 'Aggiornato adesso'
+	String get now => 'Aggiornato adesso';
+
+	/// it: '(one) {Aggiornato $n minuto fa} (other) {Aggiornato $n minuti fa}'
+	String minutesAgo({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: 'Aggiornato ${n} minuto fa',
+		other: 'Aggiornato ${n} minuti fa',
+	);
+
+	/// it: 'Aggiornato alle $time'
+	String at({required Object time}) => 'Aggiornato alle ${time}';
+
+	/// it: 'Aggiornato il $date'
+	String on({required Object date}) => 'Aggiornato il ${date}';
+
+	/// it: 'Offline'
+	String get offline => 'Offline';
+
+	/// it: 'Offline · aggiornato alle $time'
+	String offlineAt({required Object time}) => 'Offline · aggiornato alle ${time}';
+
+	/// it: 'Offline · aggiornato il $date'
+	String offlineOn({required Object date}) => 'Offline · aggiornato il ${date}';
+
+	/// it: 'Aggiornamento non riuscito'
+	String get failed => 'Aggiornamento non riuscito';
+
+	/// it: 'Riprova'
+	String get retry => 'Riprova';
+
+	/// it: 'Aggiorna la posta'
+	String get refresh => 'Aggiorna la posta';
+
+	/// it: 'Posta aggiornata'
+	String get done => 'Posta aggiornata';
 }
 
 // Path: list
@@ -1351,6 +1400,18 @@ extension on Translations {
 			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
+			'syncStatus.running' => 'Sincronizzazione in corso…',
+			'syncStatus.now' => 'Aggiornato adesso',
+			'syncStatus.minutesAgo' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: 'Aggiornato ${n} minuto fa', other: 'Aggiornato ${n} minuti fa', ), 
+			'syncStatus.at' => ({required Object time}) => 'Aggiornato alle ${time}',
+			'syncStatus.on' => ({required Object date}) => 'Aggiornato il ${date}',
+			'syncStatus.offline' => 'Offline',
+			'syncStatus.offlineAt' => ({required Object time}) => 'Offline · aggiornato alle ${time}',
+			'syncStatus.offlineOn' => ({required Object date}) => 'Offline · aggiornato il ${date}',
+			'syncStatus.failed' => 'Aggiornamento non riuscito',
+			'syncStatus.retry' => 'Riprova',
+			'syncStatus.refresh' => 'Aggiorna la posta',
+			'syncStatus.done' => 'Posta aggiornata',
 			'list.loading' => 'Caricamento dei messaggi',
 			'list.emptyTitle' => 'Niente di nuovo',
 			'list.emptyBody' => 'I messaggi compaiono qui appena arrivano.',

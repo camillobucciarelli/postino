@@ -304,6 +304,15 @@ final _components = <String, Widget Function()>{
   'sync_status': () => const Wrap(
     spacing: 16,
     children: [
+      PostinoSyncStatus(state: PostinoSyncState.syncing, label: 'Sincronizzazione in corso…'),
+      PostinoSyncStatus(state: PostinoSyncState.ok, label: 'Aggiornato 5 minuti fa'),
+      PostinoSyncStatus(
+        state: PostinoSyncState.error,
+        label: 'Aggiornamento non riuscito',
+        retryLabel: 'Riprova',
+        onRetry: _noop,
+      ),
+      PostinoSyncStatus(state: PostinoSyncState.offline, label: 'Offline · aggiornato alle 09:42'),
       PostinoSyncStatus(state: PostinoSyncState.reconnect, label: 'Da ricollegare'),
       PostinoSyncStatus(state: PostinoSyncState.offline, label: 'Offline'),
       PostinoSyncStatus(state: PostinoSyncState.reconnect, label: 'Da ricollegare', compact: true),

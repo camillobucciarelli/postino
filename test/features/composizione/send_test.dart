@@ -21,6 +21,7 @@ import 'package:postino/core/domain/provider_search_page.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/search_query.dart';
 import 'package:postino/core/domain/send_limit.dart';
+import 'package:postino/core/domain/sync_status.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -462,7 +463,9 @@ class _TooBig(
   @override
   Future<void> syncAll() => real.syncAll();
   @override
-  Future<void> refresh() => real.refresh();
+  Future<bool> refresh() => real.refresh();
+  @override
+  Stream<Map<String, SyncStatus>> watchSyncStatus() => real.watchSyncStatus();
   @override
   Future<Result<void>> openConversation(String a, String c) => real.openConversation(a, c);
   @override

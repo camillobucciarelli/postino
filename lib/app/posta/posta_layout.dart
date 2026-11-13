@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../core/domain/app_menu.dart';
 import '../../core/domain/message.dart' show draftLabelId, sentLabelId;
 import '../../core/domain/platform_services.dart' show Clock;
 import '../../core/domain/settings_repository.dart';
@@ -11,6 +12,7 @@ import '../../core/presentation/model_ready_notifier.dart';
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/onboarding_gate.dart';
 import '../../features/posta/presentation/posta_shortcuts.dart';
+import '../../features/posta/presentation/refresh_mail.dart';
 import '../../features/segnalazione/presentation/crash_report_prompt.dart';
 import '../../i18n/strings.g.dart';
 import '../../main.dart' show routePaths;
@@ -42,6 +44,8 @@ class _PostaLayoutState() extends State<PostaLayout> {
   /// What the keyboard shortcuts move: the list in front plugs itself in.
   final _cursor = ListCursor();
 
+  late final StreamSubscription<void> _menu;
+
   /// The sidebar choice and the list width saved by an earlier run (null: none); the layout waits for it, so the bar does not jump.
   late final Future<(bool?, double?)> _saved = () async {
     final settings = GetIt.I<SettingsRepository>();
@@ -58,6 +62,17 @@ class _PostaLayoutState() extends State<PostaLayout> {
     _cursor.reportProblem = reportProblem;
     // The Account of the list in front, read when the key is pressed.
     _cursor.search = () => openSearch(accountId: _accountId, labelId: _labelId);
+    _cursor.refresh = () => unawaited(refreshMail(context));
+    // The «Aggiorna» of the macOS menu (#251), the same as the bar's.
+    _menu = GetIt.I<AppMenu>().refresh.listen((_) {
+      if (mounted) unawaited(refreshMail(context));
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_menu.cancel());
+    super.dispose();
   }
 
   @override

@@ -14,6 +14,7 @@ import 'new_mail_notifier.dart';
 import 'notification_cleanup.dart';
 import 'provider_factory.dart';
 import 'queue_replay.dart';
+import 'sync_status_board.dart';
 
 /// One sync of an Account (ADR 0008): the Azioni, the initial sync or the incremental one from the saved cursor,
 /// then the Bozze and the outbox. An expired cursor starts over; an auth failure makes the Account Da ricollegare.
@@ -26,6 +27,7 @@ class SyncPhase(
   final ErrorLog _log,
   final AccountGate _gate,
   final QueueReplay _replay,
+  final SyncStatusBoard _status,
 ) {
   /// Per Account, the latest Etichettatura automatica and its replay, which the sync does not wait for.
   final autoLabeling = <String, Future<void>>{};
@@ -42,12 +44,17 @@ class SyncPhase(
     // dropped, is not created again.
     if (await _gate.find(accountId) == null) return;
     final provider = providerFor(account);
+    _status.started(accountId);
     try {
       // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
       await _replay.beforeSync(accountId, provider);
-      if (!_gate.paused(accountId)) await _sync(account, provider, autoLabel: autoLabel);
+      final paused = _gate.paused(accountId);
+      final failure = paused ? null : await _sync(account, provider, autoLabel: autoLabel);
+      // Before [synced]: a refresh waiting on it reads how it went.
+      _status.finished(accountId, failure: failure, synced: !paused);
       synced.complete();
     } catch (e, s) {
+      _status.finished(accountId, failure: UnexpectedFailure(e, s));
       synced.completeError(e, s);
       rethrow;
     } finally {
@@ -57,7 +64,8 @@ class SyncPhase(
     }
   }
 
-  Future<void> _sync(Account account, MailProvider provider, {required bool autoLabel}) async {
+  /// Null when it went through, else why it failed.
+  Future<Failure?> _sync(Account account, MailProvider provider, {required bool autoLabel}) async {
     final accountId = account.id;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
@@ -113,6 +121,7 @@ class SyncPhase(
           '[sync] $accountId: ${full ? 'initial' : 'incremental'} sync end, '
           '${value.messages.length} messages, ${value.removedMessageIds.length} removed',
         );
+        return null;
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
         _log.failure('sync $accountId', failure);
@@ -124,6 +133,7 @@ class SyncPhase(
         if (failure is AuthFailure) {
           await _store.setStatus(accountId, AccountStatus.daRicollegare);
         }
+        return failure;
     }
   }
 }

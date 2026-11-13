@@ -15,6 +15,7 @@ import '../domain/platform_services.dart';
 import '../domain/provider_search_page.dart';
 import '../domain/result.dart';
 import '../domain/search_query.dart';
+import '../domain/sync_status.dart';
 import 'mail_store.dart';
 import 'sync/account_gate.dart';
 import 'sync/account_queue.dart';
@@ -30,6 +31,7 @@ import 'sync/queue_replay.dart';
 import 'sync/sync_hold.dart';
 import 'sync/sync_owner.dart';
 import 'sync/sync_phase.dart';
+import 'sync/sync_status_board.dart';
 import 'sync/sync_triggers.dart';
 
 export 'sync/sync_triggers.dart' show pollEvery;
@@ -73,7 +75,8 @@ class SyncEngine(
     _queue,
   );
   late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock);
-  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay);
+  late final _status = SyncStatusBoard(_clock);
+  late final _phase = SyncPhase(_store, _newMail, _cleanup, _labeler, _log, _gate, _replay, _status);
   late final _triggers = SyncTriggers(
     _store,
     _clock,
@@ -125,11 +128,20 @@ class SyncEngine(
   }
 
   @override
-  Future<void> refresh() async {
+  Future<bool> refresh() async {
     await _hold.owned;
     _store.refreshAfterExternalWrites();
-    await _eachActive((account) => _queue.running(account.id) ?? _sync(account)?.synced);
+    final active = [
+      for (final a in await _store.accounts())
+        if (a.status == AccountStatus.attivo) a,
+    ];
+    await Future.wait([for (final a in active) _queue.running(a.id) ?? _sync(a)?.synced ?? Future<void>.value()]);
+    // A paused Account was not synced: its last failure (the rate limit) stays.
+    return active.every((a) => _status.of(a.id)?.failure == null);
   }
+
+  @override
+  Stream<Map<String, SyncStatus>> watchSyncStatus() => _status.watch();
 
   /// The background task's sync (#212), once [SyncOwner] gave it the sync: every attivo Account once, with its
   /// notifications, replay and due outbox; the Etichettatura automatica waits for the next sync in the app.
@@ -329,6 +341,7 @@ class SyncEngine(
       rethrow;
     }
     _gate.removalDone(accountId);
+    _status.forget(accountId);
     // The logout of an IMAP adapter may wait on the network: the adapter is unregistered at once anyway.
     unawaited(forgetProvider(accountId));
   }

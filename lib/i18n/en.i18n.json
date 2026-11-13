@@ -46,6 +46,23 @@
     "title": "You're offline",
     "message": "Mail will update when the network is back."
   },
+  "syncStatus": {
+    "running": "Syncing…",
+    "now": "Updated just now",
+    "minutesAgo": {
+      "one": "Updated $n minute ago",
+      "other": "Updated $n minutes ago"
+    },
+    "at": "Updated at $time",
+    "on": "Updated on $date",
+    "offline": "Offline",
+    "offlineAt": "Offline · updated at $time",
+    "offlineOn": "Offline · updated on $date",
+    "failed": "Couldn't update",
+    "retry": "Retry",
+    "refresh": "Refresh mail",
+    "done": "Mail updated"
+  },
   "list": {
     "loading": "Loading messages",
     "emptyTitle": "Nothing new",

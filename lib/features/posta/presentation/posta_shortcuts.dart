@@ -22,6 +22,7 @@ enum PostaAction() {
   markRead,
   markUnread,
   search,
+  refresh,
 }
 
 /// One key and what it does. [listOnly]: only while the focus is on the list (the arrows),
@@ -63,6 +64,7 @@ const postaShortcuts = <PostaShortcut>[
   PostaShortcut(LogicalKeyboardKey.keyS, PostaAction.star, repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyI, PostaAction.markRead, shift: true, repeats: false),
   PostaShortcut(LogicalKeyboardKey.keyU, PostaAction.markUnread, shift: true, repeats: false),
+  PostaShortcut(LogicalKeyboardKey.keyR, PostaAction.refresh, command: true, repeats: false),
 ];
 
 /// What the shortcuts act on: the list of Conversazioni, which plugs itself in.
@@ -94,6 +96,9 @@ class ListCursor() {
   /// Opens the search (`/`, #205) from a Posta view, or puts the focus in its field when it is open: the Posta layout
   /// and the search page plug themselves in.
   VoidCallback? search;
+
+  /// «Aggiorna» (Cmd/Ctrl+R, #251): the Posta layout plugs it in.
+  VoidCallback? refresh;
 
   /// An Azione (#146: `e`, `#`, `s`, Maiusc+I, Maiusc+U) on the open Conversazione: the Conversazione plugs it in.
   void Function(PostaAction action)? act;
@@ -193,6 +198,8 @@ class _PostaAction(final ListCursor cursor) extends Action<PostaIntent> {
         cursor.reportProblem?.call();
       case PostaAction.search:
         cursor.search?.call();
+      case PostaAction.refresh:
+        cursor.refresh?.call();
       case PostaAction.archive ||
           PostaAction.delete ||
           PostaAction.star ||

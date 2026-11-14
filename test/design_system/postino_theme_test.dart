@@ -105,8 +105,6 @@ const _names = [
   'snackbarBg',
   'snackbarFg',
   'snackbarAction',
-  'fabBg',
-  'fabFg',
   'switchTrackOn',
   'switchTrackOff',
   'switchThumbOn',
@@ -221,8 +219,6 @@ List<Color> _all(PostinoColors c) => [
   c.snackbarBg,
   c.snackbarFg,
   c.snackbarAction,
-  c.fabBg,
-  c.fabFg,
   c.switchTrackOn,
   c.switchTrackOff,
   c.switchThumbOn,
@@ -251,7 +247,7 @@ void main() {
   });
 
   test('fixture covers all fields with distinct colors', () {
-    expect(_names.length, 112);
+    expect(_names.length, 110);
     expect(_palette(0).toSet().length, _names.length);
     expect(_all(_build(_palette(0))), _palette(0));
   });
@@ -276,5 +272,17 @@ void main() {
     expect(_all(from.lerp(to, 0)), a);
     expect(_all(from.lerp(to, 1)), b);
     expect(_all(from.lerp(to, 0.5)), [for (var i = 0; i < a.length; i++) Color.lerp(a[i], b[i], 0.5)]);
+  });
+
+  test('elevations of the theme follow the four PostinoElevation levels (#264)', () {
+    final t = PostinoTheme.light();
+    expect(PostinoElevation.e0, 0);
+    expect(PostinoElevation.e1, 1);
+    expect(PostinoElevation.e2, 3);
+    expect(PostinoElevation.e3, 6);
+    expect(t.floatingActionButtonTheme.elevation, PostinoElevation.e2);
+    expect(t.dialogTheme.elevation, PostinoElevation.e3);
+    expect(t.snackBarTheme.elevation, PostinoElevation.e3);
+    expect(t.appBarTheme.elevation, PostinoElevation.e0);
   });
 }

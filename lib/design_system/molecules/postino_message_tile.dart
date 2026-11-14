@@ -78,7 +78,7 @@ class const PostinoMessageTile({
       time,
       style: unread
           ? PostinoText.metaStrong.copyWith(color: c.brand)
-          : PostinoText.meta.copyWith(color: c.listItemMeta),
+          : PostinoText.metaRead.copyWith(color: c.listItemMeta),
     );
     final a = account;
     return Semantics(

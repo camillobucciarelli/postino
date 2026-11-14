@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #285: flutter_local_notifications cerca l'icona piccola per nome (stringa in Dart), quindi lo shrink delle
+     risorse in release la vedrebbe inutilizzata e la toglierebbe. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_postino" />

@@ -1,4 +1,4 @@
-// Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// Parte dei token di postino_tokens.dart: vedi lì la fonte di verità.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
@@ -74,7 +74,7 @@ abstract final class PostinoPrimitives() {
   static const pVerdigris600 = Color(0xFF167A66);
 
   /// Primitivo verdigris (colore del brand), gradino 700.
-  static const pVerdigris700 = Color(0xFF0F6B5C);
+  static const pVerdigris700 = Color(0xFF0E6456);
 
   /// Primitivo verdigris (colore del brand), gradino 800.
   static const pVerdigris800 = Color(0xFF0B5649);

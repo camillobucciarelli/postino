@@ -6,7 +6,35 @@ import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/postino_database.dart';
 
+import 'package:postino/core/domain/platform_services.dart';
+
 import '../../support/fake_platform.dart';
+
+/// One keychain seen by two isolates, each with its own [PostinoDatabase.keyFrom] cache: a read returns what was
+/// there when it was asked; a read of [slow] answers 200 ms later (the other isolate goes on meanwhile).
+class _IsolateView(final Map<String, String> values, {final String? slow}) implements SecureStore {
+  static var deletes = 0;
+
+  @override
+  Future<String?> read(String key) async {
+    final value = values[key];
+    await Future<void>.delayed(key == slow ? const Duration(milliseconds: 200) : Duration.zero);
+    return value;
+  }
+
+  @override
+  Future<void> write(String key, String value) async {
+    await Future<void>.delayed(Duration.zero);
+    values[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    await Future<void>.delayed(Duration.zero);
+    deletes++;
+    values.remove(key);
+  }
+}
 
 void main() {
   late Directory dir;
@@ -76,6 +104,45 @@ void main() {
     expect(interrupted.values['database_key.fresh'], isNull);
   });
 
+  test(
+    'the app and a background engine opening a restore together wipe once, never the database already open',
+    () async {
+      final db = await PostinoDatabase.open(path, FakeSecureStore());
+      await insertAccount(db);
+      await db.close();
+      _IsolateView.deletes = 0;
+      final keychain = otherKey().values..['database_key.fresh'] = '1';
+      final views = [_IsolateView(keychain), _IsolateView(keychain, slow: 'database_key.fresh')];
+      // Each engine already holds the key (its error log read it): only the mark, the wipe and the open race.
+      for (final v in views) {
+        await PostinoDatabase.keyFrom(v, path);
+      }
+
+      final opening = [for (final v in views) PostinoDatabase.open(path, v)];
+      final app = await opening.first;
+      await insertAccount(app);
+      final background = await opening.last;
+      expect(await accounts(background), 1, reason: 'the same database, not a second wipe of it');
+      expect(_IsolateView.deletes, 1);
+      await app.close();
+      await background.close();
+    },
+  );
+
+  test('the app and a background engine starting with no key create one key, and open the same database', () async {
+    final keychain = <String, String>{};
+    final opening = [
+      PostinoDatabase.open(path, _IsolateView(keychain)),
+      PostinoDatabase.open(path, _IsolateView(keychain, slow: 'database_key')),
+    ];
+    final app = await opening.first;
+    await insertAccount(app);
+    final background = await opening.last;
+    expect(await accounts(background), 1);
+    await app.close();
+    await background.close();
+  });
+
   test('a database that does not open is in the error log as a crash', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
     await db.close();
@@ -92,14 +159,14 @@ void main() {
 
   test('the key is created once and then read from the keychain only once; a failed read is asked again', () async {
     final keychain = FakeSecureStore()..failure = Exception('keychain bloccato');
-    await expectLater(PostinoDatabase.keyFrom(keychain), throwsException);
+    await expectLater(PostinoDatabase.keyFrom(keychain, path), throwsException);
 
     keychain.failure = null;
-    final key = await PostinoDatabase.keyFrom(keychain);
+    final key = await PostinoDatabase.keyFrom(keychain, path);
     expect(key, hasLength(64));
     keychain.failure = Exception('a second read would prompt again');
-    expect(await PostinoDatabase.keyFrom(keychain), key);
-    expect(await PostinoDatabase.keyFrom(FakeSecureStore()..values.addAll(keychain.values)), key);
+    expect(await PostinoDatabase.keyFrom(keychain, path), key);
+    expect(await PostinoDatabase.keyFrom(FakeSecureStore()..values.addAll(keychain.values), path), key);
   });
 
   test('deleted content is overwritten (secure_delete)', () async {

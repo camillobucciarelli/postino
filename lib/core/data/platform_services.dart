@@ -172,7 +172,7 @@ abstract class DatabaseModule() {
   /// After the [log]: a database that does not open is recorded (#116).
   Future<PostinoDatabase> database(@Named(deviceOnlyKeychainName) SecureStore keychain, ErrorLog log) async {
     final dir = await getApplicationSupportDirectory();
-    return PostinoDatabase.open('${dir.path}/postino.db', keychain, log: log);
+    return PostinoDatabase.open(PostinoDatabase.fileIn(dir.path), keychain, log: log);
   }
 }
 

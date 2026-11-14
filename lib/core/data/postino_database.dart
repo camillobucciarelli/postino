@@ -28,6 +28,7 @@ import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
 import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'database_lock.dart';
 import 'device_only_key.dart';
 import 'row_mappers.dart';
 import 'search_index.dart';
@@ -93,48 +94,55 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   /// A file that does not open (damaged, wrong key) is a crash for [log] before it propagates (#116): Postino cannot
   /// start, and the next start proposes the Segnalazione di un problema.
   static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
-    final key = await keyFrom(keychain);
-    // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
-    // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
-    if (await keychain.read(_freshName) != null) {
-      for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
-        if (File(f).existsSync()) File(f).deleteSync();
+    final key = await keyFrom(keychain, path);
+    // Locked up to the first open: the mark read before another isolate's wipe and open would wipe a live database.
+    return withDatabaseLock(_lockOf(path), () async {
+      // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
+      // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
+      if (await keychain.read(_freshName) != null) {
+        for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
+          if (File(f).existsSync()) File(f).deleteSync();
+        }
+        await keychain.delete(_freshName);
       }
-      await keychain.delete(_freshName);
-    }
-    final db = PostinoDatabase(
-      NativeDatabase(
-        File(path),
-        // Throwing here makes drift close the native handle (wrong key, no SQLCipher).
-        setup: (sql) {
-          sql.execute("PRAGMA key = \"x'$key'\"");
-          if (sql.select('PRAGMA cipher_version').isEmpty) {
-            throw StateError('SQLite without SQLCipher: refusing to open');
-          }
-          // A wrong key fails here.
-          sql.select('SELECT count(*) FROM sqlite_master');
-          _secureDelete(sql);
-          // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
-          sql.execute('PRAGMA busy_timeout = 5000');
-        },
-      ),
-    );
-    try {
-      await db.customSelect('SELECT 1').get(); // open now, not on first query
-      return db;
-    } catch (e, s) {
-      log?.record(e, stack: s, context: 'database', crash: true);
-      await db.close();
-      rethrow;
-    }
+      final db = PostinoDatabase(
+        NativeDatabase(
+          File(path),
+          // Throwing here makes drift close the native handle (wrong key, no SQLCipher).
+          setup: (sql) {
+            sql.execute("PRAGMA key = \"x'$key'\"");
+            if (sql.select('PRAGMA cipher_version').isEmpty) {
+              throw StateError('SQLite without SQLCipher: refusing to open');
+            }
+            // A wrong key fails here.
+            sql.select('SELECT count(*) FROM sqlite_master');
+            _secureDelete(sql);
+            // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
+            sql.execute('PRAGMA busy_timeout = 5000');
+          },
+        ),
+      );
+      try {
+        await db.customSelect('SELECT 1').get(); // open now, not on first query
+        return db;
+      } catch (e, s) {
+        log?.record(e, stack: s, context: 'database', crash: true);
+        await db.close();
+        rethrow;
+      }
+    });
   }
+
+  /// The database file in the app's support [dir].
+  static String fileIn(String dir) => '$dir/postino.db';
 
   /// The database key (hex) from the [keychain], generated and saved at the first launch; the error log's keys
   /// derive from it too (#116). Read once per [keychain]: each read may be a system prompt (#76).
-  /// A failed read is not remembered: the next call asks again.
-  static Future<String> keyFrom(SecureStore keychain) async {
+  /// A failed read is not remembered: the next call asks again. Read, migrated or created under the lock of the
+  /// database at [path]: another isolate starting meanwhile reads the key this one wrote, never a second one.
+  static Future<String> keyFrom(SecureStore keychain, String path) async {
     try {
-      return await (_keys[keychain] ??= _readOrCreateKey(keychain));
+      return await (_keys[keychain] ??= withDatabaseLock(_lockOf(path), () => _readOrCreateKey(keychain)));
     } on Object catch (_) {
       _keys[keychain] = null;
       rethrow;
@@ -353,6 +361,9 @@ void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = 
 
 const _keyName = 'database_key';
 const _freshName = '$_keyName.fresh';
+
+/// Never wiped with the database: it outlives the restore it guards.
+String _lockOf(String path) => '$path.lock';
 
 /// The light-theme ARGB colors v1-v3 stored, in palette order (sky … graphite).
 const _v3AccountColors = [

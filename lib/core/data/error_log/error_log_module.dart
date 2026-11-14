@@ -14,10 +14,12 @@ abstract class ErrorLogModule() {
   /// In the app's support folder, next to the database, under keys derived from the database's (#116).
   @preResolve
   @Singleton(env: [Environment.prod])
-  Future<ErrorLog> errorLog(@Named(deviceOnlyKeychainName) SecureStore keychain, Clock clock) async =>
-      EncryptedErrorLog(
-        const LocalFileSystem().directory('${(await getApplicationSupportDirectory()).path}/logs'),
-        logKeysFrom(await PostinoDatabase.keyFrom(keychain)),
-        clock,
-      );
+  Future<ErrorLog> errorLog(@Named(deviceOnlyKeychainName) SecureStore keychain, Clock clock) async {
+    final dir = (await getApplicationSupportDirectory()).path;
+    return EncryptedErrorLog(
+      const LocalFileSystem().directory('$dir/logs'),
+      logKeysFrom(await PostinoDatabase.keyFrom(keychain, PostinoDatabase.fileIn(dir))),
+      clock,
+    );
+  }
 }

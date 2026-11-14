@@ -18,6 +18,9 @@ typedef PostinoSuggestion = ({String? name, String address});
 /// The first Esc closes it ([onDismiss]) before the page it is on, like a selection (PostinoClearSelectionIntent).
 /// Screen readers hear [countLabel] when the list opens or changes, and the highlighted entry as it moves, read as
 /// «Name, address».
+/// The panel opens and fades in, and closes and fades out still showing what it showed (#283, [PostinoMotion.state]);
+/// its height follows the list. The opening is inside the Material, so its shadow is never cut; a closing panel takes
+/// no taps and is not read.
 class const PostinoSuggestions({
   super.key,
 
@@ -49,13 +52,30 @@ class const PostinoSuggestions({
   State<PostinoSuggestions> createState() => _PostinoSuggestionsState();
 }
 
-class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
+class _PostinoSuggestionsState() extends State<PostinoSuggestions> with SingleTickerProviderStateMixin {
   final _portal = OverlayPortalController();
   final _scroll = ScrollController();
+
+  late final AnimationController _open;
+  late final CurvedAnimation _shown;
+
+  /// The list drawn: the suggestions, or the last ones while the panel closes.
+  late ({List<PostinoSuggestion> list, int highlighted}) _drawn;
 
   @override
   void initState() {
     super.initState();
+    _drawn = (list: widget.suggestions, highlighted: widget.highlighted);
+    // Open from the first build if there is something to suggest: it does not animate.
+    _open = AnimationController(vsync: this, value: widget.suggestions.isEmpty ? 0 : 1)
+      ..addStatusListener((s) {
+        if (s.isDismissed && mounted) setState(() {});
+      });
+    _shown = CurvedAnimation(
+      parent: _open,
+      curve: PostinoMotion.standardDecelerate,
+      reverseCurve: PostinoMotion.standardAccelerate,
+    );
     // Always shown, empty while there is nothing to suggest: show() may not be called while building.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _portal.show();
@@ -66,7 +86,16 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
   void didUpdateWidget(PostinoSuggestions old) {
     super.didUpdateWidget(old);
     final s = widget.suggestions;
-    if (s.isEmpty) return;
+    final d = PostinoMotion.of(context, PostinoMotion.state);
+    _open
+      ..duration = d
+      ..reverseDuration = d;
+    if (s.isEmpty) {
+      _open.reverse();
+      return;
+    }
+    _drawn = (list: s, highlighted: widget.highlighted);
+    _open.forward();
     if (!listEquals(s, old.suggestions)) {
       _announce(widget.countLabel);
     } else if (widget.highlighted != old.highlighted) {
@@ -79,6 +108,8 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
 
   @override
   void dispose() {
+    _shown.dispose();
+    _open.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -88,7 +119,7 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
   Widget build(BuildContext context) => OverlayPortal.overlayChildLayoutBuilder(
     controller: _portal,
     overlayChildBuilder: (context, info) {
-      if (widget.suggestions.isEmpty) return const SizedBox.shrink();
+      if (_open.isDismissed) return const SizedBox.shrink();
       final field = MatrixUtils.transformRect(info.childPaintTransform, Offset.zero & info.childSize);
       final (:above, :height) = _room(MediaQuery.of(context), field, info.overlaySize);
       return Stack(
@@ -98,7 +129,7 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
             width: field.width,
             top: above ? null : field.bottom,
             bottom: above ? info.overlaySize.height - field.top : null,
-            child: _panel(context, height),
+            child: _panel(context, height, above: above),
           ),
         ],
       );
@@ -121,38 +152,63 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> {
     return (above: above, height: (above ? over : below).clamp(PostinoSize.touchTargetAndroid, _maxHeight));
   }
 
-  Widget _panel(BuildContext context, double maxHeight) {
+  /// The list's height follows it; not with reduced motion (AnimatedSize cannot take a zero duration).
+  static Widget _sized(BuildContext context, Alignment from, Widget child) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : AnimatedSize(duration: PostinoMotion.state, curve: PostinoMotion.standard, alignment: from, child: child);
+
+  Widget _panel(BuildContext context, double maxHeight, {required bool above}) {
+    // It opens from the field: down from its top under it, up from its bottom above it.
+    final from = above ? Alignment.bottomCenter : Alignment.topCenter;
     final c = context.pc;
-    final s = widget.suggestions;
+    final (list: s, :highlighted) = _drawn;
+    final closing = widget.suggestions.isEmpty;
     // A tap here is inside the field: it keeps the focus (and its keyboard on a phone).
     return TextFieldTapRegion(
-      child: Material(
-        color: c.surfaceRaised,
-        elevation: PostinoElevation.e3,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
-          side: BorderSide(color: c.borderSubtle),
-        ),
-        // At text 200% the rows grow: the panel scrolls, the highlighted row kept in view.
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: SingleChildScrollView(
-            controller: _scroll,
-            padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s1),
-            child: Semantics(
-              explicitChildNodes: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final (i, item) in s.indexed)
-                    _Row(
-                      key: ValueKey(('suggestion', i, i == widget.highlighted)),
-                      suggestion: item,
-                      highlighted: i == widget.highlighted,
-                      onTap: () => widget.onSelected(i),
+      child: FadeTransition(
+        opacity: _shown,
+        child: IgnorePointer(
+          ignoring: closing,
+          child: ExcludeSemantics(
+            excluding: closing,
+            child: Material(
+              color: c.surfaceRaised,
+              elevation: PostinoElevation.e3,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),
+                side: BorderSide(color: c.borderSubtle),
+              ),
+              // At text 200% the rows grow: the panel scrolls, the highlighted row kept in view.
+              child: SizeTransition(
+                sizeFactor: _shown,
+                alignment: from,
+                child: _sized(
+                  context,
+                  from,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxHeight),
+                    child: SingleChildScrollView(
+                      controller: _scroll,
+                      padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s1),
+                      child: Semantics(
+                        explicitChildNodes: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final (i, item) in s.indexed)
+                              _Row(
+                                key: ValueKey(('suggestion', i, i == highlighted)),
+                                suggestion: item,
+                                highlighted: i == highlighted,
+                                onTap: () => widget.onSelected(i),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
           ),

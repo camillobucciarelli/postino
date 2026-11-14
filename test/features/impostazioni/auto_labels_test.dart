@@ -70,6 +70,10 @@ Future<void> emit(WidgetTester tester, FakeModelDownload model, ModelDownloadSta
   model.emit(state);
   await tester.pump();
   await tester.pump();
+  // One stage fades into the next and the banner's height follows (#283): let them end (a spinner never settles).
+  for (var i = 0; i < 3; i++) {
+    await tester.pump(PostinoMotion.snackbar);
+  }
 }
 
 final _row = find.ancestor(of: find.text('Viaggi'), matching: find.byType(PostinoSwitchRow));

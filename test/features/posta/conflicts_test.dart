@@ -153,6 +153,59 @@ void main() {
       expect(title(tester), '1 conflitto');
     });
 
+    testWidgets('a resolved row fades and closes out of reach (#283); the last one gives way to the empty state', (
+      tester,
+    ) async {
+      await start(tester);
+      await archiveVsTrash(tester, a, 'a', '1');
+      await archiveVsTrash(tester, b, 'b', '2');
+      await openList(tester);
+      final full = tester.getSize(row('a', '1')).height;
+
+      await tester.tap(inRow(row('a', '1'), find.text('La tua')));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      final fade = find.ancestor(of: row('a', '1'), matching: find.byType(PostinoSizeFade));
+      expect(tester.getSize(fade).height, inExclusiveRange(0, full), reason: 'half way it is closing');
+      expect(Focus.of(tester.element(inRow(row('a', '1'), find.text('La tua')))).canRequestFocus, isFalse);
+      expect(find.text('1 conflitto'), findsOneWidget, reason: 'the count does not wait');
+      final next = inRow(row('b', '2'), find.text('La tua'));
+      expect(Focus.of(tester.element(next)).hasPrimaryFocus, isTrue, reason: 'the focus goes on at once');
+      await tester.pumpAndSettle();
+      expect(row('a', '1'), findsNothing);
+
+      final handle = tester.ensureSemantics();
+      await tester.tap(next);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(PostinoMotion.state ~/ 2);
+      final empty = find.text('Nessun conflitto');
+      expect(empty, findsOneWidget, reason: 'the empty state fades in at once');
+      expect(primaryFocus?.debugLabel, 'Nessun conflitto', reason: 'the focus lands on it at once');
+      expect(find.semantics.byLabel(RegExp('La tua')), findsNothing, reason: 'the leaving list is not read');
+      await tester.pumpAndSettle();
+      expect(row('b', '2'), findsNothing);
+      expect(primaryFocus?.debugLabel, 'Nessun conflitto');
+      handle.dispose();
+    });
+
+    testWidgets('with reduced motion a resolved row goes at once', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+        disableAnimations: true,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await start(tester);
+      await archiveVsTrash(tester, a, 'a', '1');
+      await archiveVsTrash(tester, b, 'b', '2');
+      await openList(tester);
+      await tester.tap(inRow(row('a', '1'), find.text('La tua')));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(row('a', '1'), findsNothing);
+    });
+
     testWidgets('«Del Provider» takes the Provider value here and writes nothing on the Provider', (tester) async {
       await start(tester);
       await archiveVsTrash(tester, a, 'a', '1');

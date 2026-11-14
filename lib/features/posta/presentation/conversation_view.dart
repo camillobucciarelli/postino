@@ -263,57 +263,63 @@ class _ConversationViewState()
             ),
         ],
       ),
-      body: !ready
-          ? const SizedBox.shrink()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ConversationConflicts(
-                  accountId: widget.accountId,
-                  messages: {for (final m in messages) m.message.id: m.message},
-                ),
-                Expanded(
-                  child: ConversationBody(
-                    account: a,
-                    messages: messages,
-                    labels: _labels,
-                    trusted: _trusted,
-                    expanded: _expanded,
-                    failed: _failed,
-                    attachments: _attachments,
-                    onToggle: _toggle,
-                    onFetchBody: _fetchBody,
-                    onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
-                    onRemoveLabel: (label) =>
-                        removeConversationLabel(context, conversationKey, [for (final m in messages) m.message], label),
+      // The thread fades in once it is there (#283); a thread ready at the first build is just there.
+      body: PostinoFadeSwitcher(
+        curve: PostinoMotion.standardDecelerate,
+        child: !ready
+            ? const SizedBox.shrink()
+            : Column(
+                key: const ValueKey('thread'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ConversationConflicts(
+                    accountId: widget.accountId,
+                    messages: {for (final m in messages) m.message.id: m.message},
                   ),
-                ),
-                // Under the thread, always in view: on the last message (ADR 0014: r, a, f).
-                if (_forwardUnavailable)
-                  PostinoBanner(
-                    key: const ValueKey('forward-unavailable'),
-                    tone: PostinoBannerTone.warning,
-                    title: t.forwardUnavailable,
+                  Expanded(
+                    child: ConversationBody(
+                      account: a,
+                      messages: messages,
+                      labels: _labels,
+                      trusted: _trusted,
+                      expanded: _expanded,
+                      failed: _failed,
+                      attachments: _attachments,
+                      onToggle: _toggle,
+                      onFetchBody: _fetchBody,
+                      onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
+                      onRemoveLabel: (label) => removeConversationLabel(context, conversationKey, [
+                        for (final m in messages) m.message,
+                      ], label),
+                    ),
                   ),
-                PostinoActionBar(
-                  children: [
-                    PostinoButton(key: const ValueKey('reply'), label: t.reply, onPressed: _reply),
-                    PostinoButton(
-                      key: const ValueKey('reply-all'),
-                      label: t.replyAll,
-                      variant: PostinoButtonVariant.ghost,
-                      onPressed: _replyAll,
+                  // Under the thread, always in view: on the last message (ADR 0014: r, a, f).
+                  if (_forwardUnavailable)
+                    PostinoBanner(
+                      key: const ValueKey('forward-unavailable'),
+                      tone: PostinoBannerTone.warning,
+                      title: t.forwardUnavailable,
                     ),
-                    PostinoButton(
-                      key: const ValueKey('forward'),
-                      label: t.forward,
-                      variant: PostinoButtonVariant.ghost,
-                      onPressed: _forward,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  PostinoActionBar(
+                    children: [
+                      PostinoButton(key: const ValueKey('reply'), label: t.reply, onPressed: _reply),
+                      PostinoButton(
+                        key: const ValueKey('reply-all'),
+                        label: t.replyAll,
+                        variant: PostinoButtonVariant.ghost,
+                        onPressed: _replyAll,
+                      ),
+                      PostinoButton(
+                        key: const ValueKey('forward'),
+                        label: t.forward,
+                        variant: PostinoButtonVariant.ghost,
+                        onPressed: _forward,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

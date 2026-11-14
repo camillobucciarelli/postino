@@ -13,13 +13,18 @@ import 'oauth_connect.dart';
 import 'password_account_form.dart';
 
 /// One `warning` Banner per Da ricollegare Account, offering to sign in again: the consent of the Provider for Gmail and
-/// Microsoft, the password form with the address locked for iCloud and IMAP.
+/// Microsoft, the password form with the address locked for iCloud and IMAP. A banner opens and closes as its Account
+/// goes Da ricollegare and back, or arrives already so after the first list of Accounts (PostinoReveal, #283); a
+/// removed Account takes its banner away at once.
 class const ReconnectBanners({super.key}) extends StatefulWidget {
   @override
   State<ReconnectBanners> createState() => _ReconnectBannersState();
 }
 
 class _ReconnectBannersState() extends State<ReconnectBanners> with AccountsSignal {
+  /// The Accounts already shown; null before the first list, whose banners are just there.
+  Set<String>? _known;
+
   Future<void> _reconnect(Account a) async {
     final consent = connectWithConsent(GetIt.I<AccountsRepository>(), a.provider, loginHint: a.address);
     if (consent == null) {
@@ -35,26 +40,36 @@ class _ReconnectBannersState() extends State<ReconnectBanners> with AccountsSign
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
-    builder: (context) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final a in accounts.value.value ?? const <Account>[])
-          if (a.status == AccountStatus.daRicollegare)
-            PostinoBanner(
-              key: ValueKey('da-ricollegare-${a.id}'),
-              tone: PostinoBannerTone.warning,
-              icon: PostinoIcons.key,
-              account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
-              title: context.t.daRicollegare.title(name: a.name),
-              message: switch (a.provider) {
-                ProviderKind.gmail => context.t.daRicollegare.message,
-                ProviderKind.microsoft => context.t.daRicollegare.microsoftMessage,
-                ProviderKind.icloud || ProviderKind.imap => context.t.daRicollegare.passwordMessage,
-              },
-              actionLabel: context.t.daRicollegare.signIn,
-              onAction: () => _reconnect(a),
+    builder: (context) {
+      final list = accounts.value.value;
+      final known = _known;
+      if (list != null) _known = {for (final a in list) a.id};
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final a in list ?? const <Account>[])
+            PostinoReveal(
+              key: ValueKey('reveal-${a.id}'),
+              appear: known != null && !known.contains(a.id),
+              child: a.status != AccountStatus.daRicollegare
+                  ? null
+                  : PostinoBanner(
+                      key: ValueKey('da-ricollegare-${a.id}'),
+                      tone: PostinoBannerTone.warning,
+                      icon: PostinoIcons.key,
+                      account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
+                      title: context.t.daRicollegare.title(name: a.name),
+                      message: switch (a.provider) {
+                        ProviderKind.gmail => context.t.daRicollegare.message,
+                        ProviderKind.microsoft => context.t.daRicollegare.microsoftMessage,
+                        ProviderKind.icloud || ProviderKind.imap => context.t.daRicollegare.passwordMessage,
+                      },
+                      actionLabel: context.t.daRicollegare.signIn,
+                      onAction: () => _reconnect(a),
+                    ),
             ),
-      ],
-    ),
+        ],
+      );
+    },
   );
 }

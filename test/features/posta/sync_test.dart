@@ -64,6 +64,31 @@ void main() {
     expect(find.byKey(_b), findsOneWidget);
   });
 
+  testWidgets('the offline Banner opens over the list and closes (#283), the list moving with it', (tester) async {
+    await start(tester);
+    final top = tester.getTopLeft(find.byKey(_a)).dy;
+    h.connectivity.online = false;
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(PostinoMotion.snackbar ~/ 2);
+    final full = tester.getSize(find.byKey(_offline)).height;
+    final half = tester.getTopLeft(find.byKey(_a)).dy - top;
+    expect(half, inExclusiveRange(0, full), reason: 'the list is pushed down bit by bit');
+    await tester.pumpAndSettle();
+    final open = tester.getTopLeft(find.byKey(_a)).dy - top;
+    expect(open, greaterThan(half));
+
+    h.connectivity.online = true;
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(PostinoMotion.snackbar ~/ 2);
+    expect(find.byKey(_offline), findsOneWidget, reason: 'still drawn while it closes');
+    expect(tester.getTopLeft(find.byKey(_a)).dy - top, inExclusiveRange(0, open));
+    await tester.pumpAndSettle();
+    expect(find.byKey(_offline), findsNothing);
+    expect(tester.getTopLeft(find.byKey(_a)).dy, top);
+  });
+
   testWidgets('offline shows the offline Banner; back online, the incremental sync fetches only the differences', (
     tester,
   ) async {

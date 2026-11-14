@@ -25,7 +25,7 @@ final c = _row('c');
 
 void main() {
   late int changed;
-  late RowMotion motion;
+  late RowMotion<InboxEntry> motion;
   List<InboxEntry>? update(List<InboxEntry>? list, {bool reduced = false}) => motion.update(
     list == null ? null : [...list],
     enter: reduced ? Duration.zero : _enter,
@@ -37,7 +37,7 @@ void main() {
     // A first frame: the tickers count from the test's own clock.
     await tester.pumpWidget(const SizedBox());
     changed = 0;
-    motion = RowMotion(const TestVSync(), () => changed++);
+    motion = RowMotion<InboxEntry>(const TestVSync(), () => changed++, _k);
     addTearDown(motion.dispose);
   }
 

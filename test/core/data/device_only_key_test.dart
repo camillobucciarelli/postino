@@ -282,6 +282,35 @@ void main() {
       expect(await readDeviceOnly(keychain, name), key);
     });
 
+    test(
+      'a legacy key without the moved mark never replaces a different key in use (an old keychain restored)',
+      () async {
+        dataProtection.values.addAll({name: 'in use', '$name.device_only': '1'});
+        expect(await readDeviceOnly(keychain, name), 'in use');
+        expect(dataProtection.values, {name: 'in use', '$name.device_only': '1'});
+        expect(legacy.values, migrated, reason: 'left as it is');
+        expect(legacy.writes, isEmpty);
+      },
+    );
+
+    test('a moved mark that cannot be written fails the start: without it a Debug build would wipe', () async {
+      legacy.values.clear();
+      dataProtection.values.addAll({name: key, '$name.device_only': '1'});
+      legacy.failingWrites.add('$name.moved');
+      await expectLater(readDeviceOnly(keychain, name), throwsException);
+
+      legacy.failingWrites.clear();
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(legacy.values, {'$name.moved': '1'});
+    });
+
+    test('a Data Protection keychain that cannot be read fails the start before the legacy one is touched', () async {
+      final locked = FakeSecureStore()..failure = Exception('-34018');
+      await expectLater(readDeviceOnly(MovingKeychain(locked, legacy), name), throwsException);
+      expect(legacy.values, migrated);
+      expect([...locked.writes, ...legacy.writes], isEmpty);
+    });
+
     test('a legacy key wins over the moved one: a downgrade wrote it, and the database with it', () async {
       dataProtection.values.addAll({name: 'old', '$name.device_only': '1'});
       legacy.values['$name.moved'] = '1';
@@ -325,8 +354,9 @@ void main() {
         }
         final legacy = FakeSecureStore()..values.addAll(from.values);
         final read = await readDeviceOnly(MovingKeychain(FakeSecureStore()..values.addAll(to.values), legacy), name);
+        // Killed before the key was saved: none, as at a first launch (no database yet). Saved: always found.
+        expect(read, to.values[name] == key ? key : isNull, reason: 'killed after $budget operations');
         if (read != null) {
-          expect(read, key, reason: 'killed after $budget operations');
           await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build fails, never wipes');
         }
         if (!ops.killed) break;

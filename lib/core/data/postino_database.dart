@@ -102,7 +102,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
       // A mark of another key is stale, left by a start killed before a downgrade made this key (#270): dropped.
       if (await keychain.read(_freshName) case final fresh?) {
-        if (fresh == '1' || fresh == freshOf(key)) {
+        if (isFreshOf(fresh, key)) {
           for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
             if (File(f).existsSync()) File(f).deleteSync();
           }

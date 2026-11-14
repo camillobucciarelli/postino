@@ -169,10 +169,12 @@ void main() {
   });
 
   test('a fresh mark of another key, left before a downgrade made this one, wipes nothing (#270)', () async {
+    // The older version, after the downgrade: it does not know the moved mark the release left, and keeps it.
     final legacy = FakeSecureStore();
-    final db = await PostinoDatabase.open(path, legacy); // the older version, after the downgrade
+    final db = await PostinoDatabase.open(path, legacy);
     await insertAccount(db);
     await db.close();
+    legacy.values['database_key.moved'] = '1';
 
     final stale = 'ab' * 32;
     final dataProtection = FakeSecureStore()

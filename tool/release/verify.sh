@@ -25,6 +25,9 @@ is() { [ "$(/usr/libexec/PlistBuddy -c "Print :$2" "$dir/$1.plist" 2> /dev/null)
 is profile TeamIdentifier:0 "$team"
 # A Development profile passes notarization and spctl too, then the app does not launch on any other Mac.
 is profile ProvisionsAllDevices true
+# An expired profile no longer authorizes the app's restricted entitlements: it would not launch.
+expires=$(plutil -extract ExpirationDate raw -o - "$dir/profile.plist")
+[[ $expires > $(date -u +%Y-%m-%dT%H:%M:%SZ) ]] || fail "The provisioning profile expired on $expires"
 is profile Entitlements:com.apple.application-identifier "$app_id"
 group=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:keychain-access-groups:0' "$dir/profile.plist" 2> /dev/null) ||
   fail "The profile authorizes no keychain access group"

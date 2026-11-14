@@ -43,6 +43,9 @@ void main() {
       final to = await optionsOf(moving.to, TargetPlatform.macOS);
       expect(to['usesDataProtectionKeychain'], 'true');
       expect(to['accessibility'], 'first_unlock_this_device');
+      // In a signed app a legacy query targets both keychains: the names must never meet.
+      expect(to['accountName'], KeychainStore.dataProtectionService);
+      expect((await optionsOf(moving.from, TargetPlatform.macOS))['accountName'], isNot(to['accountName']));
       expect((await optionsOf(moving, TargetPlatform.macOS))['usesDataProtectionKeychain'], 'true');
       expect((await optionsOf(moving.from, TargetPlatform.macOS))['usesDataProtectionKeychain'], 'false');
     },

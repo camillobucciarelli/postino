@@ -19,7 +19,10 @@ fails() { # <what> <file in the site, or "guide"> <sed on it, or "rm">
   cp "$guide" "$tmp/guide.html"
   local target="$tmp/s/$2" source="$site/$2"
   if [ "$2" = guide ]; then target="$tmp/guide.html"; source=$guide; fi
-  if [ "$3" = rm ]; then rm "$target"; else sed -E "$3" "$source" > "$target"; fi
+  if [ "$3" = rm ]; then rm "$target"; else
+    sed -E "$3" "$source" > "$target"
+    if cmp -s "$source" "$target"; then echo "the sed of '$1' changed nothing"; exit 1; fi
+  fi
   if tool/release/download_check.sh "$tmp/s" "$tmp/guide.html" > /dev/null 2>&1; then echo "should fail: $1"; exit 1; fi
 }
 fails "Google Fonts link" index.html 's|</head>|<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree"></head>|'
@@ -43,11 +46,13 @@ fails "switch to the twin" en/privacy.html 's|href="../privacy.html" hreflang="i
 fails "download link" en/index.html 's|\.\./android/latest/Postino.apk|android/latest/Postino.apk|'
 fails "privacy link of the product page" en/index.html 's|<a href="privacy.html">|<a href="../privacy.html">|'
 fails "back link of the privacy page" privacy.html 's|<a href="index.html">|<a href="en/index.html">|'
-fails "placeholder on a page published as it is" privacy.html 's|13 novembre 2026|__VERSION__|'
+fails "placeholder on a page published as it is" privacy.html 's|Ultimo aggiornamento|__VERSION__|'
 fails "broken markup" privacy.html 's|</ul>|</strong></ul>|'
 fails "policy link without rel" en/privacy.html 's|policy" rel="noopener noreferrer">|policy">|'
 fails "policy URL on a link element" en/privacy.html 's|</head>|<link href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"></head>|'
 fails "other page of the policy host" privacy.html 's|api-services-user-data-policy"|other-page"|'
+fails "Cloudflare policy without rel" privacy.html 's|privacypolicy/" rel="noopener noreferrer"|privacypolicy/"|'
+fails "other page of Cloudflare" en/privacy.html 's|cloudflare.com/privacypolicy/|cloudflare.com/other/|'
 fails "privacy contact other than the guide's" privacy.html 's|mailto:camillo@bucciarelli.dev|mailto:privacy@example.com|'
 fails "privacy contact gone" en/privacy.html 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|'
 fails "mail link on the product page" index.html 's|<footer>|<footer><a href="mailto:camillo@bucciarelli.dev">x</a>|'

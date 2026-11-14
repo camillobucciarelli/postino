@@ -61,6 +61,12 @@ class SystemClock() implements Clock {
 
   @override
   Stream<void> every(Duration period) => Stream<void>.periodic(period);
+
+  @override
+  Duration Function() stopwatch() {
+    final s = Stopwatch()..start();
+    return () => s.elapsed;
+  }
 }
 
 /// Network state from the OS (connectivity_plus).

@@ -23,6 +23,9 @@ abstract interface class Clock() {
 
   /// Fires every [period], for as long as it is listened to.
   Stream<void> every(Duration period);
+
+  /// Starts measuring: the function gives the time passed since, which a change of the system time does not move.
+  Duration Function() stopwatch();
 }
 
 /// Lo stato della rete.

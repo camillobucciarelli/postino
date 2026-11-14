@@ -89,7 +89,7 @@ class const PostinoMessageTile({
       onTap: onTap,
       customSemanticsActions: customSemanticsActions,
       excludeSemantics: true,
-      child: Material(
+      child: _FadingBackground(
         color: selected ? c.listItemBgSelected : c.listItemBg,
         child: InkWell(
           focusNode: focusNode,
@@ -112,7 +112,8 @@ class const PostinoMessageTile({
                       width: PostinoBorder.accountBarWidth,
                       child: ColoredBox(color: c.account(a.color).color),
                     ),
-                  Padding(
+                  _FadingLook(
+                    look: (unread, starred),
                     padding: EdgeInsets.symmetric(horizontal: PostinoSpacing.s4, vertical: d.padY),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,4 +229,33 @@ class const PostinoMessageTile({
       ),
     );
   }
+}
+
+/// The row's background: the selection colours it gradually (#282). The ink stays on the transparent Material.
+class const _FadingBackground({required final Color color, required final Widget child}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+    duration: PostinoMotion.of(context, PostinoMotion.state),
+    curve: PostinoMotion.standard,
+    color: color,
+    child: Material(type: MaterialType.transparency, child: child),
+  );
+}
+
+/// The row's content: letto/non letto and the Stella fade from one [look] to the other (#282). Nothing focusable
+/// inside (the focus is the InkWell's, outside), so the two looks can live side by side while they fade.
+class const _FadingLook({
+  required final Object look,
+  required final EdgeInsetsGeometry padding,
+  required final Widget child,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: PostinoMotion.of(context, PostinoMotion.toggle),
+    switchInCurve: PostinoMotion.standard,
+    switchOutCurve: PostinoMotion.standard,
+    // Top-aligned like the row's own Stack.
+    layoutBuilder: (current, previous) => Stack(children: [...previous, ?current]),
+    child: Padding(key: ValueKey(look), padding: padding, child: child),
+  );
 }

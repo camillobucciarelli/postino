@@ -19,6 +19,7 @@ import 'posta_shortcuts.dart';
 import 'refresh_mail.dart';
 import 'row_keep_alive.dart';
 import 'row_menu.dart';
+import 'row_motion.dart';
 import 'row_swipe.dart';
 
 /// List of Conversazioni (Posta unificata, an Account's inbox, an Etichetta); reads only from the local database
@@ -54,7 +55,7 @@ class const MessageList({
   State<MessageList> createState() => _MessageListState();
 }
 
-class _MessageListState() extends State<MessageList> {
+class _MessageListState() extends State<MessageList> with TickerProviderStateMixin {
   late final entries = streamSignal(() => widget.watch(GetIt.I<InboxRepository>()));
   // ponytail: a row is flagged when its latest message is in Conflitto; a Conflitto on an older one shows in the Conversazione.
   late final conflicts = streamSignal(
@@ -70,6 +71,12 @@ class _MessageListState() extends State<MessageList> {
   /// The row with the focus (or that had it last): the open one, or the one the arrows reached.
   (String, String)? _cursor;
   List<InboxEntry>? _list;
+
+  /// Rows entering and leaving (#282).
+  late final _motion = RowMotion(this, () => mounted ? setState(() {}) : null);
+
+  /// The rows drawn: [_list] plus the ones on their way out.
+  List<InboxEntry>? _drawn;
   bool? _wasTwoPane;
   int? _counted;
 
@@ -145,6 +152,7 @@ class _MessageListState() extends State<MessageList> {
     for (final n in _nodes.values) {
       n.dispose();
     }
+    _motion.dispose();
     for (final s in _labelSubs.values) {
       unawaited(s.cancel());
     }
@@ -180,7 +188,8 @@ class _MessageListState() extends State<MessageList> {
       );
       return;
     }
-    final list = _list;
+    // Where the row is drawn, rows on their way out included (a mass removal leaves them above it for a while).
+    final list = _drawn;
     if (tries == 0 || list == null || !_scroll.hasClients) return;
     final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
     if (at < 0) return;
@@ -283,6 +292,11 @@ class _MessageListState() extends State<MessageList> {
       final swipeActions = swipes.value.value ?? swipeActionsDefault;
       _realign(list);
       _list = list;
+      final shown = _drawn = _motion.update(
+        list,
+        enter: PostinoMotion.of(context, PostinoMotion.rowEnter),
+        leave: PostinoMotion.of(context, PostinoMotion.swipeDismiss),
+      );
       if (list != null && list.length != _counted) {
         _counted = list.length;
         WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? widget.onCount?.call(list.length) : null);
@@ -294,14 +308,15 @@ class _MessageListState() extends State<MessageList> {
       return PostinoMessageList(
         controller: _scroll,
         loading: list == null,
-        itemCount: list?.length ?? 0,
+        itemCount: shown?.length ?? 0,
         onRefresh: () => refreshMail(context, pull: true),
         loadingLabel: t.loading,
         emptyTitle: widget.emptyTitle ?? t.emptyTitle,
         emptyBody: widget.emptyBody ?? t.emptyBody,
         emptyIcon: widget.emptyIcon,
         itemBuilder: (context, i) {
-          final InboxEntry(message: m, account: a, :count, :unread, :status) = list![i];
+          final entry = shown![i];
+          final InboxEntry(message: m, account: a, :count, :unread, :status) = entry;
           final labels = [
             for (final l in _labelsOf(a.id))
               if (l.kind == LabelKind.etichetta && m.labelIds.contains(l.id)) l.name,
@@ -309,7 +324,7 @@ class _MessageListState() extends State<MessageList> {
           final time = messageTime(m.date, now, locale, t.yesterday);
           final key = (a.id, m.conversationId);
           final conflict = inConflict.contains((a.id, m.id));
-          final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list));
+          final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list!));
           PostinoMessageTile tileWith([Map<CustomSemanticsAction, VoidCallback>? semanticActions]) =>
               PostinoMessageTile(
                 key: ValueKey('row-${a.id}-${m.id}'),
@@ -345,34 +360,38 @@ class _MessageListState() extends State<MessageList> {
                   time,
                 ].join(', '),
               );
-          return RowKeepAlive(
+          return PostinoSizeFade(
             // By Conversazione, not by index: a list that changes under a swipe in progress keeps it with its row.
             key: ValueKey(key),
-            keep: key == _cursor,
-            // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
-            child: m.conversationId.startsWith('<')
-                ? tileWith()
-                : RowSwipe(
-                    accountId: a.id,
-                    conversationId: m.conversationId,
-                    labelsAreFolders: a.provider.labelsAreFolders,
-                    read: !unread,
-                    starred: _starred(list[i]),
-                    focusNode: node,
-                    actions: swipeActions,
-                    onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
-                    builder: (semanticActions) => RowMenu(
+            visibility: _motion.of(key),
+            leaving: _motion.leaving(key),
+            child: RowKeepAlive(
+              keep: key == _cursor,
+              // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
+              child: m.conversationId.startsWith('<')
+                  ? tileWith()
+                  : RowSwipe(
                       accountId: a.id,
-                      messageId: m.id,
                       conversationId: m.conversationId,
-                      focusNode: node,
                       labelsAreFolders: a.provider.labelsAreFolders,
                       read: !unread,
-                      starred: _starred(list[i]),
+                      starred: _starred(entry),
+                      focusNode: node,
+                      actions: swipeActions,
                       onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
-                      child: tileWith(semanticActions),
+                      builder: (semanticActions) => RowMenu(
+                        accountId: a.id,
+                        messageId: m.id,
+                        conversationId: m.conversationId,
+                        focusNode: node,
+                        labelsAreFolders: a.provider.labelsAreFolders,
+                        read: !unread,
+                        starred: _starred(entry),
+                        onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
+                        child: tileWith(semanticActions),
+                      ),
                     ),
-                  ),
+            ),
           );
         },
       );
@@ -383,4 +402,6 @@ class _MessageListState() extends State<MessageList> {
 /// A message of the Conversazione has the Stella: the row's labels are those of all of them.
 bool _starred(InboxEntry e) => e.message.labelIds.contains(starredLabelId);
 
-(String, String) _firstKey(List<InboxEntry> list) => (list.first.account.id, list.first.message.conversationId);
+/// The first row, the Tab stop before any focus; none in a list emptied while its last rows leave.
+(String, String)? _firstKey(List<InboxEntry> list) =>
+    list.isEmpty ? null : (list.first.account.id, list.first.message.conversationId);

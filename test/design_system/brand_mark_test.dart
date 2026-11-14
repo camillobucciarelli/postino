@@ -42,6 +42,11 @@ void main() {
 
   testComponentGoldens({
     'brand_mark': () => const PostinoBrandMark(),
+    // The 0 ms frame: what assets/brand/mark-closed.svg (the native splash, #267) must look like.
+    'brand_mark_closed': () => CustomPaint(
+      size: const Size.square(128),
+      painter: PostinoBrandMarkPainter(const AlwaysStoppedAnimation(0)),
+    ),
     'brand_mark_frame': () => CustomPaint(
       size: const Size.square(128),
       painter: PostinoBrandMarkPainter(const AlwaysStoppedAnimation(450 / 900)),

@@ -61,14 +61,16 @@ for d in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
   png "$(pick "$px")" "$px" "$RES/mipmap-$n/ic_launcher.png"
   nested "$B/mark.svg" 15.6 15 76.8 108 "$fg" "$RES/mipmap-$n/ic_launcher_foreground.png"
   nested "$B/mark-mono.svg" 15.6 15 76.8 108 "$fg" "$RES/mipmap-$n/ic_launcher_monochrome.png"
-  png "$B/mark.svg" "$sp" "$RES/drawable-$n/splash_mark.png"
+  png "$B/mark-closed.svg" "$sp" "$RES/drawable-$n/splash_mark.png"
+  # Android 12+: icona animata dello splash, tela 288 dp mascherata a cerchio di 192 dp: busta chiusa 128 dp al centro.
+  nested "$B/mark-closed.svg" 80 80 128 288 "$(awk "BEGIN{print 288*$k}")" "$RES/drawable-$n/splash_icon.png"
 done
 
-# iOS splash: marchio 128 pt a 1x/2x/3x.
+# iOS splash: busta chiusa (posa a 0 ms dell'animazione, #267) 128 pt a 1x/2x/3x.
 LI=ios/Runner/Assets.xcassets/LaunchImage.imageset
-png "$B/mark.svg" 128 "$LI/LaunchImage.png"
-png "$B/mark.svg" 256 "$LI/LaunchImage@2x.png"
-png "$B/mark.svg" 384 "$LI/LaunchImage@3x.png"
+png "$B/mark-closed.svg" 128 "$LI/LaunchImage.png"
+png "$B/mark-closed.svg" 256 "$LI/LaunchImage@2x.png"
+png "$B/mark-closed.svg" 384 "$LI/LaunchImage@3x.png"
 # Tray desktop: macOS template (silhouette nera con alfa, 36 px = 18 pt @2x, la barra dei menu la colora);
 # Windows e Linux a colori, 64 px (il sistema scala alla misura del tray).
 png "$B/mark-mono.svg" 36 assets/tray/tray_icon_template.png

@@ -102,7 +102,6 @@ void main() {
     await start(answer: (c) => c.startsWith('RCPT') ? '550 5.1.1 no such user' : null);
     await expectLater(sender.send(_raw), _fails<RejectedFailure>());
     await server.stop();
-    await server.stop();
     await start(answer: (c) => c.startsWith('RCPT') ? '500 5.5.1 syntax' : null);
     await expectLater(sender.send(_raw), _fails<RejectedFailure>(), reason: '500 is the lowest permanent code');
     await server.stop();

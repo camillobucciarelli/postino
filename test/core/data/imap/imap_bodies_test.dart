@@ -1,20 +1,23 @@
 // Bodies, attachments and Conversazioni of the IMAP adapter on GreenMail (#164): MIME fixtures delivered as another
-// client would, beyond the contract.
+// client would, beyond the contract; recorded responses for what GreenMail never sends.
 @Tags(['imap'])
 library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' show Random;
+import 'dart:math' show Random, min;
 
 import 'package:enough_mail/enough_mail.dart' show MessageFlags, MessageSequence;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/imap/imap_provider.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 
+import '../../../support/fake_platform.dart';
 import '../../../support/gmail_recorded.dart' show isErr, okValue;
 import '../../../support/greenmail_server.dart';
 import '../../../support/imap_harness.dart';
+import '../../../support/recorded_imap_server.dart';
 
 const _head =
     'From: ada@example.com\r\nTo: me@example.com\r\nSubject: Prova\r\nDate: Thu, 01 Jan 2026 10:00:00 +0000\r\n';
@@ -30,7 +33,66 @@ String _alternative(String plain, String html) =>
     '--alt\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n$plain\r\n'
     '--alt\r\nContent-Type: text/html; charset=utf-8\r\n\r\n$html\r\n--alt--\r\n';
 
+/// Bytes per FETCH of an attachment, as the adapter asks for them.
+const _chunk = 256 * 1024;
+
+/// The attachment `2` of the message INBOX/7/5, of [bytes] ASCII bytes, on a server whose BODYSTRUCTURE says it is
+/// [declared] bytes: the size to download as the server reports it, 0 for a server that does not. Every partial FETCH
+/// of it is in the list returned.
+Future<(ImapProvider, List<String>)> _recorded(int bytes, {required int declared}) async {
+  final payload = 'a' * bytes;
+  final fetches = <String>[];
+  final server = await RecordedImapServer.start((command) {
+    if (basics(command, capabilities: 'IMAP4rev1') case final b?) return b;
+    final upper = command.toUpperCase();
+    if (upper.startsWith('SELECT')) return ['* 1 EXISTS', '* OK [UIDVALIDITY 7] UIDs valid', 'OK [READ-WRITE] done'];
+    if (upper.startsWith('UID FETCH 5 (UID BODYSTRUCTURE)')) {
+      const text = '("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 6 1 NIL NIL NIL)';
+      final file =
+          '("APPLICATION" "OCTET-STREAM" ("NAME" "dati.bin") NIL NIL "7BIT" $declared NIL '
+          '("ATTACHMENT" ("FILENAME" "dati.bin")) NIL)';
+      return ['* 1 FETCH (UID 5 BODYSTRUCTURE ($text$file "MIXED" ("BOUNDARY" "mix") NIL NIL))'];
+    }
+    if (RegExp(r'^UID FETCH 5 \(UID BODY\.PEEK\[2\]<(\d+)\.').firstMatch(upper) case final m?) {
+      fetches.add(command);
+      final from = int.parse(m[1]!);
+      final part = payload.substring(min(from, bytes), min(from + _chunk, bytes));
+      return ['* 1 FETCH (UID 5 BODY[2]<$from> ${literal(part)})'];
+    }
+    return ['OK done'];
+  });
+  addTearDown(server.stop);
+  final keychain = FakeSecureStore();
+  await server.remember(keychain, 'icloud:ada@icloud.com');
+  final p = ImapProvider(
+    'icloud:ada@icloud.com',
+    'ada@icloud.com',
+    keychain,
+    FakeClock(DateTime.utc(2026, 11, 6)),
+    connect: plainConnector,
+  );
+  addTearDown(p.close);
+  return (p, fetches);
+}
+
 void main() {
+  // Recorded responses: GreenMail always reports a part's size, and never one that is a whole number of chunks.
+  group('attachment download, on recorded responses', () {
+    test('a server that reports no size: the chunks go on until a short one, nothing is cut', () async {
+      final (p, fetches) = await _recorded(_chunk + 10, declared: 0);
+      expect(okValue(await p.fetchAttachment('INBOX/7/5', '2')), hasLength(_chunk + 10));
+      expect(fetches, hasLength(2));
+    });
+
+    test('exactly the size reported, a whole chunk: one FETCH, and the progress goes straight to 1', () async {
+      final (p, fetches) = await _recorded(_chunk, declared: _chunk);
+      final progress = <double>[];
+      expect(okValue(await p.fetchAttachment('INBOX/7/5', '2', onProgress: progress.add)), hasLength(_chunk));
+      expect(fetches, hasLength(1), reason: 'nothing left to ask for');
+      expect(progress, [1]);
+    });
+  });
+
   if (imapSkipReason case final reason?) {
     test('IMAP bodies', () {}, skip: reason);
     return;

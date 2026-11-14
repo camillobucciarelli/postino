@@ -73,7 +73,11 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   List<InboxEntry>? _list;
 
   /// Rows entering and leaving (#282).
-  late final _motion = RowMotion(this, () => mounted ? setState(() {}) : null);
+  late final _motion = RowMotion<InboxEntry>(
+    this,
+    () => mounted ? setState(() {}) : null,
+    (e) => (e.account.id, e.message.conversationId),
+  );
 
   /// The rows drawn: [_list] plus the ones on their way out.
   List<InboxEntry>? _drawn;

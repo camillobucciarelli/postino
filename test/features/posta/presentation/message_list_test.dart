@@ -240,7 +240,9 @@ void main() {
       await _start(
         tester,
         frame: () {
-          for (final f in tester.widgetList<PostinoSizeFade>(find.byType(PostinoSizeFade))) {
+          // The rows only: the banners above the list fade in their own way (PostinoReveal, #283).
+          final rows = find.descendant(of: find.byType(MessageList), matching: find.byType(PostinoSizeFade));
+          for (final f in tester.widgetList<PostinoSizeFade>(rows)) {
             seen++;
             expect(f.visibility, kAlwaysCompleteAnimation);
           }

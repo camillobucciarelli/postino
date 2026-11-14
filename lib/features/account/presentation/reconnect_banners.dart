@@ -13,7 +13,8 @@ import 'oauth_connect.dart';
 import 'password_account_form.dart';
 
 /// One `warning` Banner per Da ricollegare Account, offering to sign in again: the consent of the Provider for Gmail and
-/// Microsoft, the password form with the address locked for iCloud and IMAP.
+/// Microsoft, the password form with the address locked for iCloud and IMAP. A banner opens and closes as its Account
+/// goes Da ricollegare and back (PostinoReveal, #283); a removed Account takes its banner away at once.
 class const ReconnectBanners({super.key}) extends StatefulWidget {
   @override
   State<ReconnectBanners> createState() => _ReconnectBannersState();
@@ -39,21 +40,25 @@ class _ReconnectBannersState() extends State<ReconnectBanners> with AccountsSign
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final a in accounts.value.value ?? const <Account>[])
-          if (a.status == AccountStatus.daRicollegare)
-            PostinoBanner(
-              key: ValueKey('da-ricollegare-${a.id}'),
-              tone: PostinoBannerTone.warning,
-              icon: PostinoIcons.key,
-              account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
-              title: context.t.daRicollegare.title(name: a.name),
-              message: switch (a.provider) {
-                ProviderKind.gmail => context.t.daRicollegare.message,
-                ProviderKind.microsoft => context.t.daRicollegare.microsoftMessage,
-                ProviderKind.icloud || ProviderKind.imap => context.t.daRicollegare.passwordMessage,
-              },
-              actionLabel: context.t.daRicollegare.signIn,
-              onAction: () => _reconnect(a),
-            ),
+          PostinoReveal(
+            key: ValueKey('reveal-${a.id}'),
+            child: a.status != AccountStatus.daRicollegare
+                ? null
+                : PostinoBanner(
+                    key: ValueKey('da-ricollegare-${a.id}'),
+                    tone: PostinoBannerTone.warning,
+                    icon: PostinoIcons.key,
+                    account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
+                    title: context.t.daRicollegare.title(name: a.name),
+                    message: switch (a.provider) {
+                      ProviderKind.gmail => context.t.daRicollegare.message,
+                      ProviderKind.microsoft => context.t.daRicollegare.microsoftMessage,
+                      ProviderKind.icloud || ProviderKind.imap => context.t.daRicollegare.passwordMessage,
+                    },
+                    actionLabel: context.t.daRicollegare.signIn,
+                    onAction: () => _reconnect(a),
+                  ),
+          ),
       ],
     ),
   );

@@ -65,4 +65,51 @@ void main() {
       expect(readCalls(), contains(('m4', true)));
     },
   );
+
+  testWidgets('the thread fades in once it is there, from nothing to whole (#283)', (tester) async {
+    final seen = (await _openAndWatch(tester)).nonNulls.toList();
+    expect(seen.first, lessThan(1), reason: 'it does not pop in');
+    expect(seen.any((o) => o > 0 && o < 1), isTrue, reason: 'half way it is partly there');
+    expect(_threadOpacity(tester), 1);
+  });
+
+  testWidgets('with reduced motion the thread is there at once', (tester) async {
+    final seen = (await _openAndWatch(tester, reduced: true)).nonNulls.toList();
+    expect(seen, isNotEmpty);
+    expect(seen, everyElement(1));
+  });
+}
+
+/// The opacity of the thread's fade-in (#283) at this frame; null while the thread is not there.
+double? _threadOpacity(WidgetTester tester) {
+  final thread = find.byKey(const ValueKey('thread'));
+  if (thread.evaluate().isEmpty) return null;
+  final fade = find.ancestor(of: thread, matching: find.byType(FadeTransition)).first;
+  return tester.widget<FadeTransition>(fade).opacity.value;
+}
+
+/// Opens a Conversazione beside the list and returns the thread's opacity at each frame of the opening.
+Future<List<double?>> _openAndWatch(WidgetTester tester, {bool reduced = false}) async {
+  tester.view
+    ..physicalSize = const Size(1200, 844)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  if (reduced) {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
+  final h = await Harness.create();
+  (await h.addAccount('a1')).deliver(msg('m1', conversationId: 't', date: _day(1)));
+  LocaleSettings.setLocaleSync(AppLocale.it);
+  await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+  unawaited(Routefly.navigate(routePaths.posta.path));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('row-a1-m1')));
+  final seen = <double?>[];
+  for (var i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 16));
+    seen.add(_threadOpacity(tester));
+  }
+  await tester.pumpAndSettle();
+  return seen;
 }

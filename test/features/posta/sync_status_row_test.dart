@@ -34,7 +34,8 @@ Future<void> _start(WidgetTester tester, Size size) async {
   await tester.pumpAndSettle();
 }
 
-PostinoSyncStatus _status(WidgetTester tester) => tester.widget<PostinoSyncStatus>(find.byKey(_row));
+/// The status shown: while one state fades into the next (#283) the old one is still drawn, before it.
+PostinoSyncStatus _status(WidgetTester tester) => tester.widgetList<PostinoSyncStatus>(find.byKey(_row)).last;
 
 /// A poll's sync, as the app runs it on its own.
 Future<void> _autoSync(WidgetTester tester) async {

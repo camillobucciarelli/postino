@@ -1,17 +1,16 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../core/domain/inbox_repository.dart';
-
 /// The rows of the list that enter or leave (#282): a row gone from the list stays drawn at its old place while it
 /// fades and closes, a new one opens and fades in. Each moving row has its own controller, owned here and not by the
 /// row, so a row scrolled away or rebuilt at another index still ends its animation; the others are at rest.
 /// Nothing moves until the list has shown rows (loading, then the empty state the first sync fills), nor with reduced
 /// motion (durations zero). Afterwards a list that empties and fills again (Annulla on the last row) animates.
-class RowMotion(final TickerProvider _vsync, final VoidCallback _changed) {
-  final _moving = <(String, String), AnimationController>{};
-  final _leaving = <(String, String)>{};
-  List<InboxEntry>? _list;
-  List<InboxEntry>? _shown;
+/// A row is told apart by [_key] (the Conversazione for the inbox, the Conflitto in the list of the Conflitti, #283).
+class RowMotion<T>(final TickerProvider _vsync, final VoidCallback _changed, final Object Function(T) _key) {
+  final _moving = <Object, AnimationController>{};
+  final _leaving = <Object>{};
+  List<T>? _list;
+  List<T>? _shown;
   bool _hadRows = false;
 
   /// Inside [update]: an animation that ends there at once (a row that leaves before it began to enter) must not ask
@@ -19,7 +18,7 @@ class RowMotion(final TickerProvider _vsync, final VoidCallback _changed) {
   bool _updating = false;
 
   /// The rows to draw for [list]: [list] itself, plus the rows still on their way out.
-  List<InboxEntry>? update(List<InboxEntry>? list, {required Duration enter, required Duration leave}) {
+  List<T>? update(List<T>? list, {required Duration enter, required Duration leave}) {
     if (identical(list, _list)) return _shown;
     final before = _shown;
     _list = list;
@@ -37,7 +36,7 @@ class RowMotion(final TickerProvider _vsync, final VoidCallback _changed) {
     }
   }
 
-  List<InboxEntry> _diff(List<InboxEntry> list, List<InboxEntry> before, Duration enter, Duration leave) {
+  List<T> _diff(List<T> list, List<T> before, Duration enter, Duration leave) {
     final now = {for (final e in list) _key(e)};
     final was = {for (final e in before) _key(e)};
     for (final k in now) {
@@ -64,12 +63,12 @@ class RowMotion(final TickerProvider _vsync, final VoidCallback _changed) {
   }
 
   /// 1 at rest; between 0 and 1 while [key]'s row enters or leaves.
-  Animation<double> of((String, String) key) => _moving[key] ?? kAlwaysCompleteAnimation;
+  Animation<double> of(Object key) => _moving[key] ?? kAlwaysCompleteAnimation;
 
   /// [key]'s row is on its way out.
-  bool leaving((String, String) key) => _leaving.contains(key);
+  bool leaving(Object key) => _leaving.contains(key);
 
-  AnimationController _controller((String, String) key, double from, Duration enter, Duration leave) =>
+  AnimationController _controller(Object key, double from, Duration enter, Duration leave) =>
       _moving[key] = AnimationController(vsync: _vsync, value: from, duration: enter, reverseDuration: leave)
         ..addStatusListener((s) {
           if (s.isAnimating) return;
@@ -88,5 +87,3 @@ class RowMotion(final TickerProvider _vsync, final VoidCallback _changed) {
 
   void dispose() => _stop();
 }
-
-(String, String) _key(InboxEntry e) => (e.account.id, e.message.conversationId);

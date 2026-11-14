@@ -14,22 +14,26 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'conflict_row.dart';
 import 'draft_conflict_row.dart';
+import 'row_motion.dart';
 
 /// The open Conflitti, of every Account or only of [accountId]: one [ConflictRow] each, then a [DraftConflictRow] for
 /// each Bozza (#149), resolved with a tap.
 /// The row leaves the list, the focus goes to the choices of the one now in its place, and the count, a live region,
 /// is announced. Routing is the caller's: Esc and the back arrow call [onBack].
+/// A resolved row fades and closes (RowMotion and PostinoSizeFade, #283), the last one fades through to the empty
+/// state; nothing moves while the lists load.
 class const ConflictsScreen({super.key, required final VoidCallback onBack, final String? accountId})
     extends StatefulWidget {
   @override
   State<ConflictsScreen> createState() => _ConflictsScreenState();
 }
 
-class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal {
+class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal, TickerProviderStateMixin {
   late final conflicts = streamSignal(() => GetIt.I<InboxRepository>().watchConflicts(accountId: widget.accountId));
   late final drafts = streamSignal(() => GetIt.I<InboxRepository>().watchDraftConflicts(accountId: widget.accountId));
   final _emptyFocus = FocusNode(debugLabel: 'Nessun conflitto');
   final _choices = <String, FocusNode>{};
+  late final _motion = RowMotion<(Object, Account)>(this, () => mounted ? setState(() {}) : null, (r) => _key(r.$1));
 
   /// Every open Conflitto: a [Conflict], or a [DraftConflict].
   List<Object> get _all => [...?conflicts.value.value, ...?drafts.value.value];
@@ -73,6 +77,7 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
   void dispose() {
     conflicts.dispose();
     drafts.dispose();
+    _motion.dispose();
     _emptyFocus.dispose();
     for (final n in _choices.values) {
       n.dispose();
@@ -84,7 +89,6 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final t = context.t.conflitti;
-      final c = context.pc;
       final list = _all;
       _refocus(list);
       final byId = {for (final a in accounts.value.value ?? const <Account>[]) a.id: a};
@@ -97,60 +101,77 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
               case final a?)
             (k, a),
       ];
+      final loading = [conflicts.value, drafts.value, accounts.value].any((s) => s.isLoading && !s.hasValue);
+      final shown = _motion.update(
+        loading ? null : rows,
+        enter: PostinoMotion.of(context, PostinoMotion.rowEnter),
+        leave: PostinoMotion.of(context, PostinoMotion.swipeDismiss),
+      );
       return PostinoDetailPage(
         title: t.title,
         onBack: widget.onBack,
-        child: rows.isEmpty
-            ? Focus(
-                focusNode: _emptyFocus,
-                child: PostinoEmptyState(title: t.emptyTitle, body: t.emptyBody),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // The count, announced when it changes.
-                  Semantics(
-                    container: true,
-                    liveRegion: true,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        PostinoSpacing.s4,
-                        PostinoSpacing.s3,
-                        PostinoSpacing.s4,
-                        PostinoSpacing.s1,
-                      ),
-                      child: Text(
-                        t.bannerTitle(n: rows.length),
-                        style: PostinoText.meta.copyWith(color: c.inkMuted),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        for (final (k, a) in rows)
-                          switch (k) {
-                            DraftConflict() => DraftConflictRow(
-                              key: ValueKey(_key(k)),
-                              conflict: k,
-                              account: a,
-                              firstChoice: _choice(k),
-                              onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
-                            ),
-                            _ => ConflictRow(
-                              key: ValueKey(_key(k)),
-                              conflict: k as Conflict,
-                              account: a,
-                              firstChoice: _choice(k),
-                              onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
-                            ),
-                          },
-                      ],
-                    ),
-                  ),
-                ],
+        child: shown == null
+            ? const SizedBox.shrink()
+            : PostinoFadeThrough(
+                transitionKey: shown.isEmpty,
+                child: shown.isEmpty ? _empty(context) : _list(context, shown, rows.length),
               ),
       );
     },
+  );
+
+  Widget _empty(BuildContext context) => Focus(
+    focusNode: _emptyFocus,
+    child: PostinoEmptyState(title: context.t.conflitti.emptyTitle, body: context.t.conflitti.emptyBody),
+  );
+
+  /// The [shown] rows, the leaving ones among them; [count] the open Conflitti.
+  Widget _list(BuildContext context, List<(Object, Account)> shown, int count) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      // The count, announced when it changes.
+      Semantics(
+        container: true,
+        liveRegion: true,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            PostinoSpacing.s4,
+            PostinoSpacing.s3,
+            PostinoSpacing.s4,
+            PostinoSpacing.s1,
+          ),
+          child: Text(
+            context.t.conflitti.bannerTitle(n: count),
+            style: PostinoText.meta.copyWith(color: context.pc.inkMuted),
+          ),
+        ),
+      ),
+      Expanded(
+        child: ListView(
+          children: [
+            for (final (k, a) in shown)
+              PostinoSizeFade(
+                key: ValueKey(_key(k)),
+                visibility: _motion.of(_key(k)),
+                leaving: _motion.leaving(_key(k)),
+                child: switch (k) {
+                  DraftConflict() => DraftConflictRow(
+                    conflict: k,
+                    account: a,
+                    firstChoice: _choice(k),
+                    onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
+                  ),
+                  _ => ConflictRow(
+                    conflict: k as Conflict,
+                    account: a,
+                    firstChoice: _choice(k),
+                    onResolve: ({required keepMine}) => unawaited(_resolve(k, keepMine: keepMine)),
+                  ),
+                },
+              ),
+          ],
+        ),
+      ),
+    ],
   );
 }

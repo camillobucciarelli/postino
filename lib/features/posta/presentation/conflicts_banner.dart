@@ -8,7 +8,8 @@ import '../../../i18n/strings.g.dart';
 
 /// The «N conflitti» Banner on top of an inbox: all the Accounts' in the Posta unificata, only [accountId]'s in an
 /// Account's; nothing at 0. It is a live region, so a screen reader announces it when N changes; «Vedi» ([onOpen])
-/// opens the list of the Conflitti it counts, those of the Bozze too (#149).
+/// opens the list of the Conflitti it counts, those of the Bozze too (#149). It opens and closes (PostinoReveal, #283),
+/// not while the counts load: a banner there at the start is just there.
 class const ConflictsBanner({super.key, required final VoidCallback onOpen, final String? accountId})
     extends StatefulWidget {
   @override
@@ -33,16 +34,20 @@ class _ConflictsBannerState() extends State<ConflictsBanner> {
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
+      if ([count.value, drafts.value].any((s) => s.isLoading && !s.hasValue)) return const SizedBox.shrink();
       final n = (count.value.value ?? 0) + (drafts.value.value ?? 0);
-      if (n == 0) return const SizedBox.shrink();
       final t = context.t.conflitti;
-      return PostinoBanner(
-        key: const ValueKey('conflicts-banner'),
-        tone: PostinoBannerTone.warning,
-        title: t.bannerTitle(n: n),
-        message: t.bannerMessage,
-        actionLabel: t.open,
-        onAction: widget.onOpen,
+      return PostinoReveal(
+        child: n == 0
+            ? null
+            : PostinoBanner(
+                key: const ValueKey('conflicts-banner'),
+                tone: PostinoBannerTone.warning,
+                title: t.bannerTitle(n: n),
+                message: t.bannerMessage,
+                actionLabel: t.open,
+                onAction: widget.onOpen,
+              ),
       );
     },
   );

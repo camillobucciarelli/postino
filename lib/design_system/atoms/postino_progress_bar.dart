@@ -6,7 +6,7 @@ import '../tokens/postino_tokens.dart';
 
 /// A determinate bar ([value] 0–1) or an indeterminate one (null): `brand` on [track], `radius-full`.
 /// Read as [label] with its value in steps of 25% («50%»), so a live region around it (a Banner)
-/// speaks at the steps, not at every tick.
+/// speaks at the steps, not at every tick. A determinate bar glides to a new [value] (#283), at once with reduced motion.
 class const PostinoProgressBar({
   super.key,
 
@@ -26,18 +26,26 @@ class const PostinoProgressBar({
   Widget build(BuildContext context) {
     final c = context.pc;
     final v = value;
+    Widget bar(double? at) => LinearProgressIndicator(
+      value: at,
+      minHeight: PostinoSpacing.s1,
+      color: c.brand,
+      backgroundColor: track ?? c.borderSubtle,
+    );
     return Semantics(
       label: label,
       value: v == null ? null : '${(v.clamp(0, 1) * 100) ~/ 25 * 25}%',
       child: ExcludeSemantics(
         child: ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.full)),
-          child: LinearProgressIndicator(
-            value: v,
-            minHeight: PostinoSpacing.s1,
-            color: c.brand,
-            backgroundColor: track ?? c.borderSubtle,
-          ),
+          child: v == null
+              ? bar(null)
+              : TweenAnimationBuilder<double>(
+                  tween: Tween(end: v),
+                  // Linear (PostinoMotion.linear), the default curve.
+                  duration: PostinoMotion.of(context, PostinoMotion.state),
+                  builder: (context, shown, _) => bar(shown),
+                ),
         ),
       ),
     );

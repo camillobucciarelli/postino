@@ -58,7 +58,9 @@ class const ToggleSidebarIntent() extends Intent {
 /// Docked, the sidebar is `sidebar-width` (280) from `breakpoint-sidebar-collapse` (1440) and icons only
 /// (`sidebar-collapsed-width`, 72) below it. A manual choice ([expanded] at the start, then the button or
 /// [ToggleSidebarIntent]) holds until the window crosses 1440 either way; each change goes to [onExpandedChanged]
-/// (null: no choice, the width decides).
+/// (null: no choice, the width decides). Opening or closing it slides its width over [PostinoMotion.menuIndicator]
+/// (#283): the extended drawer is laid out at its full width and cut at the moving edge, and only once the edge is
+/// back at `sidebar-collapsed-width` does it turn to icons, so nothing is squeezed; the button's name changes at once.
 class const PostinoSidebarShell({
   super.key,
 
@@ -136,18 +138,38 @@ class _PostinoSidebarShellState() extends State<PostinoSidebarShell> {
               decoration: BoxDecoration(
                 border: Border(right: BorderSide(color: c.borderSubtle)),
               ),
-              child: PostinoSidebarScope(
-                collapsed: !expanded,
-                toggleLabel: expanded ? widget.closeLabel : widget.openLabel,
-                toggle: toggle,
-                child: DrawerTheme(
-                  data: DrawerThemeData(
-                    width: expanded ? PostinoSize.sidebarWidth : PostinoSize.sidebarCollapsedWidth,
-                    elevation: PostinoElevation.e0,
-                    shape: const RoundedRectangleBorder(),
-                  ),
-                  child: widget.drawer,
-                ),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: expanded ? PostinoSize.sidebarWidth : PostinoSize.sidebarCollapsedWidth),
+                duration: PostinoMotion.of(context, PostinoMotion.menuIndicator),
+                curve: PostinoMotion.emphasized,
+                builder: (context, width, drawer) {
+                  final icons = width <= PostinoSize.sidebarCollapsedWidth;
+                  final layout = icons ? PostinoSize.sidebarCollapsedWidth : PostinoSize.sidebarWidth;
+                  return SizedBox(
+                    width: width,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: AlignmentDirectional.centerStart,
+                        minWidth: layout,
+                        maxWidth: layout,
+                        child: PostinoSidebarScope(
+                          collapsed: icons,
+                          toggleLabel: expanded ? widget.closeLabel : widget.openLabel,
+                          toggle: toggle,
+                          child: DrawerTheme(
+                            data: DrawerThemeData(
+                              width: layout,
+                              elevation: PostinoElevation.e0,
+                              shape: const RoundedRectangleBorder(),
+                            ),
+                            child: drawer!,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: widget.drawer,
               ),
             ),
           Expanded(key: const ValueKey('content'), child: widget.child),

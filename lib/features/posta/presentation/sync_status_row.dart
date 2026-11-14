@@ -16,7 +16,8 @@ import 'synced_time.dart';
 
 /// The sync status under the bar of a list (#251), of the Account [accountId] (an Account or one of its folders) or,
 /// with null, of every Account (the Posta unificata). In order: running, offline, failed (with «Riprova»), an
-/// Account Da ricollegare, the last update; nothing before the first sync.
+/// Account Da ricollegare, the last update; nothing before the first sync. The row opens and closes, and one state
+/// fades into the next (PostinoReveal, #283); not while the statuses load, nor as «N minuti fa» moves on.
 class const SyncStatusRow({super.key, final String? accountId}) extends StatefulWidget {
   @override
   State<SyncStatusRow> createState() => _SyncStatusRowState();
@@ -46,6 +47,7 @@ class _SyncStatusRowState() extends State<SyncStatusRow> with AccountsSignal {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       _tick.value;
+      if ([_status.value, accounts.value].any((s) => s.isLoading && !s.hasValue)) return const SizedBox.shrink();
       final t = context.t;
       final all = _status.value.value ?? const <String, SyncStatus>{};
       final scope = [
@@ -73,14 +75,19 @@ class _SyncStatusRowState() extends State<SyncStatusRow> with AccountsSignal {
         SyncStatus(syncedAt: final at?) => (PostinoSyncState.ok, syncedText(t, at, now, locale)),
         _ => (null, ''),
       };
-      if (state == null) return const SizedBox.shrink();
-      return PostinoSyncStatus(
-        key: const ValueKey('sync-status'),
-        state: state,
-        label: label,
-        spinning: !pulling.value,
-        retryLabel: t.syncStatus.retry,
-        onRetry: state == PostinoSyncState.error ? () => unawaited(refreshMail(context)) : null,
+      return PostinoReveal(
+        contentKey: state,
+        duration: PostinoMotion.state,
+        child: state == null
+            ? null
+            : PostinoSyncStatus(
+                key: const ValueKey('sync-status'),
+                state: state,
+                label: label,
+                spinning: !pulling.value,
+                retryLabel: t.syncStatus.retry,
+                onRetry: state == PostinoSyncState.error ? () => unawaited(refreshMail(context)) : null,
+              ),
       );
     },
   );

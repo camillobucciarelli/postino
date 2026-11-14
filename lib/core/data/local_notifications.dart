@@ -93,7 +93,7 @@ class LocalNotifications() implements Notifications {
     _relay = onAction == null ? null : listenForRelayedActions(onAction);
     await _plugin.initialize(
       settings: InitializationSettings(
-        android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: const AndroidInitializationSettings('@drawable/ic_stat_postino'),
         iOS: darwin,
         macOS: darwin,
         linux: LinuxInitializationSettings(defaultActionName: openLabel),

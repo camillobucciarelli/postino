@@ -107,10 +107,10 @@ extension GetItInjectableX on _i174.GetIt {
     final httpModule = _$HttpModule();
     final appUpdaterModule = _$AppUpdaterModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
-    final modelModule = _$ModelModule();
-    final errorLogModule = _$ErrorLogModule();
-    final reportSharerModule = _$ReportSharerModule();
     final databaseModule = _$DatabaseModule();
+    final modelModule = _$ModelModule();
+    final reportSharerModule = _$ReportSharerModule();
+    final errorLogModule = _$ErrorLogModule();
     final mailStoreModule = _$MailStoreModule();
     final syncModule = _$SyncModule();
     gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
@@ -178,6 +178,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i960.GoogleRevoke>(
       () => _i960.GoogleRevoke(gh<_i519.Client>(), gh<_i398.Connectivity>()),
     );
+    gh.singleton<_i398.SecureStore>(
+      () => databaseModule.deviceOnlyKeychain(),
+      instanceName: 'deviceOnlyKeychain',
+      registerFor: {_prod},
+    );
     gh.singleton<_i902.GoogleConsent>(
       () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
@@ -198,13 +203,16 @@ extension GetItInjectableX on _i174.GetIt {
       registerFor: {_prod},
       preResolve: true,
     );
-    await gh.singletonAsync<_i346.ErrorLog>(
-      () => errorLogModule.errorLog(gh<_i398.SecureStore>(), gh<_i398.Clock>()),
+    await gh.singletonAsync<_i325.ReportSharer>(
+      () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
       registerFor: {_prod},
       preResolve: true,
     );
-    await gh.singletonAsync<_i325.ReportSharer>(
-      () => reportSharerModule.reportSharer(gh<_i398.FileSaver>()),
+    await gh.singletonAsync<_i346.ErrorLog>(
+      () => errorLogModule.errorLog(
+        gh<_i398.SecureStore>(instanceName: 'deviceOnlyKeychain'),
+        gh<_i398.Clock>(),
+      ),
       registerFor: {_prod},
       preResolve: true,
     );
@@ -221,7 +229,7 @@ extension GetItInjectableX on _i174.GetIt {
     );
     await gh.singletonAsync<_i1028.PostinoDatabase>(
       () => databaseModule.database(
-        gh<_i398.SecureStore>(),
+        gh<_i398.SecureStore>(instanceName: 'deviceOnlyKeychain'),
         gh<_i346.ErrorLog>(),
       ),
       registerFor: {_prod},
@@ -422,13 +430,13 @@ class _$AppUpdaterModule extends _i429.AppUpdaterModule {}
 
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 
-class _$ModelModule extends _i260.ModelModule {}
+class _$DatabaseModule extends _i524.DatabaseModule {}
 
-class _$ErrorLogModule extends _i907.ErrorLogModule {}
+class _$ModelModule extends _i260.ModelModule {}
 
 class _$ReportSharerModule extends _i439.ReportSharerModule {}
 
-class _$DatabaseModule extends _i524.DatabaseModule {}
+class _$ErrorLogModule extends _i907.ErrorLogModule {}
 
 class _$MailStoreModule extends _i385.MailStoreModule {}
 

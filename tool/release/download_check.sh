@@ -21,8 +21,8 @@ ok=1
 fail() { echo "$1"; ok=0; }
 has() { grep -qF -- "$2" "$1" || fail "$1: missing $2"; }
 bmc='href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"'
-# The external links the site may have: Buy me a coffee and Google's policy for the Limited Use statement.
-external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.com/terms/api-services-user-data-policy)
+# The external links the site may have: Buy me a coffee, Google's policy for the Limited Use statement and Cloudflare's privacy policy.
+external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.com/terms/api-services-user-data-policy https://www.cloudflare.com/privacypolicy/)
 
 page() { # <file> <lang> <twin's lang> <twin, relative> <site root, relative>
   has "$dir/$1" "<html lang=\"$2\">"
@@ -39,6 +39,10 @@ product() { # <file> <site root, relative>
     has "$dir/$1" "href=\"$2$href\""
   done
   has "$dir/$1" 'href="privacy.html"'
+  # Link previews: the Open Graph image, published by release.yml (job site) from tool/brand_icons.sh's output.
+  has "$dir/$1" "<meta property=\"og:image\" content=\"https://$site/og.png\">"
+  has "$dir/$1" '<meta name="twitter:card" content="summary_large_image">'
+  [ -s "$dir/og.png" ] || fail "$dir/og.png: missing or empty (tool/brand_icons.sh)"
 }
 links() { # <file> <its path on the bucket> [the mail link allowed there]
   local base path url host
@@ -66,7 +70,7 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
   done < <(grep -oE '="[^"]*"' "$1" | grep -oE '//[A-Za-z0-9.-]+' | sed 's|^//||' | sort -u)
   while read -r url; do
     case $url in
-      https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy) continue ;;
+      https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy | https://www.cloudflare.com/privacypolicy/) continue ;;
       mailto:*) [ "$url" = "${3:-}" ] || fail "$1: mail link $url"; continue ;;
       "https://$site/"*) path=${url#https://"$site"/} ;;
       *:* | //*) fail "$1: external or unknown link $url"; continue ;;

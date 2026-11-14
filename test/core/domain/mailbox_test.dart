@@ -32,6 +32,14 @@ void main() {
     ]);
   });
 
+  test('a backslash escapes one character of a quoted name, and the list goes on after it', () {
+    expect(parseMailboxes(r'"Ada \"Ace\" Okafor" <a@x.it>, "Rossi, Carla" <c@x.it>, b@x.it'), [
+      (name: 'Ada "Ace" Okafor', address: 'a@x.it'),
+      (name: 'Rossi, Carla', address: 'c@x.it'),
+      (name: null, address: 'b@x.it'),
+    ]);
+  });
+
   test('formatMailbox writes the name before the address, if any', () {
     expect(formatMailbox((name: 'Ada', address: 'a@x.it')), 'Ada <a@x.it>');
     expect(formatMailbox((name: null, address: 'a@x.it')), 'a@x.it');

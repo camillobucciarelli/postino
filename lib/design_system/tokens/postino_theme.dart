@@ -79,8 +79,8 @@ abstract final class PostinoTheme() {
         backgroundColor: c.surface,
         foregroundColor: c.ink,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 3,
+        elevation: PostinoElevation.e0,
+        scrolledUnderElevation: PostinoElevation.e2,
         toolbarHeight: PostinoSize.appBarHeight,
         titleTextStyle: PostinoText.appBarTitle.copyWith(color: c.ink),
       ),
@@ -96,9 +96,9 @@ abstract final class PostinoTheme() {
         surfaceTintColor: Colors.transparent,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: c.fabBg,
-        foregroundColor: c.fabFg,
-        elevation: 3,
+        backgroundColor: c.brand,
+        foregroundColor: c.onBrand,
+        elevation: PostinoElevation.e2,
         extendedTextStyle: PostinoText.label,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg))),
       ),
@@ -146,7 +146,7 @@ abstract final class PostinoTheme() {
       ),
       searchBarTheme: SearchBarThemeData(
         backgroundColor: WidgetStatePropertyAll(c.inputBg),
-        elevation: const WidgetStatePropertyAll(1),
+        elevation: const WidgetStatePropertyAll(PostinoElevation.e1),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         hintStyle: WidgetStatePropertyAll(PostinoText.preview.copyWith(color: c.inkSubtle)),
         constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
@@ -163,7 +163,7 @@ abstract final class PostinoTheme() {
         contentTextStyle: PostinoText.label.copyWith(color: c.snackbarFg),
         actionTextColor: c.snackbarAction,
         behavior: SnackBarBehavior.floating,
-        elevation: 6,
+        elevation: PostinoElevation.e3,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md))),
       ),
       bannerTheme: MaterialBannerThemeData(
@@ -173,14 +173,14 @@ abstract final class PostinoTheme() {
       dialogTheme: DialogThemeData(
         backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        elevation: 8,
+        elevation: PostinoElevation.e3,
         titleTextStyle: PostinoText.sheetTitle.copyWith(color: c.ink),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg))),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        modalElevation: 8,
+        modalElevation: PostinoElevation.e3,
         showDragHandle: true,
         dragHandleColor: c.borderStrong,
         shape: const RoundedRectangleBorder(
@@ -190,14 +190,14 @@ abstract final class PostinoTheme() {
       popupMenuTheme: PopupMenuThemeData(
         color: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        elevation: 6,
+        elevation: PostinoElevation.e3,
         textStyle: PostinoText.label.copyWith(color: c.ink),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.md))),
       ),
       menuTheme: MenuThemeData(
         style: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(c.surfaceRaised),
-          elevation: const WidgetStatePropertyAll(6),
+          elevation: const WidgetStatePropertyAll(PostinoElevation.e3),
         ),
       ),
       tabBarTheme: TabBarThemeData(

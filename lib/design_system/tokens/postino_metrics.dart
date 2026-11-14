@@ -1,4 +1,4 @@
-// Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// Parte dei token di postino_tokens.dart: vedi lì la fonte di verità.
 
 /// Scala di spaziatura (padding, gap, margini).
 abstract final class PostinoSpacing() {
@@ -187,4 +187,22 @@ abstract final class PostinoBorder() {
 
   /// Anello avatar-badge-ring attorno al badge account.
   static const double accountBadgeRing = 2;
+}
+
+/// Livelli di elevation (ombra Material). Un componente usa un livello, mai un numero.
+abstract final class PostinoElevation() {
+  /// Non istanziabile: solo membri statici.
+  this;
+
+  /// Piatto: app bar, drawer.
+  static const double e0 = 0;
+
+  /// Barra di ricerca.
+  static const double e1 = 1;
+
+  /// FAB.
+  static const double e2 = 3;
+
+  /// Sopra il contenuto: popover, suggerimenti, menu, snackbar, dialog.
+  static const double e3 = 6;
 }

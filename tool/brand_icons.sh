@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Rigenera tutti i PNG di icona e splash da assets/brand/*.svg (unica fonte, vedi docs/brand-icone.md).
+# Rigenera tutti i PNG di icona, splash e tray, i lockup e l'immagine Open Graph da assets/brand/*.svg (unica fonte,
+# vedi docs/brand-icone.md).
 # Rasterizza con rsvg-convert se c'è, altrimenti con sips (di serie su macOS, SVG con fondo trasparente).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,11 +16,16 @@ png() {
   local src=$1 px=$2 out=$3 name
   name=$(basename "$out" .png)
   sed -E "1s/width=\"[0-9.]+\" height=\"[0-9.]+\"/width=\"$px\" height=\"$px\"/" "$src" > "$T/$name.svg"
-  mkdir -p "$(dirname "$out")"
+  raster "$T/$name.svg" "$out"
+}
+
+# raster <svg> <out>: rasterizza l'SVG alla sua misura (width/height sulla riga 1).
+raster() {
+  mkdir -p "$(dirname "$2")"
   if command -v rsvg-convert >/dev/null; then
-    rsvg-convert -w "$px" -h "$px" "$T/$name.svg" -o "$out"
+    rsvg-convert "$1" -o "$2"
   else
-    sips -s format png "$T/$name.svg" --out "$out" >/dev/null
+    sips -s format png "$1" --out "$2" >/dev/null
   fi
 }
 
@@ -32,11 +38,20 @@ opaque() {
 # pick <px>: sotto i 64 px la posa semplificata (righe più spesse), come sulla board.
 pick() { if [ "$1" -lt 64 ]; then echo "$B/icon-small.svg"; else echo "$B/icon.svg"; fi; }
 
+# viewbox <svg>: il viewBox sulla riga 1.
+viewbox() { sed -nE '1s/.*viewBox="([^"]*)".*/\1/p' "$1"; }
+# inline <svg> <viewBox> <x> <y> <w> <h>: il contenuto dell'SVG (righe 2..penultima) in un <svg> annidato.
+inline() {
+  printf '<svg x="%s" y="%s" width="%s" height="%s" viewBox="%s">\n' "$3" "$4" "$5" "$6" "$2"
+  sed '1d;$d' "$1"
+  echo '</svg>'
+}
+
 # nested <svg> <x> <y> <size> <canvas> <px> <out>: l'SVG (viewBox 256) a (x,y,size) in una tela canvas x canvas.
 nested() {
-  { printf '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><svg x="%s" y="%s" width="%s" height="%s" viewBox="0 0 256 256">\n' "$5" "$5" "$5" "$5" "$2" "$3" "$4" "$4"
-    sed '1d;$d' "$1"
-    echo '</svg></svg>'; } > "$T/nested.svg"
+  { printf '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s">\n' "$5" "$5" "$5" "$5"
+    inline "$1" "0 0 256 256" "$2" "$3" "$4" "$4"
+    echo '</svg>'; } > "$T/nested.svg"
   png "$T/nested.svg" "$6" "$7"
 }
 
@@ -75,4 +90,34 @@ png "$B/mark-closed.svg" 384 "$LI/LaunchImage@3x.png"
 # Windows e Linux a colori, 64 px (il sistema scala alla misura del tray).
 png "$B/mark-mono.svg" 36 assets/tray/tray_icon_template.png
 png "$B/icon.svg" 64 assets/tray/tray_icon.png
+
+# Lockup: marchio + «Postino» (wordmark.svg, Caprasimo in tracciati). Unità: il marchio è alto 152 (busta 56..208
+# di mark.svg), area di rispetto 76 = metà tutt'intorno, 40 tra marchio e scritta, maiuscole (1434/2048 em) alte 96
+# centrate sul marchio. lockup.svg per fondi chiari (tile + inchiostro), lockup-dark.svg per fondi scuri o verderame
+# (marchio + carta).
+read -r _ wy ww wh <<< "$(viewbox "$B/wordmark.svg")"
+read -r ty tw th <<< "$(awk "BEGIN{k = 96 / 1434; printf \"%.2f %.2f %.2f\", 104 + ($wy + 1434) * k, $ww * k, $wh * k}")"
+lockup() { # <marchio svg> <viewBox marchio> <larghezza marchio> <colore scritta> <out>
+  local x=$((76 + $3 + 40)) w
+  w=$(awk "BEGIN{print $x + $tw + 76}")
+  { printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %s 304" width="%s" height="304">\n' "$w" "$w"
+    inline "$1" "$2" 76 76 "$3" 152
+    printf '<g fill="%s">\n' "$4"
+    inline "$B/wordmark.svg" "$(viewbox "$B/wordmark.svg")" "$x" "$ty" "$tw" "$th"
+    echo '</g>'
+    echo '</svg>'; } > "$5"
+}
+lockup "$B/icon.svg" "0 0 256 256" 152 "#1c1c1a" "$B/lockup.svg"
+lockup "$B/mark.svg" "40 56 176 152" 176 "#fffdf8" "$B/lockup-dark.svg"
+
+# Open Graph del sito: 1200x630, fondo verderame del tile, lockup chiaro centrato (largo 960), senza alfa.
+read -r _ _ lw lh <<< "$(viewbox "$B/lockup-dark.svg")"
+read -r oh oy <<< "$(awk "BEGIN{h = $lh * 960 / $lw; printf \"%.2f %.2f\", h, (630 - h) / 2}")"
+{ echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">'
+  sed -n 2p "$B/icon.svg"
+  echo '<rect width="1200" height="630" fill="url(#t)"/>'
+  inline "$B/lockup-dark.svg" "0 0 $lw $lh" 120 "$oy" 960 "$oh"
+  echo '</svg>'; } > "$T/og.svg"
+raster "$T/og.svg" docs/download/og.png
+opaque docs/download/og.png
 echo "Icone e splash rigenerate da $B"

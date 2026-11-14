@@ -34,12 +34,16 @@ class _Mailbox(
 
   /// After a SEARCH that never answers, the next connection's CAPABILITY does not either.
   final bool stuckAfterwards = false,
+
+  /// Called on every LIST.
+  final void Function()? onList,
 }) {
   var _hung = false;
 
   var _selected = '';
 
   List<String> answer(String command) {
+    if (command.toUpperCase().startsWith('LIST')) onList?.call();
     if (_hung && command.toUpperCase().startsWith('CAPABILITY')) return hang;
     if (basics(command, capabilities: capabilities, folders: _folders) case final b?) return b;
     final upper = command.toUpperCase();
@@ -78,7 +82,7 @@ class _Mailbox(
       'Message-ID: <$_selected-$u@example.com>\r\n${reply && _selected == 'INBOX' && u == 1 ? 'In-Reply-To: <parent@example.com>\r\n' : ''}\r\n';
 }
 
-Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox) async {
+Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox, {FakeClock? clock}) async {
   final server = await RecordedImapServer.start(mailbox.answer);
   addTearDown(server.stop);
   final keychain = FakeSecureStore();
@@ -87,7 +91,7 @@ Future<(ImapProvider, RecordedImapServer)> _setUp(_Mailbox mailbox) async {
     _account,
     'ada@icloud.com',
     keychain,
-    FakeClock(DateTime.utc(2026, 11, 6)),
+    clock ?? FakeClock(DateTime.utc(2026, 11, 6)),
     connect: plainConnector,
     searchTimeout: const Duration(milliseconds: 400),
   );
@@ -227,6 +231,23 @@ void main() {
     );
     expect(await p.search(_query), isErr<OfflineFailure>());
   });
+
+  test(
+    'the 13 s budget runs on the Provider\'s clock: spent during the LIST, every folder is the next page\'s',
+    () async {
+      final clock = FakeClock(DateTime.utc(2026, 11, 6));
+      final (p, server) = await _setUp(
+        _Mailbox('IMAP4rev1', {
+          'INBOX': [1],
+        }, onList: () => clock.current = clock.current.add(const Duration(seconds: 14))),
+        clock: clock,
+      );
+      final page = okValue(await p.search(_query));
+      expect(page.messages, isEmpty);
+      expect(page.nextPageToken, isNotNull);
+      expect(_searches(server), isEmpty);
+    },
+  );
 
   test('a page token that is not ours is NotFound', () async {
     final (p, _) = await _setUp(_Mailbox('IMAP4rev1', const {}));

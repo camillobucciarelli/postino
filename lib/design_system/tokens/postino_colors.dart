@@ -1,4 +1,4 @@
-// Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// Parte dei token di postino_tokens.dart: vedi lì la fonte di verità.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
@@ -333,12 +333,6 @@ class const PostinoColors({
   /// Snackbar: azione “Annulla”.
   required final Color snackbarAction,
 
-  /// FAB “Scrivi”: fondo.
-  required final Color fabBg,
-
-  /// FAB “Scrivi”: icona ed etichetta.
-  required final Color fabFg,
-
   /// Switch acceso: traccia.
   required final Color switchTrackOn,
 
@@ -360,7 +354,7 @@ class const PostinoColors({
   /// Skeleton: riflesso dell’animazione.
   required final Color skeletonHighlight,
 
-  /// BulkActionBar: fondo (con elevation-2).
+  /// BulkActionBar: fondo (senza ombra).
   required final Color bulkBarBg,
 
   /// SyncStatus: sincronizzato.
@@ -395,7 +389,7 @@ class const PostinoColors({
     inkSubtle: Color(0xFF67635A),
     inkDisabled: PostinoPrimitives.pNeutral400,
     inkInverse: PostinoPrimitives.pNeutral50,
-    brand: Color(0xFF0E6456),
+    brand: PostinoPrimitives.pVerdigris700,
     brandHover: PostinoPrimitives.pVerdigris800,
     onBrand: PostinoPrimitives.pNeutral0,
     brandSubtle: PostinoPrimitives.pVerdigris50,
@@ -476,8 +470,6 @@ class const PostinoColors({
     snackbarBg: PostinoPrimitives.pNeutral900,
     snackbarFg: PostinoPrimitives.pNeutral50,
     snackbarAction: PostinoPrimitives.pVerdigris300,
-    fabBg: PostinoPrimitives.pVerdigris700,
-    fabFg: PostinoPrimitives.pNeutral0,
     switchTrackOn: PostinoPrimitives.pVerdigris700,
     switchTrackOff: PostinoPrimitives.pNeutral200,
     switchThumbOn: PostinoPrimitives.pNeutral0,
@@ -592,8 +584,6 @@ class const PostinoColors({
     snackbarBg: PostinoPrimitives.pNeutral100,
     snackbarFg: PostinoPrimitives.pNeutral900,
     snackbarAction: PostinoPrimitives.pVerdigris700,
-    fabBg: PostinoPrimitives.pVerdigris300,
-    fabFg: PostinoPrimitives.pVerdigris950,
     switchTrackOn: PostinoPrimitives.pVerdigris300,
     switchTrackOff: PostinoPrimitives.pNeutral750,
     switchThumbOn: PostinoPrimitives.pVerdigris950,
@@ -720,8 +710,6 @@ class const PostinoColors({
     Color? snackbarBg,
     Color? snackbarFg,
     Color? snackbarAction,
-    Color? fabBg,
-    Color? fabFg,
     Color? switchTrackOn,
     Color? switchTrackOff,
     Color? switchThumbOn,
@@ -833,8 +821,6 @@ class const PostinoColors({
     snackbarBg: snackbarBg ?? this.snackbarBg,
     snackbarFg: snackbarFg ?? this.snackbarFg,
     snackbarAction: snackbarAction ?? this.snackbarAction,
-    fabBg: fabBg ?? this.fabBg,
-    fabFg: fabFg ?? this.fabFg,
     switchTrackOn: switchTrackOn ?? this.switchTrackOn,
     switchTrackOff: switchTrackOff ?? this.switchTrackOff,
     switchThumbOn: switchThumbOn ?? this.switchThumbOn,

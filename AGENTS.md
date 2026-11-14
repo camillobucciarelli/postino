@@ -35,3 +35,7 @@ Job `mutation` sulle PR (solo i file Dart modificati, non richiesto) e workflow 
 ### Accessibilità
 
 Ogni ticket che crea o modifica componenti UI include nei criteri di accettazione le etichette semantiche per lo screen reader e la navigazione da tastiera secondo `docs/adr/0014-navigazione-da-tastiera.md`, verificate in QA con VoiceOver su macOS. Contrasto WCAG 2.2 AA e testo fino al 200% seguono le regole del design system (#53).
+
+### Design system
+
+La fonte di verità è il codice in `lib/design_system/`; l'artefatto Claude Design https://claude.ai/artifact/NHTah8veqH7f9q2BbEcBKs lo rispecchia, non lo guida. Ogni PR che cambia token o componenti del design system aggiorna anche l'artefatto, oppure scrive nel corpo della PR «Artefatto da aggiornare» con l'elenco dei valori. Un valore non va mai duplicato con un secondo nome: riusa il token esistente (#264).

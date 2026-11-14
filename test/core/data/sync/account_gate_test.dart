@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/main.dart';
 
 import '../../../support/fake_mail_provider.dart';
@@ -62,5 +65,25 @@ void main() {
     h.clock.advance(const Duration(minutes: 5));
     await pumpEventQueue();
     expect(await inbox(), containsAll(['a:3', 'a:4']));
+  });
+
+  group('the queue of an Account goes to the Provider only while it is attivo', () {
+    Future<List<MailAction>> replayedAfter(AccountStatus status) async {
+      final engine = GetIt.I<SyncEngine>();
+      a.goOffline();
+      await engine.act('a', ['1'], const Star());
+      a.goOnline();
+      await getIt<MailStore>().setStatus('a', status);
+      await engine.replayActions('a');
+      return [for (final c in a.actionCalls) c.$2];
+    }
+
+    test('attivo: the queued Azione is sent', () async {
+      expect(await replayedAfter(AccountStatus.attivo), [const Star()]);
+    });
+
+    test('Da ricollegare: it waits for the reconnection', () async {
+      expect(await replayedAfter(AccountStatus.daRicollegare), isEmpty);
+    });
   });
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icona piccola delle notifiche (#285): Android ne legge solo l'alfa. Silhouette di assets/brand/mark-mono.svg
+     (viewBox 256) scalata a 22 dp di larghezza, margine 1 dp, centrata nei 24 dp. Le righe della lettera sono quelle
+     di icon-small.svg (8 unità) e le due sulla stessa riga lasciano un vuoto tra loro: a 24 dp il tratto sottile di
+     mark-mono.svg (5 unità) non si vedrebbe. Scritta a mano come lo sfondo adattivo: se cambia il marchio, aggiornarla. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.125"
+        android:scaleY="0.125"
+        android:translateX="-4"
+        android:translateY="-4.25">
+        <path
+            android:fillAlpha="0.5"
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M40 128 L128 56 L216 128 Z" />
+        <group
+            android:pivotX="128"
+            android:pivotY="128"
+            android:rotation="-5">
+            <path
+                android:fillColor="#FFFFFFFF"
+                android:fillType="evenOdd"
+                android:pathData="M86 76 H170 A10 10 0 0 1 180 86 V178 A10 10 0 0 1 170 188 H86 A10 10 0 0 1 76 178 V86 A10 10 0 0 1 86 76 Z M130 94 H164 A4 4 0 0 1 164 102 H130 A4 4 0 0 1 130 94 Z M92 112 H166 A4 4 0 0 1 166 120 H92 A4 4 0 0 1 92 112 Z M92 94 H112 A4 4 0 0 1 112 102 H92 A4 4 0 0 1 92 94 Z" />
+        </group>
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z" />
+    </group>
+</vector>

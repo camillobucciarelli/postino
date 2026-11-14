@@ -30,8 +30,8 @@ typedef _Done = ({List<ImapParsed> messages, _Resume? more, bool timedOut});
 class ImapFolderSearch(
   final ImapSession _session,
 
-  /// What the budget is measured on: the Provider's clock, never a [Stopwatch], which in the widget tests runs on real
-  /// time while the timeouts run on fake time (#265).
+  /// What the budget is measured on: a [Stopwatch] of its own would run on real time in the widget tests, where the
+  /// timeouts run on fake time (#265).
   final Clock _clock,
 
   /// The messages threaded as the syncs do (`ImapProvider._thread`), over the headers `_related` looked up.
@@ -65,8 +65,7 @@ class ImapFolderSearch(
     String? token,
     Set<String> stored,
   ) async {
-    final start = _clock.now();
-    Duration elapsed() => _clock.now().difference(start);
+    final elapsed = _clock.stopwatch();
     final all = await _within<List<ImapFolder>>(_budget, list);
     final resumes = _decode(token);
     final pending = <_Resume>[

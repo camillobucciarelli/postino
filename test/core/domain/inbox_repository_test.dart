@@ -31,6 +31,10 @@ void main() {
     ]);
   });
 
+  test('an OutgoingEntry has not failed until the Provider refuses it', () {
+    expect(OutgoingEntry(message: _outgoing(), sendAfter: 1).failed, isFalse);
+  });
+
   test('OutgoingEntry compares by value (#94)', () {
     OutgoingEntry entry({OutgoingMessage? message, int sendAfter = 1, bool failed = false}) =>
         OutgoingEntry(message: message ?? _outgoing(), sendAfter: sendAfter, failed: failed);

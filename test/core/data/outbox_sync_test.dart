@@ -190,6 +190,19 @@ void main() {
     expect(await outbox(), isEmpty);
   });
 
+  for (final refusal in [const SizeLimitFailure(1), const NotFoundFailure()]) {
+    test('a copy in Inviati refused as ${refusal.runtimeType} after SMTP (#175) is not failed either', () async {
+      engine.start();
+      addTearDown(engine.stop);
+      await pumpEventQueue();
+      a.failAfterSubmit = refusal;
+      await engine.send('a', _message(id));
+      h.clock.advance(sendWindow);
+      await pumpEventQueue();
+      expect(await outbox(), isEmpty);
+    });
+  }
+
   test('Annulla of a row SMTP already delivered (#175) is refused: the replay finishes the copy', () async {
     await engine.send('a', _message(id));
     await GetIt.I<OutboxStore>().outgoingSubmitted('a', id, nowMs: 1);

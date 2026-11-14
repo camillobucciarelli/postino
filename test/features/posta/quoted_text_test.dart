@@ -89,6 +89,13 @@ void main() {
       expect(p.body, '> Ti va una cena?\n\nSì, alle 20.');
     });
 
+    test('plain text: a > block that starts on the first line is the quote', () {
+      final p = splitText('> Ciao\n> Come va?');
+      expect(p.quote, '> Ciao\n> Come va?');
+      expect(p.body, isEmpty);
+      expect(splitText('> Ciao').quote, '> Ciao', reason: 'one line, the very first');
+    });
+
     for (final name in ['gmail_forward.html', 'apple_forward.html', 'outlook_forward.html']) {
       test('a forward is never a quote: $name', () {
         final p = _html(name);

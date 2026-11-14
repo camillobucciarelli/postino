@@ -69,6 +69,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
 	late final Translations$connect$it connect = Translations$connect$it.internal(_root);
+	late final Translations$aggiornamenti$it aggiornamenti = Translations$aggiornamenti$it.internal(_root);
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 	late final Translations$syncStatus$it syncStatus = Translations$syncStatus$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
@@ -205,6 +206,24 @@ class Translations$connect$it {
 
 	/// it: 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.'
 	String get workAccount => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.';
+}
+
+// Path: aggiornamenti
+class Translations$aggiornamenti$it {
+	Translations$aggiornamenti$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'È disponibile Postino $version'
+	String available({required Object version}) => 'È disponibile Postino ${version}';
+
+	/// it: 'Aggiorna'
+	String get update => 'Aggiorna';
+
+	/// it: 'Chiudi'
+	String get dismiss => 'Chiudi';
 }
 
 // Path: offline
@@ -646,6 +665,12 @@ class Translations$impostazioni$it {
 
 	/// it: 'Cerca subito una nuova versione di Postino.'
 	String get checkForUpdatesBody => 'Cerca subito una nuova versione di Postino.';
+
+	/// it: 'Postino è aggiornato.'
+	String get upToDate => 'Postino è aggiornato.';
+
+	/// it: 'C'è una nuova versione di Postino.'
+	String get checkFound => 'C\'è una nuova versione di Postino.';
 
 	/// it: 'Notifiche'
 	String get notifications => 'Notifiche';
@@ -1398,6 +1423,9 @@ extension on Translations {
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
 			'connect.alreadyConnected' => 'Questo Account è già collegato.',
 			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
+			'aggiornamenti.available' => ({required Object version}) => 'È disponibile Postino ${version}',
+			'aggiornamenti.update' => 'Aggiorna',
+			'aggiornamenti.dismiss' => 'Chiudi',
 			'offline.title' => 'Sei offline',
 			'offline.message' => 'La posta si aggiornerà al ritorno della rete.',
 			'syncStatus.running' => 'Sincronizzazione in corso…',
@@ -1517,6 +1545,8 @@ extension on Translations {
 			'impostazioni.immediateNotificationsFailed' => 'Il sistema non ha avviato le Notifiche immediate. Riprova.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
+			'impostazioni.upToDate' => 'Postino è aggiornato.',
+			'impostazioni.checkFound' => 'C\'è una nuova versione di Postino.',
 			'impostazioni.notifications' => 'Notifiche',
 			'impostazioni.notificationsAllowed' => 'Consentite',
 			'impostazioni.notificationsDenied' => 'Non consentite: la posta nuova arriva senza avviso.',

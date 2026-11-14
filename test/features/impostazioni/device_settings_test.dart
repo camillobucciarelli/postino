@@ -7,7 +7,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/app_updater.dart';
 import 'package:postino/core/domain/launch_at_login_use_case.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -189,6 +191,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.updater.checks, 1);
     semantics.dispose();
+  });
+
+  group('on Android and iOS (#287) «Cerca aggiornamenti» says what it found', () {
+    for (final (name, answer, text) in [
+      ('up to date', const Ok(UpdateCheck.upToDate), 'Postino è aggiornato.'),
+      // No error shown: the row stays as it was.
+      (
+        'failed',
+        Err<UpdateCheck>(UnexpectedFailure(Exception('offline'))),
+        'Cerca subito una nuova versione di Postino.',
+      ),
+    ]) {
+      testWidgets('$name: «$text», no Banner', (tester) async {
+        final semantics = tester.ensureSemantics();
+        final h = await _start(tester, supported: false, updates: true);
+        h.updater.answer = answer;
+        await _openSettings(tester);
+        await tester.tap(_updates);
+        await tester.pumpAndSettle();
+        expect(h.updater.checks, 1);
+        expect(find.text(text), findsOneWidget);
+        expect(find.byKey(const ValueKey('update-banner')), findsNothing);
+        // A live region: the screen reader hears the answer.
+        expect(
+          find.ancestor(
+            of: _updates,
+            matching: find.byWidgetPredicate((w) => w is Semantics && (w.properties.liveRegion ?? false)),
+          ),
+          findsOneWidget,
+        );
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('a new version: the Banner under it, whose «Aggiorna» downloads it', (tester) async {
+      final h = await _start(tester, supported: false, updates: true);
+      h.updater
+        ..answer = const Ok(UpdateCheck.available)
+        ..found = (version: '9.9.9', url: Uri.parse('https://example.org/p.apk'));
+      await _openSettings(tester);
+      expect(find.byKey(const ValueKey('update-banner')), findsNothing);
+      await tester.tap(_updates);
+      await tester.pumpAndSettle();
+      expect(find.text("C'è una nuova versione di Postino."), findsOneWidget);
+      expect(find.text('È disponibile Postino 9.9.9'), findsOneWidget);
+      await tester.tap(find.text('Aggiorna'));
+      await tester.pumpAndSettle();
+      expect(h.updater.downloads, 1);
+    });
   });
 
   testWidgets('where only the updater exists, the device settings still show, with it alone', (tester) async {

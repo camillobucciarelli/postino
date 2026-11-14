@@ -28,7 +28,7 @@ Postino si aggiorna da solo. Al secondo avvio ti chiede il permesso di cercare g
 
 ### Aggiornare Postino su Android
 
-Su Android Postino non si aggiorna da solo. Per passare a una versione nuova scarica di nuovo l'APK dal link qui sopra e installalo sopra quello che hai: Account e posta restano.
+Su Android Postino non si installa gli aggiornamenti da solo, ma ti avvisa: quando esce una versione nuova compare in cima alla posta «È disponibile Postino…». Tocca «Aggiorna» per scaricare l'APK e installalo sopra quello che hai: Account e posta restano. Puoi anche cercare una versione nuova con «Cerca aggiornamenti» in Impostazioni › Impostazioni del dispositivo, oppure scaricare di nuovo l'APK dal link qui sopra.
 
 ### Verifica dello sviluppatore Android dal 2027
 
@@ -47,7 +47,7 @@ Postino su iPhone e iPad passa da TestFlight, l'app di Apple per provare le app 
 
 ### Aggiornare Postino su iOS
 
-Le versioni nuove arrivano da sole: TestFlight ti manda una notifica. Puoi anche aprire TestFlight e toccare «Aggiorna» accanto a Postino. Account e posta restano.
+Le versioni nuove arrivano da sole: TestFlight ti manda una notifica e Postino mostra in cima alla posta «È disponibile Postino…», il cui «Aggiorna» apre TestFlight. Puoi anche aprire TestFlight e toccare «Aggiorna» accanto a Postino. Account e posta restano.
 
 ### I build di TestFlight scadono dopo 90 giorni
 

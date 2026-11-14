@@ -53,6 +53,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
+	@override late final _Translations$aggiornamenti$en aggiornamenti = _Translations$aggiornamenti$en._(_root);
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 	@override late final _Translations$syncStatus$en syncStatus = _Translations$syncStatus$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
@@ -141,6 +142,18 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String get failed => 'Something went wrong: try again.';
 	@override String get alreadyConnected => 'This Account is already connected.';
 	@override String get workAccount => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.';
+}
+
+// Path: aggiornamenti
+class _Translations$aggiornamenti$en extends Translations$aggiornamenti$it {
+	_Translations$aggiornamenti$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String available({required Object version}) => 'Postino ${version} is available';
+	@override String get update => 'Update';
+	@override String get dismiss => 'Dismiss';
 }
 
 // Path: offline
@@ -344,6 +357,8 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get immediateNotificationsFailed => 'The system did not start the immediate notifications. Try again.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
+	@override String get upToDate => 'Postino is up to date.';
+	@override String get checkFound => 'A new version of Postino is available.';
 	@override String get notifications => 'Notifications';
 	@override String get notificationsAllowed => 'Allowed';
 	@override String get notificationsDenied => 'Not allowed: new mail arrives without an alert.';
@@ -715,6 +730,9 @@ extension on TranslationsEn {
 			'connect.failed' => 'Something went wrong: try again.',
 			'connect.alreadyConnected' => 'This Account is already connected.',
 			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
+			'aggiornamenti.available' => ({required Object version}) => 'Postino ${version} is available',
+			'aggiornamenti.update' => 'Update',
+			'aggiornamenti.dismiss' => 'Dismiss',
 			'offline.title' => 'You\'re offline',
 			'offline.message' => 'Mail will update when the network is back.',
 			'syncStatus.running' => 'Syncing…',
@@ -834,6 +852,8 @@ extension on TranslationsEn {
 			'impostazioni.immediateNotificationsFailed' => 'The system did not start the immediate notifications. Try again.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
+			'impostazioni.upToDate' => 'Postino is up to date.',
+			'impostazioni.checkFound' => 'A new version of Postino is available.',
 			'impostazioni.notifications' => 'Notifications',
 			'impostazioni.notificationsAllowed' => 'Allowed',
 			'impostazioni.notificationsDenied' => 'Not allowed: new mail arrives without an alert.',

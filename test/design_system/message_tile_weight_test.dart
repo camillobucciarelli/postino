@@ -1,4 +1,4 @@
-// #264: mittente e ora pesano 600 se non letti e 400 se letti; il peso non è l'unico segnale (semanticLabel + pallino).
+// #264: mittente e ora pesano 600 se non letti e 400 se letti (il «non letto» per VoiceOver viene da message_list, non dal peso).
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +26,6 @@ void main() {
       final expected = unread ? FontWeight.w600 : FontWeight.w400;
       expect(tester.widget<Text>(find.text('Bruno')).style!.fontWeight, expected);
       expect(tester.widget<Text>(find.text('09:42')).style!.fontWeight, expected);
-      expect(find.bySemanticsLabel(unread ? 'Non letto, Bruno' : 'Bruno'), findsOneWidget);
     });
   }
 }

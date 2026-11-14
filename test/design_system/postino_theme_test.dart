@@ -273,4 +273,16 @@ void main() {
     expect(_all(from.lerp(to, 1)), b);
     expect(_all(from.lerp(to, 0.5)), [for (var i = 0; i < a.length; i++) Color.lerp(a[i], b[i], 0.5)]);
   });
+
+  test('elevations of the theme follow the four PostinoElevation levels (#264)', () {
+    final t = PostinoTheme.light();
+    expect(PostinoElevation.e0, 0);
+    expect(PostinoElevation.e1, 1);
+    expect(PostinoElevation.e2, 3);
+    expect(PostinoElevation.e3, 6);
+    expect(t.floatingActionButtonTheme.elevation, PostinoElevation.e2);
+    expect(t.dialogTheme.elevation, PostinoElevation.e3);
+    expect(t.snackBarTheme.elevation, PostinoElevation.e3);
+    expect(t.appBarTheme.elevation, PostinoElevation.e0);
+  });
 }

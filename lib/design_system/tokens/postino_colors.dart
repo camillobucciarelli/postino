@@ -389,7 +389,7 @@ class const PostinoColors({
     inkSubtle: Color(0xFF67635A),
     inkDisabled: PostinoPrimitives.pNeutral400,
     inkInverse: PostinoPrimitives.pNeutral50,
-    brand: Color(0xFF0E6456),
+    brand: PostinoPrimitives.pVerdigris700,
     brandHover: PostinoPrimitives.pVerdigris800,
     onBrand: PostinoPrimitives.pNeutral0,
     brandSubtle: PostinoPrimitives.pVerdigris50,

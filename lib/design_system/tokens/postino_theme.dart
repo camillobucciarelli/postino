@@ -80,7 +80,7 @@ abstract final class PostinoTheme() {
         foregroundColor: c.ink,
         surfaceTintColor: Colors.transparent,
         elevation: PostinoElevation.e0,
-        scrolledUnderElevation: 3,
+        scrolledUnderElevation: PostinoElevation.e2,
         toolbarHeight: PostinoSize.appBarHeight,
         titleTextStyle: PostinoText.appBarTitle.copyWith(color: c.ink),
       ),
@@ -180,7 +180,7 @@ abstract final class PostinoTheme() {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        modalElevation: 8,
+        modalElevation: PostinoElevation.e3,
         showDragHandle: true,
         dragHandleColor: c.borderStrong,
         shape: const RoundedRectangleBorder(

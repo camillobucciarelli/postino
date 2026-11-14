@@ -53,10 +53,11 @@ Future<(ImapProvider, List<String>)> _recorded(int bytes, {required int declared
           '("ATTACHMENT" ("FILENAME" "dati.bin")) NIL)';
       return ['* 1 FETCH (UID 5 BODYSTRUCTURE ($text$file "MIXED" ("BOUNDARY" "mix") NIL NIL))'];
     }
-    if (RegExp(r'^UID FETCH 5 \(UID BODY\.PEEK\[2\]<(\d+)\.').firstMatch(upper) case final m?) {
+    if (RegExp(r'^UID FETCH 5 \(UID BODY\.PEEK\[2\]<(\d+)\.(\d+)>').firstMatch(upper) case final m?) {
       fetches.add(command);
+      // As a server would: at most the bytes asked for, from the offset asked for.
       final from = int.parse(m[1]!);
-      final part = payload.substring(min(from, bytes), min(from + _chunk, bytes));
+      final part = payload.substring(min(from, bytes), min(from + int.parse(m[2]!), bytes));
       return ['* 1 FETCH (UID 5 BODY[2]<$from> ${literal(part)})'];
     }
     return ['OK done'];

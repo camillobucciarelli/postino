@@ -24,8 +24,12 @@ void main() {
     expect(await _moves(tester, ListCursor(), LogicalKeyboardKey.arrowDown), isEmpty, reason: 'no list plugged in');
   });
 
-  testWidgets('an arrow moves while the list has the focus, not when it has not', (tester) async {
+  // One pump each: a second pumpWidget would not autofocus again, and an arrow without focus does nothing anyway.
+  testWidgets('an arrow moves while the list has the focus', (tester) async {
     expect(await _moves(tester, ListCursor()..listFocused = () => true, LogicalKeyboardKey.arrowDown), [1]);
+  });
+
+  testWidgets('an arrow does nothing while the list says it has not the focus', (tester) async {
     expect(await _moves(tester, ListCursor()..listFocused = () => false, LogicalKeyboardKey.arrowDown), isEmpty);
   });
 

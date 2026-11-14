@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Splash statico: marchio (assets/brand/mark.svg) al centro su verderame. PNG da tool/brand_icons.sh. -->
+<!-- Splash: busta chiusa (assets/brand/mark-closed.svg, il fotogramma 0 dell'animazione) al centro su verderame. PNG da tool/brand_icons.sh. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
     <item>

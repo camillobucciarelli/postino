@@ -3,6 +3,7 @@ library;
 
 export 'atoms/postino_account_mark.dart';
 export 'atoms/postino_avatar.dart';
+export 'atoms/postino_brand_mark.dart';
 export 'atoms/postino_button.dart';
 export 'atoms/postino_checkbox_tile.dart';
 export 'atoms/postino_composer_field.dart';
@@ -49,6 +50,7 @@ export 'organisms/postino_rich_editor.dart';
 export 'organisms/postino_thread_message.dart';
 export 'organisms/postino_thread_view.dart';
 export 'templates/postino_adaptive_layout.dart';
+export 'templates/postino_brand_intro.dart';
 export 'templates/postino_composer_layout.dart';
 export 'templates/postino_detail_page.dart';
 export 'templates/postino_fade_through.dart';

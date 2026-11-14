@@ -133,7 +133,7 @@ void main() {
         PostinoComposerLayout(
           sender: PostinoSenderPicker(
             options: const [
-              (id: 'a1', mark: (color: PostinoAccountColor.sky, initial: 'L'), address: 'lavoro@example.com'),
+              (id: 'a1', mark: (color: PostinoAccountColor.sky, initial: 'L'), name: 'lavoro@example.com'),
             ],
             selectedId: 'a1',
             onSelected: (_) {},

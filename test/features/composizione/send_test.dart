@@ -471,7 +471,7 @@ class _TooBig(
   @override
   Future<Result<void>> fetchBody(String a, String m) => real.fetchBody(a, m);
   @override
-  Future<void> saveDraft(String a, OutgoingMessage d) {
+  Future<bool> saveDraft(String a, OutgoingMessage d) {
     saves++;
     return real.saveDraft(a, d);
   }

@@ -59,7 +59,7 @@ const _formats = PostinoFormatLabels(
 /// The whole composer, with a long address and subject.
 Widget _composer() => PostinoComposerLayout(
   sender: PostinoSenderPicker(
-    options: const [(id: 'a1', mark: _sky, address: 'lucia.bianchi.della.valle@example.com')],
+    options: const [(id: 'a1', mark: _sky, name: 'lucia.bianchi.della.valle@example.com')],
     selectedId: 'a1',
     onSelected: (_) {},
     label: 'Da',

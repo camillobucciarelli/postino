@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
+import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
@@ -61,7 +62,7 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
                   key: ValueKey('settings-account-${a.id}'),
                   title: a.name,
                   subtitle: [
-                    _providerName(context, a.provider),
+                    providerName(context, a.provider),
                     if (a.status == AccountStatus.daRicollegare) context.t.daRicollegare.status,
                   ].join(' · '),
                   onTap: null,
@@ -82,7 +83,7 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
           const SyncAccountSection(),
           for (final a in accounts.value.value ?? const <Account>[])
             PostinoSettingsSection(
-              title: _sectionTitle(context, a, accounts.value.value!),
+              title: accountLabel(context, a, accounts.value.value!),
               children: [
                 PostinoSettingsItem(
                   key: ValueKey('settings-auto-labels-${a.id}'),
@@ -111,15 +112,3 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
     ),
   );
 }
-
-/// The Account's name, with its Provider when another Account has the same address (ADR 0016): two sections must
-/// not read the same.
-String _sectionTitle(BuildContext context, Account a, List<Account> all) =>
-    all.where((b) => b.address == a.address).length > 1 ? '${a.name} · ${_providerName(context, a.provider)}' : a.name;
-
-String _providerName(BuildContext context, ProviderKind p) => switch (p) {
-  ProviderKind.gmail => context.t.accounts.gmail,
-  ProviderKind.microsoft => context.t.accounts.microsoft,
-  ProviderKind.icloud => context.t.accounts.icloud,
-  ProviderKind.imap => context.t.accounts.imap,
-};

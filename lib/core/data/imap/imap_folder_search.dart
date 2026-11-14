@@ -4,6 +4,7 @@ import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:enough_mail/enough_mail.dart' show ImapClient, ImapException, ReturnOption;
 
 import '../../domain/message.dart';
+import '../../domain/platform_services.dart';
 import '../../domain/provider_search_page.dart';
 import '../../domain/result.dart';
 import '../../domain/search_query.dart';
@@ -28,6 +29,10 @@ typedef _Done = ({List<ImapParsed> messages, _Resume? more, bool timedOut});
 /// UID to go on from. A folder that times out or refuses the SEARCH is left out of this page, the others answer.
 class ImapFolderSearch(
   final ImapSession _session,
+
+  /// What the budget is measured on: the Provider's clock, never a [Stopwatch], which in the widget tests runs on real
+  /// time while the timeouts run on fake time (#265).
+  final Clock _clock,
 
   /// The messages threaded as the syncs do (`ImapProvider._thread`), over the headers `_related` looked up.
   final List<Message> Function(List<ImapParsed> messages, List<ThreadInput> related) _thread,
@@ -60,7 +65,8 @@ class ImapFolderSearch(
     String? token,
     Set<String> stored,
   ) async {
-    final clock = Stopwatch()..start();
+    final start = _clock.now();
+    Duration elapsed() => _clock.now().difference(start);
     final all = await _within<List<ImapFolder>>(_budget, list);
     final resumes = _decode(token);
     final pending = <_Resume>[
@@ -73,7 +79,7 @@ class ImapFolderSearch(
     final slow = <String>{};
     var answered = 0;
     for (final (i, r) in pending.indexed) {
-      final left = _budget - clock.elapsed;
+      final left = _budget - elapsed();
       if (left <= Duration.zero) {
         next.addAll(pending.skip(i));
         break;
@@ -100,7 +106,7 @@ class ImapFolderSearch(
       for (final f in searchable(all))
         if (!slow.contains(f.path)) f,
     ];
-    final rest = _budget - clock.elapsed;
+    final rest = _budget - elapsed();
     final related = await _within<List<ThreadInput>>(
       rest < _minLookup ? _minLookup : rest,
       (c) => _related(c, lookup, found),

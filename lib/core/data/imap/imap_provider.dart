@@ -81,6 +81,7 @@ class ImapProvider(
 
   late final _search = ImapFolderSearch(
     _session,
+    _clock,
     (found, related) => _thread(found, found, related),
     _related,
     timeout: _searchTimeout,

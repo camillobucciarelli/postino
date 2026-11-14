@@ -130,19 +130,28 @@ void main() {
     await again.close();
     expect(legacy.values, {'database_key.moved': '1'});
 
-    // Moved and then not found (a Debug build on the same Mac, a lost item): no new key, the file untouched.
-    // Another start: a store not seen yet, keyFrom reads once per store.
-    final lost = FakeSecureStore();
-    final debug = FakeSecureStore()..values['database_key.moved'] = '1';
-    await expectLater(
-      PostinoDatabase.open(path, MovingKeychain(lost, FakeSecureStore()..values.addAll(debug.values))),
-      throwsStateError,
-    );
+    // A Debug build (the legacy keychain alone) finds only the mark: no new key, the file untouched. Another start is
+    // a store not seen yet: keyFrom reads once per store.
+    final debug = FakeSecureStore()..values.addAll(legacy.values);
     await expectLater(PostinoDatabase.open(path, debug), throwsStateError);
-    expect([...lost.writes, ...debug.writes], isEmpty);
+    expect(debug.writes, isEmpty);
+    // The Data Protection keychain cannot be read (-34018): the start fails, the file untouched.
+    final locked = FakeSecureStore()..failure = Exception('-34018');
+    await expectLater(PostinoDatabase.open(path, MovingKeychain(locked, legacy)), throwsException);
+    expect(locked.writes, isEmpty);
     final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
     expect(await accounts(third), 1);
     await third.close();
+
+    // Restored on another Mac: the login keychain brings the mark, the Data Protection keychain is empty. Postino
+    // starts over empty, as iOS after a restore, and keeps the mark for a Debug build there.
+    final restoredLegacy = FakeSecureStore()..values.addAll(legacy.values);
+    final restored = FakeSecureStore();
+    final fresh = await PostinoDatabase.open(path, MovingKeychain(restored, restoredLegacy));
+    expect(await accounts(fresh), 0);
+    await fresh.close();
+    expect(restored.values.keys, unorderedEquals(['database_key', 'database_key.device_only']));
+    expect(restoredLegacy.values, {'database_key.moved': '1'});
   });
 
   test('a Debug build on the Mac of a release installed new fails, never wipes its database (#270)', () async {

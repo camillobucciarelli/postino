@@ -21,9 +21,11 @@ class MovingKeychain(final SecureStore to, final SecureStore from) implements Se
   Future<void> delete(String key) => to.delete(key);
 }
 
-/// Reads [name] from a device-only [keychain] (#263), null if it has none; a keychain that cannot be read throws, and
-/// so does a key moved out of the legacy keychain and then not found (#270): never taken for none, which means a new
-/// key and the database wiped.
+/// Reads [name] from a device-only [keychain] (#263), null if it has none; a keychain that cannot be read throws.
+/// A legacy keychain marked moved, read alone (a Debug build, which cannot see the Data Protection keychain), throws
+/// too: its null would be a new key and the release's database wiped (#270). Read through a [MovingKeychain] with no
+/// key in either store, it is none: the Mac was restored from Time Machine or Migration Assistant, which bring the
+/// mark but not the key, and Postino starts over empty, as iOS after a restore.
 ///
 /// An older version saved it under a migratable attribute, which a device-only write replaces (on iOS by deleting the
 /// item and adding it again). So once per key it is copied first, the copy read back and marked checked, then the key
@@ -34,14 +36,20 @@ class MovingKeychain(final SecureStore to, final SecureStore from) implements Se
 /// checked. The migration is marked done only once the key reads back as the copy, and a key restored from the copy
 /// drops an earlier mark first. The key lost is the local database lost.
 Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
-  var legacy = keychain;
   if (keychain case MovingKeychain(:final to, :final from)) {
-    if (await _move(from, to, name) case final value?) return value;
-    legacy = from;
+    // The legacy keychain loses the key only once [to] holds it, read back: none in both is no key on this Mac.
+    final value = await _move(from, to, name) ?? await _readMigrating(to, name);
+    // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe.
+    if (value != null && await from.read(_movedMark(name)) == null) {
+      try {
+        await from.write(_movedMark(name), '1');
+        // ponytail: silent, the next start tries again.
+      } on Object catch (_) {}
+    }
+    return value;
   }
   if (await _readMigrating(keychain, name) case final value?) return value;
-  // In the Data Protection keychain, which a Debug build cannot read, or lost there.
-  if (await legacy.read(_movedMark(name)) != null) throw StateError('$name: moved to the Data Protection keychain');
+  if (await keychain.read(_movedMark(name)) != null) throw StateError('$name: moved to the Data Protection keychain');
   return null;
 }
 

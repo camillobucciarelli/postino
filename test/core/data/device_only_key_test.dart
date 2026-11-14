@@ -313,14 +313,72 @@ void main() {
       expect(legacy.values, {'$name.moved': '1'});
     });
 
-    test('moved and found nowhere is an error, never a missing key', () async {
-      legacy.values
-        ..clear()
-        ..['$name.moved'] = '1';
-      await expectLater(readDeviceOnly(keychain, name), throwsStateError);
-      await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build on the same Mac');
-      expect([...dataProtection.writes, ...legacy.writes], isEmpty);
+    test('a new key killed at any step: the next start that reads it marks the legacy keychain moved', () async {
+      for (var budget = 0; ; budget++) {
+        final ops = _Budget(budget);
+        final from = _Killable(ops);
+        final to = _Killable(ops);
+        try {
+          await writeDeviceOnly(MovingKeychain(to, from), name, key);
+        } on _Killed catch (_) {
+          // the process died here
+        }
+        final legacy = FakeSecureStore()..values.addAll(from.values);
+        final read = await readDeviceOnly(MovingKeychain(FakeSecureStore()..values.addAll(to.values), legacy), name);
+        if (read != null) {
+          expect(read, key, reason: 'killed after $budget operations');
+          await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build fails, never wipes');
+        }
+        if (!ops.killed) break;
+      }
     });
+
+    test(
+      'moved and found in neither store: none for the release (a restored Mac), an error for a Debug build',
+      () async {
+        legacy.values
+          ..clear()
+          ..['$name.moved'] = '1';
+        expect(await readDeviceOnly(keychain, name), isNull);
+        await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build on the same Mac');
+        expect([...dataProtection.writes, ...legacy.writes], isEmpty);
+      },
+    );
+
+    // A start killed after any keychain operation of the move, then started again: the key is never lost, so the
+    // release never reads none (a new key, the database wiped), and a Debug build never gets a key of its own.
+    for (final (label, start) in [
+      ('migrated', migrated),
+      ('not yet migrated', const {name: key}),
+      ('with a fresh mark', {...migrated, '$name.fresh': '1'}),
+    ]) {
+      test('a move killed at any step, $label, keeps the key', () async {
+        for (var budget = 0; ; budget++) {
+          final ops = _Budget(budget);
+          final from = _Killable(ops)..values.addAll(start);
+          final to = _Killable(ops);
+          try {
+            await readDeviceOnly(MovingKeychain(to, from), name);
+          } on _Killed catch (_) {
+            // the process died here
+          } on Object catch (_) {
+            // a step that failed: the start fails, tried again
+          }
+          final restart = MovingKeychain(
+            FakeSecureStore()..values.addAll(to.values),
+            FakeSecureStore()..values.addAll(from.values),
+          );
+          final debug = FakeSecureStore()..values.addAll(from.values);
+          expect(await readDeviceOnly(restart, name), key, reason: 'killed after $budget operations');
+          try {
+            expect(await readDeviceOnly(debug, name), key, reason: 'a Debug build after $budget operations');
+          } on StateError catch (_) {
+            // moved: the Debug build fails, never wipes
+          }
+          if (!ops.killed) break;
+        }
+      });
+    }
 
     test('a keychain that cannot be read is an error, never a missing key', () async {
       dataProtection.failure = Exception('-34018');
@@ -351,6 +409,41 @@ void main() {
       expect(legacy.writes, isEmpty);
     });
   });
+}
+
+/// The keychain operations a process makes before it dies.
+class _Budget(var int left) {
+  var killed = false;
+
+  void spend() {
+    if (left-- <= 0) {
+      killed = true;
+      throw _Killed();
+    }
+  }
+}
+
+class _Killed() implements Exception {}
+
+/// A keychain in a process that dies once the shared [ops] are spent: nothing after that reaches it.
+class _Killable(final _Budget ops) extends FakeSecureStore {
+  @override
+  Future<String?> read(String key) async {
+    ops.spend();
+    return super.read(key);
+  }
+
+  @override
+  Future<void> write(String key, String value) async {
+    ops.spend();
+    return super.write(key, value);
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    ops.spend();
+    return super.delete(key);
+  }
 }
 
 /// A keychain whose deletes of [key] throw.

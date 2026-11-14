@@ -40,6 +40,15 @@ class _IsolateView(final Map<String, String> values, {final String? slow}) imple
   }
 }
 
+/// A keychain that says when the fresh mark is read: under the lock, just before the database opens.
+class _SignalsFreshRead(final SendPort port) extends FakeSecureStore {
+  @override
+  Future<String?> read(String key) {
+    if (key == 'database_key.fresh') port.send(null);
+    return super.read(key);
+  }
+}
+
 void main() {
   late Directory dir;
   late String path;
@@ -158,16 +167,17 @@ void main() {
       ..execute("PRAGMA key = \"x'$key'\"")
       ..execute('BEGIN IMMEDIATE');
     final values = {...keychain.values};
+    final reachedOpen = ReceivePort();
+    final signal = reachedOpen.sendPort;
     final migrating = Isolate.run(() async {
-      final background = await PostinoDatabase.open(path, FakeSecureStore()..values.addAll(values));
+      final background = await PostinoDatabase.open(path, _SignalsFreshRead(signal)..values.addAll(values));
       await background.close();
     });
-    await Future<void>.delayed(const Duration(seconds: 1));
+    // The fresh mark is the last read under the lock: from here the open goes on to the waiting migration.
+    await reachedOpen.first;
     try {
-      expect(
-        await withDatabaseLock('$path.lock', () async => 'free', timeout: const Duration(milliseconds: 200)),
-        'free',
-      );
+      // Locked through the migration, the lock would stay taken until the writer below lets go: well past this.
+      expect(await withDatabaseLock('$path.lock', () async => 'free', timeout: const Duration(seconds: 2)), 'free');
     } finally {
       writer.close();
     }

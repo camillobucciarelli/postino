@@ -140,6 +140,29 @@ void main() {
     expect(keychain.writes, [name, '$name.device_only']);
   });
 
+  test('a key deleted after the migration is restored from its copy', () async {
+    final keychain = FakeSecureStore()
+      ..values['$name.copy'] = key
+      ..values['$name.copied'] = '1'
+      ..values['$name.device_only'] = '1';
+
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.values[name], key);
+  });
+
+  test('only an unchecked copy left: the only value, better than a new key that wipes the database', () async {
+    final keychain = FakeSecureStore()..values['$name.copy'] = key;
+
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.values, {name: key, '$name.copy': key, '$name.copied': '1', '$name.device_only': '1'});
+  });
+
+  test('a copy that cannot be read is an error, never a missing copy', () async {
+    final keychain = _FailingRead('$name.copy')..values[name] = key;
+    await expectLater(readDeviceOnly(keychain, name), throwsException);
+    expect(keychain.writes, isEmpty);
+  });
+
   test('a new key read back different is an error, not a key the next start cannot open with', () async {
     final keychain = FakeSecureStore()..corruptWrites.add(name);
     await expectLater(writeDeviceOnly(keychain, name, key), throwsStateError);
@@ -152,4 +175,10 @@ void main() {
       ..failure = Exception('keychain bloccato');
     await expectLater(readDeviceOnly(keychain, name), throwsException);
   });
+}
+
+/// A keychain whose reads of [key] throw: that item locked, the others readable.
+class _FailingRead(final String key) extends FakeSecureStore {
+  @override
+  Future<String?> read(String key) async => key == this.key ? throw Exception('keychain bloccato') : super.read(key);
 }

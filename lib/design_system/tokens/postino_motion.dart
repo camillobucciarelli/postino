@@ -16,8 +16,11 @@ abstract final class PostinoMotion() {
   /// Riga che torna in posizione se lo swipe non supera la soglia. Flutter: Durations.short4.
   static const Duration swipeSettle = Durations.short4;
 
-  /// Riga che esce e lista che si richiude dopo un’azione. Flutter: Durations.medium1.
+  /// Riga che esce (azione con mouse, tastiera o swipe, o sparita col sync): sfuma e la lista si richiude. Flutter: Durations.medium1.
   static const Duration swipeDismiss = Durations.medium1;
+
+  /// Riga che entra (posta nuova, «Annulla»): l’inverso di [swipeDismiss]. Flutter: Durations.medium1.
+  static const Duration rowEnter = Durations.medium1;
 
   /// Messaggio del thread che si espande/collassa. Flutter: Durations.medium1.
   static const Duration threadExpand = Durations.medium1;

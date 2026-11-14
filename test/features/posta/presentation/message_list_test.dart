@@ -1,5 +1,5 @@
 // The list of Conversazioni (the twin of message_list.dart for the mutation test): the cursor follows a focus that
-// came some other way, and the number of rows is reported when it changes.
+// came some other way, the number of rows is reported when it changes, and rows leave and arrive animated (#282).
 import 'dart:async';
 
 // ignore: deprecated_member_use
@@ -39,6 +39,26 @@ Future<FakeMailProvider> _start(WidgetTester tester) async {
 int? _focusedRow() {
   final key = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<PostinoMessageTile>()?.key;
   return key is ValueKey<String> ? int.parse(key.value.split('-m').last) : null;
+}
+
+Finder _fadeOf(int i) => find.ancestor(of: find.byKey(ValueKey('row-a1-m$i')), matching: find.byType(PostinoSizeFade));
+
+/// How visible row `m$i` is: its fade, and its height against the row's own (both 1 at rest).
+({double opacity, double height}) _visible(WidgetTester tester, int i) {
+  final fade = _fadeOf(i);
+  final opacity = tester
+      .widget<FadeTransition>(find.descendant(of: fade, matching: find.byType(FadeTransition)).first)
+      .opacity
+      .value;
+  final full = tester.getSize(find.byKey(ValueKey('row-a1-m$i'))).height;
+  final height = tester.getSize(find.descendant(of: fade, matching: find.byType(SizeTransition)).first).height;
+  return (opacity: opacity, height: height / full);
+}
+
+/// The sync writes the database; one frame lets the list take the new rows, before any time passes.
+Future<void> _syncNoSettle(WidgetTester tester) async {
+  await getIt<SyncEngine>().syncAll();
+  await tester.pump();
 }
 
 Future<void> _focus(WidgetTester tester, int i) async {
@@ -138,5 +158,120 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.getSemantics(live).label, '1 risultato');
     handle.dispose();
+  });
+
+  group('motion (#282)', () {
+    testWidgets('a row that leaves fades while its height closes, then is gone; the rows under it move up', (
+      tester,
+    ) async {
+      final p = await _start(tester);
+      final below = tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy;
+      final rowHeight = tester.getSize(find.byKey(const ValueKey('row-a1-m3'))).height;
+      p.removeRemotely('m3');
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      final mid = _visible(tester, 3);
+      expect(mid.opacity, inExclusiveRange(0, 1));
+      expect(mid.height, inExclusiveRange(0, 1));
+      expect(tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy, inExclusiveRange(below - rowHeight, below));
+      await tester.pump(PostinoMotion.swipeDismiss);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
+      expect(tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy, below - rowHeight);
+    });
+
+    testWidgets('a row on its way out takes no taps and is not read', (tester) async {
+      final handle = tester.ensureSemantics();
+      final p = await _start(tester);
+      p.removeRemotely('m3');
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      expect(find.semantics.byLabel(RegExp('Fattura 3')), findsNothing);
+      expect(find.semantics.byLabel(RegExp('Fattura 2')), findsOne);
+      await tester.tap(find.byKey(const ValueKey('row-a1-m3')), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byType(PostinoThreadView), findsNothing, reason: 'nothing opened');
+      handle.dispose();
+    });
+
+    testWidgets('a row that arrives opens its height and fades in', (tester) async {
+      final p = await _start(tester);
+      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.rowEnter ~/ 2);
+      final mid = _visible(tester, 9);
+      expect(mid.opacity, inExclusiveRange(0, 1));
+      expect(mid.height, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(_visible(tester, 9), (opacity: 1.0, height: 1.0));
+    });
+
+    testWidgets('a row archived and brought back with Annulla comes back animated', (tester) async {
+      await _start(tester);
+      await _focus(tester, 3);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.runAsync(pumpEventQueue);
+      }
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
+      await tester.tap(find.widgetWithText(PostinoButton, 'Annulla'));
+      // The database writes are real I/O: no time passes on the test's clock until the row is back.
+      for (var i = 0; i < 8 && find.byKey(const ValueKey('row-a1-m3')).evaluate().isEmpty; i++) {
+        await tester.runAsync(pumpEventQueue);
+        await tester.pump();
+      }
+      await tester.pump(PostinoMotion.rowEnter ~/ 2);
+      expect(_visible(tester, 3).opacity, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
+    });
+
+    testWidgets('the first load does not animate', (tester) async {
+      await _start(tester);
+      for (var i = 1; i <= 5; i++) {
+        expect(tester.widget<PostinoSizeFade>(_fadeOf(i)).visibility, kAlwaysCompleteAnimation);
+      }
+    });
+
+    testWidgets('with reduced motion rows leave and arrive at once', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+        disableAnimations: true,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final p = await _start(tester);
+      p
+        ..removeRemotely('m3')
+        ..deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+      await _syncNoSettle(tester);
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
+      expect(tester.widget<PostinoSizeFade>(_fadeOf(9)).visibility, kAlwaysCompleteAnimation);
+    });
+
+    testWidgets('while the focused row leaves the focus is already on the row taking its place', (tester) async {
+      final p = await _start(tester);
+      await _focus(tester, 3);
+      p.removeRemotely('m3');
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsOneWidget);
+      expect(_focusedRow(), 2);
+      await tester.pumpAndSettle();
+      expect(_focusedRow(), 2);
+    });
+
+    testWidgets('a row that comes back while leaving turns round', (tester) async {
+      final p = await _start(tester);
+      p.removeRemotely('m3');
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      final out = _visible(tester, 3).opacity;
+      p.deliver(msg('m3', subject: 'Fattura 3', date: DateTime.utc(2026, 10, 1, 9, 3), conversationId: 't3'));
+      await _syncNoSettle(tester);
+      await tester.pump(PostinoMotion.rowEnter ~/ 4);
+      expect(_visible(tester, 3).opacity, greaterThan(out));
+      await tester.pumpAndSettle();
+      expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
+    });
   });
 }

@@ -208,6 +208,61 @@ void main() {
     await third.close();
   });
 
+  group('the key kept for the file (#270)', () {
+    FakeSecureStore movedOnly() => FakeSecureStore()..values['database_key.moved'] = '1';
+
+    /// The key of a database with one Account at [path].
+    Future<String> populated() async {
+      final owner = FakeSecureStore();
+      final db = await PostinoDatabase.open(path, MovingKeychain(owner, FakeSecureStore()));
+      await insertAccount(db);
+      await db.close();
+      return owner.values['database_key']!;
+    }
+
+    test('an overwrite failing half way while it puts the kept key back loses nothing', () async {
+      final inUse = await populated();
+      final dataProtection = FakeSecureStore()
+        ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.replaced': inUse})
+        ..failingWrites.add('database_key');
+
+      final opened = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
+      expect(await accounts(opened), 1, reason: 'opened with the kept key');
+      await opened.close();
+      expect(dataProtection.values['database_key'], isNull, reason: 'deleted, not added');
+      expect(dataProtection.values['database_key.replaced'], inUse);
+
+      final restarted = FakeSecureStore()..values.addAll(dataProtection.values);
+      final again = await PostinoDatabase.open(path, MovingKeychain(restarted, movedOnly()));
+      expect(await accounts(again), 1, reason: 'the kept key is the key again, never a new one');
+      await again.close();
+      expect(restarted.values['database_key'], inUse);
+      expect(restarted.values['database_key.replaced'], isNull);
+    });
+
+    test('a kept key that cannot be forgotten never fails a database that opened', () async {
+      final inUse = await populated();
+      final dataProtection = FakeSecureStore()
+        ..values.addAll({'database_key': inUse, 'database_key.device_only': '1', 'database_key.replaced': 'cd' * 32})
+        ..deleteFailure = Exception('keychain: delete failed');
+      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
+      expect(await accounts(db), 1);
+      await db.close();
+    });
+
+    test('a new file drops the kept key: it opens nothing any more', () async {
+      final dataProtection = FakeSecureStore()
+        ..values.addAll({
+          'database_key': 'ab' * 32,
+          'database_key.device_only': '1',
+          'database_key.replaced': 'cd' * 32,
+        });
+      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
+      await db.close();
+      expect(dataProtection.values['database_key.replaced'], isNull);
+    });
+  });
+
   test(
     'the app and a background engine opening a restore together wipe once, never the database already open',
     () async {

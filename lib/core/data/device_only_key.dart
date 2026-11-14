@@ -39,7 +39,13 @@ Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
   if (keychain case MovingKeychain(:final to, :final from)) {
     if (await _move(from, to, name) case final value?) return value;
     // The legacy keychain loses the key only once [to] holds it, read back: none in both is no key on this Mac.
-    final value = await _readMigrating(to, name);
+    var value = await _readMigrating(to, name);
+    // Only the key a moved one replaced, the other lost by an overwrite that failed half way: it is the key again.
+    final replaced = value == null ? await to.read(replacedMark(name)) : null;
+    if (replaced != null) {
+      await writeDeviceOnly(to, name, replaced);
+      value = replaced;
+    }
     // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe the
     // database. A write that fails fails the start: without the mark the database is not safe.
     if (value != null && await from.read(_movedMark(name)) == null) await from.write(_movedMark(name), '1');

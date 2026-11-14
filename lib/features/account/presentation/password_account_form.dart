@@ -148,38 +148,77 @@ class _PasswordAccountFormState() extends State<_PasswordAccountForm> {
           keyboardType: TextInputType.emailAddress,
           onSubmitted: (_) => _connect(),
         ),
-        PostinoTextField(
-          key: const ValueKey('password-form-password'),
-          label: widget.icloud ? t.appPassword : t.password,
-          controller: _password,
-          error: _passwordError,
-          obscure: true,
-          autofocus: locked,
-          onSubmitted: (_) => _connect(),
-        ),
-        if (!widget.icloud)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Semantics(
-              expanded: _manual,
-              child: PostinoButton(
-                label: t.manual,
-                variant: PostinoButtonVariant.ghost,
-                onPressed: () => setState(() => _manual = !_manual),
-              ),
+        // The manual configuration and the error open and close, each with its gap inside, so a closed one takes no
+        // room (#283).
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PostinoTextField(
+              key: const ValueKey('password-form-password'),
+              label: widget.icloud ? t.appPassword : t.password,
+              controller: _password,
+              error: _passwordError,
+              obscure: true,
+              autofocus: locked,
+              onSubmitted: (_) => _connect(),
             ),
-          ),
-        if (_manual) ...[
-          ServerFields(title: t.imapServer, draft: _imap, onChanged: () => setState(() {}), onSubmitted: _connect),
-          ServerFields(title: t.smtpServer, draft: _smtp, onChanged: () => setState(() {}), onSubmitted: _connect),
-        ],
-        if (_error case final e?)
-          Semantics(
-            liveRegion: true,
-            child: PostinoBanner(tone: PostinoBannerTone.danger, title: e, spaced: false),
-          ),
+            if (!widget.icloud)
+              Padding(
+                padding: const EdgeInsets.only(top: PostinoSpacing.s4),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Semantics(
+                    expanded: _manual,
+                    child: PostinoButton(
+                      label: t.manual,
+                      variant: PostinoButtonVariant.ghost,
+                      onPressed: () => setState(() => _manual = !_manual),
+                    ),
+                  ),
+                ),
+              ),
+            PostinoReveal(
+              duration: PostinoMotion.threadExpand,
+              child: _manual
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: PostinoSpacing.s4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: PostinoSpacing.s4,
+                        children: [
+                          ServerFields(
+                            title: t.imapServer,
+                            draft: _imap,
+                            onChanged: () => setState(() {}),
+                            onSubmitted: _connect,
+                          ),
+                          ServerFields(
+                            title: t.smtpServer,
+                            draft: _smtp,
+                            onChanged: () => setState(() {}),
+                            onSubmitted: _connect,
+                          ),
+                        ],
+                      ),
+                    )
+                  : null,
+            ),
+            PostinoReveal(
+              child: _error == null
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(top: PostinoSpacing.s4),
+                      child: Semantics(
+                        liveRegion: true,
+                        child: PostinoBanner(tone: PostinoBannerTone.danger, title: _error!, spaced: false),
+                      ),
+                    ),
+            ),
+          ],
+        ),
         PostinoDialogActions(
           children: [
+            // ponytail: no fade, an empty slot would still take a gap in the Wrap; the spinner moves on its own.
             if (_busy) PostinoSpinner(label: t.connecting),
             PostinoButton(
               label: t.cancel,

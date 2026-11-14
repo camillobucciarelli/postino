@@ -37,29 +37,42 @@ class _AccountChoicesState() extends State<AccountChoices> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     mainAxisSize: MainAxisSize.min,
-    spacing: PostinoSpacing.s2,
     children: [
-      if (_error case final e?)
-        PostinoBanner(tone: PostinoBannerTone.danger, title: context.t.connect.title, message: e),
-      PostinoButton(
-        label: context.t.onboarding.connectGmail,
-        onPressed: () => _consent(ProviderKind.gmail),
-        size: PostinoButtonSize.lg,
+      // It opens and closes, its gap inside (#283).
+      PostinoReveal(
+        child: _error == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(bottom: PostinoSpacing.s2),
+                child: PostinoBanner(tone: PostinoBannerTone.danger, title: context.t.connect.title, message: _error),
+              ),
       ),
-      PostinoButton(
-        label: context.t.onboarding.connectOutlook,
-        onPressed: () => _consent(ProviderKind.microsoft),
-        size: PostinoButtonSize.lg,
-      ),
-      PostinoButton(
-        label: context.t.onboarding.connectIcloud,
-        onPressed: () => _password(icloud: true),
-        size: PostinoButtonSize.lg,
-      ),
-      PostinoButton(
-        label: context.t.onboarding.connectImap,
-        onPressed: () => _password(icloud: false),
-        size: PostinoButtonSize.lg,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        spacing: PostinoSpacing.s2,
+        children: [
+          PostinoButton(
+            label: context.t.onboarding.connectGmail,
+            onPressed: () => _consent(ProviderKind.gmail),
+            size: PostinoButtonSize.lg,
+          ),
+          PostinoButton(
+            label: context.t.onboarding.connectOutlook,
+            onPressed: () => _consent(ProviderKind.microsoft),
+            size: PostinoButtonSize.lg,
+          ),
+          PostinoButton(
+            label: context.t.onboarding.connectIcloud,
+            onPressed: () => _password(icloud: true),
+            size: PostinoButtonSize.lg,
+          ),
+          PostinoButton(
+            label: context.t.onboarding.connectImap,
+            onPressed: () => _password(icloud: false),
+            size: PostinoButtonSize.lg,
+          ),
+        ],
       ),
     ],
   );

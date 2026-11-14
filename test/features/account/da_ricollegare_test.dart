@@ -79,4 +79,37 @@ void main() {
     expect(find.textContaining('per ricollegare ada@gmail.com'), findsOneWidget);
     expect(find.byKey(_banner), findsOneWidget);
   });
+
+  testWidgets('in the app the banner opens over the list and closes once reconnected (#283), out of reach meanwhile', (
+    tester,
+  ) async {
+    await start(tester);
+    final top = tester.getTopLeft(find.byKey(_old)).dy;
+    gmail.breakAuth();
+    await getIt<SyncEngine>().syncAll();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(PostinoMotion.snackbar ~/ 2);
+    final half = tester.getTopLeft(find.byKey(_old)).dy - top;
+    final full = tester.getSize(find.byKey(_banner)).height;
+    expect(half, inExclusiveRange(0, full), reason: 'the list is pushed down bit by bit');
+    await tester.pumpAndSettle();
+    final open = tester.getTopLeft(find.byKey(_old)).dy - top;
+    expect(open, greaterThan(half));
+
+    final handle = tester.ensureSemantics();
+    gmail.restoreAuth();
+    await tester.tap(find.text('Accedi'));
+    for (var i = 0; i < 10 && tester.getTopLeft(find.byKey(_old)).dy - top == open; i++) {
+      await tester.pump();
+    }
+    await tester.pump(PostinoMotion.snackbar ~/ 4);
+    expect(find.byKey(_banner), findsOneWidget, reason: 'still drawn while it closes');
+    expect(tester.getTopLeft(find.byKey(_old)).dy - top, inExclusiveRange(0, open));
+    expect(find.semantics.byLabel('Accedi'), findsNothing, reason: 'a leaving banner is not read');
+    await tester.pumpAndSettle();
+    expect(find.byKey(_banner), findsNothing);
+    expect(tester.getTopLeft(find.byKey(_old)).dy, top);
+    handle.dispose();
+  });
 }

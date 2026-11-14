@@ -10,6 +10,8 @@ import 'account_choices.dart';
 import 'notification_permission.dart';
 
 /// Shows the onboarding while there is no Account (with [onReportProblem] on it), [child] afterwards, offering the notifications once per device.
+/// The onboarding fades through to [child] when the first Account arrives, and back when the last one goes (#283);
+/// what the start shows is just there.
 class const OnboardingGate({super.key, required final Widget child, required final VoidCallback onReportProblem})
     extends StatefulWidget {
   @override
@@ -24,20 +26,18 @@ class _OnboardingGateState() extends State<OnboardingGate> with AccountsSignal {
   Widget build(BuildContext context) => SignalBuilder(builder: _content);
 
   Widget _content(BuildContext context) {
-    switch (accounts.value.value) {
-      case null:
-        return const SizedBox.shrink();
-      case []:
-        return _Onboarding(onReportProblem: widget.onReportProblem);
-      case _:
-        if (!_offered) {
-          _offered = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) unawaited(askNotificationPermission(this.context));
-          });
-        }
-        return widget.child;
+    final all = accounts.value.value;
+    if (all == null) return const SizedBox.shrink();
+    if (all.isNotEmpty && !_offered) {
+      _offered = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(askNotificationPermission(this.context));
+      });
     }
+    return PostinoFadeThrough(
+      transitionKey: all.isEmpty,
+      child: all.isEmpty ? _Onboarding(onReportProblem: widget.onReportProblem) : widget.child,
+    );
   }
 }
 

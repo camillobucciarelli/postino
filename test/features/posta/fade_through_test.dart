@@ -20,7 +20,9 @@ Future<void> _start(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder get _fade => find.descendant(of: find.byType(PostinoFadeThrough), matching: find.byType(FadeTransition)).first;
+/// The fade of the Posta's views, inside the onboarding gate's own.
+Finder get _fade =>
+    find.descendant(of: find.byType(PostinoFadeThrough).last, matching: find.byType(FadeTransition)).first;
 
 void main() {
   testWidgets('switching view fades the new content in, then settles', (tester) async {
@@ -83,6 +85,37 @@ void main() {
       expect(box.color.a, 1);
       expect(box.color, theme.extension<PostinoColors>()!.surface);
     }
+  });
+
+  testWidgets('the outgoing page takes no taps, no focus and is not read while it fades out (#283)', (tester) async {
+    final handle = tester.ensureSemantics();
+    var taps = 0;
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    Widget host(String k) => MaterialApp(
+      theme: PostinoTheme.light(),
+      home: PostinoFadeThrough(
+        transitionKey: k,
+        child: k == 'a'
+            ? Center(
+                child: TextButton(focusNode: focus, onPressed: () => taps++, child: const Text('Vecchia')),
+              )
+            : const Center(child: Text('Nuova')),
+      ),
+    );
+    await tester.pumpWidget(host('a'));
+    focus.requestFocus();
+    await tester.pump();
+    await tester.pumpWidget(host('b'));
+    await tester.pump(const Duration(milliseconds: 45));
+    expect(find.text('Vecchia'), findsOneWidget, reason: 'still fading out');
+    expect(find.semantics.byLabel('Vecchia'), findsNothing);
+    expect(focus.hasFocus, isFalse);
+    await tester.tap(find.text('Vecchia'), warnIfMissed: false);
+    expect(taps, 0);
+    await tester.pumpAndSettle();
+    expect(find.text('Nuova'), findsOneWidget);
+    handle.dispose();
   });
 
   testWidgets('outgoing page keeps its State while fading out', (tester) async {

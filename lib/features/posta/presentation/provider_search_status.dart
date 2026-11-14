@@ -8,11 +8,12 @@ import '../../../core/domain/result.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'provider_search.dart';
+import 'reveal_column.dart';
 
 /// Where the search on the Providers stands (#207), above the results: «Cerco anche su…» while an Account
 /// is asked, «Risultati solo locali» for one not reachable, «Mostrati i primi 1.000 risultati» for one whose
 /// Provider stopped at its cap (all live regions, their text selectable), and «Mostra altri» for the next page.
-/// Nothing before Invio.
+/// Nothing before Invio. Each comes and goes with a fade (RevealColumn, #283).
 class const ProviderSearchStatus({super.key, required final ProviderSearch search}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SignalBuilder(
@@ -56,6 +57,7 @@ class const ProviderSearchStatus({super.key, required final ProviderSearch searc
           ),
         if (search.hasMore.value)
           Align(
+            key: const ValueKey('altri'),
             alignment: AlignmentDirectional.centerStart,
             child: PostinoButton(
               label: t.more,
@@ -65,10 +67,9 @@ class const ProviderSearchStatus({super.key, required final ProviderSearch searc
             ),
           ),
       ];
-      if (children.isEmpty) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+        child: RevealColumn(children: children),
       );
     },
   );

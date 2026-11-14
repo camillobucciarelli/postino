@@ -12,6 +12,7 @@ import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_servers.dart';
 import 'package:postino/core/domain/password_provider.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 
@@ -151,6 +152,64 @@ void main() {
     expect(_address, findsNothing);
     expect(find.text('Altro IMAP'), findsOneWidget);
   });
+
+  for (final reduced in [false, true]) {
+    testWidgets('the manual configuration and the error open and close'
+        '${reduced ? ', all at once with reduced motion' : ''} (#283)', (tester) async {
+      if (reduced) {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+          disableAnimations: true,
+        );
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      }
+      final h = await _start(tester);
+      await _open(tester, 'Altro IMAP');
+      double shown(Finder f) =>
+          tester.getSize(find.ancestor(of: f, matching: find.byType(PostinoSizeFade)).first).height;
+      bool between(Finder f, double full) => shown(f) > 0 && shown(f) < full;
+
+      // The manual configuration: duration-thread-expand.
+      await tester.tap(find.text('Impostazione manuale dei server'));
+      await tester.pump();
+      await tester.pump(PostinoMotion.threadExpand ~/ 2);
+      final imap = find.text('Server IMAP (posta in arrivo)');
+      await tester.pumpAndSettle();
+      final manual = shown(imap);
+      await tester.tap(find.text('Impostazione manuale dei server'));
+      await tester.pump();
+      await tester.pump(PostinoMotion.threadExpand ~/ 2);
+      expect(reduced ? imap.evaluate().isEmpty : between(imap, manual), isTrue, reason: 'half way it is closing');
+      await tester.pumpAndSettle();
+      expect(imap, findsNothing);
+
+      // «Connessione…», then the error.
+      h.connection
+        ..gate = Completer<void>()
+        ..failure = const OfflineFailure();
+      h.discovery.servers['ada@fastmail.com'] = _fastmail;
+      await _fill(tester, 'ada@fastmail.com', 'app-password-1');
+      await tester.ensureVisible(_connect);
+      await tester.pumpAndSettle();
+      await tester.tap(_connect);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(PostinoMotion.state ~/ 2);
+      expect(find.byType(PostinoSpinner), findsOneWidget, reason: '«Connessione…» is there at once');
+      h.connection.gate!.complete();
+      final error = find.textContaining('Server non raggiungibile');
+      for (var i = 0; i < 10 && error.evaluate().isEmpty; i++) {
+        await tester.pump();
+      }
+      await tester.pump(PostinoMotion.snackbar ~/ 2);
+      final reveal = find.ancestor(of: error, matching: find.byType(PostinoSizeFade)).first;
+      final full =
+          tester.getSize(find.ancestor(of: error, matching: find.byType(PostinoBanner))).height + PostinoSpacing.s4;
+      expect(tester.getSize(reveal).height, reduced ? full : inExclusiveRange(0, full));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(reveal).height, full);
+      expect(h.keychain.values, isEmpty);
+    });
+  }
 
   testWidgets('Annulla while the connection is tested closes the form and saves nothing', (tester) async {
     final h = await _start(tester);

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -80,6 +81,48 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('sync-busy')), findsNothing);
   });
+
+  for (final reduced in [false, true]) {
+    testWidgets(
+      'the progress opens, then fades into the error${reduced ? ', at once with reduced motion' : ''} (#283)',
+      (tester) async {
+        if (reduced) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+            disableAnimations: true,
+          );
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        final h = await _start(tester);
+        final gate = Completer<void>();
+        h.consent
+          ..gate = gate.future
+          ..failure = const DriveScopeFailure();
+        await tester.tap(_entry);
+        await tester.pumpAndSettle();
+        final busy = find.byKey(const ValueKey('sync-busy'));
+        final error = find.byKey(const ValueKey('sync-error'));
+        await tester.tap(find.byKey(const ValueKey('sync-a1')));
+        for (var i = 0; i < 10 && busy.evaluate().isEmpty; i++) {
+          await tester.pump();
+        }
+        await tester.pump(PostinoMotion.snackbar ~/ 2);
+        final reveal = find.ancestor(of: busy, matching: find.byType(PostinoSizeFade));
+        final full = tester.getSize(busy).height + PostinoSpacing.s2;
+        expect(tester.getSize(reveal).height, reduced ? full : inExclusiveRange(0, full));
+
+        gate.complete();
+        for (var i = 0; i < 10 && error.evaluate().isEmpty; i++) {
+          await tester.pump();
+        }
+        await tester.pump(PostinoMotion.snackbar ~/ 2);
+        expect(busy, reduced ? findsNothing : findsOneWidget, reason: 'the progress fades out under the error');
+        expect(error, findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(busy, findsNothing);
+        expect(error, findsOneWidget);
+      },
+    );
+  }
 
   testWidgets('a denial leaves Nessuno and says so', (tester) async {
     final h = await _start(tester);

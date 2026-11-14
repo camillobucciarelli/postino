@@ -6,7 +6,8 @@ import '../tokens/postino_tokens.dart';
 /// Material 3 "fade through" when [transitionKey] changes: the previous child fades out (90ms),
 /// then [child] fades in and scales 0.96→1 (210ms). Only one of them is in the tree at a time.
 /// The previous child is the widget given before, so it must carry its own params.
-/// With reduced motion ([MediaQuery.disableAnimationsOf]) the swap is instant.
+/// With reduced motion ([MediaQuery.disableAnimationsOf]) the swap is instant. The outgoing child is gone already:
+/// no taps, no focus, nothing for the screen reader (#283).
 class const PostinoFadeThrough({
   super.key,
 
@@ -70,9 +71,18 @@ class _PostinoFadeThroughState() extends State<PostinoFadeThrough> with SingleTi
             scale: AlwaysStoppedAnimation(
               fadingOut ? 1.0 : PostinoMotion.fadeThroughScaleBegin + (1 - PostinoMotion.fadeThroughScaleBegin) * k,
             ),
-            child: out != null && fadingOut
-                ? out
-                : KeyedSubtree(key: ValueKey(widget.transitionKey), child: widget.child),
+            child: IgnorePointer(
+              ignoring: fadingOut,
+              child: ExcludeSemantics(
+                excluding: fadingOut,
+                child: ExcludeFocus(
+                  excluding: fadingOut,
+                  child: out != null && fadingOut
+                      ? out
+                      : KeyedSubtree(key: ValueKey(widget.transitionKey), child: widget.child),
+                ),
+              ),
+            ),
           ),
         );
       },

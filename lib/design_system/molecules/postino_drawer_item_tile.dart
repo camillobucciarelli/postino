@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_account_mark.dart';
+import '../atoms/postino_fade_switcher.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
 import '../tokens/postino_icons.dart';
@@ -11,6 +12,7 @@ import 'postino_drawer_item.dart';
 import 'postino_sync_status.dart';
 
 /// One row of `PostinoNavigationDrawer` (not in the barrel): [item] as a row, or, [collapsed], as a rail icon.
+/// The unread dot and the Da ricollegare badge fade in and out (#283, `duration-toggle`).
 class const PostinoDrawerItemTile(
   /// The destination it shows and opens.
   final PostinoDrawerItem item, {
@@ -37,22 +39,28 @@ class const PostinoDrawerItemTile(
               size: PostinoSize.iconLg,
               color: item.active ? c.drawerItemIconActive : c.drawerItemIcon,
             ),
-          if (item.unreadLabel != null)
-            const Positioned(top: PostinoSpacing.s1 + 2, right: PostinoSpacing.s1 + 2, child: _UnreadDot()),
-          if (item.reconnectLabel != null)
-            Positioned(
-              bottom: PostinoSpacing.s1,
-              right: PostinoSpacing.s1,
-              child: ExcludeSemantics(
-                // A shape, not only a color; the ground keeps it apart from the mark.
-                child: Container(
-                  key: const ValueKey('reconnect-badge'),
-                  padding: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(color: c.drawerBg, shape: BoxShape.circle),
-                  child: PostinoIcon(PostinoIcons.alert, size: PostinoSize.iconSm - 2, color: c.warning),
-                ),
-              ),
+          Positioned(
+            top: PostinoSpacing.s1 + 2,
+            right: PostinoSpacing.s1 + 2,
+            child: _FadeToggle(item.unreadLabel == null ? null : const _UnreadDot()),
+          ),
+          Positioned(
+            bottom: PostinoSpacing.s1,
+            right: PostinoSpacing.s1,
+            child: _FadeToggle(
+              item.reconnectLabel == null
+                  ? null
+                  : ExcludeSemantics(
+                      // A shape, not only a color; the ground keeps it apart from the mark.
+                      child: Container(
+                        key: const ValueKey('reconnect-badge'),
+                        padding: const EdgeInsets.all(1),
+                        decoration: BoxDecoration(color: c.drawerBg, shape: BoxShape.circle),
+                        child: PostinoIcon(PostinoIcons.alert, size: PostinoSize.iconSm - 2, color: c.warning),
+                      ),
+                    ),
             ),
+          ),
         ],
       ),
     );
@@ -95,7 +103,6 @@ class const PostinoDrawerItemTile(
                     constraints: const BoxConstraints(minHeight: PostinoSize.touchTargetAndroid),
                     padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s3),
                     child: Row(
-                      spacing: PostinoSpacing.s3,
                       children: [
                         if (a != null)
                           PostinoAccountMark(color: a.color, initial: a.initial, size: 22)
@@ -105,6 +112,7 @@ class const PostinoDrawerItemTile(
                             size: PostinoSize.iconLg,
                             color: item.active ? c.drawerItemIconActive : c.drawerItemIcon,
                           ),
+                        const SizedBox(width: PostinoSpacing.s3),
                         Expanded(
                           child: Text(
                             item.label,
@@ -117,9 +125,27 @@ class const PostinoDrawerItemTile(
                             ),
                           ),
                         ),
-                        if (item.unreadLabel case final l?) _UnreadDot(label: l),
-                        if (item.reconnectLabel case final l?)
-                          PostinoSyncStatus(state: PostinoSyncState.reconnect, label: l, compact: true),
+                        // Each with the gap before it, so an absent one takes no room.
+                        _FadeToggle(
+                          item.unreadLabel == null
+                              ? null
+                              : Padding(
+                                  padding: const EdgeInsetsDirectional.only(start: PostinoSpacing.s3),
+                                  child: _UnreadDot(label: item.unreadLabel),
+                                ),
+                        ),
+                        _FadeToggle(
+                          item.reconnectLabel == null
+                              ? null
+                              : Padding(
+                                  padding: const EdgeInsetsDirectional.only(start: PostinoSpacing.s3),
+                                  child: PostinoSyncStatus(
+                                    state: PostinoSyncState.reconnect,
+                                    label: item.reconnectLabel!,
+                                    compact: true,
+                                  ),
+                                ),
+                        ),
                       ],
                     ),
                   ),
@@ -143,4 +169,11 @@ class const _UnreadDot({final String? label}) extends StatelessWidget {
     );
     return label == null ? ExcludeSemantics(child: dot) : Semantics(label: label, child: dot);
   }
+}
+
+/// [child] fading in when it comes and out when it goes (`duration-toggle`); null: nothing, no room.
+class const _FadeToggle(final Widget? child) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      PostinoFadeSwitcher(duration: PostinoMotion.toggle, child: child ?? const SizedBox.shrink());
 }

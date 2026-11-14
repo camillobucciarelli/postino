@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 
 import '../atoms/postino_avatar.dart';
 import '../atoms/postino_focus_ring.dart';
+import '../atoms/postino_reveal.dart';
 import '../molecules/postino_attachment_chip.dart';
 import '../molecules/postino_message_detail.dart';
 import '../molecules/postino_message_details_panel.dart';
@@ -20,7 +21,8 @@ export '../molecules/postino_message_detail.dart' show PostinoMessageDetail;
 /// Expanded: avatar 40, sender and its [address], [recipients] (a tap opens the [details]), time,
 /// then the [notices] (Banner…), the [body], the [signature] and the [quote] folded behind «…»
 /// ([quoteLabel] for screen readers; a tap shows it, another hides it), and last the [attachments]. A tap on the header toggles,
-/// in `duration-thread-expand` with `easing-emphasized-decelerate`.
+/// in `duration-thread-expand` with `easing-emphasized-decelerate`. The details and the quote open and close with a
+/// fade in `duration-thread-expand`, the notices in `duration-snackbar` (#283).
 class const PostinoThreadMessage({
   super.key,
 
@@ -84,6 +86,9 @@ class const PostinoThreadMessage({
 
 class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
   bool _details = false;
+
+  /// The content keeps its State and focus when AnimatedSize comes or goes with reduced motion.
+  final _content = GlobalKey();
 
   /// The quote shown: per message, in memory.
   bool _quote = false;
@@ -185,79 +190,101 @@ class _PostinoThreadMessageState() extends State<PostinoThreadMessage> {
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: c.borderSubtle)),
         ),
-        child: AnimatedSize(
-          duration: PostinoMotion.of(context, PostinoMotion.threadExpand),
-          curve: PostinoMotion.emphasizedDecelerate,
-          alignment: Alignment.topCenter,
-          child: expanded
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    PostinoSpacing.s2,
-                    PostinoSpacing.s2,
-                    PostinoSpacing.s2,
-                    PostinoSpacing.s4,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      header,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_details && w.details.isNotEmpty) PostinoMessageDetailsPanel(w.details),
-                            if (w.notices.isNotEmpty)
+        // ponytail: AnimatedSize cannot take a zero duration (it would relayout inside its own layout), so with
+        // reduced motion it is left out, as in PostinoReveal.
+        child: _sized(
+          context,
+          KeyedSubtree(
+            key: _content,
+            child: expanded
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      PostinoSpacing.s2,
+                      PostinoSpacing.s2,
+                      PostinoSpacing.s2,
+                      PostinoSpacing.s4,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        header,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s2),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Details, notices and quote open and close with a fade (#283).
+                              PostinoReveal(
+                                duration: PostinoMotion.threadExpand,
+                                child: _details && w.details.isNotEmpty ? PostinoMessageDetailsPanel(w.details) : null,
+                              ),
+                              PostinoReveal(
+                                child: w.notices.isEmpty
+                                    ? null
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s2),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          spacing: PostinoSpacing.s3,
+                                          children: w.notices,
+                                        ),
+                                      ),
+                              ),
+                              // Body, signature and quote are nodes of their own: read after the header and the notices.
                               Padding(
                                 padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  spacing: PostinoSpacing.s3,
-                                  children: w.notices,
+                                child: Semantics(container: true, child: w.body),
+                              ),
+                              if (w.signature case final signature?)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: PostinoSpacing.s4),
+                                  child: Semantics(container: true, child: signature),
                                 ),
-                              ),
-                            // Body, signature and quote are nodes of their own: read after the header and the notices.
-                            Padding(
-                              padding: EdgeInsets.only(top: w.notices.isEmpty ? PostinoSpacing.s2 : PostinoSpacing.s4),
-                              child: Semantics(container: true, child: w.body),
-                            ),
-                            if (w.signature case final signature?)
-                              Padding(
-                                padding: const EdgeInsets.only(top: PostinoSpacing.s4),
-                                child: Semantics(container: true, child: signature),
-                              ),
-                            if (w.quote case final quote?) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                                child: PostinoQuoteToggle(
-                                  label: w.quoteLabel,
-                                  open: _quote,
-                                  onTap: () => setState(() => _quote = !_quote),
+                              if (w.quote case final quote?) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                                  child: PostinoQuoteToggle(
+                                    label: w.quoteLabel,
+                                    open: _quote,
+                                    onTap: () => setState(() => _quote = !_quote),
+                                  ),
                                 ),
-                              ),
-                              if (_quote) Semantics(container: true, child: PostinoQuote(quote)),
+                                PostinoReveal(
+                                  duration: PostinoMotion.threadExpand,
+                                  child: _quote ? Semantics(container: true, child: PostinoQuote(quote)) : null,
+                                ),
+                              ],
+                              if (w.attachments.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: PostinoSpacing.s4),
+                                  child: Wrap(
+                                    spacing: PostinoSpacing.s2,
+                                    runSpacing: PostinoSpacing.s2,
+                                    children: w.attachments,
+                                  ),
+                                ),
                             ],
-                            if (w.attachments.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: PostinoSpacing.s4),
-                                child: Wrap(
-                                  spacing: PostinoSpacing.s2,
-                                  runSpacing: PostinoSpacing.s2,
-                                  children: w.attachments,
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              // A collapsed message is a tap-to-expand control, like a list row.
-              : SelectionContainer.disabled(child: header),
+                      ],
+                    ),
+                  )
+                // A collapsed message is a tap-to-expand control, like a list row.
+                : SelectionContainer.disabled(child: header),
+          ),
         ),
       ),
     );
   }
+
+  Widget _sized(BuildContext context, Widget child) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : AnimatedSize(
+          duration: PostinoMotion.threadExpand,
+          curve: PostinoMotion.emphasizedDecelerate,
+          alignment: Alignment.topCenter,
+          child: child,
+        );
 }
 
 /// Text in an expanded header: a tap on it does not collapse the message (the SelectionArea takes

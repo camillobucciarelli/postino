@@ -6,12 +6,18 @@ import 'package:flutter/widgets.dart';
 /// Nothing moves until the list has shown rows (loading, then the empty state the first sync fills), nor with reduced
 /// motion (durations zero). Afterwards a list that empties and fills again (Annulla on the last row) animates.
 /// A row is told apart by [_key] (the Conversazione for the inbox, the Conflitto in the list of the Conflitti, #283).
-class RowMotion<T>(final TickerProvider _vsync, final VoidCallback _changed, final Object Function(T) _key) {
+/// [fromEmpty]: a list shown empty at first opens its first rows too (a column of banners, not an inbox that loads).
+class RowMotion<T>(
+  final TickerProvider _vsync,
+  final VoidCallback _changed,
+  final Object Function(T) _key, {
+  final bool fromEmpty = false,
+}) {
   final _moving = <Object, AnimationController>{};
   final _leaving = <Object>{};
   List<T>? _list;
   List<T>? _shown;
-  bool _hadRows = false;
+  late bool _hadRows = fromEmpty;
 
   /// Inside [update]: an animation that ends there at once (a row that leaves before it began to enter) must not ask
   /// for a rebuild during the build that called [update].

@@ -104,6 +104,44 @@ void main() {
     expect(find.byKey(const ValueKey('settings-auto-labels-a1')), findsOneWidget);
   });
 
+  for (final reduced in [false, true]) {
+    testWidgets(
+      'switched off, the description closes${reduced ? ' at once with reduced motion' : ', out of reach'} (#283)',
+      (tester) async {
+        if (reduced) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+            disableAnimations: true,
+          );
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        await _start(tester);
+        _managed(wifi: true);
+        await _run(tester);
+        await _openPage(tester);
+        await tester.tap(_row);
+        await tester.pumpAndSettle();
+        final field = find.text('Descrizione (facoltativa)');
+        final reveal = find.ancestor(of: field, matching: find.byType(PostinoSizeFade)).first;
+        final full = tester.getSize(reveal).height;
+
+        await tester.tap(_row);
+        for (var i = 0; i < 10 && field.evaluate().isNotEmpty && tester.getSize(reveal).height == full; i++) {
+          await tester.runAsync(pumpEventQueue);
+          await tester.pump();
+        }
+        if (reduced) {
+          expect(field, findsNothing);
+          return;
+        }
+        await tester.pump(PostinoMotion.toggle ~/ 4);
+        expect(tester.getSize(reveal).height, inExclusiveRange(0, full), reason: 'half way it is closing');
+        expect(Focus.of(tester.element(find.byType(TextField))).canRequestFocus, isFalse);
+        await tester.pumpAndSettle();
+        expect(field, findsNothing);
+      },
+    );
+  }
+
   testWidgets('the switch is one control named by the Etichetta; on shows the description, which saves on blur', (
     tester,
   ) async {
@@ -148,6 +186,8 @@ void main() {
     // Typing again takes the notice away; an unchanged text saves nothing new.
     await tester.enterText(find.byType(TextField), 'fatture dei fornitori ');
     await tester.pump();
+    expect(find.semantics.byLabel('Descrizione salvata'), findsNothing, reason: 'on its way out, not read');
+    await tester.pumpAndSettle();
     expect(find.text('Descrizione salvata'), findsNothing);
     FocusManager.instance.primaryFocus!.unfocus();
     await tester.pumpAndSettle();

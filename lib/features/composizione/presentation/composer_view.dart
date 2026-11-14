@@ -211,98 +211,109 @@ class _ComposerViewState() extends State<ComposerView> with AccountsSignal {
           PostinoIconButton(icon: PostinoIcons.close, label: t.close, onPressed: widget.onClose),
         ],
       ),
+      // The error opens and closes; the form, or why it is missing, fades in once known (#283).
       banners: [
-        if (_sendError case final e?)
-          PostinoBanner(key: const ValueKey('send-error'), tone: PostinoBannerTone.danger, title: e),
+        PostinoReveal(
+          child: _sendError == null
+              ? null
+              : PostinoBanner(key: const ValueKey('send-error'), tone: PostinoBannerTone.danger, title: _sendError!),
+        ),
       ],
-      body: _failed
-          ? PostinoEmptyState(
-              title: _isReply
-                  ? t.draftReply
-                  : _withAttachments
-                  ? t.draftWithAttachments
-                  : t.draftNotFound,
-            )
-          : controller == null || senders.every((s) => s.id != _from)
-          ? const SizedBox.shrink()
-          // Cmd/Ctrl+Enter sends from any field or the editor (ADR 0014); the Posta registry skips text fields.
-          : CallbackShortcuts(
-              bindings: {SingleActivator(LogicalKeyboardKey.enter, meta: mac, control: !mac): _send},
-              child: AbsorbPointer(
-                absorbing: _sending,
-                child: ExcludeFocus(
-                  excluding: _sending,
-                  child: PostinoComposerLayout(
-                    sender: PostinoSenderPicker(
-                      label: t.from,
-                      options: senders,
-                      selectedId: _from,
-                      enabled: !_saved,
-                      onSelected: (id) => setState(() => _from = id),
-                    ),
-                    fields: [
-                      for (final (label, c) in [(t.to, _to), (t.cc, _cc), (t.bcc, _bcc)])
-                        RecipientField(
-                          label: label,
-                          controller: c,
-                          autofocus: c == _to && !_saved,
-                          onChanged: (_) => _save(),
-                        ),
-                      PostinoComposerField(label: t.subject, controller: _subject, onChanged: (_) => _save()),
-                      // The attachments a forward carries over (#37), read-only.
-                      // ponytail: adding and removing attachments is #75.
-                      if (_opened?.attachments case final atts? when atts.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s3),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: PostinoSpacing.s3,
-                            children: [
-                              Text(
-                                t.forwardedAttachments,
-                                style: PostinoText.label.copyWith(color: context.pc.inkMuted),
-                              ),
-                              Expanded(
-                                child: Wrap(
-                                  spacing: PostinoSpacing.s2,
-                                  runSpacing: PostinoSpacing.s2,
-                                  children: [
-                                    for (final a in atts)
-                                      PostinoAttachmentChip(
-                                        key: ValueKey('draft-attachment-${a.attachment.id}'),
-                                        // safeFileName: un override bidi non deve falsare l'estensione mostrata.
-                                        name: safeFileName(a.attachment.name),
-                                        size: fileSize(a.attachment.size, Localizations.localeOf(context).languageCode),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
+      body: PostinoFadeSwitcher(
+        curve: PostinoMotion.standardDecelerate,
+        child: _failed
+            ? PostinoEmptyState(
+                title: _isReply
+                    ? t.draftReply
+                    : _withAttachments
+                    ? t.draftWithAttachments
+                    : t.draftNotFound,
+              )
+            : controller == null || senders.every((s) => s.id != _from)
+            ? const SizedBox.shrink()
+            // Cmd/Ctrl+Enter sends from any field or the editor (ADR 0014); the Posta registry skips text fields.
+            : CallbackShortcuts(
+                key: const ValueKey('form'),
+                bindings: {SingleActivator(LogicalKeyboardKey.enter, meta: mac, control: !mac): _send},
+                child: AbsorbPointer(
+                  absorbing: _sending,
+                  child: ExcludeFocus(
+                    excluding: _sending,
+                    child: PostinoComposerLayout(
+                      sender: PostinoSenderPicker(
+                        label: t.from,
+                        options: senders,
+                        selectedId: _from,
+                        enabled: !_saved,
+                        onSelected: (id) => setState(() => _from = id),
+                      ),
+                      fields: [
+                        for (final (label, c) in [(t.to, _to), (t.cc, _cc), (t.bcc, _bcc)])
+                          RecipientField(
+                            label: label,
+                            controller: c,
+                            autofocus: c == _to && !_saved,
+                            onChanged: (_) => _save(),
                           ),
+                        PostinoComposerField(label: t.subject, controller: _subject, onChanged: (_) => _save()),
+                        // The attachments a forward carries over (#37), read-only.
+                        // ponytail: adding and removing attachments is #75.
+                        if (_opened?.attachments case final atts? when atts.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s3),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: PostinoSpacing.s3,
+                              children: [
+                                Text(
+                                  t.forwardedAttachments,
+                                  style: PostinoText.label.copyWith(color: context.pc.inkMuted),
+                                ),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: PostinoSpacing.s2,
+                                    runSpacing: PostinoSpacing.s2,
+                                    children: [
+                                      for (final a in atts)
+                                        PostinoAttachmentChip(
+                                          key: ValueKey('draft-attachment-${a.attachment.id}'),
+                                          // safeFileName: un override bidi non deve falsare l'estensione mostrata.
+                                          name: safeFileName(a.attachment.name),
+                                          size: fileSize(
+                                            a.attachment.size,
+                                            Localizations.localeOf(context).languageCode,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                      editor: PostinoRichEditor(
+                        controller: controller,
+                        focusNode: _editorFocus,
+                        label: t.editor,
+                        placeholder: t.body,
+                        labels: PostinoFormatLabels(
+                          bold: t.bold,
+                          italic: t.italic,
+                          underline: t.underline,
+                          strikethrough: t.strikethrough,
+                          link: t.link,
+                          bulletList: t.bulletList,
+                          numberedList: t.numberedList,
+                          linkUrl: t.linkUrl,
+                          insert: t.insert,
+                          cancel: t.cancel,
                         ),
-                    ],
-                    editor: PostinoRichEditor(
-                      controller: controller,
-                      focusNode: _editorFocus,
-                      label: t.editor,
-                      placeholder: t.body,
-                      labels: PostinoFormatLabels(
-                        bold: t.bold,
-                        italic: t.italic,
-                        underline: t.underline,
-                        strikethrough: t.strikethrough,
-                        link: t.link,
-                        bulletList: t.bulletList,
-                        numberedList: t.numberedList,
-                        linkUrl: t.linkUrl,
-                        insert: t.insert,
-                        cancel: t.cancel,
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

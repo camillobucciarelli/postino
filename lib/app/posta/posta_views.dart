@@ -6,6 +6,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../core/domain/mail_sync.dart';
 import '../../core/domain/message.dart' show draftLabelId, inboxLabelId, sentLabelId;
+import '../../core/presentation/app_update_banner.dart';
 import '../../core/presentation/model_download_banner.dart';
 import '../../design_system/design_system.dart';
 import '../../features/account/presentation/reconnect_banners.dart';
@@ -184,8 +185,9 @@ Widget postaConversationView(
   cursor: cursor,
 );
 
-/// On top of every list, under its sync status: offline, then the Accounts Da ricollegare.
-const postaBanners = <Widget>[OfflineBanner(), ReconnectBanners(), ModelDownloadBanner()];
+/// On top of every list, under its sync status: offline, then the Accounts Da ricollegare, the model download and a
+/// new version of Postino (#287).
+const postaBanners = <Widget>[OfflineBanner(), ReconnectBanners(), ModelDownloadBanner(), AppUpdateBanner()];
 
 /// The «N conflitti» Banner of the Posta unificata, or of one Account's inbox: «Vedi» opens the Conflitti it counts.
 Widget conflictsBanner({String? accountId}) => ConflictsBanner(

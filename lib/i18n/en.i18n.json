@@ -42,6 +42,11 @@
     "alreadyConnected": "This Account is already connected.",
     "workAccount": "Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported."
   },
+  "aggiornamenti": {
+    "available": "Postino $version is available",
+    "update": "Update",
+    "dismiss": "Dismiss"
+  },
   "offline": {
     "title": "You're offline",
     "message": "Mail will update when the network is back."
@@ -188,6 +193,9 @@
     "immediateNotificationsFailed": "The system did not start the immediate notifications. Try again.",
     "checkForUpdates": "Check for updates",
     "checkForUpdatesBody": "Look for a new version of Postino now.",
+    "upToDate": "Postino is up to date.",
+    "checkFailed": "Could not check for updates. Try again later.",
+    "checkFound": "A new version of Postino is available.",
     "notifications": "Notifications",
     "notificationsAllowed": "Allowed",
     "notificationsDenied": "Not allowed: new mail arrives without an alert.",

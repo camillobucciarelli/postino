@@ -27,6 +27,7 @@ import 'core/data/postino_database.dart';
 import 'core/data/settings_sync.dart';
 import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';
+import 'core/domain/app_updater.dart';
 import 'core/domain/app_window.dart';
 import 'core/domain/error_log.dart';
 import 'core/domain/immediate_notifications.dart';
@@ -244,7 +245,15 @@ class _PostinoAppState() extends State<PostinoApp> {
     getIt<SettingsSync>().start();
     getIt<AccountsSettingsMirror>().start();
     getIt<PeriodicSchedule>().start();
-    _lifecycle = AppLifecycleListener(onResume: () => unawaited(getIt<SyncEngine>().syncAll()));
+    // A new version of Postino (#287): at most once a day, at start and back in foreground.
+    final updater = getIt<AppUpdater>();
+    unawaited(updater.checkDaily());
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        unawaited(getIt<SyncEngine>().syncAll());
+        unawaited(updater.checkDaily());
+      },
+    );
     // Heard from the start: started at login (#239) the window is hidden and may draw no frame until shown, so the
     // tap shows it first and opens its target once the Posta unificata is drawn.
     _taps = getIt<Notifications>().taps.listen((target) {

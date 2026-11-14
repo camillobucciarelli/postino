@@ -1,12 +1,46 @@
-/// Aggiornamenti di Postino (#122): the platform's updater, Sparkle on macOS. It shows its own window, which also
-/// says when there is nothing new. The real one in core/data, a fake in tests.
+/// A version of Postino newer than the one installed (#287): its number for the Banner, and where to get it.
+typedef AppUpdate = ({String version, Uri url});
+
+/// What «Cerca aggiornamenti» found.
+enum UpdateCheck() {
+  /// The updater answered in its own window (Sparkle on macOS).
+  shown,
+
+  /// Nothing newer.
+  upToDate,
+
+  /// A newer version: [AppUpdater.available] names it.
+  available,
+
+  /// The site could not be read: no network, a bad answer.
+  failed,
+}
+
+/// Aggiornamenti di Postino: Sparkle on macOS (#122), with its own window; on Android and iOS (#287) the release's
+/// version file, read at most once a day, and a Banner while a newer version is not dismissed. The real ones in
+/// core/data, a fake in tests.
 abstract interface class AppUpdater() {
   /// Interfaccia: nessuno stato da costruire.
   this;
 
-  /// False where Postino does not update itself (everywhere but macOS for now).
+  /// False where Postino does not look for updates (Windows, Linux, a development build).
   bool get supported;
 
-  /// Looks for a new version now, with the updater's own window.
-  Future<void> checkForUpdates();
+  /// The newer version found and not dismissed; null otherwise, and always where the updater has its own window.
+  AppUpdate? get available;
+
+  /// [available], each time it changes.
+  Stream<AppUpdate?> get changes;
+
+  /// At start and back in foreground: looks for a new version unless it did in the last day. Never fails.
+  Future<void> checkDaily();
+
+  /// Looks for a new version now; a version found shows again even if dismissed.
+  Future<UpdateCheck> checkForUpdates();
+
+  /// The user closed the Banner: [available] stays null until a newer version.
+  Future<void> dismiss();
+
+  /// Opens where [available] is downloaded (the browser, TestFlight).
+  Future<void> download();
 }

@@ -217,7 +217,8 @@ class FakeLaunchAtLogin() implements LaunchAtLogin {
   Future<bool> launchedAtLogin() async => atLogin;
 }
 
-/// Counts the checks asked instead of showing Sparkle: [supported] false like a phone, until a test makes it a Mac.
+/// Counts the checks asked instead of reading a site or showing Sparkle: [supported] false like a development build,
+/// until a test turns it on. «Cerca aggiornamenti» answers [answer], and finds [found] when it is available.
 class FakeAppUpdater() implements AppUpdater {
   @override
   bool supported = false;
@@ -225,8 +226,41 @@ class FakeAppUpdater() implements AppUpdater {
   /// How many times «Cerca aggiornamenti» was asked.
   var checks = 0;
 
+  /// How many daily checks were asked.
+  var dailyChecks = 0;
+
+  var answer = UpdateCheck.shown;
+  AppUpdate? found;
+
+  /// How many times «Aggiorna» was tapped.
+  var downloads = 0;
+
+  final _changes = StreamController<AppUpdate?>.broadcast();
+
   @override
-  Future<void> checkForUpdates() async => checks++;
+  AppUpdate? available;
+
+  @override
+  Stream<AppUpdate?> get changes => _changes.stream;
+
+  /// Shows [update] as the site would.
+  void offer(AppUpdate? update) => _changes.add(available = update);
+
+  @override
+  Future<void> checkDaily() async => dailyChecks++;
+
+  @override
+  Future<UpdateCheck> checkForUpdates() async {
+    checks++;
+    if (answer == UpdateCheck.available) offer(found);
+    return answer;
+  }
+
+  @override
+  Future<void> dismiss() async => offer(null);
+
+  @override
+  Future<void> download() async => downloads++;
 }
 
 /// Keeps what it is given in memory: (error, crash).

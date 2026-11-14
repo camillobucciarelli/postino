@@ -111,17 +111,18 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
       if (File(path).existsSync()) return null;
       // A new file is this key's: a key kept for an older one (#270) opens nothing any more.
-      if (await keychain.read(_replacedName) != null) await _dropReplaced(keychain);
+      final kept = await readKept(keychain, _keyName);
+      if (kept.isNotEmpty) await _dropKept(keychain, key, kept.length);
       return _openFile(path, key, log);
     });
     if (created != null) return created;
     // Downgrades' keys moved over ones in use (#270): the file tells which is its key; the others go, never before.
-    final kept = keptKeys(await keychain.read(_replacedName));
+    final kept = await readKept(keychain, _keyName);
     if (kept.isEmpty) return _openFile(path, key, log);
-    final (Object, StackTrace)? first;
+    final (Object, StackTrace) first;
     try {
       final db = await _openFile(path, key, null);
-      await _dropReplaced(keychain);
+      await _dropKept(keychain, key, kept.length);
       return db;
     } on Object catch (e, s) {
       first = (e, s);
@@ -134,11 +135,11 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         continue;
       }
       try {
-        // The kept keys leave their slot only once the file's is the key again: an overwrite that fails half way (the
+        // The kept keys leave their items only once the file's is the key again: an overwrite that fails half way (the
         // item deleted, not added) leaves them there, and the next start puts one back ([readDeviceOnly]).
         await withDatabaseLock(_lockOf(path), () async {
           await writeDeviceOnly(keychain, _keyName, candidate);
-          await keychain.delete(_replacedName);
+          await dropKept(keychain, _keyName, kept.length);
         });
         // ponytail: silent, the database is open with the right key; the next start tries again.
       } on Object catch (_) {}
@@ -152,11 +153,12 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     Error.throwWithStackTrace(e, s);
   }
 
-  /// Forgets the key a moved one replaced (#270), once the database opened without it.
-  static Future<void> _dropReplaced(SecureStore keychain) async {
+  /// Forgets the [count] keys moved ones replaced (#270), once the file is [key]'s and [key] is in its item: one put
+  /// back by [readDeviceOnly] with a write that failed is not, and they stay until it is.
+  static Future<void> _dropKept(SecureStore keychain, String key, int count) async {
     try {
-      await keychain.delete(_replacedName);
-      // ponytail: silent, the database is open; the next start drops it again.
+      if (await keychain.read(_keyName) == key) await dropKept(keychain, _keyName, count);
+      // ponytail: silent, the database is open; the next start drops them again.
     } on Object catch (_) {}
   }
 
@@ -416,7 +418,6 @@ void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = 
 
 const _keyName = 'database_key';
 final _freshName = freshMark(_keyName);
-final _replacedName = replacedMark(_keyName);
 
 /// Never wiped with the database: it outlives the restore it guards.
 String _lockOf(String path) => '$path.lock';

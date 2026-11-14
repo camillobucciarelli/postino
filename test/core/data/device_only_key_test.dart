@@ -320,26 +320,50 @@ void main() {
       legacy.values['$name.moved'] = '1';
       expect(await readDeviceOnly(keychain, name), key);
       expectKeptIn(dataProtection);
-      expect(dataProtection.values['$name.replaced'], 'in use');
+      expect(await readKept(dataProtection, name), ['in use']);
       expect(legacy.values, {'$name.moved': '1'});
     });
 
-    test('a slot holding another replaced key keeps both: the database tries them all', () async {
-      dataProtection.values.addAll({name: 'in-use', '$name.device_only': '1', '$name.replaced': 'older'});
+    test('a key already kept keeps both: the database tries them all', () async {
+      dataProtection.values.addAll({name: 'in use', '$name.device_only': '1', '$name.replaced.0': 'older'});
       legacy.values['$name.moved'] = '1';
       expect(await readDeviceOnly(keychain, name), key);
       expect(dataProtection.values[name], key);
-      expect(keptKeys(dataProtection.values['$name.replaced']), ['older', 'in-use']);
+      expect(await readKept(dataProtection, name), ['older', 'in use']);
+    });
+
+    test('a kept key that fails half way while it is added loses none of the others', () async {
+      dataProtection.values.addAll({name: 'in use', '$name.device_only': '1', '$name.replaced.0': 'older'});
+      dataProtection.failingWrites.add('$name.replaced.1');
+      legacy.values['$name.moved'] = '1';
+      await expectLater(readDeviceOnly(keychain, name), throwsException);
+      expect(dataProtection.values[name], 'in use', reason: 'not replaced');
+      expect(await readKept(dataProtection, name), ['older']);
+      expect(legacy.values[name], key);
+    });
+
+    test('a checked copy left in the Data Protection keychain is kept too, never lost under a moved key', () async {
+      dataProtection.values.addAll({'$name.copy': 'copied', '$name.copied': '1'});
+      legacy.values['$name.moved'] = '1';
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(await readKept(dataProtection, name), ['copied']);
     });
 
     test('a key lost half way with several kept: the latest is the key again, the others stay kept', () async {
       legacy.values
         ..clear()
         ..['$name.moved'] = '1';
-      dataProtection.values['$name.replaced'] = 'older in-use';
-      expect(await readDeviceOnly(keychain, name), 'in-use');
-      expect(dataProtection.values[name], 'in-use');
-      expect(dataProtection.values['$name.replaced'], 'older in-use');
+      dataProtection.values.addAll({'$name.replaced.0': 'older', '$name.replaced.1': 'in use'});
+      expect(await readDeviceOnly(keychain, name), 'in use');
+      expect(dataProtection.values[name], 'in use');
+      expect(await readKept(dataProtection, name), ['older', 'in use']);
+
+      // The key cannot be written back: the latest kept key is still read, for the database to try them all.
+      final failing = FakeSecureStore()
+        ..values.addAll({'$name.replaced.0': 'older', '$name.replaced.1': 'in use'})
+        ..failingWrites.add(name);
+      expect(await readDeviceOnly(MovingKeychain(failing, legacy), name), 'in use');
+      expect(await readKept(failing, name), ['older', 'in use']);
     });
 
     test('a fresh mark moves with its key, once: the database it wiped is never wiped again', () async {

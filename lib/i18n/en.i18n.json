@@ -194,7 +194,6 @@
     "checkForUpdates": "Check for updates",
     "checkForUpdatesBody": "Look for a new version of Postino now.",
     "upToDate": "Postino is up to date.",
-    "checkFailed": "Could not check for updates. Try again later.",
     "checkFound": "A new version of Postino is available.",
     "notifications": "Notifications",
     "notificationsAllowed": "Allowed",

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/app_updater.dart';
 import 'package:postino/core/domain/launch_at_login_use_case.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -193,11 +194,16 @@ void main() {
   });
 
   group('on Android and iOS (#287) «Cerca aggiornamenti» says what it found', () {
-    for (final (answer, text) in [
-      (UpdateCheck.upToDate, 'Postino è aggiornato.'),
-      (UpdateCheck.failed, 'Non è stato possibile cercare gli aggiornamenti. Riprova più tardi.'),
+    for (final (name, answer, text) in [
+      ('up to date', const Ok(UpdateCheck.upToDate), 'Postino è aggiornato.'),
+      // No error shown: the row stays as it was.
+      (
+        'failed',
+        Err<UpdateCheck>(UnexpectedFailure(Exception('offline'))),
+        'Cerca subito una nuova versione di Postino.',
+      ),
     ]) {
-      testWidgets('${answer.name}: «$text», no Banner', (tester) async {
+      testWidgets('$name: «$text», no Banner', (tester) async {
         final semantics = tester.ensureSemantics();
         final h = await _start(tester, supported: false, updates: true);
         h.updater.answer = answer;
@@ -222,7 +228,7 @@ void main() {
     testWidgets('a new version: the Banner under it, whose «Aggiorna» downloads it', (tester) async {
       final h = await _start(tester, supported: false, updates: true);
       h.updater
-        ..answer = UpdateCheck.available
+        ..answer = const Ok(UpdateCheck.available)
         ..found = (version: '9.9.9', url: Uri.parse('https://example.org/p.apk'));
       await _openSettings(tester);
       expect(find.byKey(const ValueKey('update-banner')), findsNothing);

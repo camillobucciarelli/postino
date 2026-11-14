@@ -1,7 +1,9 @@
+import 'result.dart';
+
 /// A version of Postino newer than the one installed (#287): its number for the Banner, and where to get it.
 typedef AppUpdate = ({String version, Uri url});
 
-/// What «Cerca aggiornamenti» found.
+/// What «Cerca aggiornamenti» found; a site that could not be read (no network, a bad answer) is an [Err].
 enum UpdateCheck() {
   /// The updater answered in its own window (Sparkle on macOS).
   shown,
@@ -11,9 +13,6 @@ enum UpdateCheck() {
 
   /// A newer version: [AppUpdater.available] names it.
   available,
-
-  /// The site could not be read: no network, a bad answer.
-  failed,
 }
 
 /// Aggiornamenti di Postino: Sparkle on macOS (#122), with its own window; on Android and iOS (#287) the release's
@@ -36,7 +35,7 @@ abstract interface class AppUpdater() {
   Future<void> checkDaily();
 
   /// Looks for a new version now; a version found shows again even if dismissed.
-  Future<UpdateCheck> checkForUpdates();
+  Future<Result<UpdateCheck>> checkForUpdates();
 
   /// The user closed the Banner: [available] stays null until a newer version.
   Future<void> dismiss();

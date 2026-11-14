@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:postino/core/data/desktop/app_updater_module.dart';
+import 'package:postino/core/data/app_updater_module.dart';
 import 'package:postino/core/data/desktop/channel_app_updater.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/site_app_updater.dart';

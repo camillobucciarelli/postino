@@ -358,7 +358,6 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
 	@override String get upToDate => 'Postino is up to date.';
-	@override String get checkFailed => 'Could not check for updates. Try again later.';
 	@override String get checkFound => 'A new version of Postino is available.';
 	@override String get notifications => 'Notifications';
 	@override String get notificationsAllowed => 'Allowed';
@@ -854,7 +853,6 @@ extension on TranslationsEn {
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
 			'impostazioni.upToDate' => 'Postino is up to date.',
-			'impostazioni.checkFailed' => 'Could not check for updates. Try again later.',
 			'impostazioni.checkFound' => 'A new version of Postino is available.',
 			'impostazioni.notifications' => 'Notifications',
 			'impostazioni.notificationsAllowed' => 'Allowed',

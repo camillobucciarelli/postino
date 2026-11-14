@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../../domain/app_updater.dart';
+import '../../domain/result.dart';
 
 /// macOS (Sparkle 2, `macos/Runner/Updater.swift`): the runner answers on [channel]. Sparkle checks on its own and
 /// shows its own window, so no Banner.
@@ -21,9 +22,9 @@ class const ChannelAppUpdater() implements AppUpdater {
   Future<void> checkDaily() async {}
 
   @override
-  Future<UpdateCheck> checkForUpdates() async {
+  Future<Result<UpdateCheck>> checkForUpdates() async {
     await channel.invokeMethod<void>('checkForUpdates');
-    return UpdateCheck.shown;
+    return const Ok(UpdateCheck.shown);
   }
 
   @override

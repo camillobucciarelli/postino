@@ -1,17 +1,18 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../domain/app_updater.dart';
 import '../domain/platform_services.dart';
+import '../domain/result.dart';
 import 'daos/device_settings_dao.dart';
+import 'version_file.dart';
 
-/// Android and iOS (#287): the release publishes `<platform>/latest/version.json` on the site, `{"version": "X.Y.Z",
-/// "build": N, "url": "..."}`; a build above the [installed] one is [available] until dismissed. The request carries
-/// nothing of the user: a fixed HTTPS URL, no redirect followed (the same principle as `httpsOnly`), a short timeout.
-/// Any failure leaves things as they are and is never logged: no Banner, no error.
+/// Android and iOS (#287): reads the release's `<platform>/latest/version.json` on the site ([newerVersion]); a build
+/// above the [installed] one is [available] until dismissed. The request carries nothing of the user: a fixed HTTPS
+/// URL, no redirect followed (the same principle as `httpsOnly`), aborted after a short timeout. Any failure leaves
+/// things as they are and is never logged: no Banner, no error.
 class SiteAppUpdater(
   final http.Client _http,
   final DeviceSettingsDao _settings,
@@ -33,7 +34,9 @@ class SiteAppUpdater(
   static const _foundKey = 'update_found';
   static const _dismissedKey = 'update_dismissed';
   static const _day = Duration(days: 1);
-  static const _timeout = Duration(seconds: 10);
+
+  /// How long the whole request may take, answer included: then it is aborted, connection and all.
+  static const timeout = Duration(seconds: 10);
 
   final _changes = StreamController<AppUpdate?>.broadcast();
   AppUpdate? _available;
@@ -59,26 +62,27 @@ class SiteAppUpdater(
       final now = _clock.now();
       // A clock moved back counts as a day gone.
       final due = last == null || now.difference(last) >= _day || now.isBefore(last);
-      // Within the day, the last answer: a restart shows the same Banner without asking the site again.
-      final update = due ? await _fetch() : _newer(await _settings.read(_foundKey));
+      // Within the day, the last good answer: a restart shows the same Banner without asking the site again. A
+      // failure keeps it too: it names a build really newer than this one, which a failure does not undo.
+      final found = await _settings.read(_foundKey);
+      final update = due ? await _fetch() : (found == null ? null : newerVersion(found, installed: installed));
       _show(update, dismissed: await _settings.read(_dismissedKey));
     } on Object catch (e) {
-      // The type only, and never in the error log: nothing the user needs to know.
-      debugPrint('[aggiornamenti] ${e.runtimeType}');
+      _log(e);
     }
   }
 
   @override
-  Future<UpdateCheck> checkForUpdates() async {
+  Future<Result<UpdateCheck>> checkForUpdates() async {
     try {
       final update = await _fetch();
       // Asked for: a version dismissed shows again.
       await _settings.write(_dismissedKey, null);
       _show(update, dismissed: null);
-      return update == null ? UpdateCheck.upToDate : UpdateCheck.available;
+      return Ok(update == null ? UpdateCheck.upToDate : UpdateCheck.available);
     } on Object catch (e) {
-      debugPrint('[aggiornamenti] ${e.runtimeType}');
-      return UpdateCheck.failed;
+      _log(e);
+      return Err(UnexpectedFailure(e.runtimeType));
     }
   }
 
@@ -97,7 +101,7 @@ class SiteAppUpdater(
     try {
       if (!await launch(update.url)) await launch(fallback);
     } on Object catch (e) {
-      debugPrint('[aggiornamenti] ${e.runtimeType}');
+      _log(e);
     }
   }
 
@@ -106,25 +110,19 @@ class SiteAppUpdater(
   Future<AppUpdate?> _fetch() async {
     await _settings.write(_checkedKey, _clock.now().toIso8601String());
     if (!feed.isScheme('https')) throw const FormatException('not https');
-    final request = http.Request('GET', feed)..followRedirects = false;
-    final response = await http.Response.fromStream(await _http.send(request).timeout(_timeout)).timeout(_timeout);
-    // A redirect comes back as it is, and is refused here like any other status.
-    if (response.statusCode != 200) throw http.ClientException('status ${response.statusCode}', feed);
-    final update = _newer(response.body);
-    await _settings.write(_foundKey, response.body);
-    return update;
-  }
-
-  /// The version in [body] if its build is above the installed one; throws [FormatException] on a malformed file.
-  AppUpdate? _newer(String? body) {
-    if (body == null) return null;
-    if (jsonDecode(body) case {'version': final String version, 'build': final int build, 'url': final String url}
-        when RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version)) {
-      final uri = Uri.parse(url);
-      if (!uri.isScheme('https') && !uri.isScheme('itms-beta')) throw const FormatException('url');
-      return build > installed ? (version: version, url: uri) : null;
+    final deadline = Completer<void>();
+    final timer = Timer(timeout, deadline.complete);
+    try {
+      final request = http.AbortableRequest('GET', feed, abortTrigger: deadline.future)..followRedirects = false;
+      final response = await http.Response.fromStream(await _http.send(request));
+      // A redirect comes back as it is, and is refused here like any other status.
+      if (response.statusCode != 200) throw http.ClientException('status ${response.statusCode}', feed);
+      final update = newerVersion(response.body, installed: installed);
+      await _settings.write(_foundKey, response.body);
+      return update;
+    } finally {
+      timer.cancel();
     }
-    throw const FormatException('version file');
   }
 
   void _show(AppUpdate? update, {required String? dismissed}) {
@@ -133,4 +131,7 @@ class SiteAppUpdater(
     _available = shown;
     _changes.add(shown);
   }
+
+  /// The type only, and never in the error log: nothing the user needs to know.
+  static void _log(Object e) => debugPrint('[aggiornamenti] ${e.runtimeType}');
 }

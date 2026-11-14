@@ -669,9 +669,6 @@ class Translations$impostazioni$it {
 	/// it: 'Postino è aggiornato.'
 	String get upToDate => 'Postino è aggiornato.';
 
-	/// it: 'Non è stato possibile cercare gli aggiornamenti. Riprova più tardi.'
-	String get checkFailed => 'Non è stato possibile cercare gli aggiornamenti. Riprova più tardi.';
-
 	/// it: 'C'è una nuova versione di Postino.'
 	String get checkFound => 'C\'è una nuova versione di Postino.';
 
@@ -1549,7 +1546,6 @@ extension on Translations {
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
 			'impostazioni.upToDate' => 'Postino è aggiornato.',
-			'impostazioni.checkFailed' => 'Non è stato possibile cercare gli aggiornamenti. Riprova più tardi.',
 			'impostazioni.checkFound' => 'C\'è una nuova versione di Postino.',
 			'impostazioni.notifications' => 'Notifiche',
 			'impostazioni.notificationsAllowed' => 'Consentite',

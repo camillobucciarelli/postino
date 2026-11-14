@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../domain/app_updater.dart';
-import '../../domain/platform_services.dart';
-import '../postino_database.dart';
-import '../site_app_updater.dart';
-import 'channel_app_updater.dart';
+import '../domain/app_updater.dart';
+import '../domain/platform_services.dart';
+import '../domain/result.dart';
+import 'desktop/channel_app_updater.dart';
+import 'postino_database.dart';
+import 'site_app_updater.dart';
 
 /// The site the release publishes to (release.yml).
 const _site = 'https://postino.camillobucciarelli.dev';
@@ -57,7 +58,7 @@ class const _Unsupported() implements AppUpdater {
   Future<void> checkDaily() async {}
 
   @override
-  Future<UpdateCheck> checkForUpdates() async => UpdateCheck.upToDate;
+  Future<Result<UpdateCheck>> checkForUpdates() async => const Ok(UpdateCheck.upToDate);
 
   @override
   Future<void> dismiss() async {}

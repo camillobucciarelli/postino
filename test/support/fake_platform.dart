@@ -5,6 +5,7 @@ import 'package:postino/core/domain/attachment_repository.dart';
 import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
+import 'package:postino/core/domain/result.dart';
 
 class FakeSecureStore() implements SecureStore {
   final values = <String, String>{};
@@ -229,7 +230,7 @@ class FakeAppUpdater() implements AppUpdater {
   /// How many daily checks were asked.
   var dailyChecks = 0;
 
-  var answer = UpdateCheck.shown;
+  Result<UpdateCheck> answer = const Ok(UpdateCheck.shown);
   AppUpdate? found;
 
   /// How many times «Aggiorna» was tapped.
@@ -250,9 +251,9 @@ class FakeAppUpdater() implements AppUpdater {
   Future<void> checkDaily() async => dailyChecks++;
 
   @override
-  Future<UpdateCheck> checkForUpdates() async {
+  Future<Result<UpdateCheck>> checkForUpdates() async {
     checks++;
-    if (answer == UpdateCheck.available) offer(found);
+    if (answer case Ok(value: UpdateCheck.available)) offer(found);
     return answer;
   }
 

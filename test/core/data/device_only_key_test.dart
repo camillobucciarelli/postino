@@ -157,6 +157,28 @@ void main() {
     expect(keychain.values, {name: key, '$name.copy': key, '$name.copied': '1', '$name.device_only': '1'});
   });
 
+  test('the only copy left is never written: a failed write would lose the last key', () async {
+    final keychain = FakeSecureStore()
+      ..values['$name.copy'] = key
+      ..failingWrites.add('$name.copy');
+
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.values['$name.copy'], key);
+  });
+
+  test('a key restored from its copy and read back different is not taken as migrated at the next start', () async {
+    final keychain = FakeSecureStore()
+      ..values['$name.copy'] = key
+      ..values['$name.copied'] = '1'
+      ..values['$name.device_only'] = '1'
+      ..corruptWrites.add(name);
+
+    expect(await readDeviceOnly(keychain, name), key);
+    keychain.corruptWrites.clear();
+    expect(await readDeviceOnly(keychain, name), key, reason: 'the copy, not the wrong key');
+    expect(keychain.values[name], key);
+  });
+
   test('a copy that cannot be read is an error, never a missing copy', () async {
     final keychain = _FailingRead('$name.copy')..values[name] = key;
     await expectLater(readDeviceOnly(keychain, name), throwsException);

@@ -10,8 +10,9 @@ const deviceOnlyKeychainName = 'deviceOnlyKeychain';
 /// is rewritten and read back. A checked copy is never written again and is the value from then on: a rewrite that
 /// deleted the key, or saved something else, is redone from it at the next start, and another isolate reading
 /// meanwhile reads it. An unchecked copy never wins over the key, which was not rewritten yet, and is copied again from
-/// it; with no key left it is the only value, better than a new key that wipes the database. The migration is marked
-/// done only once the key reads back as the copy. The key lost is the local database lost.
+/// it; with no key left it is the only value, better than a new key that wipes the database, and is only marked
+/// checked. The migration is marked done only once the key reads back as the copy, and a key restored from the copy
+/// drops an earlier mark first. The key lost is the local database lost.
 Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
   final current = await keychain.read(name);
   if (current != null && await keychain.read(_deviceOnlyMark(name)) != null) return current;
@@ -20,8 +21,13 @@ Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
   final value = checked ? copy : current ?? copy;
   if (value == null) return null;
   try {
+    if (current == null) {
+      // Restored from the copy: until the key reads back right it is not migrated, whatever an earlier start marked.
+      await keychain.delete(_deviceOnlyMark(name));
+    }
     if (!checked) {
-      await _writeChecked(keychain, _copy(name), value);
+      // With no key the copy is the only value left: never rewritten, a failed write would lose it.
+      if (current != null) await _writeChecked(keychain, _copy(name), value);
       await keychain.write(_copiedMark(name), '1');
     }
     await _writeChecked(keychain, name, value);

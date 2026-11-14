@@ -40,11 +40,12 @@ Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
     if (await _move(from, to, name) case final value?) return value;
     // The legacy keychain loses the key only once [to] holds it, read back: none in both is no key on this Mac.
     var value = await _readMigrating(to, name);
-    // Only the key a moved one replaced, the other lost by an overwrite that failed half way: it is the key again.
-    final replaced = value == null ? await to.read(replacedMark(name)) : null;
-    if (replaced != null) {
-      await writeDeviceOnly(to, name, replaced);
-      value = replaced;
+    // Only the keys a moved one replaced, the key lost by an overwrite that failed half way: the latest is the key
+    // again, and the database still tries them all.
+    final kept = value == null ? keptKeys(await to.read(replacedMark(name))) : const <String>[];
+    if (kept.isNotEmpty) {
+      await writeDeviceOnly(to, name, kept.last);
+      value = kept.last;
     }
     // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe the
     // database. A write that fails fails the start: without the mark the database is not safe.
@@ -72,8 +73,11 @@ String freshMark(String name) => '$name.fresh';
 /// after a downgrade (#270). Earlier versions wrote `1`, for the key they saved next.
 String freshOf(String key) => sha256.convert(utf8.encode('fresh:$key')).toString();
 
-/// The key in use that a moved one replaced (#270), kept until the database opens with one of the two.
+/// The keys in use that moved ones replaced (#270), kept until the database opens with one of them.
 String replacedMark(String name) => '$name.replaced';
+
+/// The keys a [replacedMark] value holds, oldest first: hex, joined by spaces.
+List<String> keptKeys(String? mark) => mark == null ? const [] : mark.split(' ');
 
 /// Whether the [freshMark] value [mark] belongs to [key].
 bool isFreshOf(String mark, String key) => mark == '1' || mark == freshOf(key);
@@ -112,15 +116,16 @@ Future<String?> _readMigrating(SecureStore keychain, String name) async {
 Future<String?> _move(SecureStore from, SecureStore to, String name) async {
   // Read before any write: a Data Protection keychain that cannot be read fails the start, [from] untouched.
   final current = await to.read(name);
+  final marked = await to.read(_deviceOnlyMark(name)) != null;
+  final kept = keptKeys(await to.read(replacedMark(name)));
   final value = await _readMigrating(from, name);
   if (value == null) return null;
   if (current != null && current != value) {
-    if (await to.read(_deviceOnlyMark(name)) != null && await from.read(_movedMark(name)) == null) return current;
-    final replaced = await to.read(replacedMark(name));
-    // A slot already holding another key: nothing replaced, so nothing lost.
-    if (replaced != null && replaced != current) return current;
-    // A failed write fails the start, before the key in use is touched.
-    if (replaced == null) await _writeChecked(to, replacedMark(name), current);
+    if (marked && await from.read(_movedMark(name)) == null) return current;
+    // Kept with any key an earlier move replaced and no database dropped yet: whichever opens the file wins, so a
+    // stale one left by a cleanup that failed never shuts out a newer key. A failed write fails the start, before the
+    // key in use is touched.
+    if (!kept.contains(current)) await _writeChecked(to, replacedMark(name), [...kept, current].join(' '));
   }
   if (await from.read(freshMark(name)) case final fresh?) {
     // A new key whose database is still to be wiped: the mark moves before the key, as for a new one, and leaves

@@ -261,6 +261,46 @@ void main() {
       await db.close();
       expect(dataProtection.values['database_key.replaced'], isNull);
     });
+
+    test('two downgrades with a kept key left between them: every start opens the last database', () async {
+      void wipe() {
+        for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
+          if (File(f).existsSync()) File(f).deleteSync();
+        }
+      }
+
+      /// An older DMG on the legacy keychain: it does not know the moved mark, starts over and keeps the mark.
+      Future<void> olderDmg(FakeSecureStore legacy) async {
+        wipe();
+        final own = FakeSecureStore();
+        final db = await PostinoDatabase.open(path, own);
+        await insertAccount(db);
+        await db.close();
+        legacy.values.addAll(own.values);
+      }
+
+      // 1. The release: key B, its database.
+      final dataProtection = FakeSecureStore();
+      final legacy = FakeSecureStore();
+      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+      await db.close();
+      // 2. Downgrade: key A next to the moved mark, A's database.
+      await olderDmg(legacy);
+      // 3. Upgrade: A's database opens, the kept B cannot be dropped.
+      dataProtection.deleteFailure = Exception('keychain: delete failed');
+      final upgraded = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+      expect(await accounts(upgraded), 1);
+      await upgraded.close();
+      dataProtection.deleteFailure = null;
+      // 4. Downgrade again: key C, C's database.
+      await olderDmg(legacy);
+      // 5-6. Upgrade, and starts after it: C's database, every time.
+      for (var start = 0; start < 3; start++) {
+        final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+        expect(await accounts(again), 1, reason: 'start $start');
+        await again.close();
+      }
+    });
   });
 
   test(

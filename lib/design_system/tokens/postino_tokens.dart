@@ -1,5 +1,5 @@
-// postino_tokens.dart — copiato dal design system Postino (artifact https://claude.ai/artifact/NHTah8veqH7f9q2BbEcBKs,
-// sezione 04-flutter). Nessun generatore nel repo: va tenuto allineato a mano con quella fonte.
+// postino_tokens.dart — il codice in lib/design_system/ è la fonte di verità dei token; l'artefatto Claude Design
+// (https://claude.ai/artifact/NHTah8veqH7f9q2BbEcBKs) lo rispecchia e si aggiorna a ogni cambio (vedi AGENTS.md).
 /// Token del design system Postino: palette, colori, metriche, densità, motion e testo.
 library;
 

@@ -23,6 +23,7 @@ void main() {
     const u = ChannelAppUpdater();
     expect(await u.checkForUpdates(), isA<Ok<UpdateCheck>>().having((r) => r.value, 'value', UpdateCheck.shown));
     expect(calls, ['checkForUpdates']);
+    expect(u.supported, isTrue);
     expect(u.available, isNull);
   });
 }

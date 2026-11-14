@@ -66,6 +66,17 @@ void main() {
   tearDown(() => db.close());
 
   group('the build on the site against the installed one', () {
+    test('supported, and the Banner hears of a version once, not at every check that finds it again', () async {
+      final u = updater();
+      expect(u.supported, isTrue);
+      final shown = <AppUpdate?>[];
+      u.changes.listen(shown.add);
+      await u.checkForUpdates();
+      await u.checkForUpdates();
+      await pumpEventQueue();
+      expect(shown, [(version: '1.3.0', url: _apk)]);
+    });
+
     test('newer: available, named by its version', () async {
       final u = updater();
       expect(await _check(u), UpdateCheck.available);

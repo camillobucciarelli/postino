@@ -28,6 +28,8 @@ import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
 import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'database_lock.dart';
+import 'device_only_key.dart';
 import 'row_mappers.dart';
 import 'search_index.dart';
 import 'tables/accounts_table.dart';
@@ -92,7 +94,24 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   /// A file that does not open (damaged, wrong key) is a crash for [log] before it propagates (#116): Postino cannot
   /// start, and the next start proposes the Segnalazione di un problema.
   static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
-    final key = await keyFrom(keychain);
+    final key = await keyFrom(keychain, path);
+    // Locked from the mark to its removal, and to the creation of a new file: the mark read before another isolate's
+    // wipe would wipe a database already open. An existing file opens unlocked: its migrations may be long (#263).
+    final created = await withDatabaseLock(_lockOf(path), () async {
+      // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
+      // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
+      if (await keychain.read(_freshName) != null) {
+        for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
+          if (File(f).existsSync()) File(f).deleteSync();
+        }
+        await keychain.delete(_freshName);
+      }
+      return File(path).existsSync() ? null : _openFile(path, key, log);
+    });
+    return created ?? _openFile(path, key, log);
+  }
+
+  static Future<PostinoDatabase> _openFile(String path, String key, ErrorLog? log) async {
     final db = PostinoDatabase(
       NativeDatabase(
         File(path),
@@ -120,12 +139,16 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     }
   }
 
+  /// The database file in the app's support [dir].
+  static String fileIn(String dir) => '$dir/postino.db';
+
   /// The database key (hex) from the [keychain], generated and saved at the first launch; the error log's keys
   /// derive from it too (#116). Read once per [keychain]: each read may be a system prompt (#76).
-  /// A failed read is not remembered: the next call asks again.
-  static Future<String> keyFrom(SecureStore keychain) async {
+  /// A failed read is not remembered: the next call asks again. Read, migrated or created under the lock of the
+  /// database at [path]: another isolate starting meanwhile reads the key this one wrote, never a second one.
+  static Future<String> keyFrom(SecureStore keychain, String path) async {
     try {
-      return await (_keys[keychain] ??= _readOrCreateKey(keychain));
+      return await (_keys[keychain] ??= withDatabaseLock(_lockOf(path), () => _readOrCreateKey(keychain)));
     } on Object catch (_) {
       _keys[keychain] = null;
       rethrow;
@@ -135,9 +158,11 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   static final _keys = Expando<Future<String>>();
 
   static Future<String> _readOrCreateKey(SecureStore keychain) async {
-    if (await keychain.read(_keyName) case final key?) return key;
+    if (await readDeviceOnly(keychain, _keyName) case final key?) return key;
     final key = hex(randomBytes(32));
-    await keychain.write(_keyName, key);
+    // Before the key: a new key means no file it can open, which [open] wipes.
+    await keychain.write(_freshName, '1');
+    await writeDeviceOnly(keychain, _keyName, key);
     return key;
   }
 
@@ -341,6 +366,10 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
+const _freshName = '$_keyName.fresh';
+
+/// Never wiped with the database: it outlives the restore it guards.
+String _lockOf(String path) => '$path.lock';
 
 /// The light-theme ARGB colors v1-v3 stored, in palette order (sky … graphite).
 const _v3AccountColors = [

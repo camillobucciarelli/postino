@@ -18,9 +18,6 @@ class const PostinoBrandIntro({
   /// Crea l'intro del marchio.
   this;
 
-  /// Il verderame dello splash nativo (`values/colors.xml`, `LaunchScreen.storyboard`), in chiaro come in scuro.
-  static const Color splash = Color(0xFF0E6456);
-
   @override
   State<PostinoBrandIntro> createState() => _PostinoBrandIntroState();
 }
@@ -69,7 +66,8 @@ class _PostinoBrandIntroState() extends State<PostinoBrandIntro> {
                   duration: PostinoMotion.fadeThroughOut,
                   onEnd: _uncover,
                   child: ColoredBox(
-                    color: PostinoBrandIntro.splash,
+                    // Il verderame dello splash nativo (`values/colors.xml`, `LaunchScreen.storyboard`), in chiaro come in scuro.
+                    color: PostinoPrimitives.pVerdigris700,
                     child: Center(child: PostinoBrandMark(onDone: () => setState(() => _fading = true))),
                   ),
                 ),

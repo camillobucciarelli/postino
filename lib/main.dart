@@ -38,6 +38,7 @@ import 'core/domain/notification_target.dart';
 import 'core/domain/notifications.dart';
 import 'core/domain/system_tray.dart';
 import 'core/presentation/desktop_tray.dart';
+import 'design_system/templates/postino_brand_intro.dart';
 import 'design_system/tokens/postino_theme.dart';
 import 'features/impostazioni/presentation/listening_notice.dart';
 import 'features/impostazioni/presentation/notification_action_label.dart';
@@ -311,6 +312,8 @@ class _PostinoAppState() extends State<PostinoApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: _router,
+      // After the native splash, the mark opens once over the app, which builds under it (#267).
+      builder: (context, child) => PostinoBrandIntro(child: child!),
       theme: PostinoTheme.light(),
       darkTheme: PostinoTheme.dark(),
       onGenerateTitle: (context) => context.t.appTitle,

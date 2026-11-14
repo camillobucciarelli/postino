@@ -28,4 +28,6 @@ Il fondo adattivo Android (`drawable/ic_launcher_background.xml`) e il verderame
 
 Il sito (`docs/download/`) usa questi stessi file: `release.yml` (job `site`) pubblica `icon.svg` (logo) e `icon-small.svg` (favicon) in `brand/` sul bucket, senza copie.
 
-Splash: statico (marchio su verderame), senza animazione. macOS non ha launch screen.
+Splash nativo: statico (marchio su verderame), senza animazione. macOS non ha launch screen.
+
+All'avvio, dopo lo splash nativo, `PostinoBrandIntro` (#267, nel `builder` di `MaterialApp.router`) copre l'app col verderame dello splash e il marchio che si apre una volta (`PostinoBrandMark`, 900 ms: lembo 250 ms, lettera 650 ms), poi dissolve. L'app si costruisce sotto dal primo frame e riceve input; con «riduci movimento» non c'è copertura. Il painter ricopia le geometrie di `mark.svg`: se cambia, aggiornarlo.

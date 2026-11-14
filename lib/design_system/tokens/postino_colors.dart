@@ -1,4 +1,4 @@
-// Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// Parte dei token di postino_tokens.dart: vedi lì la fonte di verità.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
@@ -354,7 +354,7 @@ class const PostinoColors({
   /// Skeleton: riflesso dell’animazione.
   required final Color skeletonHighlight,
 
-  /// BulkActionBar: fondo (con elevation-2).
+  /// BulkActionBar: fondo (senza ombra).
   required final Color bulkBarBg,
 
   /// SyncStatus: sincronizzato.

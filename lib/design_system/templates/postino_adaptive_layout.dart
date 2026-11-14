@@ -143,7 +143,7 @@ class _PostinoSidebarShellState() extends State<PostinoSidebarShell> {
                 child: DrawerTheme(
                   data: DrawerThemeData(
                     width: expanded ? PostinoSize.sidebarWidth : PostinoSize.sidebarCollapsedWidth,
-                    elevation: 0,
+                    elevation: PostinoElevation.e0,
                     shape: const RoundedRectangleBorder(),
                   ),
                   child: widget.drawer,

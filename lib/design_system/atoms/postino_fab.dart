@@ -32,7 +32,7 @@ class const PostinoFab({
       style: ButtonStyle(
         backgroundColor: WidgetStatePropertyAll(c.brand),
         foregroundColor: WidgetStatePropertyAll(c.onBrand),
-        elevation: const WidgetStatePropertyAll(3),
+        elevation: const WidgetStatePropertyAll(PostinoElevation.e2),
         minimumSize: const WidgetStatePropertyAll(Size(PostinoSize.fabHeight, PostinoSize.fabHeight)),
         padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: PostinoSpacing.s5)),
         textStyle: const WidgetStatePropertyAll(PostinoText.label),

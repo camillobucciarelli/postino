@@ -6,6 +6,11 @@ Finder icon(PostinoIconData data) => find.byWidgetPredicate((w) => w is PostinoI
 
 Finder get starIcon => icon(PostinoIcons.star);
 
+/// The opacity [f] shows: the product of the fades around it (1 when none is fading).
+double shownOpacity(WidgetTester tester, Finder f) => tester
+    .widgetList<FadeTransition>(find.ancestor(of: f, matching: find.byType(FadeTransition)))
+    .fold(1, (o, t) => o * t.opacity.value);
+
 /// Opens the NavigationDrawer from the AppBar's `menu`.
 Future<void> openDrawer(WidgetTester tester) async {
   await tester.tap(icon(PostinoIcons.menu));

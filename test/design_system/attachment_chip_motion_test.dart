@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
+import '../support/ui.dart';
+
 Widget _chip({double? progress, String? error, bool reduced = false, VoidCallback? onCancel}) => MaterialApp(
   theme: PostinoTheme.light(),
   home: MediaQuery(
@@ -31,10 +33,6 @@ Widget _chip({double? progress, String? error, bool reduced = false, VoidCallbac
 const _bar = ValueKey('attachment-progress');
 
 double _width(WidgetTester tester) => tester.widget<FractionallySizedBox>(find.byKey(_bar)).widthFactor!;
-
-double _opacity(WidgetTester tester, Finder f) => tester
-    .widgetList<FadeTransition>(find.ancestor(of: f, matching: find.byType(FadeTransition)))
-    .fold(1, (o, t) => o * t.opacity.value);
 
 void main() {
   final half = PostinoMotion.state ~/ 2;
@@ -62,16 +60,16 @@ void main() {
     );
     expect(fade.opacity, 0);
     final cancel = find.byKey(const ValueKey('attachment-cancel'));
-    expect(_opacity(tester, cancel), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, cancel), inExclusiveRange(0, 1));
     expect(find.semantics.byLabel('Annulla'), findsNothing);
     expect(Focus.of(tester.element(cancel)).canRequestFocus, isFalse);
     await tester.tap(cancel, warnIfMissed: false);
     expect(cancels, 0);
-    expect(_opacity(tester, find.text('1,2 MB')), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.text('1,2 MB')), inExclusiveRange(0, 1));
     await tester.pumpAndSettle();
     expect(find.byKey(_bar), findsNothing);
     expect(cancel, findsNothing);
-    expect(_opacity(tester, find.text('1,2 MB')), 1);
+    expect(shownOpacity(tester, find.text('1,2 MB')), 1);
 
     // A new download starts its bar from nothing, not from where the last one ended.
     await tester.pumpWidget(_chip(progress: 0.1));
@@ -83,9 +81,9 @@ void main() {
     await tester.pumpWidget(_chip(progress: 0.5));
     await tester.pumpWidget(_chip(error: 'Non scaricato'));
     await tester.pump(half);
-    expect(_opacity(tester, find.byKey(const ValueKey('attachment-retry'))), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.byKey(const ValueKey('attachment-retry'))), inExclusiveRange(0, 1));
     await tester.pumpAndSettle();
-    expect(_opacity(tester, find.byKey(const ValueKey('attachment-retry'))), 1);
+    expect(shownOpacity(tester, find.byKey(const ValueKey('attachment-retry'))), 1);
   });
 
   testWidgets('with reduced motion bar and buttons change at once', (tester) async {

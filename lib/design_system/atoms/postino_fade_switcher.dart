@@ -4,7 +4,7 @@ import '../tokens/postino_tokens.dart';
 
 /// A [child] with a new key fades in over the one it replaces, which fades out (#283); the first child is just there.
 /// [duration] goes through [PostinoMotion.of], so with reduced motion the swap is instant. The outgoing child is gone
-/// already: no taps, no focus, nothing for the screen reader, so a fade never reads twice. Both are top-aligned and
+/// already: no taps, no focus, nothing for the screen reader, so a fade never reads twice. Both sit at the top start and
 /// take this widget's constraints (a stretched banner stays stretched); while they overlap the taller sets the height.
 class const PostinoFadeSwitcher({
   super.key,
@@ -26,8 +26,7 @@ class const PostinoFadeSwitcher({
     duration: PostinoMotion.of(context, duration),
     switchInCurve: curve,
     switchOutCurve: curve,
-    layoutBuilder: (current, previous) =>
-        Stack(alignment: Alignment.topCenter, fit: StackFit.passthrough, children: [...previous, ?current]),
+    layoutBuilder: (current, previous) => Stack(fit: StackFit.passthrough, children: [...previous, ?current]),
     transitionBuilder: (child, animation) => _Fading(animation: animation, child: child),
     child: child,
   );

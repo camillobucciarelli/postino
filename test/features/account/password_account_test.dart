@@ -154,7 +154,7 @@ void main() {
   });
 
   for (final reduced in [false, true]) {
-    testWidgets('the manual configuration and the error open and close, «Connessione…» fades in'
+    testWidgets('the manual configuration and the error open and close'
         '${reduced ? ', all at once with reduced motion' : ''} (#283)', (tester) async {
       if (reduced) {
         tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
@@ -194,11 +194,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump(PostinoMotion.state ~/ 2);
-      final spinner = find.byType(PostinoSpinner);
-      final fade = tester.widget<FadeTransition>(
-        find.ancestor(of: spinner, matching: find.byType(FadeTransition)).first,
-      );
-      expect(fade.opacity.value, reduced ? 1 : inExclusiveRange(0, 1));
+      expect(find.byType(PostinoSpinner), findsOneWidget, reason: '«Connessione…» is there at once');
       h.connection.gate!.complete();
       final error = find.textContaining('Server non raggiungibile');
       for (var i = 0; i < 10 && error.evaluate().isEmpty; i++) {

@@ -42,12 +42,12 @@ class const PostinoDrawerItemTile(
           Positioned(
             top: PostinoSpacing.s1 + 2,
             right: PostinoSpacing.s1 + 2,
-            child: _Pop(item.unreadLabel == null ? null : const _UnreadDot()),
+            child: _FadeToggle(item.unreadLabel == null ? null : const _UnreadDot()),
           ),
           Positioned(
             bottom: PostinoSpacing.s1,
             right: PostinoSpacing.s1,
-            child: _Pop(
+            child: _FadeToggle(
               item.reconnectLabel == null
                   ? null
                   : ExcludeSemantics(
@@ -126,7 +126,7 @@ class const PostinoDrawerItemTile(
                           ),
                         ),
                         // Each with the gap before it, so an absent one takes no room.
-                        _Pop(
+                        _FadeToggle(
                           item.unreadLabel == null
                               ? null
                               : Padding(
@@ -134,7 +134,7 @@ class const PostinoDrawerItemTile(
                                   child: _UnreadDot(label: item.unreadLabel),
                                 ),
                         ),
-                        _Pop(
+                        _FadeToggle(
                           item.reconnectLabel == null
                               ? null
                               : Padding(
@@ -172,7 +172,7 @@ class const _UnreadDot({final String? label}) extends StatelessWidget {
 }
 
 /// [child] fading in when it comes and out when it goes (`duration-toggle`); null: nothing, no room.
-class const _Pop(final Widget? child) extends StatelessWidget {
+class const _FadeToggle(final Widget? child) extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       PostinoFadeSwitcher(duration: PostinoMotion.toggle, child: child ?? const SizedBox.shrink());

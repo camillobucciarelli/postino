@@ -218,8 +218,8 @@ class _PasswordAccountFormState() extends State<_PasswordAccountForm> {
         ),
         PostinoDialogActions(
           children: [
-            // «Connessione…» fades in and out.
-            PostinoFadeSwitcher(child: _busy ? PostinoSpinner(label: t.connecting) : const SizedBox.shrink()),
+            // ponytail: no fade, an empty slot would still take a gap in the Wrap; the spinner moves on its own.
+            if (_busy) PostinoSpinner(label: t.connecting),
             PostinoButton(
               label: t.cancel,
               variant: PostinoButtonVariant.ghost,

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -138,4 +141,27 @@ void main() {
       },
     );
   }
+
+  testWidgets('the Posta fades through back to the onboarding when the last Account goes (#283)', (tester) async {
+    final h = await Harness.create();
+    await h.addAccount('a1');
+    await _start(tester);
+    expect(find.text('Collega Gmail'), findsNothing);
+    double opacity() => tester
+        .widget<FadeTransition>(
+          find.descendant(of: find.byType(PostinoFadeThrough).first, matching: find.byType(FadeTransition)).first,
+        )
+        .opacity
+        .value;
+    unawaited(getIt<AccountsRepository>().remove('a1'));
+    final seen = <double>[];
+    for (var i = 0; i < 60; i++) {
+      await tester.runAsync(pumpEventQueue);
+      await tester.pump(const Duration(milliseconds: 16));
+      seen.add(opacity());
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('Collega Gmail'), findsOneWidget);
+    expect(seen.any((o) => o > 0 && o < 1), isTrue, reason: 'it fades, it does not pop');
+  });
 }

@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/design_system/molecules/postino_quote_toggle.dart';
 
+import '../support/ui.dart';
+
 Widget _message({bool blocked = false, bool reduced = false, VoidCallback? onShow}) => MaterialApp(
   theme: PostinoTheme.light(),
   home: MediaQuery(
@@ -41,11 +43,6 @@ Widget _message({bool blocked = false, bool reduced = false, VoidCallback? onSho
   ),
 );
 
-/// The opacity of the reveal holding [f], 1 when none is fading.
-double _opacity(WidgetTester tester, Finder f) => tester
-    .widgetList<FadeTransition>(find.ancestor(of: f, matching: find.byType(FadeTransition)))
-    .fold(1, (o, t) => o * t.opacity.value);
-
 void main() {
   final half = PostinoMotion.threadExpand ~/ 2;
 
@@ -54,16 +51,16 @@ void main() {
     await tester.tap(find.text('a me'));
     await tester.pump();
     await tester.pump(half);
-    expect(_opacity(tester, find.text('ada@example.com')), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.text('ada@example.com')), inExclusiveRange(0, 1));
     await tester.pump(half);
     await tester.pump();
-    expect(_opacity(tester, find.text('ada@example.com')), 1);
+    expect(shownOpacity(tester, find.text('ada@example.com')), 1);
 
     await tester.tap(find.text('a me'));
     await tester.pump();
     await tester.pump(half);
     expect(find.text('ada@example.com'), findsOneWidget, reason: 'still drawn while it closes');
-    expect(_opacity(tester, find.text('ada@example.com')), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.text('ada@example.com')), inExclusiveRange(0, 1));
     await tester.pumpAndSettle();
     expect(find.text('ada@example.com'), findsNothing);
   });
@@ -77,10 +74,10 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     await tester.pump(half);
-    expect(_opacity(tester, find.text('> Ti va una cena?')), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.text('> Ti va una cena?')), inExclusiveRange(0, 1));
     expect(Focus.of(tester.element(inner)).hasFocus, isTrue);
     await tester.pumpAndSettle();
-    expect(_opacity(tester, find.text('> Ti va una cena?')), 1);
+    expect(shownOpacity(tester, find.text('> Ti va una cena?')), 1);
     expect(Focus.of(tester.element(inner)).hasFocus, isTrue);
   });
 
@@ -88,14 +85,14 @@ void main() {
     final handle = tester.ensureSemantics();
     var shown = 0;
     await tester.pumpWidget(_message(blocked: true, onShow: () => shown++));
-    expect(_opacity(tester, find.text('Immagini bloccate')), 1);
+    expect(shownOpacity(tester, find.text('Immagini bloccate')), 1);
     expect(tester.hasRunningAnimations, isFalse);
     final body = tester.getTopLeft(find.text('Ciao')).dy;
 
     await tester.pumpWidget(_message());
     await tester.pump(PostinoMotion.snackbar ~/ 2);
     expect(find.text('Immagini bloccate'), findsOneWidget);
-    expect(_opacity(tester, find.text('Immagini bloccate')), inExclusiveRange(0, 1));
+    expect(shownOpacity(tester, find.text('Immagini bloccate')), inExclusiveRange(0, 1));
     expect(find.semantics.byLabel('Immagini bloccate'), findsNothing);
     await tester.tap(find.text('Mostra immagini'), warnIfMissed: false);
     expect(shown, 0);
@@ -111,12 +108,23 @@ void main() {
     await tester.pumpWidget(_message(blocked: true, reduced: true));
     await tester.tap(find.text('a me'));
     await tester.pump();
-    expect(_opacity(tester, find.text('ada@example.com')), 1);
+    expect(shownOpacity(tester, find.text('ada@example.com')), 1);
     await tester.tap(find.byType(PostinoQuoteToggle));
     await tester.pump();
-    expect(_opacity(tester, find.text('> Ti va una cena?')), 1);
+    expect(shownOpacity(tester, find.text('> Ti va una cena?')), 1);
     await tester.pumpWidget(_message(reduced: true));
     await tester.pump();
     expect(find.text('Immagini bloccate'), findsNothing);
+  });
+
+  testWidgets('switching reduced motion keeps the expanded content and its focus', (tester) async {
+    await tester.pumpWidget(_message());
+    final inner = find.descendant(of: find.byKey(const ValueKey('quote-toggle')), matching: find.byType(PostinoIcon));
+    Focus.of(tester.element(inner)).requestFocus();
+    await tester.pump();
+    await tester.pumpWidget(_message(reduced: true));
+    expect(Focus.of(tester.element(inner)).hasFocus, isTrue);
+    await tester.pumpWidget(_message());
+    expect(Focus.of(tester.element(inner)).hasFocus, isTrue);
   });
 }

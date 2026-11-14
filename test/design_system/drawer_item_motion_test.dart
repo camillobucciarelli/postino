@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
+import '../support/ui.dart';
+
 Widget _drawer({bool unread = false, bool reconnect = false, bool collapsed = false, bool reduced = false}) =>
     MaterialApp(
       theme: PostinoTheme.light(),
@@ -38,10 +40,6 @@ Widget _drawer({bool unread = false, bool reconnect = false, bool collapsed = fa
 
 const _dot = ValueKey('unread-dot');
 
-double _opacity(WidgetTester tester, Finder f) => tester
-    .widgetList<FadeTransition>(find.ancestor(of: f, matching: find.byType(FadeTransition)))
-    .fold(1, (o, t) => o * t.opacity.value);
-
 void main() {
   final half = PostinoMotion.toggle ~/ 2;
 
@@ -53,14 +51,14 @@ void main() {
       await tester.pumpWidget(_drawer(collapsed: collapsed));
       await tester.pumpWidget(_drawer(unread: true, collapsed: collapsed));
       await tester.pump(half);
-      expect(_opacity(tester, find.byKey(_dot)), inExclusiveRange(0, 1));
+      expect(shownOpacity(tester, find.byKey(_dot)), inExclusiveRange(0, 1));
       await tester.pump(half);
-      expect(_opacity(tester, find.byKey(_dot)), 1);
+      expect(shownOpacity(tester, find.byKey(_dot)), 1);
 
       await tester.pumpWidget(_drawer(collapsed: collapsed));
       await tester.pump(half);
       expect(find.byKey(_dot), findsOneWidget, reason: 'still drawn while it fades');
-      expect(_opacity(tester, find.byKey(_dot)), inExclusiveRange(0, 1));
+      expect(shownOpacity(tester, find.byKey(_dot)), inExclusiveRange(0, 1));
       if (!collapsed) expect(find.semantics.byLabel('Non letti'), findsNothing);
       await tester.pumpAndSettle();
       expect(find.byKey(_dot), findsNothing);
@@ -77,9 +75,9 @@ void main() {
       final badge = collapsed
           ? find.byKey(const ValueKey('reconnect-badge'))
           : find.byWidgetPredicate((w) => w is PostinoSyncStatus && w.state == PostinoSyncState.reconnect);
-      expect(_opacity(tester, badge), inExclusiveRange(0, 1));
+      expect(shownOpacity(tester, badge), inExclusiveRange(0, 1));
       await tester.pumpAndSettle();
-      expect(_opacity(tester, badge), 1);
+      expect(shownOpacity(tester, badge), 1);
     });
   }
 
@@ -97,7 +95,7 @@ void main() {
     await tester.pumpWidget(_drawer(reduced: true));
     await tester.pumpWidget(_drawer(unread: true, reduced: true));
     await tester.pump();
-    expect(_opacity(tester, find.byKey(_dot)), 1);
+    expect(shownOpacity(tester, find.byKey(_dot)), 1);
     await tester.pumpWidget(_drawer(reduced: true));
     await tester.pump();
     expect(find.byKey(_dot), findsNothing);

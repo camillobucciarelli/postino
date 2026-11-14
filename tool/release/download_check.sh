@@ -39,6 +39,10 @@ product() { # <file> <site root, relative>
     has "$dir/$1" "href=\"$2$href\""
   done
   has "$dir/$1" 'href="privacy.html"'
+  # Link previews: the Open Graph image, published by release.yml (job site) from tool/brand_icons.sh's output.
+  has "$dir/$1" "<meta property=\"og:image\" content=\"https://$site/og.png\">"
+  has "$dir/$1" '<meta name="twitter:card" content="summary_large_image">'
+  [ -f "$dir/og.png" ] || fail "$dir/og.png: missing (tool/brand_icons.sh)"
 }
 links() { # <file> <its path on the bucket> [the mail link allowed there]
   local base path url host

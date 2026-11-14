@@ -1,12 +1,16 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/database_lock.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/postino_database.dart';
 
 import 'package:postino/core/domain/platform_services.dart';
+
+import 'package:sqlite3/sqlite3.dart';
 
 import '../../support/fake_platform.dart';
 
@@ -141,6 +145,33 @@ void main() {
     expect(await accounts(background), 1);
     await app.close();
     await background.close();
+  });
+
+  test('a background engine migrating an existing database slowly does not hold the lock the app waits for', () async {
+    final keychain = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, keychain);
+    await db.customStatement('PRAGMA user_version = 23'); // one migration to run at the next open
+    await db.close();
+    final key = keychain.values['database_key']!;
+    // Another writer makes the migration wait (busy_timeout), the way a long one (the FTS index rebuilt) keeps going.
+    final writer = sqlite3.open(path)
+      ..execute("PRAGMA key = \"x'$key'\"")
+      ..execute('BEGIN IMMEDIATE');
+    final values = {...keychain.values};
+    final migrating = Isolate.run(() async {
+      final background = await PostinoDatabase.open(path, FakeSecureStore()..values.addAll(values));
+      await background.close();
+    });
+    await Future<void>.delayed(const Duration(seconds: 1));
+    try {
+      expect(
+        await withDatabaseLock('$path.lock', () async => 'free', timeout: const Duration(milliseconds: 200)),
+        'free',
+      );
+    } finally {
+      writer.close();
+    }
+    await migrating;
   });
 
   test('a database that does not open is in the error log as a crash', () async {

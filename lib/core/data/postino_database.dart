@@ -95,8 +95,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   /// start, and the next start proposes the Segnalazione di un problema.
   static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
     final key = await keyFrom(keychain, path);
-    // Locked up to the first open: the mark read before another isolate's wipe and open would wipe a live database.
-    return withDatabaseLock(_lockOf(path), () async {
+    // Locked from the mark to its removal, and to the creation of a new file: the mark read before another isolate's
+    // wipe would wipe a database already open. An existing file opens unlocked: its migrations may be long (#263).
+    final created = await withDatabaseLock(_lockOf(path), () async {
       // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
       // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
       if (await keychain.read(_freshName) != null) {
@@ -105,32 +106,37 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         }
         await keychain.delete(_freshName);
       }
-      final db = PostinoDatabase(
-        NativeDatabase(
-          File(path),
-          // Throwing here makes drift close the native handle (wrong key, no SQLCipher).
-          setup: (sql) {
-            sql.execute("PRAGMA key = \"x'$key'\"");
-            if (sql.select('PRAGMA cipher_version').isEmpty) {
-              throw StateError('SQLite without SQLCipher: refusing to open');
-            }
-            // A wrong key fails here.
-            sql.select('SELECT count(*) FROM sqlite_master');
-            _secureDelete(sql);
-            // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
-            sql.execute('PRAGMA busy_timeout = 5000');
-          },
-        ),
-      );
-      try {
-        await db.customSelect('SELECT 1').get(); // open now, not on first query
-        return db;
-      } catch (e, s) {
-        log?.record(e, stack: s, context: 'database', crash: true);
-        await db.close();
-        rethrow;
-      }
+      return File(path).existsSync() ? null : _openFile(path, key, log);
     });
+    return created ?? _openFile(path, key, log);
+  }
+
+  static Future<PostinoDatabase> _openFile(String path, String key, ErrorLog? log) async {
+    final db = PostinoDatabase(
+      NativeDatabase(
+        File(path),
+        // Throwing here makes drift close the native handle (wrong key, no SQLCipher).
+        setup: (sql) {
+          sql.execute("PRAGMA key = \"x'$key'\"");
+          if (sql.select('PRAGMA cipher_version').isEmpty) {
+            throw StateError('SQLite without SQLCipher: refusing to open');
+          }
+          // A wrong key fails here.
+          sql.select('SELECT count(*) FROM sqlite_master');
+          _secureDelete(sql);
+          // The WorkManager isolate opens the same file (#36): a write waits for the other's lock instead of failing.
+          sql.execute('PRAGMA busy_timeout = 5000');
+        },
+      ),
+    );
+    try {
+      await db.customSelect('SELECT 1').get(); // open now, not on first query
+      return db;
+    } catch (e, s) {
+      log?.record(e, stack: s, context: 'database', crash: true);
+      await db.close();
+      rethrow;
+    }
   }
 
   /// The database file in the app's support [dir].

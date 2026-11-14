@@ -366,7 +366,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
-const _freshName = '$_keyName.fresh';
+final _freshName = freshMark(_keyName);
 
 /// Never wiped with the database: it outlives the restore it guards.
 String _lockOf(String path) => '$path.lock';

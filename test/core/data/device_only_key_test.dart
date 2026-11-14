@@ -197,6 +197,139 @@ void main() {
       ..failure = Exception('keychain bloccato');
     await expectLater(readDeviceOnly(keychain, name), throwsException);
   });
+
+  group('moved from the legacy keychain (macOS release, #270)', () {
+    const migrated = {name: key, '$name.copy': key, '$name.copied': '1', '$name.device_only': '1'};
+    late FakeSecureStore legacy;
+    late FakeSecureStore dataProtection;
+    late MovingKeychain keychain;
+    setUp(() {
+      legacy = FakeSecureStore()..values.addAll(migrated);
+      dataProtection = FakeSecureStore();
+      keychain = MovingKeychain(dataProtection, legacy);
+    });
+
+    /// The same key in [store], and no fresh mark anywhere: never a new key, never the database wiped.
+    void expectKeptIn(FakeSecureStore store) {
+      expect(store.values[name], key);
+      expect(dataProtection.values['$name.fresh'], isNull);
+      expect(legacy.values['$name.fresh'], isNull);
+    }
+
+    test('the key moves, checked, and only then leaves the legacy keychain, a mark in its place', () async {
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(dataProtection.values, {name: key, '$name.device_only': '1'});
+      expect(dataProtection.writes, [name, '$name.device_only'], reason: 'saved device only: nothing to migrate');
+      expect(legacy.values, {'$name.moved': '1'});
+
+      dataProtection.writes.clear();
+      legacy.writes.clear();
+      expect(await readDeviceOnly(keychain, name), key);
+      expect([...dataProtection.writes, ...legacy.writes], isEmpty);
+    });
+
+    test('a key never migrated device only is migrated in the legacy keychain first, then moved', () async {
+      legacy.values
+        ..clear()
+        ..[name] = key;
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(legacy.values, {'$name.moved': '1'});
+      expectKeptIn(dataProtection);
+    });
+
+    for (final (step, fail) in <(String, void Function(FakeSecureStore, FakeSecureStore))>[
+      ('the write', (to, from) => to.failingWrites.add(name)),
+      ('the read back', (to, from) => to.corruptWrites.add(name)),
+      ('the device only mark', (to, from) => to.failingWrites.add('$name.device_only')),
+      ('the moved mark', (to, from) => from.failingWrites.add('$name.moved')),
+    ]) {
+      test('$step failing leaves the key in the legacy keychain: this start goes on with it, the next moves', () async {
+        fail(dataProtection, legacy);
+        expect(await readDeviceOnly(keychain, name), key);
+        expectKeptIn(legacy);
+
+        dataProtection
+          ..failingWrites.clear()
+          ..corruptWrites.clear();
+        legacy.failingWrites.clear();
+        expect(await readDeviceOnly(keychain, name), key);
+        expectKeptIn(dataProtection);
+        expect(legacy.values, {'$name.moved': '1'});
+      });
+    }
+
+    test('a cleanup that fails leaves the legacy items, removed at the next start', () async {
+      legacy.deleteFailure = Exception('keychain: delete failed');
+      expect(await readDeviceOnly(keychain, name), key);
+      expectKeptIn(dataProtection);
+
+      legacy.deleteFailure = null;
+      expect(await readDeviceOnly(keychain, name), key);
+      expectKeptIn(dataProtection);
+      expect(legacy.values, {'$name.moved': '1'});
+    });
+
+    test('a legacy key wins over the moved one: a downgrade wrote it, and the database with it', () async {
+      dataProtection.values.addAll({name: 'old', '$name.device_only': '1'});
+      legacy.values['$name.moved'] = '1';
+      expect(await readDeviceOnly(keychain, name), key);
+      expectKeptIn(dataProtection);
+      expect(legacy.values, {'$name.moved': '1'});
+    });
+
+    test('a fresh mark moves with its key, once: the database it wiped is never wiped again', () async {
+      legacy.values['$name.fresh'] = '1';
+      legacy.deleteFailure = Exception('keychain: delete failed');
+      await expectLater(readDeviceOnly(keychain, name), throwsException, reason: 'it would be carried again');
+      expect(legacy.values['$name.fresh'], '1');
+
+      legacy.deleteFailure = null;
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(dataProtection.values['$name.fresh'], '1');
+      expect(legacy.values, {'$name.moved': '1'});
+
+      dataProtection.values.remove('$name.fresh'); // wiped by PostinoDatabase.open
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(dataProtection.values['$name.fresh'], isNull);
+    });
+
+    test('moved and found nowhere is an error, never a missing key', () async {
+      legacy.values
+        ..clear()
+        ..['$name.moved'] = '1';
+      await expectLater(readDeviceOnly(keychain, name), throwsStateError);
+      await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build on the same Mac');
+      expect([...dataProtection.writes, ...legacy.writes], isEmpty);
+    });
+
+    test('a keychain that cannot be read is an error, never a missing key', () async {
+      dataProtection.failure = Exception('-34018');
+      legacy.values.clear();
+      await expectLater(readDeviceOnly(keychain, name), throwsException);
+
+      dataProtection.failure = null;
+      legacy
+        ..values.addAll(migrated)
+        ..failure = Exception('keychain bloccato');
+      await expectLater(readDeviceOnly(keychain, name), throwsException);
+      expect(dataProtection.writes, isEmpty);
+    });
+
+    test('nothing in either keychain: none, as at a first launch', () async {
+      legacy.values.clear();
+      expect(await readDeviceOnly(keychain, name), isNull);
+      expect([...dataProtection.writes, ...legacy.writes], isEmpty);
+    });
+
+    test('reads, writes and deletes go to the Data Protection keychain', () async {
+      await keychain.write('x', '1');
+      expect(dataProtection.values['x'], '1');
+      expect(await keychain.read('x'), '1');
+      await keychain.delete('x');
+      expect(dataProtection.values, isEmpty);
+      expect(legacy.writes, isEmpty);
+    });
+  });
 }
 
 /// A keychain whose reads of [key] throw: that item locked, the others readable.

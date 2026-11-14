@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/database_lock.dart';
+import 'package:postino/core/data/device_only_key.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -115,6 +116,33 @@ void main() {
     expect(await accounts(again), 0);
     await again.close();
     expect(interrupted.values['database_key.fresh'], isNull);
+  });
+
+  test('a macOS release opens the database whose key an older version left in the legacy keychain (#270)', () async {
+    final legacy = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, legacy);
+    await insertAccount(db);
+    await db.close();
+
+    final dataProtection = FakeSecureStore();
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 1);
+    await again.close();
+    expect(legacy.values, {'database_key.moved': '1'});
+
+    // Moved and then not found (a Debug build on the same Mac, a lost item): no new key, the file untouched.
+    // Another start: a store not seen yet, keyFrom reads once per store.
+    FakeSecureStore movedOnly() => FakeSecureStore()..values['database_key.moved'] = '1';
+    for (final keychain in [MovingKeychain(FakeSecureStore(), movedOnly()), movedOnly()]) {
+      await expectLater(PostinoDatabase.open(path, keychain), throwsStateError);
+      expect(
+        (keychain is MovingKeychain ? keychain.to as FakeSecureStore : keychain as FakeSecureStore).writes,
+        isEmpty,
+      );
+    }
+    final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(third), 1);
+    await third.close();
   });
 
   test(

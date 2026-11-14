@@ -204,12 +204,17 @@ class _MessageListState() extends State<MessageList> {
     }
     bool at(InboxEntry e) => (e.account.id, e.message.conversationId) == cursor;
     if (list.any(at)) return;
+    // The row still has the focus (it is built until this frame ends): it goes to the row that takes its place,
+    // or it would fall to the route's scope, out of the shortcuts. A focus that was elsewhere is not taken.
+    final hadFocus = _nodes[cursor]?.hasFocus ?? false;
     final was = _list?.indexWhere(at) ?? -1;
     if (list.isEmpty) {
       _cursor = null;
     } else {
       final e = list[(was < 0 ? 0 : was).clamp(0, list.length - 1)];
       _cursor = (e.account.id, e.message.conversationId);
+      // Not under a full-page Conversazione (narrowed in the same frame): there the focus belongs to it.
+      if (hadFocus && (_twoPane || widget.selected == null)) _focusSoon();
     }
   }
 

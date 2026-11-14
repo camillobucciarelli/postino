@@ -106,6 +106,14 @@ void main() {
     await third.close();
   });
 
+  test('a new key is created with the fresh mark bound to it, not the generic 1 (#270)', () async {
+    final keychain = FakeSecureStore();
+    final key = await PostinoDatabase.keyFrom(keychain, path);
+    expect(keychain.values['database_key'], key);
+    expect(keychain.values['database_key.fresh'], freshOf(key));
+    expect(keychain.values['database_key.fresh'], isNot('1'));
+  });
+
   test('a restore killed after saving the new key and before the wipe wipes at the next start', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
     await insertAccount(db);

@@ -66,6 +66,16 @@ void main() {
       ]);
     });
 
+    test('only the bullet and ordered lists stay lists, whatever else a delta says', () {
+      String html(Map<String, dynamic> attributes) => deltaToHtml([
+        {'insert': 'voce'},
+        {'insert': '\n', 'attributes': attributes},
+      ]);
+      expect(html({'list': 'checked'}), '<p>voce</p>', reason: 'a checklist is flattened');
+      expect(html({'align': 'bullet'}), '<p>voce</p>', reason: 'a value of a list on another format');
+      expect(html({'list': 'bullet'}), contains('<li>'));
+    });
+
     test('header, image and colour are flattened to text', () {
       expect(
         _normal(

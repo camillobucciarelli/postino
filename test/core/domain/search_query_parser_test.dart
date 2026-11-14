@@ -92,7 +92,7 @@ void main() {
     });
 
     test('a known operator with a value it cannot read stays free text; with no value yet it is ignored', () {
-      for (final bad in ['dopo:ieri', 'prima:2026-02-31', 'dopo:2026-1', 'è:rosso', 'ha:fame']) {
+      for (final bad in ['dopo:ieri', 'prima:2026-02-31', 'dopo:2026-13-05', 'dopo:2026-1', 'è:rosso', 'ha:fame']) {
         final q = parseSearchQuery(bad);
         expect(q.terms, [bad], reason: bad);
         expect((q.after, q.before, q.unread, q.starred, q.hasAttachment), (null, null, null, null, null));

@@ -63,6 +63,8 @@ void main() {
     expect(use.asksProviders(const SearchQuery(accountNames: ['anna'])), isFalse);
     expect(use.asksProviders(const SearchQuery(unread: true, accountNames: ['anna'])), isTrue);
     expect(use.asksProviders(const SearchQuery(terms: ['fattura'])), isTrue);
+    expect(use.asksProviders(const SearchQuery(starred: true)), isTrue);
+    expect(use.asksProviders(const SearchQuery(hasAttachment: true)), isTrue);
   });
 
   test('the timeout of a page is 15 s', () => expect(providerSearchTimeout, const Duration(seconds: 15)));

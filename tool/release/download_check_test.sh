@@ -3,7 +3,8 @@
 # from a third party (link, script, inline style, srcset, single-quoted attribute, @import, a Buy me a coffee widget),
 # a link to a missing file (relative or absolute on the site's host), Buy me a coffee or Google's policy without their
 # rel, another page of an allowed host, a mail link other than the guide's privacy contact, wrong
-# lang, missing switch to the twin, lost download or footer link, missing font or license, a placeholder on a page
+# lang, missing switch to the twin, lost download or footer link, missing font or license, lost Open Graph meta or
+# a missing or empty og.png, a placeholder on a page
 # published as it is, broken markup, and the same slips in the guide.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -51,6 +52,10 @@ fails "other page of the policy host" privacy.html 's|api-services-user-data-pol
 fails "privacy contact other than the guide's" privacy.html 's|mailto:camillo@bucciarelli.dev|mailto:privacy@example.com|'
 fails "privacy contact gone" en/privacy.html 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|'
 fails "mail link on the product page" index.html 's|<footer>|<footer><a href="mailto:camillo@bucciarelli.dev">x</a>|'
+fails "Open Graph image meta gone" index.html 's|<meta property="og:image" [^>]*>||'
+fails "Twitter card meta gone" en/index.html 's|<meta name="twitter:card" [^>]*>||'
+fails "missing Open Graph image" og.png rm
+fails "empty Open Graph image" og.png d
 fails "guide without its mail address" guide 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|g; s|mailto:||g'
 fails "guide with a third-party font" guide 's|</head>|<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree"></head>|'
 fails "guide with a missing stylesheet" guide 's|href="../style.css"|href="../stile.css"|'

@@ -38,8 +38,8 @@ Rasterizza con `rsvg-convert` se installato, altrimenti con `sips` (di serie su 
   (job `site`) lo pubblica alla radice del bucket e `download_check.sh` controlla meta e file.
 
 macOS 26 (Icon Composer, `.icon` a livelli) non c'è ancora: con un `AppIcon.icon` nel target, Xcode genera anche le
-icone per macOS < 26 dal `.icon` e ignora `app_icon_*.png`, perdendo la posa `icon-small.svg` sotto i 64 px. Follow-up
-in #268.
+icone per macOS < 26 dal `.icon` e ignora `app_icon_*.png`, perdendo la posa `icon-small.svg` sotto i 64 px. Prova e
+decisione da prendere nel commento di follow-up di #268.
 
 Il fondo adattivo Android (`drawable/ic_launcher_background.xml`) e il verderame dello splash (`values/colors.xml`, `LaunchScreen.storyboard`) sono scritti a mano: se cambiano i colori in `assets/brand/`, aggiornarli.
 

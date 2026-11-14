@@ -183,6 +183,29 @@ void main() {
     expect(await accounts(again), 1);
     await again.close();
     expect(dataProtection.values['database_key.fresh'], isNull);
+    expect(dataProtection.values['database_key.replaced'], isNull, reason: 'the moved key opened the file');
+  });
+
+  test('a moved legacy key that is not the file\'s never loses the key in use (#270)', () async {
+    // The release's database, its key in the Data Protection keychain.
+    final dataProtection = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, FakeSecureStore()));
+    await insertAccount(db);
+    await db.close();
+    final inUse = dataProtection.values['database_key'];
+
+    // A login keychain saved during a downgrade, restored: another key next to the moved mark.
+    final restored = FakeSecureStore()
+      ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.moved': '1'});
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, restored));
+    expect(await accounts(again), 1);
+    await again.close();
+    expect(dataProtection.values['database_key'], inUse);
+    expect(dataProtection.values['database_key.replaced'], isNull);
+
+    final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, restored));
+    expect(await accounts(third), 1);
+    await third.close();
   });
 
   test(

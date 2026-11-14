@@ -111,7 +111,23 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
       return File(path).existsSync() ? null : _openFile(path, key, log);
     });
-    return created ?? _openFile(path, key, log);
+    if (created != null) return created;
+    // A downgrade's key moved over one in use (#270): the file tells which of the two is its key; the other goes.
+    final replaced = await keychain.read(_replacedName);
+    if (replaced == null) return _openFile(path, key, log);
+    try {
+      final db = await _openFile(path, key, null);
+      await keychain.delete(_replacedName);
+      return db;
+    } on Object catch (_) {
+      final db = await _openFile(path, replaced, log);
+      await withDatabaseLock(_lockOf(path), () async {
+        await writeDeviceOnly(keychain, _keyName, replaced);
+        await keychain.delete(_replacedName);
+      });
+      _keys[keychain] = Future.value(replaced);
+      return db;
+    }
   }
 
   static Future<PostinoDatabase> _openFile(String path, String key, ErrorLog? log) async {
@@ -370,6 +386,7 @@ void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = 
 
 const _keyName = 'database_key';
 final _freshName = freshMark(_keyName);
+final _replacedName = replacedMark(_keyName);
 
 /// Never wiped with the database: it outlives the restore it guards.
 String _lockOf(String path) => '$path.lock';

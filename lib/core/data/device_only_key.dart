@@ -66,6 +66,9 @@ String freshMark(String name) => '$name.fresh';
 /// after a downgrade (#270). Earlier versions wrote `1`, for the key they saved next.
 String freshOf(String key) => sha256.convert(utf8.encode('fresh:$key')).toString();
 
+/// The key in use that a moved one replaced (#270), kept until the database opens with one of the two.
+String replacedMark(String name) => '$name.replaced';
+
 /// Whether the [freshMark] value [mark] belongs to [key].
 bool isFreshOf(String mark, String key) => mark == '1' || mark == freshOf(key);
 
@@ -95,19 +98,23 @@ Future<String?> _readMigrating(SecureStore keychain, String name) async {
 
 /// Moves [name] from the legacy keychain [from] to [to] (#270), null if [from] has none. [from] keeps it until [to]
 /// holds it, read back and marked, so a step that fails leaves it there: this start goes on with it, the next moves it
-/// again. A key in [from] next to the moved mark wins over [to]'s: an older version wrote it after a downgrade, and
-/// its database with it. One without the mark does not replace a different key already in use in [to] (an old login
-/// keychain restored, say): it is left as it is. Only the moved mark is left in [from].
+/// again. A key in [from] next to the moved mark wins over a different one in [to]: an older version wrote it after a
+/// downgrade, and its database with it. The key it replaces is kept as [replacedMark] until the database tells which
+/// one opens it (`PostinoDatabase.open`): never lost, whichever keychain was restored. One without the mark does not
+/// replace a different key already in use in [to] (an old login keychain restored, say): it is left as it is. Only
+/// the moved mark is left in [from].
 Future<String?> _move(SecureStore from, SecureStore to, String name) async {
-  final value = await _readMigrating(from, name);
-  if (value == null) return null;
   // Read before any write: a Data Protection keychain that cannot be read fails the start, [from] untouched.
   final current = await to.read(name);
-  if (current != null &&
-      current != value &&
-      await to.read(_deviceOnlyMark(name)) != null &&
-      await from.read(_movedMark(name)) == null) {
-    return current;
+  final value = await _readMigrating(from, name);
+  if (value == null) return null;
+  if (current != null && current != value) {
+    if (await to.read(_deviceOnlyMark(name)) != null && await from.read(_movedMark(name)) == null) return current;
+    final replaced = await to.read(replacedMark(name));
+    // A slot already holding another key: nothing replaced, so nothing lost.
+    if (replaced != null && replaced != current) return current;
+    // A failed write fails the start, before the key in use is touched.
+    if (replaced == null) await _writeChecked(to, replacedMark(name), current);
   }
   if (await from.read(freshMark(name)) case final fresh?) {
     // A new key whose database is still to be wiped: the mark moves before the key, as for a new one, and leaves

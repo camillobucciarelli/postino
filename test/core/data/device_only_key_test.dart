@@ -309,14 +309,28 @@ void main() {
       await expectLater(readDeviceOnly(MovingKeychain(locked, legacy), name), throwsException);
       expect(legacy.values, migrated);
       expect([...locked.writes, ...legacy.writes], isEmpty);
+
+      final notMigrated = FakeSecureStore()..values[name] = key;
+      await expectLater(readDeviceOnly(MovingKeychain(locked, notMigrated), name), throwsException);
+      expect(notMigrated.writes, isEmpty, reason: 'not even the migration of #263');
     });
 
-    test('a legacy key wins over the moved one: a downgrade wrote it, and the database with it', () async {
-      dataProtection.values.addAll({name: 'old', '$name.device_only': '1'});
+    test('a legacy key wins over the moved one, the key it replaces kept: the database tells which opens it', () async {
+      dataProtection.values.addAll({name: 'in use', '$name.device_only': '1'});
       legacy.values['$name.moved'] = '1';
       expect(await readDeviceOnly(keychain, name), key);
       expectKeptIn(dataProtection);
+      expect(dataProtection.values['$name.replaced'], 'in use');
       expect(legacy.values, {'$name.moved': '1'});
+    });
+
+    test('a slot holding another replaced key: nothing replaced, nothing lost', () async {
+      dataProtection.values.addAll({name: 'in use', '$name.device_only': '1', '$name.replaced': 'older'});
+      legacy.values['$name.moved'] = '1';
+      expect(await readDeviceOnly(keychain, name), 'in use');
+      expect(dataProtection.values[name], 'in use');
+      expect(dataProtection.values['$name.replaced'], 'older');
+      expect(legacy.values[name], key);
     });
 
     test('a fresh mark moves with its key, once: the database it wiped is never wiped again', () async {
@@ -356,9 +370,12 @@ void main() {
         final read = await readDeviceOnly(MovingKeychain(FakeSecureStore()..values.addAll(to.values), legacy), name);
         // Killed before the key was saved: none, as at a first launch (no database yet). Saved: always found.
         expect(read, to.values[name] == key ? key : isNull, reason: 'killed after $budget operations');
-        if (read != null) {
-          await expectLater(readDeviceOnly(legacy, name), throwsStateError, reason: 'a Debug build fails, never wipes');
-        }
+        // The moved mark comes after the key: with the key a Debug build fails, without it nothing is there yet.
+        await expectLater(
+          readDeviceOnly(legacy, name),
+          read != null ? throwsStateError : completion(isNull),
+          reason: 'a Debug build after $budget operations',
+        );
         if (!ops.killed) break;
       }
     });
@@ -400,10 +417,11 @@ void main() {
           );
           final debug = FakeSecureStore()..values.addAll(from.values);
           expect(await readDeviceOnly(restart, name), key, reason: 'killed after $budget operations');
-          try {
+          // The legacy keychain loses its key and copy only after the moved mark: a Debug build reads the key or fails.
+          if (debug.values.containsKey(name) || debug.values.containsKey('$name.copy')) {
             expect(await readDeviceOnly(debug, name), key, reason: 'a Debug build after $budget operations');
-          } on StateError catch (_) {
-            // moved: the Debug build fails, never wipes
+          } else {
+            await expectLater(readDeviceOnly(debug, name), throwsStateError, reason: 'moved, after $budget operations');
           }
           if (!ops.killed) break;
         }

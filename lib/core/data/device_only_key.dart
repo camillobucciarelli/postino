@@ -38,20 +38,19 @@ class MovingKeychain(final SecureStore to, final SecureStore from) implements Se
 Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
   if (keychain case MovingKeychain(:final to, :final from)) {
     // [to] is read first, before anything is written in the legacy keychain. A key read back and marked there always
-    // wins, whatever the legacy keychain holds (a downgrade's key is not supported). Without one, the first move.
-    final current = await to.read(name);
-    if (current == null || await to.read(_deviceOnlyMark(name)) == null) {
-      if (await _move(from, to, name) case final value?) return value;
-    }
-    final value = await _readMigrating(to, name);
-    if (value != null) {
+    // wins, whatever the legacy keychain holds (a downgrade's key is not supported).
+    final value = await to.read(name);
+    if (value != null && await to.read(_deviceOnlyMark(name)) != null) {
       // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe
       // the database. A write that fails fails the start: without the mark the database is not safe.
       if (await from.read(_movedMark(name)) == null) await from.write(_movedMark(name), '1');
       // The same key left in the legacy keychain by a move whose cleanup failed or was killed: removed now.
       if (await from.read(name) == value) await _dropLegacy(from, name);
+      return value;
     }
-    return value;
+    // Without one, the first move, or none. A key in [to] not marked is a write that did not finish (killed, or read
+    // back different): no database was ever opened with it, and the move or a new key overwrites it.
+    return _move(from, to, name);
   }
   if (await _readMigrating(keychain, name) case final value?) return value;
   if (await keychain.read(_movedMark(name)) != null) throw StateError('$name: moved to the Data Protection keychain');

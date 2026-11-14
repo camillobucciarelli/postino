@@ -168,6 +168,37 @@ void main() {
     await again.close();
   });
 
+  test('a fresh mark of another key wipes nothing: dropped, the database kept (#270)', () async {
+    final keychain = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, keychain);
+    await insertAccount(db);
+    await db.close();
+
+    final again = FakeSecureStore()
+      ..values.addAll(keychain.values)
+      ..values['database_key.fresh'] = freshOf('ab' * 32);
+    final reopened = await PostinoDatabase.open(path, again);
+    expect(await accounts(reopened), 1);
+    await reopened.close();
+    expect(again.values['database_key.fresh'], isNull);
+  });
+
+  test('a restore whose new key was killed or read back different before its mark still starts over (#270)', () async {
+    final db = await PostinoDatabase.open(path, FakeSecureStore());
+    await insertAccount(db);
+    await db.close();
+
+    // The restored Mac: legacy with only the moved mark; the first start saved the fresh mark and a key that read
+    // back different, never marked.
+    final legacy = FakeSecureStore()..values['database_key.moved'] = '1';
+    final dataProtection = FakeSecureStore()
+      ..values.addAll({'database_key.fresh': freshOf('ab' * 32), 'database_key': '${'ab' * 32}!'});
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 0, reason: 'a new key, the restored file wiped');
+    await again.close();
+    expect(dataProtection.values['database_key.device_only'], '1');
+  });
+
   test(
     'a key in the Data Protection keychain always opens its database, whatever the legacy one holds (#270)',
     () async {
@@ -271,11 +302,6 @@ void main() {
 
     await expectLater(PostinoDatabase.open(path, otherKey(), log: log), throwsA(anything));
     expect(await log.read(), contains('[database]'));
-    expect(await log.takeCrashMark(), isTrue);
-
-    // With kept keys (#270) that open nothing either: still a crash in the log.
-    final kept = otherKey()..values['database_key.replaced.0'] = 'cd' * 32;
-    await expectLater(PostinoDatabase.open(path, kept, log: log), throwsA(anything));
     expect(await log.takeCrashMark(), isTrue);
   });
 

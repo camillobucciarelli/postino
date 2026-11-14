@@ -374,8 +374,10 @@ void main() {
         }
         final legacy = FakeSecureStore()..values.addAll(from.values);
         final read = await readDeviceOnly(MovingKeychain(FakeSecureStore()..values.addAll(to.values), legacy), name);
-        // Killed before the key was saved: none, as at a first launch (no database yet). Saved: always found.
-        expect(read, to.values[name] == key ? key : isNull, reason: 'killed after $budget operations');
+        // Killed before the key was saved and marked: none, as at a first launch (no database was opened with it, the
+        // start that wrote it never returned it). Saved and marked: always found.
+        final saved = to.values[name] == key && to.values['$name.device_only'] != null;
+        expect(read, saved ? key : isNull, reason: 'killed after $budget operations');
         if (!ops.killed) expect(read, key, reason: 'not killed: the key saved');
         // The moved mark comes after the key: with the key a Debug build fails, without it nothing is there yet.
         await expectLater(

@@ -94,6 +94,15 @@ abstract final class PostinoText() {
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
+  /// Ora di un messaggio letto in lista (peso 400). Flutter: PostinoText.metaRead.
+  static const metaRead = TextStyle(
+    fontFamily: sans,
+    fontSize: 12,
+    height: 1.3333,
+    fontWeight: FontWeight.w400,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
   /// Ora di un messaggio non letto. Flutter: PostinoText.metaStrong.
   static const metaStrong = TextStyle(
     fontFamily: sans,

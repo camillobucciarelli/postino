@@ -91,7 +91,7 @@ final _pairs = <(String, _Token, List<_Token>, double)>[
   ('EmptyState icon', (c) => c.brand, [(c) => c.surfaceSelected], _ui),
   ('primary button', (c) => c.onBrand, [(c) => c.brand], _text),
   ('ghost button', (c) => c.brand, [(c) => c.surface, (c) => c.surfaceRaised], _text),
-  ('FAB', (c) => c.fabFg, [(c) => c.fabBg], _text),
+  ('FAB', (c) => c.onBrand, [(c) => c.brand], _text),
   (
     'AccountMark initial',
     (c) => c.onAccount,

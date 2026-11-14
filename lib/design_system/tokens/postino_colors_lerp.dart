@@ -110,8 +110,6 @@ extension PostinoColorsLerp on PostinoColors {
       snackbarBg: _mix(snackbarBg, other.snackbarBg, t),
       snackbarFg: _mix(snackbarFg, other.snackbarFg, t),
       snackbarAction: _mix(snackbarAction, other.snackbarAction, t),
-      fabBg: _mix(fabBg, other.fabBg, t),
-      fabFg: _mix(fabFg, other.fabFg, t),
       switchTrackOn: _mix(switchTrackOn, other.switchTrackOn, t),
       switchTrackOff: _mix(switchTrackOff, other.switchTrackOff, t),
       switchThumbOn: _mix(switchThumbOn, other.switchThumbOn, t),

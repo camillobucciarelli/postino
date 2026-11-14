@@ -105,8 +105,6 @@ const _names = [
   'snackbarBg',
   'snackbarFg',
   'snackbarAction',
-  'fabBg',
-  'fabFg',
   'switchTrackOn',
   'switchTrackOff',
   'switchThumbOn',
@@ -221,8 +219,6 @@ List<Color> _all(PostinoColors c) => [
   c.snackbarBg,
   c.snackbarFg,
   c.snackbarAction,
-  c.fabBg,
-  c.fabFg,
   c.switchTrackOn,
   c.switchTrackOff,
   c.switchThumbOn,
@@ -251,7 +247,7 @@ void main() {
   });
 
   test('fixture covers all fields with distinct colors', () {
-    expect(_names.length, 112);
+    expect(_names.length, 110);
     expect(_palette(0).toSet().length, _names.length);
     expect(_all(_build(_palette(0))), _palette(0));
   });

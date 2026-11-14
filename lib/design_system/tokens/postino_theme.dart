@@ -96,8 +96,8 @@ abstract final class PostinoTheme() {
         surfaceTintColor: Colors.transparent,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: c.fabBg,
-        foregroundColor: c.fabFg,
+        backgroundColor: c.brand,
+        foregroundColor: c.onBrand,
         elevation: 3,
         extendedTextStyle: PostinoText.label,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(PostinoRadius.lg))),

@@ -30,9 +30,9 @@ class const PostinoFab({
     return FilledButton.icon(
       onPressed: onPressed,
       style: ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll(c.fabBg),
-        foregroundColor: WidgetStatePropertyAll(c.fabFg),
-        elevation: const WidgetStatePropertyAll(3),
+        backgroundColor: WidgetStatePropertyAll(c.brand),
+        foregroundColor: WidgetStatePropertyAll(c.onBrand),
+        elevation: const WidgetStatePropertyAll(PostinoElevation.e2),
         minimumSize: const WidgetStatePropertyAll(Size(PostinoSize.fabHeight, PostinoSize.fabHeight)),
         padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: PostinoSpacing.s5)),
         textStyle: const WidgetStatePropertyAll(PostinoText.label),

@@ -1,4 +1,4 @@
-// Parte dei token di postino_tokens.dart: vedi lì la fonte da cui sono copiati.
+// Parte dei token di postino_tokens.dart: vedi lì la fonte di verità.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
@@ -91,6 +91,15 @@ abstract final class PostinoText() {
     fontSize: 12,
     height: 1.3333,
     fontWeight: FontWeight.w600,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  /// Ora di un messaggio letto in lista (peso 400). Flutter: PostinoText.metaRead.
+  static const metaRead = TextStyle(
+    fontFamily: sans,
+    fontSize: 12,
+    height: 1.3333,
+    fontWeight: FontWeight.w400,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 

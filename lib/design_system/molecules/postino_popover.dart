@@ -58,7 +58,7 @@ Future<T?> showPostinoPopover<T>(
               explicitChildNodes: true,
               child: Material(
                 color: c.surfaceRaised,
-                elevation: 6,
+                elevation: PostinoElevation.e3,
                 clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(
                   borderRadius: const BorderRadius.all(Radius.circular(PostinoRadius.md)),

@@ -94,6 +94,45 @@ void main() {
     expect(find.text('Errore'), findsOneWidget);
   });
 
+  testWidgets('appear: an element added to a column on screen opens; at once with reduced motion', (tester) async {
+    Widget app({required bool reduced}) => MaterialApp(
+      home: MediaQuery(
+        data: MediaQueryData(disableAnimations: reduced),
+        child: Scaffold(
+          body: Column(children: [PostinoReveal(appear: true, child: _banner('Nuovo'))]),
+        ),
+      ),
+    );
+    await tester.pumpWidget(app(reduced: false));
+    expect(_height(tester), 0);
+    await tester.pump();
+    await tester.pump(half);
+    expect(_height(tester), closeTo(40 * k, 0.5));
+    await tester.pumpAndSettle();
+    expect(_height(tester), 40);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(app(reduced: true));
+    expect(_height(tester), 40);
+  });
+
+  testWidgets('switching reduced motion keeps the content and its focus', (tester) async {
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    final button = SizedBox(
+      height: 40,
+      child: TextButton(focusNode: focus, onPressed: () {}, child: const Text('Riprova')),
+    );
+    await tester.pumpWidget(_reveal(button));
+    focus.requestFocus();
+    await tester.pump();
+    expect(focus.hasFocus, isTrue);
+    await tester.pumpWidget(_reveal(button, reduced: true));
+    expect(focus.hasFocus, isTrue);
+    await tester.pumpWidget(_reveal(button));
+    expect(focus.hasFocus, isTrue);
+  });
+
   testWidgets('with reduced motion it opens, closes and swaps at once', (tester) async {
     await tester.pumpWidget(_reveal(null, reduced: true));
     await tester.pumpWidget(_reveal(_banner('Offline'), reduced: true));

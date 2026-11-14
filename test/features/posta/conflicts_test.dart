@@ -175,10 +175,19 @@ void main() {
       await tester.pumpAndSettle();
       expect(row('a', '1'), findsNothing);
 
+      final handle = tester.ensureSemantics();
       await tester.tap(next);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(PostinoMotion.state ~/ 2);
+      final empty = find.text('Nessun conflitto');
+      expect(empty, findsOneWidget, reason: 'the empty state fades in at once');
+      expect(primaryFocus?.debugLabel, 'Nessun conflitto', reason: 'the focus lands on it at once');
+      expect(find.semantics.byLabel(RegExp('La tua')), findsNothing, reason: 'the leaving list is not read');
       await tester.pumpAndSettle();
       expect(row('b', '2'), findsNothing);
-      expect(find.text('Nessun conflitto'), findsOneWidget);
+      expect(primaryFocus?.debugLabel, 'Nessun conflitto');
+      handle.dispose();
     });
 
     testWidgets('with reduced motion a resolved row goes at once', (tester) async {

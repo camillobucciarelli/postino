@@ -33,21 +33,47 @@ class const PostinoFadeSwitcher({
   );
 }
 
-/// [child] fading with [animation]; once that runs backwards the child is on its way out.
-class const _Fading({required final Animation<double> animation, required final Widget child}) extends StatelessWidget {
+/// [child] fading with [animation]; once that runs backwards the child is on its way out. The status is followed
+/// on its own: a reverse() announces it at once, a frame before the value moves.
+class const _Fading({required final Animation<double> animation, required final Widget child}) extends StatefulWidget {
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: animation,
-    builder: (context, child) {
-      final gone = animation.status == AnimationStatus.reverse || animation.isDismissed;
-      return IgnorePointer(
-        ignoring: gone,
-        child: ExcludeSemantics(
-          excluding: gone,
-          child: ExcludeFocus(excluding: gone, child: child!),
-        ),
-      );
-    },
-    child: FadeTransition(opacity: animation, child: child),
+  State<_Fading> createState() => _FadingState();
+}
+
+class _FadingState() extends State<_Fading> {
+  bool get _gone => widget.animation.status == AnimationStatus.reverse || widget.animation.isDismissed;
+
+  void _changed(AnimationStatus _) => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    widget.animation.addStatusListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(_Fading old) {
+    super.didUpdateWidget(old);
+    if (old.animation == widget.animation) return;
+    old.animation.removeStatusListener(_changed);
+    widget.animation.addStatusListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.animation.removeStatusListener(_changed);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: _gone,
+    child: ExcludeSemantics(
+      excluding: _gone,
+      child: ExcludeFocus(
+        excluding: _gone,
+        child: FadeTransition(opacity: widget.animation, child: widget.child),
+      ),
+    ),
   );
 }

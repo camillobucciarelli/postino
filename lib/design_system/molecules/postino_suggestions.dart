@@ -129,7 +129,7 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> with SingleTi
             width: field.width,
             top: above ? null : field.bottom,
             bottom: above ? info.overlaySize.height - field.top : null,
-            child: _panel(context, height),
+            child: _panel(context, height, above: above),
           ),
         ],
       );
@@ -153,16 +153,13 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> with SingleTi
   }
 
   /// The list's height follows it; not with reduced motion (AnimatedSize cannot take a zero duration).
-  static Widget _sized(BuildContext context, Widget child) => MediaQuery.disableAnimationsOf(context)
+  static Widget _sized(BuildContext context, Alignment from, Widget child) => MediaQuery.disableAnimationsOf(context)
       ? child
-      : AnimatedSize(
-          duration: PostinoMotion.state,
-          curve: PostinoMotion.standard,
-          alignment: Alignment.topCenter,
-          child: child,
-        );
+      : AnimatedSize(duration: PostinoMotion.state, curve: PostinoMotion.standard, alignment: from, child: child);
 
-  Widget _panel(BuildContext context, double maxHeight) {
+  Widget _panel(BuildContext context, double maxHeight, {required bool above}) {
+    // It opens from the field: down from its top under it, up from its bottom above it.
+    final from = above ? Alignment.bottomCenter : Alignment.topCenter;
     final c = context.pc;
     final (list: s, :highlighted) = _drawn;
     final closing = widget.suggestions.isEmpty;
@@ -185,9 +182,10 @@ class _PostinoSuggestionsState() extends State<PostinoSuggestions> with SingleTi
               // At text 200% the rows grow: the panel scrolls, the highlighted row kept in view.
               child: SizeTransition(
                 sizeFactor: _shown,
-                alignment: Alignment.topCenter,
+                alignment: from,
                 child: _sized(
                   context,
+                  from,
                   ConstrainedBox(
                     constraints: BoxConstraints(maxHeight: maxHeight),
                     child: SingleChildScrollView(

@@ -36,6 +36,9 @@ void main() {
     final focus = Focus.of(tester.element(find.text('Uno')))..requestFocus();
     await tester.pump();
     await tester.pumpWidget(_switcher('Due'));
+    // Out of reach from the very frame of the swap, before the fade moved.
+    expect(Focus.of(tester.element(find.text('Uno'))).canRequestFocus, isFalse);
+    expect(find.semantics.byLabel('Uno'), findsNothing);
     await tester.pump(half);
     final k = PostinoMotion.standard.transform(0.5);
     expect(_opacity(tester, 'Due'), closeTo(k, 0.05));

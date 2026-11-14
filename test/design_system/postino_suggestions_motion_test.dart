@@ -81,6 +81,30 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a shorter list: the height follows it, at once with reduced motion', (tester) async {
+    double height() => tester.getSize(find.byType(SingleChildScrollView)).height;
+    await tester.pumpWidget(_app(_items));
+    await tester.pump();
+    final two = height();
+    await tester.pumpWidget(_app(_items.take(1).toList()));
+    await tester.pump();
+    Size sized() => tester.getSize(find.byType(AnimatedSize));
+    expect(sized().height, two, reason: 'the new height is not there at once');
+    await tester.pump(half);
+    final mid = sized().height;
+    await tester.pumpAndSettle();
+    final one = sized().height;
+    expect(one, lessThan(two));
+    expect(mid, inExclusiveRange(one, two));
+
+    await tester.pumpWidget(_app(_items, reduced: true));
+    await tester.pump();
+    await tester.pumpWidget(_app(_items.take(1).toList(), reduced: true));
+    await tester.pump();
+    expect(find.byType(AnimatedSize), findsNothing);
+    expect(height(), lessThan(two));
+  });
+
   testWidgets('with reduced motion it opens and closes at once', (tester) async {
     await tester.pumpWidget(_app(const [], reduced: true));
     await tester.pump();

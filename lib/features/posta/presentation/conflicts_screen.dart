@@ -20,8 +20,8 @@ import 'row_motion.dart';
 /// each Bozza (#149), resolved with a tap.
 /// The row leaves the list, the focus goes to the choices of the one now in its place, and the count, a live region,
 /// is announced. Routing is the caller's: Esc and the back arrow call [onBack].
-/// A resolved row fades and closes (RowMotion and PostinoSizeFade, #283), the last one fades through to the empty
-/// state; nothing moves while the lists load.
+/// A resolved row fades and closes (RowMotion and PostinoSizeFade, #283); the last one fades into the empty state at
+/// once (PostinoFadeSwitcher), so the focus has somewhere to land. Nothing moves while the lists load.
 class const ConflictsScreen({super.key, required final VoidCallback onBack, final String? accountId})
     extends StatefulWidget {
   @override
@@ -112,9 +112,11 @@ class _ConflictsScreenState() extends State<ConflictsScreen> with AccountsSignal
         onBack: widget.onBack,
         child: shown == null
             ? const SizedBox.shrink()
-            : PostinoFadeThrough(
-                transitionKey: shown.isEmpty,
-                child: shown.isEmpty ? _empty(context) : _list(context, shown, rows.length),
+            : PostinoFadeSwitcher(
+                child: KeyedSubtree(
+                  key: ValueKey(rows.isEmpty),
+                  child: rows.isEmpty ? _empty(context) : _list(context, shown, rows.length),
+                ),
               ),
       );
     },

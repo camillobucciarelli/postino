@@ -28,6 +28,7 @@ import 'daos/outbox_dao.dart';
 import 'daos/postino_settings_dao.dart';
 import 'daos/search_dao.dart';
 import 'daos/trusted_senders_dao.dart';
+import 'device_only_key.dart';
 import 'row_mappers.dart';
 import 'search_index.dart';
 import 'tables/accounts_table.dart';
@@ -93,6 +94,14 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   /// start, and the next start proposes the Segnalazione di un problema.
   static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
     final key = await keyFrom(keychain);
+    // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
+    // never be read: Postino starts over empty and syncs again.
+    if (_created[keychain] ?? false) {
+      _created[keychain] = null;
+      for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
+        if (File(f).existsSync()) File(f).deleteSync();
+      }
+    }
     final db = PostinoDatabase(
       NativeDatabase(
         File(path),
@@ -135,11 +144,15 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   static final _keys = Expando<Future<String>>();
 
   static Future<String> _readOrCreateKey(SecureStore keychain) async {
-    if (await keychain.read(_keyName) case final key?) return key;
+    if (await readDeviceOnly(keychain, _keyName) case final key?) return key;
     final key = hex(randomBytes(32));
     await keychain.write(_keyName, key);
+    _created[keychain] = true;
     return key;
   }
+
+  /// Whether [keyFrom] generated the key for this keychain in this process.
+  static final _created = Expando<bool>();
 
   @override
   int get schemaVersion => 24;

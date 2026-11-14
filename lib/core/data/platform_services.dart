@@ -21,13 +21,30 @@ import 'postino_database.dart';
 import 'sync/outbox_sender.dart' show sendWindow;
 
 /// Keychain (iOS/macOS), Keystore (Android), Credential Manager (Windows), libsecret (Linux).
-// ponytail: first_unlock so the future background isolate can read the key with the device locked.
+// ponytail: first_unlock so the background isolate can read with the device locked.
 @Singleton(as: SecureStore, env: [Environment.prod])
-class KeychainStore() implements SecureStore {
-  static const _storage = FlutterSecureStorage(
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    mOptions: MacOsOptions(usesDataProtectionKeychain: false),
-  );
+class KeychainStore implements SecureStore {
+  KeychainStore()
+    : _storage = const FlutterSecureStorage(
+        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+        mOptions: MacOsOptions(usesDataProtectionKeychain: false),
+      );
+
+  /// The database key's (#263): the same unlock level, this device only, so it leaves no backup and no other device
+  /// can open a restored database. On macOS the login keychain ignores the attribute (#270).
+  KeychainStore.deviceOnly()
+    : _storage = const FlutterSecureStorage(
+        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+        mOptions: MacOsOptions(
+          accessibility: KeychainAccessibility.first_unlock_this_device,
+          usesDataProtectionKeychain: false,
+        ),
+      );
+
+  /// The name of the [KeychainStore.deviceOnly] binding.
+  static const deviceOnlyName = 'deviceOnlyKeychain';
+
+  final FlutterSecureStorage _storage;
 
   @override
   Future<String?> read(String key) => _storage.read(key: key);
@@ -148,10 +165,14 @@ abstract class AttachmentModule() {
 
 @module
 abstract class DatabaseModule() {
+  @Named(KeychainStore.deviceOnlyName)
+  @Singleton(env: [Environment.prod])
+  SecureStore deviceOnlyKeychain() => KeychainStore.deviceOnly();
+
   @preResolve
   @Singleton(env: [Environment.prod])
   /// After the [log]: a database that does not open is recorded (#116).
-  Future<PostinoDatabase> database(SecureStore keychain, ErrorLog log) async {
+  Future<PostinoDatabase> database(@Named(KeychainStore.deviceOnlyName) SecureStore keychain, ErrorLog log) async {
     final dir = await getApplicationSupportDirectory();
     return PostinoDatabase.open('${dir.path}/postino.db', keychain, log: log);
   }

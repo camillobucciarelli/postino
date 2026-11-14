@@ -22,8 +22,22 @@ class FakeSecureStore() implements SecureStore {
     return values[key];
   }
 
+  /// The keys written, in order.
+  final writes = <String>[];
+
+  /// Writes of these keys fail the way the iOS Keychain plugin can when it changes an item's attribute: the old
+  /// item already deleted, the new one not added.
+  final failingWrites = <String>{};
+
   @override
-  Future<void> write(String key, String value) async => values[key] = value;
+  Future<void> write(String key, String value) async {
+    writes.add(key);
+    if (failingWrites.contains(key)) {
+      values.remove(key);
+      throw Exception('keychain: add failed');
+    }
+    values[key] = value;
+  }
 
   /// While set, every delete throws it.
   Exception? deleteFailure;

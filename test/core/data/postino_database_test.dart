@@ -19,6 +19,9 @@ void main() {
 
   Future<void> insertAccount(PostinoDatabase db) =>
       db.customStatement("INSERT INTO accounts VALUES ('a1', 'a@example.com', 'gmail', 1, 0, 'attivo')");
+
+  /// A keychain holding a key, not the file's.
+  FakeSecureStore otherKey() => FakeSecureStore()..values['database_key'] = 'ab' * 32;
   Future<int> accounts(PostinoDatabase db) async =>
       (await db.customSelect('SELECT count(*) AS n FROM accounts').getSingle()).read<int>('n');
 
@@ -38,12 +41,24 @@ void main() {
     await again.close();
   });
 
-  test('without the keychain key the file cannot be read', () async {
+  test('with another key the file cannot be read', () async {
     final db = await PostinoDatabase.open(path, FakeSecureStore());
     await insertAccount(db);
     await db.close();
 
-    expect(() => PostinoDatabase.open(path, FakeSecureStore()), throwsA(anything));
+    expect(() => PostinoDatabase.open(path, otherKey()), throwsA(anything));
+  });
+
+  test('a file with no key in the keychain (restored on another device, #263) starts over empty', () async {
+    final db = await PostinoDatabase.open(path, FakeSecureStore());
+    await insertAccount(db);
+    await db.close();
+
+    final restored = FakeSecureStore();
+    final again = await PostinoDatabase.open(path, restored);
+    expect(await accounts(again), 0);
+    await again.close();
+    expect(await accounts(await PostinoDatabase.open(path, restored)), 0, reason: 'reopens with the new key');
   });
 
   test('a database that does not open is in the error log as a crash', () async {
@@ -55,7 +70,7 @@ void main() {
       FakeClock(DateTime.utc(2026, 11, 4)),
     );
 
-    await expectLater(PostinoDatabase.open(path, FakeSecureStore(), log: log), throwsA(anything));
+    await expectLater(PostinoDatabase.open(path, otherKey(), log: log), throwsA(anything));
     expect(await log.read(), contains('[database]'));
     expect(await log.takeCrashMark(), isTrue);
   });

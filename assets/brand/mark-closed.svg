@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
 <path d="M40 132 H216 V194 Q216 208 202 208 H54 Q40 208 40 194 Z" fill="#000" fill-opacity=".22"/>
-<path d="M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z" fill="#fffdf8"/>
-<path d="M40 128 L128 200 L216 128 Z" fill="#e2ded4"/>
+<path d="M40 128 H216 V190 Q216 204 202 204 H54 Q40 204 40 190 Z" fill="#cdc8bb"/>
+<path d="M40 128 L128 200 L216 128 Z" fill="#a6a093"/>
 </svg>

@@ -15,6 +15,12 @@ Logo V3 «Grafico e piatto» (#194). L'unica fonte sono gli SVG in `assets/brand
 | `lockup.svg` | generato: tile + «Postino» in inchiostro `#1c1c1a`, per fondi chiari |
 | `lockup-dark.svg` | generato: marchio + «Postino» in carta `#fffdf8`, per fondi scuri o verderame |
 
+Colori del marchio («carta e sabbia», solo token di `PostinoPrimitives`, gli stessi del painter): tasca (davanti
+della busta) `pNeutral300` `#cdc8bb`, lettera `pNeutral0` `#ffffff`, falda e interno `pNeutral400` `#a6a093`, righe
+della lettera `pNeutral300` `#cdc8bb`, riga d'accento `pGold400` `#f0c419`. La tasca resta più scura della lettera
+così la lettera si stacca dalla busta. `icon-tinted.svg` ripete lo stesso salto in grigi (tasca `#cacaca`, lettera
+`#fff`).
+
 Lockup: il marchio è alto 152 unità, l'area di rispetto (76, metà del marchio) è già dentro il viewBox; scritta a 40
 dal marchio, maiuscole alte 96 centrate sul marchio. Sui fondi chiari il marchio senza tile sparirebbe (carta su
 carta), quindi `lockup.svg` usa il tile. `wordmark.svg` è stato estratto una volta da `assets/fonts/Caprasimo-Regular.ttf`

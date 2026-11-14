@@ -4,14 +4,17 @@ import 'package:injectable/injectable.dart';
 
 import '../../domain/mail_servers.dart';
 import '../../domain/server_discovery.dart';
+import 'https_only_http_overrides.dart';
 
-/// Autodiscovery with enough_mail's `Discover.discover` (RFC 6186 SRV records, Mozilla autoconfig).
+/// Autodiscovery with enough_mail's `Discover.discover`, HTTPS only: `autoconfig.<domain>` (and that of the MX domain),
+/// MX lookup over Google DNS-over-HTTPS, Mozilla's ISP database, then guessed host names (sockets, no credentials).
+/// The package's plain-HTTP retry with the address in the URL is blocked.
 @LazySingleton(as: ServerDiscovery, env: [Environment.prod])
 class EnoughServerDiscovery() implements ServerDiscovery {
   @override
   Future<ServerSettings?> discover(String address) async {
     try {
-      return discoveredServers(await Discover.discover(address));
+      return discoveredServers(await httpsOnly(() => Discover.discover(address)));
     } on Object {
       return null;
     }

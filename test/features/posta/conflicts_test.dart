@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/mail_action.dart';
+import 'package:postino/core/domain/mail_sync.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -274,6 +275,71 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('In conflitto'), findsNothing);
     });
+
+    testWidgets('in the app the banner opens over the list and closes once resolved (#283)', (tester) async {
+      await start(tester);
+      Finder reveal() => find.ancestor(of: find.byKey(_banner), matching: find.byType(PostinoSizeFade));
+      a.goOffline();
+      await getIt<SyncEngine>().act('a', ['1'], const Archive());
+      a
+        ..changeElsewhere('1', placementAttribute, Placement.trash)
+        ..goOnline();
+      await getIt<SyncEngine>().syncAll();
+      for (var i = 0; i < 10 && find.byKey(_banner).evaluate().isEmpty; i++) {
+        await tester.pump();
+      }
+      await tester.pump(PostinoMotion.snackbar ~/ 2);
+      final full = tester.getSize(find.byKey(_banner)).height;
+      expect(tester.getSize(reveal()).height, inExclusiveRange(0, full), reason: 'half way it is opening');
+      await tester.pumpAndSettle();
+      expect(tester.getSize(reveal()).height, full);
+
+      final conflict = (await tester.runAsync(() => getIt<InboxRepository>().watchConflicts().first))!.single;
+      unawaited(getIt<MailSync>().resolveConflict(conflict, keepMine: true));
+      for (var i = 0; i < 10 && tester.getSize(reveal()).height == full; i++) {
+        await tester.runAsync(pumpEventQueue);
+        await tester.pump();
+      }
+      await tester.pump(PostinoMotion.snackbar ~/ 4);
+      expect(tester.getSize(reveal()).height, inExclusiveRange(0, full), reason: 'half way it is closing');
+      await tester.pumpAndSettle();
+      expect(find.byKey(_banner), findsNothing);
+    });
+
+    for (final reduced in [false, true]) {
+      testWidgets(
+        'in the open Conversazione a resolved notice fades and closes${reduced ? ', at once with reduced motion' : ''} (#283)',
+        (tester) async {
+          if (reduced) {
+            tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+              disableAnimations: true,
+            );
+            addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+          }
+          await start(tester);
+          await archiveVsTrash(tester, a, 'a', '1');
+          unawaited(Routefly.navigate('/posta/a/conversazione/t-1'));
+          await tester.pumpAndSettle();
+          final notice = find.byKey(const ValueKey('conversation-conflict-1-placement'));
+          final fade = find.ancestor(of: notice, matching: find.byType(PostinoSizeFade));
+          final full = tester.getSize(fade).height;
+
+          await tester.tap(find.text('La tua'));
+          for (var i = 0; i < 10 && fade.evaluate().isNotEmpty && tester.getSize(fade).height == full; i++) {
+            await tester.pump();
+          }
+          if (reduced) {
+            expect(notice, findsNothing);
+            return;
+          }
+          await tester.pump(PostinoMotion.swipeDismiss ~/ 4);
+          expect(tester.getSize(fade).height, inExclusiveRange(0, full), reason: 'half way it is closing');
+          expect(Focus.of(tester.element(find.text('La tua'))).canRequestFocus, isFalse);
+          await tester.pumpAndSettle();
+          expect(notice, findsNothing);
+        },
+      );
+    }
 
     testWidgets('two Conflitti in one Conversazione: each notice names its message by sender and date', (tester) async {
       await start(tester);

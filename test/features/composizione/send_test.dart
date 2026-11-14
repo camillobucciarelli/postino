@@ -218,6 +218,85 @@ void main() {
     await _afterWindow(tester);
   });
 
+  _onMac('the error opens over the composition and closes at the next edit (#283), out of reach meanwhile', (
+    tester,
+  ) async {
+    await _start(tester);
+    await _write(tester, recipient: false);
+    final error = find.byKey(const ValueKey('send-error'));
+    Finder reveal() => find.ancestor(of: error, matching: find.byType(PostinoSizeFade));
+    await tester.tap(find.byTooltip('Invia'));
+    await tester.pump();
+    await tester.pump(PostinoMotion.snackbar ~/ 2);
+    final full = tester.getSize(error).height;
+    expect(tester.getSize(reveal()).height, inExclusiveRange(0, full), reason: 'half way it is opening');
+    await _settle(tester);
+    expect(tester.getSize(reveal()).height, full);
+
+    await tester.enterText(_field('A'), 'ada@example.com');
+    await tester.pump();
+    await tester.pump(PostinoMotion.snackbar ~/ 2);
+    expect(tester.getSize(reveal()).height, inExclusiveRange(0, full), reason: 'half way it is closing');
+    expect(find.semantics.byLabel('Aggiungi almeno un destinatario'), findsNothing);
+    await _settle(tester);
+    expect(error, findsNothing);
+    await _afterWindow(tester);
+  });
+
+  _onMac('with reduced motion the error comes and goes at once', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await _start(tester);
+    await _write(tester, recipient: false);
+    await tester.tap(find.byTooltip('Invia'));
+    await tester.pump();
+    await tester.pump();
+    final error = find.byKey(const ValueKey('send-error'));
+    expect(
+      tester.getSize(find.ancestor(of: error, matching: find.byType(PostinoSizeFade))).height,
+      tester.getSize(error).height,
+    );
+    await tester.enterText(_field('A'), 'ada@example.com');
+    await tester.pump();
+    await tester.pump();
+    expect(error, findsNothing);
+    await _afterWindow(tester);
+  });
+
+  for (final reduced in [false, true]) {
+    _onMac('the composition fades in once its Bozza is open${reduced ? ', at once with reduced motion' : ''} (#283)', (
+      tester,
+    ) async {
+      if (reduced) {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+          disableAnimations: true,
+        );
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      }
+      await _start(tester);
+      await tester.tap(find.text('Scrivi'));
+      final form = find.byKey(const ValueKey('form'));
+      for (var i = 0; i < 400 && form.evaluate().isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.runAsync(pumpEventQueue);
+      }
+      // The fade of the composition itself: its nearest one.
+      double opacity() => tester
+          .widget<FadeTransition>(find.ancestor(of: form, matching: find.byType(FadeTransition)).first)
+          .opacity
+          .value;
+      await tester.pump();
+      await tester.pump(PostinoMotion.state ~/ 2);
+      if (reduced) {
+        expect(opacity(), 1);
+      } else {
+        expect(opacity(), inExclusiveRange(0, 1));
+      }
+      await _settle(tester);
+      expect(opacity(), 1);
+    });
+  }
+
   _onMac('the composer is frozen while the engine prepares the message: no edit, no Bozza save', (tester) async {
     await _start(tester);
     final hold = Completer<void>();

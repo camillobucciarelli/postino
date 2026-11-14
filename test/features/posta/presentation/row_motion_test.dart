@@ -118,4 +118,19 @@ void main() {
     expect(shown, [a, b]);
     expect(identical(motion.update(list, enter: _enter, leave: _leave), shown), isTrue);
   });
+
+  testWidgets('fromEmpty: a list shown empty at first opens its first rows, after loading as at rest', (tester) async {
+    await start(tester);
+    motion = RowMotion<InboxEntry>(const TestVSync(), () => changed++, _k, fromEmpty: true);
+    addTearDown(motion.dispose);
+    expect(update(null), isNull);
+    expect(update([a]), [a], reason: 'the first value after loading is just there');
+    expect(motion.of(_k(a)), kAlwaysCompleteAnimation);
+
+    final other = RowMotion<InboxEntry>(const TestVSync(), () {}, _k, fromEmpty: true);
+    addTearDown(other.dispose);
+    other.update([], enter: _enter, leave: _leave);
+    expect(other.update([b], enter: _enter, leave: _leave), [b]);
+    expect(other.of(_k(b)).value, 0, reason: 'empty at first, it opens from nothing');
+  });
 }

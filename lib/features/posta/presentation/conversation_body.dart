@@ -223,16 +223,22 @@ class _ConversationBodyState() extends State<ConversationBody> {
               (final b?, final q?) => _part(q, b.kind, message, quiet: true),
               _ => null,
             },
-            body: switch ((body, widget.failed[message.id])) {
-              (final b?, _) => _part(shown[message.id]!.body, b.kind, message),
-              (null, final f?) => PostinoMessageBody.missing(
-                key: const ValueKey('body-missing'),
-                note: f is OfflineFailure ? t.offline : t.failed,
-                actionLabel: t.retry,
-                onAction: () => widget.onFetchBody(message.id),
-              ),
-              (null, null) => PostinoMessageBody.missing(note: t.loading),
-            },
+            // «Caricamento…», offline or failed, and the body fade one into the next (#283).
+            body: PostinoFadeSwitcher(
+              child: switch ((body, widget.failed[message.id])) {
+                (final b?, _) => KeyedSubtree(
+                  key: const ValueKey('body'),
+                  child: _part(shown[message.id]!.body, b.kind, message),
+                ),
+                (null, final f?) => PostinoMessageBody.missing(
+                  key: const ValueKey('body-missing'),
+                  note: f is OfflineFailure ? t.offline : t.failed,
+                  actionLabel: t.retry,
+                  onAction: () => widget.onFetchBody(message.id),
+                ),
+                (null, null) => PostinoMessageBody.missing(key: const ValueKey('body-loading'), note: t.loading),
+              },
+            ),
           ),
       ],
     );

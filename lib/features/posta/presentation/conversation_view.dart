@@ -293,13 +293,16 @@ class _ConversationViewState()
                       ], label),
                     ),
                   ),
-                  // Under the thread, always in view: on the last message (ADR 0014: r, a, f).
-                  if (_forwardUnavailable)
-                    PostinoBanner(
-                      key: const ValueKey('forward-unavailable'),
-                      tone: PostinoBannerTone.warning,
-                      title: t.forwardUnavailable,
-                    ),
+                  // Under the thread, always in view: on the last message (ADR 0014: r, a, f). It opens and closes.
+                  PostinoReveal(
+                    child: _forwardUnavailable
+                        ? PostinoBanner(
+                            key: const ValueKey('forward-unavailable'),
+                            tone: PostinoBannerTone.warning,
+                            title: t.forwardUnavailable,
+                          )
+                        : null,
+                  ),
                   PostinoActionBar(
                     children: [
                       PostinoButton(key: const ValueKey('reply'), label: t.reply, onPressed: _reply),

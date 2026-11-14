@@ -164,7 +164,7 @@ void main() {
       final c = conversation();
       ScrollPosition scroll() => tester
           .state<ScrollableState>(
-            find.descendant(of: find.byType(ConversationView), matching: find.byType(Scrollable)).first,
+            find.descendant(of: find.byType(PostinoThreadView), matching: find.byType(Scrollable)).first,
           )
           .position;
       // The user collapses the latest one (a tap on its header) and scrolls down.
@@ -469,6 +469,41 @@ void main() {
       expect(find.text('Corpo di e2', findRichText: true), findsOneWidget);
       expect(find.text('Corpo non disponibile offline'), findsNothing);
     });
+
+    for (final reduced in [false, true]) {
+      testWidgets('Riprova: the note fades into the next one${reduced ? ', at once with reduced motion' : ''} (#283)', (
+        tester,
+      ) async {
+        if (reduced) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+            disableAnimations: true,
+          );
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        }
+        final handle = tester.ensureSemantics();
+        await _start(tester, _phone, mailbox);
+        gmail.goOffline();
+        await _open(tester, 'e2');
+        final note = find.text('Corpo non disponibile offline');
+        gmail.goOnline();
+        await tester.tap(find.text('Riprova'));
+        await tester.pump();
+        await tester.pump(PostinoMotion.state ~/ 2);
+        if (reduced) {
+          expect(note, findsNothing);
+        } else {
+          final fade = tester.widget<FadeTransition>(
+            find.ancestor(of: note, matching: find.byType(FadeTransition)).first,
+          );
+          expect(fade.opacity.value, inExclusiveRange(0, 1), reason: 'half way it fades out');
+          expect(find.semantics.byLabel('Corpo non disponibile offline'), findsNothing, reason: 'not read twice');
+          expect(Focus.of(tester.element(find.text('Riprova'))).canRequestFocus, isFalse);
+        }
+        await tester.pumpAndSettle();
+        expect(note, findsNothing);
+        handle.dispose();
+      });
+    }
 
     testWidgets('offline, it retries by itself when the network returns', (tester) async {
       await _start(tester, _phone, mailbox);

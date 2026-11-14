@@ -72,6 +72,20 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
       final id = _current.value.value;
       final address = _hostList.where((a) => a.id == id).firstOrNull?.address;
       if (_hostList.isEmpty) return const SizedBox.shrink();
+      final banner = switch ((_busy, _failure)) {
+        (true, _) => PostinoBanner(
+          key: const ValueKey('sync-busy'),
+          tone: PostinoBannerTone.info,
+          title: t.syncBusy,
+          leading: PostinoSpinner(label: t.syncBusy),
+        ),
+        (false, final f?) => PostinoBanner(
+          key: const ValueKey('sync-error'),
+          tone: PostinoBannerTone.danger,
+          title: _error(f),
+        ),
+        _ => null,
+      };
       return PostinoSettingsSection(
         title: t.syncSection,
         children: [
@@ -81,18 +95,24 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
             subtitle: address ?? t.syncNone,
             onTap: () => unawaited(_open()),
           ),
-          PostinoSelectable(
-            child: Text(t.syncBody, style: PostinoText.caption.copyWith(color: context.pc.inkMuted)),
+          // The banner (in progress, or why it failed) opens and closes under the text, its gap inside (#283).
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PostinoSelectable(
+                child: Text(t.syncBody, style: PostinoText.caption.copyWith(color: context.pc.inkMuted)),
+              ),
+              PostinoReveal(
+                contentKey: _busy,
+                child: banner == null
+                    ? null
+                    : Padding(
+                        padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                        child: banner,
+                      ),
+              ),
+            ],
           ),
-          if (_busy)
-            PostinoBanner(
-              key: const ValueKey('sync-busy'),
-              tone: PostinoBannerTone.info,
-              title: t.syncBusy,
-              leading: PostinoSpinner(label: t.syncBusy),
-            ),
-          if (_failure case final f?)
-            PostinoBanner(key: const ValueKey('sync-error'), tone: PostinoBannerTone.danger, title: _error(f)),
         ],
       );
     },

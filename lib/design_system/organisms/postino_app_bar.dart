@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_account_mark.dart';
+import '../atoms/postino_fade_switcher.dart';
 import '../atoms/postino_icon_button.dart';
 import '../molecules/postino_menu.dart';
 import '../tokens/postino_icons.dart';
@@ -113,7 +114,15 @@ class const PostinoAppBar({
                   onPressed: scaffold.openDrawer,
                 )
               : null,
-          actions: trailing,
+          // Actions that come once the content is there (a Conversazione loaded, #283) fade in; at the first build
+          // they are just there.
+          actions: [
+            PostinoFadeSwitcher(
+              child: trailing.isEmpty
+                  ? const SizedBox.shrink()
+                  : Row(key: const ValueKey('actions'), mainAxisSize: MainAxisSize.min, children: trailing),
+            ),
+          ],
           titleSpacing: spacing,
           // The AppBar clamps its title to 1.34 and sets `softWrap: false`: undo both, the text is at the user's size.
           title: MediaQuery(

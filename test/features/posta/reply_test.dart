@@ -301,6 +301,35 @@ void main() {
     expect(d.body, contains('Venerdì?'));
   });
 
+  for (final reduced in [false, true]) {
+    _onMac('«Impossibile inoltrare» opens over the bar${reduced ? ' at once with reduced motion' : ''} (#283)', (
+      tester,
+    ) async {
+      if (reduced) {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+          disableAnimations: true,
+        );
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      }
+      await _start(tester);
+      await _forgetBodyOfM1(tester);
+      await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+      await tester.tap(find.byKey(const ValueKey('message-forward-m1')));
+      final banner = find.byKey(const ValueKey('forward-unavailable'));
+      for (var i = 0; i < 20 && banner.evaluate().isEmpty; i++) {
+        await tester.runAsync(pumpEventQueue);
+        await tester.pump();
+      }
+      await tester.pump();
+      await tester.pump(PostinoMotion.snackbar ~/ 2);
+      final full = tester.getSize(banner).height;
+      final reveal = find.ancestor(of: banner, matching: find.byType(PostinoSizeFade));
+      expect(tester.getSize(reveal).height, reduced ? full : inExclusiveRange(0, full));
+      await _settle(tester);
+      expect(tester.getSize(reveal).height, full);
+    });
+  }
+
   _onMac('Inoltra when the body cannot be downloaded makes no Bozza and says so', (tester) async {
     await _start(tester);
     await _forgetBodyOfM1(tester);

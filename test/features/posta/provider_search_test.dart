@@ -11,6 +11,7 @@ import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/provider_search_use_case.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/conversation_view.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -119,6 +120,41 @@ void main() {
     expect(banner, findsNothing);
     handle.dispose();
   });
+
+  for (final reduced in [false, true]) {
+    testWidgets('«Cerco anche su…» closes once answered${reduced ? ', at once with reduced motion' : ''} (#283)', (
+      tester,
+    ) async {
+      if (reduced) {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+          disableAnimations: true,
+        );
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      }
+      final (_, _, a2) = await _start(tester);
+      final slow = a2.holdSearch = Completer<void>();
+      await _type(tester, 'affitto');
+      await _enter(tester, settle: false);
+      await tester.pump(PostinoMotion.snackbar);
+      await tester.pump(PostinoMotion.snackbar);
+      final banner = find.textContaining('Cerco anche su a2@example.com…');
+      final reveal = find.ancestor(of: banner, matching: find.byType(PostinoSizeFade)).first;
+      final full = tester.getSize(reveal).height;
+
+      slow.complete();
+      for (var i = 0; i < 60 && banner.evaluate().isNotEmpty && tester.getSize(reveal).height == full; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      if (reduced) {
+        expect(banner, findsNothing);
+      } else {
+        expect(tester.getSize(reveal).height, inExclusiveRange(0, full), reason: 'it closes bit by bit');
+      }
+      await tester.pumpAndSettle();
+      expect(banner, findsNothing);
+    });
+  }
 
   testWidgets('a Provider that stopped at its cap says so, in a live region (#209)', (tester) async {
     final handle = tester.ensureSemantics();

@@ -1,6 +1,7 @@
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
+import '../atoms/postino_fade_switcher.dart';
 import '../atoms/postino_file_type_badge.dart';
 import '../atoms/postino_focus_ring.dart';
 import '../atoms/postino_icon.dart';
@@ -18,6 +19,8 @@ import 'postino_menu.dart';
 /// [onRetry], by default [onOpen]: the failed action may have been a save). A [warning] (an executable, #75)
 /// takes the size's place in `warning`; [error] wins when both are set. Without [onOpen] the chip is not a
 /// button: no tap, no hint, screen readers hear «name, warning»; the menu stays.
+/// Downloading, failed and at rest fade one into the next; the bar glides to a new [progress] and fades away at the
+/// end (#283), all at once with reduced motion.
 /// Name and size are selectable text; screen readers hear «name, size» as a button, [openLabel] as its hint.
 class const PostinoAttachmentChip({
   super.key,
@@ -75,6 +78,9 @@ class const PostinoAttachmentChip({
 }
 
 class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
+  /// The last progress shown: the bar fades away from there when the download ends.
+  double? _bar;
+
   @override
   Widget build(BuildContext context) {
     final c = context.pc;
@@ -82,6 +88,14 @@ class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
     final progress = w.progress;
     final error = w.error;
     final warning = w.warning;
+    // With reduced motion there is no fade: the bar goes with the download.
+    final bar = _bar = progress ?? (MediaQuery.disableAnimationsOf(context) ? null : _bar);
+    // What the chip is doing: a change fades the meta and the buttons into the new ones.
+    final stage = progress != null
+        ? 'progress'
+        : error != null
+        ? 'error'
+        : 'rest';
     final meta = progress != null ? w.progressLabel ?? '' : error ?? warning ?? w.size;
     final metaColor = error != null
         ? c.danger
@@ -110,7 +124,9 @@ class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
                     overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: PostinoText.preview.copyWith(color: c.ink, fontWeight: FontWeight.w500),
                   ),
-                  _Meta(text: meta, color: metaColor, icon: metaColor != c.inkSubtle),
+                  PostinoFadeSwitcher(
+                    child: _Meta(key: ValueKey(stage), text: meta, color: metaColor, icon: metaColor != c.inkSubtle),
+                  ),
                 ],
               ),
             ),
@@ -151,42 +167,58 @@ class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
                   ),
                 ),
                 SelectionContainer.disabled(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (progress != null)
-                        PostinoIconButton(
-                          key: const ValueKey('attachment-cancel'),
-                          icon: PostinoIcons.close,
-                          label: w.cancelLabel,
-                          onPressed: w.onCancel,
-                        )
-                      else ...[
-                        if (error != null)
+                  child: PostinoFadeSwitcher(
+                    child: Row(
+                      key: ValueKey(stage),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (progress != null)
                           PostinoIconButton(
-                            key: const ValueKey('attachment-retry'),
-                            icon: PostinoIcons.refresh,
-                            label: w.retryLabel,
-                            onPressed: w.onRetry ?? open,
-                          ),
-                        if (save != null) _menu(save),
+                            key: const ValueKey('attachment-cancel'),
+                            icon: PostinoIcons.close,
+                            label: w.cancelLabel,
+                            onPressed: w.onCancel,
+                          )
+                        else ...[
+                          if (error != null)
+                            PostinoIconButton(
+                              key: const ValueKey('attachment-retry'),
+                              icon: PostinoIcons.refresh,
+                              label: w.retryLabel,
+                              onPressed: w.onRetry ?? open,
+                            ),
+                          if (save != null) _menu(save),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
-            if (progress != null)
+            if (bar != null)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    key: const ValueKey('attachment-progress'),
-                    widthFactor: progress.clamp(0, 1),
-                    child: ColoredBox(color: c.brand, child: const SizedBox(height: 3)),
+                child: AnimatedOpacity(
+                  opacity: progress == null ? 0 : 1,
+                  duration: PostinoMotion.of(context, PostinoMotion.state),
+                  curve: PostinoMotion.standard,
+                  // Gone: the next download starts its bar from nothing, not from where this one ended.
+                  onEnd: () => widget.progress == null && mounted ? setState(() => _bar = null) : null,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    // Linear (PostinoMotion.linear), the default curve; the first value is just there.
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(end: bar.clamp(0, 1)),
+                      duration: PostinoMotion.of(context, PostinoMotion.state),
+                      builder: (context, at, child) => FractionallySizedBox(
+                        key: const ValueKey('attachment-progress'),
+                        widthFactor: at,
+                        child: child,
+                      ),
+                      child: ColoredBox(color: c.brand, child: const SizedBox(height: 3)),
+                    ),
                   ),
                 ),
               ),
@@ -212,7 +244,7 @@ class _PostinoAttachmentChipState() extends State<PostinoAttachmentChip> {
 
 /// The size, the progress, a warning or the reason it failed: `meta` in [color] (`ink-subtle`, `warning`
 /// or `danger`), with the alert [icon] in front when asked.
-class const _Meta({required final String text, required final Color color, required final bool icon})
+class const _Meta({super.key, required final String text, required final Color color, required final bool icon})
     extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

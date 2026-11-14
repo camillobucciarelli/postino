@@ -10,7 +10,8 @@ import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import '../domain/auto_label_switch_use_case.dart';
 
-/// One Etichetta of the page: the «Automatica» switch, named by the Etichetta, and, with it on, the optional description.
+/// One Etichetta of the page: the «Automatica» switch, named by the Etichetta, and, with it on, the optional description,
+/// which opens and closes (#283).
 class const AutoLabelTile({
   super.key,
   required final String accountId,
@@ -28,11 +29,15 @@ class const AutoLabelTile({
         onChanged: (on) =>
             unawaited(GetIt.I<AutoLabelSwitchUseCase>().setAutomatic(accountId, label.id, automatic: on)),
       ),
-      if (config.automatic)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(PostinoSpacing.s4, 0, PostinoSpacing.s4, PostinoSpacing.s3),
-          child: _DescriptionField(accountId: accountId, labelId: label.id, saved: config.description),
-        ),
+      PostinoReveal(
+        duration: PostinoMotion.toggle,
+        child: config.automatic
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(PostinoSpacing.s4, 0, PostinoSpacing.s4, PostinoSpacing.s3),
+                child: _DescriptionField(accountId: accountId, labelId: label.id, saved: config.description),
+              )
+            : null,
+      ),
     ],
   );
 }
@@ -117,9 +122,12 @@ class _DescriptionFieldState() extends State<_DescriptionField> {
         Semantics(
           container: true,
           liveRegion: true,
-          child: _announce
-              ? Text(t.descriptionSaved, style: PostinoText.caption.copyWith(color: context.pc.inkMuted))
-              : const SizedBox.shrink(),
+          child: PostinoReveal(
+            duration: PostinoMotion.state,
+            child: _announce
+                ? Text(t.descriptionSaved, style: PostinoText.caption.copyWith(color: context.pc.inkMuted))
+                : null,
+          ),
         ),
       ],
     );

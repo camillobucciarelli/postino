@@ -20,7 +20,9 @@ Future<void> _start(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder get _fade => find.descendant(of: find.byType(PostinoFadeThrough), matching: find.byType(FadeTransition)).first;
+/// The fade of the Posta's views, inside the onboarding gate's own.
+Finder get _fade =>
+    find.descendant(of: find.byType(PostinoFadeThrough).last, matching: find.byType(FadeTransition)).first;
 
 void main() {
   testWidgets('switching view fades the new content in, then settles', (tester) async {

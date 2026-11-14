@@ -320,9 +320,10 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           # versionCode grows with the version (build_number.sh), as the macOS build number; pubspec's "+1" is fixed.
+          # POSTINO_BUILD is the same number for the app, which compares it with the site's version.json (#287).
           build=$(tool/release/build_number.sh "$VERSION")
           flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
-            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
       - name: Delete the upload keystore
         if: always()
@@ -347,6 +348,10 @@ jobs:
             latest=$(tool/release/is_latest.sh "$VERSION")
             if [ "$latest" = yes ]; then
               upload android/latest/Postino.apk 'public, max-age=300'
+              # The version file installed copies read (#287), after the APK it points at.
+              tool/release/version_json.sh "$VERSION" \
+                "https://postino.camillobucciarelli.dev/android/$VERSION/Postino-$VERSION.apk" > "$RUNNER_TEMP/version.json"
+              tool/release/r2_upload.sh "$RUNNER_TEMP/version.json" android/latest/version.json application/json 'public, max-age=300'
             fi
           else
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
@@ -394,7 +399,7 @@ jobs:
         run: |
           build=$(tool/release/build_number.sh "$VERSION")
           flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
-            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build"
       - name: Archive and export the IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -410,3 +415,21 @@ jobs:
         run: |
           tool/release/testflight_upload.sh build/release/Postino.ipa
           echo "- iOS: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to TestFlight (internal testers)" >> "$GITHUB_STEP_SUMMARY"
+      # The version file installed copies read (#287): only a tag release of the highest version, after its upload, as
+      # the other "latest" files. Its URL opens the TestFlight app (no public TestFlight link exists), where the build
+      # shows once Apple has processed it.
+      - name: Upload the version file to R2
+        if: github.event_name == 'push'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          latest=$(tool/release/is_latest.sh "$VERSION")
+          if [ "$latest" != yes ]; then
+            echo "v$VERSION is not the highest version: version file left as it is"
+            exit 0
+          fi
+          tool/release/version_json.sh "$VERSION" itms-beta:// > "$RUNNER_TEMP/version.json"
+          tool/release/r2_upload.sh "$RUNNER_TEMP/version.json" ios/latest/version.json application/json 'public, max-age=300'

@@ -16,12 +16,12 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:postino/core/data/accounts_lock.dart' as _i681;
 import 'package:postino/core/data/accounts_service.dart' as _i413;
 import 'package:postino/core/data/accounts_settings_mirror.dart' as _i400;
+import 'package:postino/core/data/app_updater_module.dart' as _i671;
 import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
 import 'package:postino/core/data/channel_immediate_notifications.dart'
     as _i103;
 import 'package:postino/core/data/contacts_store.dart' as _i863;
-import 'package:postino/core/data/desktop/app_updater_module.dart' as _i429;
 import 'package:postino/core/data/desktop/channel_app_menu.dart' as _i249;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
 import 'package:postino/core/data/desktop/native_app_window.dart' as _i634;
@@ -105,13 +105,13 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final attachmentModule = _$AttachmentModule();
     final httpModule = _$HttpModule();
-    final appUpdaterModule = _$AppUpdaterModule();
     final launchAtLoginModule = _$LaunchAtLoginModule();
     final databaseModule = _$DatabaseModule();
     final modelModule = _$ModelModule();
     final reportSharerModule = _$ReportSharerModule();
     final errorLogModule = _$ErrorLogModule();
     final mailStoreModule = _$MailStoreModule();
+    final appUpdaterModule = _$AppUpdaterModule();
     final syncModule = _$SyncModule();
     gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
@@ -139,10 +139,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
-    gh.lazySingleton<_i833.AppUpdater>(
-      () => appUpdaterModule.appUpdater(),
-      registerFor: {_prod},
-    );
     gh.lazySingleton<_i462.LaunchAtLogin>(
       () => launchAtLoginModule.launchAtLogin(),
       registerFor: {_prod},
@@ -281,6 +277,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i936.ImmediateNotifications>(),
         gh<_i307.SettingsRepository>(),
       ),
+    );
+    gh.lazySingleton<_i833.AppUpdater>(
+      () => appUpdaterModule.appUpdater(
+        gh<_i519.Client>(),
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i398.Clock>(),
+      ),
+      registerFor: {_prod},
     );
     gh.lazySingleton<_i205.AutoLabelsRepository>(
       () => _i452.AutoLabelsStore(
@@ -426,8 +430,6 @@ class _$AttachmentModule extends _i524.AttachmentModule {}
 
 class _$HttpModule extends _i524.HttpModule {}
 
-class _$AppUpdaterModule extends _i429.AppUpdaterModule {}
-
 class _$LaunchAtLoginModule extends _i377.LaunchAtLoginModule {}
 
 class _$DatabaseModule extends _i524.DatabaseModule {}
@@ -439,5 +441,7 @@ class _$ReportSharerModule extends _i439.ReportSharerModule {}
 class _$ErrorLogModule extends _i907.ErrorLogModule {}
 
 class _$MailStoreModule extends _i385.MailStoreModule {}
+
+class _$AppUpdaterModule extends _i671.AppUpdaterModule {}
 
 class _$SyncModule extends _i893.SyncModule {}

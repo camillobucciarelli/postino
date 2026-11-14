@@ -6,6 +6,8 @@ import 'package:get_it/get_it.dart';
 import '../../../core/domain/app_updater.dart';
 import '../../../core/domain/immediate_notifications_use_case.dart';
 import '../../../core/domain/launch_at_login_use_case.dart';
+import '../../../core/domain/result.dart';
+import '../../../core/presentation/app_update_banner.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'escape_to_go_back.dart';
@@ -14,8 +16,9 @@ import 'notification_actions_sections.dart';
 import 'notification_permission_row.dart';
 
 /// The Impostazioni del dispositivo (spec #28, story 98): the avvio al login, on desktop (#38), «Cerca
-/// aggiornamenti» where Postino updates itself (macOS, #122), then on every platform the «Notifiche», the Notifiche
-/// immediate on Android (#214) and the Azioni of a notification (#211).
+/// aggiornamenti» where Postino looks for updates (Sparkle on macOS, #122; Android and iOS say what they found,
+/// #287), then on every platform the «Notifiche», the Notifiche immediate on Android (#214) and the Azioni of a
+/// notification (#211).
 /// Esc and the back arrow call [onBack]; routing is the caller's.
 class const DeviceSettingsView({super.key, required final VoidCallback onBack}) extends StatefulWidget {
   @override
@@ -32,6 +35,19 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
 
   /// The OS refused the last change.
   var _failed = false;
+
+  /// What the last «Cerca aggiornamenti» found; null before it, while it looks, or when it failed (#287: no error
+  /// shown).
+  UpdateCheck? _check;
+
+  Future<void> _checkForUpdates() async {
+    setState(() => _check = null);
+    final check = switch (await _updater.checkForUpdates()) {
+      Ok(:final value) => value,
+      Err() => null,
+    };
+    if (mounted) setState(() => _check = check);
+  }
 
   @override
   void initState() {
@@ -81,13 +97,25 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
                 value: enabled ?? false,
                 onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
               ),
-            if (_updater.supported)
-              PostinoSettingsItem(
-                key: const ValueKey('check-for-updates'),
-                title: t.checkForUpdates,
-                subtitle: t.checkForUpdatesBody,
-                onTap: () => unawaited(_updater.checkForUpdates()),
+            if (_updater.supported) ...[
+              // Live: the screen reader hears what the check found.
+              Semantics(
+                liveRegion: true,
+                child: PostinoSettingsItem(
+                  key: const ValueKey('check-for-updates'),
+                  title: t.checkForUpdates,
+                  subtitle: switch (_check) {
+                    UpdateCheck.upToDate => t.upToDate,
+                    UpdateCheck.available => t.checkFound,
+                    UpdateCheck.shown || null => t.checkForUpdatesBody,
+                  },
+                  onTap: () => unawaited(_checkForUpdates()),
+                ),
               ),
+              const AppUpdateBanner(
+                padding: EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s4, 0),
+              ),
+            ],
             const NotificationPermissionRow(),
             if (_immediate) const ImmediateNotificationsRow(),
             const NotificationActionsSections(),

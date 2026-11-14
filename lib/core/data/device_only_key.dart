@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
 import '../domain/platform_services.dart';
 
 /// The name of the device-only keychain binding (#263), for the modules that hold the database key.
@@ -42,13 +46,20 @@ Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
 }
 
 /// Saves a new [value] under [name], already device only: nothing to migrate. A read back that differs throws.
+/// On a macOS release the legacy keychain is marked moved too, after the key: a Debug build on the same Mac, which
+/// shares the database but cannot read the key, then fails instead of wiping it (#270).
 Future<void> writeDeviceOnly(SecureStore keychain, String name, String value) async {
   await _writeChecked(keychain, name, value);
   await keychain.write(_deviceOnlyMark(name), '1');
+  if (keychain case MovingKeychain(:final from)) await from.write(_movedMark(name), '1');
 }
 
 /// The mark of a new [name] whose database is still to be wiped (#263): it moves with the key (#270).
 String freshMark(String name) => '$name.fresh';
+
+/// The value of the [freshMark] of [key]: the mark wipes only the database of that key, not one a later key made
+/// after a downgrade (#270). Earlier versions wrote `1`, for the key they saved next.
+String freshOf(String key) => sha256.convert(utf8.encode('fresh:$key')).toString();
 
 Future<String?> _readMigrating(SecureStore keychain, String name) async {
   final current = await keychain.read(name);
@@ -81,11 +92,11 @@ Future<String?> _readMigrating(SecureStore keychain, String name) async {
 Future<String?> _move(SecureStore from, SecureStore to, String name) async {
   final value = await _readMigrating(from, name);
   if (value == null) return null;
-  if (await from.read(freshMark(name)) != null) {
+  if (await from.read(freshMark(name)) case final fresh?) {
     // A new key whose database is still to be wiped: the mark moves before the key, as for a new one, and leaves
     // [from] before this start wipes, or a later start would carry it again and wipe the new database. Either step
-    // failing fails the start, to be tried again.
-    await to.write(freshMark(name), '1');
+    // failing fails the start, to be tried again. A mark of another key is stale: dropped.
+    if (fresh == '1' || fresh == freshOf(value)) await to.write(freshMark(name), freshOf(value));
     await from.delete(freshMark(name));
   }
   try {

@@ -23,7 +23,18 @@ security cms -D -i "$app/Contents/embedded.provisionprofile" > "$dir/profile.pli
 codesign -d --entitlements - --xml "$app" > "$dir/entitlements.plist"
 is() { [ "$(/usr/libexec/PlistBuddy -c "Print :$2" "$dir/$1.plist" 2> /dev/null)" = "$3" ] || fail "$1 $2 is not $3"; }
 is profile TeamIdentifier:0 "$team"
+# A Development profile passes notarization and spctl too, then the app does not launch on any other Mac.
+is profile ProvisionsAllDevices true
 is profile Entitlements:com.apple.application-identifier "$app_id"
+group=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:keychain-access-groups:0' "$dir/profile.plist" 2> /dev/null) ||
+  fail "The profile authorizes no keychain access group"
+# shellcheck disable=SC2053 # the profile's group is a pattern, usually <team>.*
+[[ $app_id == $group ]] || fail "The profile's keychain access group $group does not cover $app_id"
+# The profile authorizes certain certificates: one signed with another passes notarization, then is killed at launch.
+codesign -d --extract-certificates="$dir/cert" "$app" 2> /dev/null
+leaf=$(base64 -i "$dir/cert0" | tr -d '\n')
+plutil -extract DeveloperCertificates xml1 -o - "$dir/profile.plist" | tr -d ' \t\n' | grep -qF "$leaf" ||
+  fail "The profile does not authorize the certificate that signed $app"
 is entitlements com.apple.application-identifier "$app_id"
 is entitlements com.apple.developer.team-identifier "$team"
 is entitlements keychain-access-groups:0 "$app_id"

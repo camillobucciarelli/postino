@@ -258,15 +258,28 @@ void main() {
       });
     }
 
-    test('a cleanup that fails leaves the legacy items, removed at the next start', () async {
-      legacy.deleteFailure = Exception('keychain: delete failed');
-      expect(await readDeviceOnly(keychain, name), key);
-      expectKeptIn(dataProtection);
+    for (final item in ['$name.device_only', '$name.copied', '$name.copy', name]) {
+      test('a cleanup failing at $item leaves the rest, removed at the next start', () async {
+        legacy = _FailingDelete(item)..values.addAll(migrated);
+        keychain = MovingKeychain(dataProtection, legacy);
+        expect(await readDeviceOnly(keychain, name), key);
+        expectKeptIn(dataProtection);
+        expect(legacy.values[name], key, reason: 'the key last');
 
-      legacy.deleteFailure = null;
-      expect(await readDeviceOnly(keychain, name), key);
-      expectKeptIn(dataProtection);
+        keychain = MovingKeychain(dataProtection, FakeSecureStore()..values.addAll(legacy.values));
+        expect(await readDeviceOnly(keychain, name), key);
+        expectKeptIn(dataProtection);
+        expect(keychain.from, isA<FakeSecureStore>().having((s) => s.values, 'values', {'$name.moved': '1'}));
+      });
+    }
+
+    test('a new key marks the legacy keychain moved, after the key: a Debug build then fails', () async {
+      legacy.values.clear();
+      await writeDeviceOnly(keychain, name, key);
+      expect(dataProtection.values, {name: key, '$name.device_only': '1'});
       expect(legacy.values, {'$name.moved': '1'});
+      await expectLater(readDeviceOnly(legacy, name), throwsStateError);
+      expect(await readDeviceOnly(keychain, name), key);
     });
 
     test('a legacy key wins over the moved one: a downgrade wrote it, and the database with it', () async {
@@ -285,12 +298,19 @@ void main() {
 
       legacy.deleteFailure = null;
       expect(await readDeviceOnly(keychain, name), key);
-      expect(dataProtection.values['$name.fresh'], '1');
+      expect(dataProtection.values['$name.fresh'], freshOf(key), reason: 'of this key');
       expect(legacy.values, {'$name.moved': '1'});
 
       dataProtection.values.remove('$name.fresh'); // wiped by PostinoDatabase.open
       expect(await readDeviceOnly(keychain, name), key);
       expect(dataProtection.values['$name.fresh'], isNull);
+    });
+
+    test('a legacy fresh mark of another key is stale: dropped, not moved', () async {
+      legacy.values['$name.fresh'] = freshOf('another');
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(dataProtection.values['$name.fresh'], isNull);
+      expect(legacy.values, {'$name.moved': '1'});
     });
 
     test('moved and found nowhere is an error, never a missing key', () async {
@@ -306,6 +326,7 @@ void main() {
       dataProtection.failure = Exception('-34018');
       legacy.values.clear();
       await expectLater(readDeviceOnly(keychain, name), throwsException);
+      expect([...dataProtection.writes, ...legacy.writes], isEmpty, reason: 'no new key, no fresh mark');
 
       dataProtection.failure = null;
       legacy
@@ -330,6 +351,12 @@ void main() {
       expect(legacy.writes, isEmpty);
     });
   });
+}
+
+/// A keychain whose deletes of [key] throw.
+class _FailingDelete(final String key) extends FakeSecureStore {
+  @override
+  Future<void> delete(String key) async => key == this.key ? throw Exception('delete failed') : super.delete(key);
 }
 
 /// A keychain whose reads of [key] throw: that item locked, the others readable.

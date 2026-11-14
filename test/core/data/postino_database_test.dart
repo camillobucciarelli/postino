@@ -132,17 +132,46 @@ void main() {
 
     // Moved and then not found (a Debug build on the same Mac, a lost item): no new key, the file untouched.
     // Another start: a store not seen yet, keyFrom reads once per store.
-    FakeSecureStore movedOnly() => FakeSecureStore()..values['database_key.moved'] = '1';
-    for (final keychain in [MovingKeychain(FakeSecureStore(), movedOnly()), movedOnly()]) {
-      await expectLater(PostinoDatabase.open(path, keychain), throwsStateError);
-      expect(
-        (keychain is MovingKeychain ? keychain.to as FakeSecureStore : keychain as FakeSecureStore).writes,
-        isEmpty,
-      );
-    }
+    final lost = FakeSecureStore();
+    final debug = FakeSecureStore()..values['database_key.moved'] = '1';
+    await expectLater(
+      PostinoDatabase.open(path, MovingKeychain(lost, FakeSecureStore()..values.addAll(debug.values))),
+      throwsStateError,
+    );
+    await expectLater(PostinoDatabase.open(path, debug), throwsStateError);
+    expect([...lost.writes, ...debug.writes], isEmpty);
     final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
     expect(await accounts(third), 1);
     await third.close();
+  });
+
+  test('a Debug build on the Mac of a release installed new fails, never wipes its database (#270)', () async {
+    final legacy = FakeSecureStore();
+    final dataProtection = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    await insertAccount(db);
+    await db.close();
+    expect(legacy.values, {'database_key.moved': '1'});
+
+    await expectLater(PostinoDatabase.open(path, legacy), throwsStateError);
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 1);
+    await again.close();
+  });
+
+  test('a fresh mark of another key, left before a downgrade made this one, wipes nothing (#270)', () async {
+    final legacy = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, legacy); // the older version, after the downgrade
+    await insertAccount(db);
+    await db.close();
+
+    final stale = 'ab' * 32;
+    final dataProtection = FakeSecureStore()
+      ..values.addAll({'database_key': stale, 'database_key.device_only': '1', 'database_key.fresh': freshOf(stale)});
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 1);
+    await again.close();
+    expect(dataProtection.values['database_key.fresh'], isNull);
   });
 
   test(

@@ -57,8 +57,23 @@ void main() {
     final restored = FakeSecureStore();
     final again = await PostinoDatabase.open(path, restored);
     expect(await accounts(again), 0);
+    await insertAccount(again);
     await again.close();
-    expect(await accounts(await PostinoDatabase.open(path, restored)), 0, reason: 'reopens with the new key');
+    final third = await PostinoDatabase.open(path, restored);
+    expect(await accounts(third), 1, reason: 'reopens with the new key, not wiped again');
+    await third.close();
+  });
+
+  test('a restore killed after saving the new key and before the wipe wipes at the next start', () async {
+    final db = await PostinoDatabase.open(path, FakeSecureStore());
+    await insertAccount(db);
+    await db.close();
+
+    final interrupted = otherKey()..values['database_key.fresh'] = '1';
+    final again = await PostinoDatabase.open(path, interrupted);
+    expect(await accounts(again), 0);
+    await again.close();
+    expect(interrupted.values['database_key.fresh'], isNull);
   });
 
   test('a database that does not open is in the error log as a crash', () async {

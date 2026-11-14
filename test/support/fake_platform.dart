@@ -29,6 +29,9 @@ class FakeSecureStore() implements SecureStore {
   /// item already deleted, the new one not added.
   final failingWrites = <String>{};
 
+  /// Writes of these keys save something else: a read back that differs.
+  final corruptWrites = <String>{};
+
   @override
   Future<void> write(String key, String value) async {
     writes.add(key);
@@ -36,7 +39,7 @@ class FakeSecureStore() implements SecureStore {
       values.remove(key);
       throw Exception('keychain: add failed');
     }
-    values[key] = value;
+    values[key] = corruptWrites.contains(key) ? '$value!' : value;
   }
 
   /// While set, every delete throws it.

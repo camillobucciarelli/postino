@@ -17,6 +17,7 @@ import '../domain/error_log.dart';
 import '../domain/message.dart';
 import '../domain/platform_services.dart';
 import 'attachment_cache.dart';
+import 'device_only_key.dart';
 import 'postino_database.dart';
 import 'sync/outbox_sender.dart' show sendWindow;
 
@@ -40,9 +41,6 @@ class KeychainStore implements SecureStore {
           usesDataProtectionKeychain: false,
         ),
       );
-
-  /// The name of the [KeychainStore.deviceOnly] binding.
-  static const deviceOnlyName = 'deviceOnlyKeychain';
 
   final FlutterSecureStorage _storage;
 
@@ -165,14 +163,14 @@ abstract class AttachmentModule() {
 
 @module
 abstract class DatabaseModule() {
-  @Named(KeychainStore.deviceOnlyName)
+  @Named(deviceOnlyKeychainName)
   @Singleton(env: [Environment.prod])
   SecureStore deviceOnlyKeychain() => KeychainStore.deviceOnly();
 
   @preResolve
   @Singleton(env: [Environment.prod])
   /// After the [log]: a database that does not open is recorded (#116).
-  Future<PostinoDatabase> database(@Named(KeychainStore.deviceOnlyName) SecureStore keychain, ErrorLog log) async {
+  Future<PostinoDatabase> database(@Named(deviceOnlyKeychainName) SecureStore keychain, ErrorLog log) async {
     final dir = await getApplicationSupportDirectory();
     return PostinoDatabase.open('${dir.path}/postino.db', keychain, log: log);
   }

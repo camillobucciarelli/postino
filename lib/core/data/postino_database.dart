@@ -95,12 +95,12 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   static Future<PostinoDatabase> open(String path, SecureStore keychain, {ErrorLog? log}) async {
     final key = await keyFrom(keychain);
     // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
-    // never be read: Postino starts over empty and syncs again.
-    if (_created[keychain] ?? false) {
-      _created[keychain] = null;
+    // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
+    if (await keychain.read(_freshName) != null) {
       for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
         if (File(f).existsSync()) File(f).deleteSync();
       }
+      await keychain.delete(_freshName);
     }
     final db = PostinoDatabase(
       NativeDatabase(
@@ -146,13 +146,11 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
   static Future<String> _readOrCreateKey(SecureStore keychain) async {
     if (await readDeviceOnly(keychain, _keyName) case final key?) return key;
     final key = hex(randomBytes(32));
-    await keychain.write(_keyName, key);
-    _created[keychain] = true;
+    // Before the key: a new key means no file it can open, which [open] wipes.
+    await keychain.write(_freshName, '1');
+    await writeDeviceOnly(keychain, _keyName, key);
     return key;
   }
-
-  /// Whether [keyFrom] generated the key for this keychain in this process.
-  static final _created = Expando<bool>();
 
   @override
   int get schemaVersion => 24;
@@ -354,6 +352,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
+const _freshName = '$_keyName.fresh';
 
 /// The light-theme ARGB colors v1-v3 stored, in palette order (sky … graphite).
 const _v3AccountColors = [

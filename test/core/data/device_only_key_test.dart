@@ -7,14 +7,23 @@ void main() {
   const name = 'database_key';
   const key = 'k3y';
 
-  test('a key an older version saved is rewritten device only, once', () async {
+  test('a key an older version saved is rewritten device only, once, its copy kept', () async {
     final keychain = FakeSecureStore()..values[name] = key;
 
     expect(await readDeviceOnly(keychain, name), key);
-    expect(keychain.writes, contains(name), reason: 'rewritten under the device-only attribute');
-    expect(keychain.values.keys, unorderedEquals([name, '$name.device_only']), reason: 'the copy is gone');
+    expect(keychain.writes, ['$name.copy', name, '$name.device_only'], reason: 'copied before the rewrite');
+    expect(keychain.values, {name: key, '$name.copy': key, '$name.device_only': '1'});
 
     keychain.writes.clear();
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.writes, isEmpty);
+  });
+
+  test('a key saved by writeDeviceOnly is never migrated', () async {
+    final keychain = FakeSecureStore();
+    await writeDeviceOnly(keychain, name, key);
+    keychain.writes.clear();
+
     expect(await readDeviceOnly(keychain, name), key);
     expect(keychain.writes, isEmpty);
   });
@@ -28,7 +37,7 @@ void main() {
   test('a failed copy leaves the key as it was, and the next start migrates', () async {
     final keychain = FakeSecureStore()
       ..values[name] = key
-      ..failingWrites.add('$name.migrating');
+      ..failingWrites.add('$name.copy');
 
     expect(await readDeviceOnly(keychain, name), key);
     expect(keychain.values, {name: key});
@@ -38,17 +47,33 @@ void main() {
     expect(keychain.values['$name.device_only'], isNotNull);
   });
 
-  test('a rewrite that lost the key (deleted, not added) is recovered from the copy at the next start', () async {
+  test('a rewrite that lost the key (deleted, not added) is recovered from the copy, never rewritten', () async {
     final keychain = FakeSecureStore()
       ..values[name] = key
       ..failingWrites.add(name);
 
     expect(await readDeviceOnly(keychain, name), key, reason: 'this start still opens the database');
-    expect(keychain.values, {'$name.migrating': key});
+    expect(keychain.values, {'$name.copy': key});
+
+    // The next start fails again: the copy, the only one left, is not touched.
+    keychain.writes.clear();
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.writes, [name]);
+    expect(keychain.values, {'$name.copy': key});
 
     keychain.failingWrites.clear();
     expect(await readDeviceOnly(keychain, name), key);
-    expect(keychain.values.keys, unorderedEquals([name, '$name.device_only']));
+    expect(keychain.values, {name: key, '$name.copy': key, '$name.device_only': '1'});
+  });
+
+  test('a rewrite read back different leaves the migration undone', () async {
+    final keychain = FakeSecureStore()
+      ..values[name] = key
+      ..corruptWrites.add(name);
+
+    expect(await readDeviceOnly(keychain, name), key);
+    expect(keychain.values['$name.copy'], key);
+    expect(keychain.values['$name.device_only'], isNull, reason: 'tried again at the next start');
   });
 
   test('a keychain that cannot be read is an error, never a missing key', () async {

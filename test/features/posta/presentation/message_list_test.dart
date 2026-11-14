@@ -16,22 +16,30 @@ import 'package:routefly/routefly.dart';
 import '../../../support/fake_mail_provider.dart';
 import '../../../support/harness.dart';
 
-/// Rows `m1` to `m5`, newest first: `m5` is the first row.
-Future<FakeMailProvider> _start(WidgetTester tester) async {
+/// Rows `m1` to `m[count]`, newest first: the last is the first row. [frame] runs after each frame of the first load
+/// instead of settling it.
+Future<FakeMailProvider> _start(WidgetTester tester, {int count = 5, void Function()? frame}) async {
   tester.view
     ..physicalSize = const Size(1600, 900)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final h = await Harness.create();
   final p = await h.addAccount('a1');
-  for (var i = 1; i <= 5; i++) {
+  for (var i = 1; i <= count; i++) {
     p.deliver(msg('m$i', subject: 'Fattura $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i'));
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   // Routefly keeps the last navigation in statics.
   unawaited(Routefly.navigate(routePaths.posta.path));
-  await tester.pumpAndSettle();
+  if (frame == null) {
+    await tester.pumpAndSettle();
+    return p;
+  }
+  for (var i = 0; i < 40; i++) {
+    await tester.pump(const Duration(milliseconds: 16));
+    frame();
+  }
   return p;
 }
 
@@ -227,11 +235,61 @@ void main() {
       expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
     });
 
-    testWidgets('the first load does not animate', (tester) async {
-      await _start(tester);
-      for (var i = 1; i <= 5; i++) {
-        expect(tester.widget<PostinoSizeFade>(_fadeOf(i)).visibility, kAlwaysCompleteAnimation);
+    testWidgets('the first load does not animate, frame by frame', (tester) async {
+      var seen = 0;
+      await _start(
+        tester,
+        frame: () {
+          for (final f in tester.widgetList<PostinoSizeFade>(find.byType(PostinoSizeFade))) {
+            seen++;
+            expect(f.visibility, kAlwaysCompleteAnimation);
+          }
+        },
+      );
+      expect(seen, greaterThan(0), reason: 'the rows came during the frames watched');
+      expect(find.byKey(const ValueKey('row-a1-m5')), findsOneWidget);
+    });
+
+    testWidgets('the last row archived and brought back with Annulla comes back animated', (tester) async {
+      await _start(tester, count: 1);
+      await _focus(tester, 1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.runAsync(pumpEventQueue);
       }
+      expect(find.byKey(const ValueKey('row-a1-m1')), findsNothing);
+      await tester.tap(find.widgetWithText(PostinoButton, 'Annulla'));
+      for (var i = 0; i < 8 && find.byKey(const ValueKey('row-a1-m1')).evaluate().isEmpty; i++) {
+        await tester.runAsync(pumpEventQueue);
+        await tester.pump();
+      }
+      await tester.pump(PostinoMotion.rowEnter ~/ 2);
+      expect(_visible(tester, 1).opacity, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(_visible(tester, 1), (opacity: 1.0, height: 1.0));
+    });
+
+    testWidgets('a row that arrives and leaves on the next frame just goes', (tester) async {
+      final p = await _start(tester);
+      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+      await _syncNoSettle(tester);
+      p.removeRemotely('m9');
+      await _syncNoSettle(tester);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('row-a1-m9')), findsNothing);
+      expect(find.byKey(const ValueKey('row-a1-m5')), findsOneWidget);
+    });
+
+    testWidgets('many rows leave at once above the focused one: the focus stays in the list', (tester) async {
+      final p = await _start(tester, count: 100);
+      await _focus(tester, 100);
+      for (var i = 2; i <= 100; i++) {
+        p.removeRemotely('m$i', signal: false);
+      }
+      await _syncNoSettle(tester);
+      await tester.pumpAndSettle(const Duration(milliseconds: 16));
+      expect(_focusedRow(), 1);
     });
 
     testWidgets('with reduced motion rows leave and arrive at once', (tester) async {

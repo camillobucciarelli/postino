@@ -74,6 +74,9 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
 
   /// Rows entering and leaving (#282).
   late final _motion = RowMotion(this, () => mounted ? setState(() {}) : null);
+
+  /// The rows drawn: [_list] plus the ones on their way out.
+  List<InboxEntry>? _drawn;
   bool? _wasTwoPane;
   int? _counted;
 
@@ -185,7 +188,8 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
       );
       return;
     }
-    final list = _list;
+    // Where the row is drawn, rows on their way out included (a mass removal leaves them above it for a while).
+    final list = _drawn;
     if (tries == 0 || list == null || !_scroll.hasClients) return;
     final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
     if (at < 0) return;
@@ -288,7 +292,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
       final swipeActions = swipes.value.value ?? swipeActionsDefault;
       _realign(list);
       _list = list;
-      final shown = _motion.update(
+      final shown = _drawn = _motion.update(
         list,
         enter: PostinoMotion.of(context, PostinoMotion.rowEnter),
         leave: PostinoMotion.of(context, PostinoMotion.swipeDismiss),

@@ -349,6 +349,13 @@ void main() {
       expect(await readKept(dataProtection, name), ['copied']);
     });
 
+    test('with the moved key already in place a stale copy is not kept again', () async {
+      dataProtection.values.addAll({name: key, '$name.device_only': '1', '$name.copy': 'stale', '$name.copied': '1'});
+      legacy.values['$name.moved'] = '1';
+      expect(await readDeviceOnly(keychain, name), key);
+      expect(await readKept(dataProtection, name), isEmpty);
+    });
+
     test('a key lost half way with several kept: the latest is the key again, the others stay kept', () async {
       legacy.values
         ..clear()

@@ -142,8 +142,10 @@ Future<String?> _move(SecureStore from, SecureStore to, String name) async {
   if (current != null && current != value && marked && await from.read(_movedMark(name)) == null) return current;
   // Every key of [to] it replaces, the key or a copy a #263 migration left there, joins the ones an earlier move
   // replaced: whichever opens the file wins, so none is lost and a stale one left by a cleanup that failed never
-  // shuts out a newer key. A failed write fails the start, before the key in use is touched.
-  for (final key in {current, copy}.nonNulls.where((k) => k != value && !kept.contains(k))) {
+  // shuts out a newer key. A failed write fails the start, before the key in use is touched. With the moved key
+  // already in place (a legacy cleanup that keeps failing) nothing is replaced, and a stale copy is not kept again.
+  final replacing = current == value ? const <String>{} : {current, copy}.nonNulls;
+  for (final key in replacing.where((k) => k != value && !kept.contains(k))) {
     await _writeChecked(to, replacedMark(name, kept.length), key);
     kept.add(key);
   }

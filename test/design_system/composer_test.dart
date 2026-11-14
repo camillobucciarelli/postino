@@ -161,8 +161,8 @@ void main() {
 
   group('PostinoSenderPicker', () {
     const options = <PostinoSenderOption>[
-      (id: 'a1', mark: (color: PostinoAccountColor.sky, initial: 'L'), address: 'lavoro@example.com'),
-      (id: 'a2', mark: (color: PostinoAccountColor.rose, initial: 'P'), address: 'personale@example.com'),
+      (id: 'a1', mark: (color: PostinoAccountColor.sky, initial: 'L'), name: 'lavoro@example.com'),
+      (id: 'a2', mark: (color: PostinoAccountColor.rose, initial: 'P'), name: 'personale@example.com'),
     ];
 
     testWidgets('opens from the keyboard and a choice calls onSelected', (tester) async {

@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/outbox_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/domain/accounts_repository.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -267,6 +268,26 @@ void main() {
     await _settle(tester);
     expect(await _pendingIds(), isEmpty);
     expect(find.byType(PostinoComposerLayout), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  _onMac('the Account removed while the body for Rispondi downloads: no Bozza, no composer (#191)', (tester) async {
+    await _start(tester);
+    final db = GetIt.I<PostinoDatabase>();
+    await tester.runAsync(() => (db.delete(db.bodies)..where((t) => t.messageId.equals('m1'))).go());
+    await _settle(tester);
+    gmail.holdBody = Completer<void>();
+    await _tap(tester, find.byKey(const ValueKey('message-actions-m1')));
+    await _tap(tester, find.byKey(const ValueKey('message-reply-m1')));
+    // Not awaited: the removal waits in the Account's queue behind the download.
+    final removal = GetIt.I<AccountsRepository>().remove('a1');
+    await tester.runAsync(pumpEventQueue);
+    gmail.holdBody!.complete();
+    await _settle(tester);
+    await tester.runAsync(() => removal);
+    await _settle(tester);
+    expect(find.byType(PostinoComposerLayout), findsNothing);
+    expect(Routefly.currentUri.pathSegments, isNot(contains('bozza')));
     expect(tester.takeException(), isNull);
   });
 

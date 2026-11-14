@@ -212,8 +212,9 @@ class _ConversationViewState()
       if (!mounted) return;
       setState(() => _forwardUnavailable = source.unavailable);
       if (source.unavailable) return;
+      // Null: the Account was removed meanwhile, there is no Bozza to open (#191).
       final id = await _replyDraft.save(a, source);
-      if (mounted) widget.onOpenDraft(id);
+      if (id != null && mounted) widget.onOpenDraft(id);
     } finally {
       _acting = false;
     }

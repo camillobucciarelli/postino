@@ -36,9 +36,9 @@ class ReplyDraftUseCase(final MailSync _sync, final InboxRepository _inbox) {
     return ReplySource(kind, message, body);
   }
 
-  /// Saves the Bozza from [account] answering (or forwarding) [s]; returns its Message-ID.
-  /// Without a body, Rispondi quotes the snippet.
-  Future<String> save(Account account, ReplySource s) async {
+  /// Saves the Bozza from [account] answering (or forwarding) [s]; returns its Message-ID, null when the Account
+  /// was removed meanwhile and no Bozza was kept (#191). Without a body, Rispondi quotes the snippet.
+  Future<String?> save(Account account, ReplySource s) async {
     final message = s.message;
     final html = switch (s.body) {
       MessageBody(kind: BodyKind.html, :final content) => content,
@@ -67,7 +67,6 @@ class ReplyDraftUseCase(final MailSync _sync, final InboxRepository _inbox) {
         dateLabel: dateLabel,
       ),
     };
-    await _sync.saveDraft(account.id, draft);
-    return id;
+    return await _sync.saveDraft(account.id, draft) ? id : null;
   }
 }

@@ -33,24 +33,24 @@ class ReportProblemUseCase(
   /// (Account, Message-ID) of the Bozza to open in the composer, or null when the log was shared instead.
   Future<(String, String)?> start({required String subject, required String intro}) async {
     final log = await _log.read();
-    final accounts = await _accounts.watchAccounts().first;
-    if (accounts.isEmpty) {
-      await _sharer.share(text: log, name: problemReportFileName, subject: subject);
-      return null;
+    // An Account removed between the list and the save keeps no Bozza (#191): the next one is tried, and with
+    // none left the log is shared, never a Bozza that cannot be opened.
+    for (final account in await _accounts.watchAccounts().first) {
+      final messageId = newMessageId(account.address);
+      final kept = await _sync.saveDraft(
+        account.id,
+        OutgoingMessage(
+          messageId: messageId,
+          from: account.address,
+          to: const [problemReportAddress],
+          subject: subject,
+          body: _body(intro, log),
+        ),
+      );
+      if (kept) return (account.id, messageId);
     }
-    final account = accounts.first;
-    final messageId = newMessageId(account.address);
-    await _sync.saveDraft(
-      account.id,
-      OutgoingMessage(
-        messageId: messageId,
-        from: account.address,
-        to: const [problemReportAddress],
-        subject: subject,
-        body: _body(intro, log),
-      ),
-    );
-    return (account.id, messageId);
+    await _sharer.share(text: log, name: problemReportFileName, subject: subject);
+    return null;
   }
 
   static String _body(String intro, String log) {

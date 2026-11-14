@@ -168,175 +168,30 @@ void main() {
     await again.close();
   });
 
-  test('a fresh mark of another key, left before a downgrade made this one, wipes nothing (#270)', () async {
-    // The older version, after the downgrade: it does not know the moved mark the release left, and keeps it.
-    final legacy = FakeSecureStore();
-    final db = await PostinoDatabase.open(path, legacy);
-    await insertAccount(db);
-    await db.close();
-    legacy.values['database_key.moved'] = '1';
-
-    final stale = 'ab' * 32;
-    final dataProtection = FakeSecureStore()
-      ..values.addAll({'database_key': stale, 'database_key.device_only': '1', 'database_key.fresh': freshOf(stale)});
-    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
-    expect(await accounts(again), 1);
-    await again.close();
-    expect(dataProtection.values['database_key.fresh'], isNull);
-    expect(dataProtection.values['database_key.replaced.0'], isNull, reason: 'the moved key opened the file');
-  });
-
-  test('a moved legacy key that is not the file\'s never loses the key in use (#270)', () async {
-    // The release's database, its key in the Data Protection keychain.
-    final dataProtection = FakeSecureStore();
-    final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, FakeSecureStore()));
-    await insertAccount(db);
-    await db.close();
-    final inUse = dataProtection.values['database_key'];
-
-    // A login keychain saved during a downgrade, restored: another key next to the moved mark.
-    final restored = FakeSecureStore()
-      ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.moved': '1'});
-    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, restored));
-    expect(await accounts(again), 1);
-    await again.close();
-    expect(dataProtection.values['database_key'], inUse);
-    expect(dataProtection.values['database_key.replaced.0'], isNull);
-
-    final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, restored));
-    expect(await accounts(third), 1);
-    await third.close();
-  });
-
-  group('the key kept for the file (#270)', () {
-    FakeSecureStore movedOnly() => FakeSecureStore()..values['database_key.moved'] = '1';
-
-    /// The key of a database with one Account at [path].
-    Future<String> populated() async {
-      final owner = FakeSecureStore();
-      final db = await PostinoDatabase.open(path, MovingKeychain(owner, FakeSecureStore()));
+  test(
+    'a key in the Data Protection keychain always opens its database, whatever the legacy one holds (#270)',
+    () async {
+      // The release's database, key B in the Data Protection keychain.
+      final dataProtection = FakeSecureStore();
+      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, FakeSecureStore()));
       await insertAccount(db);
       await db.close();
-      return owner.values['database_key']!;
-    }
+      final before = {...dataProtection.values};
+      final writes = dataProtection.writes.length;
 
-    test('an overwrite failing half way while it puts the kept key back loses nothing', () async {
-      final inUse = await populated();
-      final dataProtection = FakeSecureStore()
-        ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.replaced.0': inUse})
-        ..failingWrites.add('database_key');
-
-      final opened = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      expect(await accounts(opened), 1, reason: 'opened with the kept key');
-      await opened.close();
-      expect(dataProtection.values['database_key'], isNull, reason: 'deleted, not added');
-      expect(dataProtection.values['database_key.replaced.0'], inUse);
-
-      final restarted = FakeSecureStore()..values.addAll(dataProtection.values);
-      final again = await PostinoDatabase.open(path, MovingKeychain(restarted, movedOnly()));
-      expect(await accounts(again), 1, reason: 'the kept key is the key again, never a new one');
-      await again.close();
-      expect(restarted.values['database_key'], inUse);
-      expect(restarted.values['database_key.replaced.0'], isNull);
-    });
-
-    test('a kept key that cannot be forgotten never fails a database that opened', () async {
-      final inUse = await populated();
-      final dataProtection = FakeSecureStore()
-        ..values.addAll({'database_key': inUse, 'database_key.device_only': '1', 'database_key.replaced.0': 'cd' * 32})
-        ..deleteFailure = Exception('keychain: delete failed');
-      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      expect(await accounts(db), 1);
-      await db.close();
-    });
-
-    test('several kept keys: the one that opens the file wins, after others that do not', () async {
-      final inUse = await populated();
-      final dataProtection = FakeSecureStore()
-        ..values.addAll({
-          'database_key': 'ab' * 32,
-          'database_key.device_only': '1',
-          'database_key.replaced.0': 'cd' * 32,
-          'database_key.replaced.1': inUse,
-          'database_key.replaced.2': 'ef' * 32,
-        });
-      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      expect(await accounts(db), 1);
-      await db.close();
-      expect(dataProtection.values['database_key'], inUse);
-      expect(dataProtection.values.keys.where((k) => k.contains('replaced')), isEmpty);
-    });
-
-    test('a key put back that could not be written keeps the kept keys until it is', () async {
-      final inUse = await populated();
-      final dataProtection = FakeSecureStore()
-        ..values.addAll({'database_key.replaced.0': 'cd' * 32, 'database_key.replaced.1': inUse})
-        ..failingWrites.add('database_key');
-      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      expect(await accounts(db), 1);
-      await db.close();
-      expect(dataProtection.values['database_key.replaced.1'], inUse, reason: 'the only place the key is');
-
-      dataProtection.failingWrites.clear();
-      final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      expect(await accounts(again), 1);
-      await again.close();
-      expect(dataProtection.values['database_key'], inUse);
-      expect(dataProtection.values['database_key.replaced.1'], isNull);
-    });
-
-    test('a new file drops the kept key: it opens nothing any more', () async {
-      final dataProtection = FakeSecureStore()
-        ..values.addAll({
-          'database_key': 'ab' * 32,
-          'database_key.device_only': '1',
-          'database_key.replaced.0': 'cd' * 32,
-        });
-      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, movedOnly()));
-      await db.close();
-      expect(dataProtection.values['database_key.replaced.0'], isNull);
-    });
-
-    test('two downgrades with a kept key left between them: every start opens the last database', () async {
-      void wipe() {
-        for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
-          if (File(f).existsSync()) File(f).deleteSync();
-        }
-      }
-
-      /// An older DMG on the legacy keychain: it does not know the moved mark, starts over and keeps the mark.
-      Future<void> olderDmg(FakeSecureStore legacy) async {
-        wipe();
-        final own = FakeSecureStore();
-        final db = await PostinoDatabase.open(path, own);
-        await insertAccount(db);
-        await db.close();
-        legacy.values.addAll(own.values);
-      }
-
-      // 1. The release: key B, its database.
-      final dataProtection = FakeSecureStore();
-      final legacy = FakeSecureStore();
-      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
-      await db.close();
-      // 2. Downgrade: key A next to the moved mark, A's database.
-      await olderDmg(legacy);
-      // 3. Upgrade: A's database opens, the kept B cannot be dropped.
-      dataProtection.deleteFailure = Exception('keychain: delete failed');
-      final upgraded = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
-      expect(await accounts(upgraded), 1);
-      await upgraded.close();
-      dataProtection.deleteFailure = null;
-      // 4. Downgrade again: key C, C's database.
-      await olderDmg(legacy);
-      // 5-6. Upgrade, and starts after it: C's database, every time.
-      for (var start = 0; start < 3; start++) {
+      // Legacy {A, device_only, moved}: a downgrade's key, or a login keychain saved then and restored.
+      final legacy = FakeSecureStore()
+        ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.moved': '1'});
+      for (var start = 0; start < 2; start++) {
         final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
-        expect(await accounts(again), 1, reason: 'start $start');
+        expect(await accounts(again), 1);
         await again.close();
       }
-    });
-  });
+      expect(dataProtection.values, before, reason: 'the Data Protection keychain does not change');
+      expect(dataProtection.writes, hasLength(writes), reason: 'nothing written there');
+      expect(legacy.values['database_key'], 'cd' * 32, reason: 'the legacy key left as it is');
+    },
+  );
 
   test(
     'the app and a background engine opening a restore together wipe once, never the database already open',

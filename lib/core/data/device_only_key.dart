@@ -37,22 +37,20 @@ class MovingKeychain(final SecureStore to, final SecureStore from) implements Se
 /// drops an earlier mark first. The key lost is the local database lost.
 Future<String?> readDeviceOnly(SecureStore keychain, String name) async {
   if (keychain case MovingKeychain(:final to, :final from)) {
-    if (await _move(from, to, name) case final value?) return value;
-    // The legacy keychain loses the key only once [to] holds it, read back: none in both is no key on this Mac.
-    var value = await _readMigrating(to, name);
-    // Only the keys a moved one replaced, the key lost by an overwrite that failed half way: the latest is the key
-    // again, and the database still tries them all.
-    final kept = value == null ? await readKept(to, name) : const <String>[];
-    if (kept.isNotEmpty) {
-      value = kept.last;
-      try {
-        await writeDeviceOnly(to, name, value);
-        // ponytail: silent, the kept keys stay until the key is back in its item (PostinoDatabase.open).
-      } on Object catch (_) {}
+    // [to] is read first, before anything is written in the legacy keychain. A key read back and marked there always
+    // wins, whatever the legacy keychain holds (a downgrade's key is not supported). Without one, the first move.
+    final current = await to.read(name);
+    if (current == null || await to.read(_deviceOnlyMark(name)) == null) {
+      if (await _move(from, to, name) case final value?) return value;
     }
-    // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe the
-    // database. A write that fails fails the start: without the mark the database is not safe.
-    if (value != null && await from.read(_movedMark(name)) == null) await from.write(_movedMark(name), '1');
+    final value = await _readMigrating(to, name);
+    if (value != null) {
+      // A new key's mark that a start killed or failed before it wrote: written again, or a Debug build would wipe
+      // the database. A write that fails fails the start: without the mark the database is not safe.
+      if (await from.read(_movedMark(name)) == null) await from.write(_movedMark(name), '1');
+      // The same key left in the legacy keychain by a move whose cleanup failed or was killed: removed now.
+      if (await from.read(name) == value) await _dropLegacy(from, name);
+    }
     return value;
   }
   if (await _readMigrating(keychain, name) case final value?) return value;
@@ -75,27 +73,6 @@ String freshMark(String name) => '$name.fresh';
 /// The value of the [freshMark] of [key]: the mark wipes only the database of that key, not one a later key made
 /// after a downgrade (#270). Earlier versions wrote `1`, for the key they saved next.
 String freshOf(String key) => sha256.convert(utf8.encode('fresh:$key')).toString();
-
-/// The [i]th key in use that a moved one replaced (#270), kept until the database opens with one of them. One item
-/// each, written once and never rewritten: a write that fails half way (deleted, not added) loses no other key.
-String replacedMark(String name, int i) => '$name.replaced.$i';
-
-/// The kept keys of [name], oldest first: the items from 0 up to the first missing.
-Future<List<String>> readKept(SecureStore keychain, String name) async {
-  final kept = <String>[];
-  for (;;) {
-    final key = await keychain.read(replacedMark(name, kept.length));
-    if (key == null) return kept;
-    kept.add(key);
-  }
-}
-
-/// Forgets the [count] kept keys of [name], newest first: a delete that fails leaves only older ones, still read.
-Future<void> dropKept(SecureStore keychain, String name, int count) async {
-  for (var i = count - 1; i >= 0; i--) {
-    await keychain.delete(replacedMark(name, i));
-  }
-}
 
 /// Whether the [freshMark] value [mark] belongs to [key].
 bool isFreshOf(String mark, String key) => mark == '1' || mark == freshOf(key);
@@ -124,31 +101,16 @@ Future<String?> _readMigrating(SecureStore keychain, String name) async {
   return value;
 }
 
-/// Moves [name] from the legacy keychain [from] to [to] (#270), null if [from] has none. [from] keeps it until [to]
-/// holds it, read back and marked, so a step that fails leaves it there: this start goes on with it, the next moves it
-/// again. A key in [from] next to the moved mark wins over a different one in [to]: an older version wrote it after a
-/// downgrade, and its database with it. The keys it replaces are kept ([replacedMark]) until the database tells which
-/// one opens it (`PostinoDatabase.open`): never lost, whichever keychain was restored. One without the mark does not
-/// replace a different key already in use in [to] (an old login keychain restored, say): it is left as it is. Only
-/// the moved mark is left in [from].
+/// Moves [name] from the legacy keychain [from] to [to] (#270), the first time only: null if [from] has no key or is
+/// marked moved already. [to] has no key here, or one not marked (a write killed or read back different), which the
+/// move rewrites. [from] keeps the key until [to] holds it, read back and marked, and is
+/// marked moved only then, so a step that fails leaves it there: this start goes on with it, the next moves it again.
+/// A key in a legacy keychain marked moved was written by an older version after a downgrade, which is not supported,
+/// or came with a restored login keychain: never moved, Postino starts over.
 Future<String?> _move(SecureStore from, SecureStore to, String name) async {
-  // Read before any write: a Data Protection keychain that cannot be read fails the start, [from] untouched.
-  final current = await to.read(name);
-  final marked = await to.read(_deviceOnlyMark(name)) != null;
-  final copy = await to.read(_copy(name));
-  final kept = await readKept(to, name);
+  if (await from.read(_movedMark(name)) != null) return null;
   final value = await _readMigrating(from, name);
   if (value == null) return null;
-  if (current != null && current != value && marked && await from.read(_movedMark(name)) == null) return current;
-  // Every key of [to] it replaces, the key or a copy a #263 migration left there, joins the ones an earlier move
-  // replaced: whichever opens the file wins, so none is lost and a stale one left by a cleanup that failed never
-  // shuts out a newer key. A failed write fails the start, before the key in use is touched. With the moved key
-  // already in place (a legacy cleanup that keeps failing) nothing is replaced, and a stale copy is not kept again.
-  final replacing = current == value ? const <String>{} : {current, copy}.nonNulls;
-  for (final key in replacing.where((k) => k != value && !kept.contains(k))) {
-    await _writeChecked(to, replacedMark(name, kept.length), key);
-    kept.add(key);
-  }
   if (await from.read(freshMark(name)) case final fresh?) {
     // A new key whose database is still to be wiped: the mark moves before the key, as for a new one, and leaves
     // [from] before this start wipes, or a later start would carry it again and wipe the new database. Either step
@@ -159,13 +121,23 @@ Future<String?> _move(SecureStore from, SecureStore to, String name) async {
   try {
     await writeDeviceOnly(to, name, value);
     await from.write(_movedMark(name), '1');
-    // The key last: a copy left without it would be written back into it.
+    // ponytail: silent as the migration; the next start tries again.
+  } on Object catch (_) {
+    return value;
+  }
+  await _dropLegacy(from, name);
+  return value;
+}
+
+/// Removes the key and its marks from the legacy keychain, the key last: a copy left without it would be written back
+/// into it. Only the moved mark stays.
+Future<void> _dropLegacy(SecureStore from, String name) async {
+  try {
     for (final item in [_deviceOnlyMark(name), _copiedMark(name), _copy(name), name]) {
       await from.delete(item);
     }
-    // ponytail: silent as the migration; the next start tries again.
+    // ponytail: silent, the next start removes what is left.
   } on Object catch (_) {}
-  return value;
 }
 
 String _copy(String name) => '$name.copy';

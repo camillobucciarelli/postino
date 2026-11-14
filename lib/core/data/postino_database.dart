@@ -109,57 +109,9 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
         }
         await keychain.delete(_freshName);
       }
-      if (File(path).existsSync()) return null;
-      // A new file is this key's: a key kept for an older one (#270) opens nothing any more.
-      final kept = await readKept(keychain, _keyName);
-      if (kept.isNotEmpty) await _dropKept(keychain, key, kept.length);
-      return _openFile(path, key, log);
+      return File(path).existsSync() ? null : _openFile(path, key, log);
     });
-    if (created != null) return created;
-    // Downgrades' keys moved over ones in use (#270): the file tells which is its key; the others go, never before.
-    final kept = await readKept(keychain, _keyName);
-    if (kept.isEmpty) return _openFile(path, key, log);
-    final (Object, StackTrace) first;
-    try {
-      final db = await _openFile(path, key, null);
-      await _dropKept(keychain, key, kept.length);
-      return db;
-    } on Object catch (e, s) {
-      first = (e, s);
-    }
-    for (final candidate in kept.where((k) => k != key)) {
-      final PostinoDatabase db;
-      try {
-        db = await _openFile(path, candidate, null);
-      } on Object catch (_) {
-        continue;
-      }
-      try {
-        // The kept keys leave their items only once the file's is the key again: an overwrite that fails half way (the
-        // item deleted, not added) leaves them there, and the next start puts one back ([readDeviceOnly]).
-        await withDatabaseLock(_lockOf(path), () async {
-          await writeDeviceOnly(keychain, _keyName, candidate);
-          await dropKept(keychain, _keyName, kept.length);
-        });
-        // ponytail: silent, the database is open with the right key; the next start tries again.
-      } on Object catch (_) {}
-      // ponytail: this start's error log keeps the keys of the losing key, so its entries are unreadable later.
-      _keys[keychain] = Future.value(candidate);
-      return db;
-    }
-    // None opens: the error of the key in use is the one to report.
-    final (e, s) = first;
-    log?.record(e, stack: s, context: 'database', crash: true);
-    Error.throwWithStackTrace(e, s);
-  }
-
-  /// Forgets the [count] keys moved ones replaced (#270), once the file is [key]'s and [key] is in its item: one put
-  /// back by [readDeviceOnly] with a write that failed is not, and they stay until it is.
-  static Future<void> _dropKept(SecureStore keychain, String key, int count) async {
-    try {
-      if (await keychain.read(_keyName) == key) await dropKept(keychain, _keyName, count);
-      // ponytail: silent, the database is open; the next start drops them again.
-    } on Object catch (_) {}
+    return created ?? _openFile(path, key, log);
   }
 
   static Future<PostinoDatabase> _openFile(String path, String key, ErrorLog? log) async {

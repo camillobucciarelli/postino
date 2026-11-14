@@ -32,7 +32,7 @@ class KeychainStore implements SecureStore {
       );
 
   /// The database key's (#263): the same unlock level, this device only, so it leaves no backup and no other device
-  /// can open a restored database. On macOS the login keychain ignores the attribute (#270).
+  /// can open a restored database. On macOS the login keychain ignores the attribute: [KeychainStore.dataProtection] (#270).
   KeychainStore.deviceOnly()
     : _storage = const FlutterSecureStorage(
         iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
@@ -41,6 +41,25 @@ class KeychainStore implements SecureStore {
           usesDataProtectionKeychain: false,
         ),
       );
+
+  /// The database key's on macOS (#270): the Data Protection keychain applies "this device only", so the key stays
+  /// out of Time Machine and of Migration Assistant. It needs the app's keychain access group, which only a build
+  /// signed with a provisioning profile has. Its own service: in an app with that group, a query without the Data
+  /// Protection flag (the legacy store's) targets both keychains, so with the same names a delete from the legacy one
+  /// would delete the moved key too.
+  KeychainStore.dataProtection()
+    : _storage = const FlutterSecureStorage(
+        mOptions: MacOsOptions(
+          accountName: dataProtectionService,
+          accessibility: KeychainAccessibility.first_unlock_this_device,
+          // The plugin's default, spelled out: the whole point.
+          // ignore: avoid_redundant_argument_values
+          usesDataProtectionKeychain: true,
+        ),
+      );
+
+  /// The `kSecAttrService` of [KeychainStore.dataProtection], never the legacy store's.
+  static const dataProtectionService = 'postino_data_protection';
 
   final FlutterSecureStorage _storage;
 
@@ -167,11 +186,20 @@ abstract class AttachmentModule() {
   }
 }
 
+/// The database key's keychain (#263). A macOS release, signed with a provisioning profile, keeps it in the Data
+/// Protection keychain, moving it from the legacy one older versions saved it in (#270). Debug and Profile builds cannot
+/// have the profile and stay on the legacy one; the other platforms' keychains apply the attribute already.
+@visibleForTesting
+SecureStore deviceOnlyKeychainFor(TargetPlatform platform, {required bool release}) =>
+    release && !kIsWeb && platform == TargetPlatform.macOS
+    ? MovingKeychain(KeychainStore.dataProtection(), KeychainStore.deviceOnly())
+    : KeychainStore.deviceOnly();
+
 @module
 abstract class DatabaseModule() {
   @Named(deviceOnlyKeychainName)
   @Singleton(env: [Environment.prod])
-  SecureStore deviceOnlyKeychain() => KeychainStore.deviceOnly();
+  SecureStore deviceOnlyKeychain() => deviceOnlyKeychainFor(defaultTargetPlatform, release: kReleaseMode);
 
   @preResolve
   @Singleton(env: [Environment.prod])

@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/database_lock.dart';
+import 'package:postino/core/data/device_only_key.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -116,6 +117,112 @@ void main() {
     await again.close();
     expect(interrupted.values['database_key.fresh'], isNull);
   });
+
+  test('a macOS release opens the database whose key an older version left in the legacy keychain (#270)', () async {
+    final legacy = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, legacy);
+    await insertAccount(db);
+    await db.close();
+
+    final dataProtection = FakeSecureStore();
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 1);
+    await again.close();
+    expect(legacy.values, {'database_key.moved': '1'});
+
+    // A Debug build (the legacy keychain alone) finds only the mark: no new key, the file untouched. Another start is
+    // a store not seen yet: keyFrom reads once per store.
+    final debug = FakeSecureStore()..values.addAll(legacy.values);
+    await expectLater(PostinoDatabase.open(path, debug), throwsStateError);
+    expect(debug.writes, isEmpty);
+    // The Data Protection keychain cannot be read (-34018): the start fails, the file untouched.
+    final locked = FakeSecureStore()..failure = Exception('-34018');
+    await expectLater(PostinoDatabase.open(path, MovingKeychain(locked, legacy)), throwsException);
+    expect(locked.writes, isEmpty);
+    final third = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(third), 1);
+    await third.close();
+
+    // Restored on another Mac: the login keychain brings the mark, the Data Protection keychain is empty. Postino
+    // starts over empty, as iOS after a restore, and keeps the mark for a Debug build there.
+    final restoredLegacy = FakeSecureStore()..values.addAll(legacy.values);
+    final restored = FakeSecureStore();
+    final fresh = await PostinoDatabase.open(path, MovingKeychain(restored, restoredLegacy));
+    expect(await accounts(fresh), 0);
+    await fresh.close();
+    expect(restored.values.keys, unorderedEquals(['database_key', 'database_key.device_only']));
+    expect(restoredLegacy.values, {'database_key.moved': '1'});
+  });
+
+  test('a Debug build on the Mac of a release installed new fails, never wipes its database (#270)', () async {
+    final legacy = FakeSecureStore();
+    final dataProtection = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    await insertAccount(db);
+    await db.close();
+    expect(legacy.values, {'database_key.moved': '1'});
+
+    await expectLater(PostinoDatabase.open(path, legacy), throwsStateError);
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 1);
+    await again.close();
+  });
+
+  test('a fresh mark of another key wipes nothing: dropped, the database kept (#270)', () async {
+    final keychain = FakeSecureStore();
+    final db = await PostinoDatabase.open(path, keychain);
+    await insertAccount(db);
+    await db.close();
+
+    final again = FakeSecureStore()
+      ..values.addAll(keychain.values)
+      ..values['database_key.fresh'] = freshOf('ab' * 32);
+    final reopened = await PostinoDatabase.open(path, again);
+    expect(await accounts(reopened), 1);
+    await reopened.close();
+    expect(again.values['database_key.fresh'], isNull);
+  });
+
+  test('a restore whose new key was killed or read back different before its mark still starts over (#270)', () async {
+    final db = await PostinoDatabase.open(path, FakeSecureStore());
+    await insertAccount(db);
+    await db.close();
+
+    // The restored Mac: legacy with only the moved mark; the first start saved the fresh mark and a key that read
+    // back different, never marked.
+    final legacy = FakeSecureStore()..values['database_key.moved'] = '1';
+    final dataProtection = FakeSecureStore()
+      ..values.addAll({'database_key.fresh': freshOf('ab' * 32), 'database_key': '${'ab' * 32}!'});
+    final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+    expect(await accounts(again), 0, reason: 'a new key, the restored file wiped');
+    await again.close();
+    expect(dataProtection.values['database_key.device_only'], '1');
+  });
+
+  test(
+    'a key in the Data Protection keychain always opens its database, whatever the legacy one holds (#270)',
+    () async {
+      // The release's database, key B in the Data Protection keychain.
+      final dataProtection = FakeSecureStore();
+      final db = await PostinoDatabase.open(path, MovingKeychain(dataProtection, FakeSecureStore()));
+      await insertAccount(db);
+      await db.close();
+      final before = {...dataProtection.values};
+      final writes = dataProtection.writes.length;
+
+      // Legacy {A, device_only, moved}: a downgrade's key, or a login keychain saved then and restored.
+      final legacy = FakeSecureStore()
+        ..values.addAll({'database_key': 'cd' * 32, 'database_key.device_only': '1', 'database_key.moved': '1'});
+      for (var start = 0; start < 2; start++) {
+        final again = await PostinoDatabase.open(path, MovingKeychain(dataProtection, legacy));
+        expect(await accounts(again), 1);
+        await again.close();
+      }
+      expect(dataProtection.values, before, reason: 'the Data Protection keychain does not change');
+      expect(dataProtection.writes, hasLength(writes), reason: 'nothing written there');
+      expect(legacy.values['database_key'], 'cd' * 32, reason: 'the legacy key left as it is');
+    },
+  );
 
   test(
     'the app and a background engine opening a restore together wipe once, never the database already open',

@@ -100,9 +100,12 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     final created = await withDatabaseLock(_lockOf(path), () async {
       // A file older than its key (a backup restored on another device: the key stays on the first one, #263) can
       // never be read: Postino starts over empty and syncs again. The mark outlives a start killed before the wipe.
-      if (await keychain.read(_freshName) != null) {
-        for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
-          if (File(f).existsSync()) File(f).deleteSync();
+      // A mark of another key is stale, left by a start killed before a downgrade made this key (#270): dropped.
+      if (await keychain.read(_freshName) case final fresh?) {
+        if (isFreshOf(fresh, key)) {
+          for (final f in [path, '$path-wal', '$path-shm', '$path-journal']) {
+            if (File(f).existsSync()) File(f).deleteSync();
+          }
         }
         await keychain.delete(_freshName);
       }
@@ -161,7 +164,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
     if (await readDeviceOnly(keychain, _keyName) case final key?) return key;
     final key = hex(randomBytes(32));
     // Before the key: a new key means no file it can open, which [open] wipes.
-    await keychain.write(_freshName, '1');
+    await keychain.write(_freshName, freshOf(key));
     await writeDeviceOnly(keychain, _keyName, key);
     return key;
   }
@@ -366,7 +369,7 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
 void _secureDelete(sqlite3.Database sql) => sql.execute('PRAGMA secure_delete = ON');
 
 const _keyName = 'database_key';
-const _freshName = '$_keyName.fresh';
+final _freshName = freshMark(_keyName);
 
 /// Never wiped with the database: it outlives the restore it guards.
 String _lockOf(String path) => '$path.lock';

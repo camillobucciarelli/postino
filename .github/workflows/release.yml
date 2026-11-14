@@ -139,15 +139,17 @@ jobs:
     steps:
       # Without GOOGLE_CLIENT_ID or MICROSOFT_CLIENT_ID the app builds fine but no Gmail or Outlook.com Account can
       # connect (README, "Client OAuth di Google" and "Client OAuth di Microsoft"); without SPARKLE_ED_PRIVATE_KEY no
-      # appcast can be signed (#122): all stop the job before any build.
+      # appcast can be signed (#122); without MACOS_PROVISION_PROFILE_BASE64 the app cannot use the Data Protection
+      # keychain that holds the database key (#270): all stop the job before any build.
       - name: Required secrets are set
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          MACOS_PROVISION_PROFILE_BASE64: ${{ secrets.MACOS_PROVISION_PROFILE_BASE64 }}
         run: |
           missing=0
-          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID SPARKLE_ED_PRIVATE_KEY; do
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID SPARKLE_ED_PRIVATE_KEY MACOS_PROVISION_PROFILE_BASE64; do
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
@@ -183,7 +185,17 @@ jobs:
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: tool/release/keychain_create.sh
-      - run: tool/release/sign_app.sh "$APP"
+      # The Developer ID provisioning profile authorizes the app's keychain access group (#270); it ships inside the
+      # app, so it is no secret once signed, but it is never printed.
+      - name: Sign with the provisioning profile
+        env:
+          MACOS_PROVISION_PROFILE_BASE64: ${{ secrets.MACOS_PROVISION_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          export PROVISION_PROFILE="$RUNNER_TEMP/postino.provisionprofile"
+          trap 'rm -f "$PROVISION_PROFILE"' EXIT
+          (umask 077 && printf '%s' "$MACOS_PROVISION_PROFILE_BASE64" | base64 -D > "$PROVISION_PROFILE")
+          tool/release/sign_app.sh "$APP"
       - name: Notarize and staple the app
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
@@ -202,6 +214,8 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: tool/release/notarize.sh "$DMG"
       - run: tool/release/verify.sh "$APP" "$DMG"
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       # Every run signs it, so a wrong key fails a manual run too; only a tag release of the highest version
       # publishes it, below, after its DMG. The app's SUFeedURL (<base>/macos/appcast.xml) is what installed copies
       # poll: the DMG link is built from it, and a RELEASE_BASE_URL pointing elsewhere stops the job.

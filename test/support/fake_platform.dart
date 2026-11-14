@@ -64,6 +64,12 @@ class FakeClock(var DateTime current) implements Clock {
     return c.stream;
   }
 
+  @override
+  Duration Function() stopwatch() {
+    final start = current;
+    return () => current.difference(start);
+  }
+
   void advance(Duration d) {
     current = current.add(d);
     for (final (period, c, elapsed) in [..._tickers]) {

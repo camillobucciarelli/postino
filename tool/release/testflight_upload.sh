@@ -22,7 +22,7 @@ for attempt in 1 2 3 4; do
   API_PRIVATE_KEYS_DIR=$keys xcrun altool --upload-app -t ios -f "$ipa" \
     --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" 2>&1 | tee "$log" || rc=${PIPESTATUS[0]}
   [ "$rc" -eq 0 ] && exit 0
-  if [ "$attempt" -lt 4 ] && grep -q 'Defaults.properties' "$log"; then
+  if [ "$attempt" -lt 4 ] && grep -Fq 'Defaults.properties' "$log"; then
     echo "::warning::altool could not fetch Defaults.properties (attempt $attempt of 4), retrying in ${wait}s" >&2
     sleep "$wait"
     wait=$((wait * 2))

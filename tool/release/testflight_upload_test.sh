@@ -31,5 +31,6 @@ msg="The file “Defaults.properties” couldn’t be opened."
 run 0 x 0 1
 run 2 "$msg" 0 3
 run 1 "Error: invalid credentials" 7 1
+run 1 "Defaults-properties" 7 1
 run 9 "$msg" 7 4
 echo "testflight_upload.sh ok"

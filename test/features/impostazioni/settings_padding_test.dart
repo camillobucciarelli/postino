@@ -89,6 +89,8 @@ void main() {
         await _start(tester, size);
         await _open(tester, routePaths.impostazioni.dispositivo);
         _expectColumn(tester, size, 'device');
+        // Both headings of the Azioni of a notification are built, so both are measured.
+        expect(find.byType(PostinoSettingsSection), findsNWidgets(2));
         final bar = tester.getRect(find.byType(PostinoAppBar));
         expect(tester.getRect(_rows.first).top, bar.bottom + PostinoSpacing.s4);
       });

@@ -281,4 +281,60 @@ void main() {
       expect(tester.getRect(box), tester.getRect(active));
     }
   });
+
+  testWidgets('swapping an open and a closed group keeps each its own state and children', (tester) async {
+    final theme = PostinoTheme.light();
+    var swapped = false;
+    PostinoDrawerItem group(String id, {required bool expanded}) => PostinoDrawerItem(
+      key: ValueKey(id),
+      label: id,
+      expanded: expanded,
+      onTap: () {},
+      children: [PostinoDrawerItem(key: ValueKey('$id-child'), label: '$id child', onTap: () {})],
+    );
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) => MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: Column(
+              children: [
+                TextButton(onPressed: () => setState(() => swapped = !swapped), child: const Text('swap')),
+                Expanded(
+                  child: PostinoNavigationDrawer(
+                    sections: [
+                      PostinoDrawerSection(
+                        items: [
+                          for (final id in swapped ? ['B', 'A'] : ['A', 'B']) group(id, expanded: id == 'A'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('swap'));
+    await tester.pump();
+    // The open group stays open: its reveal moved with it, it does not open again from closed.
+    final reveal = tester.widget<SizeTransition>(
+      find.ancestor(of: find.text('A child'), matching: find.byType(SizeTransition)).first,
+    );
+    expect(reveal.sizeFactor.value, 1);
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('A child'), findsOneWidget);
+    expect(find.text('B child'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('A child')).dy,
+      greaterThan(tester.getTopLeft(find.byKey(const ValueKey('A'))).dy),
+    );
+  });
 }

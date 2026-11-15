@@ -198,6 +198,8 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                                 if (item.children case final children?)
                                   // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
                                   SizeChangedLayoutNotifier(
+                                    // With its group, not its position: reordered groups keep their state and children.
+                                    key: ValueKey(('reveal', item.key ?? (i, ii))),
                                     child: PostinoReveal(
                                       duration: PostinoMotion.threadExpand,
                                       child: item.expanded

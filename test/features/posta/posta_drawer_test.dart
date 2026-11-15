@@ -28,6 +28,7 @@ Future<void> _setUp(WidgetTester tester) async {
   final h = await Harness.create();
   await h.addAccount('a1', provider: ProviderKind.imap);
   await h.addAccount('a2');
+  await h.addAccount('a3', provider: ProviderKind.microsoft);
   final labels = getIt<PostinoDatabase>().labelsDao;
   await labels.upsert('a1', const Label(id: _folder, name: 'Lavoro/Progetti', kind: LabelKind.cartella));
   await labels.upsert('a1', const Label(id: sentLabelId, name: 'Sent', kind: LabelKind.cartella));
@@ -93,20 +94,29 @@ void main() {
     }
   });
 
-  testWidgets('every Account, in Posta unificata too, lists its Cestino, folders and labels, never a system folder', (
-    tester,
-  ) async {
+  testWidgets(
+    'every Account, in Posta unificata too, lists its folders and labels and (not on Microsoft, #318) its Cestino, never a system folder',
+    (tester) async {
+      await _setUp(tester);
+      await _pump(tester);
+      expect(find.text('a1@example.com'), findsOneWidget);
+      expect(find.text('Cestino'), findsNWidgets(2));
+      expect(find.text('Lavoro/Progetti'), findsOneWidget);
+      expect(find.text('Fatture'), findsOneWidget);
+      expect(find.text('Bonifici'), findsOneWidget);
+      expect(find.text('Sent'), findsNothing);
+      // Elsewhere (picker, Etichettatura automatica) the folders stay out, as before.
+      final names = await tester.runAsync(() => getIt<InboxRepository>().watchLabels('a1').first);
+      expect(names!.map((l) => l.name), ['Fatture']);
+    },
+  );
+
+  testWidgets('a Microsoft Account has no Cestino: it is not synced (#318)', (tester) async {
     await _setUp(tester);
     await _pump(tester);
-    expect(find.text('a1@example.com'), findsOneWidget);
-    expect(find.text('Cestino'), findsNWidgets(2));
-    expect(find.text('Lavoro/Progetti'), findsOneWidget);
-    expect(find.text('Fatture'), findsOneWidget);
-    expect(find.text('Bonifici'), findsOneWidget);
-    expect(find.text('Sent'), findsNothing);
-    // Elsewhere (picker, Etichettatura automatica) the folders stay out, as before.
-    final names = await tester.runAsync(() => getIt<InboxRepository>().watchLabels('a1').first);
-    expect(names!.map((l) => l.name), ['Fatture']);
+    expect(find.byKey(const ValueKey('label-a1-TRASH')), findsOneWidget);
+    expect(find.byKey(const ValueKey('label-a3-TRASH')), findsNothing);
+    expect(find.byKey(const ValueKey('label-a3-SENT')), findsOneWidget);
   });
 
   testWidgets('a folder opens with its Account, its id one segment of the path', (tester) async {

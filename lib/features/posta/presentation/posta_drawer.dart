@@ -103,7 +103,8 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
                       for (final (id, name, icon, counts) in [
                         (draftLabelId, t.bozze.title, PostinoIcons.pencil, false),
                         (sentLabelId, t.inviati.title, PostinoIcons.send, false),
-                        (trashLabelId, t.cestino, PostinoIcons.trash, false),
+                        // ponytail: Microsoft's Cestino is not synced (GraphFolders._unsynced): no entry until #318.
+                        if (a.provider != ProviderKind.microsoft) (trashLabelId, t.cestino, PostinoIcons.trash, false),
                         for (final l in byAccount[a.id] ?? const <Label>[]) (l.id, l.name, PostinoIcons.tag, true),
                       ])
                         PostinoDrawerItem(

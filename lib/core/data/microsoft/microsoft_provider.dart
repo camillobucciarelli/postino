@@ -43,12 +43,15 @@ class MicrosoftProvider(
 
   /// The Message-ID of a message by its Graph id, from the app's cache: how an Azione finds a message whose id is gone.
   final MessageIdOf? _messageIdOf,
+
+  /// The most messages Graph answers a filtered delta with; lower only in tests.
+  final int filterCap = GraphDelta.filterCap,
 }) implements MailProvider {
   this : _graph = GraphHttp(accountId, keychain, httpClient, _clock, client: client, sleep: _sleep);
 
   final GraphHttp _graph;
   late final _folders = GraphFolders(_graph);
-  late final _delta = GraphDelta(_graph);
+  late final _delta = GraphDelta(_graph, cap: filterCap);
   late final _bodies = GraphBodies(_graph);
   late final _conversations = GraphConversations(_graph, _folders);
   late final _lookup = GraphLookup(_graph);

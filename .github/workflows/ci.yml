@@ -77,6 +77,7 @@ jobs:
       - run: tool/release/testflight_upload_test.sh
       - run: tool/release/guide_check_test.sh
       - run: tool/release/download_check_test.sh
+      - run: tool/release/entitlements_check_test.sh
       - run: tool/ci/approval_test.sh
       - run: tool/ci/codex_ok_test.sh
       - run: tool/ci/gate_test.sh

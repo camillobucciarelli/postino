@@ -1,4 +1,4 @@
-// Collegare un Account Microsoft personale (#179): consent, keychain, ricollegamento, rimozione.
+// Collegare un Account Microsoft, personale (#179) o Microsoft 365 (#313): consent, keychain, ricollegamento, rimozione.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -50,7 +50,8 @@ void main() {
   test('every failure of the consent writes nothing', () async {
     for (final failure in <Failure>[
       const CancelledFailure(),
-      const WorkAccountFailure(),
+      const AdminConsentFailure(),
+      const OrganizationPolicyFailure(),
       const MissingPermissionFailure(),
       const ConfigurationFailure('MICROSOFT_CLIENT_ID'),
       const OfflineFailure(),
@@ -137,6 +138,49 @@ void main() {
     }
     expect(h.keychain.values, isEmpty);
     expect(await getIt<MailStore>().accounts(), isEmpty);
+  });
+
+  test('a custom domain on Microsoft 365\'s servers points to «Collega Outlook», no login tried', () async {
+    const office365 = MailServer(host: 'outlook.office365.com', port: 993, security: ServerSecurity.ssl);
+    const smtp = MailServer(host: 'smtp.office365.com', port: 587, security: ServerSecurity.starttls);
+    h.discovery.servers['ada@contoso.com'] = const ServerSettings(imap: office365, smtp: smtp);
+
+    expect(_failure(await accounts.connectWithPassword('ada@contoso.com', 'x')), isA<UseMicrosoftFailure>());
+    final typed = await accounts.connectWithPassword(
+      'bob@contoso.com',
+      'x',
+      servers: const ServerSettings(
+        imap: MailServer(host: 'Outlook.Office365.com', port: 993, security: ServerSecurity.ssl),
+        smtp: smtp,
+      ),
+    );
+    expect(_failure(typed), isA<UseMicrosoftFailure>(), reason: 'servers entered by hand too');
+
+    expect(h.connection.tested, isEmpty);
+    expect(h.keychain.values, isEmpty);
+    expect(await getIt<MailStore>().accounts(), isEmpty);
+  });
+
+  test('an IMAP Account already saved on Microsoft 365\'s servers still reconnects with its password', () async {
+    await getIt<MailStore>().addAccount(
+      const Account(
+        id: 'imap:ada@contoso.com',
+        address: 'ada@contoso.com',
+        provider: ProviderKind.imap,
+        color: 0,
+        position: 0,
+      ),
+    );
+    await getIt<MailStore>().setStatus('imap:ada@contoso.com', AccountStatus.daRicollegare);
+    h.discovery.servers['ada@contoso.com'] = const ServerSettings(
+      imap: MailServer(host: 'outlook.office365.com', port: 993, security: ServerSecurity.ssl),
+      smtp: MailServer(host: 'smtp.office365.com', port: 587, security: ServerSecurity.starttls),
+    );
+
+    final r = await accounts.connectWithPassword('ada@contoso.com', 'app-password-1');
+
+    expect(r, isA<Ok<Account>>());
+    expect(h.connection.tested, hasLength(1));
   });
 
   test(

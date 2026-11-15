@@ -34,7 +34,7 @@ class _ReconnectBannersState() extends State<ReconnectBanners> with AccountsSign
     final r = await consent;
     if (!mounted) return;
     if (connectError(context, r, provider: a.provider) case final e?) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: PostinoSelectable(child: Text(e))));
     }
   }
 

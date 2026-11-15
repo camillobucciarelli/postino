@@ -141,7 +141,8 @@ class _Translations$connect$en extends Translations$connect$it {
 	@override String wrongAccount({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.';
 	@override String get failed => 'Something went wrong: try again.';
 	@override String get alreadyConnected => 'This Account is already connected.';
-	@override String get workAccount => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.';
+	@override String get adminConsent => 'Your organization requires an administrator\'s approval to use Postino.';
+	@override String get organizationPolicy => 'Your organization does not allow sign-in from this app or this device.';
 }
 
 // Path: aggiornamenti
@@ -610,7 +611,7 @@ class _Translations$passwordForm$en extends Translations$passwordForm$it {
 	@override String get unreachable => 'Server unreachable: check the connection, the host and the port.';
 	@override String get alreadyConnected => 'This Account is already connected.';
 	@override String get useGmail => 'For a Gmail address use «Connect Gmail».';
-	@override String get useMicrosoft => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».';
+	@override String get useMicrosoft => 'For an Outlook.com, Hotmail, Live, MSN or Microsoft 365 work or school address use «Connect Outlook».';
 }
 
 // Path: accounts
@@ -731,7 +732,8 @@ extension on TranslationsEn {
 			'connect.wrongAccount' => ({required Object address}) => 'You picked a different account: to reconnect ${address}, pick that account.',
 			'connect.failed' => 'Something went wrong: try again.',
 			'connect.alreadyConnected' => 'This Account is already connected.',
-			'connect.workAccount' => 'Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported.',
+			'connect.adminConsent' => 'Your organization requires an administrator\'s approval to use Postino.',
+			'connect.organizationPolicy' => 'Your organization does not allow sign-in from this app or this device.',
 			'aggiornamenti.available' => ({required Object version}) => 'Postino ${version} is available',
 			'aggiornamenti.update' => 'Update',
 			'aggiornamenti.dismiss' => 'Dismiss',
@@ -1033,7 +1035,7 @@ extension on TranslationsEn {
 			'passwordForm.unreachable' => 'Server unreachable: check the connection, the host and the port.',
 			'passwordForm.alreadyConnected' => 'This Account is already connected.',
 			'passwordForm.useGmail' => 'For a Gmail address use «Connect Gmail».',
-			'passwordForm.useMicrosoft' => 'For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook».',
+			'passwordForm.useMicrosoft' => 'For an Outlook.com, Hotmail, Live, MSN or Microsoft 365 work or school address use «Connect Outlook».',
 			'accounts.section' => 'Accounts',
 			'accounts.add' => 'Add Account',
 			'accounts.gmail' => 'Gmail',

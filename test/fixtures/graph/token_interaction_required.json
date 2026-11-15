@@ -1,0 +1,10 @@
+{
+  "status": 400,
+  "body": {
+    "error": "interaction_required",
+    "error_description": "AADSTS50076: Due to a configuration change made by your administrator, or because you moved to a new location, you must use multi-factor authentication.",
+    "error_codes": [
+      50076
+    ]
+  }
+}

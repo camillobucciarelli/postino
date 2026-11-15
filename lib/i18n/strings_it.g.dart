@@ -204,8 +204,11 @@ class Translations$connect$it {
 	/// it: 'Questo Account è già collegato.'
 	String get alreadyConnected => 'Questo Account è già collegato.';
 
-	/// it: 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.'
-	String get workAccount => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.';
+	/// it: 'La tua organizzazione richiede l'approvazione di un amministratore per usare Postino.'
+	String get adminConsent => 'La tua organizzazione richiede l\'approvazione di un amministratore per usare Postino.';
+
+	/// it: 'La tua organizzazione non consente l'accesso da questa app o da questo dispositivo.'
+	String get organizationPolicy => 'La tua organizzazione non consente l\'accesso da questa app o da questo dispositivo.';
 }
 
 // Path: aggiornamenti
@@ -1216,8 +1219,8 @@ class Translations$passwordForm$it {
 	/// it: 'Per un indirizzo Gmail usa «Collega Gmail».'
 	String get useGmail => 'Per un indirizzo Gmail usa «Collega Gmail».';
 
-	/// it: 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».'
-	String get useMicrosoft => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».';
+	/// it: 'Per un indirizzo Outlook.com, Hotmail, Live, MSN o di un account di lavoro o scuola Microsoft 365 usa «Collega Outlook».'
+	String get useMicrosoft => 'Per un indirizzo Outlook.com, Hotmail, Live, MSN o di un account di lavoro o scuola Microsoft 365 usa «Collega Outlook».';
 }
 
 // Path: accounts
@@ -1428,7 +1431,8 @@ extension on Translations {
 			'connect.wrongAccount' => ({required Object address}) => 'Hai scelto un altro account: per ricollegare ${address} scegli quell\'account.',
 			'connect.failed' => 'Qualcosa è andato storto: riprova.',
 			'connect.alreadyConnected' => 'Questo Account è già collegato.',
-			'connect.workAccount' => 'Postino collega solo account Microsoft personali (Outlook.com, Hotmail, Live): gli account di lavoro o scuola non sono supportati.',
+			'connect.adminConsent' => 'La tua organizzazione richiede l\'approvazione di un amministratore per usare Postino.',
+			'connect.organizationPolicy' => 'La tua organizzazione non consente l\'accesso da questa app o da questo dispositivo.',
 			'aggiornamenti.available' => ({required Object version}) => 'È disponibile Postino ${version}',
 			'aggiornamenti.update' => 'Aggiorna',
 			'aggiornamenti.dismiss' => 'Chiudi',
@@ -1730,7 +1734,7 @@ extension on Translations {
 			'passwordForm.unreachable' => 'Server non raggiungibile: controlla la connessione, l\'host e la porta.',
 			'passwordForm.alreadyConnected' => 'Questo Account è già collegato.',
 			'passwordForm.useGmail' => 'Per un indirizzo Gmail usa «Collega Gmail».',
-			'passwordForm.useMicrosoft' => 'Per un indirizzo Outlook.com, Hotmail, Live o MSN usa «Collega Outlook».',
+			'passwordForm.useMicrosoft' => 'Per un indirizzo Outlook.com, Hotmail, Live, MSN o di un account di lavoro o scuola Microsoft 365 usa «Collega Outlook».',
 			'accounts.section' => 'Account',
 			'accounts.add' => 'Aggiungi Account',
 			'accounts.gmail' => 'Gmail',

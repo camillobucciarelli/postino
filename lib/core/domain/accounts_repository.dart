@@ -16,16 +16,17 @@ abstract interface class AccountsRepository() {
   /// (else [WrongAccountFailure], nothing written).
   Future<Result<Account>> connectGmail({String? loginHint});
 
-  /// Microsoft consent for a personal account (Outlook.com, Hotmail, Live); creates the Microsoft Account, or
-  /// brings it back to attivo if Da ricollegare, then syncs. Like [connectGmail], plus [WorkAccountFailure] for a
-  /// work or school identity and [MissingPermissionFailure] when the mail permissions were not granted.
+  /// Microsoft consent for a personal (Outlook.com, Hotmail, Live) or work or school account (Microsoft 365);
+  /// creates the Microsoft Account, or brings it back to attivo if Da ricollegare, then syncs. Like [connectGmail],
+  /// plus [MissingPermissionFailure] when the mail permissions were not granted, [AdminConsentFailure] and
+  /// [OrganizationPolicyFailure] when the user's organization refuses the app.
   Future<Result<Account>> connectMicrosoft({String? loginHint});
 
   /// Connects the iCloud or IMAP Account [address] with [password] (an app-specific one for iCloud), or brings it
   /// back to attivo if Da ricollegare, then syncs. The Provider comes from the address (`passwordProviderFor`);
   /// the servers are [servers] when given, else those already saved for the Account, the Provider's preset or
   /// autodiscovery. A test connection runs before anything is written: on any failure nothing is saved.
-  /// Failures: [UseGmailFailure] (a Gmail address), [UseMicrosoftFailure] (an Outlook.com, Hotmail, Live or MSN one), [AlreadyConnectedFailure], [ServerNotFoundFailure] (enter the
+  /// Failures: [UseGmailFailure] (a Gmail address), [UseMicrosoftFailure] (an Outlook.com, Hotmail, Live or MSN one, or one on Microsoft 365's servers), [AlreadyConnectedFailure], [ServerNotFoundFailure] (enter the
   /// servers by hand), [AuthFailure] (credentials refused), [OfflineFailure] (server unreachable), and
   /// [CancelledFailure] when [cancel] completes before the save: then nothing is written either.
   Future<Result<Account>> connectWithPassword(

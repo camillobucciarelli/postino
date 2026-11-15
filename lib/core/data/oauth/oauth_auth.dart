@@ -38,7 +38,8 @@ class OAuthAuth(
   }
 
   /// A new access token from the refresh token of [old], saved in the keychain.
-  /// A revoked or expired refresh token is the Provider's definitive refusal: [AuthFailure].
+  /// A revoked or expired refresh token, or one that needs the user to sign in again, is the Provider's definitive
+  /// refusal: [AuthFailure].
   Future<OAuthTokens> refresh(OAuthTokens? old) async {
     if (old == null) throw const OAuthFailed(AuthFailure());
     final r = await _http.post(
@@ -59,7 +60,8 @@ class OAuthAuth(
       if ((await tokens())?.refresh == old.refresh) await fresh.write(_keychain, _accountId);
       return fresh;
     }
-    if (r.statusCode == 401 || body['error'] == 'invalid_grant') {
+    // interaction_required: the organization wants the user to sign in again (MFA, Conditional Access).
+    if (r.statusCode == 401 || body['error'] == 'invalid_grant' || body['error'] == 'interaction_required') {
       throw const OAuthFailed(AuthFailure());
     }
     throw OAuthFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));

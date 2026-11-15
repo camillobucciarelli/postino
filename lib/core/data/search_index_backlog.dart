@@ -8,9 +8,11 @@ import 'search_index.dart';
 /// body done. Not a drift table, as the index.
 const _backlog = 'search_index_backlog';
 
-/// Writes the text of a body only if its row (?4) is still there: a body replaced meanwhile has a new row, which the
-/// sync indexed and the backlog reaches later.
-const _backlogBodySql = '$indexBodySql AND EXISTS (SELECT 1 FROM bodies WHERE rowid = ?4)';
+/// Writes the text of a body only if the body read (row ?4, content ?5, kind ?6) is still the one stored: a body
+/// replaced meanwhile was indexed by the sync, even when its new row took the old rowid (no AUTOINCREMENT).
+const _backlogBodySql =
+    '$indexBodySql AND EXISTS (SELECT 1 FROM bodies WHERE rowid = ?4 AND account_id = ?1 AND message_id = ?2 '
+    'AND body = ?5 AND kind = ?6)';
 
 /// Puts the bodies already stored in the backlog, if any (the migration that builds the index, ADR 0018).
 Future<void> queueSearchBacklog(PostinoDatabase db) async {
@@ -46,6 +48,8 @@ Future<void> indexSearchBacklog(PostinoDatabase db, {int batch = 50}) async {
           r.read<String>('message_id'),
           texts[i],
           r.read<int>('rowid'),
+          r.read<String>('body'),
+          r.read<String>('kind'),
         ]);
       }
       await db.customStatement('UPDATE $_backlog SET last = ?1', [rows.last.read<int>('rowid')]);

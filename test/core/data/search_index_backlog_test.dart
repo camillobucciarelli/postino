@@ -87,21 +87,28 @@ void main() {
     expect(await indexed(), {'a1/m1': '', 'a1/m2': 'due'});
   });
 
-  test('a body replaced while its batch is parsed keeps the new text, even an empty one', () async {
-    await beforeTheIndex({'m1': '<p>vecchio</p>'});
-    // Between the read of the batch and its write: a Bozza saved again, with only an image.
-    afterRead.run = (e) async {
-      await e.runCustom(
-        "INSERT OR REPLACE INTO bodies (account_id, message_id, body, kind) VALUES ('a1', 'm1', '<img>', 'html')",
-      );
-      await e.runCustom(indexBodySql, ['a1', 'm1', '']);
-    };
+  for (final (how, replace) in [
+    (
+      'in a new row',
+      "INSERT OR REPLACE INTO bodies (account_id, message_id, body, kind) VALUES ('a1', 'm1', '<img>', 'html')",
+    ),
+    // Removed and inserted again: without AUTOINCREMENT the last rowid comes back.
+    ('in a row with the same rowid', "UPDATE bodies SET body = '<img>' WHERE account_id = 'a1' AND message_id = 'm1'"),
+  ]) {
+    test('a body replaced $how while its batch is parsed keeps the new text, even an empty one', () async {
+      await beforeTheIndex({'m1': '<p>vecchio</p>'});
+      // Between the read of the batch and its write: a Bozza saved again, with only an image.
+      afterRead.run = (e) async {
+        await e.runCustom(replace);
+        await e.runCustom(indexBodySql, ['a1', 'm1', '']);
+      };
 
-    await indexSearchBacklog(db);
+      await indexSearchBacklog(db);
 
-    expect(await indexed(), {'a1/m1': ''});
-    expect(await backlog(), isFalse);
-  });
+      expect(await indexed(), {'a1/m1': ''});
+      expect(await backlog(), isFalse);
+    });
+  }
 
   test('an open search finds what the backlog indexed', () async {
     await beforeTheIndex({'m1': '<p>preventivo</p>'});

@@ -1,4 +1,6 @@
 // The local search (#205): the full-text index of the database, kept in step with every write.
+import 'package:drift/drift.dart' show ApplyInterceptor, QueryExecutor, QueryInterceptor, Variable;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -206,25 +208,30 @@ void main() {
     expect(results.last, isEmpty);
   });
 
-  test('20,000 messages answer in well under a second', () async {
-    final all = [
-      for (var i = 0; i < 20000; i++)
-        msg(
-          'm$i',
-          subject: 'Oggetto numero $i riunione${i % 50}',
-          from: 'mittente${i % 200}@example.test',
-          snippet: 'anteprima${i % 97} del messaggio $i',
-          date: DateTime.utc(2026).add(Duration(minutes: i)),
-        ),
+  test('a keystroke reads only through the index, never a whole table (#221)', () async {
+    // The query plan, not the clock: it does not depend on the runner, nor on the rows (no ANALYZE).
+    final statements = _Statements();
+    final probe = PostinoDatabase(NativeDatabase.memory().interceptWith(statements));
+    addTearDown(probe.close);
+    await SearchStore(probe).watchLocal(parseSearchQuery('riunione7 da:mittente7')).first;
+    final (sql, args) = statements.selects.last;
+    final plan = [
+      for (final r
+          in await probe.customSelect('EXPLAIN QUERY PLAN $sql', variables: [for (final a in args) Variable(a)]).get())
+        r.read<String>('detail'),
     ];
-    for (var start = 0; start < all.length; start += 2000) {
-      await sync('a1', all.sublist(start, start + 2000));
-    }
-    final watch = Stopwatch()..start();
-    final rows = await search.watchLocal(parseSearchQuery('riunione7 da:mittente7')).first;
-    watch.stop();
-    expect(rows, isNotEmpty);
-    // Generous: the real figure is a few milliseconds; this only catches a scan per keystroke.
-    expect(watch.elapsedMilliseconds, lessThan(100), reason: '${watch.elapsedMilliseconds} ms');
+    expect(plan, contains(startsWith('SCAN search_index VIRTUAL TABLE INDEX')));
+    expect(plan.where((d) => d.startsWith('SCAN ') && !d.startsWith('SCAN search_index ')), isEmpty, reason: '$plan');
   });
+}
+
+/// The SELECTs a database runs, with their arguments.
+class _Statements() extends QueryInterceptor {
+  final selects = <(String, List<Object?>)>[];
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(QueryExecutor executor, String statement, List<Object?> args) {
+    selects.add((statement, args));
+    return super.runSelect(executor, statement, args);
+  }
 }

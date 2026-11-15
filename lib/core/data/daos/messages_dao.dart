@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../postino_database.dart';
+import '../search_index.dart';
 import '../tables/accounts_table.dart';
 import '../tables/bodies_table.dart';
 import '../tables/conflicts_table.dart';
@@ -46,91 +47,100 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   /// The batch's cursor is saved in the same transaction, so data and cursor never disagree;
   /// [saveCursor] false stores a partial page of the initial sync, whose cursor must wait for the end.
-  Future<void> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false, bool saveCursor = true}) =>
-      transaction(() async {
+  /// [bodyTexts]: the `searchableTextsOf` the batch's bodies, when the caller made them before its own transaction.
+  Future<void> applySync(
+    String accountId,
+    SyncBatch batch, {
+    bool fullSnapshot = false,
+    bool saveCursor = true,
+    Map<String, String>? bodyTexts,
+  }) async {
+    // Before the transaction: other writers do not wait for the HTML to be parsed (#221).
+    final texts = bodyTexts ?? await searchableTextsOf(batch.bodies);
+    return transaction(() async {
+      if (fullSnapshot) {
+        // Ids go through a TEMP table, not bound variables: SQLite caps those.
+        await customStatement('CREATE TEMP TABLE IF NOT EXISTS snapshot_ids (id TEXT PRIMARY KEY)');
+        await customStatement('DELETE FROM snapshot_ids');
+      }
+      final labelsDao = attachedDatabase.labelsDao;
+      final bodiesDao = attachedDatabase.bodiesDao;
+      await this.batch((b) {
         if (fullSnapshot) {
-          // Ids go through a TEMP table, not bound variables: SQLite caps those.
-          await customStatement('CREATE TEMP TABLE IF NOT EXISTS snapshot_ids (id TEXT PRIMARY KEY)');
-          await customStatement('DELETE FROM snapshot_ids');
+          // Left behind by the sync (#252): the stored copy stays until its retry, its Bozza too.
+          for (final id in [for (final m in batch.messages) m.id, ...batch.deferredMessageIds]) {
+            b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [id]);
+          }
+          b
+            ..deleteWhere(
+              messageLabels,
+              (t) =>
+                  t.accountId.equals(accountId) &
+                  const CustomExpression('message_id NOT IN (SELECT id FROM snapshot_ids)'),
+            )
+            ..deleteWhere(
+              messages,
+              (t) => t.accountId.equals(accountId) & const CustomExpression('id NOT IN (SELECT id FROM snapshot_ids)'),
+            );
+          bodiesDao.deleteNotInSnapshotIn(b, accountId);
         }
-        final labelsDao = attachedDatabase.labelsDao;
-        final bodiesDao = attachedDatabase.bodiesDao;
-        await this.batch((b) {
-          if (fullSnapshot) {
-            // Left behind by the sync (#252): the stored copy stays until its retry, its Bozza too.
-            for (final id in [for (final m in batch.messages) m.id, ...batch.deferredMessageIds]) {
-              b.customStatement('INSERT OR IGNORE INTO snapshot_ids VALUES (?)', [id]);
-            }
-            b
-              ..deleteWhere(
-                messageLabels,
-                (t) =>
-                    t.accountId.equals(accountId) &
-                    const CustomExpression('message_id NOT IN (SELECT id FROM snapshot_ids)'),
-              )
-              ..deleteWhere(
-                messages,
-                (t) =>
-                    t.accountId.equals(accountId) & const CustomExpression('id NOT IN (SELECT id FROM snapshot_ids)'),
-              );
-            bodiesDao.deleteNotInSnapshotIn(b, accountId);
-          }
-          // Removals before upserts: an id both removed and upserted in one batch survives.
-          for (final id in batch.removedMessageIds) {
-            b
-              ..deleteWhere(messages, (t) => t.accountId.equals(accountId) & t.id.equals(id))
-              ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(id));
-            bodiesDao.deleteIn(b, accountId, id);
-          }
-          // The batch's list is the whole one: those gone from the Provider go too.
-          if (batch.labels case final labels?) {
-            labelsDao
-              ..deleteAllIn(b, accountId)
-              ..upsertAllIn(b, accountId, labels);
-          }
-          for (final m in batch.messages) {
-            final row = MessagesCompanion.insert(
-              accountId: accountId,
-              id: m.id,
-              messageId: m.messageId,
-              conversationId: m.conversationId,
-              sender: m.from,
-              senderName: Value(m.fromName),
-              recipients: m.to.join('\n'),
-              cc: Value(m.cc.join('\n')),
-              bcc: Value(m.bcc.join('\n')),
-              replyTo: Value(m.replyTo),
-              references: Value(m.references.join('\n')),
-              subject: m.subject,
-              snippet: m.snippet,
-              date: m.date.millisecondsSinceEpoch,
-              isRead: m.isRead,
-              isStarred: m.isStarred,
-              // Unknown does not erase what a body or an earlier sync already said.
-              hasAttachments: Value.absentIfNull(m.hasAttachments),
-            );
-            b
-              // An upsert, not a replace: the row keeps its rowid, which is the id of its entry in the search index.
-              ..insert(messages, row, onConflict: DoUpdate((_) => row))
-              ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(m.id))
-              ..insertAll(messageLabels, [
-                for (final l in m.labelIds)
-                  MessageLabelsCompanion.insert(accountId: accountId, messageId: m.id, labelId: l),
-              ]);
-            // A header-only guess does not undo what the body already said.
-            if (m.hasAttachments != null) bodiesDao.correctHasAttachmentsIn(b, accountId, m.id);
-          }
-          bodiesDao.upsertAllIn(b, accountId, batch.bodies);
-          if (saveCursor) {
-            b.insert(
-              syncCursors,
-              SyncCursorsCompanion.insert(accountId: accountId, cursor: batch.cursor),
-              mode: InsertMode.insertOrReplace,
-            );
-          }
-        });
-        await _keepIntents(accountId, {for (final m in batch.messages) m.id});
+        // Removals before upserts: an id both removed and upserted in one batch survives.
+        for (final id in batch.removedMessageIds) {
+          b
+            ..deleteWhere(messages, (t) => t.accountId.equals(accountId) & t.id.equals(id))
+            ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(id));
+          bodiesDao.deleteIn(b, accountId, id);
+        }
+        // The batch's list is the whole one: those gone from the Provider go too.
+        if (batch.labels case final labels?) {
+          labelsDao
+            ..deleteAllIn(b, accountId)
+            ..upsertAllIn(b, accountId, labels);
+        }
+        for (final m in batch.messages) {
+          final row = MessagesCompanion.insert(
+            accountId: accountId,
+            id: m.id,
+            messageId: m.messageId,
+            conversationId: m.conversationId,
+            sender: m.from,
+            senderName: Value(m.fromName),
+            recipients: m.to.join('\n'),
+            cc: Value(m.cc.join('\n')),
+            bcc: Value(m.bcc.join('\n')),
+            replyTo: Value(m.replyTo),
+            references: Value(m.references.join('\n')),
+            subject: m.subject,
+            snippet: m.snippet,
+            date: m.date.millisecondsSinceEpoch,
+            isRead: m.isRead,
+            isStarred: m.isStarred,
+            // Unknown does not erase what a body or an earlier sync already said.
+            hasAttachments: Value.absentIfNull(m.hasAttachments),
+          );
+          b
+            // An upsert, not a replace: the row keeps its rowid, which is the id of its entry in the search index.
+            ..insert(messages, row, onConflict: DoUpdate((_) => row))
+            ..deleteWhere(messageLabels, (t) => t.accountId.equals(accountId) & t.messageId.equals(m.id))
+            ..insertAll(messageLabels, [
+              for (final l in m.labelIds)
+                MessageLabelsCompanion.insert(accountId: accountId, messageId: m.id, labelId: l),
+            ]);
+          // A header-only guess does not undo what the body already said.
+          if (m.hasAttachments != null) bodiesDao.correctHasAttachmentsIn(b, accountId, m.id);
+        }
+        bodiesDao.upsertAllIn(b, accountId, batch.bodies, texts);
+        if (saveCursor) {
+          b.insert(
+            syncCursors,
+            SyncCursorsCompanion.insert(accountId: accountId, cursor: batch.cursor),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
       });
+      await _keepIntents(accountId, {for (final m in batch.messages) m.id});
+    });
+  }
 
   /// What the user did here wins over what the Provider still says: until its voce is replayed, and while its
   /// Conflitto is open (ADR 0008).

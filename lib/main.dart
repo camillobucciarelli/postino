@@ -24,6 +24,7 @@ import 'core/data/notification_action_relay.dart';
 import 'core/data/notification_payload.dart' show decodeAction;
 import 'core/data/platform_services.dart' show SystemPeriodicSync;
 import 'core/data/postino_database.dart';
+import 'core/data/search_index.dart';
 import 'core/data/settings_sync.dart';
 import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';
@@ -127,6 +128,17 @@ Future<void> main() async {
   unawaited(_resumeImmediateNotifications());
   runApp(TranslationProvider(child: PostinoApp(launch: launch)));
   if (_desktop) unawaited(_startDesktop());
+  unawaited(_indexSearchBacklog());
+}
+
+/// The bodies stored before the search index get their text while the app runs (#221). Failing leaves them for the
+/// next start.
+Future<void> _indexSearchBacklog() async {
+  try {
+    await indexSearchBacklog(getIt<PostinoDatabase>());
+  } on Object catch (e, s) {
+    getIt<ErrorLog>().record(e, stack: s, context: 'search index');
+  }
 }
 
 /// The Notifiche immediate (#214) at every start of the app's engine (killed by the system, or started by the service

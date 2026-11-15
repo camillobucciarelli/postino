@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/result.dart';
@@ -18,29 +16,55 @@ typedef FolderDelta = ({
 });
 
 /// The message delta query of Graph, per folder (`/me/mailFolders/{id}/messages/delta`).
-class GraphDelta(final GraphHttp _graph) {
+class GraphDelta(final GraphHttp _graph, {final int cap = filterCap}) {
   /// Graph answers a delta with `$filter` with at most this many messages (delta-query-messages).
   static const filterCap = 5000;
 
   /// The first round of folder [folderId], whose Etichetta is [labelId]: the messages received since [since],
   /// newest first, page by page to [onPage]. The next rounds keep the window and the properties asked here.
-  // ponytail: a folder with more than [filterCap] messages in the window syncs only [filterCap] of them; drop the
-  // `$filter` and keep the window here if such folders show up (a far longer first round).
+  /// A round that reaches the cap was cut by Graph: the rest of the window comes from the paged list of the
+  /// folder, `receivedDateTime` up to the oldest message seen (`le`: others may share its date); the delta link
+  /// stays the one of the filtered round.
+  // ponytail: not checked on a real account: whether the later rounds report the flag changes (Stella) of the
+  // messages of that tail. If they do not, redo without `$filter` the folders that reach the cap.
   Future<FolderDelta> start(String folderId, String labelId, DateTime since, {SyncPage? onPage}) async {
+    final select = labelId == inboxLabelId ? graphBodySelect : graphMessageSelect;
+    final from = 'receivedDateTime ge ${since.toUtc().toIso8601String()}';
     final d = await _round(
       _graph.get(
         'mailFolders/$folderId/messages/delta',
-        query: {
-          r'$select': labelId == inboxLabelId ? graphBodySelect : graphMessageSelect,
-          r'$filter': 'receivedDateTime ge ${since.toUtc().toIso8601String()}',
-          r'$orderby': 'receivedDateTime desc',
-        },
+        query: {r'$select': select, r'$filter': from, r'$orderby': 'receivedDateTime desc'},
       ),
       labelId,
       onPage,
     );
-    if (d.messages.length >= filterCap) debugPrint('[graph] a folder reached the $filterCap messages of a delta');
-    return d;
+    if (d.messages.length < cap) return d;
+    final oldest = d.messages.values.map((m) => m.date).reduce((a, b) => a.isBefore(b) ? a : b);
+    var page = await _graph.get(
+      'mailFolders/$folderId/messages',
+      query: {
+        r'$select': select,
+        r'$filter': '$from and receivedDateTime le ${oldest.toUtc().toIso8601String()}',
+        r'$orderby': 'receivedDateTime desc',
+      },
+    );
+    while (true) {
+      final fresh = <Message>[];
+      final freshBodies = <String, MessageBody>{};
+      for (final j in jsonObjects(page['value'])) {
+        final id = j['id'] as String;
+        if (d.messages.containsKey(id)) continue;
+        final m = d.messages[id] = parseGraphMessage(j, labelId: labelId);
+        fresh.add(m);
+        if (graphBody(j) case final body?) d.bodies[id] = freshBodies[id] = body;
+      }
+      await onPage?.call(fresh, freshBodies);
+      if (page['@odata.nextLink'] case final String next) {
+        page = await _graph.follow(next);
+      } else {
+        return d;
+      }
+    }
   }
 
   /// The changes since the round that handed out [link].

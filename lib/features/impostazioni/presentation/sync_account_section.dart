@@ -140,23 +140,27 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
             onTap: () => unawaited(_open()),
           ),
           // The banner (in progress, or why it failed) opens and closes under the text, its gap inside (#283).
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PostinoSelectable(
-                child: Text(t.syncBody, style: PostinoText.caption.copyWith(color: context.pc.inkMuted)),
-              ),
-              for (final shown in [consent, outcome])
-                PostinoReveal(
-                  contentKey: shown?.key,
-                  child: shown == null
-                      ? null
-                      : Padding(
-                          padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                          child: shown,
-                        ),
+          // The note in line with the rows' text (#312).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s4, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PostinoSelectable(
+                  child: Text(t.syncBody, style: PostinoText.caption.copyWith(color: context.pc.inkMuted)),
                 ),
-            ],
+                for (final shown in [consent, outcome])
+                  PostinoReveal(
+                    contentKey: shown?.key,
+                    child: shown == null
+                        ? null
+                        : Padding(
+                            padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                            child: shown,
+                          ),
+                  ),
+              ],
+            ),
           ),
         ],
       );

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/domain/model_download.dart';
 import 'package:postino/core/domain/model_download_state.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/presentation/model_download_banner.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -22,13 +23,18 @@ void main() {
   });
   tearDown(() => GetIt.I.reset());
 
-  Future<void> start(WidgetTester tester, ModelDownloadState state) async {
+  Future<void> start(WidgetTester tester, ModelDownloadState state, {EdgeInsets padding = EdgeInsets.zero}) async {
     model.emit(state);
     await tester.pumpWidget(
       TranslationProvider(
         child: MaterialApp(
           theme: PostinoTheme.light(),
-          home: const Scaffold(body: Column(children: [ModelDownloadBanner()])),
+          home: Scaffold(
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [ModelDownloadBanner(padding: padding)],
+            ),
+          ),
         ),
       ),
     );
@@ -53,5 +59,20 @@ void main() {
     expect(banner, findsNWidgets(2));
     await tester.pumpAndSettle();
     expect(banner, findsOneWidget);
+  });
+
+  testWidgets('its padding (#312) only while there is a banner', (tester) async {
+    const padding = EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s4, PostinoSpacing.s4, 0);
+    await start(tester, const ModelDownloadAbsent(), padding: padding);
+    expect(tester.getSize(find.byType(ModelDownloadBanner)).height, 0, reason: 'no gap without a banner');
+
+    model.emit(const ModelDownloadFailed(OfflineFailure()));
+    await tester.pumpAndSettle();
+    final outer = tester.getRect(find.byType(ModelDownloadBanner));
+    final inner = tester.getRect(find.byType(PostinoBanner));
+    expect(
+      (inner.left - outer.left, inner.top - outer.top, outer.right - inner.right),
+      (PostinoSpacing.s4, PostinoSpacing.s4, PostinoSpacing.s4),
+    );
   });
 }

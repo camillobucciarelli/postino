@@ -86,43 +86,43 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
     final enabled = _enabled;
     return EscapeToGoBack(
       onBack: widget.onBack,
-      child: PostinoSinglePaneLayout(
-        appBar: PostinoAppBar(title: t.device, onBack: widget.onBack),
-        body: ListView(
-          children: [
-            if (_launchAtLogin.supported)
-              PostinoSwitchRow(
-                key: const ValueKey('launch-at-login'),
-                title: t.launchAtLogin,
-                description: _failed ? t.launchAtLoginFailed : t.launchAtLoginBody,
-                value: enabled ?? false,
-                onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
+      // The template of every page of the Impostazioni: its column and margins (#312).
+      child: PostinoSettingsPage(
+        title: t.device,
+        onBack: widget.onBack,
+        sections: [
+          if (_launchAtLogin.supported)
+            PostinoSwitchRow(
+              key: const ValueKey('launch-at-login'),
+              title: t.launchAtLogin,
+              description: _failed ? t.launchAtLoginFailed : t.launchAtLoginBody,
+              value: enabled ?? false,
+              onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
+            ),
+          if (_updater.supported) ...[
+            // Live: the screen reader hears what the check found.
+            Semantics(
+              liveRegion: true,
+              child: PostinoSettingsItem(
+                key: const ValueKey('check-for-updates'),
+                title: t.checkForUpdates,
+                subtitle: switch (_check) {
+                  UpdateCheck.upToDate => t.upToDate,
+                  UpdateCheck.available => t.checkFound,
+                  UpdateCheck.shown || null => t.checkForUpdatesBody,
+                },
+                onTap: () => unawaited(_checkForUpdates()),
               ),
-            if (_updater.supported) ...[
-              // Live: the screen reader hears what the check found.
-              Semantics(
-                liveRegion: true,
-                child: PostinoSettingsItem(
-                  key: const ValueKey('check-for-updates'),
-                  title: t.checkForUpdates,
-                  subtitle: switch (_check) {
-                    UpdateCheck.upToDate => t.upToDate,
-                    UpdateCheck.available => t.checkFound,
-                    UpdateCheck.shown || null => t.checkForUpdatesBody,
-                  },
-                  onTap: () => unawaited(_checkForUpdates()),
-                ),
-              ),
-              const AppUpdateBanner(
-                padding: EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s4, 0),
-              ),
-            ],
-            const AppVersionLabel(),
-            const NotificationPermissionRow(),
-            if (_immediate) const ImmediateNotificationsRow(),
-            const NotificationActionsSections(),
+            ),
+            const AppUpdateBanner(
+              padding: EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s4, 0),
+            ),
           ],
-        ),
+          const AppVersionLabel(),
+          const NotificationPermissionRow(),
+          if (_immediate) const ImmediateNotificationsRow(),
+          const NotificationActionsSections(),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../atoms/postino_icon_button.dart';
+import '../atoms/postino_reveal.dart';
 import '../molecules/postino_drawer_item.dart';
 import '../molecules/postino_drawer_item_tile.dart';
 import '../tokens/postino_icons.dart';
@@ -51,7 +52,8 @@ class const PostinoDrawerSection({
 
 /// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar,
 /// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
-/// The highlight of the active item is one box under the list that slides to the new item.
+/// The highlight of the active item is one box under the list that slides to the new item, or to its group while
+/// that is closed. A group's children open and close with [PostinoReveal] (#311).
 class const PostinoNavigationDrawer({
   super.key,
 
@@ -67,21 +69,32 @@ class const PostinoNavigationDrawer({
 
 class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _stack = GlobalKey();
-  final _itemKeys = <int, GlobalKey>{};
+
+  /// By the item's key, else by position, (section, item) or (section, item, child): a focused Etichetta stays itself
+  /// when a sync adds another before it, and a closing group keeps its keys.
+  final _keys = <Object, GlobalKey>{};
   Rect? _active;
   var _slide = false;
+  GlobalKey? _activeKey;
+  GlobalKey? _measuredKey;
 
-  void _measure(int? index) {
+  GlobalKey _key(Object id) => _keys.putIfAbsent(id, GlobalKey.new);
+
+  /// [key] shows the active item: the item, or its group while closed; null: none. The box slides to a new key, and
+  /// follows at once the same one when a group opening or closing above it moves it.
+  void _measure(GlobalKey? key) {
     if (!mounted) return;
     final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
-    final item = index == null ? null : _itemKeys[index]?.currentContext?.findRenderObject() as RenderBox?;
+    // A child of a closed group left the tree: no context.
+    final item = key?.currentContext?.findRenderObject() as RenderBox?;
     final rect = stack == null || item == null || !item.attached
         ? null
         : item.localToGlobal(Offset.zero, ancestor: stack) & item.size;
     if (rect == _active) return;
     // The first position (or one after no active item) is placed, not slid to.
     setState(() {
-      _slide = _active != null && rect != null;
+      _slide = key != _measuredKey && _active != null && rect != null;
+      _measuredKey = key;
       _active = rect;
     });
   }
@@ -92,16 +105,17 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
     final sections = widget.sections;
     final scope = PostinoSidebarScope.maybeOf(context);
     final collapsed = scope?.collapsed ?? false;
-    var n = 0;
-    int? activeIndex;
-    for (final s in sections) {
-      for (final item in s.items) {
-        if (item.active) activeIndex = n;
-        n++;
+    GlobalKey? activeKey;
+    for (final (si, s) in sections.indexed) {
+      for (final (ii, item) in s.items.indexed) {
+        if (item.active) activeKey = _key(item.key ?? (si, ii));
+        for (final (ci, child) in (item.children ?? const <PostinoDrawerItem>[]).indexed) {
+          if (child.active) activeKey = item.expanded ? _key(child.key ?? (si, ii, ci)) : _key(item.key ?? (si, ii));
+        }
       }
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeIndex));
-    n = 0;
+    _activeKey = activeKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeKey));
     // Width and shape come from the DrawerTheme: modal by default, docked in PostinoAdaptiveLayout.
     return Drawer(
       backgroundColor: c.drawerBg,
@@ -142,47 +156,74 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                       ),
                     ),
                   ),
-                Column(
-                  children: [
-                    for (final (i, s) in sections.indexed)
-                      Container(
-                        margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
-                        padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                        decoration: i == 0
-                            ? null
-                            : BoxDecoration(
-                                border: Border(top: BorderSide(color: c.borderSubtle)),
-                              ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          spacing: PostinoSpacing.s0_5,
-                          children: [
-                            if (s.title case final t? when !collapsed)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s2,
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s1,
+                // A group opening or closing moves the rows below it frame by frame: the box follows them.
+                NotificationListener<SizeChangedLayoutNotification>(
+                  onNotification: (_) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(_activeKey));
+                    return true;
+                  },
+                  child: Column(
+                    children: [
+                      for (final (i, s) in sections.indexed)
+                        Container(
+                          margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
+                          padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                          decoration: i == 0
+                              ? null
+                              : BoxDecoration(
+                                  border: Border(top: BorderSide(color: c.borderSubtle)),
                                 ),
-                                child: Semantics(
-                                  header: true,
-                                  child: Text(
-                                    t.toUpperCase(),
-                                    style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: PostinoSpacing.s0_5,
+                            children: [
+                              if (s.title case final t? when !collapsed)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s2,
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s1,
+                                  ),
+                                  child: Semantics(
+                                    header: true,
+                                    child: Text(
+                                      t.toUpperCase(),
+                                      style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            for (final item in s.items)
-                              PostinoDrawerItemTile(
-                                item,
-                                collapsed: collapsed,
-                                key: _itemKeys.putIfAbsent(n++, GlobalKey.new),
-                              ),
-                          ],
+                              for (final (ii, item) in s.items.indexed) ...[
+                                PostinoDrawerItemTile(item, collapsed: collapsed, key: _key(item.key ?? (i, ii))),
+                                if (item.children case final children?)
+                                  // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
+                                  SizeChangedLayoutNotifier(
+                                    // With its group, not its position: reordered groups keep their state and children.
+                                    key: ValueKey(('reveal', item.key ?? (i, ii))),
+                                    child: PostinoReveal(
+                                      duration: PostinoMotion.threadExpand,
+                                      child: item.expanded
+                                          ? Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              spacing: PostinoSpacing.s0_5,
+                                              children: [
+                                                for (final (ci, child) in children.indexed)
+                                                  PostinoDrawerItemTile(
+                                                    child,
+                                                    collapsed: collapsed,
+                                                    key: _key(child.key ?? (i, ii, ci)),
+                                                  ),
+                                              ],
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

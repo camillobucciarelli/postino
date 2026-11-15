@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.getSemantics(find.byKey(const ValueKey('account-$graphAccount'))).label,
-      'ada@outlook.com, Da ricollegare',
+      'Account ada@outlook.com, Da ricollegare',
     );
     handle.dispose();
   });

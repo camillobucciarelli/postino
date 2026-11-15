@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:injectable/injectable.dart';
 
 import '../domain/notification_action.dart';
@@ -7,6 +9,7 @@ import 'postino_database.dart';
 @LazySingleton(as: SettingsRepository)
 class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsRepository {
   static const _sidebar = 'sidebar_expanded';
+  static const _collapsedAccounts = 'drawer_collapsed_accounts';
   static const _listWidth = 'list_width';
   static const _launchAtLogin = 'launch_at_login';
   static const _immediateNotifications = 'immediate_notifications';
@@ -22,6 +25,21 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   @override
   Future<void> setSidebarExpanded({required bool? expanded}) =>
       _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
+
+  @override
+  Future<Set<String>> collapsedAccounts() async {
+    final v = await _db.deviceSettingsDao.read(_collapsedAccounts);
+    try {
+      return v == null ? const {} : {...(jsonDecode(v) as List).cast<String>()};
+    } on Object {
+      // A value that is not a list of ids: every Account open, never a drawer without Accounts.
+      return const {};
+    }
+  }
+
+  @override
+  Future<void> setCollapsedAccounts(Set<String> accountIds) =>
+      _db.deviceSettingsDao.write(_collapsedAccounts, jsonEncode(accountIds.toList()));
 
   @override
   Future<double?> listWidth() async {

@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/inbox_repository.dart';
+import '../../../core/domain/message.dart' show trashLabelId;
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
@@ -61,7 +62,8 @@ class const AccountAppBar({
 }
 
 class _AccountAppBarState() extends State<AccountAppBar> with AccountsSignal {
-  late final labels = streamSignal(() => GetIt.I<InboxRepository>().watchLabels(widget.accountId));
+  // Every kind, as the drawer lists them: a folder of the user is named too (#311).
+  late final labels = streamSignal(() => GetIt.I<InboxRepository>().watchAllLabels());
 
   @override
   void dispose() {
@@ -73,12 +75,14 @@ class _AccountAppBarState() extends State<AccountAppBar> with AccountsSignal {
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
       final a = accounts.value.value?.where((a) => a.id == widget.accountId).firstOrNull;
-      final label = labels.value.value?.where((l) => l.id == widget.labelId).firstOrNull;
+      final label = labels.value.value?[widget.accountId]?.where((l) => l.id == widget.labelId).firstOrNull;
       final name = a?.name ?? '';
       return PostinoAppBar(
         commands: searchCommand(context, widget.onSearch),
         moreLabel: context.t.azioni.more,
-        title: widget.labelId == null ? name : widget.labelName ?? label?.name ?? '',
+        title: widget.labelId == null
+            ? name
+            : widget.labelName ?? (widget.labelId == trashLabelId ? context.t.cestino : label?.name) ?? '',
         subtitle: widget.labelId == null ? context.t.postaInArrivo : name,
         account: a == null ? null : (color: PostinoAccountColor.values[a.color], initial: a.initial),
       );

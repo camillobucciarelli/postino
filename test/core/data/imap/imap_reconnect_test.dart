@@ -51,7 +51,10 @@ void main() {
     await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
     unawaited(Routefly.navigate(routePaths.posta.path));
     await tester.pumpAndSettle();
-    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_id'))).label, 'ada@icloud.com, Da ricollegare');
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('account-$_id'))).label,
+      'Account ada@icloud.com, Da ricollegare',
+    );
     await tester.runAsync(server.stop);
     handle.dispose();
   });

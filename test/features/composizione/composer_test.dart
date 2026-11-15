@@ -167,7 +167,7 @@ void main() {
     );
     h.clock.advance(pollEvery); // a Bozza raises no signal: the poll brings it
     await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-DRAFT')));
     await _settle(tester);
     gmail.goOffline();
     await tester.tap(find.text('Dal telefono'));
@@ -255,7 +255,7 @@ void main() {
         ),
       );
     await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-DRAFT')));
     await _settle(tester);
     await tester.tap(find.text('Con allegato'));
     await _settle(tester);
@@ -280,7 +280,7 @@ void main() {
         conversationId: 't-r',
       );
     await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-DRAFT')));
     await _settle(tester);
     await tester.tap(find.text('Re: Originale'));
     await _settle(tester);
@@ -321,7 +321,7 @@ void main() {
       ),
     );
     await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-DRAFT')));
     await _settle(tester);
     expect(find.text('Bozze'), findsWidgets);
     await tester.tap(find.text('Dal telefono'));
@@ -371,7 +371,7 @@ void main() {
     // The Bozze list no longer has it, and nothing complained.
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('drafts-a1')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-DRAFT')));
     await _settle(tester);
     // The signal back: the sync also forgets the Provider's copy of it.
     gmail.restoreSignal();

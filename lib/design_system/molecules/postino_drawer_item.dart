@@ -6,7 +6,8 @@ import '../tokens/postino_icons.dart';
 
 /// A destination of the drawer: an [icon] or an [account] mark, and, for an Account Da ricollegare,
 /// the compact SyncStatus named [reconnectLabel]. [unreadLabel] ("Non letto") is set when it holds unread mail:
-/// both sidebars show it as a dot and read it out.
+/// both sidebars show it as a dot and read it out. With [children] it is a group (an Account, #311): tapping it opens or
+/// closes them ([expanded]) and, closed, it shows the dot of its unread children.
 class const PostinoDrawerItem({
   /// Nome della destinazione.
   required final String label,
@@ -31,6 +32,15 @@ class const PostinoDrawerItem({
 
   /// Se impostata, ci sono messaggi non letti: nome del puntino.
   final String? unreadLabel,
+
+  /// Nome letto dallo screen reader al posto di [label], con gli stati.
+  final String? semanticLabel,
+
+  /// Voci contenute: la voce diventa un gruppo che le apre e le chiude.
+  final List<PostinoDrawerItem>? children,
+
+  /// Se il gruppo è aperto; conta solo con [children].
+  final bool expanded = true,
 }) {
   /// Crea una destinazione del drawer.
   this;

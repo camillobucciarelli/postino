@@ -15,7 +15,8 @@
     "label": "List width",
     "value": "$px pixels"
   },
-  "etichette": "Labels",
+  "drawerAccount": "Account $address",
+  "cestino": "Trash",
   "onboarding": {
     "body": "All your mailboxes in one place.",
     "connectGmail": "Connect Gmail",

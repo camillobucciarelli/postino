@@ -49,7 +49,8 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	);
 	@override late final _Translations$sidebar$en sidebar = _Translations$sidebar$en._(_root);
 	@override late final _Translations$listWidth$en listWidth = _Translations$listWidth$en._(_root);
-	@override String get etichette => 'Labels';
+	@override String drawerAccount({required Object address}) => 'Account ${address}';
+	@override String get cestino => 'Trash';
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$daRicollegare$en daRicollegare = _Translations$daRicollegare$en._(_root);
 	@override late final _Translations$connect$en connect = _Translations$connect$en._(_root);
@@ -717,7 +718,8 @@ extension on TranslationsEn {
 			'sidebar.open' => 'Open the sidebar',
 			'listWidth.label' => 'List width',
 			'listWidth.value' => ({required Object px}) => '${px} pixels',
-			'etichette' => 'Labels',
+			'drawerAccount' => ({required Object address}) => 'Account ${address}',
+			'cestino' => 'Trash',
 			'onboarding.body' => 'All your mailboxes in one place.',
 			'onboarding.connectGmail' => 'Connect Gmail',
 			'onboarding.connectOutlook' => 'Connect Outlook',

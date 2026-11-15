@@ -34,6 +34,12 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
   Future<bool?> sidebarExpanded() async => null;
 
   @override
+  Future<Set<String>> collapsedAccounts() async => const {};
+
+  @override
+  Future<void> setCollapsedAccounts(Set<String> accountIds) async {}
+
+  @override
   Future<void> setSidebarExpanded({required bool? expanded}) async {}
 
   @override

@@ -3,8 +3,8 @@ import 'dart:convert';
 import '../domain/app_updater.dart';
 
 /// The version file the release publishes (#287, tool/release/version_json.sh): `{"version": "X.Y.Z", "build": N,
-/// "url": "https://…"}`, on iOS the app's App Store page (#323). The version in [body] if its build is above [installed], null otherwise;
-/// throws [FormatException] on anything else.
+/// "url": "https://…"}`, on iOS the app's App Store page (#323). The version in [body] if its build is above
+/// [installed], null otherwise; throws [FormatException] on anything else.
 AppUpdate? newerVersion(String body, {required int installed}) {
   if (jsonDecode(body) case {'version': final String version, 'build': final int build, 'url': final String url}
       when RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version)) {

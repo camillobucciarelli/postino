@@ -418,27 +418,5 @@ jobs:
         run: |
           tool/release/testflight_upload.sh build/release/Postino.ipa
           echo "- iOS: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to TestFlight (internal testers)" >> "$GITHUB_STEP_SUMMARY"
-      # The version file installed copies read (#287): only a tag release of the highest version, after its upload, as
-      # the other "latest" files. Its URL opens the app's App Store page (#323): https://apps.apple.com/app/id<N>, N
-      # the numeric Apple ID of App Store Connect (App information), the repository variable APP_STORE_ID. Without it
-      # the file is left as it is: the app refuses the old itms-beta:// one, so no Banner rather than a wrong page.
-      - name: Upload the version file to R2
-        if: github.event_name == 'push'
-        env:
-          APP_STORE_ID: ${{ vars.APP_STORE_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: |
-          latest=$(tool/release/is_latest.sh "$VERSION")
-          if [ "$latest" != yes ]; then
-            echo "v$VERSION is not the highest version: version file left as it is"
-            exit 0
-          fi
-          if ! [[ $APP_STORE_ID =~ ^[0-9]+$ ]]; then
-            echo "::warning::APP_STORE_ID is not a numeric Apple ID: iOS version file left as it is"
-            exit 0
-          fi
-          tool/release/version_json.sh "$VERSION" "https://apps.apple.com/app/id$APP_STORE_ID" > "$RUNNER_TEMP/version.json"
-          tool/release/r2_upload.sh "$RUNNER_TEMP/version.json" ios/latest/version.json application/json 'public, max-age=300'
+      # No version file here (#323): the build is not on the App Store until it passes review and is released by
+      # hand. ios-version-file.yml publishes it then.

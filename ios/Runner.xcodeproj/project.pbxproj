@@ -207,6 +207,7 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				3A9F0C1E2D4B5A6C7D8E9F03 /* sqlcipher privacy manifest */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
@@ -301,6 +302,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		3A9F0C1E2D4B5A6C7D8E9F03 /* sqlcipher privacy manifest */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "sqlcipher privacy manifest";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# #323: sqlcipher.framework (a native asset of the sqlite3 package) has no privacy manifest of its own; Thin Binary copies it from here into the app and signs it.\nfw=\"$BUILT_PRODUCTS_DIR/native_assets/sqlcipher.framework\"\nif [ ! -d \"$fw\" ]; then\n  echo \"error: no $fw for its privacy manifest (ios/sqlcipher/PrivacyInfo.xcprivacy)\" >&2\n  exit 1\nfi\ncp \"$SRCROOT/sqlcipher/PrivacyInfo.xcprivacy\" \"$fw/PrivacyInfo.xcprivacy\"\n";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -1,0 +1,42 @@
+name: iOS version file
+
+# The version file installed iOS copies read (#287, #323): run by hand once a version is out on the App Store, which
+# release.yml cannot know (the build waits for App Review and a manual release in App Store Connect). The file points
+# at the app's App Store page; it moves only to the highest released vX.Y.Z, and only when the App Store already offers
+# that version (app_store_url.sh), so the Banner never announces a version nobody can install yet.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version out on the App Store (X.Y.Z)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # From main only, as the manual releases (version.sh): another branch could change the scripts below.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload the version file to R2
+        env:
+          VERSION: ${{ inputs.version }}
+          APP_STORE_ID: ${{ vars.APP_STORE_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          latest=$(tool/release/is_latest.sh "$VERSION")
+          if [ "$latest" != yes ]; then
+            echo "::error::v$VERSION is not the highest released version" >&2
+            exit 1
+          fi
+          url=$(tool/release/app_store_url.sh "$VERSION")
+          tool/release/version_json.sh "$VERSION" "$url" > "$RUNNER_TEMP/version.json"
+          tool/release/r2_upload.sh "$RUNNER_TEMP/version.json" ios/latest/version.json application/json 'public, max-age=300'
+          echo "- iOS: version file → $VERSION ($url)" >> "$GITHUB_STEP_SUMMARY"

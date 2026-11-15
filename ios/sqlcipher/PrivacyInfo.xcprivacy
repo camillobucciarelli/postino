@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The privacy manifest of sqlcipher.framework (#323): the sqlite3 package's native asset (`source: sqlcipher`) ships
+  none, and Apple wants it in the bundle of each dynamic library that uses a required-reason API, not in the app's.
+  The Runner's "sqlcipher privacy manifest" build phase copies it into the framework before the Thin Binary phase
+  embeds and signs it. `nm -u` on the built framework (2026-11-15): stat/fstat/lstat (file timestamp) and
+  statfs/fstatfs (disk space). No tracking, nothing collected.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- SQLite reads the size and metadata of the database, journal and WAL files in the app container. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<!-- SQLite's statfs/fstatfs on the database's volume, before writing to it; nothing leaves the device. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

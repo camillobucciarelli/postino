@@ -55,7 +55,7 @@ void main() {
     expect(await _get(t.graph), isA<Ok<Object?>>());
     expect(
       [for (final r in t.requests) r.headers['authorization'] ?? r.url.path],
-      ['Bearer EwB.stale', '/consumers/oauth2/v2.0/token', 'Bearer EwB.refreshed'],
+      ['Bearer EwB.stale', '/common/oauth2/v2.0/token', 'Bearer EwB.refreshed'],
     );
   });
 

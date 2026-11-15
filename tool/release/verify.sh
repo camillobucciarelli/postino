@@ -41,4 +41,5 @@ plutil -extract DeveloperCertificates xml1 -o - "$dir/profile.plist" | tr -d ' \
 is entitlements com.apple.application-identifier "$app_id"
 is entitlements com.apple.developer.team-identifier "$team"
 is entitlements keychain-access-groups:0 "$app_id"
+"$(dirname "$0")/entitlements_check.sh" "$dir/entitlements.plist" "$dir/profile.plist"
 echo "verify.sh ok"

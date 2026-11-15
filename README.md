@@ -24,13 +24,13 @@ Su iOS, Android e macOS serve un client di tipo iOS (callback sullo schema `com.
 
 ## Client OAuth di Microsoft
 
-Per gli account personali Outlook.com, Hotmail, Live e MSN (endpoint `consumers`, niente account di lavoro o scuola). Anche questo client ID non sta nel repository:
+Per gli account personali Outlook.com, Hotmail, Live e MSN e per quelli di lavoro o scuola Microsoft 365 (endpoint `common`). Anche questo client ID non sta nel repository:
 
 ```sh
 flutter run --dart-define=MICROSOFT_CLIENT_ID=<application id>
 ```
 
-L'app va registrata su Microsoft Entra ID come «Personal Microsoft accounts only», client pubblico (nessun secret), con i redirect URI di «Mobile and desktop applications» `msal<application id>://auth` (iOS, Android e macOS) e `http://localhost` (Windows e Linux, loopback sulla porta `53682`), e i permessi delegati di Microsoft Graph `Mail.ReadWrite`, `Mail.Send`, `User.Read`, `offline_access`, `openid` ed `email`. In CI il valore sta nel secret `MICROSOFT_CLIENT_ID`, che `release.yml` richiede insieme a `GOOGLE_CLIENT_ID`. Senza, «Collega Outlook» mostra l'errore.
+L'app va registrata su Microsoft Entra ID come «Accounts in any organizational directory and personal Microsoft accounts» (`signInAudience: AzureADandPersonalMicrosoftAccount`, richiesto dall'endpoint `common`), client pubblico (nessun secret), con i redirect URI di «Mobile and desktop applications» `msal<application id>://auth` (iOS, Android e macOS) e `http://localhost` (Windows e Linux, loopback sulla porta `53682`), e i permessi delegati di Microsoft Graph `Mail.ReadWrite`, `Mail.Send`, `User.Read`, `offline_access`, `openid` ed `email`. In CI il valore sta nel secret `MICROSOFT_CLIENT_ID`, che `release.yml` richiede insieme a `GOOGLE_CLIENT_ID`. Senza, «Collega Outlook» mostra l'errore.
 
 ## Verifica
 

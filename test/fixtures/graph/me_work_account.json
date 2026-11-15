@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "body": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users(mail,userPrincipalName)/$entity",
+    "mail": "Ada@Contoso.com",
+    "userPrincipalName": "ada.lovelace@contoso.onmicrosoft.com"
+  }
+}

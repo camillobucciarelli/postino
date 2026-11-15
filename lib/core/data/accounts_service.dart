@@ -123,6 +123,9 @@ class AccountsService(
     final saved = known == null ? null : (await PasswordCredentials.read(_keychain, id))?.servers;
     final chosen = servers ?? saved ?? provider.preset ?? await _discovery.discover(normalized);
     if (chosen == null) return const Err(ServerNotFoundFailure());
+    // A Microsoft 365 address (a custom domain hosted there) never logs in with a password; a legacy Account keeps
+    // what it was saved with.
+    if (!legacy && microsoft365Servers(chosen)) return const Err(UseMicrosoftFailure());
     switch (await _tester.test(chosen, user: normalized, password: password)) {
       case Err(:final failure):
         return Err(failure);

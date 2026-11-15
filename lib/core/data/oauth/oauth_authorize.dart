@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../domain/result.dart';
 import 'oauth_browser.dart';
 import 'oauth_pkce.dart';
+import 'oauth_refusal.dart';
 
 /// The authorization code the browser returned, with what the token exchange needs along with it.
 class const AuthorizationCode({
@@ -17,7 +18,7 @@ class const AuthorizationCode({
 
 /// The authorization request of an authorization code + PKCE (S256) flow in the system browser: [query] has what is
 /// specific to the Provider (client, scope, hints), the rest is added here. The `state` of the callback is checked;
-/// a callback without a code is the user backing out ([CancelledFailure]). Never throws.
+/// a callback without a code is the user backing out ([CancelledFailure]) or an [organizationRefusal]. Never throws.
 Future<Result<AuthorizationCode>> authorizeInBrowser({
   required Authenticate authenticate,
   required Uri endpoint,
@@ -48,8 +49,10 @@ Future<Result<AuthorizationCode>> authorizeInBrowser({
     if (callback['state'] != state) return const Err(UnexpectedFailure('OAuth state mismatch'));
     final code = callback['code'];
     if (code == null) {
-      // access_denied is the user backing out; any other error is a failure to show (a misregistered redirect, say).
+      // An organization's refusal has its own message; access_denied is the user backing out; any other error is a
+      // failure to show (a misregistered redirect, say).
       final error = callback['error'];
+      if (organizationRefusal(error, callback['error_description']) case final refusal?) return Err(refusal);
       return error == null || error == 'access_denied'
           ? const Err(CancelledFailure())
           : Err(UnexpectedFailure('OAuth error: $error'));

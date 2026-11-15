@@ -41,7 +41,8 @@
     "wrongAccount": "You picked a different account: to reconnect $address, pick that account.",
     "failed": "Something went wrong: try again.",
     "alreadyConnected": "This Account is already connected.",
-    "workAccount": "Postino connects only personal Microsoft accounts (Outlook.com, Hotmail, Live): work or school accounts are not supported."
+    "adminConsent": "Your organization requires an administrator's approval to use Postino.",
+    "organizationPolicy": "Your organization does not allow sign-in from this app or this device."
   },
   "aggiornamenti": {
     "available": "Postino $version is available",
@@ -412,7 +413,7 @@
     "unreachable": "Server unreachable: check the connection, the host and the port.",
     "alreadyConnected": "This Account is already connected.",
     "useGmail": "For a Gmail address use «Connect Gmail».",
-    "useMicrosoft": "For an Outlook.com, Hotmail, Live or MSN address use «Connect Outlook»."
+    "useMicrosoft": "For an Outlook.com, Hotmail, Live, MSN or Microsoft 365 work or school address use «Connect Outlook»."
   },
   "accounts": {
     "section": "Accounts",

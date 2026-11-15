@@ -51,13 +51,13 @@ FakeSecureStore _keychain({Duration validFor = const Duration(hours: 1)}) {
 Matcher _throwsFailure<F>() => throwsA(isA<OAuthFailed>().having((e) => e.failure, 'failure', isA<F>()));
 
 void main() {
-  test('refresh goes to the consumers token endpoint and the rotated refresh token replaces the old one', () async {
+  test('refresh goes to the common token endpoint and the rotated refresh token replaces the old one', () async {
     final keychain = _keychain();
     final t = _auth(keychain);
     await t.auth.refresh(await t.auth.tokens());
 
     final r = t.requests.single;
-    expect(r.url, Uri.parse('https://login.microsoftonline.com/consumers/oauth2/v2.0/token'));
+    expect(r.url, Uri.parse('https://login.microsoftonline.com/common/oauth2/v2.0/token'));
     expect(r.bodyFields, {
       'grant_type': 'refresh_token',
       'refresh_token': 'M.C5.initial',
@@ -71,6 +71,14 @@ void main() {
   test('invalid_grant is an AuthFailure, the tokens stay as they were', () async {
     final keychain = _keychain(validFor: Duration.zero);
     final t = _auth(keychain, token: 'token_invalid_grant');
+
+    await expectLater(t.auth.validTokens(), _throwsFailure<AuthFailure>());
+    expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');
+  });
+
+  test('interaction_required (MFA, Conditional Access) is an AuthFailure: the Account is to reconnect', () async {
+    final keychain = _keychain(validFor: Duration.zero);
+    final t = _auth(keychain, token: 'token_interaction_required');
 
     await expectLater(t.auth.validTokens(), _throwsFailure<AuthFailure>());
     expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');

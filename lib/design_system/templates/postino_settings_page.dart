@@ -12,7 +12,7 @@ import 'postino_single_pane_layout.dart';
 
 /// A page of the Impostazioni: the bar with [title], [subtitle] and the mark of the [account] it is about
 /// ([onBack] leads it with `arrow-left`), the [intro] (selectable, it explains), then the [sections]
-/// (PostinoSettingsSection), in a column at most `reading-max-width` wide.
+/// (PostinoSettingsSection, or rows on their own), in a column at most `reading-max-width` wide.
 class const PostinoSettingsPage({
   super.key,
 
@@ -54,8 +54,12 @@ class const PostinoSettingsPage({
             padding: EdgeInsets.fromLTRB(side + extra, PostinoSpacing.s4, side + extra, PostinoSpacing.s16),
             children: [
               if (intro case final i?)
-                PostinoSelectable(
-                  child: Text(i, style: PostinoText.preview.copyWith(color: c.inkMuted)),
+                Padding(
+                  // In line with the rows' text.
+                  padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4),
+                  child: PostinoSelectable(
+                    child: Text(i, style: PostinoText.preview.copyWith(color: c.inkMuted)),
+                  ),
                 ),
               ...sections,
             ],

@@ -13,7 +13,7 @@ print() { /usr/libexec/PlistBuddy -c "Print :$1" "$2" 2> /dev/null; }
 values() {
   local out
   out=$(print "$1" "$2") || return 1
-  if [[ $out == 'Array {'* ]]; then sed -e '1d' -e '$d' -e 's/^ *//' <<< "$out"; else echo "$out"; fi
+  if [[ $out == 'Array {'* ]]; then sed -e '1d' -e '$d' -e 's/^ *//' <<< "$out"; else printf '%s\n' "$out"; fi
 }
 
 # plutil's XML puts top-level keys at one tab of indentation.

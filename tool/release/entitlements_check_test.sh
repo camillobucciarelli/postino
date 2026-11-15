@@ -32,4 +32,6 @@ fails "other application identifier" '<key>com.apple.application-identifier</key
   'com.apple.application-identifier = TEAM.app.other'
 fails "restricted entitlement missing from the profile" "$release<key>com.apple.developer.icloud-services</key><array><string>CloudKit</string></array>" \
   'entitlement com.apple.developer.icloud-services = CloudKit'
+fails "a value echo would take as an option" '<key>com.apple.developer.team-identifier</key><string>-n</string>' \
+  'com.apple.developer.team-identifier = -n'
 echo "entitlements_check.sh ok"

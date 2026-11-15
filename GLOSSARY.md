@@ -137,6 +137,14 @@ _Avoid_: Config, profilo
 L'Account scelto alla voce "Sincronizza su…" nel cui spazio Google (Drive) stanno le Impostazioni di Postino. È un'Impostazione del dispositivo; senza una scelta le Impostazioni di Postino restano locali.
 _Avoid_: Account principale, Account di backup
 
+**Chiave di sincronizzazione**:
+Il segreto con cui le Impostazioni di Postino sono cifrate nello spazio Google dell'Account di sincronizzazione. Passa da un dispositivo all'altro solo con l'Abbinamento, mai attraverso Drive. Non è una Chiave: non identifica l'utente e non riguarda i Messaggi cifrati.
+_Avoid_: Password di sincronizzazione, chiave di backup
+
+**Abbinamento**:
+Il passaggio della Chiave di sincronizzazione da un dispositivo che la possiede a uno nuovo, inquadrando un QR o digitando un codice. Un dispositivo non abbinato non legge né scrive le Impostazioni di Postino sincronizzate.
+_Avoid_: Pairing, associazione, collegamento (si collega un Account, si abbina un dispositivo)
+
 **Impostazioni del dispositivo**:
 Le preferenze che valgono solo per un dispositivo e non si sincronizzano tra dispositivi, a differenza delle Impostazioni di Postino. Ad esempio le Notifiche immediate, l'avvio al login, il tema e l'Observability.
 

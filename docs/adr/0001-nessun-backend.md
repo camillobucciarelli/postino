@@ -6,6 +6,7 @@ date: 2026-10-27
 # Nessun backend: tutta la logica di posta sul dispositivo
 
 Superata in parte dalla [ADR 0013](0013-observability-self-hosted.md): un endpoint di observability opt-in nella v2.
+Precisata dall'[ADR 0019](0019-impostazioni-cifrate-e-credenziali-sincronizzate.md) (proposta): i token lasciano il dispositivo solo cifrati, verso lo spazio Drive dell'utente.
 
 Postino è usato dall'autore e da pochi tester (meno di 100), senza pubblicazione sugli store. Tutta la logica di posta gira sul dispositivo e parla direttamente con i Provider: non c'è nessun server da ospitare e i token degli Account non lasciano mai il dispositivo. Il client OAuth Google è pubblicato "in produzione non verificato" (avviso di app non verificata, tetto di 100 utenti): i refresh token non scadono, a differenza della modalità Testing che li fa scadere dopo 7 giorni.
 

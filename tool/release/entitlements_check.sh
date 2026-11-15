@@ -20,7 +20,8 @@ values() {
 keys=$(plutil -convert xml1 -o - "$signed" | sed -n 's/^\t<key>\(.*\)<\/key>$/\1/p')
 while IFS= read -r key; do
   [[ -z $key || $key == com.apple.security.* ]] && continue
-  allowed=$(values "Entitlements:$key" "$profile") || fail "The profile does not allow the entitlement $key"
+  allowed=$(values "Entitlements:$key" "$profile") ||
+    fail "The profile does not allow the entitlement $key = $(values "$key" "$signed" | paste -sd , -)"
   while IFS= read -r value; do
     ok=
     while IFS= read -r pattern; do

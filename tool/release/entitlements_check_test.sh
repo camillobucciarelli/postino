@@ -31,5 +31,5 @@ fails "group outside the wildcard" "$release<key>keychain-access-groups</key><ar
 fails "other application identifier" '<key>com.apple.application-identifier</key><string>TEAM.app.other</string>' \
   'com.apple.application-identifier = TEAM.app.other'
 fails "restricted entitlement missing from the profile" "$release<key>com.apple.developer.icloud-services</key><array><string>CloudKit</string></array>" \
-  'entitlement com.apple.developer.icloud-services'
+  'entitlement com.apple.developer.icloud-services = CloudKit'
 echo "entitlements_check.sh ok"

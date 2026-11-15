@@ -40,6 +40,6 @@ abstract interface class AppUpdater() {
   /// The user closed the Banner: [available] stays null until a newer version.
   Future<void> dismiss();
 
-  /// Opens where [available] is downloaded (the browser, TestFlight).
+  /// Opens where [available] is downloaded (the browser, the App Store).
   Future<void> download();
 }

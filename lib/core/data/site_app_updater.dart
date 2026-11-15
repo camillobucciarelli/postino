@@ -24,11 +24,15 @@ class SiteAppUpdater(
   /// This build's number (`--dart-define=POSTINO_BUILD`, the release's build_number.sh).
   required final int installed,
 
-  /// Opens a URL outside Postino; false when nothing can (TestFlight not installed).
+  /// Opens a URL outside Postino (the browser, the App Store); false when nothing can.
   required final Future<bool> Function(Uri url) launch,
 
   /// Where [download] goes when the version's URL does not open: the invitees' guide.
   required final Uri fallback,
+
+  /// iOS (#323): the file is published only once the app is on the App Store, so a missing file (404) and the legacy
+  /// TestFlight one ([newerVersion]) mean no update, not an error.
+  final bool storeOnly = false,
 }) implements AppUpdater {
   static const _checkedKey = 'update_checked';
   static const _foundKey = 'update_found';
@@ -65,7 +69,9 @@ class SiteAppUpdater(
       // Within the day, the last good answer: a restart shows the same Banner without asking the site again. A
       // failure keeps it too: it names a build really newer than this one, which a failure does not undo.
       final found = await _settings.read(_foundKey);
-      final update = due ? await _fetch() : (found == null ? null : newerVersion(found, installed: installed));
+      final update = due
+          ? await _fetch()
+          : (found == null ? null : newerVersion(found, installed: installed, storeOnly: storeOnly));
       _show(update, dismissed: await _settings.read(_dismissedKey));
     } on Object catch (e) {
       _log(e);
@@ -116,8 +122,9 @@ class SiteAppUpdater(
       final request = http.AbortableRequest('GET', feed, abortTrigger: deadline.future)..followRedirects = false;
       final response = await http.Response.fromStream(await _http.send(request));
       // A redirect comes back as it is, and is refused here like any other status.
+      if (storeOnly && response.statusCode == 404) return null;
       if (response.statusCode != 200) throw http.ClientException('status ${response.statusCode}', feed);
-      final update = newerVersion(response.body, installed: installed);
+      final update = newerVersion(response.body, installed: installed, storeOnly: storeOnly);
       await _settings.write(_foundKey, response.body);
       return update;
     } finally {

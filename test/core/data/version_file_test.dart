@@ -22,8 +22,17 @@ void main() {
     });
   }
 
-  test("iOS's TestFlight url", () {
-    expect(newerVersion(_file(url: 'itms-beta://'), installed: _installed)?.url, Uri.parse('itms-beta://'));
+  test("iOS's App Store page", () {
+    final store = Uri.parse('https://apps.apple.com/app/id1234567890');
+    expect(newerVersion(_file(url: '$store'), installed: _installed)?.url, store);
+  });
+
+  test('storeOnly: the legacy TestFlight url is no update; other non-https urls still fail', () {
+    expect(newerVersion(_file(url: 'itms-beta://'), installed: _installed, storeOnly: true), isNull);
+    expect(
+      () => newerVersion(_file(url: 'http://x.example/p'), installed: _installed, storeOnly: true),
+      throwsFormatException,
+    );
   });
 
   for (final (name, body) in [
@@ -34,6 +43,7 @@ void main() {
     ('a version that is not X.Y.Z', _file(version: '1.3.0 <b>')),
     ('a plain http url', _file(url: 'http://postino.example/p.apk')),
     ('a javascript url', _file(url: 'javascript:alert(1)')),
+    ('the TestFlight url of before the App Store (#323)', _file(url: 'itms-beta://')),
   ]) {
     test('malformed, $name: FormatException', () {
       expect(() => newerVersion(body, installed: _installed), throwsFormatException);

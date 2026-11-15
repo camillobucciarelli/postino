@@ -359,6 +359,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get immediateNotificationsFailed => 'The system did not start the immediate notifications. Try again.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
+	@override String get privacy => 'Privacy policy';
 	@override String versionLabel({required Object version, required Object build}) => 'Postino ${version} (build ${build})';
 	@override String get versionDevelopment => 'Postino · development';
 	@override String get upToDate => 'Postino is up to date.';
@@ -863,6 +864,7 @@ extension on TranslationsEn {
 			'impostazioni.immediateNotificationsFailed' => 'The system did not start the immediate notifications. Try again.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',
+			'impostazioni.privacy' => 'Privacy policy',
 			'impostazioni.versionLabel' => ({required Object version, required Object build}) => 'Postino ${version} (build ${build})',
 			'impostazioni.versionDevelopment' => 'Postino · development',
 			'impostazioni.upToDate' => 'Postino is up to date.',

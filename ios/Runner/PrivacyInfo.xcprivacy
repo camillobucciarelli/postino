@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Postino's privacy manifest (#323): no tracking, nothing collected (no backend, ADR 0001).
+  Required-reason APIs: none in the app's own code. Checked on the built Runner.app with `nm -u` (2026-11-15): the
+  Runner executable imports only NSUserDefaults, from the plugins linked into it (workmanager_apple,
+  flutter_local_notifications), whose resource bundles declare it; Flutter.framework, llama.framework and
+  LiteRtLm.framework carry their own manifests; sqlcipher.framework gets ios/sqlcipher/PrivacyInfo.xcprivacy.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

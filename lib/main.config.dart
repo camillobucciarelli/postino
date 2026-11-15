@@ -21,6 +21,7 @@ import 'package:postino/core/data/attachment_cache.dart' as _i696;
 import 'package:postino/core/data/auto_labels_store.dart' as _i452;
 import 'package:postino/core/data/channel_immediate_notifications.dart'
     as _i103;
+import 'package:postino/core/data/channel_screen_guard.dart' as _i780;
 import 'package:postino/core/data/contacts_store.dart' as _i863;
 import 'package:postino/core/data/desktop/channel_app_menu.dart' as _i249;
 import 'package:postino/core/data/desktop/launch_at_login_module.dart' as _i377;
@@ -47,6 +48,7 @@ import 'package:postino/core/data/sync/auto_labeler.dart' as _i95;
 import 'package:postino/core/data/sync/new_mail_notifier.dart' as _i27;
 import 'package:postino/core/data/sync/notification_cleanup.dart' as _i555;
 import 'package:postino/core/data/sync/periodic_schedule.dart' as _i190;
+import 'package:postino/core/data/sync/sync_key_store.dart' as _i167;
 import 'package:postino/core/data/sync_engine.dart' as _i893;
 import 'package:postino/core/data/trusted_senders_store.dart' as _i412;
 import 'package:postino/core/domain/accounts_repository.dart' as _i382;
@@ -76,6 +78,7 @@ import 'package:postino/core/domain/outbox_repository.dart' as _i700;
 import 'package:postino/core/domain/platform_services.dart' as _i398;
 import 'package:postino/core/domain/provider_search_use_case.dart' as _i51;
 import 'package:postino/core/domain/report_sharer.dart' as _i325;
+import 'package:postino/core/domain/screen_guard.dart' as _i616;
 import 'package:postino/core/domain/search_repository.dart' as _i71;
 import 'package:postino/core/domain/server_discovery.dart' as _i221;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
@@ -143,6 +146,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i519.Client>(() => httpModule.client(), registerFor: {_prod});
     gh.lazySingleton<_i462.LaunchAtLogin>(
       () => launchAtLoginModule.launchAtLogin(),
+      registerFor: {_prod},
+    );
+    gh.lazySingleton<_i616.ScreenGuard>(
+      () => _i780.ChannelScreenGuard(),
       registerFor: {_prod},
     );
     gh.singleton<_i398.SecureStore>(
@@ -218,6 +225,11 @@ extension GetItInjectableX on _i174.GetIt {
       () => modelModule.modelDownload(gh<_i689.ModelManager>()),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i167.SyncKeyStore>(
+      () => _i167.SyncKeyStore(
+        gh<_i398.SecureStore>(instanceName: 'deviceOnlyKeychain'),
+      ),
+    );
     gh.lazySingleton<_i374.TextEmbedder>(
       () => modelModule.textEmbedder(
         gh<_i689.ModelManager>(),
@@ -274,6 +286,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
+    gh.lazySingleton<_i311.SettingsSync>(
+      () => _i311.SettingsSync(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i167.SyncKeyStore>(),
+      ),
+    );
     gh.factory<_i758.ImmediateNotificationsUseCase>(
       () => _i758.ImmediateNotificationsUseCase(
         gh<_i936.ImmediateNotifications>(),
@@ -312,18 +333,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i96.ModelDownload>(),
       ),
     );
+    gh.lazySingleton<_i355.SettingsSyncControl>(
+      () => settingsSyncModule.settingsSyncControl(gh<_i311.SettingsSync>()),
+    );
     gh.lazySingleton<_i555.NotificationCleanup>(
       () => _i555.NotificationCleanup(
         gh<_i1028.PostinoDatabase>(),
         gh<_i184.Notifications>(),
-      ),
-    );
-    gh.lazySingleton<_i311.SettingsSync>(
-      () => _i311.SettingsSync(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
       ),
     );
     gh.factory<_i166.LaunchAtLoginUseCase>(
@@ -331,9 +347,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
       ),
-    );
-    gh.lazySingleton<_i355.SettingsSyncControl>(
-      () => settingsSyncModule.settingsSyncControl(gh<_i311.SettingsSync>()),
     );
     gh.lazySingleton<_i893.SyncEngine>(
       () => _i893.SyncEngine(

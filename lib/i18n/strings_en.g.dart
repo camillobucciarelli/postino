@@ -374,7 +374,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get syncSection => 'Sync';
 	@override String get syncTitle => 'Sync to…';
 	@override String get syncNone => 'None';
-	@override String get syncBody => 'Postino\'s settings (for example the automatic labels) are saved in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.';
+	@override String get syncBody => 'Postino\'s settings (for example the automatic labels) are saved encrypted in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.';
 	@override String get syncChooserTitle => 'Sync settings to';
 	@override String get syncCancel => 'Cancel';
 	@override String get syncBusy => 'Connecting to Drive…';
@@ -387,6 +387,38 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get syncCycleFailed => 'Settings not synced';
 	@override String get syncCycleScope => 'Google no longer grants access to the hidden Drive space: pick the Account again in “Sync to…”.';
 	@override String syncCycleReason({required Object reason}) => 'Reason: ${reason}';
+	@override String get syncPairOther => 'Pair another device';
+	@override String get syncPairOtherSubtitle => 'Shows the code to enter on the new device';
+	@override String get syncPairShowBody => 'On the new device connect this same Account, pick it in “Sync to…”, then type or paste this code. Whoever has the code can read the synced settings: do not share it.';
+	@override String get syncPairQrLabel => 'QR of the pairing code';
+	@override String get syncPairCodeLabel => 'Pairing code';
+	@override String syncPairClosesIn({required Object time}) => 'Closes in ${time}';
+	@override String syncPairClosesInSeconds({required Object seconds}) => 'The code closes in ${seconds} seconds';
+	@override String get syncPairCaptured => 'The code is hidden while the screen is recorded or mirrored.';
+	@override String get syncPairClose => 'Close';
+	@override String get syncPairNoKey => 'Nothing to pair yet: this device\'s settings have not been synced yet.';
+	@override String get syncPairEnter => 'Enter the code';
+	@override String get syncPairEnterTitle => 'Pair this device';
+	@override String get syncPairEnterBody => 'On a device already paired open “Sync to…” › “Pair another device”, then type or paste the code here. Both devices must sync to the same Account.';
+	@override String get syncPairEnterField => 'Pairing code';
+	@override String get syncPairEnterHelper => 'It starts with P1. Spaces and dashes do not matter.';
+	@override String get syncPairEnterConfirm => 'Pair';
+	@override String get syncPairEnterCancel => 'Cancel';
+	@override String get syncPairBusy => 'Checking the code…';
+	@override String get syncPairInvalid => 'Invalid code. Check you copied all of it, and that both devices sync to the same Account in “Sync to…”.';
+	@override String get syncPairNothing => 'There are no encrypted settings on Drive to pair with yet: this device makes its own key at its first sync.';
+	@override String syncPairFailed({required Object reason}) => 'Pairing failed. Reason: ${reason}';
+	@override String get syncPairNeededTitle => 'This device is not paired';
+	@override String get syncPairNeededBody => 'The settings on Drive are encrypted. Pair it with the code of a device that syncs to this Account: until then the changes stay here.';
+	@override String get syncKeyInvalidTitle => 'Sync key no longer valid';
+	@override String get syncKeyInvalidBody => 'The settings on Drive are encrypted with another key. Pair this device again: the changes made here stay and upload afterwards.';
+	@override String get syncRegenerate => 'Regenerate the key';
+	@override String get syncRegenerateSubtitle => 'The other devices will have to be paired again';
+	@override String get syncRegenerateTitle => 'Regenerate the sync key?';
+	@override String get syncRegenerateMessage => 'Postino makes a new key and encrypts the settings on Drive with it. The other devices will have to be paired again.';
+	@override String get syncRegenerateNote => 'If the settings on Drive can be read, they are merged with this device\'s first. If they cannot (key lost or file damaged), they are replaced by this device\'s: what was on Drive and is not here is lost.';
+	@override String get syncRegenerateConfirm => 'Regenerate';
+	@override String get syncRegenerateCancel => 'Cancel';
 }
 
 // Path: segnalazione
@@ -879,7 +911,7 @@ extension on TranslationsEn {
 			'impostazioni.syncSection' => 'Sync',
 			'impostazioni.syncTitle' => 'Sync to…',
 			'impostazioni.syncNone' => 'None',
-			'impostazioni.syncBody' => 'Postino\'s settings (for example the automatic labels) are saved in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.',
+			'impostazioni.syncBody' => 'Postino\'s settings (for example the automatic labels) are saved encrypted in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.',
 			'impostazioni.syncChooserTitle' => 'Sync settings to',
 			'impostazioni.syncCancel' => 'Cancel',
 			'impostazioni.syncBusy' => 'Connecting to Drive…',
@@ -892,6 +924,38 @@ extension on TranslationsEn {
 			'impostazioni.syncCycleFailed' => 'Settings not synced',
 			'impostazioni.syncCycleScope' => 'Google no longer grants access to the hidden Drive space: pick the Account again in “Sync to…”.',
 			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Reason: ${reason}',
+			'impostazioni.syncPairOther' => 'Pair another device',
+			'impostazioni.syncPairOtherSubtitle' => 'Shows the code to enter on the new device',
+			'impostazioni.syncPairShowBody' => 'On the new device connect this same Account, pick it in “Sync to…”, then type or paste this code. Whoever has the code can read the synced settings: do not share it.',
+			'impostazioni.syncPairQrLabel' => 'QR of the pairing code',
+			'impostazioni.syncPairCodeLabel' => 'Pairing code',
+			'impostazioni.syncPairClosesIn' => ({required Object time}) => 'Closes in ${time}',
+			'impostazioni.syncPairClosesInSeconds' => ({required Object seconds}) => 'The code closes in ${seconds} seconds',
+			'impostazioni.syncPairCaptured' => 'The code is hidden while the screen is recorded or mirrored.',
+			'impostazioni.syncPairClose' => 'Close',
+			'impostazioni.syncPairNoKey' => 'Nothing to pair yet: this device\'s settings have not been synced yet.',
+			'impostazioni.syncPairEnter' => 'Enter the code',
+			'impostazioni.syncPairEnterTitle' => 'Pair this device',
+			'impostazioni.syncPairEnterBody' => 'On a device already paired open “Sync to…” › “Pair another device”, then type or paste the code here. Both devices must sync to the same Account.',
+			'impostazioni.syncPairEnterField' => 'Pairing code',
+			'impostazioni.syncPairEnterHelper' => 'It starts with P1. Spaces and dashes do not matter.',
+			'impostazioni.syncPairEnterConfirm' => 'Pair',
+			'impostazioni.syncPairEnterCancel' => 'Cancel',
+			'impostazioni.syncPairBusy' => 'Checking the code…',
+			'impostazioni.syncPairInvalid' => 'Invalid code. Check you copied all of it, and that both devices sync to the same Account in “Sync to…”.',
+			'impostazioni.syncPairNothing' => 'There are no encrypted settings on Drive to pair with yet: this device makes its own key at its first sync.',
+			'impostazioni.syncPairFailed' => ({required Object reason}) => 'Pairing failed. Reason: ${reason}',
+			'impostazioni.syncPairNeededTitle' => 'This device is not paired',
+			'impostazioni.syncPairNeededBody' => 'The settings on Drive are encrypted. Pair it with the code of a device that syncs to this Account: until then the changes stay here.',
+			'impostazioni.syncKeyInvalidTitle' => 'Sync key no longer valid',
+			'impostazioni.syncKeyInvalidBody' => 'The settings on Drive are encrypted with another key. Pair this device again: the changes made here stay and upload afterwards.',
+			'impostazioni.syncRegenerate' => 'Regenerate the key',
+			'impostazioni.syncRegenerateSubtitle' => 'The other devices will have to be paired again',
+			'impostazioni.syncRegenerateTitle' => 'Regenerate the sync key?',
+			'impostazioni.syncRegenerateMessage' => 'Postino makes a new key and encrypts the settings on Drive with it. The other devices will have to be paired again.',
+			'impostazioni.syncRegenerateNote' => 'If the settings on Drive can be read, they are merged with this device\'s first. If they cannot (key lost or file damaged), they are replaced by this device\'s: what was on Drive and is not here is lost.',
+			'impostazioni.syncRegenerateConfirm' => 'Regenerate',
+			'impostazioni.syncRegenerateCancel' => 'Cancel',
 			'segnalazione.action' => 'Report a problem',
 			'segnalazione.subject' => 'Problem in Postino',
 			'segnalazione.intro' => 'Describe here what went wrong. Below is Postino\'s error log: it has no passwords or tokens, read it before sending.',

@@ -3,14 +3,12 @@ import 'dart:convert';
 
 import '../../domain/result.dart';
 import '../../domain/settings_backend.dart';
-import '../../domain/settings_document.dart';
-import '../../domain/settings_entry.dart';
-import '../../domain/settings_merge.dart';
 import '../oauth/oauth_guard.dart';
 import 'drive_http.dart';
 
 /// The file of the Impostazioni di Postino in the hidden appDataFolder of an Account's Drive (ADR 0016),
-/// over [DriveHttp]: finding it, reading it, creating it and updating it.
+/// over [DriveHttp]: finding it, reading it, creating it and updating it. It moves sealed text and never sees the
+/// key (ADR 0019): the copies doubled by two devices that created the file at once are merged by `SettingsSync`.
 class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
   /// Il nome del file nella appDataFolder.
   static const fileName = 'postino-settings.json';
@@ -18,22 +16,30 @@ class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
   static const _upload = 'https://www.googleapis.com/upload/drive/v3/files';
   static const _boundary = 'postino-settings-boundary';
 
-  /// Found by the last read, so a write right after it does not search again.
-  String? _fileId;
+  /// The copies the last read found, oldest first: a write right after it does not search again.
+  var _ids = <String>[];
+
+  String? get _fileId => _ids.firstOrNull;
 
   @override
-  Future<Result<String?>> read() => oauthGuard(() async {
+  Future<Result<List<String>>> read() => oauthGuard(() async {
     final ids = await _find();
-    if (ids.isEmpty) return const Ok(null);
-    final contents = [for (final id in ids) (await _drive.send('GET', _media(id))).body];
-    if (contents.length == 1) return Ok(contents.single);
-    return Ok(await _mergeDuplicates(ids, contents));
+    return Ok([for (final id in ids) (await _drive.send('GET', _media(id))).body]);
   });
 
   @override
-  Future<Result<void>> write(String json) => oauthGuard(() async {
+  Future<Result<void>> dropDuplicates() => oauthGuard(() async {
+    for (final id in _ids.skip(1)) {
+      await _drive.send('DELETE', Uri.parse('$_api/$id'));
+    }
+    _ids = _ids.take(1).toList();
+    return const Ok(null);
+  });
+
+  @override
+  Future<Result<void>> write(String text) => oauthGuard(() async {
     if (_fileId ?? (await _find()).firstOrNull case final id?) {
-      await _patch(id, json);
+      await _patch(id, text);
       return const Ok(null);
     }
     final metadata = jsonEncode({
@@ -51,12 +57,12 @@ class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
         '--$_boundary',
         'content-type: application/json; charset=UTF-8',
         '',
-        json,
+        text,
         '--$_boundary--',
       ].join('\r\n'),
       type: 'multipart/related; boundary=$_boundary',
     );
-    _fileId = (jsonDecode(r.body) as Map<String, dynamic>)['id'] as String;
+    _ids = [(jsonDecode(r.body) as Map<String, dynamic>)['id'] as String];
     return const Ok(null);
   });
 
@@ -76,28 +82,7 @@ class DriveSettingsBackend(final DriveHttp _drive) implements SettingsBackend {
       ),
     );
     final files = (jsonDecode(r.body) as Map<String, dynamic>)['files'] as List<dynamic>;
-    final ids = [for (final f in files) (f as Map<String, dynamic>)['id'] as String];
-    _fileId = ids.firstOrNull;
-    return ids;
-  }
-
-  /// Duplicates merged last-write-wins into the oldest, the others deleted, so every device reads one file.
-  /// A copy that cannot be read or comes from a newer Postino is never touched: the oldest is read as it is.
-  Future<String> _mergeDuplicates(List<String> ids, List<String> contents) async {
-    var merged = <String, SettingsEntry>{};
-    for (final c in contents) {
-      if (decodeSettings(c) case Ok(:final value) when value.writable) {
-        merged = mergeSettings(merged, value.entries);
-      } else {
-        return contents.first;
-      }
-    }
-    final json = encodeSettings(merged.values);
-    await _patch(ids.first, json);
-    for (final id in ids.skip(1)) {
-      await _drive.send('DELETE', Uri.parse('$_api/$id'));
-    }
-    return json;
+    return _ids = [for (final f in files) (f as Map<String, dynamic>)['id'] as String];
   }
 
   Uri _media(String id) => Uri.parse('$_api/$id').replace(queryParameters: {'alt': 'media'});

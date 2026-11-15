@@ -205,3 +205,30 @@ final class const OrganizationPolicyFailure() extends Failure {
   /// Crea il fallimento.
   this;
 }
+
+/// The file of the Impostazioni on Drive is sealed and this device holds no Chiave di sincronizzazione (ADR 0019):
+/// Non abbinato. Nothing is read nor written until it is paired.
+final class const SyncNotPairedFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// The file of the Impostazioni on Drive is sealed with another key than this device's, after «Rigenera la chiave»
+/// on another device or two first encryptions at once (ADR 0019): it must be paired again.
+final class const SyncKeyInvalidFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// The codice di abbinamento is malformed or does not open the file: a typo, or the code of a device that syncs on
+/// another Account di sincronizzazione (ADR 0019). Nothing was saved.
+final class const PairingCodeFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// No sealed file on Drive yet, so nothing to pair with: this device makes its own key at its first cycle (ADR 0019).
+final class const NothingToPairFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}

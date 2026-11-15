@@ -8,6 +8,7 @@ import workmanager_apple
   /// Background tasks begun for the outbox (#36), by identifier; ended once or at expiration.
   private var sendTasks = Set<Int>()
   private var backgroundChannel: FlutterMethodChannel?
+  private var screenGuardChannel: FlutterMethodChannel?
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -50,6 +51,23 @@ import workmanager_apple
       }
     }
     backgroundChannel = channel
+
+    // The codice di abbinamento (ADR 0019): screenshots cannot be stopped on iOS, so Dart hides it while the screen is
+    // recorded or mirrored. protect(bool) answers whether it is now; "captured"(bool) at every change.
+    let guardChannel = FlutterMethodChannel(
+      name: "it.postino/screen_guard",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger())
+    guardChannel.setMethodCallHandler { call, result in
+      guard call.method == "protect" else { return result(FlutterMethodNotImplemented) }
+      result(UIScreen.main.isCaptured)
+    }
+    NotificationCenter.default.addObserver(
+      forName: UIScreen.capturedDidChangeNotification, object: nil, queue: .main
+    ) { [weak self] note in
+      let captured = (note.object as? UIScreen)?.isCaptured ?? UIScreen.main.isCaptured
+      self?.screenGuardChannel?.invokeMethod("captured", arguments: captured)
+    }
+    screenGuardChannel = guardChannel
   }
 
   private func endSendTask(_ raw: Int) {

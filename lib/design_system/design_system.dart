@@ -15,6 +15,7 @@ export 'atoms/postino_icon.dart';
 export 'atoms/postino_icon_button.dart';
 export 'atoms/postino_label_chip.dart';
 export 'atoms/postino_progress_bar.dart';
+export 'atoms/postino_qr_code.dart';
 export 'atoms/postino_resize_handle.dart';
 export 'atoms/postino_reveal.dart';
 export 'atoms/postino_selectable.dart';

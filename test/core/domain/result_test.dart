@@ -24,6 +24,10 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: UseMicrosoftFailure()) => 'use-microsoft',
   Err(failure: AdminConsentFailure()) => 'admin-consent',
   Err(failure: OrganizationPolicyFailure()) => 'organization-policy',
+  Err(failure: SyncNotPairedFailure()) => 'sync-not-paired',
+  Err(failure: SyncKeyInvalidFailure()) => 'sync-key-invalid',
+  Err(failure: PairingCodeFailure()) => 'pairing-code',
+  Err(failure: NothingToPairFailure()) => 'nothing-to-pair',
 };
 
 void main() {

@@ -1,6 +1,5 @@
 // The Accounts synced between devices through the file of the Impostazioni di Postino (#142, ADR 0016):
 // devices on in-memory databases, one shared fake backend standing for the file on Drive.
-import 'dart:convert';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +24,14 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
   final db = PostinoDatabase.inMemory();
   final keychain = FakeSecureStore();
   late final settings = DeviceSettingsStore(db);
-  late final sync = SettingsSync(db, settings, clock, FakeConnectivity(), backendFor: (_) => backend);
+  late final sync = SettingsSync(
+    db,
+    settings,
+    clock,
+    FakeConnectivity(),
+    keysWith(testSyncKey),
+    backendFor: (_) => backend,
+  );
   late final mirror = AccountsSettingsMirror(db, MailStore(db), keychain, settings, AccountsLock(), FakeAttachments());
 
   Future<void> start() async {
@@ -58,9 +64,6 @@ Account _account(String name, {int color = 0, int position = 0}) => Account(
   color: color,
   position: position,
 );
-
-Map<String, Object?> _entries(String? file) =>
-    (jsonDecode(file!) as Map<String, dynamic>)['entries'] as Map<String, Object?>;
 
 void main() {
   // Two devices: two databases on purpose.
@@ -147,7 +150,7 @@ void main() {
         expect(await a.accounts(), isEmpty);
         expect(await b.accounts(), isEmpty);
         expect(b.keychain.values, isEmpty);
-        expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
+        expect(file.entries()['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
       },
     );
 
@@ -167,7 +170,7 @@ void main() {
       await a.syncNow();
       await b.syncNow();
 
-      expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
+      expect(file.entries()['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
       expect(await b.accounts(), isEmpty);
       expect(await a.accounts(), isEmpty);
       expect(a.keychain.values, isEmpty);
@@ -175,15 +178,15 @@ void main() {
     });
 
     test('voci from a newer Postino under a prefix unknown here stay in the file', () async {
-      file.file = jsonEncode({
-        'schemaVersion': 2,
+      file.file = sealedWith({
+        'schemaVersion': 3,
         'entries': {
           'themes/x': {'value': 1, 'updatedAt': 1, 'deviceId': 'z', 'deleted': false},
         },
       });
       await a.put(_account('ada'));
       await a.syncNow();
-      expect(_entries(file.file).keys, containsAll(['themes/x', 'accounts/gmail:ada@gmail.com']));
+      expect(file.entries().keys, containsAll(['themes/x', 'accounts/gmail:ada@gmail.com']));
       expect(await a.db.postinoSettingsDao.read('themes/x'), isNull);
     });
   });
@@ -194,7 +197,7 @@ void main() {
       final db = getIt<PostinoDatabase>();
       final settings = DeviceSettingsStore(db);
       await settings.setSettingsSyncAccount('gmail:ada@gmail.com');
-      return SettingsSync(db, settings, h.clock, h.connectivity, backendFor: (_) => file);
+      return SettingsSync(db, settings, h.clock, h.connectivity, keysWith(testSyncKey), backendFor: (_) => file);
     }
 
     test('its first Account, connected before the sync is on, takes the synced color and position', () async {
@@ -209,7 +212,7 @@ void main() {
       h.consent.address = 'bob@gmail.com';
       await getIt<AccountsRepository>().connectGmail();
       await (await syncedWith(h, file)).syncNow();
-      Object? bobInFile() => (_entries(file.file)['accounts/gmail:bob@gmail.com']! as Map<String, Object?>)['value'];
+      Object? bobInFile() => (file.entries()['accounts/gmail:bob@gmail.com']! as Map<String, Object?>)['value'];
       final bobOnA = bobInFile();
       expect(bobOnA, {'address': 'bob@gmail.com', 'provider': 'gmail', 'color': 1, 'position': 1});
 
@@ -296,6 +299,7 @@ void main() {
         getIt<SettingsRepository>(),
         h.clock,
         h.connectivity,
+        keysWith(testSyncKey),
         backendFor: (_) => file,
       ),
     );
@@ -303,12 +307,12 @@ void main() {
     await getIt<AccountsRepository>().connectGmail();
     await getIt<SettingsRepository>().setSettingsSyncAccount('gmail:ada@gmail.com');
     await getIt<SettingsSync>().syncNow();
-    expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', false));
+    expect(file.entries()['accounts/gmail:ada@gmail.com'], containsPair('deleted', false));
 
     h.clock.advance(const Duration(minutes: 1));
     await getIt<AccountsRepository>().remove('gmail:ada@gmail.com');
 
-    expect(_entries(file.file)['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
+    expect(file.entries()['accounts/gmail:ada@gmail.com'], containsPair('deleted', true));
     expect(await getIt<SettingsRepository>().settingsSyncAccount(), isNull);
   });
 }

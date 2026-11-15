@@ -73,7 +73,7 @@ abstract interface class InboxRepository() {
   /// The messages of one Account waiting to be sent (Annulla invio, offline), newest first.
   Stream<List<OutgoingEntry>> watchOutbox(String accountId);
 
-  /// The Etichette of one Account, by name; never those of another.
+  /// The Etichette of one Account, by name, of both kinds (the user's folders on IMAP and Microsoft); never those of another.
   Stream<List<Label>> watchLabels(String accountId);
 
   /// Every stored message of a Conversazione, oldest first.

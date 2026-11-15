@@ -7,6 +7,7 @@ import 'postino_database.dart';
 @LazySingleton(as: SettingsRepository)
 class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsRepository {
   static const _sidebar = 'sidebar_expanded';
+  static const _labelsExpanded = 'labels_expanded:';
   static const _listWidth = 'list_width';
   static const _launchAtLogin = 'launch_at_login';
   static const _immediateNotifications = 'immediate_notifications';
@@ -22,6 +23,14 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
   @override
   Future<void> setSidebarExpanded({required bool? expanded}) =>
       _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
+
+  @override
+  Stream<bool> watchLabelsExpanded(String accountId) =>
+      _db.deviceSettingsDao.watch('$_labelsExpanded$accountId').map((v) => v != 'false');
+
+  @override
+  Future<void> setLabelsExpanded(String accountId, {required bool expanded}) =>
+      _db.deviceSettingsDao.write('$_labelsExpanded$accountId', expanded.toString());
 
   @override
   Future<double?> listWidth() async {

@@ -15,7 +15,7 @@
     "label": "Larghezza lista",
     "value": "$px pixel"
   },
-  "etichette": "Etichette",
+  "etichetteDi": "Etichette di $name",
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",
     "connectGmail": "Collega Gmail",

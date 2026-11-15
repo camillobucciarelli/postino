@@ -24,10 +24,10 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   /// The Account's labels, once.
   Future<List<LabelRow>> all(String accountId) => (select(labels)..where((t) => t.accountId.equals(accountId))).get();
 
-  /// The Account's own Etichette, by name.
+  /// The Account's own Etichette, by name: Gmail's labels or the user's folders (#311); system folders are no label.
   Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)
-            ..where((t) => t.accountId.equals(accountId) & t.kind.equalsValue(LabelKind.etichetta))
+            ..where((t) => t.accountId.equals(accountId))
             ..orderBy([(t) => OrderingTerm.asc(t.name)]))
           .watch();
 

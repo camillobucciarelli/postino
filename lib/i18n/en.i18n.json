@@ -15,7 +15,7 @@
     "label": "List width",
     "value": "$px pixels"
   },
-  "etichette": "Labels",
+  "etichetteDi": "$name labels",
   "onboarding": {
     "body": "All your mailboxes in one place.",
     "connectGmail": "Connect Gmail",

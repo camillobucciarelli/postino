@@ -1,9 +1,12 @@
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
+import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_icon_button.dart';
+import '../atoms/postino_reveal.dart';
 import '../molecules/postino_drawer_item.dart';
 import '../molecules/postino_drawer_item_tile.dart';
+import '../molecules/postino_drawer_section_header.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -37,13 +40,23 @@ class const PostinoSidebarScope({
   bool updateShouldNotify(PostinoSidebarScope old) => collapsed != old.collapsed || toggleLabel != old.toggleLabel;
 }
 
-/// Una sezione del drawer, con un titolo facoltativo e le sue voci.
+/// Una sezione del drawer, con un titolo facoltativo e le sue voci. Con [onToggle] è collassabile: l'intestazione
+/// diventa un pulsante che la apre e la chiude.
 class const PostinoDrawerSection({
-  /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta.
+  /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta, se non è collassabile.
   final String? title,
 
   /// Voci della sezione, in ordine.
   required final List<PostinoDrawerItem> items,
+
+  /// Account di cui l'intestazione collassabile mostra il segno.
+  final PostinoAccountRef? account,
+
+  /// Se la sezione collassabile è aperta.
+  final bool expanded = true,
+
+  /// Apre o chiude la sezione; se impostata (con [title]) la sezione è collassabile.
+  final VoidCallback? onToggle,
 }) {
   /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
   this;
@@ -67,14 +80,21 @@ class const PostinoNavigationDrawer({
 
 class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _stack = GlobalKey();
-  final _itemKeys = <int, GlobalKey>{};
+
+  /// By (section, item) for an item, by section for a collapsible header: a section's keys stay its own while it
+  /// closes, whatever the other sections do.
+  final _keys = <Object, GlobalKey>{};
   Rect? _active;
   var _slide = false;
 
-  void _measure(int? index) {
+  GlobalKey _key(Object id) => _keys.putIfAbsent(id, GlobalKey.new);
+
+  /// [key] is what shows the active item: the item, or the header of its closed section; null: none.
+  void _measure(GlobalKey? key) {
     if (!mounted) return;
     final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
-    final item = index == null ? null : _itemKeys[index]?.currentContext?.findRenderObject() as RenderBox?;
+    // An item that left the tree (its section closed) has no context.
+    final item = key?.currentContext?.findRenderObject() as RenderBox?;
     final rect = stack == null || item == null || !item.attached
         ? null
         : item.localToGlobal(Offset.zero, ancestor: stack) & item.size;
@@ -92,16 +112,14 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
     final sections = widget.sections;
     final scope = PostinoSidebarScope.maybeOf(context);
     final collapsed = scope?.collapsed ?? false;
-    var n = 0;
-    int? activeIndex;
-    for (final s in sections) {
-      for (final item in s.items) {
-        if (item.active) activeIndex = n;
-        n++;
+    bool closed(PostinoDrawerSection s) => s.onToggle != null && s.title != null && !s.expanded;
+    GlobalKey? activeKey;
+    for (final (si, s) in sections.indexed) {
+      for (final (ii, item) in s.items.indexed) {
+        if (item.active) activeKey = closed(s) ? _key(si) : _key((si, ii));
       }
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeIndex));
-    n = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeKey));
     // Width and shape come from the DrawerTheme: modal by default, docked in PostinoAdaptiveLayout.
     return Drawer(
       backgroundColor: c.drawerBg,
@@ -157,28 +175,53 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           spacing: PostinoSpacing.s0_5,
                           children: [
-                            if (s.title case final t? when !collapsed)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s2,
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s1,
-                                ),
-                                child: Semantics(
-                                  header: true,
-                                  child: Text(
-                                    t.toUpperCase(),
-                                    style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                            if (s.onToggle case final toggle? when s.title != null) ...[
+                              PostinoDrawerSectionHeader(
+                                key: _key(i),
+                                title: s.title!,
+                                account: s.account,
+                                expanded: s.expanded,
+                                collapsed: collapsed,
+                                selected: closed(s) && s.items.any((item) => item.active),
+                                unreadLabel: s.expanded
+                                    ? null
+                                    : s.items.map((item) => item.unreadLabel).nonNulls.firstOrNull,
+                                onToggle: toggle,
+                              ),
+                              // Closed, the items leave: no taps, no Tab, nothing read (PostinoSizeFade).
+                              PostinoReveal(
+                                duration: PostinoMotion.threadExpand,
+                                child: s.expanded
+                                    ? Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        spacing: PostinoSpacing.s0_5,
+                                        children: [
+                                          for (final (ii, item) in s.items.indexed)
+                                            PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
+                                        ],
+                                      )
+                                    : null,
+                              ),
+                            ] else ...[
+                              if (s.title case final t? when !collapsed)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s2,
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s1,
+                                  ),
+                                  child: Semantics(
+                                    header: true,
+                                    child: Text(
+                                      t.toUpperCase(),
+                                      style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            for (final item in s.items)
-                              PostinoDrawerItemTile(
-                                item,
-                                collapsed: collapsed,
-                                key: _itemKeys.putIfAbsent(n++, GlobalKey.new),
-                              ),
+                              for (final (ii, item) in s.items.indexed)
+                                PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
+                            ],
                           ],
                         ),
                       ),

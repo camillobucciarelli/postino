@@ -10,6 +10,7 @@ import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 import 'postino_drawer_item.dart';
 import 'postino_sync_status.dart';
+import 'postino_unread_dot.dart';
 
 /// One row of `PostinoNavigationDrawer` (not in the barrel): [item] as a row, or, [collapsed], as a rail icon.
 /// The unread dot and the Da ricollegare badge fade in and out (#283, `duration-toggle`).
@@ -42,7 +43,7 @@ class const PostinoDrawerItemTile(
           Positioned(
             top: PostinoSpacing.s1 + 2,
             right: PostinoSpacing.s1 + 2,
-            child: _FadeToggle(item.unreadLabel == null ? null : const _UnreadDot()),
+            child: _FadeToggle(item.unreadLabel == null ? null : const PostinoUnreadDot()),
           ),
           Positioned(
             bottom: PostinoSpacing.s1,
@@ -131,7 +132,7 @@ class const PostinoDrawerItemTile(
                               ? null
                               : Padding(
                                   padding: const EdgeInsetsDirectional.only(start: PostinoSpacing.s3),
-                                  child: _UnreadDot(label: item.unreadLabel),
+                                  child: PostinoUnreadDot(label: item.unreadLabel),
                                 ),
                         ),
                         _FadeToggle(
@@ -153,21 +154,6 @@ class const PostinoDrawerItemTile(
         ),
       ),
     );
-  }
-}
-
-/// The unread dot (8 px, `unread`): in the icon sidebar the item's semantics already say it,
-/// in the extended one it reads [label] itself.
-class const _UnreadDot({final String? label}) extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final dot = Container(
-      key: const ValueKey('unread-dot'),
-      width: PostinoSpacing.s2,
-      height: PostinoSpacing.s2,
-      decoration: BoxDecoration(color: context.pc.unread, shape: BoxShape.circle),
-    );
-    return label == null ? ExcludeSemantics(child: dot) : Semantics(label: label, child: dot);
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -5,12 +7,14 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/domain/account.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/message.dart';
+import '../../../core/domain/settings_repository.dart';
 import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 
-/// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]).
+/// The drawer: Posta unificata, the Accounts (each with its Bozze under its inbox), and the Etichette of the open Account ([accountId]),
+/// a section that opens and closes, remembered on the device for each Account (#311).
 /// [onOpenSettings], when given, adds the Impostazioni at the end, [onReportProblem] Segnala un problema (#117). Routing is the caller's: features don't know the routes.
 class const PostaDrawer({
   super.key,
@@ -39,6 +43,13 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
     },
   );
 
+  late final labelsExpanded = streamSignal(
+    () => switch (openAccount.value) {
+      final id? => GetIt.I<SettingsRepository>().watchLabelsExpanded(id),
+      null => const Stream<bool>.empty(),
+    },
+  );
+
   @override
   void didUpdateWidget(PostaDrawer old) {
     super.didUpdateWidget(old);
@@ -47,6 +58,7 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
 
   @override
   void dispose() {
+    labelsExpanded.dispose();
     labels.dispose();
     unread.dispose();
     super.dispose();
@@ -105,9 +117,16 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
               ],
             ],
           ),
-          if (etichette.isNotEmpty)
+          // Shown once its state is known, so a closed section does not close under the eyes at start.
+          if (all.where((a) => a.id == open).firstOrNull case final a?
+              when etichette.isNotEmpty && labelsExpanded.value.hasValue)
             PostinoDrawerSection(
-              title: t.etichette,
+              title: t.etichetteDi(name: accountLabel(context, a, all)),
+              account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
+              expanded: labelsExpanded.value.requireValue,
+              onToggle: () => unawaited(
+                GetIt.I<SettingsRepository>().setLabelsExpanded(a.id, expanded: !labelsExpanded.value.requireValue),
+              ),
               items: [
                 for (final l in etichette)
                   PostinoDrawerItem(
@@ -115,7 +134,7 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
                     label: l.name,
                     icon: PostinoIcons.tag,
                     active: l.id == widget.labelId,
-                    unreadLabel: unreadLabel(any: folders.contains((open!, l.id))),
+                    unreadLabel: unreadLabel(any: folders.contains((a.id, l.id))),
                     onTap: () => widget.onOpenLabel(l.id),
                   ),
               ],

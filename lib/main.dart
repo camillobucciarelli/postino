@@ -128,11 +128,10 @@ Future<void> main() async {
   unawaited(_resumeImmediateNotifications());
   runApp(TranslationProvider(child: PostinoApp(launch: launch)));
   if (_desktop) unawaited(_startDesktop());
-  unawaited(_indexSearchBacklog());
 }
 
-/// The bodies stored before the search index get their text while the app runs (#221). Failing leaves them for the
-/// next start.
+/// The bodies stored before the search index get their text while the app runs (#221), from [PostinoApp]: only the
+/// app's isolate builds it, the background ones never. Failing leaves them for the next start.
 Future<void> _indexSearchBacklog() async {
   try {
     await indexSearchBacklog(getIt<PostinoDatabase>());
@@ -258,6 +257,7 @@ class _PostinoAppState() extends State<PostinoApp> {
     getIt<SettingsSync>().start();
     getIt<AccountsSettingsMirror>().start();
     getIt<PeriodicSchedule>().start();
+    unawaited(_indexSearchBacklog());
     // A new version of Postino (#287): at most once a day, at start and back in foreground.
     final updater = getIt<AppUpdater>();
     unawaited(updater.checkDaily());

@@ -78,16 +78,22 @@ class _AutoLabelsViewState() extends State<AutoLabelsView> with AccountsSignal {
           onBack: widget.onBack,
           intro: t.intro,
           sections: [
-            const Padding(
-              padding: EdgeInsets.only(top: PostinoSpacing.s4),
-              child: ModelDownloadBanner(showReady: true, spaced: false),
+            // Its gap and the rows' inset only while it is there (#312).
+            const ModelDownloadBanner(
+              showReady: true,
+              spaced: false,
+              padding: EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s4, PostinoSpacing.s4, 0),
             ),
             PostinoSettingsSection(
               title: t.labels,
               children: [
                 if (labels.isEmpty)
-                  PostinoSelectable(
-                    child: Text(t.empty, style: PostinoText.preview.copyWith(color: context.pc.inkMuted)),
+                  Padding(
+                    // In line with the rows' text (#312).
+                    padding: const EdgeInsets.symmetric(horizontal: PostinoSpacing.s4),
+                    child: PostinoSelectable(
+                      child: Text(t.empty, style: PostinoText.preview.copyWith(color: context.pc.inkMuted)),
+                    ),
                   ),
                 for (final l in labels)
                   AutoLabelTile(
@@ -96,7 +102,9 @@ class _AutoLabelsViewState() extends State<AutoLabelsView> with AccountsSignal {
                     label: l,
                     config: config[l.id] ?? autoLabelDefault,
                   ),
-                Align(
+                Container(
+                  // The rows touch; the button keeps its distance from the last one.
+                  padding: const EdgeInsets.only(top: PostinoSpacing.s2),
                   alignment: AlignmentDirectional.centerStart,
                   child: PostinoButton(
                     label: t.create,

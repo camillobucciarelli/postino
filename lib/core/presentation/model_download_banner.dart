@@ -12,9 +12,14 @@ import 'model_download_progress.dart';
 /// Where the model download stands (#107), as a Banner: info while preparing, waiting or downloading, danger
 /// with «Riprova» when it failed. The same one tops the Posta lists and the page of the Etichette automatiche
 /// ([showReady]: there «Modello pronto» stays; on the lists the banner goes away when it is ready).
-/// Nothing while the model is absent. It opens and closes, and one stage fades into the next (PostinoReveal, #283).
-class const ModelDownloadBanner({super.key, final bool showReady = false, final bool spaced = true})
-    extends StatefulWidget {
+/// Nothing while the model is absent, not even [padding]. It opens and closes, and one stage fades into the next
+/// (PostinoReveal, #283).
+class const ModelDownloadBanner({
+  super.key,
+  final bool showReady = false,
+  final bool spaced = true,
+  final EdgeInsets padding = EdgeInsets.zero,
+}) extends StatefulWidget {
   @override
   State<ModelDownloadBanner> createState() => _ModelDownloadBannerState();
 }
@@ -39,7 +44,10 @@ class _ModelDownloadBannerState() extends State<ModelDownloadBanner> {
         ModelDownloadAwaitingConfirmation() => ModelDownloadWaitingForWifi,
         final s => s.runtimeType,
       },
-      child: _banner(context, snapshot.requireData),
+      child: switch (_banner(context, snapshot.requireData)) {
+        null => null,
+        final banner => Padding(padding: widget.padding, child: banner),
+      },
     ),
   );
 

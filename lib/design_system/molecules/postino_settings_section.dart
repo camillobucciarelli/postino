@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
 
-/// A group of the Impostazioni: [title] in `overline` (a heading for the screen reader), then its [children].
+/// A group of the Impostazioni: [title] in `overline` (a heading for the screen reader), in line with the rows' text,
+/// then its [children], touching as in a list.
 class const PostinoSettingsSection({
   super.key,
 
@@ -22,12 +23,14 @@ class const PostinoSettingsSection({
     padding: const EdgeInsets.only(top: PostinoSpacing.s6),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: PostinoSpacing.s2,
       children: [
-        Semantics(
-          header: true,
-          child: SelectionContainer.disabled(
-            child: Text(title.toUpperCase(), style: PostinoText.overline.copyWith(color: context.pc.inkSubtle)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(PostinoSpacing.s4, 0, PostinoSpacing.s4, PostinoSpacing.s2),
+          child: Semantics(
+            header: true,
+            child: SelectionContainer.disabled(
+              child: Text(title.toUpperCase(), style: PostinoText.overline.copyWith(color: context.pc.inkSubtle)),
+            ),
           ),
         ),
         ...children,

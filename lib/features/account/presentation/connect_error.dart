@@ -14,7 +14,8 @@ String? connectError(BuildContext context, Result<Object> result, {ProviderKind 
         provider == ProviderKind.microsoft
             ? context.t.connect.missingPermissionMicrosoft
             : context.t.connect.missingPermission,
-      Err(failure: WorkAccountFailure()) => context.t.connect.workAccount,
+      Err(failure: AdminConsentFailure()) => context.t.connect.adminConsent,
+      Err(failure: OrganizationPolicyFailure()) => context.t.connect.organizationPolicy,
       Err(failure: WrongAccountFailure(:final expected)) => context.t.connect.wrongAccount(address: expected),
       Err(failure: AlreadyConnectedFailure()) => context.t.connect.alreadyConnected,
       Err() => context.t.connect.failed,

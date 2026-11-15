@@ -22,7 +22,8 @@ String describe(Result<int> r) => switch (r) {
   Err(failure: AlreadyConnectedFailure()) => 'already-connected',
   Err(failure: UseGmailFailure()) => 'use-gmail',
   Err(failure: UseMicrosoftFailure()) => 'use-microsoft',
-  Err(failure: WorkAccountFailure()) => 'work-account',
+  Err(failure: AdminConsentFailure()) => 'admin-consent',
+  Err(failure: OrganizationPolicyFailure()) => 'organization-policy',
 };
 
 void main() {
@@ -47,6 +48,7 @@ void main() {
     expect(describe(const Err(AlreadyConnectedFailure())), 'already-connected');
     expect(describe(const Err(UseGmailFailure())), 'use-gmail');
     expect(describe(const Err(UseMicrosoftFailure())), 'use-microsoft');
-    expect(describe(const Err(WorkAccountFailure())), 'work-account');
+    expect(describe(const Err(AdminConsentFailure())), 'admin-consent');
+    expect(describe(const Err(OrganizationPolicyFailure())), 'organization-policy');
   });
 }

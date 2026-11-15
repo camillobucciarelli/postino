@@ -194,8 +194,14 @@ final class const UseMicrosoftFailure() extends Failure {
   this;
 }
 
-/// The Microsoft identity is a work or school account: v1 connects only personal ones (Outlook.com, Hotmail, Live).
-final class const WorkAccountFailure() extends Failure {
+/// The user's organization lets the app in only after an administrator approves it (Microsoft 365).
+final class const AdminConsentFailure() extends Failure {
+  /// Crea il fallimento.
+  this;
+}
+
+/// The policies of the user's organization block the sign-in from this app or this device (Microsoft 365).
+final class const OrganizationPolicyFailure() extends Failure {
   /// Crea il fallimento.
   this;
 }

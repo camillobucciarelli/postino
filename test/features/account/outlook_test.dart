@@ -92,7 +92,8 @@ void main() {
     }
 
     await attempt(const ConfigurationFailure('MICROSOFT_CLIENT_ID'), 'MICROSOFT_CLIENT_ID');
-    await attempt(const WorkAccountFailure(), 'account Microsoft personali');
+    await attempt(const AdminConsentFailure(), "richiede l'approvazione di un amministratore");
+    await attempt(const OrganizationPolicyFailure(), 'non consente l\'accesso da questa app');
     await attempt(const MissingPermissionFailure(), 'leggere e inviare la posta');
     await attempt(const OfflineFailure(), 'Nessuna connessione');
     await attempt(const AlreadyConnectedFailure(), 'già collegato');

@@ -7,6 +7,7 @@ import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
 import 'oauth_authorize.dart';
 import 'oauth_client.dart';
+import 'oauth_refusal.dart';
 
 /// The token endpoint's answer to a code exchange.
 class const TokenResponse({
@@ -37,7 +38,8 @@ class const TokenResponse({
   String toString() => 'TokenResponse';
 }
 
-/// Exchanges [code] for tokens at the client's token endpoint. Never throws: no network is [OfflineFailure].
+/// Exchanges [code] for tokens at the client's token endpoint. Never throws: no network is [OfflineFailure], an
+/// organization's refusal its [organizationRefusal].
 Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth, AuthorizationCode code) async {
   try {
     final r = await client.post(
@@ -50,7 +52,13 @@ Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth
         ...oauth.fields,
       },
     );
-    if (r.statusCode != 200) return Err(UnexpectedFailure('code exchange: HTTP ${r.statusCode}'));
+    if (r.statusCode != 200) {
+      final error = _errorBody(r.body);
+      return Err(
+        organizationRefusal(error['error'] as String?, error['error_description'] as String?) ??
+            UnexpectedFailure('code exchange: HTTP ${r.statusCode}'),
+      );
+    }
     final body = jsonDecode(r.body) as Map<String, dynamic>;
     // The id_token comes straight from the token endpoint over TLS: its payload needs no signature check.
     final idToken = (body['id_token'] as String).split('.')[1];
@@ -67,5 +75,14 @@ Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth
     return const Err(OfflineFailure());
   } on Object catch (e, s) {
     return Err(UnexpectedFailure(e, s));
+  }
+}
+
+/// The JSON error of a refused request; empty when the body is not one.
+Map<String, dynamic> _errorBody(String body) {
+  try {
+    return jsonDecode(body) as Map<String, dynamic>;
+  } on Object {
+    return const {};
   }
 }

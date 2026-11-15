@@ -46,6 +46,10 @@ ProviderKind? oauthProviderFor(String address) => _oauthDomains[_domain(address)
 
 String _domain(String address) => address.substring(address.lastIndexOf('@') + 1);
 
+/// Whether [servers] are Microsoft 365's (Exchange Online): it refuses the password login (`LOGINDISABLED`), the
+/// address connects with «Collega Outlook». Told from the servers, never from the domain's MX.
+bool microsoft365Servers(ServerSettings servers) => servers.imap.host.toLowerCase() == 'outlook.office365.com';
+
 /// The Provider of the password Account [address] (already trimmed and lower case); null for an address of
 /// [oauthProviderFor]. Any other domain is a generic IMAP server.
 PasswordProvider? passwordProviderFor(String address) {

@@ -8,9 +8,11 @@ import '../../domain/result.dart';
 import '../oauth/oauth_authorize.dart';
 import '../oauth/oauth_browser.dart';
 import '../oauth/oauth_exchange.dart';
+import 'graph_me.dart';
 import 'microsoft_client.dart';
 
-/// Microsoft consent in the system browser (authorization code + PKCE, `consumers` endpoint), then code exchange.
+/// Microsoft consent in the system browser (authorization code + PKCE, `common` endpoint: personal, work and school
+/// accounts), then code exchange.
 @Singleton(as: MicrosoftConsent, env: [Environment.prod])
 class MicrosoftWebConsent(
   final http.Client _http,
@@ -22,9 +24,6 @@ class MicrosoftWebConsent(
   this : _loopback = loopback ?? loopbackRedirectPlatform;
 
   final bool _loopback;
-
-  /// The tenant of every personal Microsoft account: any other `tid` is a work or school identity.
-  static const personalTenant = '9188040d-6c67-4c5b-b112-36a304b66dad';
 
   // Polling only for Microsoft in v1: no IMAP.AccessAsUser.All (the IDLE signal), decided with the owner.
   static const _scopes = 'openid email offline_access User.Read Mail.ReadWrite Mail.Send';
@@ -59,12 +58,20 @@ class MicrosoftWebConsent(
       case Ok(:final value):
         tokens = value;
     }
-    if (tokens.claims['tid'] != personalTenant) return const Err(WorkAccountFailure());
     // The scopes come back with or without the Graph prefix, in any case.
     final granted = {for (final s in tokens.scopes) s.toLowerCase().replaceFirst(_graph, '')};
     if (!granted.containsAll(_mailScopes)) return const Err(MissingPermissionFailure());
-    final address = tokens.claims['email'] ?? tokens.claims['preferred_username'];
-    if (address is! String) return const Err(UnexpectedFailure('no address in id_token'));
+    // Without `email`, `preferred_username` of a work or school account is its UPN, maybe not its mail address:
+    // Graph knows the address.
+    var address = tokens.claims['email'];
+    if (address is! String) {
+      switch (await graphMeAddress(_http, tokens.accessToken)) {
+        case Err(:final failure):
+          return Err(failure);
+        case Ok(:final value):
+          address = value;
+      }
+    }
     return tokens.grant(address: address.trim().toLowerCase(), clock: _clock);
   }
 }

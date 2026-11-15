@@ -30,7 +30,7 @@ import 'graph_search.dart';
 import 'graph_sender.dart';
 import 'microsoft_client.dart';
 
-/// Microsoft Graph adapter (ADR 0002) for a personal Outlook.com Account: folders are Etichette
+/// Microsoft Graph adapter (ADR 0002) for an Outlook.com or Microsoft 365 Account: folders are Etichette
 /// ([LabelKind.cartella]), a message's id is Graph's immutable id, its Conversazione Graph's `conversationId`.
 /// No change signal in v1 (no `IMAP.AccessAsUser.All`, ADR 0008): the poll every 60 s brings the changes.
 class MicrosoftProvider(

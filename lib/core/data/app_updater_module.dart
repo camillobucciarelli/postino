@@ -40,6 +40,7 @@ AppUpdater appUpdaterFor(TargetPlatform? platform, int build, http.Client client
         installed: build,
         launch: (url) => launchUrl(url, mode: LaunchMode.externalApplication),
         fallback: Uri.parse('$_site/guida/index.html'),
+        storeOnly: platform == TargetPlatform.iOS,
       ),
       _ => const _Unsupported(),
     };

@@ -27,6 +27,14 @@ void main() {
     expect(newerVersion(_file(url: '$store'), installed: _installed)?.url, store);
   });
 
+  test('storeOnly: the legacy TestFlight url is no update; other non-https urls still fail', () {
+    expect(newerVersion(_file(url: 'itms-beta://'), installed: _installed, storeOnly: true), isNull);
+    expect(
+      () => newerVersion(_file(url: 'http://x.example/p'), installed: _installed, storeOnly: true),
+      throwsFormatException,
+    );
+  });
+
   for (final (name, body) in [
     ('not JSON', 'oops'),
     ('a list', '[]'),

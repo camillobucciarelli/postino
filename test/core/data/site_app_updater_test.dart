@@ -38,7 +38,7 @@ void main() {
   late List<Uri> launched;
   var opens = true;
 
-  SiteAppUpdater updater({Uri? feed, http.Client? client}) => SiteAppUpdater(
+  SiteAppUpdater updater({Uri? feed, http.Client? client, bool storeOnly = false}) => SiteAppUpdater(
     client ??
         MockClient((r) async {
           requests.add(r);
@@ -53,6 +53,7 @@ void main() {
       return opens;
     },
     fallback: _guide,
+    storeOnly: storeOnly,
   );
 
   setUp(() {
@@ -105,6 +106,39 @@ void main() {
       final u = updater();
       expect(await _check(u), UpdateCheck.available);
       expect(u.available?.url, store);
+    });
+  });
+
+  group('iOS before the App Store (#323): no store page yet is no update, not an error', () {
+    final legacy = _file(url: 'itms-beta://');
+    test('the legacy TestFlight file: up to date, nothing available', () async {
+      reply = () => http.Response(legacy, 200);
+      final u = updater(storeOnly: true);
+      expect(await _check(u), UpdateCheck.upToDate);
+      expect(u.available, isNull);
+      await u.checkDaily();
+      expect(u.available, isNull);
+    });
+
+    test('no file (404): up to date, nothing available', () async {
+      reply = () => http.Response('', 404);
+      final u = updater(storeOnly: true);
+      expect(await _check(u), UpdateCheck.upToDate);
+      expect(u.available, isNull);
+    });
+
+    test('a 500 or a malformed file is still a failure', () async {
+      reply = () => http.Response('', 500);
+      expect(await _check(updater(storeOnly: true)), isNull);
+      reply = () => http.Response('oops', 200);
+      expect(await _check(updater(storeOnly: true)), isNull);
+    });
+
+    test('Android still fails on the legacy file and on a 404', () async {
+      reply = () => http.Response(legacy, 200);
+      expect(await _check(updater()), isNull);
+      reply = () => http.Response('', 404);
+      expect(await _check(updater()), isNull);
     });
   });
 

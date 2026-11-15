@@ -2,7 +2,8 @@
 // the top inset itself, so the rows must not take it a second time.
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
@@ -42,5 +43,36 @@ void main() {
     final flat = await _gap(tester, top: 0, bottom: 0);
     final phone = await _gap(tester, top: 47, bottom: 34);
     expect(phone, flat);
+  });
+
+  testWidgets('the last row still clears the home bar', (tester) async {
+    await _gap(tester, top: 47, bottom: 34);
+    await tester.drag(find.byType(ListView), const Offset(0, -5000));
+    await tester.pumpAndSettle();
+    final last = find.byKey(const ValueKey('row-a1-m1'));
+    expect(tester.getBottomLeft(last).dy, lessThanOrEqualTo(800 - 34));
+  });
+
+  testWidgets('a page under the bar of PostinoDetailPage starts right under it too', (tester) async {
+    tester.view
+      ..physicalSize = const Size(400, 800)
+      ..devicePixelRatio = 1
+      ..padding = const FakeViewPadding(top: 47, bottom: 34)
+      ..viewPadding = const FakeViewPadding(top: 47, bottom: 34);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PostinoTheme.light(),
+        home: PostinoDetailPage(
+          title: 'T',
+          onBack: () {},
+          child: ListView(children: const [Text('prima')]),
+        ),
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.text('prima')).dy - tester.getBottomLeft(find.byType(PostinoAppBar)).dy,
+      lessThan(PostinoSpacing.s4),
+    );
   });
 }

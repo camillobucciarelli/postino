@@ -193,6 +193,8 @@
     "immediateNotificationsFailed": "Il sistema non ha avviato le Notifiche immediate. Riprova.",
     "checkForUpdates": "Cerca aggiornamenti",
     "checkForUpdatesBody": "Cerca subito una nuova versione di Postino.",
+    "versionLabel": "Postino $version (build $build)",
+    "versionDevelopment": "Postino · sviluppo",
     "upToDate": "Postino è aggiornato.",
     "checkFound": "C'è una nuova versione di Postino.",
     "notifications": "Notifiche",

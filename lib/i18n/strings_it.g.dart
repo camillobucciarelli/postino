@@ -666,6 +666,12 @@ class Translations$impostazioni$it {
 	/// it: 'Cerca subito una nuova versione di Postino.'
 	String get checkForUpdatesBody => 'Cerca subito una nuova versione di Postino.';
 
+	/// it: 'Postino $version (build $build)'
+	String versionLabel({required Object version, required Object build}) => 'Postino ${version} (build ${build})';
+
+	/// it: 'Postino · sviluppo'
+	String get versionDevelopment => 'Postino · sviluppo';
+
 	/// it: 'Postino è aggiornato.'
 	String get upToDate => 'Postino è aggiornato.';
 
@@ -1545,6 +1551,8 @@ extension on Translations {
 			'impostazioni.immediateNotificationsFailed' => 'Il sistema non ha avviato le Notifiche immediate. Riprova.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',
+			'impostazioni.versionLabel' => ({required Object version, required Object build}) => 'Postino ${version} (build ${build})',
+			'impostazioni.versionDevelopment' => 'Postino · sviluppo',
 			'impostazioni.upToDate' => 'Postino è aggiornato.',
 			'impostazioni.checkFound' => 'C\'è una nuova versione di Postino.',
 			'impostazioni.notifications' => 'Notifiche',

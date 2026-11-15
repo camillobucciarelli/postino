@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../tokens/postino_tokens.dart';
+import 'postino_below_bar.dart';
 
 /// One pane on the phone: [appBar], the [drawer] behind it, [banners] on top of the [body], [fab] over it.
 class const PostinoSinglePaneLayout({
@@ -44,7 +45,7 @@ class const PostinoSinglePaneLayout({
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: banners),
         ),
-        Expanded(child: body),
+        Expanded(child: PostinoBelowBar(child: body)),
       ],
     ),
   );

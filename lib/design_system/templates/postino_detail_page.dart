@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../organisms/postino_app_bar.dart';
+import 'postino_below_bar.dart';
 
 /// A full-screen page over the list: the bar with `arrow-left` ([onBack], Esc too) and [title] over a [subtitle],
 /// then [child] filling the rest. For a content that is not a list, like «Vedi originale».
@@ -34,7 +35,7 @@ class const PostinoDetailPage({
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             PostinoAppBar(title: title, subtitle: subtitle, onBack: onBack),
-            Expanded(child: child),
+            Expanded(child: PostinoBelowBar(child: child)),
           ],
         ),
       ),

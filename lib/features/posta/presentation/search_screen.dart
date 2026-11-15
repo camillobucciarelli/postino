@@ -172,18 +172,20 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
           child: const SizedBox(height: 1),
         ),
         Expanded(
-          child: MessageList(
-            // A new query is a new list: its stream starts over.
-            key: ValueKey(_query),
-            watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query, found: _providers.watchFound()),
-            showAccount: widget.accountId == null,
-            selected: _open,
-            cursor: _cursor,
-            onOpen: (a, c) => setState(() => _open = (a, c)),
-            onCount: (n) => setState(() => _count = searching ? n : null),
-            emptyIcon: PostinoIcons.search,
-            emptyTitle: searching ? t.emptyTitle : t.idleTitle,
-            emptyBody: searching ? t.emptyBody : t.idleBody,
+          child: PostinoBelowBar(
+            child: MessageList(
+              // A new query is a new list: its stream starts over.
+              key: ValueKey(_query),
+              watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query, found: _providers.watchFound()),
+              showAccount: widget.accountId == null,
+              selected: _open,
+              cursor: _cursor,
+              onOpen: (a, c) => setState(() => _open = (a, c)),
+              onCount: (n) => setState(() => _count = searching ? n : null),
+              emptyIcon: PostinoIcons.search,
+              emptyTitle: searching ? t.emptyTitle : t.idleTitle,
+              emptyBody: searching ? t.emptyBody : t.idleBody,
+            ),
           ),
         ),
       ],

@@ -31,6 +31,14 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
             ..orderBy([(t) => OrderingTerm.asc(t.name)]))
           .watch();
 
+  /// Every Account's Etichette of both kinds (the user's folders on IMAP and Microsoft), by name: the drawer's (#311).
+  /// Never a system folder, even one a creation named after it stored.
+  Stream<List<LabelRow>> watchAll() =>
+      (select(labels)
+            ..where((t) => t.id.isNotIn(const [inboxLabelId, draftLabelId, sentLabelId, trashLabelId, spamLabelId]))
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .watch();
+
   /// Removes the Account's labels (Rimozione di un Account, #174).
   Future<void> deleteByAccount(String accountId) => (delete(labels)..where((t) => t.accountId.equals(accountId))).go();
 }

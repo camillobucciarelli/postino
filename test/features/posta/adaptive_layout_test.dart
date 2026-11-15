@@ -53,7 +53,7 @@ void main() {
     expect(tester.getTopRight(row).dx, PostinoSize.sidebarWidth + PostinoSize.listWidth);
     expect(find.text('Seleziona una Conversazione'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('account-a1')));
+    await tester.tap(find.byKey(const ValueKey('inbox-a1')));
     await tester.pumpAndSettle();
     expect(find.text('Da uno'), findsOneWidget);
     expect(find.text('Da due'), findsNothing);
@@ -70,9 +70,9 @@ void main() {
       expect(drawer(), same(first), reason: 'after $key');
     }
 
-    await go('account-a1');
-    await go('label-Label_12');
-    await go('account-a2');
+    await go('inbox-a1');
+    await go('label-a1-Label_12');
+    await go('inbox-a2');
     await go('drawer-posta-unificata');
   });
 }

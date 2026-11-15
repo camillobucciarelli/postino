@@ -205,13 +205,7 @@ Widget postaDrawer({String? accountId, String? labelId}) => PostaDrawer(
   labelId: labelId,
   onOpenUnified: () => Routefly.navigate(routePaths.posta.path),
   onOpenAccount: (id) => _openFromPosta(routePaths.posta.$accountId.path.changes({'accountId': id})),
-  onOpenLabel: (id) =>
-      _openFromPosta(routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': accountId!, 'labelId': id})),
-  onOpenDrafts: (id) => _openFromPosta(
-    routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': id, 'labelId': draftLabelId}),
-  ),
-  onOpenSent: (id) =>
-      _openFromPosta(routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': id, 'labelId': sentLabelId})),
+  onOpenLabel: (account, id) => _openFromPosta(labelPath(account, id)),
   onOpenSettings: () => unawaited(Routefly.push<void>(routePaths.impostazioni.path)),
   onReportProblem: reportProblem,
 );

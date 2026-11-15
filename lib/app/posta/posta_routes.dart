@@ -47,6 +47,12 @@ class const PostaRoute._({
   (String, String)? get detail => open ?? draft;
 }
 
+/// The path of an Etichetta's list; the id is percent-encoded, so a folder `cartella:Lavoro/Progetti` stays one segment.
+String labelPath(String accountId, String labelId) => routePaths.posta.$accountId.etichetta.$labelId.changes({
+  'accountId': accountId,
+  'labelId': Uri.encodeComponent(labelId),
+});
+
 /// Opens the composer of a Bozza.
 void openDraft(String accountId, String messageId) => Routefly.navigate(
   routePaths.posta.$accountId.bozza.$messageId.changes({

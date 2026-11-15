@@ -11,6 +11,12 @@ abstract interface class SettingsRepository() {
   /// Ricorda la scelta della sidebar; null cancella la scelta manuale.
   Future<void> setSidebarExpanded({required bool? expanded});
 
+  /// The ids of the Accounts closed in the drawer on this device (#311); the others are open.
+  Future<Set<String>> collapsedAccounts();
+
+  /// Ricorda quali Account sono chiusi nel drawer.
+  Future<void> setCollapsedAccounts(Set<String> accountIds);
+
   /// The width in pixels the user chose for the list; null: none, the default applies. Not limited to the window.
   Future<double?> listWidth();
 

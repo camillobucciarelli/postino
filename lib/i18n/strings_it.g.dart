@@ -63,8 +63,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$sidebar$it sidebar = Translations$sidebar$it.internal(_root);
 	late final Translations$listWidth$it listWidth = Translations$listWidth$it.internal(_root);
 
-	/// it: 'Etichette'
-	String get etichette => 'Etichette';
+	/// it: 'Account $address'
+	String drawerAccount({required Object address}) => 'Account ${address}';
+
+	/// it: 'Cestino'
+	String get cestino => 'Cestino';
 
 	late final Translations$onboarding$it onboarding = Translations$onboarding$it.internal(_root);
 	late final Translations$daRicollegare$it daRicollegare = Translations$daRicollegare$it.internal(_root);
@@ -1411,7 +1414,8 @@ extension on Translations {
 			'sidebar.open' => 'Apri la barra laterale',
 			'listWidth.label' => 'Larghezza lista',
 			'listWidth.value' => ({required Object px}) => '${px} pixel',
-			'etichette' => 'Etichette',
+			'drawerAccount' => ({required Object address}) => 'Account ${address}',
+			'cestino' => 'Cestino',
 			'onboarding.body' => 'Tutte le tue caselle in un posto solo.',
 			'onboarding.connectGmail' => 'Collega Gmail',
 			'onboarding.connectOutlook' => 'Collega Outlook',

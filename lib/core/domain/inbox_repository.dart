@@ -76,6 +76,9 @@ abstract interface class InboxRepository() {
   /// The Etichette of one Account, by name; never those of another.
   Stream<List<Label>> watchLabels(String accountId);
 
+  /// The Etichette of every Account by Account id, by name, folders of the user included (the drawer, #311).
+  Stream<Map<String, List<Label>>> watchAllLabels();
+
   /// Every stored message of a Conversazione, oldest first.
   Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId);
 

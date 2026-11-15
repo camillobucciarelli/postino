@@ -28,7 +28,7 @@ Verificate nel codice: tutte le funzioni nominate nelle schede, tranne quanto se
 - **iPhone/iPad**: nessuna build iOS è stata avviata in questa sessione (iOS arriva con #323). Layout «affiancato» su iPad, tastiera e notifiche con pulsanti sono letti nel codice (`posta_layout.dart`, `posta_shortcuts.dart`, `notification_buttons.dart` registra le categorie iOS e macOS), non provati su iPad.
 - **Icona nella barra dei menu del Mac**: c'è (`tray.open` in `lib/i18n`), ma nella variante sandbox del Mac App Store dipende da #215 e #325.
 - **Modello da circa 165 MB**: vale per iOS, iPadOS e Mac Apple Silicon (formato `.litertlm`, ADR 0015); su Mac Intel il file è il GGUF da circa 310 MB. La scheda dice 165 MB.
-- **Etichettatura automatica sui Provider non Gmail**: la pagina dell'app dice «The label is written to Gmail»; non ho verificato se sia disponibile per Microsoft e IMAP. La scheda non la restringe a Gmail.
+- **Etichettatura automatica**: il codice la offre solo dove l'Account ha Etichette vere (Gmail), non sulle cartelle IMAP e Microsoft (verifica di Codex su `AutoLabelsView`); le schede la limitano a Gmail.
 - **Tema scuro**: non menzionato perché non l'ho trovato nel codice.
 - **Impostazioni su Drive**: la scheda e le note dicono che passano solo impostazioni, mai password. L'ADR 0019 (accettato il 15/11/2026) prevede di portare anche le credenziali, cifrate; non è ancora nel codice né nell'informativa. **Se l'ADR 0019 viene implementato prima della pubblicazione, riscrivere** «Mai la posta, mai le password» nelle schede e nelle note, e aggiornare l'informativa.
 - **Informativa nelle Impostazioni dell'app**: richiesta da #323, non ancora nel codice; le note di revisione la citano.

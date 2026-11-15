@@ -43,7 +43,7 @@ NOTIFICHE CON AZIONI
 Le notifiche di posta nuova sono raggruppate per Account e hanno fino a due pulsanti a tua scelta, ad esempio Archivia e Segna come letto.
 
 ETICHETTE, ANCHE AUTOMATICHE
-Crea Etichette, anche annidate («Progetti/Postino»), e applicale ai messaggi. Se vuoi, attiva l'Etichettatura automatica su un'Etichetta, con una descrizione: Postino la assegna da solo ai messaggi nuovi che le somigliano. Il modello gira sul tuo dispositivo e il contenuto dei messaggi non viene inviato a nessun servizio. Il modello si scarica una volta, alla prima attivazione (circa 165 MB), in Wi-Fi oppure dopo la tua conferma su rete cellulare.
+Crea Etichette, anche annidate («Progetti/Postino»), e applicale ai messaggi. Con un Account Gmail puoi attivare l'Etichettatura automatica su un'Etichetta, con una descrizione: Postino la assegna da solo ai messaggi nuovi che le somigliano. Il modello gira sul tuo dispositivo e il contenuto dei messaggi non viene inviato a nessun servizio. Il modello si scarica una volta, alla prima attivazione (circa 165 MB su iPhone e iPad), in Wi-Fi oppure dopo la tua conferma su rete cellulare.
 
 SCRIVI SENZA FRETTA
 Rispondi, rispondi a tutti e inoltra con la citazione del messaggio originale. Le Bozze sono salvate sul Provider, quindi le ritrovi anche in un altro client. Dopo Invia hai un attimo per annullare l'invio; se sei offline, il messaggio resta in coda e parte da solo al ritorno della rete.

@@ -43,7 +43,7 @@ NOTIFICATIONS WITH ACTIONS
 New-mail notifications are grouped by account and carry up to two buttons of your choice, for example Archive and Mark as read.
 
 LABELS, EVEN AUTOMATIC ONES
-Create labels, even nested ones ("Projects/Postino"), and apply them to messages. If you like, turn on automatic labeling for a label, with a description: Postino assigns it by itself to new messages that resemble it. The model runs on your device and the content of your messages is never sent to any service. The model downloads once, the first time you turn it on (about 165 MB), over Wi-Fi or after your confirmation on a cellular network.
+Create labels, even nested ones ("Projects/Postino"), and apply them to messages. With a Gmail account you can turn on automatic labeling for a label, with a description: Postino assigns it by itself to new messages that resemble it. The model runs on your device and the content of your messages is never sent to any service. The model downloads once, the first time you turn it on (about 165 MB on iPhone and iPad), over Wi-Fi or after your confirmation on a cellular network.
 
 WRITE AT YOUR OWN PACE
 Reply, reply all and forward, with the original message quoted. Drafts are saved on the provider, so you find them in another client too. After you tap Send you have a moment to undo; if you are offline, the message waits in a queue and goes out by itself when the network returns.

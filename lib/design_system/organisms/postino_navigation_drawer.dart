@@ -75,10 +75,13 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _keys = <Object, GlobalKey>{};
   Rect? _active;
   var _slide = false;
+  GlobalKey? _activeKey;
+  GlobalKey? _measuredKey;
 
   GlobalKey _key(Object id) => _keys.putIfAbsent(id, GlobalKey.new);
 
-  /// [key] shows the active item: the item, or its group while closed; null: none.
+  /// [key] shows the active item: the item, or its group while closed; null: none. The box slides to a new key, and
+  /// follows at once the same one when a group opening or closing above it moves it.
   void _measure(GlobalKey? key) {
     if (!mounted) return;
     final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
@@ -90,7 +93,8 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
     if (rect == _active) return;
     // The first position (or one after no active item) is placed, not slid to.
     setState(() {
-      _slide = _active != null && rect != null;
+      _slide = key != _measuredKey && _active != null && rect != null;
+      _measuredKey = key;
       _active = rect;
     });
   }
@@ -110,6 +114,7 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
         }
       }
     }
+    _activeKey = activeKey;
     WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeKey));
     // Width and shape come from the DrawerTheme: modal by default, docked in PostinoAdaptiveLayout.
     return Drawer(
@@ -151,63 +156,72 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                       ),
                     ),
                   ),
-                Column(
-                  children: [
-                    for (final (i, s) in sections.indexed)
-                      Container(
-                        margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
-                        padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                        decoration: i == 0
-                            ? null
-                            : BoxDecoration(
-                                border: Border(top: BorderSide(color: c.borderSubtle)),
-                              ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          spacing: PostinoSpacing.s0_5,
-                          children: [
-                            if (s.title case final t? when !collapsed)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s2,
-                                  PostinoSpacing.s3,
-                                  PostinoSpacing.s1,
+                // A group opening or closing moves the rows below it frame by frame: the box follows them.
+                NotificationListener<SizeChangedLayoutNotification>(
+                  onNotification: (_) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _measure(_activeKey));
+                    return true;
+                  },
+                  child: Column(
+                    children: [
+                      for (final (i, s) in sections.indexed)
+                        Container(
+                          margin: EdgeInsets.only(top: i == 0 ? 0 : PostinoSpacing.s2),
+                          padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                          decoration: i == 0
+                              ? null
+                              : BoxDecoration(
+                                  border: Border(top: BorderSide(color: c.borderSubtle)),
                                 ),
-                                child: Semantics(
-                                  header: true,
-                                  child: Text(
-                                    t.toUpperCase(),
-                                    style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: PostinoSpacing.s0_5,
+                            children: [
+                              if (s.title case final t? when !collapsed)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s2,
+                                    PostinoSpacing.s3,
+                                    PostinoSpacing.s1,
+                                  ),
+                                  child: Semantics(
+                                    header: true,
+                                    child: Text(
+                                      t.toUpperCase(),
+                                      style: PostinoText.overline.copyWith(color: c.inkSubtle),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            for (final (ii, item) in s.items.indexed) ...[
-                              PostinoDrawerItemTile(item, collapsed: collapsed, key: _key(item.key ?? (i, ii))),
-                              if (item.children case final children?)
-                                // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
-                                PostinoReveal(
-                                  duration: PostinoMotion.threadExpand,
-                                  child: item.expanded
-                                      ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          spacing: PostinoSpacing.s0_5,
-                                          children: [
-                                            for (final (ci, child) in children.indexed)
-                                              PostinoDrawerItemTile(
-                                                child,
-                                                collapsed: collapsed,
-                                                key: _key(child.key ?? (i, ii, ci)),
-                                              ),
-                                          ],
-                                        )
-                                      : null,
-                                ),
+                              for (final (ii, item) in s.items.indexed) ...[
+                                PostinoDrawerItemTile(item, collapsed: collapsed, key: _key(item.key ?? (i, ii))),
+                                if (item.children case final children?)
+                                  // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
+                                  SizeChangedLayoutNotifier(
+                                    child: PostinoReveal(
+                                      duration: PostinoMotion.threadExpand,
+                                      child: item.expanded
+                                          ? Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              spacing: PostinoSpacing.s0_5,
+                                              children: [
+                                                for (final (ci, child) in children.indexed)
+                                                  PostinoDrawerItemTile(
+                                                    child,
+                                                    collapsed: collapsed,
+                                                    key: _key(child.key ?? (i, ii, ci)),
+                                                  ),
+                                              ],
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

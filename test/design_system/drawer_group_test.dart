@@ -224,4 +224,61 @@ void main() {
     expect(find.byTooltip('Viaggi'), findsNothing);
     expect(find.descendant(of: _row, matching: find.byKey(const ValueKey('unread-dot'))), findsOneWidget);
   });
+
+  testWidgets('the box follows the active row while a group above it closes and opens', (tester) async {
+    // One theme: a new one at each rebuild would lerp the box's color.
+    final theme = PostinoTheme.light();
+    var expanded = true;
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) => MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: PostinoNavigationDrawer(
+              sections: [
+                PostinoDrawerSection(
+                  items: [
+                    PostinoDrawerItem(
+                      key: const ValueKey('first'),
+                      label: 'a1@x.it',
+                      expanded: expanded,
+                      onTap: () => setState(() => expanded = !expanded),
+                      children: [
+                        for (final n in ['A', 'B', 'C']) PostinoDrawerItem(label: n, onTap: () {}),
+                      ],
+                    ),
+                    PostinoDrawerItem(
+                      label: 'a2@x.it',
+                      onTap: () {},
+                      children: [
+                        PostinoDrawerItem(key: const ValueKey('active'), label: 'D', active: true, onTap: () {}),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final color = theme.extension<PostinoColors>()!.drawerItemBgActive;
+    final box = find.byWidgetPredicate(
+      (w) => w is DecoratedBox && w.decoration is BoxDecoration && (w.decoration as BoxDecoration).color == color,
+    );
+    final active = find.byKey(const ValueKey('active'));
+    expect(tester.getRect(box), tester.getRect(active));
+    // Mid-way, a frame after the row moved, the box is on it again; and at the end.
+    for (final _ in [1, 2]) {
+      await tester.tap(find.byKey(const ValueKey('first')));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+        expect(tester.getRect(box), tester.getRect(active));
+      }
+      await tester.pumpAndSettle();
+      expect(tester.getRect(box), tester.getRect(active));
+    }
+  });
 }

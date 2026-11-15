@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Rigenera tutti i PNG di icona, splash e tray, i lockup e l'immagine Open Graph da assets/brand/*.svg (unica fonte,
-# vedi docs/brand-icone.md).
+# Rigenera tutti i PNG di icona, splash e tray, l'.ico di Windows, i lockup e l'immagine Open Graph da assets/brand/*.svg
+# (unica fonte, vedi docs/brand-icone.md).
 # Rasterizza con rsvg-convert se c'è, altrimenti con sips (di serie su macOS, SVG con fondo trasparente).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -91,6 +91,20 @@ png "$B/mark-closed.svg" 384 "$LI/LaunchImage@3x.png"
 png "$B/mark-mono.svg" 36 assets/tray/tray_icon_template.png
 png "$B/icon.svg" 64 assets/tray/tray_icon.png
 
+# Windows: app_icon.ico dell'eseguibile (Runner.rc), tile con angoli trasparenti, voci PNG 16…256 (Vista+).
+ICO=()
+for px in 16 24 32 48 64 256; do png "$(pick "$px")" "$px" "$T/ico_$px.png"; ICO+=("$T/ico_$px.png"); done
+python3 -I - windows/runner/resources/app_icon.ico "${ICO[@]}" <<'EOF'
+import struct, sys
+out, pngs = sys.argv[1], [open(p, 'rb').read() for p in sys.argv[2:]]
+head, off = struct.pack('<HHH', 0, 1, len(pngs)), 6 + 16 * len(pngs)
+for d in pngs:
+    w, h = struct.unpack('>II', d[16:24])
+    head += struct.pack('<BBBBHHII', w % 256, h % 256, 0, 0, 1, 32, len(d), off)
+    off += len(d)
+open(out, 'wb').write(head + b''.join(pngs))
+EOF
+
 # Lockup: marchio + «Postino» (wordmark.svg, Caprasimo in tracciati). Unità: il marchio è alto 152 (busta 56..208
 # di mark.svg), area di rispetto 76 = metà tutt'intorno, 40 tra marchio e scritta, maiuscole (1434/2048 em) alte 96
 # centrate sul marchio. lockup.svg per fondi chiari (tile + inchiostro), lockup-dark.svg per fondi scuri o verderame
@@ -108,7 +122,7 @@ lockup() { # <marchio svg> <viewBox marchio> <larghezza marchio> <colore scritta
     echo '</svg>'; } > "$5"
 }
 lockup "$B/icon.svg" "0 0 256 256" 152 "#1c1c1a" "$B/lockup.svg"
-lockup "$B/mark.svg" "40 56 176 152" 176 "#fffdf8" "$B/lockup-dark.svg"
+lockup "$B/mark.svg" "40 56 176 152" 176 "#ffffff" "$B/lockup-dark.svg"
 
 # Open Graph del sito: 1200x630, fondo verderame del tile, lockup chiaro centrato (largo 960), senza alfa.
 read -r _ _ lw lh <<< "$(viewbox "$B/lockup-dark.svg")"

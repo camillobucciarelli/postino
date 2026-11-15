@@ -16,8 +16,6 @@ class PostinoBrandMarkPainter(
   this : super(repaint: progress);
 
   static const _flapEnd = 250 / 900;
-  static const _paper = Color(0xFFFFFDF8);
-  static const _gold = Color(0xFFE0AB12);
 
   /// The flap folded over the pocket (-1) up to open as in mark.svg (1).
   double get flapFold => 2 * Curves.easeInOut.transform(math.min(progress.value / _flapEnd, 1)) - 1;
@@ -38,12 +36,12 @@ class PostinoBrandMarkPainter(
       ..lineTo(128, 128 - 72 * fold)
       ..lineTo(216, 128)
       ..close();
-    final flapPaint = Paint()..color = PostinoPrimitives.pNeutral200;
+    final flapPaint = Paint()..color = PostinoPrimitives.pNeutral400;
     if (fold >= 0) canvas.drawPath(flap, flapPaint);
     _letter(canvas, letterRise);
     canvas
       ..drawPath(_pocket(4), Paint()..color = const Color(0x38000000))
-      ..drawPath(_pocket(0), Paint()..color = _paper);
+      ..drawPath(_pocket(0), Paint()..color = PostinoPrimitives.pNeutral300);
     if (fold < 0) canvas.drawPath(flap, flapPaint);
     canvas.restore();
   }
@@ -61,10 +59,13 @@ class PostinoBrandMarkPainter(
       ..translate(128, 128 + 56 * (1 - rise))
       ..rotate(-5 * math.pi / 180 * rise)
       ..translate(-128, -128)
-      ..drawRRect(RRect.fromLTRBR(76, 76, 180, 188, const Radius.circular(10)), Paint()..color = _paper)
+      ..drawRRect(
+        RRect.fromLTRBR(76, 76, 180, 188, const Radius.circular(10)),
+        Paint()..color = PostinoPrimitives.pNeutral0,
+      )
       ..drawLine(const Offset(128, 96), const Offset(164, 96), line(PostinoPrimitives.pNeutral300))
       ..drawLine(const Offset(92, 112), const Offset(168, 112), line(PostinoPrimitives.pNeutral300))
-      ..drawLine(const Offset(92, 96), const Offset(120, 96), line(_gold))
+      ..drawLine(const Offset(92, 96), const Offset(120, 96), line(PostinoPrimitives.pGold400))
       ..restore();
   }
 

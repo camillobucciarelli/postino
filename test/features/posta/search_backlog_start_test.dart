@@ -18,13 +18,16 @@ void main() {
     tester,
   ) async {
     final h = await Harness.create();
-    (await h.addAccount('a1')).deliver(msg('a', subject: 'Vecchio'));
+    (await h.addAccount('a1'))
+      ..deliver(msg('a', subject: 'Toccato'))
+      ..deliver(msg('b', subject: 'Vecchio'));
     final db = getIt<PostinoDatabase>();
     await tester.runAsync(() async {
       await getIt<MailSync>().syncAll();
-      // The body as a version without the index stored it: not in the index.
+      // The body as a version without the index stored it: not in the index. On a message the tap leaves alone, so
+      // no sync brings its body again.
       await db.customStatement(
-        "UPDATE bodies SET body = '<p>parolarara</p>', kind = 'html' WHERE account_id = 'a1' AND message_id = 'a'",
+        "UPDATE bodies SET body = '<p>parolarara</p>', kind = 'html' WHERE account_id = 'a1' AND message_id = 'b'",
       );
       await queueSearchBacklog(db);
     });
@@ -42,6 +45,8 @@ void main() {
         ),
       ),
     );
+    // Real time for a backlog started without waiting for it.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     expect(await backlog(), isTrue, reason: 'a background isolate does not start the backlog');
 
     LocaleSettings.setLocaleSync(AppLocale.it);

@@ -70,7 +70,8 @@ class const PostinoNavigationDrawer({
 class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _stack = GlobalKey();
 
-  /// By position, (section, item) or (section, item, child): a closing group keeps its keys whatever else changes.
+  /// By the item's key, else by position, (section, item) or (section, item, child): a focused Etichetta stays itself
+  /// when a sync adds another before it, and a closing group keeps its keys.
   final _keys = <Object, GlobalKey>{};
   Rect? _active;
   var _slide = false;
@@ -103,9 +104,9 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
     GlobalKey? activeKey;
     for (final (si, s) in sections.indexed) {
       for (final (ii, item) in s.items.indexed) {
-        if (item.active) activeKey = _key((si, ii));
+        if (item.active) activeKey = _key(item.key ?? (si, ii));
         for (final (ci, child) in (item.children ?? const <PostinoDrawerItem>[]).indexed) {
-          if (child.active) activeKey = item.expanded ? _key((si, ii, ci)) : _key((si, ii));
+          if (child.active) activeKey = item.expanded ? _key(child.key ?? (si, ii, ci)) : _key(item.key ?? (si, ii));
         }
       }
     }
@@ -182,7 +183,7 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                                 ),
                               ),
                             for (final (ii, item) in s.items.indexed) ...[
-                              PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
+                              PostinoDrawerItemTile(item, collapsed: collapsed, key: _key(item.key ?? (i, ii))),
                               if (item.children case final children?)
                                 // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
                                 PostinoReveal(
@@ -196,7 +197,7 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                                               PostinoDrawerItemTile(
                                                 child,
                                                 collapsed: collapsed,
-                                                key: _key((i, ii, ci)),
+                                                key: _key(child.key ?? (i, ii, ci)),
                                               ),
                                           ],
                                         )

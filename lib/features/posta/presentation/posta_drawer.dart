@@ -52,12 +52,6 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
     unawaited(GetIt.I<SettingsRepository>().setCollapsedAccounts(next));
   }
 
-  /// The Account's address, with its Provider when another Account has the same one (ADR 0016, as [accountLabel]).
-  String _address(BuildContext context, Account a, List<Account> all) =>
-      all.where((b) => b.address == a.address).length > 1
-      ? '${a.address} · ${providerName(context, a.provider)}'
-      : a.address;
-
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -90,8 +84,8 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
                 for (final a in all)
                   PostinoDrawerItem(
                     key: ValueKey('account-${a.id}'),
-                    label: _address(context, a, all),
-                    semanticLabel: t.drawerAccount(address: _address(context, a, all)),
+                    label: accountLabel(context, a, all),
+                    semanticLabel: t.drawerAccount(address: accountLabel(context, a, all)),
                     account: (color: PostinoAccountColor.values[a.color], initial: a.initial),
                     reconnectLabel: a.status == AccountStatus.daRicollegare ? t.daRicollegare.status : null,
                     expanded: !closed.contains(a.id),

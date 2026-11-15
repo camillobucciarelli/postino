@@ -27,10 +27,15 @@ class DeviceSettingsStore(final PostinoDatabase _db) implements SettingsReposito
       _db.deviceSettingsDao.write(_sidebar, expanded?.toString());
 
   @override
-  Future<Set<String>> collapsedAccounts() async => switch (await _db.deviceSettingsDao.read(_collapsedAccounts)) {
-    final String v => {...(jsonDecode(v) as List).cast<String>()},
-    null => const {},
-  };
+  Future<Set<String>> collapsedAccounts() async {
+    final v = await _db.deviceSettingsDao.read(_collapsedAccounts);
+    try {
+      return v == null ? const {} : {...(jsonDecode(v) as List).cast<String>()};
+    } on Object {
+      // A value that is not a list of ids: every Account open, never a drawer without Accounts.
+      return const {};
+    }
+  }
 
   @override
   Future<void> setCollapsedAccounts(Set<String> accountIds) =>

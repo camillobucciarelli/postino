@@ -132,6 +132,25 @@ void main() {
     expect(find.text('Bonifici'), findsOneWidget);
   });
 
+  testWidgets('two quick taps on an Account both count: open again, nothing stored closed', (tester) async {
+    await _setUp(tester);
+    await _pump(tester);
+    await tester.tap(_account('a1'));
+    await tester.pump();
+    await tester.tap(_account('a1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lavoro/Progetti'), findsOneWidget);
+    expect(await tester.runAsync(() => getIt<SettingsRepository>().collapsedAccounts()), isEmpty);
+  });
+
+  testWidgets('a stored value that is not a list leaves every Account open', (tester) async {
+    await _setUp(tester);
+    await tester.runAsync(() => getIt<PostinoDatabase>().deviceSettingsDao.write('drawer_collapsed_accounts', 'x'));
+    await _pump(tester);
+    expect(_account('a1'), findsOneWidget);
+    expect(find.text('Lavoro/Progetti'), findsOneWidget);
+  });
+
   testWidgets('the Account row reads «Account <address>» and says whether it is expanded', (tester) async {
     final semantics = tester.ensureSemantics();
     await _setUp(tester);

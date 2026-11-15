@@ -216,7 +216,12 @@
     "syncDenied": "Google non ha concesso l'accesso allo spazio nascosto di Drive. La sincronizzazione resta com'era.",
     "syncWrongAccount": "Hai scelto un altro account Google. Scegli $address.",
     "syncOffline": "Sei offline. Riprova quando torna la rete.",
-    "syncFailed": "Non è stato possibile collegare Drive. Riprova."
+    "syncFailed": "Non è stato possibile collegare Drive. Riprova.",
+    "syncDoneAt": "Impostazioni sincronizzate alle $time",
+    "syncDoneOn": "Impostazioni sincronizzate il $date",
+    "syncCycleFailed": "Impostazioni non sincronizzate",
+    "syncCycleScope": "Google non concede più l'accesso allo spazio nascosto di Drive: scegli di nuovo l'Account in «Sincronizza su…».",
+    "syncCycleReason": "Motivo: $reason"
   },
   "segnalazione": {
     "action": "Segnala un problema",

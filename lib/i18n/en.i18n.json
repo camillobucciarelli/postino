@@ -216,7 +216,12 @@
     "syncDenied": "Google did not grant access to the hidden Drive space. Syncing stays as it was.",
     "syncWrongAccount": "You picked another Google account. Pick $address.",
     "syncOffline": "You are offline. Try again when the network is back.",
-    "syncFailed": "Could not connect Drive. Try again."
+    "syncFailed": "Could not connect Drive. Try again.",
+    "syncDoneAt": "Settings synced at $time",
+    "syncDoneOn": "Settings synced on $date",
+    "syncCycleFailed": "Settings not synced",
+    "syncCycleScope": "Google no longer grants access to the hidden Drive space: pick the Account again in “Sync to…”.",
+    "syncCycleReason": "Reason: $reason"
   },
   "segnalazione": {
     "action": "Report a problem",

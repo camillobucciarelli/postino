@@ -11,6 +11,9 @@ class FakeSettingsBackend() implements SettingsBackend {
   /// While set, every read fails with it: offline, a missing scope.
   Failure? readFailure;
 
+  /// While set, every read throws it: an error no [Failure] stands for.
+  Object? readThrows;
+
   /// While set, every write fails with it, after being attempted.
   Failure? writeFailure;
 
@@ -31,6 +34,7 @@ class FakeSettingsBackend() implements SettingsBackend {
     maxInFlight = ++_inFlight > maxInFlight ? _inFlight : maxInFlight;
     try {
       await readGate?.future;
+      if (readThrows case final e?) throw e;
       if (readFailure case final f?) return Err(f);
       return Ok(file);
     } finally {

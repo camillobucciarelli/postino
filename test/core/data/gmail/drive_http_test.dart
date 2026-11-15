@@ -81,6 +81,36 @@ void main() {
     expect(await _get(_drive((_) async => http.Response(body, 403)).drive), _failure<UnexpectedFailure>());
   });
 
+  test('an unexpected answer carries Google\'s reason, never its message nor the token (#317)', () async {
+    Future<String> error(String body) async =>
+        '${((await _get(_drive((_) async => http.Response(body, 403)).drive)) as Err<String>).failure}';
+    // The Drive API off in the Cloud project: told apart from a missing scope by its reason.
+    final disabled = jsonEncode({
+      'error': {
+        'code': 403,
+        'message': 'Google Drive API has not been used in project 123 before or it is disabled.',
+        'errors': [
+          {'reason': 'accessNotConfigured', 'message': 'ya29.a'},
+        ],
+        'status': 'PERMISSION_DENIED',
+        'details': [
+          {'reason': 'SERVICE_DISABLED'},
+        ],
+      },
+    });
+    expect(await error(disabled), 'UnexpectedFailure(Drive: HTTP 403 accessNotConfigured)');
+    expect(
+      await error('{"error":{"status":"PERMISSION_DENIED"}}'),
+      'UnexpectedFailure(Drive: HTTP 403 PERMISSION_DENIED)',
+    );
+    expect(
+      await error('{"error":{"status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}'),
+      'UnexpectedFailure(Drive: HTTP 403 SERVICE_DISABLED)',
+    );
+    expect(await error('<html>no</html>'), 'UnexpectedFailure(Drive: HTTP 403)');
+    expect(await error('{"error":{"errors":[{"reason":"Bearer ya29.a"}]}}'), 'UnexpectedFailure(Drive: HTTP 403)');
+  });
+
   test('a quota hit is a RateLimitFailure, a 404 NotFound, no network an OfflineFailure', () async {
     final quota = _drive((_) async => http.Response('{"reason":"userRateLimitExceeded"}', 403));
     expect(await _get(quota.drive), _failure<RateLimitFailure>());

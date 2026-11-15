@@ -13,6 +13,7 @@ import 'package:postino/core/data/swipe_actions_store.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_document.dart';
 import 'package:postino/core/domain/swipe_actions.dart';
+import 'package:postino/core/domain/sync_status.dart';
 
 import '../../support/fake_platform.dart';
 import '../../support/fake_settings_backend.dart';
@@ -188,6 +189,50 @@ void main() {
     expect((file.writeAttempts, await a.dirty()), (0, 1));
   });
 
+  test(
+    'the last cycle\'s outcome, by sync Account: failed with its reason, then synced at the clock\'s time (#317)',
+    () async {
+      Future<SyncStatus?> status() async => (await a.sync.watchStatus().first)['a1'];
+      expect(await status(), isNull, reason: 'nothing before the first cycle');
+
+      const disabled = UnexpectedFailure('Drive: HTTP 403 accessNotConfigured');
+      file.readFailure = disabled;
+      await a.sync.syncNow();
+      expect(await status(), const SyncStatus(failure: disabled, failures: 1));
+
+      await a.labels.setAutomatic('a1', 'L1', automatic: true);
+      file
+        ..readFailure = null
+        ..writeFailure = const DriveScopeFailure();
+      await a.sync.syncNow();
+      expect(await status(), const SyncStatus(failure: DriveScopeFailure(), failures: 2));
+
+      file.writeFailure = null;
+      await a.sync.syncNow();
+      expect(await status(), SyncStatus(syncedAt: clock.now()));
+    },
+  );
+
+  test('a file that cannot be read is a failed cycle too', () async {
+    file.file = '{"nope": true}';
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1']?.failure, isA<UnexpectedFailure>());
+  });
+
+  test('a cycle that throws is a failed cycle, and the next one can go through', () async {
+    file.readThrows = StateError('boom');
+    await a.sync.syncNow();
+    expect(
+      (await a.sync.watchStatus().first)['a1'],
+      isA<SyncStatus>()
+          .having((s) => s.running, 'running', isFalse)
+          .having((s) => s.failure, 'failure', isA<UnexpectedFailure>()),
+    );
+    file.readThrows = null;
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1'], SyncStatus(syncedAt: clock.now()));
+  });
+
   test('a failed upload keeps the voci dirty for the next cycle', () async {
     await a.labels.setAutomatic('a1', 'L1', automatic: true);
     file.writeFailure = const OfflineFailure();
@@ -237,8 +282,15 @@ void main() {
       },
     });
     file.file = newer;
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1'], SyncStatus(syncedAt: clock.now()), reason: 'nothing to upload');
     await a.labels.setAutomatic('a2', 'X', automatic: true);
     await a.sync.syncNow();
+    expect(
+      (await a.sync.watchStatus().first)['a1']?.failure,
+      isA<UnexpectedFailure>(),
+      reason: 'the voce here waits for an update: not a success (#317)',
+    );
     // Without an activation in the file: active since the voce was written (its updatedAt).
     expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null, activatedAt: 1)});
     expect(file.file, newer);

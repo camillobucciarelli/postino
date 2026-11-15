@@ -381,6 +381,11 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String syncWrongAccount({required Object address}) => 'You picked another Google account. Pick ${address}.';
 	@override String get syncOffline => 'You are offline. Try again when the network is back.';
 	@override String get syncFailed => 'Could not connect Drive. Try again.';
+	@override String syncDoneAt({required Object time}) => 'Settings synced at ${time}';
+	@override String syncDoneOn({required Object date}) => 'Settings synced on ${date}';
+	@override String get syncCycleFailed => 'Settings not synced';
+	@override String get syncCycleScope => 'Google no longer grants access to the hidden Drive space: pick the Account again in “Sync to…”.';
+	@override String syncCycleReason({required Object reason}) => 'Reason: ${reason}';
 }
 
 // Path: segnalazione
@@ -880,6 +885,11 @@ extension on TranslationsEn {
 			'impostazioni.syncWrongAccount' => ({required Object address}) => 'You picked another Google account. Pick ${address}.',
 			'impostazioni.syncOffline' => 'You are offline. Try again when the network is back.',
 			'impostazioni.syncFailed' => 'Could not connect Drive. Try again.',
+			'impostazioni.syncDoneAt' => ({required Object time}) => 'Settings synced at ${time}',
+			'impostazioni.syncDoneOn' => ({required Object date}) => 'Settings synced on ${date}',
+			'impostazioni.syncCycleFailed' => 'Settings not synced',
+			'impostazioni.syncCycleScope' => 'Google no longer grants access to the hidden Drive space: pick the Account again in “Sync to…”.',
+			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Reason: ${reason}',
 			'segnalazione.action' => 'Report a problem',
 			'segnalazione.subject' => 'Problem in Postino',
 			'segnalazione.intro' => 'Describe here what went wrong. Below is Postino\'s error log: it has no passwords or tokens, read it before sending.',

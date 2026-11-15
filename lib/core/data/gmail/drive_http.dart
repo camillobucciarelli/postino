@@ -53,7 +53,8 @@ class DriveHttp(
       // The token lacks drive.appdata: only the incremental consent fixes it.
       _ when googleScopeMissing(r) => const DriveScopeFailure(),
       404 => const NotFoundFailure(),
-      _ => UnexpectedFailure('Drive: HTTP ${r.statusCode}'),
+      // With Google's reason, so the Drive API off (`accessNotConfigured`) reads apart from the rest (#317).
+      _ => UnexpectedFailure(['Drive: HTTP ${r.statusCode}', ?googleReason(r)].join(' ')),
     });
   }
 }

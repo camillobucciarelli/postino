@@ -178,7 +178,8 @@ jobs:
         run: |
           build=$(tool/release/build_number.sh "$VERSION")
           flutter build macos --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
-            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build" \
+            --dart-define=POSTINO_VERSION="$VERSION"
       - name: Developer ID certificate in a job keychain
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -323,7 +324,8 @@ jobs:
           # POSTINO_BUILD is the same number for the app, which compares it with the site's version.json (#287).
           build=$(tool/release/build_number.sh "$VERSION")
           flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
-            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build"
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build" \
+            --dart-define=POSTINO_VERSION="$VERSION"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
       - name: Delete the upload keystore
         if: always()
@@ -399,7 +401,8 @@ jobs:
         run: |
           build=$(tool/release/build_number.sh "$VERSION")
           flutter build ios --config-only --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
-            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build"
+            --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build" \
+            --dart-define=POSTINO_VERSION="$VERSION"
       - name: Archive and export the IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

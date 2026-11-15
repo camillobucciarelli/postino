@@ -10,6 +10,7 @@ import '../../../core/domain/result.dart';
 import '../../../core/presentation/app_update_banner.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'app_version_label.dart';
 import 'escape_to_go_back.dart';
 import 'immediate_notifications_row.dart';
 import 'notification_actions_sections.dart';
@@ -116,6 +117,7 @@ class _DeviceSettingsViewState() extends State<DeviceSettingsView> {
                 padding: EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s4, 0),
               ),
             ],
+            const AppVersionLabel(),
             const NotificationPermissionRow(),
             if (_immediate) const ImmediateNotificationsRow(),
             const NotificationActionsSections(),

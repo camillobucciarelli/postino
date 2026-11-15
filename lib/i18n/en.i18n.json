@@ -193,6 +193,8 @@
     "immediateNotificationsFailed": "The system did not start the immediate notifications. Try again.",
     "checkForUpdates": "Check for updates",
     "checkForUpdatesBody": "Look for a new version of Postino now.",
+    "versionLabel": "Postino $version (build $build)",
+    "versionDevelopment": "Postino · development",
     "upToDate": "Postino is up to date.",
     "checkFound": "A new version of Postino is available.",
     "notifications": "Notifications",

@@ -2,8 +2,10 @@
 // delta queries), shaped like the responses of test/fixtures/graph.
 import 'dart:convert';
 
+import 'package:flutter_test/flutter_test.dart' show expect;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postino/core/data/microsoft/graph_delta.dart';
 import 'package:postino/core/data/microsoft/microsoft_provider.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mailbox.dart';
@@ -19,7 +21,12 @@ import 'graph_search_eval.dart';
 typedef _Folder = ({String name, String? parent, String? wellKnown});
 
 /// [hasArchive]: whether the mailbox has Graph's `archive` folder, which appears (as Outlook.com's does) with the first move.
-class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}) extends ContractHarness {
+/// [filterCap]: the most messages its delta answers with `$filter` (Graph's is [GraphDelta.filterCap]).
+class GraphHarness({
+  String access = 'EwB.initial',
+  final bool hasArchive = true,
+  final int filterCap = GraphDelta.filterCap,
+}) extends ContractHarness {
   this : keychain = graphKeychain(access: access);
 
   final FakeSecureStore keychain;
@@ -99,6 +106,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     FakeClock(now),
     client: graphTestClient,
     sleep: (d) async => sleeps.add(d),
+    filterCap: filterCap,
   );
 
   @override
@@ -282,6 +290,10 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
       ['messages'] when r.method == 'POST' => _createDraft(r),
       ['messages'] when q.containsKey(r'$search') || _stateFilter(q) => _searchAll(q),
       ['messages'] => _find(q),
+      ['mailFolders', final id, 'messages'] when (q[r'$filter'] ?? '').startsWith('receivedDateTime') => _listWindow(
+        id,
+        q,
+      ),
       ['mailFolders', final name, 'messages'] => _find(q, wellKnown: name),
       ['messages', final id, 'permanentDelete'] => _purge(id),
       ['messages', final id] when r.method == 'PATCH' => _patch(id, r),
@@ -506,7 +518,7 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
     // The window of the first round, `receivedDateTime ge <date>`, as Graph applies it.
     final window = q[r'$filter'];
     final since = window == null ? null : DateTime.parse(window.split(' ').last);
-    final ids = from < 0
+    var ids = from < 0
         ? ([
             for (final MapEntry(:key, :value) in _mailbox.entries)
               if ((value.$2 == folder || _search.contains(folder)) && !(since != null && value.$1.date.isBefore(since)))
@@ -516,6 +528,8 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
             for (final (seq, f, message) in _log)
               if (seq > from && f == folder && message != null) message,
           }.toList();
+    // Graph stops a filtered first round at its cap, the newest messages.
+    if (from < 0 && since != null) ids = ids.take(filterCap).toList();
     final path = 'mailFolders/$folder/messages/delta';
     final keep = {r'$select': q[r'$select'] ?? '', r'$filter': ?window};
     final more = offset + _page < ids.length;
@@ -537,6 +551,28 @@ class GraphHarness({String access = 'EwB.initial', final bool hasArchive = true}
         }).toString()
       else
         '@odata.deltaLink': _link(path, '$_epoch.$_seq', keep),
+    });
+  }
+
+  /// `GET mailFolders/{id}/messages` with `receivedDateTime ge <a> and receivedDateTime le <b>` and the same property
+  /// first in `$orderby` (else Graph answers `InefficientFilter`): newest first, no cap, `@odata.nextLink` pages.
+  http.Response _listWindow(String folder, Map<String, String> q) {
+    final filter = RegExp(r'^receivedDateTime ge (\S+) and receivedDateTime le (\S+)$').firstMatch(q[r'$filter']!)!;
+    expect(q[r'$orderby'], 'receivedDateTime desc', reason: 'InefficientFilter');
+    final from = DateTime.parse(filter[1]!);
+    final to = DateTime.parse(filter[2]!);
+    final all = [
+      for (final (m, f) in _mailbox.values)
+        if (f == folder && !m.date.isBefore(from) && !m.date.isAfter(to)) m,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    final offset = int.tryParse(q[r'$skiptoken'] ?? '') ?? 0;
+    return graphJson({
+      'value': [for (final m in all.skip(offset).take(_page)) _item(m, folder, q[r'$select'] ?? '', false)],
+      if (offset + _page < all.length)
+        '@odata.nextLink': Uri.https('graph.microsoft.com', '${graphApi}mailFolders/$folder/messages', {
+          ...q,
+          r'$skiptoken': '${offset + _page}',
+        }).toString(),
     });
   }
 

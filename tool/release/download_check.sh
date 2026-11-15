@@ -10,7 +10,7 @@
 # here, to assets/brand, to the guide or to a released download, the site's own absolute URLs included; nothing is
 # loaded from elsewhere (no script, inline style, srcset, @import, single-quoted link) and no host is named in an
 # attribute but the site's own and those of the external links below (only as those links, with their rel). The only
-# mail link is the guide's contact, and on the site only in the privacy pages. A typo stops the release before anything is published.
+# mail link is the guide's contact, and on the site only in the privacy and support pages. A typo stops the release before anything is published.
 # Usage: download_check.sh [site dir] [guide]
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -90,23 +90,29 @@ page index.html it en en/index.html ''
 page en/index.html en it ../index.html ../
 page privacy.html it en en/privacy.html ''
 page en/privacy.html en it ../privacy.html ../
+page support.html it en en/support.html ''
+page en/support.html en it ../support.html ../
 product index.html ''
 product en/index.html ../
 has "$dir/privacy.html" 'href="index.html"'
 has "$dir/en/privacy.html" 'href="index.html"'
+# Every page links the support page, which carries the privacy contact (#324).
+for f in index.html en/index.html privacy.html en/privacy.html; do has "$dir/$f" 'href="support.html"'; done
 # The privacy contact is the address the guide already publishes, and only that.
 contact=$(grep -oE 'mailto:[^"]+' "$guide" | sort -u || true)
 [ "$(printf '%s\n' "$contact" | grep -c .)" = 1 ] || fail "$guide: not exactly one mail address: $contact"
 for f in index.html en/index.html; do links "$dir/$f" "$f"; done
-for f in privacy.html en/privacy.html; do
+for f in privacy.html en/privacy.html support.html en/support.html; do
   links "$dir/$f" "$f" "$contact"
   has "$dir/$f" "<a href=\"$contact\">${contact#mailto:}</a>"
+done
+for f in privacy.html en/privacy.html; do
   has "$dir/$f" 'href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"'
 done
 links "$guide" guida/index.html "$contact"
 has "$guide" '<link rel="stylesheet" href="../style.css">'
 # Published as they are: a placeholder there would show.
-for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/style.css" "$guide"; do
+for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$dir/style.css" "$guide"; do
   if grep -n '__VERSION__' "$f"; then fail "$f: __VERSION__ is replaced only in the product pages"; fi
 done
 while read -r url; do

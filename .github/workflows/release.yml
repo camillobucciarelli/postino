@@ -87,8 +87,11 @@ jobs:
           upload style.css 'text/css; charset=utf-8'
           upload privacy.html 'text/html; charset=utf-8'
           upload en/privacy.html 'text/html; charset=utf-8'
+          upload support.html 'text/html; charset=utf-8'
+          upload en/support.html 'text/html; charset=utf-8'
           tool/release/r2_upload.sh docs/guida-invitati/index.html guida/index.html 'text/html; charset=utf-8' 'public, max-age=300'
           echo "- Privacy: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}privacy.html" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Support: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}support.html" >> "$GITHUB_STEP_SUMMARY"
           echo "- Guida: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}guida/index.html" >> "$GITHUB_STEP_SUMMARY"
 
   # The product page (#173) goes up as index.html at the bucket root and en/index.html, with __VERSION__ replaced; its

@@ -27,22 +27,23 @@ abstract class AppUpdaterModule() {
     client,
     db,
     clock,
-    // The analyzer sees appFlavor without --flavor (null): false here, true in `flutter build --flavor store`.
+    // The analyzer sees appFlavor without --flavor (null), the redundant default.
     // ignore: avoid_redundant_argument_values
-    store: appFlavor == 'store',
+    flavor: appFlavor,
   );
 }
 
-/// The updater of [platform] (null on the web) for the build numbered [build]; a [store] build has none on macOS.
+/// The updater of [platform] (null on the web) for the build numbered [build]. The Mac App Store [flavor] has none on
+/// macOS: `--flavor store`, which an Xcode build passes as the scheme's name, `Store`.
 AppUpdater appUpdaterFor(
   TargetPlatform? platform,
   int build,
   http.Client client,
   PostinoDatabase db,
   Clock clock, {
-  bool store = false,
+  String? flavor,
 }) => switch (platform) {
-  TargetPlatform.macOS when !store => const ChannelAppUpdater(),
+  TargetPlatform.macOS when flavor?.toLowerCase() != 'store' => const ChannelAppUpdater(),
   TargetPlatform.android || TargetPlatform.iOS when build > 0 => SiteAppUpdater(
     client,
     db.deviceSettingsDao,

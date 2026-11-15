@@ -24,10 +24,17 @@ void main() {
     expect(appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock), isA<ChannelAppUpdater>());
   });
 
-  test('the Mac App Store variant looks for nothing: the Store updates it (#325)', () {
-    final u = appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock, store: true);
-    expect(u.supported, isFalse);
-    expect(u.available, isNull);
+  // `flutter build --flavor store` gives `store`; the Xcode build of the scheme gives its name, `Store`.
+  for (final flavor in ['store', 'Store']) {
+    test('the Mac App Store variant ($flavor) looks for nothing: the Store updates it (#325)', () {
+      final u = appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock, flavor: flavor);
+      expect(u.supported, isFalse);
+      expect(u.available, isNull);
+    });
+  }
+
+  test('another flavor keeps Sparkle on macOS', () {
+    expect(appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock, flavor: 'dev'), isA<ChannelAppUpdater>());
   });
 
   for (final (platform, path) in [(TargetPlatform.android, 'android'), (TargetPlatform.iOS, 'ios')]) {

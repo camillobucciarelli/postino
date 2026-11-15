@@ -2,7 +2,7 @@
 # The Mac App Store variant (#325, ADR 0021) is a bundle the Store accepts and updates by itself: no Sparkle (framework,
 # link, SU* keys or the mach-lookup exceptions of its installer, which App Review rejects), the App Sandbox on, the
 # category, the encryption answer of ADR 0020 and the privacy manifests (the app's, sqlcipher's and cnativeapi's).
-# Runs on any build of the variant, signed or not: ci.yml checks the unsigned one, verify_store.sh the release.
+# Runs on any signed build of the variant: ci.yml checks the ad-hoc signed one, verify_store.sh the release.
 # Usage: store_bundle_check.sh <app>
 set -euo pipefail
 app=${1:?usage: store_bundle_check.sh <app>}
@@ -18,7 +18,9 @@ sparkle=$(find "$app" \( -name Sparkle.framework -o -name Autoupdate -o -name Up
   -o -name Downloader.xpc \) -print -quit)
 [ -z "$sparkle" ] || fail "Sparkle in the bundle: ${sparkle#"$app"/}"
 executable="$app/Contents/MacOS/$(value CFBundleExecutable "$plist")"
-! otool -L "$executable" | grep -qi sparkle || fail "$executable links Sparkle"
+# Read first: an otool failure must not pass for "no Sparkle".
+links=$(otool -L "$executable") || fail "otool cannot read $executable"
+! grep -qi sparkle <<< "$links" || fail "$executable links Sparkle"
 su=$(keys "$plist" | grep '^SU' | paste -sd , -) || true
 [ -z "$su" ] || fail "Sparkle keys in Info.plist: $su"
 [ "$(value LSApplicationCategoryType "$plist")" = public.app-category.productivity ] ||

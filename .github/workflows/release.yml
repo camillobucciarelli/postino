@@ -338,7 +338,8 @@ jobs:
       - name: Package the signed .pkg
         run: |
           mkdir -p "$(dirname "$PKG")"
-          productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$PKG"
+          productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" \
+            --keychain "$RUNNER_TEMP/release.keychain-db" "$PKG"
       # Last use of the certificates: the keychain goes now, and even when an earlier step failed.
       - name: Delete the job keychain
         if: always()

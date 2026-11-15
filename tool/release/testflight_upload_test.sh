@@ -37,7 +37,9 @@ run 9 "$msg" 7 4
 grep -q -- '-t ios ' "$tmp/calls.args" || { echo "default platform: $(cat "$tmp/calls.args")"; exit 1; }
 run 0 x 0 1 macos
 grep -q -- '-t macos ' "$tmp/calls.args" || { echo "macos platform: $(cat "$tmp/calls.args")"; exit 1; }
-rc=0
-"$script" "$tmp/Postino.ipa" tvos > /dev/null 2>&1 || rc=$?
-[ "$rc" -ne 0 ] || { echo "an unknown platform should fail"; exit 1; }
+rm -f "$tmp/calls"
+out=$(PATH="$tmp/bin:$PATH" CALLS="$tmp/calls" FAKE_FAILS=0 FAKE_MESSAGE=x APP_STORE_CONNECT_API_KEY_BASE64=$(printf k | base64) \
+  APP_STORE_CONNECT_KEY_ID=KEYID APP_STORE_CONNECT_ISSUER_ID=ISSUER "$script" "$tmp/Postino.ipa" tvos 2>&1) &&
+  { echo "an unknown platform should fail"; exit 1; }
+grep -qF 'Not ios or macos: tvos' <<< "$out" && [ ! -e "$tmp/calls" ] || { echo "unknown platform: $out"; exit 1; }
 echo "testflight_upload.sh ok"

@@ -4,11 +4,11 @@
 # uploaded for the version, so a rerun of a released version fails here: that is the only duplicate guard.
 # Usage: testflight_upload.sh <ipa|pkg> [ios|macos]
 set -euo pipefail
-ipa=${1:?usage: testflight_upload.sh <ipa|pkg> [ios|macos]}
+package=${1:?usage: testflight_upload.sh <ipa|pkg> [ios|macos]}
 platform=${2:-ios}
 [[ $platform == ios || $platform == macos ]] || { echo "::error::Not ios or macos: $platform" >&2; exit 1; }
 : "${APP_STORE_CONNECT_API_KEY_BASE64:?}" "${APP_STORE_CONNECT_KEY_ID:?}" "${APP_STORE_CONNECT_ISSUER_ID:?}"
-[ -f "$ipa" ] || { echo "::error::Nothing to upload at $ipa" >&2; exit 1; }
+[ -f "$package" ] || { echo "::error::Nothing to upload at $package" >&2; exit 1; }
 
 keys=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/asc-key.XXXXXX")
 # A cancelled job gets SIGTERM, which skips an EXIT-only trap: the decoded key must not outlive the run.
@@ -21,7 +21,7 @@ log="$keys/upload.log"
 wait=${UPLOAD_RETRY_WAIT_UNIT:-30}
 for attempt in 1 2 3 4; do
   rc=0
-  API_PRIVATE_KEYS_DIR=$keys xcrun altool --upload-app -t "$platform" -f "$ipa" \
+  API_PRIVATE_KEYS_DIR=$keys xcrun altool --upload-app -t "$platform" -f "$package" \
     --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" 2>&1 | tee "$log" || rc=${PIPESTATUS[0]}
   [ "$rc" -eq 0 ] && exit 0
   if [ "$attempt" -lt 4 ] && grep -Fq 'Defaults.properties' "$log"; then

@@ -66,6 +66,17 @@ fails "framework privacy manifest" 'cnativeapi.framework'
 app "$plist_keys" "$sandbox"
 rm "$tmp/Postino.app/Contents/Resources/PrivacyInfo.xcprivacy"
 fails "app privacy manifest" 'Contents/Resources/PrivacyInfo.xcprivacy'
+app "$plist_keys" "$sandbox"
+rm "$tmp/Postino.app/Contents/MacOS/Postino"
+fails "unreadable executable" 'otool cannot read'
+# An executable linked to a library named like Sparkle's.
+mkdir -p "$tmp/link"
+echo 'int sparkle(void) { return 0; }' > "$tmp/link/s.c"
+echo 'int sparkle(void); int main(void) { return sparkle(); }' > "$tmp/link/m.c"
+clang -dynamiclib -install_name @rpath/Sparkle.framework/Versions/B/Sparkle -o "$tmp/link/Sparkle" "$tmp/link/s.c"
+app "$plist_keys" "$sandbox"
+clang -o "$tmp/Postino.app/Contents/MacOS/Postino" "$tmp/link/m.c" "$tmp/link/Sparkle"
+fails "links Sparkle" 'links Sparkle'
 app "$plist_keys" '<key>com.apple.security.network.client</key><true/>'
 fails "sandbox off" 'App Sandbox'
 app "$plist_keys" "$sandbox<key>com.apple.security.temporary-exception.mach-lookup.global-name</key><array><string>x-spks</string></array>"

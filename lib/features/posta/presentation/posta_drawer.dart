@@ -38,7 +38,7 @@ class _PostaDrawerState() extends State<PostaDrawer> with AccountsSignal {
   late final unread = streamSignal(() => GetIt.I<InboxRepository>().watchUnreadFolders());
   late final labels = streamSignal(
     () => switch (openAccount.value) {
-      final id? => GetIt.I<InboxRepository>().watchLabels(id),
+      final id? => GetIt.I<InboxRepository>().watchLabels(id, folders: true),
       null => Stream.value(const <Label>[]),
     },
   );

@@ -1,6 +1,8 @@
 // A collapsible PostinoDrawerSection (#311): the header is a button that opens and closes it, announced expanded or
 // collapsed; closed, its items are gone (no Tab, no screen reader), an unread dot stands in for them and the
 // highlight of an active item moves to the header; in the 72 rail the header is a 48×48 chevron with a tooltip.
+import 'dart:ui' show Tristate;
+
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +18,10 @@ Widget _drawer({
   bool active = false,
   bool rail = false,
 }) => MaterialApp(
-  theme: PostinoTheme.light(),
+  // The icon rail is 72 wide, as PostinoAdaptiveLayout docks it.
+  theme: rail
+      ? PostinoTheme.light().copyWith(drawerTheme: const DrawerThemeData(width: PostinoSize.sidebarCollapsedWidth))
+      : PostinoTheme.light(),
   home: Scaffold(
     body: PostinoSidebarScope(
       collapsed: rail,
@@ -47,7 +52,7 @@ Widget _drawer({
   ),
 );
 
-/// A drawer whose section opens and closes on its own; returns how many times it was toggled.
+/// A drawer whose section opens and closes on its own; returns the states it was toggled to.
 Future<List<bool>> _pumpLive(WidgetTester tester, {bool unread = false, bool active = false}) async {
   final toggles = <bool>[];
   var expanded = true;
@@ -165,6 +170,7 @@ void main() {
   });
 
   testWidgets('closing the section of the active item moves the highlight to the header', (tester) async {
+    final semantics = tester.ensureSemantics();
     await _pumpLive(tester, active: true);
     final theme = PostinoTheme.light();
     final color = theme.extension<PostinoColors>()!.drawerItemBgActive;
@@ -175,6 +181,8 @@ void main() {
     await tester.tap(_header);
     await tester.pumpAndSettle();
     expect(tester.getRect(box), tester.getRect(find.descendant(of: _header, matching: find.byType(InkWell))));
+    expect(tester.getSemantics(_header).flagsCollection.isSelected, Tristate.isTrue);
+    semantics.dispose();
   });
 
   testWidgets('rail: a 48×48 chevron with the title as tooltip, no text; the icons below when open', (tester) async {

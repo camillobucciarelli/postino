@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
+import 'package:postino/core/domain/inbox_repository.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -71,6 +72,11 @@ void main() {
     await _pumpDrawer(tester, accountId: 'a1');
     expect(find.textContaining('ETICHETTE DI '), findsOneWidget);
     expect(find.text('Lavoro/Progetti'), findsOneWidget);
+    // A system folder stored by a creation named after it is not an Etichetta of the drawer.
+    expect(find.text('Sent'), findsNothing);
+    // Elsewhere (picker, Etichettatura automatica) the folders stay out, as before.
+    final names = await tester.runAsync(() => getIt<InboxRepository>().watchLabels('a1').first);
+    expect(names!.map((l) => l.name), ['Fatture']);
     expect(find.text('Fatture'), findsOneWidget);
   });
 
@@ -112,6 +118,7 @@ Future<void> _withLabels(WidgetTester tester) async {
     'a1',
     const Label(id: 'cartella:Lavoro/Progetti', name: 'Lavoro/Progetti', kind: LabelKind.cartella),
   );
+  await labels.upsert('a1', const Label(id: sentLabelId, name: 'Sent', kind: LabelKind.cartella));
   await labels.upsert('a1', const Label(id: 'Label_1', name: 'Fatture', kind: LabelKind.etichetta));
   await labels.upsert('a2', const Label(id: 'Label_2', name: 'Bonifici', kind: LabelKind.etichetta));
   LocaleSettings.setLocaleSync(AppLocale.it);

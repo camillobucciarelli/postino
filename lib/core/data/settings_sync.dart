@@ -156,8 +156,11 @@ class SettingsSync(
       for (final e in merged.values)
         if (isSyncedSetting(e.key) && local[e.key] != e) e,
     ]);
-    // A newer Postino's file is never overwritten: the voci here stay dirty until this one is updated.
-    if (!remote.writable) return null;
+    // A newer Postino's file is never overwritten: the voci here stay dirty until this one is updated, and the cycle
+    // is not a success while they wait (#317).
+    if (!remote.writable) {
+      return _same(merged, remote.entries) ? null : const UnexpectedFailure('file from a newer Postino: update it');
+    }
     if (!_same(merged, remote.entries)) {
       if (await backend.write(encodeSettings(merged.values)) case Err(:final failure)) {
         return failure;

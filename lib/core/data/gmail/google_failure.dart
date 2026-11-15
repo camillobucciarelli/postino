@@ -11,8 +11,9 @@ bool googleScopeMissing(http.Response r) =>
     r.statusCode == 403 &&
     (r.body.contains('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || r.body.contains('insufficientPermissions'));
 
-/// Why a Google API refused the call (#317): `error.errors[0].reason`, else `error.status`; `accessNotConfigured`
-/// when the API is off in the Cloud project. Only a code-like word, never the message: null otherwise.
+/// Why a Google API refused the call (#317): `error.errors[0].reason`, else `error.details[0].reason`, else
+/// `error.status`; `accessNotConfigured` or `SERVICE_DISABLED` when the API is off in the Cloud project. Only a
+/// code-like word, never the message: null otherwise.
 String? googleReason(http.Response r) {
   final Object? json;
   try {
@@ -22,6 +23,7 @@ String? googleReason(http.Response r) {
   }
   final reason = switch (json) {
     {'error': {'errors': [{'reason': final String reason}, ...]}} => reason,
+    {'error': {'details': [{'reason': final String reason}, ...]}} => reason,
     {'error': {'status': final String status}} => status,
     _ => null,
   };

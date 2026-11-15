@@ -59,6 +59,8 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
         _ => null,
       };
     });
+    // Picking the same Account again (the fix of a missing scope) changes no setting, so no cycle would start.
+    if (result is Ok && choice.accountId != null) unawaited(GetIt.I<SettingsSyncControl>().syncNow());
   }
 
   String _error(Failure failure) {
@@ -96,20 +98,24 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
       final address = _hostList.where((a) => a.id == id).firstOrNull?.address;
       if (_hostList.isEmpty) return const SizedBox.shrink();
       final status = id == null ? null : _outcome.value.value?[id];
-      final Widget? banner = switch ((_busy, _failure, status)) {
-        (true, _, _) => PostinoBanner(
+      final consent = switch ((_busy, _failure)) {
+        (true, _) => PostinoBanner(
           key: const ValueKey('sync-busy'),
           tone: PostinoBannerTone.info,
           title: t.syncBusy,
           leading: PostinoSpinner(label: t.syncBusy),
         ),
-        (false, final f?, _) => PostinoBanner(
+        (false, final f?) => PostinoBanner(
           key: const ValueKey('sync-error'),
           tone: PostinoBannerTone.danger,
           title: _error(f),
         ),
+        _ => null,
+      };
+      // Under the consent's banner, never hidden by it: the Account chosen still syncs (#317).
+      final Widget? outcome = switch (status) {
         // A live region: the screen reader says it as it comes.
-        (false, null, SyncStatus(failure: final f?) && final s) when s.failed => PostinoBanner(
+        SyncStatus(failure: final f?) && final s when s.failed => PostinoBanner(
           key: const ValueKey('settings-sync-error'),
           tone: PostinoBannerTone.danger,
           title: t.syncCycleFailed,
@@ -117,7 +123,7 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
           actionLabel: context.t.syncStatus.retry,
           onAction: () => unawaited(GetIt.I<SettingsSyncControl>().syncNow()),
         ),
-        (false, null, SyncStatus(syncedAt: final at?)) => PostinoSyncStatus(
+        SyncStatus(syncedAt: final at?) => PostinoSyncStatus(
           key: const ValueKey('settings-sync-done'),
           state: PostinoSyncState.ok,
           label: _synced(at),
@@ -140,15 +146,16 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
               PostinoSelectable(
                 child: Text(t.syncBody, style: PostinoText.caption.copyWith(color: context.pc.inkMuted)),
               ),
-              PostinoReveal(
-                contentKey: banner?.key,
-                child: banner == null
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsets.only(top: PostinoSpacing.s2),
-                        child: banner,
-                      ),
-              ),
+              for (final shown in [consent, outcome])
+                PostinoReveal(
+                  contentKey: shown?.key,
+                  child: shown == null
+                      ? null
+                      : Padding(
+                          padding: const EdgeInsets.only(top: PostinoSpacing.s2),
+                          child: shown,
+                        ),
+                ),
             ],
           ),
         ],

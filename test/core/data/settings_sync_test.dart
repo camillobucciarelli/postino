@@ -216,7 +216,21 @@ void main() {
   test('a file that cannot be read is a failed cycle too', () async {
     file.file = '{"nope": true}';
     await a.sync.syncNow();
-    expect((await a.sync.watchStatus().first)['a1']?.failure, isNotNull);
+    expect((await a.sync.watchStatus().first)['a1']?.failure, isA<UnexpectedFailure>());
+  });
+
+  test('a cycle that throws is a failed cycle, and the next one can go through', () async {
+    file.readThrows = StateError('boom');
+    await a.sync.syncNow();
+    expect(
+      (await a.sync.watchStatus().first)['a1'],
+      isA<SyncStatus>()
+          .having((s) => s.running, 'running', isFalse)
+          .having((s) => s.failure, 'failure', isA<UnexpectedFailure>()),
+    );
+    file.readThrows = null;
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1'], SyncStatus(syncedAt: clock.now()));
   });
 
   test('a failed upload keeps the voci dirty for the next cycle', () async {
@@ -268,8 +282,15 @@ void main() {
       },
     });
     file.file = newer;
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1'], SyncStatus(syncedAt: clock.now()), reason: 'nothing to upload');
     await a.labels.setAutomatic('a2', 'X', automatic: true);
     await a.sync.syncNow();
+    expect(
+      (await a.sync.watchStatus().first)['a1']?.failure,
+      isA<UnexpectedFailure>(),
+      reason: 'the voce here waits for an update: not a success (#317)',
+    );
     // Without an activation in the file: active since the voce was written (its updatedAt).
     expect(await a.labels.watch('a1').first, {'L1': (automatic: true, description: null, activatedAt: 1)});
     expect(file.file, newer);

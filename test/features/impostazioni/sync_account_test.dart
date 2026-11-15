@@ -6,9 +6,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_backend.dart';
 import 'package:postino/core/domain/settings_repository.dart';
+import 'package:postino/core/domain/settings_sync_control.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -227,12 +229,13 @@ void main() {
     late FakeSettingsBackend file;
 
     /// a1 chosen, its file in memory: the choice starts a cycle.
-    Future<void> synced(WidgetTester tester, {Failure? failure}) async {
-      await _start(tester);
+    Future<Harness> synced(WidgetTester tester, {Failure? failure}) async {
+      final h = await _start(tester);
       file = FakeSettingsBackend()..readFailure = failure;
       getIt.registerSingleton<SettingsBackend>(file, instanceName: 'a1');
       await getIt<SettingsRepository>().setSettingsSyncAccount('a1');
       await tester.pumpAndSettle();
+      return h;
     }
 
     const disabled = UnexpectedFailure('Drive: HTTP 403 accessNotConfigured');
@@ -253,9 +256,50 @@ void main() {
       expect(find.descendant(of: done, matching: find.textContaining('Impostazioni sincronizzate')), findsOneWidget);
     });
 
-    testWidgets('a missing scope says how to fix it', (tester) async {
-      await synced(tester, failure: const DriveScopeFailure());
+    testWidgets('a missing scope says how to fix it, and picking the Account again syncs at once', (tester) async {
+      final h = await synced(tester, failure: const DriveScopeFailure());
       expect(find.descendant(of: error, matching: find.textContaining('scegli di nuovo')), findsOneWidget);
+
+      file.readFailure = null;
+      h.consent.address = 'a1@example.com';
+      await _choose(tester, 'sync-a1');
+      expect(error, findsNothing);
+      expect(done, findsOneWidget);
+    });
+
+    testWidgets('it says the time of a cycle today, the date of one before', (tester) async {
+      final h = await synced(tester);
+      final at = h.clock.now().toLocal();
+      expect(
+        find.descendant(
+          of: done,
+          matching: find.text('Impostazioni sincronizzate alle ${DateFormat.Hm('it').format(at)}'),
+        ),
+        findsOneWidget,
+      );
+      // Two days on, a cycle held in flight redraws it with the last success.
+      final gate = file.readGate = Completer<void>();
+      h.clock.advance(const Duration(days: 2));
+      unawaited(getIt<SettingsSyncControl>().syncNow());
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: done,
+          matching: find.text('Impostazioni sincronizzate il ${DateFormat.MMMd('it').format(at)}'),
+        ),
+        findsOneWidget,
+      );
+      gate.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a refused consent does not hide the failure of the Account still chosen', (tester) async {
+      final h = await synced(tester, failure: disabled);
+      h.consent.failure = const DriveScopeFailure();
+      await _choose(tester, 'sync-a2');
+      expect(find.byKey(const ValueKey('sync-error')), findsOneWidget);
+      expect(error, findsOneWidget);
     });
 
     testWidgets('the screen reader hears the error as it comes, and «Riprova» is a button', (tester) async {

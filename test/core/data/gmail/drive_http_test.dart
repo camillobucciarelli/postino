@@ -103,6 +103,10 @@ void main() {
       await error('{"error":{"status":"PERMISSION_DENIED"}}'),
       'UnexpectedFailure(Drive: HTTP 403 PERMISSION_DENIED)',
     );
+    expect(
+      await error('{"error":{"status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}'),
+      'UnexpectedFailure(Drive: HTTP 403 SERVICE_DISABLED)',
+    );
     expect(await error('<html>no</html>'), 'UnexpectedFailure(Drive: HTTP 403)');
     expect(await error('{"error":{"errors":[{"reason":"Bearer ya29.a"}]}}'), 'UnexpectedFailure(Drive: HTTP 403)');
   });

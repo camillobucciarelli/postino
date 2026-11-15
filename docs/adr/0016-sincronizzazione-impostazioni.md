@@ -1,9 +1,12 @@
 ---
 status: Accettato
 date: 2026-11-05
+updated: 2026-11-15
 ---
 
 # Sincronizzazione delle Impostazioni di Postino su un Account scelto
+
+> Superata in parte dall'[ADR 0019](0019-impostazioni-cifrate-e-credenziali-sincronizzate.md): il file è cifrato e porta anche le credenziali degli Account; la regola «Token e credenziali non vanno mai nel file» e lo stato «da collegare, senza credenziali» degli Account arrivati da un altro dispositivo valgono finché quella ADR non è implementata (#321).
 
 Le Impostazioni di Postino si sincronizzano in un solo file, `postino-settings.json`, nella appDataFolder di Google Drive dell'Account che l'utente sceglie nelle Impostazioni alla voce "Sincronizza su…": l'**Account di sincronizzazione**. La scelta è un'Impostazione del dispositivo (`settings_sync_account` in `device_settings`); senza una scelta la sincronizzazione è spenta e le Impostazioni restano locali. Lo scope `drive.appdata` si chiede con un consenso incrementale (`include_granted_scopes=true`) solo per quell'Account.
 

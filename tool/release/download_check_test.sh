@@ -57,6 +57,12 @@ fails "other page of Cloudflare" en/privacy.html 's|cloudflare.com/privacypolicy
 fails "privacy contact other than the guide's" privacy.html 's|mailto:camillo@bucciarelli.dev|mailto:privacy@example.com|'
 fails "privacy contact gone" en/privacy.html 's|<a href="mailto:[^"]*">([^<]*)</a>|\1|'
 fails "mail link on the product page" index.html 's|<footer>|<footer><a href="mailto:camillo@bucciarelli.dev">x</a>|'
+fails "support page gone" support.html rm
+fails "twin support page gone" en/support.html rm
+fails "support link gone from the product page" index.html 's|href="support.html"|href="privacy.html"|'
+fails "support link gone from the privacy page" en/privacy.html 's|href="support.html"|href="privacy.html"|'
+fails "support contact other than the guide's" support.html 's|mailto:camillo@bucciarelli.dev|mailto:support@example.com|'
+fails "placeholder on a support page" en/support.html 's|<main>|<main>__VERSION__|'
 fails "Open Graph image meta gone" index.html 's|<meta property="og:image" [^>]*>||'
 fails "Twitter card meta gone" en/index.html 's|<meta name="twitter:card" [^>]*>||'
 fails "missing Open Graph image" og.png rm

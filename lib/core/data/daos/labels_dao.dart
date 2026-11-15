@@ -24,17 +24,18 @@ class LabelsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
   /// The Account's labels, once.
   Future<List<LabelRow>> all(String accountId) => (select(labels)..where((t) => t.accountId.equals(accountId))).get();
 
-  /// The Account's own Etichette, by name; [folders] adds the user's folders (IMAP, Microsoft) for the drawer (#311),
-  /// never a system one, even if a creation named after it stored it.
-  Stream<List<LabelRow>> watchLabels(String accountId, {bool folders = false}) =>
+  /// The Account's own Etichette, by name.
+  Stream<List<LabelRow>> watchLabels(String accountId) =>
       (select(labels)
-            ..where(
-              (t) =>
-                  t.accountId.equals(accountId) &
-                  (folders
-                      ? t.id.isNotIn(const [inboxLabelId, draftLabelId, sentLabelId, trashLabelId, spamLabelId])
-                      : t.kind.equalsValue(LabelKind.etichetta)),
-            )
+            ..where((t) => t.accountId.equals(accountId) & t.kind.equalsValue(LabelKind.etichetta))
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .watch();
+
+  /// Every Account's Etichette of both kinds (the user's folders on IMAP and Microsoft), by name: the drawer's (#311).
+  /// Never a system folder, even one a creation named after it stored.
+  Stream<List<LabelRow>> watchAll() =>
+      (select(labels)
+            ..where((t) => t.id.isNotIn(const [inboxLabelId, draftLabelId, sentLabelId, trashLabelId, spamLabelId]))
             ..orderBy([(t) => OrderingTerm.asc(t.name)]))
           .watch();
 

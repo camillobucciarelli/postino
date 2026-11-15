@@ -243,8 +243,8 @@ void main() {
       // a1 has unread mail, a2 does not; the unified inbox has some.
       Finder dot(String key) =>
           find.descendant(of: find.byKey(ValueKey(key)), matching: find.byKey(const ValueKey('unread-dot')));
-      expect(dot('account-a1'), findsOneWidget);
-      expect(dot('account-a2'), findsNothing);
+      expect(dot('inbox-a1'), findsOneWidget);
+      expect(dot('inbox-a2'), findsNothing);
       expect(dot('drawer-posta-unificata'), findsOneWidget);
       expect(
         find.descendant(of: find.byType(PostinoNavigationDrawer), matching: find.textContaining(RegExp(r'\d'))),
@@ -259,13 +259,18 @@ void main() {
       expect(find.byTooltip('a1@example.com'), findsOneWidget);
       expect(find.byTooltip('a2@example.com'), findsOneWidget);
       final a1Node = tester.getSemantics(find.byKey(const ValueKey('account-a1')));
-      expect(a1Node.label, 'a1@example.com, Non letto');
+      expect(a1Node.label, 'Account a1@example.com');
       expect(a1Node.flagsCollection.isButton, isTrue);
       expect(a1Node.flagsCollection.isSelected.name, 'isFalse');
-      expect(tester.getSemantics(find.byKey(const ValueKey('account-a2'))).label, 'a2@example.com');
-      await tester.tap(find.byKey(const ValueKey('account-a1')));
+      expect(tester.getSemantics(find.byKey(const ValueKey('account-a2'))).label, 'Account a2@example.com');
+      final inbox1 = tester.getSemantics(find.byKey(const ValueKey('inbox-a1')));
+      expect(inbox1.label, 'Posta in arrivo, Non letto');
+      expect(inbox1.flagsCollection.isButton, isTrue);
+      expect(inbox1.flagsCollection.isSelected.name, 'isFalse');
+      expect(tester.getSemantics(find.byKey(const ValueKey('inbox-a2'))).label, 'Posta in arrivo');
+      await tester.tap(find.byKey(const ValueKey('inbox-a1')));
       await tester.pumpAndSettle();
-      expect(tester.getSemantics(find.byKey(const ValueKey('account-a1'))).flagsCollection.isSelected.name, 'isTrue');
+      expect(tester.getSemantics(find.byKey(const ValueKey('inbox-a1'))).flagsCollection.isSelected.name, 'isTrue');
       handle.dispose();
     });
 
@@ -278,11 +283,14 @@ void main() {
       expect(inItem('account-a1', 'reconnect-badge'), findsNothing);
       expect(icon(PostinoIcons.alert), findsOneWidget);
       expect(find.byTooltip('a2@example.com'), findsOneWidget);
-      expect(tester.getSemantics(find.byKey(const ValueKey('account-a2'))).label, 'a2@example.com, Da ricollegare');
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('account-a2'))).label,
+        'Account a2@example.com, Da ricollegare',
+      );
       // a1 has unread mail and a2 is Da ricollegare: opposite corners.
-      final dot = tester.getRect(inItem('account-a1', 'unread-dot'));
+      final dot = tester.getRect(inItem('inbox-a1', 'unread-dot'));
       final badge = tester.getRect(inItem('account-a2', 'reconnect-badge'));
-      final item1 = tester.getRect(find.byKey(const ValueKey('account-a1')));
+      final item1 = tester.getRect(find.byKey(const ValueKey('inbox-a1')));
       final item2 = tester.getRect(find.byKey(const ValueKey('account-a2')));
       expect(dot.center.dy - item1.top, lessThan(item1.height / 2));
       expect(badge.center.dy - item2.top, greaterThan(item2.height / 2));
@@ -321,11 +329,11 @@ void main() {
       await _start(tester, 1600);
       Finder dot(String key) =>
           find.descendant(of: find.byKey(ValueKey(key)), matching: find.byKey(const ValueKey('unread-dot')));
-      expect(dot('account-a1'), findsOneWidget);
-      expect(dot('account-a2'), findsNothing);
+      expect(dot('inbox-a1'), findsOneWidget);
+      expect(dot('inbox-a2'), findsNothing);
       expect(dot('drawer-posta-unificata'), findsOneWidget);
-      expect(tester.getSize(dot('account-a1')), const Size(8, 8));
-      expect(tester.getSemantics(find.byKey(const ValueKey('account-a1'))).label, contains('Non letto'));
+      expect(tester.getSize(dot('inbox-a1')), const Size(8, 8));
+      expect(tester.getSemantics(find.byKey(const ValueKey('inbox-a1'))).label, contains('Non letto'));
       handle.dispose();
     });
 
@@ -345,7 +353,7 @@ void main() {
       await tester.pumpAndSettle();
       Finder dot(String key) =>
           find.descendant(of: find.byKey(ValueKey(key)), matching: find.byKey(const ValueKey('unread-dot')));
-      expect(dot('account-a1'), findsOneWidget);
+      expect(dot('inbox-a1'), findsOneWidget);
       expect(dot('drawer-posta-unificata'), findsOneWidget);
       final unread = await tester.runAsync(() => getIt<MailStore>().watchUnreadFolders().first);
       expect(unread, contains(('a1', 'Label_12')));

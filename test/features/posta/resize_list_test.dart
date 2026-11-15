@@ -34,10 +34,10 @@ class _FakeSettings([var double? saved]) implements SettingsRepository {
   Future<bool?> sidebarExpanded() async => null;
 
   @override
-  Stream<bool> watchLabelsExpanded(String accountId) => Stream.value(true);
+  Future<Set<String>> collapsedAccounts() async => const {};
 
   @override
-  Future<void> setLabelsExpanded(String accountId, {required bool expanded}) async {}
+  Future<void> setCollapsedAccounts(Set<String> accountIds) async {}
 
   @override
   Future<void> setSidebarExpanded({required bool? expanded}) async {}

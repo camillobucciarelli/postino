@@ -1,12 +1,10 @@
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
-import '../atoms/postino_account_mark.dart';
 import '../atoms/postino_icon_button.dart';
 import '../atoms/postino_reveal.dart';
 import '../molecules/postino_drawer_item.dart';
 import '../molecules/postino_drawer_item_tile.dart';
-import '../molecules/postino_drawer_section_header.dart';
 import '../tokens/postino_icons.dart';
 import '../tokens/postino_theme.dart';
 import '../tokens/postino_tokens.dart';
@@ -40,23 +38,13 @@ class const PostinoSidebarScope({
   bool updateShouldNotify(PostinoSidebarScope old) => collapsed != old.collapsed || toggleLabel != old.toggleLabel;
 }
 
-/// Una sezione del drawer, con un titolo facoltativo e le sue voci. Con [onToggle] è collassabile: l'intestazione
-/// diventa un pulsante che la apre e la chiude.
+/// Una sezione del drawer, con un titolo facoltativo e le sue voci.
 class const PostinoDrawerSection({
-  /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta, se non è collassabile.
+  /// Intestazione della sezione, mostrata in maiuscolo; nascosta quando la barra è ridotta.
   final String? title,
 
   /// Voci della sezione, in ordine.
   required final List<PostinoDrawerItem> items,
-
-  /// Account di cui l'intestazione collassabile mostra il segno.
-  final PostinoAccountRef? account,
-
-  /// Se la sezione collassabile è aperta.
-  final bool expanded = true,
-
-  /// Apre o chiude la sezione; se impostata (con [title]) la sezione è collassabile.
-  final VoidCallback? onToggle,
 }) {
   /// Crea una sezione con le sue voci; senza titolo non mostra l'intestazione.
   this;
@@ -64,7 +52,8 @@ class const PostinoDrawerSection({
 
 /// Mailboxes and Etichette: a modal drawer from the left (tapping an item closes it), or the docked sidebar,
 /// which (see [PostinoSidebarScope]) has a button to open and close it and, collapsed, shows only icons.
-/// The highlight of the active item is one box under the list that slides to the new item.
+/// The highlight of the active item is one box under the list that slides to the new item, or to its group while
+/// that is closed. A group's children open and close with [PostinoReveal] (#311).
 class const PostinoNavigationDrawer({
   super.key,
 
@@ -81,19 +70,18 @@ class const PostinoNavigationDrawer({
 class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
   final _stack = GlobalKey();
 
-  /// By (section, item) for an item, by section for a collapsible header: a section's keys stay its own while it
-  /// closes, whatever the other sections do.
+  /// By position, (section, item) or (section, item, child): a closing group keeps its keys whatever else changes.
   final _keys = <Object, GlobalKey>{};
   Rect? _active;
   var _slide = false;
 
   GlobalKey _key(Object id) => _keys.putIfAbsent(id, GlobalKey.new);
 
-  /// [key] is what shows the active item: the item, or the header of its closed section; null: none.
+  /// [key] shows the active item: the item, or its group while closed; null: none.
   void _measure(GlobalKey? key) {
     if (!mounted) return;
     final stack = _stack.currentContext?.findRenderObject() as RenderBox?;
-    // An item that left the tree (its section closed) has no context.
+    // A child of a closed group left the tree: no context.
     final item = key?.currentContext?.findRenderObject() as RenderBox?;
     final rect = stack == null || item == null || !item.attached
         ? null
@@ -112,11 +100,13 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
     final sections = widget.sections;
     final scope = PostinoSidebarScope.maybeOf(context);
     final collapsed = scope?.collapsed ?? false;
-    bool closed(PostinoDrawerSection s) => s.onToggle != null && s.title != null && !s.expanded;
     GlobalKey? activeKey;
     for (final (si, s) in sections.indexed) {
       for (final (ii, item) in s.items.indexed) {
-        if (item.active) activeKey = closed(s) ? _key(si) : _key((si, ii));
+        if (item.active) activeKey = _key((si, ii));
+        for (final (ci, child) in (item.children ?? const <PostinoDrawerItem>[]).indexed) {
+          if (child.active) activeKey = item.expanded ? _key((si, ii, ci)) : _key((si, ii));
+        }
       }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _measure(activeKey));
@@ -175,52 +165,43 @@ class _PostinoNavigationDrawerState() extends State<PostinoNavigationDrawer> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           spacing: PostinoSpacing.s0_5,
                           children: [
-                            if (s.onToggle case final toggle? when s.title != null) ...[
-                              PostinoDrawerSectionHeader(
-                                key: _key(i),
-                                title: s.title!,
-                                account: s.account,
-                                expanded: s.expanded,
-                                collapsed: collapsed,
-                                selected: closed(s) && s.items.any((item) => item.active),
-                                unreadLabel: s.expanded
-                                    ? null
-                                    : s.items.map((item) => item.unreadLabel).nonNulls.firstOrNull,
-                                onToggle: toggle,
-                              ),
-                              // Closed, the items leave: no taps, no Tab, nothing read (PostinoSizeFade).
-                              PostinoReveal(
-                                duration: PostinoMotion.threadExpand,
-                                child: s.expanded
-                                    ? Column(
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        spacing: PostinoSpacing.s0_5,
-                                        children: [
-                                          for (final (ii, item) in s.items.indexed)
-                                            PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
-                                        ],
-                                      )
-                                    : null,
-                              ),
-                            ] else ...[
-                              if (s.title case final t? when !collapsed)
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    PostinoSpacing.s3,
-                                    PostinoSpacing.s2,
-                                    PostinoSpacing.s3,
-                                    PostinoSpacing.s1,
-                                  ),
-                                  child: Semantics(
-                                    header: true,
-                                    child: Text(
-                                      t.toUpperCase(),
-                                      style: PostinoText.overline.copyWith(color: c.inkSubtle),
-                                    ),
+                            if (s.title case final t? when !collapsed)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  PostinoSpacing.s3,
+                                  PostinoSpacing.s2,
+                                  PostinoSpacing.s3,
+                                  PostinoSpacing.s1,
+                                ),
+                                child: Semantics(
+                                  header: true,
+                                  child: Text(
+                                    t.toUpperCase(),
+                                    style: PostinoText.overline.copyWith(color: c.inkSubtle),
                                   ),
                                 ),
-                              for (final (ii, item) in s.items.indexed)
-                                PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
+                              ),
+                            for (final (ii, item) in s.items.indexed) ...[
+                              PostinoDrawerItemTile(item, collapsed: collapsed, key: _key((i, ii))),
+                              if (item.children case final children?)
+                                // Closed, the children leave: no taps, no Tab, nothing read (PostinoSizeFade).
+                                PostinoReveal(
+                                  duration: PostinoMotion.threadExpand,
+                                  child: item.expanded
+                                      ? Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          spacing: PostinoSpacing.s0_5,
+                                          children: [
+                                            for (final (ci, child) in children.indexed)
+                                              PostinoDrawerItemTile(
+                                                child,
+                                                collapsed: collapsed,
+                                                key: _key((i, ii, ci)),
+                                              ),
+                                          ],
+                                        )
+                                      : null,
+                                ),
                             ],
                           ],
                         ),

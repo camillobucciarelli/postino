@@ -15,7 +15,8 @@
     "label": "Larghezza lista",
     "value": "$px pixel"
   },
-  "etichetteDi": "Etichette di $name",
+  "drawerAccount": "Account $address",
+  "cestino": "Cestino",
   "onboarding": {
     "body": "Tutte le tue caselle in un posto solo.",
     "connectGmail": "Collega Gmail",

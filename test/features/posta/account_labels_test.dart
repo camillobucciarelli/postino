@@ -40,7 +40,7 @@ void main() {
     expect(find.text('Da uno'), findsOneWidget);
     expect(find.text('Da due'), findsOneWidget);
 
-    await _tap(tester, 'account-a1');
+    await _tap(tester, 'inbox-a1');
     expect(find.text('Da uno'), findsOneWidget);
     expect(find.text('Da due'), findsNothing);
     // No bar nor badge on the rows: the AppBar says where you are, with the Account's mark.
@@ -67,14 +67,18 @@ void main() {
     a2.deliver(msg('z', subject: 'Lavoro due', labelIds: const ['Label_7']));
 
     await _start(tester);
-    await _tap(tester, 'account-a1');
+    await _tap(tester, 'inbox-a1');
     await openDrawer(tester);
-    expect(find.byKey(const ValueKey('label-$_viaggi')), findsOneWidget);
+    // Each Account's group holds only its own Etichette.
+    expect(find.byKey(const ValueKey('label-a1-$_viaggi')), findsOneWidget);
+    expect(find.byKey(const ValueKey('label-a2-$_viaggi')), findsNothing);
+    expect(find.byKey(const ValueKey('label-a2-Label_7')), findsOneWidget);
+    expect(find.byKey(const ValueKey('label-a1-Label_7')), findsNothing);
     expect(find.text('Viaggi'), findsOneWidget);
-    expect(find.text('Lavoro'), findsNothing);
+    expect(find.text('Lavoro'), findsOneWidget);
     expect(find.text('INBOX'), findsNothing);
     expect(find.text('In viaggio'), findsNothing, reason: 'not in the inbox');
-    await tester.tap(find.byKey(const ValueKey('label-$_viaggi')));
+    await tester.tap(find.byKey(const ValueKey('label-a1-$_viaggi')));
     await tester.pumpAndSettle();
     expect(find.text('In viaggio'), findsOneWidget);
     expect(find.text('Inbox uno'), findsNothing);
@@ -89,9 +93,9 @@ void main() {
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
 
     await _start(tester);
-    await _tap(tester, 'account-a1');
+    await _tap(tester, 'inbox-a1');
     expect(find.text('Da uno'), findsOneWidget);
-    await _tap(tester, 'account-a2');
+    await _tap(tester, 'inbox-a2');
     expect(find.text('Da due'), findsOneWidget);
     expect(find.text('Da uno'), findsNothing);
     expect(find.descendant(of: find.byType(PostinoAppBar), matching: find.text('a2@example.com')), findsOneWidget);
@@ -106,10 +110,10 @@ void main() {
       ..deliver(msg('w', subject: 'Al lavoro', labelIds: const ['Label_7']));
 
     await _start(tester);
-    await _tap(tester, 'account-a1');
-    await _tap(tester, 'label-$_viaggi');
+    await _tap(tester, 'inbox-a1');
+    await _tap(tester, 'label-a1-$_viaggi');
     expect(find.text('In viaggio'), findsOneWidget);
-    await _tap(tester, 'label-Label_7');
+    await _tap(tester, 'label-a1-Label_7');
     expect(find.text('Al lavoro'), findsOneWidget);
     expect(find.text('In viaggio'), findsNothing);
   });
@@ -127,7 +131,7 @@ void main() {
     expect(star('s'), findsOneWidget);
     expect(star('n'), findsNothing);
 
-    await _tap(tester, 'account-a1');
+    await _tap(tester, 'inbox-a1');
     expect(star('s'), findsOneWidget);
     expect(star('n'), findsNothing);
   });
@@ -138,7 +142,7 @@ void main() {
     a1.deliver(msg('x'));
 
     await _start(tester);
-    await _tap(tester, 'account-a1');
+    await _tap(tester, 'inbox-a1');
     a1.breakAuth();
     await getIt<SyncEngine>().syncAll();
     await tester.pumpAndSettle();

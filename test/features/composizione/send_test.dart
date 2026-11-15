@@ -117,7 +117,7 @@ Finder get _undo => find.widgetWithText(PostinoButton, 'Annulla');
 Finder _inTile(String s) => find.descendant(of: find.byType(PostinoMessageTile), matching: find.textContaining(s));
 
 Future<void> _openSent(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('sent-$_id')));
+  await tester.tap(find.byKey(const ValueKey('label-$_id-SENT')));
   await _settle(tester);
 }
 

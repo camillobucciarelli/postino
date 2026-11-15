@@ -32,7 +32,7 @@ void main() {
     await _start(tester);
 
     await openDrawer(tester);
-    await tester.tap(find.byKey(const ValueKey('account-a1')));
+    await tester.tap(find.byKey(const ValueKey('inbox-a1')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 45));
     // Old content (both Accounts) still there, fading out.
@@ -57,11 +57,11 @@ void main() {
     (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due'));
     await _start(tester);
     await openDrawer(tester);
-    await tester.tap(find.byKey(const ValueKey('account-a1')));
+    await tester.tap(find.byKey(const ValueKey('inbox-a1')));
     await tester.pumpAndSettle();
 
     await openDrawer(tester);
-    await tester.tap(find.byKey(const ValueKey('account-a2')));
+    await tester.tap(find.byKey(const ValueKey('inbox-a2')));
     for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 16));
       expect(find.byType(UnifiedAppBar), findsNothing, reason: 'frame $i');

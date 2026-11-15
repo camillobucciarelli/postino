@@ -108,7 +108,8 @@ void main() {
 
     testWidgets('Tab into the list then j / arrow goes to the second row', (tester) async {
       await _start(tester, _desktop);
-      for (var i = 0; i < 10 && _focusedRow() == null; i++) {
+      // The docked drawer comes first: each Account row, then its Posta in arrivo, Bozze, Inviata, Cestino and Etichette.
+      for (var i = 0; i < 30 && _focusedRow() == null; i++) {
         await _press(tester, LogicalKeyboardKey.tab);
       }
       expect(_focusedRow(), 5);

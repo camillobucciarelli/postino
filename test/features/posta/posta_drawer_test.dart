@@ -1,8 +1,10 @@
-// Which item of the drawer is the open one: Account, Bozze or Inviati of the open Account only; the Etichette section
-// of the open Account (#311): with the user's folders, hidden in Posta unificata, open or closed as last left here.
+// Which item of the drawer is the open one, and each Account as a group (#311): its Posta in arrivo, Bozze, Inviata,
+// Cestino and Etichette (the user's folders included, never a system one), in Posta unificata too, open or closed
+// as last left on this device; an Etichetta opens with its Account.
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/app/posta/posta_routes.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
@@ -15,116 +17,31 @@ import 'package:postino/main.dart';
 
 import '../../support/harness.dart';
 
-Future<Set<String>> _active(WidgetTester tester, {String? accountId, String? labelId}) async {
+const _folder = 'cartella:Lavoro/Progetti';
+
+/// Two Accounts: a1 (IMAP) with a folder, a system folder stored by a creation and a label, a2 with a label.
+Future<void> _setUp(WidgetTester tester) async {
   tester.view
-    ..physicalSize = const Size(400, 1200)
-    ..devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  final h = await Harness.create();
-  await h.addAccount('a1');
-  await h.addAccount('a2');
-  LocaleSettings.setLocaleSync(AppLocale.it);
-  await tester.pumpWidget(
-    TranslationProvider(
-      child: MaterialApp(
-        theme: PostinoTheme.light(),
-        home: Scaffold(
-          body: PostaDrawer(
-            accountId: accountId,
-            labelId: labelId,
-            onOpenUnified: () {},
-            onOpenAccount: (_) {},
-            onOpenLabel: (_) {},
-            onOpenDrafts: (_) {},
-            onOpenSent: (_) {},
-          ),
-        ),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
-  return {
-    for (final section in tester.widget<PostinoNavigationDrawer>(find.byType(PostinoNavigationDrawer)).sections)
-      for (final item in section.items)
-        if (item.active) (item.key! as ValueKey<String>).value,
-  };
-}
-
-void main() {
-  testWidgets('Posta unificata: only its own item is open', (tester) async {
-    expect(await _active(tester), {'drawer-posta-unificata'});
-  });
-
-  testWidgets('an Account without Etichetta: its inbox item only, not its Bozze nor Inviati', (tester) async {
-    expect(await _active(tester, accountId: 'a1'), {'account-a1'});
-  });
-
-  testWidgets('the Bozze of an Account: its item only, not the other Account\'s Bozze', (tester) async {
-    expect(await _active(tester, accountId: 'a2', labelId: draftLabelId), {'drafts-a2'});
-  });
-
-  testWidgets('the Inviati of an Account: its item only', (tester) async {
-    expect(await _active(tester, accountId: 'a1', labelId: sentLabelId), {'sent-a1'});
-  });
-
-  testWidgets('an IMAP Account lists its folders and its labels under its own header', (tester) async {
-    await _withLabels(tester);
-    await _pumpDrawer(tester, accountId: 'a1');
-    expect(find.textContaining('ETICHETTE DI '), findsOneWidget);
-    expect(find.text('Lavoro/Progetti'), findsOneWidget);
-    // A system folder stored by a creation named after it is not an Etichetta of the drawer.
-    expect(find.text('Sent'), findsNothing);
-    // Elsewhere (picker, Etichettatura automatica) the folders stay out, as before.
-    final names = await tester.runAsync(() => getIt<InboxRepository>().watchLabels('a1').first);
-    expect(names!.map((l) => l.name), ['Fatture']);
-    expect(find.text('Fatture'), findsOneWidget);
-  });
-
-  testWidgets('Posta unificata: no Etichette section', (tester) async {
-    await _withLabels(tester);
-    await _pumpDrawer(tester);
-    expect(_header, findsNothing);
-    expect(find.text('Lavoro/Progetti'), findsNothing);
-  });
-
-  testWidgets('closed for one Account stays closed for it, on this device, and open for the other', (tester) async {
-    await _withLabels(tester);
-    await _pumpDrawer(tester, accountId: 'a1');
-    await tester.tap(_header);
-    await tester.pumpAndSettle();
-    expect(find.text('Lavoro/Progetti'), findsNothing);
-    expect(await tester.runAsync(() => getIt<SettingsRepository>().watchLabelsExpanded('a1').first), isFalse);
-
-    await _pumpDrawer(tester, accountId: 'a2');
-    expect(find.text('Bonifici'), findsOneWidget);
-
-    await _pumpDrawer(tester, accountId: 'a1');
-    expect(_header, findsOneWidget);
-    expect(find.text('Lavoro/Progetti'), findsNothing);
-  });
-}
-
-/// Two Accounts: a1 (IMAP) with a folder and a label, a2 with a label.
-Future<void> _withLabels(WidgetTester tester) async {
-  tester.view
-    ..physicalSize = const Size(400, 1200)
+    ..physicalSize = const Size(400, 1600)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final h = await Harness.create();
   await h.addAccount('a1', provider: ProviderKind.imap);
   await h.addAccount('a2');
   final labels = getIt<PostinoDatabase>().labelsDao;
-  await labels.upsert(
-    'a1',
-    const Label(id: 'cartella:Lavoro/Progetti', name: 'Lavoro/Progetti', kind: LabelKind.cartella),
-  );
+  await labels.upsert('a1', const Label(id: _folder, name: 'Lavoro/Progetti', kind: LabelKind.cartella));
   await labels.upsert('a1', const Label(id: sentLabelId, name: 'Sent', kind: LabelKind.cartella));
   await labels.upsert('a1', const Label(id: 'Label_1', name: 'Fatture', kind: LabelKind.etichetta));
   await labels.upsert('a2', const Label(id: 'Label_2', name: 'Bonifici', kind: LabelKind.etichetta));
   LocaleSettings.setLocaleSync(AppLocale.it);
 }
 
-Future<void> _pumpDrawer(WidgetTester tester, {String? accountId}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  String? accountId,
+  String? labelId,
+  void Function(String, String)? onOpenLabel,
+}) async {
   await tester.pumpWidget(
     TranslationProvider(
       child: MaterialApp(
@@ -133,11 +50,10 @@ Future<void> _pumpDrawer(WidgetTester tester, {String? accountId}) async {
           body: PostaDrawer(
             key: UniqueKey(),
             accountId: accountId,
+            labelId: labelId,
             onOpenUnified: () {},
             onOpenAccount: (_) {},
-            onOpenLabel: (_) {},
-            onOpenDrafts: (_) {},
-            onOpenSent: (_) {},
+            onOpenLabel: onOpenLabel ?? (_, _) {},
           ),
         ),
       ),
@@ -146,4 +62,91 @@ Future<void> _pumpDrawer(WidgetTester tester, {String? accountId}) async {
   await tester.pumpAndSettle();
 }
 
-Finder get _header => find.byKey(const ValueKey('drawer-section-toggle'));
+/// The keys of the active items, children included.
+Set<String> _active(WidgetTester tester) => {
+  for (final section in tester.widget<PostinoNavigationDrawer>(find.byType(PostinoNavigationDrawer)).sections)
+    for (final item in section.items)
+      for (final i in [item, ...?item.children])
+        if (i.active) (i.key! as ValueKey<String>).value,
+};
+
+Finder _account(String id) => find.byKey(ValueKey('account-$id'));
+
+void main() {
+  testWidgets('Posta unificata: only its own item is open', (tester) async {
+    await _setUp(tester);
+    await _pump(tester);
+    expect(_active(tester), {'drawer-posta-unificata'});
+  });
+
+  testWidgets('an Account\'s inbox: its Posta in arrivo only', (tester) async {
+    await _setUp(tester);
+    await _pump(tester, accountId: 'a1');
+    expect(_active(tester), {'inbox-a1'});
+  });
+
+  testWidgets('the Bozze, Inviata or Cestino of an Account: its item only', (tester) async {
+    await _setUp(tester);
+    for (final id in [draftLabelId, sentLabelId, trashLabelId]) {
+      await _pump(tester, accountId: 'a2', labelId: id);
+      expect(_active(tester), {'label-a2-$id'});
+    }
+  });
+
+  testWidgets('every Account, in Posta unificata too, lists its Cestino, folders and labels, never a system folder', (
+    tester,
+  ) async {
+    await _setUp(tester);
+    await _pump(tester);
+    expect(find.text('a1@example.com'), findsOneWidget);
+    expect(find.text('Cestino'), findsNWidgets(2));
+    expect(find.text('Lavoro/Progetti'), findsOneWidget);
+    expect(find.text('Fatture'), findsOneWidget);
+    expect(find.text('Bonifici'), findsOneWidget);
+    expect(find.text('Sent'), findsNothing);
+    // Elsewhere (picker, Etichettatura automatica) the folders stay out, as before.
+    final names = await tester.runAsync(() => getIt<InboxRepository>().watchLabels('a1').first);
+    expect(names!.map((l) => l.name), ['Fatture']);
+  });
+
+  testWidgets('a folder opens with its Account, its id one segment of the path', (tester) async {
+    await _setUp(tester);
+    final opened = <(String, String)>[];
+    await _pump(tester, onOpenLabel: (a, l) => opened.add((a, l)));
+    await tester.tap(find.text('Lavoro/Progetti'));
+    expect(opened, [('a1', _folder)]);
+    expect(PostaRoute.parse(Uri.parse(labelPath('a1', _folder)), isLayout: false).labelId, _folder);
+  });
+
+  testWidgets('closed for one Account stays closed for it on this device, the other open', (tester) async {
+    await _setUp(tester);
+    await _pump(tester);
+    await tester.tap(_account('a1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lavoro/Progetti'), findsNothing);
+    expect(find.text('Bonifici'), findsOneWidget);
+    expect(await tester.runAsync(() => getIt<SettingsRepository>().collapsedAccounts()), {'a1'});
+
+    await _pump(tester, accountId: 'a2');
+    expect(find.text('Lavoro/Progetti'), findsNothing);
+    expect(find.text('Bonifici'), findsOneWidget);
+  });
+
+  testWidgets('the Account row reads «Account <address>» and says whether it is expanded', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _setUp(tester);
+    await _pump(tester);
+    expect(
+      tester.getSemantics(_account('a1')),
+      matchesSemantics(
+        label: 'Account a1@example.com',
+        isButton: true,
+        hasSelectedState: true,
+        hasExpandedState: true,
+        isExpanded: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
+}

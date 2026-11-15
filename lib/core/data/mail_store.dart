@@ -302,9 +302,18 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   Stream<Set<(String, String)>> watchUnreadFolders() => _db.messagesDao.watchUnreadFolders();
 
   @override
-  Stream<List<Label>> watchLabels(String accountId, {bool folders = false}) => _db.labelsDao
-      .watchLabels(accountId, folders: folders)
+  Stream<List<Label>> watchLabels(String accountId) => _db.labelsDao
+      .watchLabels(accountId)
       .map((rows) => [for (final r in rows) Label(id: r.id, name: r.name, kind: r.kind)]);
+
+  @override
+  Stream<Map<String, List<Label>>> watchAllLabels() => _db.labelsDao.watchAll().map((rows) {
+    final by = <String, List<Label>>{};
+    for (final r in rows) {
+      (by[r.accountId] ??= []).add(Label(id: r.id, name: r.name, kind: r.kind));
+    }
+    return by;
+  });
 }
 
 @module

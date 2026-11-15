@@ -11,11 +11,11 @@ abstract interface class SettingsRepository() {
   /// Ricorda la scelta della sidebar; null cancella la scelta manuale.
   Future<void> setSidebarExpanded({required bool? expanded});
 
-  /// Whether the Etichette section of Account [accountId] is open in the drawer (#311); open until closed here.
-  Stream<bool> watchLabelsExpanded(String accountId);
+  /// The ids of the Accounts closed in the drawer on this device (#311); the others are open.
+  Future<Set<String>> collapsedAccounts();
 
-  /// Ricorda se la sezione Etichette dell'Account è aperta nel drawer.
-  Future<void> setLabelsExpanded(String accountId, {required bool expanded});
+  /// Ricorda quali Account sono chiusi nel drawer.
+  Future<void> setCollapsedAccounts(Set<String> accountIds);
 
   /// The width in pixels the user chose for the list; null: none, the default applies. Not limited to the window.
   Future<double?> listWidth();

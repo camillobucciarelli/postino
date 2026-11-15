@@ -54,9 +54,9 @@ void _onMac(String name, Future<void> Function(WidgetTester) body) => testWidget
 void main() {
   _onMac('the drawer reads the Provider of a shared address, not of an address of its own', (tester) async {
     await _start(tester);
-    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_gmail'))).label, 'ada@acme.com · Gmail');
-    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_imap'))).label, 'ada@acme.com · IMAP');
-    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_bob'))).label, 'bob@acme.com');
+    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_gmail'))).label, 'Account ada@acme.com · Gmail');
+    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_imap'))).label, 'Account ada@acme.com · IMAP');
+    expect(tester.getSemantics(find.byKey(const ValueKey('account-$_bob'))).label, 'Account bob@acme.com');
   });
 
   _onMac('«Da» in the composer and its menu read the Provider of a shared address', (tester) async {

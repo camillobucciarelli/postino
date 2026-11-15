@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/settings_backend.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
 
+import '../../support/fake_settings_backend.dart';
 import '../../support/harness.dart';
 
 final _entry = find.byKey(const ValueKey('settings-sync-account'));
@@ -216,5 +218,91 @@ void main() {
       isSemantics(isInMutuallyExclusiveGroup: true, hasCheckedState: true, isChecked: false),
     );
     semantics.dispose();
+  });
+
+  group('the last cycle of the sync (#317)', () {
+    final error = find.byKey(const ValueKey('settings-sync-error'));
+    final done = find.byKey(const ValueKey('settings-sync-done'));
+    final retry = find.descendant(of: error, matching: find.text('Riprova'));
+    late FakeSettingsBackend file;
+
+    /// a1 chosen, its file in memory: the choice starts a cycle.
+    Future<void> synced(WidgetTester tester, {Failure? failure}) async {
+      await _start(tester);
+      file = FakeSettingsBackend()..readFailure = failure;
+      getIt.registerSingleton<SettingsBackend>(file, instanceName: 'a1');
+      await getIt<SettingsRepository>().setSettingsSyncAccount('a1');
+      await tester.pumpAndSettle();
+    }
+
+    const disabled = UnexpectedFailure('Drive: HTTP 403 accessNotConfigured');
+
+    testWidgets('a failed cycle shows its reason, selectable, until «Riprova» goes through', (tester) async {
+      await synced(tester, failure: disabled);
+      expect(error, findsOneWidget);
+      expect(find.descendant(of: error, matching: find.text('Impostazioni non sincronizzate')), findsOneWidget);
+      final reason = find.descendant(of: error, matching: find.textContaining('accessNotConfigured'));
+      expect(reason, findsOneWidget);
+      expect(find.ancestor(of: reason, matching: find.byType(PostinoSelectable)), findsWidgets);
+      expect(done, findsNothing);
+
+      file.readFailure = null;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(error, findsNothing);
+      expect(find.descendant(of: done, matching: find.textContaining('Impostazioni sincronizzate')), findsOneWidget);
+    });
+
+    testWidgets('a missing scope says how to fix it', (tester) async {
+      await synced(tester, failure: const DriveScopeFailure());
+      expect(find.descendant(of: error, matching: find.textContaining('scegli di nuovo')), findsOneWidget);
+    });
+
+    testWidgets('the screen reader hears the error as it comes, and «Riprova» is a button', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await synced(tester, failure: disabled);
+      expect(
+        find.descendant(
+          of: error,
+          matching: find.byWidgetPredicate((w) => w is Semantics && (w.properties.liveRegion ?? false)),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSemantics(retry),
+        isSemantics(label: 'Riprova', isButton: true, isFocusable: true, hasTapAction: true),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('«Riprova» is reached and pressed from the keyboard', (tester) async {
+      await synced(tester, failure: disabled);
+      file.readFailure = null;
+      bool focused() {
+        final c = FocusManager.instance.primaryFocus?.context;
+        return c != null &&
+            find.ancestor(of: find.byElementPredicate((e) => e == c), matching: error).evaluate().isNotEmpty;
+      }
+
+      for (var i = 0; i < 30 && !focused(); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(focused(), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(error, findsNothing);
+      expect(done, findsOneWidget);
+    });
+
+    testWidgets('coming back to the app runs a cycle', (tester) async {
+      await synced(tester);
+      final before = file.reads;
+      tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(file.reads, before + 1);
+    });
   });
 }

@@ -81,6 +81,7 @@ import 'package:postino/core/domain/server_discovery.dart' as _i221;
 import 'package:postino/core/domain/settings_repository.dart' as _i307;
 import 'package:postino/core/domain/settings_sync_account_use_case.dart'
     as _i114;
+import 'package:postino/core/domain/settings_sync_control.dart' as _i355;
 import 'package:postino/core/domain/swipe_actions_repository.dart' as _i401;
 import 'package:postino/core/domain/system_tray.dart' as _i739;
 import 'package:postino/core/domain/text_embedder.dart' as _i374;
@@ -112,6 +113,7 @@ extension GetItInjectableX on _i174.GetIt {
     final errorLogModule = _$ErrorLogModule();
     final mailStoreModule = _$MailStoreModule();
     final appUpdaterModule = _$AppUpdaterModule();
+    final settingsSyncModule = _$SettingsSyncModule();
     final syncModule = _$SyncModule();
     gh.lazySingleton<_i681.AccountsLock>(() => _i681.AccountsLock());
     gh.lazySingleton<_i350.OpenConversation>(() => _i350.OpenConversation());
@@ -330,6 +332,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i307.SettingsRepository>(),
       ),
     );
+    gh.lazySingleton<_i355.SettingsSyncControl>(
+      () => settingsSyncModule.settingsSyncControl(gh<_i311.SettingsSync>()),
+    );
     gh.lazySingleton<_i893.SyncEngine>(
       () => _i893.SyncEngine(
         gh<_i385.MailStore>(),
@@ -443,5 +448,7 @@ class _$ErrorLogModule extends _i907.ErrorLogModule {}
 class _$MailStoreModule extends _i385.MailStoreModule {}
 
 class _$AppUpdaterModule extends _i671.AppUpdaterModule {}
+
+class _$SettingsSyncModule extends _i311.SettingsSyncModule {}
 
 class _$SyncModule extends _i893.SyncModule {}

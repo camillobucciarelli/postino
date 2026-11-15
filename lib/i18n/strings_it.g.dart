@@ -734,6 +734,21 @@ class Translations$impostazioni$it {
 
 	/// it: 'Non è stato possibile collegare Drive. Riprova.'
 	String get syncFailed => 'Non è stato possibile collegare Drive. Riprova.';
+
+	/// it: 'Impostazioni sincronizzate alle $time'
+	String syncDoneAt({required Object time}) => 'Impostazioni sincronizzate alle ${time}';
+
+	/// it: 'Impostazioni sincronizzate il $date'
+	String syncDoneOn({required Object date}) => 'Impostazioni sincronizzate il ${date}';
+
+	/// it: 'Impostazioni non sincronizzate'
+	String get syncCycleFailed => 'Impostazioni non sincronizzate';
+
+	/// it: 'Google non concede più l'accesso allo spazio nascosto di Drive: scegli di nuovo l'Account in «Sincronizza su…».'
+	String get syncCycleScope => 'Google non concede più l\'accesso allo spazio nascosto di Drive: scegli di nuovo l\'Account in «Sincronizza su…».';
+
+	/// it: 'Motivo: $reason'
+	String syncCycleReason({required Object reason}) => 'Motivo: ${reason}';
 }
 
 // Path: segnalazione
@@ -1577,6 +1592,11 @@ extension on Translations {
 			'impostazioni.syncWrongAccount' => ({required Object address}) => 'Hai scelto un altro account Google. Scegli ${address}.',
 			'impostazioni.syncOffline' => 'Sei offline. Riprova quando torna la rete.',
 			'impostazioni.syncFailed' => 'Non è stato possibile collegare Drive. Riprova.',
+			'impostazioni.syncDoneAt' => ({required Object time}) => 'Impostazioni sincronizzate alle ${time}',
+			'impostazioni.syncDoneOn' => ({required Object date}) => 'Impostazioni sincronizzate il ${date}',
+			'impostazioni.syncCycleFailed' => 'Impostazioni non sincronizzate',
+			'impostazioni.syncCycleScope' => 'Google non concede più l\'accesso allo spazio nascosto di Drive: scegli di nuovo l\'Account in «Sincronizza su…».',
+			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Motivo: ${reason}',
 			'segnalazione.action' => 'Segnala un problema',
 			'segnalazione.subject' => 'Problema in Postino',
 			'segnalazione.intro' => 'Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.',

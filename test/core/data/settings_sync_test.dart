@@ -13,6 +13,7 @@ import 'package:postino/core/data/swipe_actions_store.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/settings_document.dart';
 import 'package:postino/core/domain/swipe_actions.dart';
+import 'package:postino/core/domain/sync_status.dart';
 
 import '../../support/fake_platform.dart';
 import '../../support/fake_settings_backend.dart';
@@ -186,6 +187,36 @@ void main() {
     file.readFailure = const DriveScopeFailure();
     await a.sync.syncNow();
     expect((file.writeAttempts, await a.dirty()), (0, 1));
+  });
+
+  test(
+    'the last cycle\'s outcome, by sync Account: failed with its reason, then synced at the clock\'s time (#317)',
+    () async {
+      Future<SyncStatus?> status() async => (await a.sync.watchStatus().first)['a1'];
+      expect(await status(), isNull, reason: 'nothing before the first cycle');
+
+      const disabled = UnexpectedFailure('Drive: HTTP 403 accessNotConfigured');
+      file.readFailure = disabled;
+      await a.sync.syncNow();
+      expect(await status(), const SyncStatus(failure: disabled, failures: 1));
+
+      await a.labels.setAutomatic('a1', 'L1', automatic: true);
+      file
+        ..readFailure = null
+        ..writeFailure = const DriveScopeFailure();
+      await a.sync.syncNow();
+      expect(await status(), const SyncStatus(failure: DriveScopeFailure(), failures: 2));
+
+      file.writeFailure = null;
+      await a.sync.syncNow();
+      expect(await status(), SyncStatus(syncedAt: clock.now()));
+    },
+  );
+
+  test('a file that cannot be read is a failed cycle too', () async {
+    file.file = '{"nope": true}';
+    await a.sync.syncNow();
+    expect((await a.sync.watchStatus().first)['a1']?.failure, isNotNull);
   });
 
   test('a failed upload keeps the voci dirty for the next cycle', () async {

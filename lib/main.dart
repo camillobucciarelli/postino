@@ -264,6 +264,8 @@ class _PostinoAppState() extends State<PostinoApp> {
     _lifecycle = AppLifecycleListener(
       onResume: () {
         unawaited(getIt<SyncEngine>().syncAll());
+        // The Impostazioni too, without waiting for their poll (#317).
+        unawaited(getIt<SettingsSync>().syncNow());
         unawaited(updater.checkDaily());
       },
     );

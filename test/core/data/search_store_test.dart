@@ -220,7 +220,8 @@ void main() {
           in await probe.customSelect('EXPLAIN QUERY PLAN $sql', variables: [for (final a in args) Variable(a)]).get())
         r.read<String>('detail'),
     ];
-    expect(plan, contains(startsWith('SCAN search_index VIRTUAL TABLE INDEX')));
+    // M: the MATCH, not a walk over every entry of the index.
+    expect(plan, contains(matches(RegExp('^SCAN search_index VIRTUAL TABLE INDEX [0-9]+:M'))));
     expect(plan.where((d) => d.startsWith('SCAN ') && !d.startsWith('SCAN search_index ')), isEmpty, reason: '$plan');
   });
 }

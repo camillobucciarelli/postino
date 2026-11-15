@@ -24,7 +24,7 @@ import 'core/data/notification_action_relay.dart';
 import 'core/data/notification_payload.dart' show decodeAction;
 import 'core/data/platform_services.dart' show SystemPeriodicSync;
 import 'core/data/postino_database.dart';
-import 'core/data/search_index.dart';
+import 'core/data/search_index_backlog.dart';
 import 'core/data/settings_sync.dart';
 import 'core/data/sync/periodic_schedule.dart';
 import 'core/data/sync_engine.dart';

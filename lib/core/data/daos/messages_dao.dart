@@ -55,7 +55,7 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     bool saveCursor = true,
     Map<String, String>? bodyTexts,
   }) async {
-    // Before the transaction: other writers do not wait for the HTML to be parsed (#221).
+    // Before this transaction; MailStore makes them before its own, so other writers do not wait for the parsing (#221).
     final texts = bodyTexts ?? await searchableTextsOf(batch.bodies);
     return transaction(() async {
       if (fullSnapshot) {

@@ -32,6 +32,7 @@ import 'database_lock.dart';
 import 'device_only_key.dart';
 import 'row_mappers.dart';
 import 'search_index.dart';
+import 'search_index_backlog.dart';
 import 'tables/accounts_table.dart';
 import 'tables/bodies_table.dart';
 import 'tables/conflicts_table.dart';
@@ -326,7 +327,10 @@ class PostinoDatabase(super.e) extends _$PostinoDatabase {
       }
       // Last: it reads the columns of every step above (v7 split the sender). By name too: a v22 of the #142 branch
       // (the Account voci) came before it, and lacks it.
-      if (from < 22 || !await _hasColumn('search_index', 'subject')) await createSearchIndex(this);
+      if (from < 22 || !await _hasColumn('search_index', 'subject')) {
+        await createSearchIndex(this);
+        await queueSearchBacklog(this);
+      }
     },
   );
 

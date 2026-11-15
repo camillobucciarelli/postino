@@ -1,7 +1,5 @@
 import 'dart:isolate';
 
-import 'package:drift/drift.dart' show Variable;
-
 import '../domain/html_text.dart';
 import '../domain/message.dart';
 import 'postino_database.dart';
@@ -43,26 +41,33 @@ String searchableText(MessageBody body) => body.kind == BodyKind.html ? htmlText
 const offIsolateHtml = 16 * 1024;
 
 /// The [searchableText] of each body, in order; in another isolate when they hold more than [offIsolateHtml] of HTML.
+/// HTML the parser cannot read (nested past its stack) has no text: it is not searched, the others are.
 Future<List<String>> searchableTexts(List<MessageBody> bodies) async {
   final html = bodies.fold(0, (n, b) => b.kind == BodyKind.html ? n + b.content.length : n);
-  if (html <= offIsolateHtml) return [for (final b in bodies) searchableText(b)];
   final sent = [for (final b in bodies) (b.content, b.kind == BodyKind.html)];
-  return Isolate.run(() => [for (final (content, isHtml) in sent) isHtml ? htmlText(content) : content]);
+  return html <= offIsolateHtml ? _texts(sent) : Isolate.run(() => _texts(sent));
+}
+
+List<String> _texts(List<(String, bool)> bodies) => [
+  for (final (content, isHtml) in bodies)
+    if (!isHtml) content else _htmlTextOrNothing(content),
+];
+
+String _htmlTextOrNothing(String html) {
+  try {
+    return htmlText(html);
+  } on Error {
+    // ponytail: StackOverflowError on very deep nesting; an iterative walk in htmlText if such mail must be found.
+    return '';
+  }
 }
 
 /// The [searchableTexts] of bodies keyed by message id.
 Future<Map<String, String>> searchableTextsOf(Map<String, MessageBody> bodies) async =>
     Map.fromIterables(bodies.keys, await searchableTexts([...bodies.values]));
 
-/// Present while the bodies stored before the index wait for their text (#221): `last` is the rowid of the last body
-/// done. Not a drift table, as the index.
-const _backlog = 'search_index_backlog';
-
-/// The backlog writes a body only where its text is still empty: a text the sync wrote meanwhile is newer.
-const _backlogBodySql = "$indexBodySql AND body = ''";
-
-/// Creates the index and fills it with the messages already stored (v22, or a new database). The bodies already stored
-/// wait in the backlog for [indexSearchBacklog]: their text is not made in the migration, on the UI isolate (#221).
+/// Creates the index and fills it with the messages already stored (v22, or a new database). The bodies already
+/// stored are not: their text is made out of the migration, by the backlog (`search_index_backlog.dart`, #221).
 /// Starts from nothing: a database taken back to an older version may hold a half of it.
 Future<void> createSearchIndex(PostinoDatabase db) async {
   for (final s in [
@@ -70,7 +75,6 @@ Future<void> createSearchIndex(PostinoDatabase db) async {
     'DROP TRIGGER IF EXISTS search_index_update',
     'DROP TRIGGER IF EXISTS search_index_delete',
     'DROP TABLE IF EXISTS search_index',
-    'DROP TABLE IF EXISTS $_backlog',
     ...searchIndexStatements,
   ]) {
     await db.customStatement(s);
@@ -80,41 +84,4 @@ Future<void> createSearchIndex(PostinoDatabase db) async {
     "SELECT rowid, subject, sender || ' ' || coalesce(sender_name, ''), recipients || ' ' || cc, snippet, '' "
     'FROM messages',
   );
-  if ((await db.customSelect('SELECT 1 FROM bodies LIMIT 1').get()).isEmpty) return;
-  await db.customStatement('CREATE TABLE $_backlog (last INTEGER NOT NULL)');
-  await db.customStatement('INSERT INTO $_backlog VALUES (0)');
-}
-
-/// Indexes the bodies of the backlog, if any, [batch] at a time: their text made by [searchableTexts], each batch
-/// written in one transaction with the progress, so a start killed meanwhile goes on from there. Between two batches
-/// the UI isolate draws its frames. A message removed meanwhile (its Account too) has no row in the index: nothing
-/// changes. Run by the app's isolate once the database is open.
-Future<void> indexSearchBacklog(PostinoDatabase db, {int batch = 50}) async {
-  const exists = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '$_backlog'";
-  if ((await db.customSelect(exists).get()).isEmpty) return;
-  while (true) {
-    final rows = await db
-        .customSelect(
-          'SELECT rowid, account_id, message_id, kind, body FROM bodies '
-          'WHERE rowid > (SELECT last FROM $_backlog) ORDER BY rowid LIMIT ?1',
-          variables: [Variable(batch)],
-        )
-        .get();
-    if (rows.isEmpty) return db.customStatement('DROP TABLE $_backlog');
-    final texts = await searchableTexts([
-      for (final r in rows) MessageBody(r.read<String>('body'), BodyKind.values.byName(r.read<String>('kind'))),
-    ]);
-    await db.transaction(() async {
-      for (final (i, r) in rows.indexed) {
-        await db.customStatement(_backlogBodySql, [
-          r.read<String>('account_id'),
-          r.read<String>('message_id'),
-          texts[i],
-        ]);
-      }
-      await db.customStatement('UPDATE $_backlog SET last = ?1', [rows.last.read<int>('rowid')]);
-    });
-    // A turn of the event loop: the frames due meanwhile are drawn before the next batch.
-    await Future<void>.delayed(Duration.zero);
-  }
 }

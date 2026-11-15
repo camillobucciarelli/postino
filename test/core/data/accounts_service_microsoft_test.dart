@@ -161,6 +161,28 @@ void main() {
     expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
+  test('an IMAP Account already saved on Microsoft 365\'s servers still reconnects with its password', () async {
+    await getIt<MailStore>().addAccount(
+      const Account(
+        id: 'imap:ada@contoso.com',
+        address: 'ada@contoso.com',
+        provider: ProviderKind.imap,
+        color: 0,
+        position: 0,
+      ),
+    );
+    await getIt<MailStore>().setStatus('imap:ada@contoso.com', AccountStatus.daRicollegare);
+    h.discovery.servers['ada@contoso.com'] = const ServerSettings(
+      imap: MailServer(host: 'outlook.office365.com', port: 993, security: ServerSecurity.ssl),
+      smtp: MailServer(host: 'smtp.office365.com', port: 587, security: ServerSecurity.starttls),
+    );
+
+    final r = await accounts.connectWithPassword('ada@contoso.com', 'app-password-1');
+
+    expect(r, isA<Ok<Account>>());
+    expect(h.connection.tested, hasLength(1));
+  });
+
   test(
     'an IMAP Account saved on an Outlook.com address before the button still reconnects with its password',
     () async {

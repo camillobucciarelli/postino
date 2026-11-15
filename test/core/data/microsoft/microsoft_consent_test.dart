@@ -198,8 +198,10 @@ void main() {
 
   test('neither email in the id_token nor an address from Graph is a Failure', () async {
     token = 'token_exchange_no_address';
-    me = 'not_found';
-    expect(await consent().run(), failsWith<UnexpectedFailure>());
+    for (final answer in ['not_found', 'me_no_address']) {
+      me = answer;
+      expect(await consent().run(), failsWith<UnexpectedFailure>(), reason: answer);
+    }
   });
 
   test('a callback with another state is refused, no code exchanged', () async {
@@ -244,6 +246,21 @@ void main() {
   test('the token endpoint refusing for want of an administrator\'s approval is an AdminConsentFailure', () async {
     token = 'token_admin_consent';
     expect(await consent().run(), failsWith<AdminConsentFailure>());
+  });
+
+  test('a refused exchange whose body is not JSON is a Failure with its HTTP status', () async {
+    final r = await MicrosoftWebConsent(
+      MockClient((_) async => http.Response('<html>Bad gateway</html>', 502)),
+      FakeClock(_now),
+      client: _client,
+      authenticate: ({required url, required callbackUrlScheme}) async {
+        final q = Uri.parse(url).queryParameters;
+        return '${q['redirect_uri']}?state=${q['state']}&code=x';
+      },
+      loopback: false,
+    ).run();
+    expect(r, failsWith<UnexpectedFailure>());
+    expect((r as Err).failure.toString(), 'UnexpectedFailure(code exchange: HTTP 502)');
   });
 
   test('a token without Mail.Send (granular consent) is a MissingPermissionFailure', () async {

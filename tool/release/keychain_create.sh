@@ -2,6 +2,8 @@
 # Imports the Developer ID p12 into a per-job keychain under $RUNNER_TEMP with a random password, puts it
 # first in the user search list and exports SIGNING_IDENTITY (the certificate hash) to later steps.
 # keychain_delete.sh undoes all of it. The login keychain is never modified.
+# The Mac App Store variant (#325, ADR 0021) passes its own p12 and the certificate names (alternatives split by |):
+# SIGNING_CERTIFICATE for SIGNING_IDENTITY, and INSTALLER_CERTIFICATE, which also exports INSTALLER_IDENTITY.
 set -euo pipefail
 : "${MACOS_CERTIFICATE_P12_BASE64:?}" "${MACOS_CERTIFICATE_PASSWORD:?}" "${APPLE_TEAM_ID:?}"
 : "${RUNNER_TEMP:?}" "${GITHUB_ENV:?}"
@@ -36,10 +38,23 @@ xargs security list-keychains -d user -s "$keychain" < "$saved_list"
 # not see the G2 intermediate above and fail with errSecInternalComponent. launchd restarts it on demand.
 pkill -U "$(id -u)" -x trustd || [ $? -eq 1 ] # 1: no agent running
 
-identity=$(security find-identity -v -p codesigning "$keychain" | 
-  awk -v team="($APPLE_TEAM_ID)\"" 'index($0, "\"Developer ID Application: ") && index($0, team) { print $2; exit }')
-if [ -z "$identity" ]; then
-  echo "::error::No valid Developer ID Application identity of team $APPLE_TEAM_ID in the p12 (wrong team, expired, or intermediate CA missing)" >&2
-  exit 1
-fi
-echo "SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+# identity_of <policy args> <names separated by |>: the hash of the first valid identity of the team named <name>: ...
+identity_of() {
+  local names=$2
+  # shellcheck disable=SC2086 # the policy is zero or two words
+  security find-identity -v $1 "$keychain" | awk -v names="$names" -v team="($APPLE_TEAM_ID)\"" '
+    BEGIN { n = split(names, list, "|") }
+    index($0, team) { for (i = 1; i <= n; i++) if (index($0, "\"" list[i] ": ")) { print $2; exit } }'
+}
+need() { # <variable> <policy args> <names>
+  local hash
+  hash=$(identity_of "$2" "$3")
+  if [ -z "$hash" ]; then
+    echo "::error::No valid $3 identity of team $APPLE_TEAM_ID in the p12 (wrong team, expired, or intermediate CA missing)" >&2
+    exit 1
+  fi
+  echo "$1=$hash" >> "$GITHUB_ENV"
+}
+need SIGNING_IDENTITY '-p codesigning' "${SIGNING_CERTIFICATE:-Developer ID Application}"
+# An installer identity is no code signing one: no policy.
+[ -z "${INSTALLER_CERTIFICATE:-}" ] || need INSTALLER_IDENTITY '' "$INSTALLER_CERTIFICATE"

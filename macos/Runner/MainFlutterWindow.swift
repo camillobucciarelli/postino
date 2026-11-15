@@ -12,7 +12,9 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     LaunchAtLogin.register(with: flutterViewController.engine.binaryMessenger)
-    Updater.register(with: flutterViewController.engine.binaryMessenger)
+    #if !APP_STORE  // #325: no Sparkle in the Mac App Store variant (ADR 0021)
+      Updater.register(with: flutterViewController.engine.binaryMessenger)
+    #endif
     MailMenu.register(with: flutterViewController.engine.binaryMessenger)
 
     super.awakeFromNib()

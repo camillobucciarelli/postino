@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The privacy manifest of cnativeapi.framework (#325), the native asset of the tray (tray_manager -> nativeapi): it ships
+  none, and Apple wants it in the bundle of each dynamic library that uses a required-reason API. The Store target's
+  "Native assets privacy manifests" phase copies it into the framework before the embed phase signs it. `nm -u` on the
+  built framework (2026-11-16, cnativeapi 0.6.0): NSUserDefaults only, for its own preferences store and the system's
+  title-bar double-click setting; nothing leaves the device. No tracking, nothing collected.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

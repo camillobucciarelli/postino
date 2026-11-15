@@ -5,7 +5,8 @@
   none, and Apple wants it in the bundle of each dynamic library that uses a required-reason API, not in the app's.
   The Runner's "sqlcipher privacy manifest" build phase copies it into the framework before the Thin Binary phase
   embeds and signs it. `nm -u` on the built framework (2026-11-15): stat/fstat/lstat (file timestamp) and
-  statfs/fstatfs (disk space). No tracking, nothing collected.
+  statfs/fstatfs (disk space). No tracking, nothing collected. The Mac App Store variant (#325) copies this same file
+  into its sqlcipher.framework: same library, same symbols (`nm -u`, 2026-11-16).
 -->
 <plist version="1.0">
 <dict>

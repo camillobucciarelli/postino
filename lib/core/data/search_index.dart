@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Variable;
+import 'dart:isolate';
 
 import '../domain/html_text.dart';
 import '../domain/message.dart';
@@ -36,7 +36,38 @@ const indexBodySql =
 /// What of a body is searched: the text a reader sees.
 String searchableText(MessageBody body) => body.kind == BodyKind.html ? htmlText(body.content) : body.content;
 
-/// Creates the index and fills it with the messages and bodies already stored (v22, or a new database).
+/// Past this much HTML the texts are made in another isolate: parsing it on the UI one drops frames (#221).
+// ponytail: below it (a few ms of parsing) an isolate costs more than it saves.
+const offIsolateHtml = 16 * 1024;
+
+/// The [searchableText] of each body, in order; in another isolate when they hold more than [offIsolateHtml] of HTML.
+/// HTML the parser cannot read (nested past its stack) has no text: it is not searched, the others are.
+Future<List<String>> searchableTexts(List<MessageBody> bodies) async {
+  final html = bodies.fold(0, (n, b) => b.kind == BodyKind.html ? n + b.content.length : n);
+  final sent = [for (final b in bodies) (b.content, b.kind == BodyKind.html)];
+  return html <= offIsolateHtml ? _texts(sent) : Isolate.run(() => _texts(sent));
+}
+
+List<String> _texts(List<(String, bool)> bodies) => [
+  for (final (content, isHtml) in bodies)
+    if (!isHtml) content else _htmlTextOrNothing(content),
+];
+
+String _htmlTextOrNothing(String html) {
+  try {
+    return htmlText(html);
+  } on Error {
+    // ponytail: StackOverflowError on very deep nesting; an iterative walk in htmlText if such mail must be found.
+    return '';
+  }
+}
+
+/// The [searchableTexts] of bodies keyed by message id.
+Future<Map<String, String>> searchableTextsOf(Map<String, MessageBody> bodies) async =>
+    Map.fromIterables(bodies.keys, await searchableTexts([...bodies.values]));
+
+/// Creates the index and fills it with the messages already stored (v22, or a new database). The bodies already
+/// stored are not: their text is made out of the migration, by the backlog (`search_index_backlog.dart`, #221).
 /// Starts from nothing: a database taken back to an older version may hold a half of it.
 Future<void> createSearchIndex(PostinoDatabase db) async {
   for (final s in [
@@ -53,24 +84,4 @@ Future<void> createSearchIndex(PostinoDatabase db) async {
     "SELECT rowid, subject, sender || ' ' || coalesce(sender_name, ''), recipients || ' ' || cc, snippet, '' "
     'FROM messages',
   );
-  // By pages: the bodies of a mailbox do not fit in memory at once.
-  var last = 0;
-  while (true) {
-    final rows = await db
-        .customSelect(
-          'SELECT rowid, account_id, message_id, kind, body FROM bodies WHERE rowid > ?1 ORDER BY rowid LIMIT 200',
-          variables: [Variable(last)],
-        )
-        .get();
-    if (rows.isEmpty) return;
-    for (final r in rows) {
-      final body = MessageBody(r.read<String>('body'), BodyKind.values.byName(r.read<String>('kind')));
-      await db.customStatement(indexBodySql, [
-        r.read<String>('account_id'),
-        r.read<String>('message_id'),
-        searchableText(body),
-      ]);
-    }
-    last = rows.last.read<int>('rowid');
-  }
 }

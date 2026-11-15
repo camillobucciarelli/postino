@@ -31,22 +31,27 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
       b.deleteWhere(bodies, (t) => t.accountId.equals(accountId) & t.messageId.equals(messageId));
 
   /// Each body goes to the search index too (#205), after its message: the caller adds the messages first.
-  void upsertAllIn(Batch b, String accountId, Map<String, MessageBody> all) {
+  /// [texts]: the [searchableTextsOf] the bodies, made by the caller before its transaction (#221).
+  void upsertAllIn(Batch b, String accountId, Map<String, MessageBody> all, Map<String, String> texts) {
     b.insertAll(bodies, [
       for (final MapEntry(:key, :value) in all.entries) _companion(accountId, key, value),
     ], mode: InsertMode.insertOrReplace);
-    for (final MapEntry(:key, :value) in all.entries) {
+    for (final key in all.keys) {
       b
-        ..customStatement(indexBodySql, [accountId, key, searchableText(value)])
+        ..customStatement(indexBodySql, [accountId, key, texts[key]!])
         ..customStatement(_setHasAttachments, [accountId, key]);
     }
   }
 
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) => transaction(() async {
-    await into(bodies).insert(_companion(accountId, messageId, body), mode: InsertMode.insertOrReplace);
-    await customStatement(indexBodySql, [accountId, messageId, searchableText(body)]);
-    await customStatement(_setHasAttachments, [accountId, messageId]);
-  });
+  /// [text]: its [searchableText], when the caller made it before its own transaction (#221).
+  Future<void> saveBody(String accountId, String messageId, MessageBody body, {String? text}) async {
+    final indexed = text ?? (await searchableTexts([body])).single;
+    return transaction(() async {
+      await into(bodies).insert(_companion(accountId, messageId, body), mode: InsertMode.insertOrReplace);
+      await customStatement(indexBodySql, [accountId, messageId, indexed]);
+      await customStatement(_setHasAttachments, [accountId, messageId]);
+    });
+  }
 
   BodiesCompanion _companion(String accountId, String messageId, MessageBody body) => BodiesCompanion.insert(
     accountId: accountId,

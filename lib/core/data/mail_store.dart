@@ -14,6 +14,7 @@ import 'action_codec.dart';
 import 'outbox_store.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
+import 'search_index.dart';
 
 /// A voce of the offline queue, decoded: `expected` null forces the write.
 typedef QueuedAction = ({String messageId, MailAction action, Object? expected});
@@ -92,26 +93,33 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
   /// [fullSnapshot]: the batch is the Account's whole state, so cached messages absent from it are gone from the Provider.
   /// Nothing is written for an Account removed meanwhile (ADR 0016): a sync in flight does not bring its mail back.
   /// False, and nothing written, when it was removed.
-  Future<bool> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false}) => _db.transaction(() async {
-    if (!await _db.accountsDao.exists(accountId)) return false;
-    await _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot);
-    // ponytail: only here, a page of Conversazione says nothing about the Bozze. A window remains if the Gmail
-    // history does not list the new DRAFT yet: the acknowledged row goes, and comes back with the next sync.
-    await _db.draftsDao.reconcile(accountId);
-    return true;
-  });
+  /// The bodies' text for the search index is made first, outside the transaction (#221).
+  Future<bool> applySync(String accountId, SyncBatch batch, {bool fullSnapshot = false}) async {
+    final texts = await searchableTextsOf(batch.bodies);
+    return _db.transaction(() async {
+      if (!await _db.accountsDao.exists(accountId)) return false;
+      await _db.messagesDao.applySync(accountId, batch, fullSnapshot: fullSnapshot, bodyTexts: texts);
+      // ponytail: only here, a page of Conversazione says nothing about the Bozze. A window remains if the Gmail
+      // history does not list the new DRAFT yet: the acknowledged row goes, and comes back with the next sync.
+      await _db.draftsDao.reconcile(accountId);
+      return true;
+    });
+  }
 
   /// A page of the initial sync: stored right away, without touching the cursor.
   /// Nothing, as in [applySync], for an Account removed meanwhile.
-  Future<void> applyPage(String accountId, List<Message> messages, Map<String, MessageBody> bodies) =>
-      _db.transaction(() async {
-        if (!await _db.accountsDao.exists(accountId)) return;
-        await _db.messagesDao.applySync(
-          accountId,
-          SyncBatch(cursor: '', messages: messages, bodies: bodies),
-          saveCursor: false,
-        );
-      });
+  Future<void> applyPage(String accountId, List<Message> messages, Map<String, MessageBody> bodies) async {
+    final texts = await searchableTextsOf(bodies);
+    return _db.transaction(() async {
+      if (!await _db.accountsDao.exists(accountId)) return;
+      await _db.messagesDao.applySync(
+        accountId,
+        SyncBatch(cursor: '', messages: messages, bodies: bodies),
+        saveCursor: false,
+        bodyTexts: texts,
+      );
+    });
+  }
 
   @override
   Stream<List<InboxEntry>> watchUnifiedInbox() => _entries(null, inboxLabelId);
@@ -136,9 +144,12 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.messagesDao.watchOne(accountId, messageId).map((r) => r == null ? null : messageOf(r.$1, r.$2));
 
   /// Nothing, as in [applySync], for an Account removed meanwhile.
-  Future<void> saveBody(String accountId, String messageId, MessageBody body) => _db.transaction(() async {
-    if (await _db.accountsDao.exists(accountId)) await _db.bodiesDao.saveBody(accountId, messageId, body);
-  });
+  Future<void> saveBody(String accountId, String messageId, MessageBody body) async {
+    final text = (await searchableTexts([body])).single;
+    return _db.transaction(() async {
+      if (await _db.accountsDao.exists(accountId)) await _db.bodiesDao.saveBody(accountId, messageId, body, text: text);
+    });
+  }
 
   /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008).
   Future<void> markConversationRead(String accountId, String conversationId) async =>

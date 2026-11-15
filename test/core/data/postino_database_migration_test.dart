@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/search_index_backlog.dart';
 import 'package:postino/core/domain/mail_action.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/message.dart';
@@ -115,9 +116,13 @@ void main() {
             ).firstOrNull?['id']
             as String?;
     await db.customSelect('SELECT 1').get();
-    for (final word in ['fattura', 'lovelace', 'bruno', 'anteprima', 'preventivo']) {
+    for (final word in ['fattura', 'lovelace', 'bruno', 'anteprima']) {
       expect(found(word), 'm1', reason: word);
     }
+    // The bodies wait for the backlog, out of the migration (#221).
+    expect(found('preventivo'), isNull);
+    await indexSearchBacklog(db);
+    expect(found('preventivo'), 'm1');
     expect(found('Pb'), isNull);
     expect(raw.select('PRAGMA user_version').first.values.first, 24);
   });

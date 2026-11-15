@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 import '../../../core/domain/account.dart';
+import '../../../core/domain/platform_services.dart';
 import '../../../core/presentation/account_label.dart';
 import '../../../core/presentation/accounts_signal.dart';
 import '../../../design_system/design_system.dart';
@@ -12,8 +14,12 @@ import 'escape_to_go_back.dart';
 import 'remove_account.dart';
 import 'sync_account_section.dart';
 
+/// The site's privacy policy (#323, Apple guideline 5.1.1(i)), in the app's language: Italian or English.
+Uri _privacyPolicy(AppLocale locale) =>
+    Uri.parse('https://postino.camillobucciarelli.dev/${locale == AppLocale.it ? '' : 'en/'}privacy.html');
+
 /// The Impostazioni (the drawer's last entry): those of the device, the «Account» list with «Aggiungi Account»
-/// ([onAddAccount]) and «Rimuovi» on each, then one group per Account.
+/// ([onAddAccount]) and «Rimuovi» on each, then one group per Account; last, Postino's own, with the privacy policy.
 /// Routing is the caller's: Esc and the back arrow call [onBack], and so does removing the last Account (the
 /// onboarding is under the Impostazioni).
 class const SettingsIndexView({
@@ -104,6 +110,12 @@ class _SettingsIndexViewState() extends State<SettingsIndexView> with AccountsSi
                 key: const ValueKey('settings-report-problem'),
                 title: context.t.segnalazione.action,
                 onTap: widget.onReportProblem,
+              ),
+              PostinoSettingsItem(
+                key: const ValueKey('settings-privacy'),
+                title: context.t.impostazioni.privacy,
+                onTap: () =>
+                    unawaited(GetIt.I<LinkOpener>().open(_privacyPolicy(TranslationProvider.of(context).locale))),
               ),
             ],
           ),

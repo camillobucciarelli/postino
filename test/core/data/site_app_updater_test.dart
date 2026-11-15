@@ -99,11 +99,12 @@ void main() {
       expect(u.available, isNull);
     });
 
-    test("iOS's TestFlight url is accepted", () async {
-      reply = () => http.Response(_file(url: 'itms-beta://'), 200);
+    test("iOS's App Store page is accepted (#323)", () async {
+      final store = Uri.parse('https://apps.apple.com/app/id1234567890');
+      reply = () => http.Response(_file(url: '$store'), 200);
       final u = updater();
       expect(await _check(u), UpdateCheck.available);
-      expect(u.available?.url, Uri.parse('itms-beta://'));
+      expect(u.available?.url, store);
     });
   });
 

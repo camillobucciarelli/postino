@@ -24,7 +24,7 @@ class SiteAppUpdater(
   /// This build's number (`--dart-define=POSTINO_BUILD`, the release's build_number.sh).
   required final int installed,
 
-  /// Opens a URL outside Postino; false when nothing can (TestFlight not installed).
+  /// Opens a URL outside Postino (the browser, the App Store); false when nothing can.
   required final Future<bool> Function(Uri url) launch,
 
   /// Where [download] goes when the version's URL does not open: the invitees' guide.

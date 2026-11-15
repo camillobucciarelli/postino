@@ -7,7 +7,7 @@ import '../../design_system/design_system.dart';
 import '../../i18n/strings.g.dart';
 import '../domain/app_updater.dart';
 
-/// A newer version of Postino (#287), on Android and iOS: «Aggiorna» opens its download (the browser, TestFlight),
+/// A newer version of Postino (#287), on Android and iOS: «Aggiorna» opens its download (the browser, the App Store),
 /// «Chiudi» hides it until a newer one. On top of the Posta lists and under «Cerca aggiornamenti» in the
 /// Impostazioni, inside [padding]. Nothing while there is none.
 class const AppUpdateBanner({super.key, final EdgeInsets padding = EdgeInsets.zero}) extends StatefulWidget {

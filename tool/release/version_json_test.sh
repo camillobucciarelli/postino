@@ -7,7 +7,9 @@ fails() { if tool/release/version_json.sh "$1" "$2" > /dev/null 2>&1; then echo 
 
 expect 1.3.0 https://postino.example/android/1.3.0/Postino-1.3.0.apk \
   '{"version":"1.3.0","build":1003000,"url":"https://postino.example/android/1.3.0/Postino-1.3.0.apk"}'
-expect 1.2.1 itms-beta:// '{"version":"1.2.1","build":1002001,"url":"itms-beta://"}'
+expect 1.2.1 https://apps.apple.com/app/id1234567890 \
+  '{"version":"1.2.1","build":1002001,"url":"https://apps.apple.com/app/id1234567890"}'
+fails 1.2.1 itms-beta://
 fails 1.3 https://postino.example/p.apk
 fails 1.3.0 http://postino.example/p.apk
 fails 1.3.0 'https://postino.example/"p'

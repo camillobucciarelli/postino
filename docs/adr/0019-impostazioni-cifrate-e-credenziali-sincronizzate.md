@@ -67,7 +67,12 @@ Decisione del proprietario: un Account sincronizzato non deve più arrivare «da
 
 Un file con il proprio `keyId` ma con il tag sbagliato è danneggiato o manomesso. È illeggibile e non si sovrascrive. L'utente può scegliere «Rigenera la chiave».
 
-Un dispositivo che ha una chiave non si fida mai di un file in chiaro: potrebbe averlo messo chi controlla Drive. Anche un dispositivo senza chiave accetta un file in chiaro solo con `schemaVersion` al massimo 2, quella delle versioni che scrivevano in chiaro. Non ne applica mai le voci `credentials/`: un file in chiaro non può legittimamente contenerle. Non ne applica le voci e lo sovrascrive con la sua copia cifrata. Le voci di un dispositivo vecchio che lo aveva scritto si perdono: è accettato. Lo stato si espone accanto all'esito dell'ultimo ciclo di #317.
+Un file in chiaro si tratta in due modi, a seconda che il dispositivo abbia già una chiave.
+
+- **Con una chiave**, un file in chiaro è un downgrade sospetto: potrebbe averlo messo chi controlla Drive. Il dispositivo non ne applica nessuna voce e lo sovrascrive con la sua copia cifrata. Le voci di un dispositivo vecchio che lo aveva scritto si perdono: è accettato.
+- **Senza chiave** è la prima migrazione (sotto). Il dispositivo unisce le voci del file in chiaro come oggi, e solo dopo genera la chiave e scrive il file cifrato. Accetta il file solo con `schemaVersion` al massimo 2, quella delle versioni che scrivevano in chiaro. Non ne applica mai le voci `credentials/`, che un file in chiaro non può legittimamente contenere.
+
+Lo stato si espone accanto all'esito dell'ultimo ciclo di #317.
 
 ## Migrazione dal file in chiaro
 

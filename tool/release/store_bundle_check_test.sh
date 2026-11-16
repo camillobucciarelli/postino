@@ -59,7 +59,7 @@ fails "SU* key" 'SUFeedURL'
 app "${plist_keys/productivity/utilities}" "$sandbox"
 fails "category" 'LSApplicationCategoryType'
 # ADR 0022: true without the code of an approved document is App Store Connect's error 90592.
-app "${plist_keys/<false\/>/<true/>}" "$sandbox"
+app "${plist_keys/NonExemptEncryption<\/key><false\/>/NonExemptEncryption</key><true/>}" "$sandbox"
 fails "encryption true" 'ITSAppUsesNonExemptEncryption'
 app "${plist_keys/<key>ITSAppUsesNonExemptEncryption<\/key><false\/>/}" "$sandbox"
 fails "encryption missing" 'ITSAppUsesNonExemptEncryption'

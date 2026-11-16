@@ -25,5 +25,5 @@ Per Postino `false` vuol dire «esente dal fornire documentazione». Non vuol di
   2. impostare `true` e il codice assegnato da Apple come `ITSEncryptionExportComplianceCode` nei tre plist, e aggiornare `store_bundle_check.sh`;
   3. solo dopo, aggiungere la Francia ai Paesi di distribuzione.
 - `tool/release/store_bundle_check.sh` vuole `false` nel bundle Mac App Store e fallisce se compare `ITSEncryptionExportComplianceCode`. Per iOS non c'è un controllo del bundle: il valore viene dal plist sorgente, e nessuno script lo riscrive.
-- Prima del merge il titolare conferma in App Store Connect l'esito del questionario «Documentazione relativa alla crittografia dell'app»: deve risultare «nessun documento richiesto» (`docs/store/checklist-titolare.md`).
+- Il 16/11/2026 il titolare ha compilato in App Store Connect il questionario «Documentazione relativa alla crittografia dell'app». Le risposte: crittografia sì, proprietaria no, standard in aggiunta a quella del sistema sì, Francia no. L'esito è «nessun documento richiesto». In App Store Connect non resta registrato alcun documento (la sezione mostra ancora solo «Carica»), ed è quello che ci si aspetta (`docs/store/checklist-titolare.md`).
 - Gli obblighi verso il governo USA (BIS, per esempio il rapporto annuale di autoclassificazione) li valuta il titolare. Questa ADR non è una consulenza legale.

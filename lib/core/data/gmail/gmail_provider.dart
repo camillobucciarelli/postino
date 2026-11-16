@@ -39,7 +39,8 @@ class GmailProvider(
   final ImapIdle _idle = imapIdle,
   Duration stall = const Duration(seconds: 30),
   // The stored copy of a message, if the history may change it without a download (#322).
-  final Future<Message?> Function(String id)? storedMessage,
+  // [withBody]: null unless its body is stored too.
+  final Future<Message?> Function(String id, {bool withBody})? storedMessage,
 }) implements MailProvider {
   this : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
@@ -133,11 +134,19 @@ class GmailProvider(
       latest = r['historyId'] as String? ?? latest;
       page = r['nextPageToken'] as String?;
     } while (page != null);
-    // A label change needs no download for a message stored here, unless it is waiting for a retry (#322).
+    // A label change needs no download for a message stored here, unless it is waiting for a retry (#322) or enters
+    // the inbox without its body, which the inbox keeps (ADR 0003).
     final edited = <Message>[];
     for (final id in edits.ids) {
       final stored = was.retries.containsKey(id) ? null : await storedMessage?.call(id);
-      stored == null ? changed.add(id) : edited.add(edits.applyTo(stored));
+      final next = stored == null ? null : edits.applyTo(stored);
+      final entersInbox =
+          next != null && next.labelIds.contains(inboxLabelId) && !stored!.labelIds.contains(inboxLabelId);
+      if (next == null || entersInbox && await storedMessage!(id, withBody: true) == null) {
+        changed.add(id);
+      } else {
+        edited.add(next);
+      }
     }
     // The messages an earlier sync left behind once their wait is over (#252); one the history touches again is
     // retried now, in `changed` already (#322).

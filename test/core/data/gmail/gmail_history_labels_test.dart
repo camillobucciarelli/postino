@@ -11,7 +11,11 @@ import '../../../support/gmail_recorded.dart';
 
 /// A Gmail whose history is [records] (each a kind, a message id and the label ids it touches), with [stored] as the
 /// local copy.
-class _Mailbox(final List<(String, String, List<String>)> records, final Map<String, Message> stored) {
+class _Mailbox(
+  final List<(String, String, List<String>)> records,
+  final Map<String, Message> stored, [
+  final Set<String> bodies = const {},
+]) {
   final fetched = <String>[];
 
   late final provider = GmailProvider(
@@ -55,7 +59,7 @@ class _Mailbox(final List<(String, String, List<String>)> records, final Map<Str
     FakeClock(gmailNow),
     client: gmailTestClient,
     sleep: (_) async {},
-    storedMessage: (id) async => stored[id],
+    storedMessage: (id, {withBody = false}) async => withBody && !bodies.contains(id) ? null : stored[id],
   );
 }
 
@@ -118,5 +122,36 @@ void main() {
     final batch = okValue(await g.provider.incrementalSync('100'));
     expect(batch.messages, isEmpty);
     expect(batch.removedMessageIds, ['a']);
+  });
+
+  group('a message entering the inbox keeps its body in cache (ADR 0003)', () {
+    final archived = msg('a', labelIds: ['Label_1']);
+    final history = [
+      ('labelsAdded', 'a', ['INBOX']),
+    ];
+
+    test('no body stored: downloaded', () async {
+      final g = _Mailbox(history, {'a': archived});
+      okValue(await g.provider.incrementalSync('100'));
+      expect(g.fetched, ['a']);
+    });
+
+    test('body stored: applied from the history', () async {
+      final g = _Mailbox(history, {'a': archived}, {'a'});
+      final batch = okValue(await g.provider.incrementalSync('100'));
+      expect(g.fetched, isEmpty);
+      expect(batch.messages.single.labelIds, ['Label_1', 'INBOX']);
+    });
+
+    test('a label that is not the inbox needs no body', () async {
+      final g = _Mailbox(
+        [
+          ('labelsAdded', 'a', ['STARRED']),
+        ],
+        {'a': archived},
+      );
+      okValue(await g.provider.incrementalSync('100'));
+      expect(g.fetched, isEmpty);
+    });
   });
 }

@@ -86,11 +86,13 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
 
   /// The stored message with Provider id [id], as the Provider last said it: null when the Account has none, or when a
   /// queued Azione or an open Conflitto overlays it (what it shows is not the Provider's state, so a sync downloads it).
-  Future<Message?> settledMessage(String accountId, String id) async {
+  /// [withBody]: null too when its body is not stored. One transaction: an Azione queued meanwhile is not read as the Provider's.
+  Future<Message?> settledMessage(String accountId, String id, {bool withBody = false}) => _db.transaction(() async {
     if (await _db.intentsDao.touches(accountId, id)) return null;
     final r = await _db.messagesDao.watchOne(accountId, id).first;
-    return r == null ? null : messageOf(r.$1, r.$2);
-  }
+    if (r == null || withBody && !await _db.bodiesDao.has(accountId, id)) return null;
+    return messageOf(r.$1, r.$2);
+  });
 
   /// The messages of [messages] the Account does not have yet.
   Future<List<Message>> unknown(String accountId, List<Message> messages) async => [

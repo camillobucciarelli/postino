@@ -30,7 +30,7 @@ MailProvider providerFor(Account account) {
           g(),
           g(),
           g(),
-          storedMessage: (id) => g<MailStore>().settledMessage(account.id, id),
+          storedMessage: (id, {withBody = false}) => g<MailStore>().settledMessage(account.id, id, withBody: withBody),
         ),
         ProviderKind.icloud || ProviderKind.imap => ImapProvider(
           account.id,

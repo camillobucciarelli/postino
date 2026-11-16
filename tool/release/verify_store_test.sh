@@ -8,7 +8,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/verify-store-test.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 mkdir "$tmp/bin" "$tmp/release"
 cp "$src/verify_store.sh" "$tmp/release/"
-for stub in store_bundle_check.sh profile_check.sh; do printf '#!/bin/bash\nexit 0\n' > "$tmp/release/$stub"; done
+for stub in store_bundle_check.sh profile_check.sh readable_check.sh; do printf '#!/bin/bash\nexit 0\n' > "$tmp/release/$stub"; done
 cat > "$tmp/bin/codesign" <<'FAKE'
 #!/bin/bash
 case "$*" in

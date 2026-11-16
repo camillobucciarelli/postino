@@ -29,6 +29,7 @@ class const TokenResponse({
         accessToken: accessToken,
         refreshToken: refresh,
         expiresAt: clock.now().add(Duration(seconds: expiresIn)),
+        scopes: scopes,
       ),
     );
   }

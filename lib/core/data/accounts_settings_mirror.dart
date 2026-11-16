@@ -12,7 +12,6 @@ import '../domain/synced_settings.dart';
 import 'account_credentials.dart';
 import 'account_settings_json.dart';
 import 'accounts_lock.dart';
-import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
@@ -20,8 +19,8 @@ import 'sync/provider_factory.dart';
 
 /// Keeps the `accounts` table a mirror of the voci `accounts/<accountId>` of the Impostazioni di Postino
 /// (ADR 0016), the source of truth for address, Provider, color and position; the status stays local.
-/// - a live voce for an Account missing here adds it da ricollegare (the SyncEngine skips it), or attivo for an iCloud
-///   or IMAP one whose credentials came first from the file (ADR 0019);
+/// - a live voce for an Account missing here adds it da ricollegare (the SyncEngine skips it), or attivo when its
+///   credentials came first from the file (ADR 0019);
 /// - a live voce for an Account here updates address, color and position, keeping its status;
 /// - a tombstone removes the Account here, its local mail, its attachment cache and its credentials; for the Account the sync runs on,
 ///   only once the tombstone is uploaded (clean), as uploading needs its credentials, then the sync goes off;
@@ -130,7 +129,7 @@ class AccountsSettingsMirror(
           // Credentials first: a crash in between leaves an Account da ricollegare, never a token without its Account.
           // ponytail: a token refresh in flight may write the credentials again after this; the window is narrow and
           // the token never leaves the device. A per-Account lock with the refresh if it ever matters.
-          await deleteCredentials(_keychain, id);
+          await deleteCredentials(_keychain, _db, id);
           await _store.deleteAccountRows(id);
           removed.add(id);
           // The sync ran on it: off, instead of failing in silence on an Account without credentials.
@@ -141,11 +140,8 @@ class AccountsSettingsMirror(
         if (synced == null) continue;
         if (local == null) {
           // The same address through another Provider is another Account (ADR 0016): it is added too.
-          final arrived =
-              isPasswordCredentialSetting(credentialsKey(id)) &&
-              await _keychain.read(PasswordCredentials.keychainKey(id)) != null;
           await _db.accountsDao.upsert(
-            arrived
+            await hasCredentials(_keychain, id)
                 ? Account(
                     id: id,
                     address: synced.address,

@@ -25,6 +25,7 @@ class FakeMicrosoftConsent() implements MicrosoftConsent {
         accessToken: 'ms-access-token-$runs',
         refreshToken: 'ms-refresh-token-$runs',
         expiresAt: DateTime.utc(2030),
+        scopes: const ['openid', 'offline_access', 'Mail.ReadWrite', 'Mail.Send'],
       ),
     );
   }

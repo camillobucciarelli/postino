@@ -27,6 +27,7 @@ class FakeGoogleConsent() implements GoogleConsent {
         accessToken: 'access-token-$runs',
         refreshToken: 'refresh-token-$runs',
         expiresAt: DateTime.utc(2030),
+        scopes: ['https://mail.google.com/', 'openid', if (drive) 'https://www.googleapis.com/auth/drive.appdata'],
       ),
     );
   }

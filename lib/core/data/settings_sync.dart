@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
+import '../domain/account.dart';
 import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/settings_backend.dart';
@@ -10,6 +11,7 @@ import '../domain/settings_repository.dart';
 import '../domain/settings_sync_control.dart';
 import '../domain/sync_status.dart';
 import 'accounts_lock.dart';
+import 'oauth/oauth_voce.dart';
 import 'postino_database.dart';
 import 'sync/credential_voci.dart';
 import 'sync/settings_backend_factory.dart';
@@ -41,9 +43,14 @@ class SettingsSync(
   final AccountsLock _lock, {
   @ignoreParam final SettingsBackend Function(String accountId) _backendFor = settingsBackendFor,
   @ignoreParam final Duration _stopWait = const Duration(seconds: 5),
+  @ignoreParam final String Function(ProviderKind) _oauthClientOf = oauthClientIdOf,
 }) implements SettingsSyncControl {
   late final _status = SyncStatusBoard(_clock);
-  late final _exchange = SettingsExchange(_db, _keys, CredentialVoci(_db, _keychain, _lock));
+  late final _exchange = SettingsExchange(
+    _db,
+    _keys,
+    CredentialVoci(_db, _keychain, _lock, _clock, clientOf: _oauthClientOf),
+  );
   final _subs = <StreamSubscription<Object?>>[];
   StreamSubscription<void>? _debounce;
 

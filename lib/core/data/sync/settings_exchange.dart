@@ -13,7 +13,7 @@ import 'sync_key_store.dart';
 
 /// One exchange with the file of the Impostazioni on Drive (ADR 0016), sealed with the Chiave di sincronizzazione
 /// (ADR 0019): the backend moves only sealed text and never sees the key. `SettingsSync` runs them one at a time.
-/// The credentials of iCloud and IMAP travel in it, swapped for their fingerprints here ([CredentialVoci]).
+/// The credentials of the Accounts travel in it, swapped for their fingerprints here ([CredentialVoci]).
 class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, final CredentialVoci _credentials) {
   /// Reads the file, merges, applies here the remote copies that won, writes the file sealed if it changed and its
   /// version allows it, then marks clean what was uploaded; the [Failure] that stopped it, if one did.
@@ -86,14 +86,14 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, fina
     await _credentials.arrive(
       [
         for (final e in won)
-          if (isPasswordCredentialSetting(e.key)) e,
+          if (isCredentialSetting(e.key)) e,
       ],
       hidden.secrets,
       merged,
     );
     await _db.postinoSettingsDao.applyRemote([
       for (final e in won)
-        if (!isPasswordCredentialSetting(e.key)) e,
+        if (!isCredentialSetting(e.key)) e,
     ]);
     // A newer Postino's file is never overwritten: the voci here stay dirty until this one is updated, and the cycle
     // is not a success while they wait (#317).

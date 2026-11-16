@@ -16,12 +16,15 @@ import '../domain/platform_services.dart';
 import '../domain/result.dart';
 import '../domain/server_discovery.dart';
 import '../domain/settings_repository.dart';
+import '../domain/synced_settings.dart';
+import 'account_credentials.dart';
 import 'account_settings_json.dart';
 import 'accounts_lock.dart';
 import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'oauth/oauth_tokens.dart';
+import 'oauth/oauth_voce.dart';
 import 'postino_database.dart';
 import 'settings_sync.dart';
 import 'sync/credential_voci.dart';
@@ -45,8 +48,9 @@ class AccountsService(
   final ConnectionTester _tester,
   final GoogleRevoke _revoke,
   final AttachmentRepository _attachments,
-  final SettingsSync _settingsSync,
-) implements AccountsRepository {
+  final SettingsSync _settingsSync, {
+  @ignoreParam final String Function(ProviderKind) _oauthClientOf = oauthClientIdOf,
+}) implements AccountsRepository {
   @override
   Stream<List<Account>> watchAccounts() => _store.watchAccounts();
 
@@ -90,11 +94,22 @@ class AccountsService(
       // Removed here while waiting for the lock: as above.
       if (_removalsStarted[id] != removals) return null;
       await OAuthTokens.of(grant).write(_keychain, id);
-      return _save(id, address, provider);
+      final added = await _save(id, address, provider);
+      await _writeOAuthVoce(id, provider, grant);
+      return added;
     });
     if (account == null) return const Err(CancelledFailure());
     unawaited(_sync.syncAll());
     return Ok(account);
+  }
+
+  /// The voce of [grant] for this device's OAuth client, stamped now even with the sync off: a consent just given
+  /// wins over an older copy elsewhere (ADR 0019). A grant without scopes has none: its refresh tells them.
+  Future<void> _writeOAuthVoce(String id, ProviderKind provider, OAuthGrant grant) async {
+    final client = _oauthClientOf(provider);
+    if (client.isEmpty || grant.scopes.isEmpty) return;
+    final voce = OAuthVoce(refresh: grant.refreshToken, scopes: grant.scopes);
+    await writeCredentialVoce(_db, oauthCredentialsKey(id, client), voce.encode(), at: _clock.now());
   }
 
   @override
@@ -144,7 +159,7 @@ class AccountsService(
       await credentials.write(_keychain, id);
       final added = await _save(id, normalized, provider.kind);
       // Stamped now even with the sync off: a password just checked wins over an older copy elsewhere (ADR 0019).
-      await writeCredentialVoce(_db, id, credentials.encode(), at: _clock.now());
+      await writeCredentialVoce(_db, credentialsKey(id), credentials.encode(), at: _clock.now());
       return added;
     });
     if (account == null) return const Err(CancelledFailure());
@@ -196,6 +211,7 @@ class AccountsService(
         return _lock.run(() async {
           if (!await _db.accountsDao.exists(account.id)) return const Err(NotFoundFailure());
           await OAuthTokens.of(value).write(_keychain, account.id);
+          await _writeOAuthVoce(account.id, account.provider, value);
           return const Ok(null);
         });
     }
@@ -246,9 +262,9 @@ class AccountsService(
     if (tokens != null && account.provider == ProviderKind.gmail) await _revoke.revoke(tokens.refresh);
     // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
     // that refuses one never leaves the other.
-    for (final delete in [OAuthTokens.delete, PasswordCredentials.delete]) {
+    for (final item in await credentialItems(_db, accountId)) {
       try {
-        await delete(_keychain, accountId);
+        await _keychain.delete(item);
       } on Object catch (e) {
         debugPrint('[accounts] $accountId: keychain delete failed, ${e.runtimeType}');
       }

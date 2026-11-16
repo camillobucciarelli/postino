@@ -89,6 +89,69 @@ void main() {
     await expectLater(revoked.auth.validTokens(), _throwsFailure<AuthFailure>());
   });
 
+  test('a refused refresh tries once the refresh token another device brought meanwhile (#321)', () async {
+    final keychain = gmailKeychain(validFor: Duration.zero);
+    final requests = <String>[];
+    final auth = OAuthAuth(
+      gmailAccount,
+      keychain,
+      MockClient((r) async {
+        requests.add(r.bodyFields['refresh_token']!);
+        // The voce from another device arrives while this refresh is in flight.
+        if (requests.length == 1) {
+          await OAuthTokens(access: 'a', refresh: '1//arrived', expiresAt: gmailNow).write(keychain, gmailAccount);
+          return gmailFixture('token_invalid_grant');
+        }
+        return gmailFixture('token_refresh');
+      }),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+
+    expect((await auth.validTokens()).access, 'ya29.refreshed');
+    expect(requests, ['1//refresh', '1//arrived']);
+    expect((await auth.tokens())!.refresh, '1//arrived');
+  });
+
+  test('a refresh token refused with nothing else in the keychain, or refused again, is an AuthFailure', () async {
+    final same = _auth(gmailKeychain(validFor: Duration.zero), token: 'token_invalid_grant');
+    await expectLater(same.auth.validTokens(), _throwsFailure<AuthFailure>());
+    expect(same.requests, hasLength(1));
+
+    // The one tried again is refused too: no further round.
+    final keychain = gmailKeychain(validFor: Duration.zero);
+    var n = 0;
+    final auth = OAuthAuth(
+      gmailAccount,
+      keychain,
+      MockClient((r) async {
+        await OAuthTokens(access: 'a', refresh: '1//other-${n++}', expiresAt: gmailNow).write(keychain, gmailAccount);
+        return gmailFixture('token_invalid_grant');
+      }),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+    await expectLater(auth.validTokens(), _throwsFailure<AuthFailure>());
+    expect(n, 2);
+  });
+
+  test('the scopes of a token saved without them are learnt at its refresh, then kept (#321)', () async {
+    final keychain = gmailKeychain(validFor: Duration.zero);
+    final t = _auth(keychain);
+    await t.auth.validTokens();
+    expect((await t.auth.tokens())!.scopes, ['https://mail.google.com/']);
+
+    const consented = ['https://mail.google.com/', 'openid', 'https://www.googleapis.com/auth/drive.appdata'];
+    await OAuthTokens(
+      access: 'a',
+      refresh: '1//refresh',
+      expiresAt: gmailNow,
+      scopes: consented,
+    ).write(keychain, gmailAccount);
+    await t.auth.validTokens();
+    expect((await t.auth.tokens())!.scopes, consented);
+  });
+
   test('authorized sends again with a refreshed token after a 401, once', () async {
     final t = _auth(gmailKeychain());
     final sent = <String>[];

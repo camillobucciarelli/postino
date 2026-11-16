@@ -92,4 +92,26 @@ void main() {
     // Without the close the login waits for ImapSession.timeout (2 minutes).
     await expectLater(run.timeout(const Duration(seconds: 10)), throwsA(isA<ImapFailed>()));
   });
+
+  test('a login refused tries once the password another device brought meanwhile, never more (#321)', () async {
+    await start((c) {
+      if (!c.startsWith('LOGIN')) return basics(c, capabilities: 'IMAP4rev1')!;
+      if (c.contains('arrived')) return ['OK LOGIN completed'];
+      // The voce from another device arrives while this login is refused.
+      unawaited(server.remember(keychain, _id, password: 'arrived'));
+      return ['NO [AUTHENTICATIONFAILED] Authentication failed'];
+    });
+    final session = ImapSession(_id, 'ada@example.org', keychain, connect: plainConnector);
+    expect(await session.run((_) async => 'ran'), 'ran');
+    expect(logins(), 2);
+
+    await start(
+      (c) => c.startsWith('LOGIN')
+          ? ['NO [AUTHENTICATIONFAILED] Authentication failed']
+          : basics(c, capabilities: 'IMAP4rev1')!,
+    );
+    final refused = ImapSession(_id, 'ada@example.org', keychain, connect: plainConnector);
+    await expectLater(refused.run((_) async => 'ran'), throwsA(isA<ImapFailed>()));
+    expect(logins(), 1);
+  });
 }

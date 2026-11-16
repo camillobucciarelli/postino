@@ -11,6 +11,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/mail_provider.dart';
 import 'package:postino/core/domain/mail_sync.dart';
+import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -208,6 +209,39 @@ void main() {
 
     expect(find.text('Le modifiche non ancora inviate al server vanno perse.'), findsOneWidget);
     expect(find.textContaining('revoca'), findsNothing);
+  });
+
+  testWidgets('with the sync on, «Rimuovi» says the Account goes from every paired device (#321)', (tester) async {
+    final h = await _start(tester);
+    await h.addAccount('imap1', provider: ProviderKind.imap);
+    await getIt<SettingsRepository>().setSettingsSyncAccount('a1');
+    await tester.pumpAndSettle();
+
+    // The Account di sincronizzazione, on Gmail: revoked at Google, and a device offline finds it da ricollegare.
+    await tester.tap(find.byKey(const ValueKey('settings-remove-account-a1')));
+    await _settle(tester);
+    expect(
+      find.text(
+        'Le modifiche non ancora inviate al server vanno perse.\n'
+        "L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.\n"
+        'Postino revoca anche il suo accesso a Gmail su Google.\n'
+        "È l'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e "
+        'andrà rimosso anche lì.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('settings-remove-account-imap1')));
+    await _settle(tester);
+    expect(
+      find.text(
+        'Le modifiche non ancora inviate al server vanno perse.\n'
+        "L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.",
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the same address with two Providers is two Accounts, each with its Provider for VoiceOver', (

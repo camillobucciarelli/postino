@@ -62,9 +62,14 @@ class PostinoSettingsDao(super.attachedDatabase)
     return true;
   });
 
-  /// Tombstones for every synced voce of [accountId], present here or not: the removal reaches every device.
+  /// Tombstones for every synced voce of [accountId], present here or not: the removal reaches every device. Its
+  /// OAuth voci, one per client, are those here; one not here yet goes as a tombstone with the next file written.
   Future<void> tombstoneAccount(String accountId, {required DateTime at}) => transaction(() async {
-    for (final key in accountSettingKeys(accountId)) {
+    final clients = [
+      for (final r in await readPrefixWithTombstones('${credentialsKey(accountId)}/'))
+        if (!r.deleted) r.key,
+    ];
+    for (final key in [...accountSettingKeys(accountId), ...clients]) {
       await write(key, null, at: at);
     }
   });

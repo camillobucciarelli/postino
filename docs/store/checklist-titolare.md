@@ -6,7 +6,7 @@ Azioni che solo il titolare può fare in App Store Connect (#326). Spuntare ogni
 
 - [x] #323, #324 e #325 unite; l'URL della pagina di supporto (#324) è in [scheda-it.md](scheda-it.md) e [scheda-en.md](scheda-en.md).
 - [ ] Account demo creato (vedi sotto) e provato in Postino, sul simulatore o su un dispositivo.
-- [ ] Screenshot prodotti secondo [screenshot.md](screenshot.md) e messi in `docs/store/screenshot/` (o caricati direttamente).
+- [ ] Screenshot Mac prodotti secondo [screenshot.md](screenshot.md) (iPhone e iPad già in `docs/store/screenshot/`) e controllati a occhio.
 
 ## Scheda e dati dell'app
 

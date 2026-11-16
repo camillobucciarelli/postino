@@ -17,12 +17,13 @@ cat > "$tmp/bin/curl" <<'FAKE'
 #!/bin/bash
 # Logs "<method> <url>" (and the JWT, the track body), answers as Google would; FAKE_DRAFT refuses a completed release
 # as on a draft app, FAKE_CODE is the versionCode Play reads, FAKE_FAIL fails that request.
+echo "$*" >> "$LOG.argv"
 method=GET url='' assertion='' body=''
 while [ $# -gt 0 ]; do
   case "$1" in
     -X) method=$2; shift ;;
     -H) [[ $2 == @* ]] && cp "${2#@}" "$LOG.auth"; shift ;;
-    --data-urlencode) [[ $2 == assertion=* ]] && assertion=${2#assertion=}; method=POST; shift ;;
+    --data-urlencode) [[ $2 == assertion@* ]] && assertion=$(cat "${2#assertion@}"); method=POST; shift ;;
     --data-binary) [ "$2" = @- ] && body=$(cat); shift ;;
     http*) url=$1 ;;
   esac
@@ -33,7 +34,7 @@ echo "$method ${url#http://play}" >> "$LOG"
 [ -n "$body" ] && echo "$body" >> "$LOG.body"
 [ "${FAKE_FAIL:-}" = "$method ${url#http://play}" ] && { echo '{"error":{"message":"boom"}}'; exit 22; }
 case "$url" in
-  */token) echo '{"access_token":"tok","expires_in":3599}' ;;
+  */token) echo '{"access_token":"ya29.secret-token","expires_in":3599}' ;;
   */bundles*) echo "{\"versionCode\":${FAKE_CODE:-1002003}}" ;;
   */tracks/*) if [ -n "${FAKE_DRAFT:-}" ] && [[ $body == *'"completed"'* ]]; then
       echo '{"error":{"code":400,"message":"Only releases with status draft may be created on draft app."}}'; exit 22
@@ -59,10 +60,12 @@ calls() { [ "$(cat "$tmp/log")" = "$(printf '%s\n' "$@")" ] || { echo "calls:"; 
 
 run 0
 calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/internal" "POST $e/e1:commit"
-grep -qx 'Authorization: Bearer tok' "$tmp/log.auth" || { echo "no bearer header"; exit 1; }
-grep -q '::add-mask::tok' "$tmp/out" || { echo "token not masked"; exit 1; }
+grep -qx 'Authorization: Bearer ya29.secret-token' "$tmp/log.auth" || { echo "no bearer header"; exit 1; }
+grep -q '::add-mask::ya29.secret-token' "$tmp/out" || { echo "token not masked"; exit 1; }
 jq -e '.track == "internal" and .releases == [{name: "1.2.3", versionCodes: ["1002003"], status: "completed"}]' \
   "$tmp/log.body" > /dev/null || { echo "track body: $(cat "$tmp/log.body")"; exit 1; }
+# No secret on a command line: neither the token nor the JWT (nor the key) in curl's arguments.
+! grep -qe ya29.secret-token -e "$(cut -c1-40 "$tmp/log.jwt")" -e PRIVATE "$tmp/log.argv" || { echo "secret in curl argv:"; cat "$tmp/log.argv"; exit 1; }
 # The JWT: header, claims, RS256 signature over "<header>.<claims>".
 unb64url() { local s; s=$(tr '_-' '/+' <<< "$1"); while [ $((${#s} % 4)) -ne 0 ]; do s="$s="; done; base64 -D <<< "$s"; }
 IFS=. read -r h c s < "$tmp/log.jwt"

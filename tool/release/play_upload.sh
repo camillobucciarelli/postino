@@ -49,10 +49,12 @@ request() {
   [ "$rc" -eq 0 ] || { echo "::error::Google Play API request failed (curl $rc): $(cat "$dir/response")" >&2; return 1; }
   cat "$dir/response"
 }
+# The signed JWT, the token and the key reach curl and openssl from files in $dir (mode 0600), never on a command
+# line, where `ps` on the shared runner would show them.
+printf '%s.%s' "$unsigned" "$signature" > "$dir/jwt"
 token=$(request --data-urlencode grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer \
-  --data-urlencode "assertion=$unsigned.$signature" "$token_url" | jq -er .access_token)
+  --data-urlencode assertion@"$dir/jwt" "$token_url" | jq -er .access_token)
 echo "::add-mask::$token"
-# The token reaches curl from a file, never on its command line.
 printf 'Authorization: Bearer %s\n' "$token" > "$dir/auth"
 play() { request -H @"$dir/auth" "$@"; }
 

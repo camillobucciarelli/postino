@@ -6,7 +6,7 @@ Risposte per la sezione **App Privacy** (etichetta nutrizionale) e per il **ques
 
 **Data Not Collected** («Non raccogliamo dati da quest'app»). **Tracking: No.** Nessun dominio di tracciamento, nessuna richiesta ATT (`NSUserTrackingUsageDescription` assente in `Info.plist`).
 
-Perché: Apple chiama «raccolta» il dato che lascia il dispositivo in modo che lo sviluppatore o un partner possano accedervi per più del tempo necessario a servire la richiesta in tempo reale. Postino non ha backend (ADR 0001): posta, credenziali, chiavi e log restano sul dispositivo; le uniche connessioni vanno ai Provider che l'utente stesso collega, a Drive dell'utente e al download del modello. Nessun SDK di analytics, pubblicità o crash reporting nelle dipendenze (`pubspec.yaml`); l'Observability (ADR 0013) è prevista «dalla v2» e **non è nel codice**.
+Perché: Apple chiama «raccolta» il dato che lascia il dispositivo in modo che lo sviluppatore o un partner possano accedervi per più del tempo necessario a servire la richiesta in tempo reale. Postino non ha backend (ADR 0001): posta, chiavi e log restano sul dispositivo; le credenziali anche, e con le Impostazioni sincronizzate ne va una copia nel file su Drive dell'utente, cifrato con una chiave che resta sui suoi dispositivi (ADR 0019), quindi illeggibile per lo sviluppatore. Le uniche connessioni vanno ai Provider che l'utente stesso collega, a Drive dell'utente e al download del modello. La fotocamera legge il QR dell'Abbinamento con il framework Vision di Apple, sul dispositivo: su iOS e macOS non c'è ML Kit. Nessun SDK di analytics, pubblicità o crash reporting nelle dipendenze (`pubspec.yaml`); l'Observability (ADR 0013) è prevista «dalla v2» e **non è nel codice**.
 
 ## 2. Voce per voce (le categorie di Apple)
 

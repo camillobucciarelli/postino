@@ -18,7 +18,7 @@ Materiale per la scheda di Postino (sullo Store «Postino Mail»; Francia esclus
 | Nome | 30 | 7 | 7 (sullo Store: «Postino Mail») |
 | Sottotitolo | 30 | 26 | 27 |
 | Testo promozionale | 170 | 170 | 149 |
-| Descrizione | 4000 | 3287 | 3142 |
+| Descrizione | 4000 | 3356 | 3197 |
 | Parole chiave | 100 | 99 | 98 |
 
 ## Affermazioni non verificate
@@ -30,7 +30,7 @@ Verificate nel codice: tutte le funzioni nominate nelle schede, tranne quanto se
 - **Modello da circa 165 MB**: vale per iOS, iPadOS e Mac Apple Silicon (formato `.litertlm`, ADR 0015); su Mac Intel il file è il GGUF da circa 310 MB. La scheda dice 165 MB.
 - **Etichettatura automatica**: il codice la offre solo dove l'Account ha Etichette vere (Gmail), non sulle cartelle IMAP e Microsoft (verifica di Codex su `AutoLabelsView`); le schede la limitano a Gmail.
 - **Tema scuro**: non menzionato perché non l'ho trovato nel codice.
-- **Impostazioni su Drive**: la scheda e le note dicono che passano solo impostazioni, mai password. L'ADR 0019 (accettato il 15/11/2026) prevede di portare anche le credenziali, cifrate; non è ancora nel codice né nell'informativa. **Se l'ADR 0019 viene implementato prima della pubblicazione, riscrivere** «Mai la posta, mai le password» nelle schede e nelle note, e aggiornare l'informativa.
+- **Impostazioni su Drive**: con #321 (ADR 0019) il file su Drive porta anche le credenziali degli Account, tutto cifrato con una chiave che resta sui dispositivi. Schede, note e informativa lo dicono dal 16/11/2026 (#348); su App Store Connect descrizione e note di revisione si aggiornano con la prossima versione inviata.
 - **Fascia d'età**: calcolata da Apple al salvataggio, non prevedibile con certezza.
 - **Funzioni che non esistono e quindi non compaiono**: Posticipa, Sessione di smistamento, Regole, PGP/S-MIME, Inviti. Sono nel glossario ma non nel codice.
 - **Prezzo**: non indicato nelle schede; il titolare ha scelto gratis (16/11/2026).

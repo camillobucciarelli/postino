@@ -54,7 +54,7 @@ ON IPHONE, IPAD AND MAC
 On iPad and Mac the sidebar, the list and the conversation sit side by side, and you can move around with the keyboard: arrows, compose, reply, archive, search. On Mac, Postino has its own icon in the menu bar.
 
 SETTINGS ON ALL YOUR DEVICES
-If you turn it on, Postino keeps your connected accounts, colors, swipe actions and automatic labels in sync across your devices, in a space reserved for the app in your own Google Drive. Never your mail, never your passwords.
+If you turn it on, Postino keeps your connected accounts with their credentials, colors, swipe actions and automatic labels in sync across your devices, in a space reserved for the app in your own Google Drive. All encrypted, with a key that stays on your devices. Never your mail.
 
 IF SOMETHING GOES WRONG
 "Report a problem" prepares an email with the error log: you read it and decide whether to send it. Postino never sends anything by itself.

@@ -211,7 +211,7 @@
     "syncSection": "Sincronizzazione",
     "syncTitle": "Sincronizza su…",
     "syncNone": "Nessuno",
-    "syncBody": "Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.",
+    "syncBody": "Le Impostazioni di Postino (per esempio le Etichette automatiche) e le credenziali degli Account vengono salvate cifrate in un file nascosto nel Google Drive dell'Account scelto. La chiave resta sui tuoi dispositivi. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.",
     "syncChooserTitle": "Sincronizza le Impostazioni su",
     "syncCancel": "Annulla",
     "syncBusy": "Accesso a Drive in corso…",

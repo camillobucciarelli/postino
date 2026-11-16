@@ -54,7 +54,7 @@ SU IPHONE, IPAD E MAC
 Su iPad e Mac la barra laterale, la lista e la conversazione stanno affiancate, e puoi muoverti con la tastiera: frecce, scrivi, rispondi, archivia, cerca. Su Mac Postino ha la sua icona nella barra dei menu.
 
 IMPOSTAZIONI SU TUTTI I DISPOSITIVI
-Se lo attivi, Postino tiene allineati tra i tuoi dispositivi gli Account collegati, i colori, le Azioni a scorrimento e le Etichette automatiche, in uno spazio riservato all'app nel tuo Google Drive. Mai la posta, mai le password.
+Se lo attivi, Postino tiene allineati tra i tuoi dispositivi gli Account collegati con le loro credenziali, i colori, le Azioni a scorrimento e le Etichette automatiche, in uno spazio riservato all'app nel tuo Google Drive. Tutto cifrato, con una chiave che resta sui tuoi dispositivi. Mai la posta.
 
 SE QUALCOSA NON VA
 «Segnala un problema» prepara un'email con il log degli errori: la rileggi e decidi tu se inviarla. Postino non invia nulla da solo.

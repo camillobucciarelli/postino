@@ -82,6 +82,7 @@ jobs:
       - run: tool/release/store_bundle_check_test.sh
       - run: tool/release/profile_check_test.sh
       - run: tool/release/verify_store_test.sh
+      - run: tool/release/readable_check_test.sh
       - run: tool/release/keychain_create_test.sh
       - run: tool/ci/approval_test.sh
       - run: tool/ci/codex_ok_test.sh

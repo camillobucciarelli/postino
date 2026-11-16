@@ -29,7 +29,8 @@ done
   -c 'Add :keychain-access-groups array' \
   -c "Add :keychain-access-groups:0 string $app_id" \
   "$entitlements"
-cp "$profile" "$app/Contents/embedded.provisionprofile"
+# release.yml writes the profile with umask 077: cp would keep its 600 mode, root-only once the .pkg installs it (#340).
+install -m 644 "$profile" "$app/Contents/embedded.provisionprofile"
 
 # -depth lists children before their parents, the order codesign needs. Sparkle (#122) adds XPC services, an
 # Updater.app and the bare Autoupdate executable. Nested code gets no entitlements: Autoupdate ships with an

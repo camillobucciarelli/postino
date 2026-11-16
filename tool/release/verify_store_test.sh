@@ -9,6 +9,9 @@ trap 'rm -rf "$tmp"' EXIT
 mkdir "$tmp/bin" "$tmp/release"
 cp "$src/verify_store.sh" "$tmp/release/"
 for stub in store_bundle_check.sh profile_check.sh; do printf '#!/bin/bash\nexit 0\n' > "$tmp/release/$stub"; done
+# Fails on demand, to prove verify_store.sh runs it (#340).
+printf '#!/bin/bash\n[ -z "$FAKE_UNREADABLE" ] || { echo "::error::Not readable by everyone" >&2; exit 1; }\n' \
+  > "$tmp/release/readable_check.sh"
 cat > "$tmp/bin/codesign" <<'FAKE'
 #!/bin/bash
 case "$*" in
@@ -44,4 +47,5 @@ fails "Developer ID app" 'not Apple Distribution' "Developer ID Application: Som
 fails "Developer ID installer" 'not the Mac Installer' "$dist" "Developer ID Installer: Someone (TEAM)"
 fails "unsigned pkg" 'is not signed' "$dist" ''
 fails "get-task-allow" 'get-task-allow' "$dist" "$installer" '<key>com.apple.security.get-task-allow</key><true/>'
+FAKE_UNREADABLE=1 fails "a file only root could read" 'Not readable by everyone' "$dist" "$installer"
 echo "verify_store.sh ok"

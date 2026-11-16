@@ -1,0 +1,1 @@
+Screenshot dello Store con posta finta (GreenMail locale, `server.sh` + `seed.py`) e il driver `integration_test/store_screenshots_test.dart` lanciato da `shots.sh`, che toglie l'alfa con `opaque.swift`: procedura in [docs/store/screenshot.md](../../docs/store/screenshot.md).

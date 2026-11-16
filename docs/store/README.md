@@ -8,7 +8,7 @@ Materiale per la scheda di Postino (sullo Store «Postino Mail»; Francia esclus
 | [scheda-en.md](scheda-en.md) | Lo stesso in inglese |
 | [note-revisione.md](note-revisione.md) | Note per il revisore Apple (inglese): account demo, Gmail non verificato, IA sul dispositivo, Drive, nessun account Postino |
 | [app-privacy.md](app-privacy.md) | Risposte per l'etichetta App Privacy e per il questionario sull'età |
-| [screenshot.md](screenshot.md) | Elenco delle schermate e risoluzioni; stato: da produrre |
+| [screenshot.md](screenshot.md) | Elenco delle schermate e risoluzioni; stato: iPhone e iPad pronti (it, en), Mac da produrre |
 | [checklist-titolare.md](checklist-titolare.md) | Azioni manuali in App Store Connect |
 
 ## Limiti di lunghezza (caratteri)

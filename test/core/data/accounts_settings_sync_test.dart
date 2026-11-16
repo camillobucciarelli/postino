@@ -12,6 +12,7 @@ import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/settings_sync.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
@@ -30,9 +31,12 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock) {
     clock,
     FakeConnectivity(),
     keysWith(testSyncKey),
+    keychain,
+    lock,
     backendFor: (_) => backend,
   );
-  late final mirror = AccountsSettingsMirror(db, MailStore(db), keychain, settings, AccountsLock(), FakeAttachments());
+  final lock = AccountsLock();
+  late final mirror = AccountsSettingsMirror(db, MailStore(db), keychain, settings, lock, FakeAttachments());
 
   Future<void> start() async {
     await settings.setSettingsSyncAccount('a1');
@@ -197,7 +201,16 @@ void main() {
       final db = getIt<PostinoDatabase>();
       final settings = DeviceSettingsStore(db);
       await settings.setSettingsSyncAccount('gmail:ada@gmail.com');
-      return SettingsSync(db, settings, h.clock, h.connectivity, keysWith(testSyncKey), backendFor: (_) => file);
+      return SettingsSync(
+        db,
+        settings,
+        h.clock,
+        h.connectivity,
+        keysWith(testSyncKey),
+        getIt<SecureStore>(),
+        getIt<AccountsLock>(),
+        backendFor: (_) => file,
+      );
     }
 
     test('its first Account, connected before the sync is on, takes the synced color and position', () async {
@@ -300,6 +313,8 @@ void main() {
         h.clock,
         h.connectivity,
         keysWith(testSyncKey),
+        getIt<SecureStore>(),
+        getIt<AccountsLock>(),
         backendFor: (_) => file,
       ),
     );

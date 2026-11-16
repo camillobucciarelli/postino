@@ -24,6 +24,7 @@ import 'mail_store.dart';
 import 'oauth/oauth_tokens.dart';
 import 'postino_database.dart';
 import 'settings_sync.dart';
+import 'sync/credential_voci.dart';
 import 'sync_engine.dart';
 
 /// How long the removal of the Account di sincronizzazione waits for its tombstones to reach Drive.
@@ -118,8 +119,8 @@ class AccountsService(
     final known = (await _store.accounts()).where((a) => a.id == id).firstOrNull;
     // The same address through another Provider is another Account (ADR 0016): only this one, attivo, is refused.
     if (known?.status == AccountStatus.attivo) return const Err(AlreadyConnectedFailure());
-    // A reconnection keeps the servers the Account was saved with; one arrived from another device has none here
-    // (they are not in the synced voce, ADR 0016), so the preset or the discovery finds them.
+    // A reconnection keeps the servers the Account was saved with, here or in the credentials from another device
+    // (ADR 0019); an Account arrived without them has none, so the preset or the discovery finds them.
     final saved = known == null ? null : (await PasswordCredentials.read(_keychain, id))?.servers;
     final chosen = servers ?? saved ?? provider.preset ?? await _discovery.discover(normalized);
     if (chosen == null) return const Err(ServerNotFoundFailure());
@@ -139,8 +140,12 @@ class AccountsService(
     final account = await _lock.run(() async {
       // Closed, or the Account removed here, while waiting for the lock: still nothing written.
       if (cancelled || _removalsStarted[id] != removals) return null;
-      await PasswordCredentials(password: password, servers: chosen).write(_keychain, id);
-      return _save(id, normalized, provider.kind);
+      final credentials = PasswordCredentials(password: password, servers: chosen);
+      await credentials.write(_keychain, id);
+      final added = await _save(id, normalized, provider.kind);
+      // Stamped now even with the sync off: a password just checked wins over an older copy elsewhere (ADR 0019).
+      await writeCredentialVoce(_db, id, credentials.encode(), at: _clock.now());
+      return added;
     });
     if (account == null) return const Err(CancelledFailure());
     unawaited(_sync.syncAll());

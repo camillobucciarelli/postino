@@ -5,6 +5,7 @@ import '../../domain/settings_entry.dart';
 import '../../domain/settings_merge.dart';
 import '../../domain/synced_settings.dart';
 import '../postino_database.dart';
+import 'credential_voci.dart';
 import 'remote_settings.dart';
 import 'settings_envelope.dart';
 import 'sync_key.dart';
@@ -12,7 +13,8 @@ import 'sync_key_store.dart';
 
 /// One exchange with the file of the Impostazioni on Drive (ADR 0016), sealed with the Chiave di sincronizzazione
 /// (ADR 0019): the backend moves only sealed text and never sees the key. `SettingsSync` runs them one at a time.
-class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
+/// The credentials of iCloud and IMAP travel in it, swapped for their fingerprints here ([CredentialVoci]).
+class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, final CredentialVoci _credentials) {
   /// Reads the file, merges, applies here the remote copies that won, writes the file sealed if it changed and its
   /// version allows it, then marks clean what was uploaded; the [Failure] that stopped it, if one did.
   ///
@@ -20,6 +22,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
   /// held here is neither applied nor written ([SyncNotPairedFailure], [SyncKeyInvalidFailure]). With [regenerate]
   /// («Rigenera la chiave») a new key seals it anyway: merged first when it reads, else overwritten with the voci here.
   Future<Failure?> cycle(SettingsBackend backend, {required bool regenerate}) async {
+    await _credentials.backfill();
     final local = {
       for (final e in await _db.postinoSettingsDao.entries())
         if (isSyncedSetting(e.key)) e.key: e,
@@ -69,18 +72,45 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
     // A newer Postino's file is never overwritten, not even by a new key: the regeneration fails, never seems done.
     if (regenerate && !remote.writable) return const UnexpectedFailure('file from a newer Postino: update it');
 
-    final merged = mergeSettings(local, remote.entries);
+    // From here the voci of credentials hold fingerprints; their secrets are only in [secrets] and the keychain.
+    final (:entries, :secrets) = CredentialVoci.hide(remote.entries);
+    final merged = mergeSettings(local, entries);
     // Voci outside the closed list (a newer Postino's) stay in the file but never come here.
-    await _db.postinoSettingsDao.applyRemote([
+    final won = [
       for (final e in merged.values)
         if (isSyncedSetting(e.key) && local[e.key] != e) e,
+    ];
+    await _credentials.arrive(
+      [
+        for (final e in won)
+          if (isPasswordCredentialSetting(e.key)) e,
+      ],
+      secrets,
+      merged,
+    );
+    await _db.postinoSettingsDao.applyRemote([
+      for (final e in won)
+        if (!isPasswordCredentialSetting(e.key)) e,
     ]);
     // A newer Postino's file is never overwritten: the voci here stay dirty until this one is updated, and the cycle
     // is not a success while they wait (#317).
     if (!remote.writable) {
-      return _same(merged, remote.entries) ? null : const UnexpectedFailure('file from a newer Postino: update it');
+      return _same(merged, entries) ? null : const UnexpectedFailure('file from a newer Postino: update it');
     }
-    if (rewrite || !_same(merged, remote.entries)) {
+    final withheld = <String>{};
+    if (rewrite || !_same(merged, entries)) {
+      final sealed = <SettingsEntry>[];
+      for (final e in merged.values) {
+        if (!isPasswordCredentialSetting(e.key) || e.deleted) {
+          sealed.add(e);
+        } else if (await _credentials.reveal(e, secrets) case final secret?) {
+          sealed.add(SettingsEntry(key: e.key, value: secret, updatedAt: e.updatedAt, deviceId: e.deviceId));
+        } else {
+          // The copy already in the file stays as it was, secret and all.
+          withheld.add(e.key);
+          if (remote.entries[e.key] case final old?) sealed.add(old);
+        }
+      }
       final sealWith = regenerate || key == null ? SyncKey.random() : key;
       // A first key is kept before the write: a write that fails leaves this device with the key the next cycle
       // reuses on a file still absent or in clear. A regenerated one waits as pending, and replaces the key only after
@@ -90,7 +120,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
       } else if (key == null) {
         await _keys.write(sealWith);
       }
-      if (await backend.write(sealSettings(encodeSettings(merged.values), sealWith)) case Err(:final failure)) {
+      if (await backend.write(sealSettings(encodeSettings(sealed), sealWith)) case Err(:final failure)) {
         return failure;
       }
       if (regenerate) {
@@ -103,7 +133,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
     }
     await _db.postinoSettingsDao.markClean([
       for (final e in local.values)
-        if (merged[e.key] == e) e,
+        if (merged[e.key] == e && !withheld.contains(e.key)) e,
     ]);
     return null;
   }

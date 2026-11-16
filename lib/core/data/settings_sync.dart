@@ -9,7 +9,9 @@ import '../domain/settings_backend.dart';
 import '../domain/settings_repository.dart';
 import '../domain/settings_sync_control.dart';
 import '../domain/sync_status.dart';
+import 'accounts_lock.dart';
 import 'postino_database.dart';
+import 'sync/credential_voci.dart';
 import 'sync/settings_backend_factory.dart';
 import 'sync/settings_exchange.dart';
 import 'sync/sync_key.dart';
@@ -34,12 +36,14 @@ class SettingsSync(
   final SettingsRepository _settings,
   final Clock _clock,
   final Connectivity _connectivity,
-  final SyncKeyStore _keys, {
+  final SyncKeyStore _keys,
+  final SecureStore _keychain,
+  final AccountsLock _lock, {
   @ignoreParam final SettingsBackend Function(String accountId) _backendFor = settingsBackendFor,
   @ignoreParam final Duration _stopWait = const Duration(seconds: 5),
 }) implements SettingsSyncControl {
   late final _status = SyncStatusBoard(_clock);
-  late final _exchange = SettingsExchange(_db, _keys);
+  late final _exchange = SettingsExchange(_db, _keys, CredentialVoci(_db, _keychain, _lock));
   final _subs = <StreamSubscription<Object?>>[];
   StreamSubscription<void>? _debounce;
 

@@ -24,6 +24,12 @@ class PostinoSettingsDao(super.attachedDatabase)
   /// The row of [key]; null when missing or removed.
   Future<PostinoSettingRow?> readRow(String key) => _live(key).getSingleOrNull();
 
+  /// The voce [key], tombstone included; null when it has no row.
+  Future<SettingsEntry?> entry(String key) async => switch (await _row(key)) {
+    final r? => _entry(r),
+    null => null,
+  };
+
   /// The live voci whose key starts with [prefix], now and after each change.
   Stream<List<PostinoSettingRow>> watchPrefix(String prefix) =>
       (_prefix(prefix)..where((t) => t.deleted.not())).watch();

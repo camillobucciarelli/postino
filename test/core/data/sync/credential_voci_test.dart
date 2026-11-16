@@ -334,6 +334,19 @@ void main() {
     },
   );
 
+  test('only iCloud and IMAP Accounts get a credentials voce from the keychain', () async {
+    final a = await device();
+    const gmail = 'gmail:bob@gmail.com';
+    await a.db.accountsDao.upsert(
+      const Account(id: gmail, address: 'bob@gmail.com', provider: ProviderKind.gmail, color: 0, position: 1),
+    );
+    await a.keychain.write(PasswordCredentials.keychainKey(gmail), _credentials('pw-g').encode());
+    await a.connect('pw-one', voce: false);
+    await a.syncNow();
+    expect(await a.db.postinoSettingsDao.entry('credentials/$gmail'), isNull);
+    expect(await a.db.postinoSettingsDao.entry(_key), isNotNull);
+  });
+
   test('a locked keychain never stops the rest of the Impostazioni', () async {
     final a = await device();
     await a.connect('pw-one', voce: false);

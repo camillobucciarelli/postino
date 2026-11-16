@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   export:
-    # The script and the pinned PEPK hash as reviewed on main, not as on some branch.
+    # Against mistakes, not a boundary: a dispatch runs the workflow file of its own ref, so a branch could drop this.
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 15

@@ -15,14 +15,20 @@ openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 2> /dev/null | open
 zip=$tmp/out.zip
 
 run() { ANDROID_KEYSTORE_PASSWORD=$1 ANDROID_KEY_PASSWORD=$1 "$script" "$tmp/ks.p12" up "$2" "$zip" "${3:-$tmp/pub.pem}" > "$tmp/log" 2>&1; }
-fails() { if run "$@"; then echo "should fail: $*"; exit 1; fi; test ! -e "$zip" || { echo "ZIP left behind: $*"; exit 1; }; }
+# fails <why> <run args>: the run fails with <why> in its output and leaves no ZIP.
+fails() {
+  local why=$1; shift
+  if run "$@"; then echo "should fail: $*"; exit 1; fi
+  grep -q "$why" "$tmp/log" || { cat "$tmp/log"; echo "no '$why': $*"; exit 1; }
+  test ! -e "$zip" || { echo "ZIP left behind: $*"; exit 1; }
+}
 
 run "$pw" "$cert" || { cat "$tmp/log"; echo "should pass"; exit 1; }
 unzip -l "$zip" encryptedPrivateKey certificate.pem > /dev/null || { echo "ZIP misses an entry"; exit 1; }
 ! grep -q "$pw" "$tmp/log" || { echo "password in the output"; exit 1; }
 run "$pw" "$(tr '[:upper:]' '[:lower:]' <<< "$cert")" || { echo "lowercase fingerprint should pass"; exit 1; }
-fails "$pw" 47:03:4A:D7
-fails wrong-password "$cert"
+fails "certificate SHA-256" "$pw" 47:03:4A:D7
+fails "password was incorrect" wrong-password "$cert"
 ! grep -q wrong-password "$tmp/log" || { echo "wrong password in the output"; exit 1; }
-fails "$pw" "$cert" "$tmp/ks.p12"
+fails "is not a public key" "$pw" "$cert" "$tmp/ks.p12"
 echo "play_key_export.sh ok"

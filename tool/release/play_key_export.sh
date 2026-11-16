@@ -9,16 +9,18 @@
 # so expect types them at its prompts on a pseudo-terminal: Java turns echo off before prompting.
 set -euo pipefail
 : "${ANDROID_KEYSTORE_PASSWORD:?}" "${ANDROID_KEY_PASSWORD:?}"
-keystore=$1 alias=$2 want=$3 out=$4
+usage="usage: play_key_export.sh <keystore> <alias> <cert SHA-256> <output.zip> [public key PEM]"
+keystore=${1:?$usage} alias=${2:?$usage} want=${3:?$usage} out=${4:?$usage}
 encryption_key=${5:-$(cd "$(dirname "$0")" && pwd)/play_encryption_public_key.pem}
 
-# The jar the Play Console links to (sources: pepk-src.jar, same folder). Unsigned: the hash is the only check.
+# The jar the Play Console links to (sources: pepk-src.jar, same folder). Unsigned: the hash is the only check. The URL
+# carries no version: a mismatch means Google republished it, so vet the new jar and its sources before re-pinning.
 pepk_url=https://www.gstatic.com/play-apps-publisher-rapid/signing-tool/prod/pepk.jar
 pepk_sha256=aaccc0774b240aa5304bdad2a49865e92f229ca73209ecb6eaafe75dc858e24e
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/pepk.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
-curl -fsS --proto '=https' -o "$tmp/pepk.jar" "$pepk_url"
+curl -fsS --proto '=https' --retry 3 --max-time 120 -o "$tmp/pepk.jar" "$pepk_url"
 echo "$pepk_sha256  $tmp/pepk.jar" | shasum -a 256 -c --status \
   || { echo "::error::pepk.jar does not match the pinned SHA-256" >&2; exit 1; }
 openssl pkey -pubin -in "$encryption_key" -noout \

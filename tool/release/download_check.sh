@@ -63,7 +63,8 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
         for u in "${external[@]}"; do
           [ "$u" != "${u#https://"$host"/}" ] || continue
           allowed=1
-          links=$((links + $(grep -oE "<a( class=\"[a-z]+\")? href=\"$u\" rel=\"noopener noreferrer\"" "$1" | wc -l)))
+          # No match is 0 links, not a grep failure under pipefail.
+          links=$((links + $({ grep -oE "<a( class=\"[a-z]+\")? href=\"$u\" rel=\"noopener noreferrer\"" "$1" || true; } | wc -l)))
         done
         [ "$allowed" = 1 ] || fail "$1: names the host $host"
         [ "$allowed" = 0 ] || [ "$(grep -oE '="[^"]*"' "$1" | grep -c "//$host" || true)" = "$links" ] ||

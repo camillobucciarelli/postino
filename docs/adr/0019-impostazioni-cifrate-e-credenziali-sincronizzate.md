@@ -218,6 +218,13 @@ Il proprietario ha approvato i default proposti:
 - **Nessuna revoca Microsoft alla rimozione.** Come oggi: la catena del token condiviso resta valida fino alla sua scadenza (90 giorni senza uso).
 - **Schermata di Abbinamento.** Si chiude dopo 2 minuti.
 
+## Precisazioni dall'implementazione (#321, fetta 1)
+
+- **«Rigenera la chiave» e i Postino più nuovi.** Non sovrascrive mai un file scritto da un Postino più nuovo (`postinoEncrypted` o `schemaVersion` più alti): l'utente aggiorna Postino.
+- **Quando nasce la chiave.** Si genera solo quando c'è qualcosa da scrivere. La prima chiave si salva prima della scrittura del file. Una chiave rigenerata si salva solo dopo una scrittura riuscita, così una scrittura fallita lascia il dispositivo con la chiave del file.
+- **Copie doppie sigillate con un'altra chiave.** Un dispositivo con una chiave le scarta. Un dispositivo senza chiave non genera nulla e resta Non abbinato finché non si abbina.
+- **Schema v3.** Per ora `credentials/` non entra nell'elenco chiuso: ci entra con le fette che portano le credenziali. Le sue voci restano nel file e non arrivano nel database.
+
 ## Da verificare in QA
 
 1. **Token Microsoft tra piattaforme e Accesso condizionale.** Il client Microsoft è lo stesso su tutte le piattaforme, ma i redirect URI cambiano (schema `msal…` su iOS, Android e macOS; loopback su Windows e Linux). La documentazione dice che il token è legato a utente e client: che un token emesso con un redirect si rinnovi su un altro dispositivo va confermato. Per gli Account Microsoft 365 di lavoro o scuola, l'Accesso condizionale dell'organizzazione (conformità del dispositivo, protezione dei token) può rifiutare un token usato da un altro dispositivo: il comportamento previsto è «da ricollegare» su quel dispositivo.

@@ -19,6 +19,27 @@ Future<MailStore> _store() async {
 }
 
 void main() {
+  test(
+    'settledMessage: the stored message as the Provider said it, unless a queued Azione overlays it (#322)',
+    () async {
+      final store = await _store();
+      await store.applySync(
+        'a',
+        SyncBatch(
+          cursor: '1',
+          messages: [
+            msg('1', labelIds: ['INBOX', 'UNREAD']),
+            msg('2'),
+          ],
+        ),
+      );
+      expect(await store.settledMessage('a', '1'), msg('1', labelIds: ['INBOX', 'UNREAD']));
+      expect(await store.settledMessage('a', 'x'), isNull);
+      await store.queue('a', ['2'], const MarkRead());
+      expect(await store.settledMessage('a', '2'), isNull);
+    },
+  );
+
   test('a sync result for an Account removed meanwhile writes nothing', () async {
     final db = PostinoDatabase.inMemory();
     addTearDown(db.close);

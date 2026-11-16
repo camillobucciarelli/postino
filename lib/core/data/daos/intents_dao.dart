@@ -179,6 +179,15 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
     }
   });
 
+  /// True when the message has a queued voce or an open Conflitto: what is stored for it is not the Provider's state.
+  Future<bool> touches(String accountId, String messageId) async =>
+      await customSelect(
+        'SELECT 1 FROM intents WHERE account_id = ?1 AND message_id = ?2 '
+        'UNION ALL SELECT 1 FROM conflicts WHERE account_id = ?1 AND message_id = ?2 LIMIT 1',
+        variables: [Variable(accountId), Variable(messageId)],
+      ).getSingleOrNull() !=
+      null;
+
   /// True when the message has an Etichetta dell'utente: one of the Account's labels (system ones are not there).
   Future<bool> hasUserLabel(String accountId, String messageId) async =>
       await customSelect(

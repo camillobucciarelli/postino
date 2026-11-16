@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/sync/outbox_sender.dart';
@@ -119,11 +121,49 @@ void main() {
     await GetIt.I<SyncEngine>().syncAll();
     a
       ..deliver(msg('1'))
+      ..deferredIds = ['1', '2']
       ..deferred = const OfflineFailure(detail: 'GET messages/*: no answer', stalled: true);
     await GetIt.I<SyncEngine>().syncAll();
     expect(
       await h.errorLog.read(),
-      contains('[sync gmail, messaggi rimandati] OfflineFailure(GET messages/*: no answer)'),
+      contains('[sync gmail, 2 messaggi rimandati] OfflineFailure(GET messages/*: no answer)'),
     );
+  });
+
+  group('what makes a slow Gmail sync visible (#322)', () {
+    test('a sync over the threshold is logged with its duration, never one under it', () async {
+      final engine = GetIt.I<SyncEngine>();
+      a.hold = Completer<void>();
+      var sync = engine.syncAll();
+      await pumpEventQueue();
+      h.clock.advance(const Duration(seconds: 10));
+      a.hold!.complete();
+      await sync;
+      expect(await h.errorLog.read(), isEmpty);
+
+      a.hold = Completer<void>();
+      sync = engine.syncAll();
+      await pumpEventQueue();
+      h.clock.advance(const Duration(seconds: 45));
+      a.hold!.complete();
+      await sync;
+      expect(await h.errorLog.read(), contains('[sync gmail, lenta] 45 s'));
+    });
+
+    test('a rate limit pause is logged when it starts and when it ends', () async {
+      final engine = GetIt.I<SyncEngine>();
+      a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));
+      await engine.syncAll();
+      final started = await h.errorLog.read();
+      expect(started, contains('[sync gmail, pausa rate limit] inizio'));
+      expect(started, isNot(contains('fine')));
+
+      a.rateLimit(on: false);
+      await engine.syncAll();
+      expect(await h.errorLog.read(), isNot(contains('fine')), reason: 'still paused');
+      h.clock.advance(const Duration(minutes: 6));
+      await engine.syncAll();
+      expect(await h.errorLog.read(), contains('[sync gmail, pausa rate limit] fine'));
+    });
   });
 }

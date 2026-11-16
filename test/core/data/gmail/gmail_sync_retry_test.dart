@@ -187,20 +187,18 @@ void main() {
     expect(await g.provider.incrementalSync('100'), isErr<OfflineFailure>());
   });
 
-  test('a message waiting for its retry is not fetched when the history touches it again', () async {
+  test('a message waiting for its retry is retried at once when the history touches it again (#322)', () async {
     final g = _Mailbox(['a', 'b'])..broken['b'] = 'stall';
     final first = okValue(await g.provider.incrementalSync('100'));
     g
       ..ids.clear()
       ..touched.add('b')
-      ..fetched.clear();
+      ..fetched.clear()
+      ..broken.clear();
     final next = okValue(await g.provider.incrementalSync(first.cursor));
-    expect(g.fetched, isEmpty, reason: 'its backoff holds');
-    g
-      ..touched.clear()
-      ..clock.advance(const Duration(minutes: 1));
-    okValue(await g.provider.incrementalSync(next.cursor));
-    expect(g.fetched, ['b'], reason: 'still retried once due');
+    expect(g.fetched, ['b'], reason: 'its backoff does not hold');
+    expect(_ids(next), ['b']);
+    expect(next.cursor, '200');
   });
 
   test('a message failing again says why only the first time: the log is not filled every hour', () async {

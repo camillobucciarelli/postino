@@ -10,7 +10,7 @@ Azioni che solo il titolare può fare in App Store Connect (#326). Spuntare ogni
 
 ## Scheda e dati dell'app
 
-- [x] **Nuova app** (fatto: «Postino Mail», ID Apple 6831333983): nome `Postino`, lingua principale Italiano, bundle ID uguale per iOS e macOS (acquisto universale, #325), SKU a scelta. Se il nome è già preso, scegliere una variante e allineare scheda e sottotitolo.
+- [x] **Nuova app** (fatto: «Postino Mail», ID Apple 6831333983): nome `Postino`, lingua principale Italiano, bundle ID uguale per iOS e macOS (acquisto universale, #325), SKU a scelta. Il nome sullo Store è «Postino Mail».
 - [x] Incollare la scheda **italiana** e quella **inglese** (nome, sottotitolo, testo promozionale, descrizione, parole chiave) da [scheda-it.md](scheda-it.md) e [scheda-en.md](scheda-en.md); URL di supporto, marketing e informativa privacy; copyright; categoria **Produttività**.
 - [ ] Caricare gli screenshot iPhone 6.9", iPad 13" e Mac, per ogni lingua.
 - [x] **App Privacy** (pubblicata come «Dati non raccolti»): rispondere come in [app-privacy.md](app-privacy.md), compresa la scelta sulla Segnalazione di un problema; l'esito deve coincidere con `PrivacyInfo.xcprivacy`.

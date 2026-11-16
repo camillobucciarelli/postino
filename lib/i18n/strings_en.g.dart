@@ -375,7 +375,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get syncSection => 'Sync';
 	@override String get syncTitle => 'Sync to…';
 	@override String get syncNone => 'None';
-	@override String get syncBody => 'Postino\'s settings (for example the automatic labels) are saved encrypted in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.';
+	@override String get syncBody => 'Postino\'s settings (for example the automatic labels) and the Accounts\' credentials are saved encrypted in a hidden file in the Google Drive of the Account you choose. The key stays on your devices. Postino asks Google for access to that hidden Drive space, not to your files.';
 	@override String get syncChooserTitle => 'Sync settings to';
 	@override String get syncCancel => 'Cancel';
 	@override String get syncBusy => 'Connecting to Drive…';
@@ -923,7 +923,7 @@ extension on TranslationsEn {
 			'impostazioni.syncSection' => 'Sync',
 			'impostazioni.syncTitle' => 'Sync to…',
 			'impostazioni.syncNone' => 'None',
-			'impostazioni.syncBody' => 'Postino\'s settings (for example the automatic labels) are saved encrypted in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.',
+			'impostazioni.syncBody' => 'Postino\'s settings (for example the automatic labels) and the Accounts\' credentials are saved encrypted in a hidden file in the Google Drive of the Account you choose. The key stays on your devices. Postino asks Google for access to that hidden Drive space, not to your files.',
 			'impostazioni.syncChooserTitle' => 'Sync settings to',
 			'impostazioni.syncCancel' => 'Cancel',
 			'impostazioni.syncBusy' => 'Connecting to Drive…',

@@ -21,8 +21,10 @@ ok=1
 fail() { echo "$1"; ok=0; }
 has() { grep -qF -- "$2" "$1" || fail "$1: missing $2"; }
 bmc='href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"'
-# The external links the site may have: Buy me a coffee, Google's policy for the Limited Use statement and Cloudflare's privacy policy.
-external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.com/terms/api-services-user-data-policy https://www.cloudflare.com/privacypolicy/)
+# The external links the site may have: Buy me a coffee, Google's policy for the Limited Use statement, ML Kit's data
+# disclosure (the QR scanner on Android) and Cloudflare's privacy policy.
+external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.com/terms/api-services-user-data-policy
+  https://developers.google.com/ml-kit/android-data-disclosure https://www.cloudflare.com/privacypolicy/)
 
 page() { # <file> <lang> <twin's lang> <twin, relative> <site root, relative>
   has "$dir/$1" "<html lang=\"$2\">"
@@ -56,21 +58,24 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
     case $host in
       "$site") ;;
       *)
-        local allowed=0 u
+        # Every attribute naming the host is one of the allowed links to it (two on developers.google.com).
+        local allowed=0 links=0 u
         for u in "${external[@]}"; do
           [ "$u" != "${u#https://"$host"/}" ] || continue
           allowed=1
-          [ "$(grep -oE '="[^"]*"' "$1" | grep -c "//$host" || true)" = \
-            "$(grep -oE "<a( class=\"[a-z]+\")? href=\"$u\" rel=\"noopener noreferrer\"" "$1" | wc -l | tr -d ' ')" ] ||
-            fail "$1: $host other than as a link to $u with rel=\"noopener noreferrer\""
+          # No match is 0 links, not a grep failure under pipefail.
+          links=$((links + $({ grep -oE "<a( class=\"[a-z]+\")? href=\"$u\" rel=\"noopener noreferrer\"" "$1" || true; } | wc -l)))
         done
         [ "$allowed" = 1 ] || fail "$1: names the host $host"
+        [ "$allowed" = 0 ] || [ "$(grep -oE '="[^"]*"' "$1" | grep -c "//$host" || true)" = "$links" ] ||
+          fail "$1: $host other than as an allowed link with rel=\"noopener noreferrer\""
         ;;
     esac
   done < <(grep -oE '="[^"]*"' "$1" | grep -oE '//[A-Za-z0-9.-]+' | sed 's|^//||' | sort -u)
   while read -r url; do
     case $url in
-      https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy | https://www.cloudflare.com/privacypolicy/) continue ;;
+      https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy | \
+        https://developers.google.com/ml-kit/android-data-disclosure | https://www.cloudflare.com/privacypolicy/) continue ;;
       mailto:*) [ "$url" = "${3:-}" ] || fail "$1: mail link $url"; continue ;;
       "https://$site/"*) path=${url#https://"$site"/} ;;
       *:* | //*) fail "$1: external or unknown link $url"; continue ;;

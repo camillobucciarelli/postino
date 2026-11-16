@@ -211,7 +211,7 @@
     "syncSection": "Sync",
     "syncTitle": "Sync to…",
     "syncNone": "None",
-    "syncBody": "Postino's settings (for example the automatic labels) are saved encrypted in a hidden file in the Google Drive of the Account you choose, without credentials. Postino asks Google for access to that hidden Drive space, not to your files.",
+    "syncBody": "Postino's settings (for example the automatic labels) and the Accounts' credentials are saved encrypted in a hidden file in the Google Drive of the Account you choose. The key stays on your devices. Postino asks Google for access to that hidden Drive space, not to your files.",
     "syncChooserTitle": "Sync settings to",
     "syncCancel": "Cancel",
     "syncBusy": "Connecting to Drive…",

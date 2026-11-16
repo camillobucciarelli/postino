@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Google Play (#345, ADR 0023): no one-tap battery dialog, whose permission Play allows only to apps whose core
+         function Doze breaks. BatteryExemption opens the system's list instead, which needs no permission. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove"/>
+</manifest>

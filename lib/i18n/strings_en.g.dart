@@ -356,6 +356,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get launchAtLoginFailed => 'The system did not accept the change. Try again, or check the login items in the system settings.';
 	@override String get immediateNotifications => 'Immediate notifications';
 	@override String get immediateNotificationsBody => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.';
+	@override String get immediateNotificationsBodySettings => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino opens the battery optimization settings, where you choose not to optimize Postino: it uses more battery. Off, new mail is checked about every 15 minutes.';
 	@override String get immediateNotificationsFailed => 'The system did not start the immediate notifications. Try again.';
 	@override String get checkForUpdates => 'Check for updates';
 	@override String get checkForUpdatesBody => 'Look for a new version of Postino now.';
@@ -903,6 +904,7 @@ extension on TranslationsEn {
 			'impostazioni.launchAtLoginFailed' => 'The system did not accept the change. Try again, or check the login items in the system settings.',
 			'impostazioni.immediateNotifications' => 'Immediate notifications',
 			'impostazioni.immediateNotificationsBody' => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino asks not to be limited by battery optimization: it uses more battery. Off, new mail is checked about every 15 minutes.',
+			'impostazioni.immediateNotificationsBodySettings' => 'New mail arrives in real time, even with Postino closed. In exchange a fixed notification stays and Postino opens the battery optimization settings, where you choose not to optimize Postino: it uses more battery. Off, new mail is checked about every 15 minutes.',
 			'impostazioni.immediateNotificationsFailed' => 'The system did not start the immediate notifications. Try again.',
 			'impostazioni.checkForUpdates' => 'Check for updates',
 			'impostazioni.checkForUpdatesBody' => 'Look for a new version of Postino now.',

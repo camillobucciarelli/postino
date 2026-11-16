@@ -2,7 +2,7 @@ name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
 # `needs: version`: `macos` (DMG), `macos-store` (Mac App Store, #325, off until configured), `android` (sideloaded
-# APK) and `ios` (TestFlight, #120). `site` publishes the
+# APK, `--flavor site`) and `ios` (TestFlight, #120). `site` publishes the
 # invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
 # `android`) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
@@ -362,7 +362,9 @@ jobs:
     timeout-minutes: 60
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      APK: build/app/outputs/flutter-apk/app-release.apk
+      # The `site` flavor (#345, ADR 0023): same applicationId and upload key as before the flavors, published as
+      # Postino-<version>.apk all the same.
+      APK: build/app/outputs/flutter-apk/app-site-release.apk
       # Upload key certificate (public): verify_apk.sh refuses any other signer, the debug key included.
       ANDROID_CERT_SHA256: 47:03:4A:D7:65:75:3A:E5:27:8C:6C:09:F6:5E:E8:5F:E7:6B:26:56:85:9C:04:AC:78:54:2D:8A:8D:12:1F:04
     steps:
@@ -407,7 +409,7 @@ jobs:
         run: tool/release/android_keystore.sh
       # Generated code is committed (checked by ci.yml), so no codegen here. JDK and ANDROID_HOME come from the
       # runner, as in ci.yml's android job. Android uses the iOS-type client: ID only (README).
-      - name: flutter build apk --release
+      - name: flutter build apk --release --flavor site
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
@@ -418,7 +420,7 @@ jobs:
           # versionCode grows with the version (build_number.sh), as the macOS build number; pubspec's "+1" is fixed.
           # POSTINO_BUILD is the same number for the app, which compares it with the site's version.json (#287).
           build=$(tool/release/build_number.sh "$VERSION")
-          flutter build apk --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+          flutter build apk --release --flavor site --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
             --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" --dart-define=POSTINO_BUILD="$build" \
             --dart-define=POSTINO_VERSION="$VERSION"
       # Last use of the keystore: it goes now, and even when an earlier step failed.
@@ -426,6 +428,7 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/upload-keystore.p12"
       - run: tool/release/verify_apk.sh "$APK" "$ANDROID_CERT_SHA256" "$(tool/release/build_number.sh "$VERSION")" "$VERSION"
+      - run: tool/release/battery_permission_check.sh "$APK" site
       - name: Upload the APK to R2
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

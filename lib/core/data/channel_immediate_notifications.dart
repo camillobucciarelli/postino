@@ -54,6 +54,10 @@ class ChannelImmediateNotifications() implements ImmediateNotifications {
     if (supported) await channel.invokeMethod<void>('requestBatteryExemption');
   }
 
+  /// `--flavor store`, whose manifest lacks the dialog's permission (ADR 0023).
+  @override
+  bool get exemptionInSettings => appFlavor == 'store';
+
   @override
   Stream<void> get opened => _opened.stream;
 }

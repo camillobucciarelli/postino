@@ -69,6 +69,7 @@ jobs:
         run: flutter test
       - run: tool/release/version_test.sh
       - run: tool/release/verify_apk_test.sh
+      - run: tool/release/battery_permission_check_test.sh
       - run: tool/release/build_number_test.sh
       - run: tool/release/version_json_test.sh
       - run: tool/release/app_store_url_test.sh
@@ -122,7 +123,11 @@ jobs:
           dart run routefly
           dart run slang
           dart run build_runner build
-      - run: flutter build apk --debug
+      # Both flavors (#345, ADR 0023): the APK from the site keeps the one-tap battery dialog, Google Play's does not.
+      - run: flutter build apk --debug --flavor site
+      - run: flutter build apk --debug --flavor store
+      - run: tool/release/battery_permission_check.sh build/app/outputs/flutter-apk/app-site-debug.apk site
+      - run: tool/release/battery_permission_check.sh build/app/outputs/flutter-apk/app-store-debug.apk store
 
   # Mutation test dei file Dart della PR (docs/agents/mutation-test.md). Non richiesto; parte dopo i check richiesti
   # per non ritardarli sull'unico runner.

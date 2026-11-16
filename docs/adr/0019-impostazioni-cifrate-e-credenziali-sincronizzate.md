@@ -221,7 +221,7 @@ Il proprietario ha approvato i default proposti:
 ## Precisazioni dall'implementazione (#321, fetta 1)
 
 - **«Rigenera la chiave» e i Postino più nuovi.** Non sovrascrive mai un file scritto da un Postino più nuovo (`postinoEncrypted` o `schemaVersion` più alti): l'utente aggiorna Postino.
-- **Quando nasce la chiave.** Si genera solo quando c'è qualcosa da scrivere. La prima chiave si salva prima della scrittura del file. Una chiave rigenerata si salva solo dopo una scrittura riuscita, così una scrittura fallita lascia il dispositivo con la chiave del file.
+- **Quando nasce la chiave.** Si genera solo quando c'è qualcosa da scrivere. La prima chiave si salva prima della scrittura del file. Una chiave rigenerata diventa la chiave del dispositivo solo dopo una scrittura riuscita, così una scrittura fallita lascia il dispositivo con la chiave del file. Fino ad allora resta accanto come chiave in attesa: se la risposta di Drive si perde ma il file è stato scritto, il ciclo successivo trova il file aperto solo da quella e la adotta.
 - **Copie doppie sigillate con un'altra chiave.** Un dispositivo con una chiave le scarta. Un dispositivo senza chiave non genera nulla e resta Non abbinato finché non si abbina.
 - **Schema v3.** Per ora `credentials/` non entra nell'elenco chiuso: ci entra con le fette che portano le credenziali. Le sue voci restano nel file e non arrivano nel database.
 

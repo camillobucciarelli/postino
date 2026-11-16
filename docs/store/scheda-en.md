@@ -4,6 +4,8 @@ Text to paste into App Store Connect, **English (U.S.)** localization (reuse it 
 
 ## Name (30)
 
+On the Store the app is named **Postino Mail** (set in App Store Connect, Apple app ID 6831333983); the text below is the short listing name and must be aligned if the listing is rewritten.
+
 ```
 Postino
 ```
@@ -75,6 +77,6 @@ Primary: **Productivity**. Secondary: none.
 | Field | Value |
 |---|---|
 | Copyright | `2026 Camillo Bucciarelli` |
-| Support URL | https://postino.camillobucciarelli.dev/en/ (the dedicated support page arrives with #324: replace the URL when it exists) |
+| Support URL | https://postino.camillobucciarelli.dev/en/support.html |
 | Marketing URL | https://postino.camillobucciarelli.dev/en/ |
 | Privacy Policy URL | https://postino.camillobucciarelli.dev/en/privacy.html |

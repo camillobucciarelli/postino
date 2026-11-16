@@ -5,7 +5,7 @@ date: 2026-11-15
 
 # Crittografia ed export compliance Apple: `ITSAppUsesNonExemptEncryption` = YES
 
-Con la pubblicazione sull'App Store (#323) la dichiarazione `ITSAppUsesNonExemptEncryption` in `ios/Runner/Info.plist` non è più una formalità di TestFlight. Era `false`; diventa `true`.
+Con la pubblicazione sull'App Store (#323) la dichiarazione `ITSAppUsesNonExemptEncryption` in `ios/Runner/Info.plist` non è più una formalità di TestFlight. Era `false`; diventa `true`. Il 16/11/2026 il titolare ha escluso la Francia dalla distribuzione: la decisione è nelle conseguenze.
 
 ## Cosa usa Postino
 
@@ -30,7 +30,10 @@ Postino è nel secondo caso. Distribuita in Francia richiede documentazione, qui
 ## Conseguenze
 
 - App Store Connect chiede le domande sulla crittografia a ogni build caricata, TestFlight compreso: finché non hanno risposta la build resta in «Missing Compliance» e non arriva ai tester. La pipeline (`release.yml`) carica comunque; la risposta si dà a mano in App Store Connect.
-- Per toglierle, il titolare carica una volta la documentazione in App Store Connect (App Information → App Encryption Documentation) e, una volta approvata, Apple dà un codice da mettere in `Info.plist` come `ITSEncryptionExportComplianceCode`. Due strade: caricare la dichiarazione francese (ANSSI), oppure escludere la Francia dalla disponibilità dell'app; nel secondo caso la tabella non chiede documenti e questo ADR va rivisto (il valore NO tornerebbe difendibile solo finché la Francia resta esclusa). Scelta del titolare, non presa qui.
-- Rapporto annuale di autoclassificazione al governo USA: secondo la prima pagina serve a chi dichiara forme esenti, e non serve a chi usa crittografia non esente e fornisce la documentazione ad Apple. Se il titolare esclude la Francia invece di caricare la dichiarazione, da verificare se ricade nel primo caso.
+- Il 16/11/2026 il titolare ha escluso la **Francia** dalla distribuzione (174 Paesi su 175, impostato in App Store Connect), per non presentare la dichiarazione di crittografia francese. Il valore resta `true` (vedi sotto).
+- Nessuna dichiarazione francese da caricare: la tabella di Apple la richiede solo per la distribuzione in Francia, e quindi per Postino non serve alcun documento. Senza documento approvato Apple non assegna un `ITSEncryptionExportComplianceCode`: le domande sulla crittografia restano da rispondere in App Store Connect per ogni build, a mano (da confermare alla prima build caricata dopo l'esclusione).
+- Rapporto annuale di autoclassificazione al governo USA: secondo la prima pagina serve a chi dichiara forme esenti, e non serve a chi usa crittografia non esente e fornisce la documentazione ad Apple. Escludendo la Francia non si fornisce documentazione: da verificare se Postino ricade nel primo caso. Non verificato.
 - La variante Mac App Store (#325) usa le stesse librerie: vale la stessa conclusione per la sua `Info.plist`.
+- Perché resta YES anche senza la Francia: SQLCipher, pointycastle e il TLS di Dart restano crittografia non fornita dal sistema operativo Apple. Escludere la Francia cambia solo quale documentazione la tabella chiede, non cosa l'app usa; il valore NO non è stato adottato.
+- **Riaprire la Francia** richiede la dichiarazione di crittografia francese (ANSSI) caricata in App Store Connect (App Information → App Encryption Documentation) e, una volta approvata, il codice di Apple da mettere in `Info.plist` come `ITSEncryptionExportComplianceCode`. Poi aggiungere la Francia ai Paesi di distribuzione.
 - Un cambio di librerie (per esempio TLS del sistema al posto di quello di Dart) non basta a tornare a NO finché restano SQLCipher e pointycastle.

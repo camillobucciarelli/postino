@@ -1,6 +1,6 @@
 # Materiale per App Store Connect
 
-Materiale per la scheda di Postino sull'App Store iOS/iPadOS e sul Mac App Store (#326). Un solo bundle ID, quindi un solo record con le due piattaforme.
+Materiale per la scheda di Postino (sullo Store «Postino Mail»; Francia esclusa dalla distribuzione, ADR 0020) sull'App Store iOS/iPadOS e sul Mac App Store (#326). Un solo bundle ID, quindi un solo record con le due piattaforme.
 
 | File | Contenuto |
 |---|---|
@@ -15,7 +15,7 @@ Materiale per la scheda di Postino sull'App Store iOS/iPadOS e sul Mac App Store
 
 | Campo | Limite | IT | EN |
 |---|---|---|---|
-| Nome | 30 | 7 | 7 |
+| Nome | 30 | 7 | 7 (sullo Store: «Postino Mail») |
 | Sottotitolo | 30 | 26 | 27 |
 | Testo promozionale | 170 | 170 | 149 |
 | Descrizione | 4000 | 3287 | 3142 |
@@ -31,7 +31,6 @@ Verificate nel codice: tutte le funzioni nominate nelle schede, tranne quanto se
 - **Etichettatura automatica**: il codice la offre solo dove l'Account ha Etichette vere (Gmail), non sulle cartelle IMAP e Microsoft (verifica di Codex su `AutoLabelsView`); le schede la limitano a Gmail.
 - **Tema scuro**: non menzionato perché non l'ho trovato nel codice.
 - **Impostazioni su Drive**: la scheda e le note dicono che passano solo impostazioni, mai password. L'ADR 0019 (accettato il 15/11/2026) prevede di portare anche le credenziali, cifrate; non è ancora nel codice né nell'informativa. **Se l'ADR 0019 viene implementato prima della pubblicazione, riscrivere** «Mai la posta, mai le password» nelle schede e nelle note, e aggiornare l'informativa.
-- **Informativa nelle Impostazioni dell'app**: richiesta da #323, non ancora nel codice; le note di revisione la citano.
 - **Fascia d'età**: calcolata da Apple al salvataggio, non prevedibile con certezza.
 - **Funzioni che non esistono e quindi non compaiono**: Posticipa, Sessione di smistamento, Regole, PGP/S-MIME, Inviti. Sono nel glossario ma non nel codice.
-- **Prezzo**: non indicato nelle schede, è una decisione del titolare.
+- **Prezzo**: non indicato nelle schede; il titolare ha scelto gratis (16/11/2026).

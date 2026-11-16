@@ -39,6 +39,12 @@ jobs:
         run: |
           version=$(tool/release/version.sh)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      # A Google Play run alone with Play off would skip everything and end green with no AAB.
+      - name: Google Play is on for a run of android-store alone
+        if: inputs.only == 'android-store' && vars.PLAY_STORE != 'true'
+        run: |
+          echo "::error::only: android-store needs the repository variable PLAY_STORE set to true"
+          exit 1
       # Except a Google Play run alone: it publishes nothing else, and Play refuses a versionCode it already has.
       - name: A manual run never replaces a released version
         if: github.event_name == 'workflow_dispatch' && inputs.only != 'android-store'

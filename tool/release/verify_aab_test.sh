@@ -15,7 +15,8 @@ mkdir -p "$tmp/build-tools/99.0.0" "$tmp/java/bin" "$tmp/aab/base/manifest" "$tm
 want=AA:BB:CC
 
 stub() { printf '#!/bin/bash\n%s\n' "$2" > "$1"; chmod +x "$1"; }
-jar_prints() { stub "$tmp/java/bin/jarsigner" "printf '%s\n' '$1'"; }
+# jar_prints <first line> [exit code]: as jarsigner -verify -strict (a run without -strict fails).
+jar_prints() { stub "$tmp/java/bin/jarsigner" "[[ \" \$* \" == *' -strict '* ]] || exit 99; printf '%s\n' '$1'; exit ${2:-0}"; }
 certs() { stub "$tmp/java/bin/keytool" "printf '%s\n' $(printf "'Signer #1:' '  SHA256: %s' " "$@")"; }
 badging() {
   stub "$tmp/build-tools/99.0.0/aapt2" "unzip -l \"\$3\" | grep -q ' AndroidManifest.xml\$' && unzip -l \"\$3\" | grep -q ' resources.pb\$' || exit 3
@@ -41,9 +42,13 @@ fails "second signer"
 stub "$tmp/java/bin/keytool" "echo 'Not a signed jar file'"
 fails "no signer"
 certs AA:BB:CC
+jar_prints 'jar verified, with signer errors.' 4
+passes "self-signed upload key (exit 4, as the real AAB)"
 jar_prints 'jar is unsigned.'
-fails "unsigned"; grep -q "is not signed" "$tmp/out" || { cat "$tmp/out"; exit 1; }
-stub "$tmp/java/bin/jarsigner" "echo 'jar verified.'; exit 1"
+fails "unsigned"; grep -q "not signed" "$tmp/out" || { cat "$tmp/out"; exit 1; }
+jar_prints 'jar verified, with signer errors.' 20
+fails "an entry added after signing (exit 16 + 4)"
+jar_prints 'jar verified.' 1
 fails "jarsigner fails"
 jar_prints 'jar verified.'
 badging com.cbucciarelli.postino 1 1.2.3

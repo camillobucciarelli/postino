@@ -16,9 +16,13 @@ name=${4:?$usage}
 [ -f "$aab" ] || { echo "::error::No AAB at $aab" >&2; exit 1; }
 bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 
-# jarsigner exits 0 on an unsigned file too: only "jar verified." means every entry is signed and intact.
-verified=$("${bin}jarsigner" -verify "$aab" 2>&1) || { echo "$verified" >&2; echo "::error::$aab: jarsigner failed" >&2; exit 1; }
-grep -qx 'jar verified.' <<< "$verified" || { echo "$verified" >&2; echo "::error::$aab is not signed" >&2; exit 1; }
+# jarsigner exits 0 on an unsigned file ("jar is unsigned."), and without -strict also on a signed one with entries
+# added after signing. With -strict its exit code is a bit mask: 16 is an unsigned entry; 4 (a certificate chain that
+# does not validate) is expected, the upload key being self-signed. Anything but 0 or 4 fails.
+rc=0
+verified=$("${bin}jarsigner" -verify -strict "$aab" 2>&1) || rc=$?
+grep -q '^jar verified' <<< "$verified" && [ $((rc & ~4)) -eq 0 ] ||
+  { echo "$verified" >&2; echo "::error::$aab: not signed, or not every entry signed (jarsigner -strict exit $rc)" >&2; exit 1; }
 want=$(tr -d ':' <<< "$expected" | tr 'A-F' 'a-f')
 have=$("${bin}keytool" -printcert -jarfile "$aab" | sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' | sort -u)
 [ "$have" = "$want" ] || { echo "::error::AAB signed by ${have:-nobody}, expected $want" >&2; exit 1; }

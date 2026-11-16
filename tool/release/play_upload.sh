@@ -8,8 +8,8 @@
 # The API changes only an app that already has an upload from the Play Console ("You can only use this API to make
 # changes to an existing app (that has at least one APK uploaded)", edits page): the first AAB goes in by hand, from
 # the workflow's artifact. Release status `completed`; while the app is still a draft in the Console Play accepts only
-# `draft` releases ("Only releases with status draft may be created on draft app"), so on that refusal the release is
-# made again as a draft, to be rolled out by hand from the Console. Play refuses a versionCode it already has, so a
+# `draft` releases ("Only releases with status draft may be created on draft app"), so on that refusal the edit is
+# made again with a draft release, to be rolled out by hand from the Console. Play refuses a versionCode it already has, so a
 # rerun of an uploaded version fails at the upload: that is the only duplicate guard, as on TestFlight.
 # PLAY_API_URL and PLAY_TOKEN_URL override Google's endpoints, for the self-check only.
 # Usage: play_upload.sh <aab> <versionCode> <versionName>
@@ -30,8 +30,8 @@ dir=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/play.XXXXXX")
 trap 'rm -rf "$dir"' EXIT
 trap 'exit 1' HUP INT TERM
 umask 077
-printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -D > "$dir/account.json"
-email=$(jq -er .client_email "$dir/account.json") && jq -er .private_key "$dir/account.json" > "$dir/key.pem" ||
+{ printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -D > "$dir/account.json"; } 2> /dev/null &&
+  email=$(jq -er .client_email "$dir/account.json") && jq -er .private_key "$dir/account.json" > "$dir/key.pem" ||
   { echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 is not a service account JSON key" >&2; exit 1; }
 
 b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
@@ -42,10 +42,11 @@ claims=$(jq -cn --arg iss "$email" --argjson iat "$now" \
 unsigned="$(printf '%s' '{"alg":"RS256","typ":"JWT"}' | b64url).$(printf '%s' "$claims" | b64url)"
 signature=$(printf '%s' "$unsigned" | openssl dgst -sha256 -sign "$dir/key.pem" -binary | b64url)
 
-# request <curl args...>: the response body on stdout; on an HTTP error Google's message on stderr and exit 1.
+# request <curl args...>: the response body on stdout; on an HTTP error Google's message on stderr and exit 1. The
+# timeouts free the only runner from a stalled connection (the upload of ~200 MB included).
 request() {
   local rc=0
-  curl -sS --fail-with-body "$@" > "$dir/response" || rc=$?
+  curl -sS --fail-with-body --connect-timeout 30 --max-time 1800 "$@" > "$dir/response" || rc=$?
   [ "$rc" -eq 0 ] || { echo "::error::Google Play API request failed (curl $rc): $(cat "$dir/response")" >&2; return 1; }
   cat "$dir/response"
 }
@@ -59,26 +60,36 @@ printf 'Authorization: Bearer %s\n' "$token" > "$dir/auth"
 play() { request -H @"$dir/auth" "$@"; }
 
 base="$api/androidpublisher/v3/applications/$package/edits"
-edit=$(play -X POST "$base" | jq -er .id)
+edit=''
 # An edit that does not reach the commit is dropped, so the next run does not find it open.
-trap 'play -X DELETE "$base/$edit" > /dev/null 2>&1 || true; rm -rf "$dir"' EXIT
+drop() { [ -z "$edit" ] || play -X DELETE "$base/$edit" > /dev/null 2>&1 || true; edit=''; }
+trap 'drop; rm -rf "$dir"' EXIT
 
-uploaded=$(play -X POST -H 'Content-Type: application/octet-stream' --data-binary @"$aab" \
-  "$api/upload/androidpublisher/v3/applications/$package/edits/$edit/bundles?uploadType=media" | jq -er .versionCode)
-[ "$uploaded" = "$code" ] || { echo "::error::Play read versionCode $uploaded, expected $code" >&2; exit 1; }
-
-release() {
+# publish <status>: one edit, from insert to commit. A POST without a body still sends Content-Length: 0, which
+# Google's front end requires (411 Length Required otherwise). Returns 1 on any failure, leaving the edit to drop.
+publish() {
+  local uploaded
+  edit=$(play -X POST -H 'Content-Length: 0' "$base" | jq -er .id) || return 1
+  uploaded=$(play -X POST -H 'Content-Type: application/octet-stream' --data-binary @"$aab" \
+    "$api/upload/androidpublisher/v3/applications/$package/edits/$edit/bundles?uploadType=media" | jq -er .versionCode) ||
+    return 1
+  [ "$uploaded" = "$code" ] || { echo "::error::Play read versionCode $uploaded, expected $code" >&2; return 1; }
   jq -cn --arg name "$name" --arg code "$code" --arg status "$1" --arg track "$track" \
     '{track: $track, releases: [{name: $name, versionCodes: [$code], status: $status}]}' |
-    play -X PUT -H 'Content-Type: application/json' --data-binary @- "$base/$edit/tracks/$track" > /dev/null
+    play -X PUT -H 'Content-Type: application/json' --data-binary @- "$base/$edit/tracks/$track" > /dev/null || return 1
+  play -X POST -H 'Content-Length: 0' "$base/$edit:commit" > /dev/null || return 1
+  edit=''
 }
+
+# The draft refusal may come from the track update or from the commit's validation: either way the whole edit is made
+# again as a draft (the uncommitted one is dropped, so the AAB goes up a second time).
 status=completed
-if ! release completed 2> "$dir/release.err"; then
-  grep -Fq 'Only releases with status draft may be created on draft app' "$dir/release.err" || { cat "$dir/release.err" >&2; exit 1; }
+if ! publish completed 2> "$dir/publish.err"; then
+  cat "$dir/publish.err" >&2
+  grep -Fq 'Only releases with status draft may be created on draft app' "$dir/publish.err" || exit 1
+  drop
   echo "::warning::The app is still a draft in the Play Console: release $name saved as a draft, roll it out by hand"
   status=draft
-  release draft
+  publish draft || exit 1
 fi
-play -X POST "$base/$edit:commit" > /dev/null
-trap 'rm -rf "$dir"' EXIT
 echo "versionCode $code ($name) on the $track track, status $status"

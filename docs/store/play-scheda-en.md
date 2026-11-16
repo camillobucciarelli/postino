@@ -25,7 +25,7 @@ Connect Gmail, Outlook.com and Microsoft 365 (personal and work or school accoun
 OFFLINE AND PRIVATE
 Recent mail is stored in an encrypted database on your device, so you can read it without a connection. Actions you take offline (archive, star, mark as read) are sent when the network returns; if a message changed elsewhere in the meantime, Postino shows it as a Conflict and you choose which change to keep.
 
-Postino has no mail server of its own: it talks only to the providers you connect. There are no analytics, no ads and no automatic error collection. Remote images are blocked until you choose to show them, and a warning flags links whose text shows a different address from the real one.
+Postino has no mail server of its own: it talks only to the providers you connect. No ads, no analytics of our own, no automatic error collection. Remote images are blocked until you choose to show them, and a warning flags links whose text shows a different address from the real one.
 
 SEARCH FAST
 Results appear as you type, from the mail on your device. Use from:, to: and subject: to search by sender, recipients and subject, quotes for an exact phrase, and filters for unread, starred, attachments, account and dates. For older mail, the search continues on the provider.

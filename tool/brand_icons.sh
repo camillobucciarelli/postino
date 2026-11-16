@@ -156,5 +156,8 @@ play_graphics() {
   opaque docs/store/grafica/grafica-in-evidenza.png
 }
 
-if [ "${1:-}" = play ]; then play_graphics; else all; fi
-echo "Icone e splash rigenerate da $B"
+case "${1:-}" in
+  '') all; echo "Icone e splash rigenerate da $B" ;;
+  play) play_graphics; echo "Grafiche di Google Play rigenerate in docs/store/grafica" ;;
+  *) echo "uso: $0 [play]" >&2; exit 2 ;;
+esac

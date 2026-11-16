@@ -29,7 +29,7 @@ Collega Gmail, Outlook.com e Microsoft 365 (Account personali e di lavoro o scuo
 OFFLINE E PRIVATA
 La posta recente è salvata in un database cifrato sul tuo dispositivo: la leggi anche senza rete. Le azioni fatte offline (archivia, Stella, segna come letto) partono quando la rete torna e, se un messaggio è cambiato altrove nel frattempo, Postino te lo mostra come Conflitto e decidi tu quale modifica tenere.
 
-Postino non ha un server suo per la posta: parla soltanto con i Provider che colleghi. Non ci sono analytics, pubblicità né raccolta automatica degli errori. Le immagini remote sono bloccate finché non scegli di vederle, e un avviso ti segnala i link il cui testo mostra un indirizzo diverso da quello vero.
+Postino non ha un server suo per la posta: parla soltanto con i Provider che colleghi. Niente pubblicità, niente analytics nostri, nessuna raccolta automatica degli errori. Le immagini remote sono bloccate finché non scegli di vederle, e un avviso ti segnala i link il cui testo mostra un indirizzo diverso da quello vero.
 
 CERCA IN FRETTA
 I risultati compaiono mentre scrivi, dalla posta sul dispositivo. Usa da:, a: e oggetto: per cercare per mittente, destinatari e oggetto, le virgolette per una frase esatta, e i filtri per non letti, Stella, allegati, Account e date. Per la posta più vecchia la ricerca continua sul Provider.

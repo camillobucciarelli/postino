@@ -46,7 +46,7 @@ Fonte: [requisiti di test per i nuovi account personali](https://support.google.
 
 - [ ] Scheda italiana e inglese da [play-scheda-it.md](play-scheda-it.md) e [play-scheda-en.md](play-scheda-en.md); categoria, contatti, icona e grafica in evidenza da [play-scheda-it.md](play-scheda-it.md).
 - [ ] Screenshot del telefono da `docs/store/screenshot/android/<lingua>/` ([screenshot.md](screenshot.md)), controllati a occhio.
-- [ ] **Aggiornare l'informativa sul sito** prima di dichiarare la Sicurezza dei dati: credenziali sincronizzate cifrate (ADR 0019), nessun controllo degli aggiornamenti nella build Play, fotocamera per il QR (sezione 1 di [play-dichiarazioni.md](play-dichiarazioni.md)).
+- [ ] **Aggiornare l'informativa sul sito** prima di dichiarare la Sicurezza dei dati: credenziali sincronizzate cifrate (ADR 0019), nessun controllo degli aggiornamenti nella build Play, fotocamera e ML Kit di Google per il QR (sezione 1 di [play-dichiarazioni.md](play-dichiarazioni.md)).
 - [ ] Norme sulla privacy, Annunci, Accesso all'app, Classificazione dei contenuti, Pubblico di destinazione, Sicurezza dei dati, ID pubblicità, App governative, Funzionalità finanziarie, App per la salute, Servizi in primo piano: come in [play-dichiarazioni.md](play-dichiarazioni.md).
 - [ ] Video dei servizi in primo piano registrato secondo la scaletta di [play-dichiarazioni.md](play-dichiarazioni.md), caricato su YouTube non in elenco, link nella dichiarazione.
 

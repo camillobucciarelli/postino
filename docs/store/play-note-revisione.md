@@ -31,13 +31,13 @@ IMMEDIATE NOTIFICATIONS (foreground service, specialUse)
 Menu > Settings > Device settings > "Immediate notifications" (off by default). When the user turns it on, a foreground service keeps the IMAP IDLE connection open so new mail is notified in real time with the app closed; a persistent "Postino is listening" notification stays visible. Postino then opens the system battery optimization settings so the user can exclude it by hand; Postino does not request the REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission. Turning the switch off stops the service. The demo video is linked in the foreground service declaration.
 
 CAMERA
-Used only by "Scan the QR" (Settings > Sync to... > pairing) to read a pairing code shown by another of the user's devices. The image is decoded on the device and never leaves it. It needs a Google account for settings sync, so it cannot be tried with the IMAP demo mailbox.
+Used only by "Scan the QR" (Settings > Sync to... > pairing) to read a pairing code shown by another of the user's devices. The image is decoded on the device by ML Kit and never leaves it. It needs a Google account for settings sync, so it cannot be tried with the IMAP demo mailbox.
 
 ON-DEVICE AI (optional)
 "Automatic labels" works only with Gmail labels. The model (about 165 MB) is downloaded once from Hugging Face when the user turns the feature on, and runs entirely on the device. It is a data file (model weights), not executable code.
 
 NO ADS, NO TRACKING, NO PURCHASES, NO UPDATES OUTSIDE GOOGLE PLAY
-No ads, no analytics, no automatic crash collection, no in-app purchases. Mail and credentials stay on the device in an encrypted database. This Google Play build does not check for or download updates from anywhere else.
+No ads, no analytics of our own, no automatic crash collection, no in-app purchases. The only third-party SDK that sends data is Google ML Kit (barcode scanning, through Google Play services), and only when the user scans a QR code; it is declared in Data safety. Mail stays on the device in an encrypted database (SQLCipher); account passwords and tokens stay in the Android Keystore-backed secure storage. If the user turns on settings sync, an end-to-end encrypted copy of the settings and account credentials goes to the app-data folder of the user's own Google Drive; the key never leaves the user's devices. This Google Play build does not check for or download updates from anywhere else.
 
 Privacy policy: https://postino.camillobucciarelli.dev/en/privacy.html
 Contact: camillo@bucciarelli.dev

@@ -6,37 +6,50 @@ Risposte per la pagina **Monitora e migliora → Norme e programmi → Contenuti
 
 URL: https://postino.camillobucciarelli.dev/privacy.html. Google lo chiede **anche se l'app non raccoglie dati**, pubblico, in HTTPS, non PDF, e lo vuole anche dentro l'app (c'è: Impostazioni → Informativa sulla privacy) ([preparare l'app per la revisione](https://support.google.com/googleplay/android-developer/answer/9859455), [Sicurezza dei dati](https://support.google.com/googleplay/android-developer/answer/10787469)).
 
-**Da aggiornare prima dell'invio** (il sito è fuori da #345, lo fa il titolare): l'informativa del 15/11/2026 dice che il file su Drive non contiene «mai posta, password o token», ma con #321 (ADR 0019, fette 3 e 4 unite) contiene anche le credenziali degli Account, cifrate con una chiave che resta sui dispositivi. Dice anche che Android controlla gli aggiornamenti sul sito: la variante Play non lo fa (fetta 1 di #345). Infine non nomina la fotocamera (usata solo per «Inquadra il QR», l'immagine non esce dal dispositivo).
+**Da aggiornare prima dell'invio** (il sito è fuori da #345, lo fa il titolare): l'informativa del 15/11/2026 dice che il file su Drive non contiene «mai posta, password o token», ma con #321 (ADR 0019, fette 3 e 4 unite) contiene anche le credenziali degli Account, cifrate con una chiave che resta sui dispositivi. Dice anche che Android controlla gli aggiornamenti sul sito: la variante Play non lo fa (fetta 1 di #345). Infine non nomina la fotocamera (usata solo per «Inquadra il QR», l'immagine non esce dal dispositivo) né ML Kit di Google, che allo scanner manda a Google dati diagnostici e identificatori (sezione 2).
 
 ## 2. Sicurezza dei dati (Data safety)
 
-Coerente con [app-privacy.md](app-privacy.md) (App Store: «Dati non raccolti»). Fonte: [Sicurezza dei dati](https://support.google.com/googleplay/android-developer/answer/10787469).
+Fonte: [Sicurezza dei dati](https://support.google.com/googleplay/android-developer/answer/10787469), letta il 16/11/2026. Le regole di Google sono diverse da quelle di Apple, quindi qui la risposta **non** è quella di [app-privacy.md](app-privacy.md) («Dati non raccolti»):
+
+- Google chiama «raccolta» ogni trasmissione fuori dal dispositivo, anche verso server di terzi e anche da un SDK. Apple invece guarda a chi può accedere al dato.
+- L'esenzione per le azioni avviate dall'utente vale solo per la **condivisione**, non per la raccolta.
+- Fuori dalla raccolta restano solo l'elaborazione sul dispositivo e i dati cifrati end-to-end; il caricamento diretto sul cloud dell'utente non va dichiarato se l'app non accede al dato.
+
+Quindi Postino dichiara quello che trasmette verso i Provider, il log della Segnalazione di un problema e quello che manda a Google lo scanner del QR (ML Kit). È la scelta prudente: dichiarare un dato in più non viola le regole, ometterlo sì. **Non verificato** come Google tratti i client email che parlano solo con i Provider dell'utente: la pagina non nomina il caso.
+
+### Risposte
 
 | Domanda | Risposta |
 |---|---|
-| La tua app raccoglie o condivide uno dei tipi di dati utente richiesti? | **No** |
+| La tua app raccoglie o condivide uno dei tipi di dati utente richiesti? | **Sì** |
+| Tutti i dati raccolti sono criptati in transito? | **Sì**: IMAP e SMTP solo con SSL o STARTTLS (`ServerSecurity` in `lib/core/domain/mail_servers.dart`), Gmail, Graph e Drive in HTTPS, ML Kit in HTTPS |
+| Fornisci agli utenti un modo per richiedere l'eliminazione dei dati? | **Sì**: la posta si elimina dall'app sul Provider, «Rimuovi Account» cancella la copia locale, e i dati della Segnalazione si cancellano scrivendo a `camillo@bucciarelli.dev` (informativa) |
 
-Con «No» la Console non chiede né la cifratura in transito né la cancellazione su richiesta: quelle domande compaiono solo per i dati raccolti. La scheda mostrerà «Nessun dato raccolto» e «Nessun dato condiviso con terze parti».
+| Tipo di dato | Raccolto | Condiviso | Temporaneo | Obbligatorio o facoltativo | Finalità | Perché |
+|---|---|---|---|---|---|---|
+| Informazioni personali → **Indirizzo email** | Sì | No | No | Obbligatorio | Funzionalità dell'app | L'indirizzo dell'Account va al suo Provider; è anche il mittente della Segnalazione |
+| Messaggi → **Email** | Sì | No | No | Obbligatorio | Funzionalità dell'app | Posta letta, inviata e sincronizzata con il Provider; il log della Segnalazione può contenere oggetti e indirizzi |
+| File e documenti → **File e documenti** | Sì | No | No | Facoltativo | Funzionalità dell'app | Allegati che l'utente sceglie di inviare |
+| Informazioni e prestazioni dell'app → **Log degli arresti anomali** | Sì | No | No | Facoltativo | Funzionalità dell'app | Log nella Segnalazione, solo se l'utente la invia |
+| Informazioni e prestazioni dell'app → **Altri dati diagnostici** | Sì | No | No | Facoltativo | Analisi, Funzionalità dell'app | Segnalazione; metriche e codici d'errore di ML Kit quando l'utente inquadra un QR |
+| ID dispositivo o altri ID → **ID dispositivo o altri ID** | Sì | No | No | Facoltativo | Analisi | ML Kit, solo quando l'utente inquadra un QR |
 
-Perché «No», punto per punto. Google chiama «raccolta» il dato che lascia il dispositivo, anche verso server di terzi; «condivisione» il trasferimento a terzi. Postino non ha backend (ADR 0001) e nessun SDK di analytics, pubblicità o crash reporting (`pubspec.yaml`).
+**Condiviso: No** per tutti. I trasferimenti al Provider scelto dall'utente sono azioni avviate dall'utente (non sono «condivisione» per Google) e ML Kit dichiara di non passare i dati a terzi ([informativa ML Kit](https://developers.google.com/ml-kit/android-data-disclosure): dati del dispositivo e dell'app, identificatori, metriche e codici d'errore, «for diagnostics and usage analytics», in HTTPS). **Facoltativo** perché lo scanner e la Segnalazione partono solo se l'utente li usa. **Non verificato** quale riga «identificatori» di ML Kit valga per lo scanner unbundled (la pagina distingue funzioni *thin* e *bundled* senza dire dove sta il barcode): dichiararla comunque.
+
+### Cosa resta fuori, e perché
 
 | Dato che esce dal dispositivo | Dove va | Perché non va dichiarato |
 |---|---|---|
-| Posta, indirizzi, password IMAP, token OAuth | Solo al Provider che l'utente collega (Gmail, Microsoft, iCloud, server IMAP/SMTP) | È la funzione richiesta dall'utente verso il suo stesso account: trasferimento avviato dall'utente, che si aspetta di mandare la posta al suo Provider ([esenzione](https://support.google.com/googleplay/android-developer/answer/10787469): «user-initiated action»). Lo sviluppatore non lo riceve. **Interpretazione**, non una frase di Google sui client email: la pagina non nomina il caso. |
-| Impostazioni e credenziali sincronizzate | Cartella `appDataFolder` del Google Drive dell'utente, file AES-256-GCM | Cifrato end-to-end con una chiave che resta sui dispositivi dell'utente (ADR 0019): illeggibile per chiunque altro, sviluppatore compreso. Google esclude i dati cifrati end-to-end e il caricamento sul cloud dell'utente stesso. |
+| Impostazioni e credenziali sincronizzate | Cartella `appDataFolder` del Google Drive dell'utente, file AES-256-GCM | Cifrato end-to-end con la Chiave di sincronizzazione, che resta sui dispositivi dell'utente (ADR 0019): illeggibile per chiunque altro, sviluppatore compreso. Google esclude i dati cifrati end-to-end. |
+| Password IMAP e token OAuth | Al Provider, per l'accesso | Credenziali di accesso al servizio dell'utente; non sono un tipo di dato del modulo (**non verificato**: nessuna voce «credenziali» nell'elenco di Google). |
 | Testo dei messaggi per l'Etichettatura automatica | Nessun luogo | Elaborato solo sul dispositivo (ADR 0015). |
 | Download del modello | Richiesta a `huggingface.co` | Non porta dati dell'utente (URL fisso, verifica SHA-256). |
-| Ricerca della configurazione IMAP | Autoconfig del dominio dell'utente, DNS di Google, database di Thunderbird | Parte del collegamento dell'Account chiesto dall'utente; non porta posta né password. |
-| Immagine della fotocamera («Inquadra il QR») | Nessun luogo | Il QR si decodifica sul dispositivo (ML Kit). |
+| Ricerca della configurazione IMAP | Autoconfig del dominio dell'utente, DNS di Google, database di Thunderbird | Il dominio e l'indirizzo dell'Account, già dichiarato sopra. |
+| Immagine della fotocamera («Inquadra il QR») | Nessun luogo | Il QR si decodifica sul dispositivo; ML Kit manda solo i dati della tabella sopra. |
 | Controllo degli aggiornamenti dal sito | Nessun luogo nella variante Play | Spento nella variante «store» (fetta 1 di #345). Se la fetta 1 non lo spegnesse, il punto va rivisto. |
-| Segnalazione di un problema | Email dall'Account dell'utente allo sviluppatore | Vedi sotto. |
 
-**Segnalazione di un problema.** È la sola via con cui lo sviluppatore riceve dati: un'email che l'utente rilegge e decide di inviare. Google non ha l'«esclusione facoltativa» di Apple. La scelta resta quella fatta per l'App Store (non dichiarata), per coerenza tra i due store. Se il titolare preferisce dichiararla, le risposte sono pronte:
-
-- Sì, l'app raccoglie dati. Tipi: **Informazioni personali → Indirizzo email**; **Informazioni e prestazioni dell'app → Log degli arresti anomali** e **Altri dati diagnostici**; **Messaggi → Email** (il log può contenere oggetti e indirizzi).
-- Per ognuno: raccolto, non condiviso; non elaborato in modo temporaneo; **facoltativo** (l'utente sceglie); finalità **Funzionalità dell'app**.
-- Cifrati in transito: **Sì** se il Provider dell'utente usa TLS (Postino esige SSL o STARTTLS); nel dubbio **No**.
-- Cancellazione su richiesta: **Sì**, scrivendo a `camillo@bucciarelli.dev` (l'informativa promette la cancellazione entro 12 mesi e su richiesta).
+**Differenza con l'App Store, da sapere.** Su Apple la stessa app è dichiarata «Dati non raccolti» perché Apple non conta come raccolta il dato che lo sviluppatore non può leggere, e la Segnalazione usa l'esclusione facoltativa di Apple. Le due risposte non si contraddicono: rispondono a definizioni diverse. ML Kit è solo su Android: `ios/Podfile.lock` non contiene pod MLKit (`mobile_scanner` 7 su iOS usa il framework Vision di Apple, **non verificato** nel codice del plugin).
 
 ## 3. Permessi della variante Play
 
@@ -95,7 +108,7 @@ Durata 30–60 s, telefono o emulatore con la build Play, lingua **inglese**, ne
 
 1. Postino aperto sulla Posta unificata con la casella demo collegata (5 s).
 2. Menu ☰ → **Settings** → **Device settings**: si vede l'interruttore **Immediate notifications** spento e il suo testo («New mail arrives in real time, even with Postino closed…») (10 s).
-3. Tocco sull'interruttore: compare la notifica fissa **«Postino is listening»**; abbassare la tendina per mostrarla. Se compare la richiesta di escludere Postino dall'ottimizzazione batteria, mostrarla e accettarla (10–15 s).
+3. Tocco sull'interruttore: Postino apre la schermata di sistema dell'ottimizzazione batteria; scegliere Postino e impostarlo su «Non ottimizzare» / senza limiti, poi tornare in Postino. Compare la notifica fissa **«Postino is listening»**: abbassare la tendina per mostrarla (15–20 s). Registrare sulla build **`store`** scaricata da Play (test interno): l'APK del sito mostra invece il dialogo di sistema a un tocco, che la variante Play non ha.
 4. Chiudere Postino (scorrerlo via dalle app recenti): la notifica fissa resta (5 s).
 5. Da un altro dispositivo o dal computer, mandare un'email alla casella demo: la notifica della posta nuova arriva in pochi secondi con Postino chiuso (10–15 s).
 6. Riaprire Postino → Settings → Device settings → spegnere **Immediate notifications**: la notifica fissa sparisce (5–10 s).

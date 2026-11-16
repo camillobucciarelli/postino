@@ -24,7 +24,7 @@ Fonte: [Google, testi della scheda](https://support.google.com/googleplay/androi
 |---|---|---|---|
 | Nome dell'app | 30 | 12 | 12 |
 | Descrizione breve | 80 | 77 | 77 |
-| Descrizione completa | 4000 | 3428 | 3260 |
+| Descrizione completa | 4000 | 3443 | 3258 |
 
 ### Requisiti verificati sulle fonti Google (16/11/2026)
 
@@ -45,6 +45,7 @@ Le altre fonti sono citate dove servono, in [play-dichiarazioni.md](play-dichiar
 - **Dipendono dalla fetta 1 di #345** (non ancora unita quando è stato scritto questo materiale): niente avviso di aggiornamento, niente `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, schermata di sistema dell'ottimizzazione batteria. Lo dicono le note per i revisori e la Sicurezza dei dati; vanno verificate sulla build `store`.
 - **Modello da circa 165 MB**: vale per Android arm64 (`.litertlm`, ADR 0015); su Android x86_64 (emulatori, alcuni Chromebook) è il GGUF da circa 310 MB.
 - **Impostazioni sincronizzate**: la scheda Play dice che portano anche gli Account collegati, in un file cifrato con la chiave sui dispositivi (ADR 0019, #321 fette 1–4 unite). Il testo dell'app `impostazioni.syncBody` dice ancora «senza credenziali», e l'informativa del sito «mai password o token»: da allineare (fuori da #345).
+- **Sicurezza dei dati diversa dall'App Privacy di Apple**: su Play si dichiarano posta, indirizzo, allegati, Segnalazione e i dati di ML Kit (lo scanner del QR), perché Google conta come raccolta ogni trasmissione fuori dal dispositivo; motivi in [play-dichiarazioni.md](play-dichiarazioni.md). Le schede dicono «niente analytics nostri», non «niente analytics».
 - **Layout su tablet Android**: non provato; la scheda non lo nomina e non ci sono screenshot tablet.
 
 ## App Store (#326)

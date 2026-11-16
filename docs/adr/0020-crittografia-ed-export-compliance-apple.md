@@ -1,9 +1,12 @@
 ---
 status: Accettato
 date: 2026-11-15
+updated: 2026-11-16
 ---
 
 # Crittografia ed export compliance Apple: `ITSAppUsesNonExemptEncryption` = YES
+
+> Decisione sostituita dall'[ADR 0022](0022-export-compliance-esente-dalla-documentazione.md): il valore è `false`, cioè esente dal fornire documentazione con la Francia esclusa. Con `true` e senza `ITSEncryptionExportComplianceCode` App Store Connect rifiuta l'upload (90592): la conseguenza «domande sulla crittografia a ogni build» qui sotto è sbagliata. L'inventario della crittografia e la tabella di Apple restano validi.
 
 Con la pubblicazione sull'App Store (#323) la dichiarazione `ITSAppUsesNonExemptEncryption` in `ios/Runner/Info.plist` non è più una formalità di TestFlight. Era `false`; diventa `true`. Il 16/11/2026 il titolare ha escluso la Francia dalla distribuzione: la decisione è nelle conseguenze.
 

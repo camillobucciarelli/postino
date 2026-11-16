@@ -99,15 +99,17 @@ class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, fin
           if (await _db.postinoSettingsDao.entry(e.key) case final here? when here.winsOver(e)) continue;
           final id = e.key.substring(credentialsSettingPrefix.length);
           final live = !e.deleted && !_removed(merged, id);
+          // Held back by the tombstone of its Account: not taken, so it arrives once the Account is back.
+          if (!e.deleted && !live) continue;
           if (e.deleted) {
             await PasswordCredentials.delete(_keychain, id);
-          } else if (live) {
+          } else {
             await _keychain.write(PasswordCredentials.keychainKey(id), secrets[e.key]!);
           }
           // Together: a crash in between never leaves the fingerprint taken and the Account still da ricollegare.
           await _db.transaction(() async {
             await _db.postinoSettingsDao.applyRemote([e]);
-            if (!live) return;
+            if (e.deleted) return;
             final account = (await _db.accountsDao.byPosition()).where((r) => r.id == id).firstOrNull;
             if (account?.status == AccountStatus.daRicollegare) {
               await _db.accountsDao.setStatus(id, AccountStatus.attivo);
@@ -153,9 +155,13 @@ class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, fin
 
   Future<String?> _reveal(SettingsEntry e, Map<String, String> secrets) async {
     if (secrets[e.key] case final remote? when credentialFingerprint(remote) == e.value) return remote;
-    final here = await _keychain.read(
-      PasswordCredentials.keychainKey(e.key.substring(credentialsSettingPrefix.length)),
-    );
+    final String? here;
+    try {
+      here = await _keychain.read(PasswordCredentials.keychainKey(e.key.substring(credentialsSettingPrefix.length)));
+    } on Object {
+      // A locked keychain is a secret not available: the copy in the file stays, the voce waits.
+      return null;
+    }
     return here != null && credentialFingerprint(here) == e.value ? here : null;
   }
 }

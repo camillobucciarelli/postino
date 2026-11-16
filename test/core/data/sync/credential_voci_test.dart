@@ -366,6 +366,45 @@ void main() {
     },
   );
 
+  test('a credential held back by a tombstone of its Account arrives once the Account is back', () async {
+    final a = await device();
+    final b = await device();
+    await a.connect('pw-one');
+    await a.syncNow();
+    final whole = Map.of(file.entries());
+    final removed = Map.of(whole)
+      ..[accountSettingsKey(_id)] = {'value': null, 'updatedAt': 9999999999998, 'deviceId': 'z', 'deleted': true};
+    file.file = sealedWith({'schemaVersion': 3, 'entries': removed});
+    await b.syncNow();
+    expect(await b.secret(), isNull);
+
+    // Connected again elsewhere with the same credential: only the voce `accounts/` changes.
+    final back = Map.of(whole)
+      ..[accountSettingsKey(_id)] = {
+        ...(whole[accountSettingsKey(_id)]! as Map<String, Object?>),
+        'updatedAt': 9999999999999,
+      };
+    file.file = sealedWith({'schemaVersion': 3, 'entries': back});
+    await b.syncNow();
+    await pumpEventQueue();
+    expect((await b.status(), await b.secret()), (AccountStatus.attivo, 'pw-one'));
+  });
+
+  test('a keychain that cannot be read while sealing keeps the copy in the file, and the rest syncs', () async {
+    final a = await device();
+    await a.connect('pw-one');
+    await a.syncNow();
+    tick();
+    await a.connect('pw-two');
+    await a.db.postinoSettingsDao.write('swipe/left', '"archive"', at: clock.now());
+    a.keychain.failure = Exception('locked');
+    await a.syncNow();
+
+    expect(file.entries(), contains('swipe/left'));
+    expect(_inFile(file), 'pw-one');
+    expect((await a.db.postinoSettingsDao.readRow(_key))!.dirty, isTrue);
+  });
+
   test('only iCloud and IMAP Accounts get a credentials voce from the keychain', () async {
     final a = await device();
     const gmail = 'gmail:bob@gmail.com';

@@ -4,6 +4,8 @@ Testi da incollare in App Store Connect, localizzazione **Italiano**. Tra parent
 
 ## Nome (30)
 
+Sullo Store l'app si chiama **Postino Mail** (impostato in App Store Connect, app ID Apple 6831333983); il testo sotto è il nome breve della scheda e va allineato se si riscrive la scheda.
+
 ```
 Postino
 ```
@@ -75,6 +77,6 @@ Principale: **Produttività**. Secondaria: nessuna.
 | Campo | Valore |
 |---|---|
 | Copyright | `2026 Camillo Bucciarelli` |
-| URL del supporto | https://postino.camillobucciarelli.dev (la pagina di supporto dedicata arriva con #324: sostituire l'URL quando c'è) |
+| URL del supporto | https://postino.camillobucciarelli.dev/support.html |
 | URL di marketing | https://postino.camillobucciarelli.dev |
 | URL dell'informativa privacy | https://postino.camillobucciarelli.dev/privacy.html |

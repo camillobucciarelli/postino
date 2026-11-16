@@ -1,6 +1,6 @@
 # App Privacy e questionario sull'età
 
-Risposte per la sezione **App Privacy** (etichetta nutrizionale) e per il **questionario sull'età** di App Store Connect. Fonti: l'[informativa](https://postino.camillobucciarelli.dev/privacy.html) (aggiornata il 14/11/2026), ADR 0001, 0003, 0007, 0013, 0015, 0016, e il codice. `PrivacyInfo.xcprivacy` non esiste ancora: lo porta #323 (iOS) e #325 (macOS); le risposte sotto devono coincidere con quel file, da controllare quando le due PR sono unite.
+Risposte per la sezione **App Privacy** (etichetta nutrizionale) e per il **questionario sull'età** di App Store Connect. Fonti: l'[informativa](https://postino.camillobucciarelli.dev/privacy.html) (aggiornata il 14/11/2026), ADR 0001, 0003, 0007, 0013, 0015, 0016, e il codice. App Privacy è pubblicata in App Store Connect come «Dati non raccolti» (16/11/2026). `PrivacyInfo.xcprivacy` lo portano #323 (iOS) e #325 (macOS), entrambe unite; le risposte sotto devono coincidere con quel file (non riverificato qui).
 
 ## 1. Risposta d'insieme
 

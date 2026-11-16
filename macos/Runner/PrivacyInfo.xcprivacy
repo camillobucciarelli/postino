@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Postino's privacy manifest on macOS (#325), as on iOS (ios/Runner/PrivacyInfo.xcprivacy): no tracking, nothing
+  collected (no backend, ADR 0001). Required-reason APIs: none in the app's own code. Checked on the built Postino.app
+  with `nm -u` (2026-11-16): the executable imports only NSUserDefaults, from the plugins linked into it, whose resource
+  bundles declare it; FlutterMacOS.framework, llama.framework and LiteRtLm.framework carry their own manifests;
+  sqlcipher.framework and cnativeapi.framework get theirs from the Store target's "Native assets privacy manifests"
+  phase. Only the Mac App Store variant ships it (the Store target, ADR 0021).
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

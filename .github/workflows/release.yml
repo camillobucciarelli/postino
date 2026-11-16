@@ -1,7 +1,8 @@
 name: Release
 
 # A vX.Y.Z tag (or a manual run, from main only) publishes the version in pubspec.yaml. One job per platform, each
-# `needs: version`: `macos` (DMG), `android` (sideloaded APK) and `ios` (TestFlight, #120). `site` publishes the
+# `needs: version`: `macos` (DMG), `macos-store` (Mac App Store, #325, off until configured), `android` (sideloaded
+# APK) and `ios` (TestFlight, #120). `site` publishes the
 # invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
 # `android`) next to them.
 # Steps live in tool/release/*.sh, one responsibility each.
@@ -263,6 +264,97 @@ jobs:
           else
             upload "macos/$VERSION/Postino-$VERSION.dmg" 'public, max-age=300'
           fi
+
+  # The Mac App Store variant (#325, ADR 0021): the Store target (`--flavor store`, no Sparkle), signed with Apple
+  # Distribution and the Mac App Store profile, packaged as a .pkg signed with the Mac Installer certificate and uploaded
+  # to App Store Connect (TestFlight for macOS, then review by hand). Off until the owner sets the repository variable
+  # MAC_APP_STORE to true, once the secrets below exist: until then the job is skipped, not failed. Nothing waits for it,
+  # so the DMG never depends on it. The build number is the other platforms'; App Store Connect refuses one it already
+  # has, so a rerun of a released version fails at the upload, as on iOS.
+  macos-store:
+    needs: version
+    if: vars.MAC_APP_STORE == 'true'
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      APP: build/macos/Build/Products/Release-store/Postino.app
+      PKG: build/release/Postino-${{ needs.version.outputs.version }}.pkg
+    steps:
+      # MAS_CERTIFICATE_P12_BASE64 holds both identities, Apple Distribution and Mac Installer Distribution;
+      # MAS_PROVISION_PROFILE_BASE64 is the Mac App Store profile of the app id, with the keychain access group (#270).
+      - name: Required secrets are set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MAS_CERTIFICATE_P12_BASE64: ${{ secrets.MAS_CERTIFICATE_P12_BASE64 }}
+          MAS_CERTIFICATE_PASSWORD: ${{ secrets.MAS_CERTIFICATE_PASSWORD }}
+          MAS_PROVISION_PROFILE_BASE64: ${{ secrets.MAS_PROVISION_PROFILE_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID APPLE_TEAM_ID MAS_CERTIFICATE_P12_BASE64 MAS_CERTIFICATE_PASSWORD \
+            MAS_PROVISION_PROFILE_BASE64 APP_STORE_CONNECT_API_KEY_BASE64 APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # As the DMG's build, with the Store flavor: the Store target, and appFlavor 'store' turns the updater off.
+      - name: flutter build macos --release --flavor store
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        run: |
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build macos --release --flavor store --build-number="$build" \
+            --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" \
+            --dart-define=POSTINO_BUILD="$build" --dart-define=POSTINO_VERSION="$VERSION"
+      - run: tool/release/store_bundle_check.sh "$APP"
+      - name: Mac App Store certificates in a job keychain
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MAS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MAS_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SIGNING_CERTIFICATE: Apple Distribution|3rd Party Mac Developer Application
+          INSTALLER_CERTIFICATE: 3rd Party Mac Developer Installer|Mac Installer Distribution
+        run: tool/release/keychain_create.sh
+      - name: Sign with the Mac App Store profile
+        env:
+          MAS_PROVISION_PROFILE_BASE64: ${{ secrets.MAS_PROVISION_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          export PROVISION_PROFILE="$RUNNER_TEMP/postino-mas.provisionprofile"
+          trap 'rm -f "$PROVISION_PROFILE"' EXIT
+          (umask 077 && printf '%s' "$MAS_PROVISION_PROFILE_BASE64" | base64 -D > "$PROVISION_PROFILE")
+          tool/release/sign_app.sh "$APP"
+      - name: Package the signed .pkg
+        run: |
+          mkdir -p "$(dirname "$PKG")"
+          productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" \
+            --keychain "$RUNNER_TEMP/release.keychain-db" "$PKG"
+      # Last use of the certificates: the keychain goes now, and even when an earlier step failed.
+      - name: Delete the job keychain
+        if: always()
+        run: tool/release/keychain_delete.sh
+      - run: tool/release/verify_store.sh "$APP" "$PKG"
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Upload to App Store Connect
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          tool/release/testflight_upload.sh "$PKG" macos
+          echo "- Mac App Store: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to App Store Connect" >> "$GITHUB_STEP_SUMMARY"
 
   android:
     needs: version

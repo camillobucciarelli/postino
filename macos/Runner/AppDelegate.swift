@@ -18,7 +18,10 @@ class AppDelegate: FlutterAppDelegate {
       options: .userInitiatedAllowingIdleSystemSleep,
       reason: "Postino sincronizza la posta anche con la finestra chiusa")
     super.applicationDidFinishLaunching(notification)
-    CheckForUpdatesMenuItem.install(in: NSApp.mainMenu)
+    // The Mac App Store variant (#325, ADR 0021) has no Sparkle: the Store updates it.
+    #if !APP_STORE
+      CheckForUpdatesMenuItem.install(in: NSApp.mainMenu)
+    #endif
     MailMenu.install(in: NSApp.mainMenu)
   }
 

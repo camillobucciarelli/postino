@@ -2,7 +2,8 @@
 # Re-signs the ad-hoc signed app from `flutter build macos` with Developer ID: nested code inside-out,
 # then the app with hardened runtime, a secure timestamp and the entitlements Xcode resolved for the
 # Release build (Release.entitlements with build settings expanded). The Xcode project keeps ad-hoc
-# signing, so dev and App Store builds are unaffected.
+# signing, so dev and App Store builds are unaffected. The Mac App Store variant (#325, ADR 0021) is signed here too,
+# with Apple Distribution and its Mac App Store profile: Store.entitlements, the same added keys.
 # The app also gets the Developer ID provisioning profile and the entitlements it authorizes, the app's
 # keychain access group: the database key lives in the Data Protection keychain, which needs it (#270).
 # Usage: SIGNING_IDENTITY=<hash> APPLE_TEAM_ID=<team> PROVISION_PROFILE=<file> sign_app.sh <app>

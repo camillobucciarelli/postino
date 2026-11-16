@@ -1,5 +1,5 @@
 // The updater of each platform (#122, #287): Sparkle on macOS, the site on Android and iOS in a release build,
-// nothing elsewhere.
+// nothing elsewhere, nor in the Mac App Store variant (#325).
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +22,19 @@ void main() {
 
   test('macOS keeps Sparkle', () {
     expect(appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock), isA<ChannelAppUpdater>());
+  });
+
+  // `flutter build --flavor store` gives `store`; the Xcode build of the scheme gives its name, `Store`.
+  for (final flavor in ['store', 'Store']) {
+    test('the Mac App Store variant ($flavor) looks for nothing: the Store updates it (#325)', () {
+      final u = appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock, flavor: flavor);
+      expect(u.supported, isFalse);
+      expect(u.available, isNull);
+    });
+  }
+
+  test('another flavor keeps Sparkle on macOS', () {
+    expect(appUpdaterFor(TargetPlatform.macOS, 1003000, client, db, clock, flavor: 'dev'), isA<ChannelAppUpdater>());
   });
 
   for (final (platform, path) in [(TargetPlatform.android, 'android'), (TargetPlatform.iOS, 'ios')]) {

@@ -79,6 +79,10 @@ jobs:
       - run: tool/release/guide_check_test.sh
       - run: tool/release/download_check_test.sh
       - run: tool/release/entitlements_check_test.sh
+      - run: tool/release/store_bundle_check_test.sh
+      - run: tool/release/profile_check_test.sh
+      - run: tool/release/verify_store_test.sh
+      - run: tool/release/keychain_create_test.sh
       - run: tool/ci/approval_test.sh
       - run: tool/ci/codex_ok_test.sh
       - run: tool/ci/gate_test.sh
@@ -196,4 +200,8 @@ jobs:
       # Text contrast on the list and the Conversazione needs the real fonts too (#55).
       - run: flutter test test/features/posta/screen_reader_test.dart
       - run: flutter build macos --debug
+      # The Mac App Store variant (#325, ADR 0021): its own Xcode target, so a Swift file added to the Runner only, or
+      # Sparkle slipping back in, fails here and not at release time.
+      - run: flutter build macos --release --flavor store
+      - run: tool/release/store_bundle_check.sh build/macos/Build/Products/Release-store/Postino.app
       - run: flutter build ios --no-codesign

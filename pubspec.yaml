@@ -75,6 +75,7 @@ dependencies:
   llamadart: ^0.19.8
   llamadart_llama_cpp_flutter: ^0.19.8
   llamadart_litert_lm_flutter: ^0.19.8
+  mobile_scanner: ^7.5.0
 
 dev_dependencies:
   flutter_test:

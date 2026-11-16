@@ -14,6 +14,7 @@ import 'package:postino/core/domain/settings_backend.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/impostazioni/presentation/pairing_code_panel.dart';
+import 'package:postino/features/impostazioni/presentation/qr_camera.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
 import 'package:routefly/routefly.dart';
@@ -140,6 +141,137 @@ void main() {
       await tester.pumpAndSettle();
       expect(_entry, findsNothing);
       expect(await _savedKey(h), isNull);
+    });
+  });
+
+  group('«Inquadra il QR»', () {
+    final scan = find.byKey(const ValueKey('pairing-entry-scan'));
+    final typeCode = find.byKey(const ValueKey('pairing-entry-type'));
+    final scanError = find.byKey(const ValueKey('pairing-scan-error'));
+
+    Future<Harness> scanning(WidgetTester tester) async {
+      final h = await _start(tester);
+      await tester.tap(find.descendant(of: _banner, matching: find.text('Inserisci il codice')));
+      await tester.pumpAndSettle();
+      await tester.tap(scan);
+      await tester.pumpAndSettle();
+      return h;
+    }
+
+    testWidgets('a QR that is not Postino\'s says so and keeps scanning; the right one pairs like the typed code', (
+      tester,
+    ) async {
+      final h = await scanning(tester);
+      expect(find.byKey(const ValueKey('fake-qr-camera')), findsOneWidget);
+      expect(_entry, findsNothing);
+
+      h.qrCamera.read('https://example.com/menu');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: scanError, matching: find.textContaining('non è un codice di abbinamento')), findsOne);
+      expect(find.byKey(const ValueKey('fake-qr-camera')), findsOneWidget);
+      expect(await _savedKey(h), isNull);
+
+      // A code of another key: the same check as when typed, which opens the file on Drive.
+      final reads = _file.reads;
+      h.qrCamera.read(SyncKey.random().code);
+      await tester.pumpAndSettle();
+      expect(_file.reads, greaterThan(reads));
+      expect(find.descendant(of: scanError, matching: find.textContaining('stesso Account')), findsOne);
+      expect(await _savedKey(h), isNull);
+
+      h.qrCamera.read(testSyncKey.code);
+      await tester.pumpAndSettle();
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+      expect(find.byKey(const ValueKey('fake-qr-camera')), findsNothing);
+      expect(_done, findsOneWidget);
+    });
+
+    testWidgets('the same refused QR, read again and again, is checked once', (tester) async {
+      final h = await scanning(tester);
+      final wrong = SyncKey.random().code;
+      h.qrCamera.read(wrong);
+      await tester.pumpAndSettle();
+      final reads = _file.reads;
+      h.qrCamera
+        ..read(wrong)
+        ..read(wrong);
+      await tester.pumpAndSettle();
+      expect(_file.reads, reads);
+      expect(scanError, findsOneWidget);
+    });
+
+    testWidgets('offline, the same QR still in view pairs once the network is back', (tester) async {
+      final h = await scanning(tester);
+      h.connectivity.online = false;
+      h.qrCamera.read(testSyncKey.code);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: scanError, matching: find.textContaining('offline')), findsOne);
+      expect(await _savedKey(h), isNull);
+
+      h.connectivity.online = true;
+      h.qrCamera.read(testSyncKey.code);
+      await tester.pumpAndSettle();
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+    });
+
+    testWidgets('back to the field while a QR is checked: its refusal does not land under the field', (tester) async {
+      final h = await scanning(tester);
+      _file.readGate = Completer<void>();
+      h.qrCamera.read(SyncKey.random().code);
+      await tester.pump();
+      await tester.tap(typeCode);
+      await tester.pump();
+      _file.readGate!.complete();
+      _file.readGate = null;
+      await tester.pumpAndSettle();
+      expect(_entry, findsOneWidget);
+      expect(find.textContaining('Codice non valido'), findsNothing);
+      expect(find.textContaining('non è un codice di abbinamento'), findsNothing);
+      await _typeCode(tester, testSyncKey.code);
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+    });
+
+    testWidgets('the camera refused: says why, and «Digita il codice» goes back to the field, which pairs', (
+      tester,
+    ) async {
+      final h = await _start(tester);
+      h.qrCamera.failure = QrCameraProblem.denied;
+      await tester.tap(find.descendant(of: _banner, matching: find.text('Inserisci il codice')));
+      await tester.pumpAndSettle();
+      await tester.tap(scan);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('non ha il permesso di usare la fotocamera'), findsOneWidget);
+
+      await tester.tap(typeCode);
+      await tester.pumpAndSettle();
+      await _typeCode(tester, testSyncKey.code);
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+    });
+
+    testWidgets('no camera on this device: no «Inquadra il QR», the code is typed', (tester) async {
+      final h = await _start(tester);
+      h.qrCamera.available = false;
+      await tester.tap(find.descendant(of: _banner, matching: find.text('Inserisci il codice')));
+      await tester.pumpAndSettle();
+      expect(scan, findsNothing);
+      expect(_entry, findsOneWidget);
+    });
+
+    testWidgets('from the keyboard: the focus on «Digita il codice» while scanning, Enter brings the field back', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final h = await scanning(tester);
+      expect(find.bySemanticsLabel('Inquadratura della fotocamera'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(_entry, findsOneWidget);
+      // The field has the focus again: typed and sent with Enter.
+      tester.testTextInput.enterText(testSyncKey.code);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+      semantics.dispose();
     });
   });
 

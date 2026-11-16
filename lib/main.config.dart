@@ -91,6 +91,10 @@ import 'package:postino/core/domain/text_embedder.dart' as _i374;
 import 'package:postino/core/domain/trusted_senders_repository.dart' as _i359;
 import 'package:postino/features/impostazioni/domain/auto_label_switch_use_case.dart'
     as _i320;
+import 'package:postino/features/impostazioni/presentation/mobile_qr_camera.dart'
+    as _i38;
+import 'package:postino/features/impostazioni/presentation/qr_camera.dart'
+    as _i961;
 import 'package:postino/features/posta/domain/conversation_label_intents.dart'
     as _i812;
 import 'package:postino/features/posta/domain/reply_draft_use_case.dart'
@@ -158,6 +162,10 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i398.PeriodicSync>(
       () => _i524.SystemPeriodicSync(),
+      registerFor: {_prod},
+    );
+    gh.lazySingleton<_i961.QrCamera>(
+      () => _i38.MobileQrCamera(),
       registerFor: {_prod},
     );
     gh.singleton<_i6.MicrosoftConsent>(

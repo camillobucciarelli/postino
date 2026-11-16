@@ -762,8 +762,8 @@ class Translations$impostazioni$it {
 	/// it: 'Mostra il codice da inserire sul nuovo dispositivo'
 	String get syncPairOtherSubtitle => 'Mostra il codice da inserire sul nuovo dispositivo';
 
-	/// it: 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.'
-	String get syncPairShowBody => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.';
+	/// it: 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi inquadra questo QR, oppure digita o incolla il codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.'
+	String get syncPairShowBody => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi inquadra questo QR, oppure digita o incolla il codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.';
 
 	/// it: 'QR del codice di abbinamento'
 	String get syncPairQrLabel => 'QR del codice di abbinamento';
@@ -806,6 +806,27 @@ class Translations$impostazioni$it {
 
 	/// it: 'Annulla'
 	String get syncPairEnterCancel => 'Annulla';
+
+	/// it: 'Inquadra il QR'
+	String get syncPairScan => 'Inquadra il QR';
+
+	/// it: 'Inquadra il QR che mostra il dispositivo già abbinato in «Sincronizza su…» › «Abbina un altro dispositivo».'
+	String get syncPairScanBody => 'Inquadra il QR che mostra il dispositivo già abbinato in «Sincronizza su…» › «Abbina un altro dispositivo».';
+
+	/// it: 'Inquadratura della fotocamera'
+	String get syncPairScanPreview => 'Inquadratura della fotocamera';
+
+	/// it: 'Questo QR non è un codice di abbinamento valido. Inquadra quello di «Abbina un altro dispositivo», su un dispositivo che sincronizza sullo stesso Account in «Sincronizza su…».'
+	String get syncPairScanInvalid => 'Questo QR non è un codice di abbinamento valido. Inquadra quello di «Abbina un altro dispositivo», su un dispositivo che sincronizza sullo stesso Account in «Sincronizza su…».';
+
+	/// it: 'Postino non ha il permesso di usare la fotocamera. Consentilo nelle impostazioni di sistema, oppure digita il codice.'
+	String get syncPairCameraDenied => 'Postino non ha il permesso di usare la fotocamera. Consentilo nelle impostazioni di sistema, oppure digita il codice.';
+
+	/// it: 'La fotocamera non è disponibile. Digita il codice.'
+	String get syncPairCameraUnavailable => 'La fotocamera non è disponibile. Digita il codice.';
+
+	/// it: 'Digita il codice'
+	String get syncPairType => 'Digita il codice';
 
 	/// it: 'Verifica del codice in corso…'
 	String get syncPairBusy => 'Verifica del codice in corso…';
@@ -1703,7 +1724,7 @@ extension on Translations {
 			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Motivo: ${reason}',
 			'impostazioni.syncPairOther' => 'Abbina un altro dispositivo',
 			'impostazioni.syncPairOtherSubtitle' => 'Mostra il codice da inserire sul nuovo dispositivo',
-			'impostazioni.syncPairShowBody' => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.',
+			'impostazioni.syncPairShowBody' => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi inquadra questo QR, oppure digita o incolla il codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.',
 			'impostazioni.syncPairQrLabel' => 'QR del codice di abbinamento',
 			'impostazioni.syncPairCodeLabel' => 'Codice di abbinamento',
 			'impostazioni.syncPairClosesIn' => ({required Object time}) => 'Si chiude tra ${time}',
@@ -1718,6 +1739,13 @@ extension on Translations {
 			'impostazioni.syncPairEnterHelper' => 'Inizia con P1. Spazi e trattini non contano.',
 			'impostazioni.syncPairEnterConfirm' => 'Abbina',
 			'impostazioni.syncPairEnterCancel' => 'Annulla',
+			'impostazioni.syncPairScan' => 'Inquadra il QR',
+			'impostazioni.syncPairScanBody' => 'Inquadra il QR che mostra il dispositivo già abbinato in «Sincronizza su…» › «Abbina un altro dispositivo».',
+			'impostazioni.syncPairScanPreview' => 'Inquadratura della fotocamera',
+			'impostazioni.syncPairScanInvalid' => 'Questo QR non è un codice di abbinamento valido. Inquadra quello di «Abbina un altro dispositivo», su un dispositivo che sincronizza sullo stesso Account in «Sincronizza su…».',
+			'impostazioni.syncPairCameraDenied' => 'Postino non ha il permesso di usare la fotocamera. Consentilo nelle impostazioni di sistema, oppure digita il codice.',
+			'impostazioni.syncPairCameraUnavailable' => 'La fotocamera non è disponibile. Digita il codice.',
+			'impostazioni.syncPairType' => 'Digita il codice',
 			'impostazioni.syncPairBusy' => 'Verifica del codice in corso…',
 			'impostazioni.syncPairInvalid' => 'Codice non valido. Controlla di averlo copiato per intero, e che i due dispositivi sincronizzino sullo stesso Account in «Sincronizza su…».',
 			'impostazioni.syncPairNothing' => 'Su Drive non ci sono ancora Impostazioni cifrate da abbinare: questo dispositivo crea la sua chiave alla prima sincronizzazione.',

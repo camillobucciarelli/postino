@@ -32,6 +32,8 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Postino usa la fotocamera solo per leggere il QR dell'Abbinamento di un altro dispositivo. Le immagini non vengono salvate né inviate.</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

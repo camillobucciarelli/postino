@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -233,6 +234,31 @@ void main() {
       expect(_code, findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('on a desktop, losing the focus to another window does not close it; hiding it does', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await open(tester);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      expect(_code, findsOneWidget);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('two taps open one screen only', (tester) async {
+      final h = await _start(tester, key: testSyncKey);
+      await tester.tap(_pairOther);
+      await tester.tap(_pairOther, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(_code, findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(h.screenGuard.protected, isFalse);
     });
 
     testWidgets('«Chiudi» has the focus: Enter closes it', (tester) async {

@@ -57,16 +57,18 @@ final class const UnreadableRemote(
 /// a key is made only when the file is absent or in clear.
 RemoteSettings readRemoteSettings(List<String> copies, SyncKey? key) {
   if (copies.isEmpty) return const NoRemoteFile();
+  // Without a key, a sealed copy anywhere means another device encrypted first: never a key of our own over it.
+  if (key == null && copies.any((c) => openSettings(c, null) is LockedCopy)) return const LockedRemote();
   final first = _copy(copies.first, key);
   if (first is! ReadableRemote || !first.doc.writable || copies.length == 1) return first;
   var entries = first.doc.entries;
+  var opened = first.opened;
   for (final c in copies.skip(1)) {
     switch (_copy(c, key)) {
-      case ReadableRemote(:final doc) when doc.writable:
+      case ReadableRemote(:final doc, opened: final o) when doc.writable:
         entries = mergeSettings(entries, doc.entries);
-      // Without a key, a sealed copy means another device encrypted first: never a key of our own over it.
-      case LockedRemote() when key == null:
-        return const LockedRemote();
+        // One copy opened with the key is enough to call the key that of the file (the pairing checks it).
+        opened |= o;
       case LockedRemote():
         break;
       case _:
@@ -75,7 +77,7 @@ RemoteSettings readRemoteSettings(List<String> copies, SyncKey? key) {
   }
   return ReadableRemote(
     SettingsDocument(schemaVersion: first.doc.schemaVersion, entries: entries),
-    opened: first.opened,
+    opened: opened,
     duplicates: true,
   );
 }

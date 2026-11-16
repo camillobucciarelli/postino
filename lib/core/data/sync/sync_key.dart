@@ -18,7 +18,13 @@ class SyncKey._(final Uint8List _bytes) {
 
   /// The key [encode] saved; throws on anything else.
   factory SyncKey.decode(String saved) {
-    final bytes = base64Decode(saved);
+    final Uint8List bytes;
+    try {
+      bytes = base64Decode(saved);
+      // A FormatException of its own: base64Decode's would quote the saved text.
+    } on FormatException {
+      throw const FormatException('not a sync key');
+    }
     if (bytes.length != _length) throw const FormatException('not a sync key');
     return SyncKey._(bytes);
   }

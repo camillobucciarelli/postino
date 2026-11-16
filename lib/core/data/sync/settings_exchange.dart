@@ -24,7 +24,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
       for (final e in await _db.postinoSettingsDao.entries())
         if (isSyncedSetting(e.key)) e.key: e,
     };
-    final key = await _keys.read();
+    var key = await _keys.read();
     final List<String> copies;
     switch (await backend.read()) {
       case Err(:final failure):
@@ -33,10 +33,24 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
         copies = value;
     }
 
+    var state = readRemoteSettings(copies, key);
+    // A regeneration whose answer was lost (a timeout, the app killed) may have reached Drive all the same: if the
+    // file opens only with the regenerated key, it becomes this device's key. Either way it is no longer pending.
+    if (await _keys.readPending() case final pending?) {
+      if (state is LockedRemote) {
+        final withPending = readRemoteSettings(copies, pending);
+        if (withPending is! LockedRemote) {
+          await _keys.write(pending);
+          (key, state) = (pending, withPending);
+        }
+      }
+      await _keys.clearPending();
+    }
+
     final SettingsDocument remote;
     var rewrite = regenerate;
     var duplicates = false;
-    switch (readRemoteSettings(copies, key)) {
+    switch (state) {
       case ReadableRemote(:final doc, :final opened, duplicates: final d):
         remote = doc;
         rewrite |= !opened || d;
@@ -52,6 +66,8 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
         // What was on Drive and is not here is lost: the confirmation of «Rigenera la chiave» says so.
         remote = _empty;
     }
+    // A newer Postino's file is never overwritten, not even by a new key: the regeneration fails, never seems done.
+    if (regenerate && !remote.writable) return const UnexpectedFailure('file from a newer Postino: update it');
 
     final merged = mergeSettings(local, remote.entries);
     // Voci outside the closed list (a newer Postino's) stay in the file but never come here.
@@ -67,13 +83,20 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys) {
     if (rewrite || !_same(merged, remote.entries)) {
       final sealWith = regenerate || key == null ? SyncKey.random() : key;
       // A first key is kept before the write: a write that fails leaves this device with the key the next cycle
-      // reuses on a file still absent or in clear. A regenerated one only after it: until then the file is sealed
-      // with the old key, which this device must keep to go on reading it.
-      if (key == null && !regenerate) await _keys.write(sealWith);
+      // reuses on a file still absent or in clear. A regenerated one waits as pending, and replaces the key only after
+      // the write: until then the file is sealed with the old key, which this device must keep to go on reading it.
+      if (regenerate) {
+        await _keys.writePending(sealWith);
+      } else if (key == null) {
+        await _keys.write(sealWith);
+      }
       if (await backend.write(sealSettings(encodeSettings(merged.values), sealWith)) case Err(:final failure)) {
         return failure;
       }
-      if (regenerate) await _keys.write(sealWith);
+      if (regenerate) {
+        await _keys.write(sealWith);
+        await _keys.clearPending();
+      }
       if (duplicates) {
         if (await backend.dropDuplicates() case Err(:final failure)) return failure;
       }

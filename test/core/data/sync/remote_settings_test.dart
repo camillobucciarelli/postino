@@ -156,6 +156,27 @@ void main() {
       );
     });
 
+    test('without a key, a sealed copy anywhere locks it, even behind one that cannot be read', () {
+      expect(
+        readRemoteSettings([
+          _doc({'a/1': _voce(1)}, schema: 2),
+          'nope',
+          _sealed({}),
+        ], null),
+        isA<LockedRemote>(),
+      );
+    });
+
+    test('a copy in clear first and one sealed with the key: opened by that copy', () {
+      expect(
+        readRemoteSettings([
+          _doc({'a/1': _voce(1)}, schema: 2),
+          _sealed({'a/2': _voce(1)}),
+        ], key),
+        _readable(['a/2'], opened: true, duplicates: true),
+      );
+    });
+
     test('without a key, plain duplicates up to schema 2 merge as the first migration', () {
       expect(
         readRemoteSettings([

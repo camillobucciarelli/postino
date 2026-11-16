@@ -45,6 +45,12 @@ class FakeSettingsBackend() implements SettingsBackend {
   /// While set, every write fails with it, after being attempted.
   Failure? writeFailure;
 
+  /// While set, writes reach the file but answer with it: an answer lost after Drive took the upload.
+  Failure? lostAnswer;
+
+  /// While set, dropping the duplicates fails with it.
+  Failure? dropFailure;
+
   /// While set, reads wait for it to complete: a cycle held in flight.
   Completer<void>? readGate;
 
@@ -76,6 +82,7 @@ class FakeSettingsBackend() implements SettingsBackend {
     if (writeFailure case final f?) return Err(f);
     writes++;
     file = text;
+    if (lostAnswer case final f?) return Err(f);
     return const Ok(null);
   }
 
@@ -88,6 +95,7 @@ class FakeSettingsBackend() implements SettingsBackend {
   @override
   Future<Result<void>> dropDuplicates() async {
     drops++;
+    if (dropFailure case final f?) return Err(f);
     duplicates = [];
     return const Ok(null);
   }

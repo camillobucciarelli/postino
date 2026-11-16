@@ -111,6 +111,34 @@ void main() {
       expect((jsonDecode(file.file!) as Map<String, Object?>)['nonce'], isNot(first['nonce']));
     });
 
+    test('a first upload that fails keeps the new key, and the retry seals with the same one', () async {
+      final a = await device();
+      await a.labels.setAutomatic('a1', 'A', automatic: true);
+      file.writeFailure = const OfflineFailure();
+      await a.sync.syncNow();
+      final key = await a.savedKey();
+      expect(key, isNotNull);
+      expect(file.file, isNull);
+      file.writeFailure = null;
+      await a.sync.syncNow();
+      expect((await a.savedKey())!.id, key!.id);
+      expect(file.entries(key).keys, ['auto_labels/a1']);
+    });
+
+    test('duplicates that cannot be dropped: the cycle fails and the voci stay to upload', () async {
+      final a = await device(key: testSyncKey);
+      file
+        ..file = sealedWith({'schemaVersion': 3, 'entries': <String, Object?>{}})
+        ..duplicates = [
+          sealedWith({'schemaVersion': 3, 'entries': <String, Object?>{}}),
+        ]
+        ..dropFailure = const OfflineFailure();
+      await a.labels.setAutomatic('a1', 'A', automatic: true);
+      await a.sync.syncNow();
+      expect(await a.outcome(), isA<OfflineFailure>());
+      expect((await a.dirty(), file.duplicates.length), (1, 1));
+    });
+
     test('nothing to write and no file: no key is made yet', () async {
       final a = await device();
       await a.sync.syncNow();
@@ -358,13 +386,42 @@ void main() {
       expect(((await a.savedKey())!.id, file.writes), (testSyncKey.id, 0));
     });
 
-    test('a file from a newer Postino is never overwritten, not even by a new key', () async {
+    test('a file from a newer Postino is never overwritten, not even by a new key, and it is no success', () async {
       final a = await device(key: testSyncKey);
-      file.file = sealedWith({'schemaVersion': 99, 'entries': <String, Object?>{}});
-      final newer = file.file;
+      final sealed = sealedWith({'schemaVersion': 99, 'entries': <String, Object?>{}});
+      // Nothing here to upload: the regeneration must fail all the same, not look done.
+      for (final newer in [sealed, sealed.replaceFirst('"postinoEncrypted":1', '"postinoEncrypted":2')]) {
+        file.file = newer;
+        expect(await a.sync.regenerateKey(), isA<Err<void>>());
+        expect(((await a.savedKey())!.id, file.file, file.writes), (testSyncKey.id, newer, 0));
+      }
+    });
+
+    test('an upload that reached Drive but lost its answer: the next cycle adopts the regenerated key', () async {
+      final a = await device(key: testSyncKey);
       await a.labels.setAutomatic('a1', 'A', automatic: true);
+      await a.sync.syncNow();
+      file.lostAnswer = const OfflineFailure();
       expect(await a.sync.regenerateKey(), isA<Err<void>>());
-      expect(((await a.savedKey())!.id, file.file), (testSyncKey.id, newer));
+      expect((await a.savedKey())!.id, testSyncKey.id, reason: 'not confirmed yet');
+      file.lostAnswer = null;
+      await a.sync.syncNow();
+      final key = (await a.savedKey())!;
+      expect(key.id, isNot(testSyncKey.id));
+      expect((jsonDecode(file.file!) as Map<String, Object?>)['keyId'], key.id);
+      expect(await a.outcome(), isNull);
+      expect(await a.keys.readPending(), isNull);
+    });
+
+    test('a regenerated key whose upload never arrived is forgotten', () async {
+      final a = await device(key: testSyncKey);
+      await a.labels.setAutomatic('a1', 'A', automatic: true);
+      await a.sync.syncNow();
+      file.writeFailure = const OfflineFailure();
+      await a.sync.regenerateKey();
+      file.writeFailure = null;
+      await a.sync.syncNow();
+      expect(((await a.savedKey())!.id, await a.keys.readPending(), await a.outcome()), (testSyncKey.id, null, null));
     });
   });
 
@@ -426,6 +483,16 @@ void main() {
       }
     });
 
+    test('the code opens a sealed duplicate beside a file in clear: paired', () async {
+      file
+        ..file = _plain({})
+        ..duplicates = [
+          sealedWith({'schemaVersion': 3, 'entries': <String, Object?>{}}),
+        ];
+      expect(await b.sync.pair(testSyncKey.code), isA<Ok<void>>());
+      expect((await b.savedKey())!.id, testSyncKey.id);
+    });
+
     test('a device whose key is no longer valid pairs again and keeps one key', () async {
       final c = await device(key: SyncKey.random());
       expect(await c.sync.pair(testSyncKey.code), isA<Ok<void>>());
@@ -434,7 +501,8 @@ void main() {
 
     test('the code and the key never reach the outcome nor the failures', () async {
       await b.sync.syncNow();
-      final shown = '${await b.sync.watchStatus().first} ${await b.sync.pair('${testSyncKey.code}X')}';
+      // A well-formed code of another key: it reaches the file and is refused there.
+      final shown = '${await b.sync.watchStatus().first} ${await b.sync.pair(SyncKey.random().code)}';
       expect(shown, isNot(contains(testSyncKey.code.substring(2, 20))));
       expect(shown, isNot(contains(testSyncKey.encode())));
     });

@@ -50,8 +50,12 @@ void main() {
     }
   });
 
-  test('a saved key that is not one throws', () {
+  test('a saved key that is not one throws, without quoting it', () {
     expect(() => SyncKey.decode('AAAA'), throwsFormatException);
+    expect(
+      () => SyncKey.decode('SECRETxyz!'),
+      throwsA(isA<FormatException>().having((e) => '$e', 'message', isNot(contains('SECRET')))),
+    );
   });
 
   test('the key never prints', () {

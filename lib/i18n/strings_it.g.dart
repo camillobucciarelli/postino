@@ -720,8 +720,8 @@ class Translations$impostazioni$it {
 	/// it: 'Nessuno'
 	String get syncNone => 'Nessuno';
 
-	/// it: 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.'
-	String get syncBody => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.';
+	/// it: 'Le Impostazioni di Postino (per esempio le Etichette automatiche) e le credenziali degli Account vengono salvate cifrate in un file nascosto nel Google Drive dell'Account scelto. La chiave resta sui tuoi dispositivi. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.'
+	String get syncBody => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) e le credenziali degli Account vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto. La chiave resta sui tuoi dispositivi. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.';
 
 	/// it: 'Sincronizza le Impostazioni su'
 	String get syncChooserTitle => 'Sincronizza le Impostazioni su';
@@ -1722,7 +1722,7 @@ extension on Translations {
 			'impostazioni.syncSection' => 'Sincronizzazione',
 			'impostazioni.syncTitle' => 'Sincronizza su…',
 			'impostazioni.syncNone' => 'Nessuno',
-			'impostazioni.syncBody' => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.',
+			'impostazioni.syncBody' => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) e le credenziali degli Account vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto. La chiave resta sui tuoi dispositivi. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.',
 			'impostazioni.syncChooserTitle' => 'Sincronizza le Impostazioni su',
 			'impostazioni.syncCancel' => 'Annulla',
 			'impostazioni.syncBusy' => 'Accesso a Drive in corso…',

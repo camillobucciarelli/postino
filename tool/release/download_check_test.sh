@@ -1,8 +1,8 @@
 #!/bin/bash
 # Self-check of download_check.sh, run by ci.yml: the real site passes, and each kind of slip fails: something loaded
 # from a third party (link, script, inline style, srcset, single-quoted attribute, @import, a Buy me a coffee widget),
-# a link to a missing file (relative or absolute on the site's host), Buy me a coffee or Google's policy without their
-# rel, another page of an allowed host, a mail link other than the guide's privacy contact, wrong
+# a link to a missing file (relative or absolute on the site's host), Buy me a coffee, Google's policy or ML Kit's
+# disclosure without their rel (while a page without the ML Kit link passes), another page of an allowed host, a mail link other than the guide's privacy contact, wrong
 # lang, missing switch to the twin, lost download or footer link, missing font or license, lost Open Graph meta or
 # a missing or empty og.png, a placeholder on a page
 # published as it is, broken markup, and the same slips in the guide.
@@ -26,6 +26,15 @@ fails() { # <what> <file in the site, or "guide"> <sed on it, or "rm">
   fi
   if tool/release/download_check.sh "$tmp/s" "$tmp/guide.html" > /dev/null 2>&1; then echo "should fail: $1"; exit 1; fi
 }
+passes() { # <what> <file in the site> <sed on it>
+  rm -rf "$tmp/s"
+  cp -R "$site" "$tmp/s"
+  sed -E "$3" "$site/$2" > "$tmp/s/$2"
+  if cmp -s "$site/$2" "$tmp/s/$2"; then echo "the sed of '$1' changed nothing"; exit 1; fi
+  tool/release/download_check.sh "$tmp/s" "$guide" > /dev/null || { echo "should pass: $1"; exit 1; }
+}
+# Two allowed links on developers.google.com: a page without the ML Kit one is still fine.
+passes "only the policy of the two Google links" privacy.html 's|<a href="https://developers.google.com/ml-kit/android-data-disclosure"[^>]*>([^<]*)</a>|\1|'
 fails "Google Fonts link" index.html 's|</head>|<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree"></head>|'
 fails "third-party script" en/privacy.html 's|</body>|<script src="https://example.com/a.js"></script></body>|'
 fails "Buy me a coffee widget" en/index.html 's|</body>|<script src="https://buymeacoffee.com/widget.js"></script></body>|'
@@ -51,6 +60,8 @@ fails "placeholder on a page published as it is" privacy.html 's|Ultimo aggiorna
 fails "broken markup" privacy.html 's|</ul>|</strong></ul>|'
 fails "policy link without rel" en/privacy.html 's|policy" rel="noopener noreferrer">|policy">|'
 fails "policy URL on a link element" en/privacy.html 's|</head>|<link href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"></head>|'
+fails "ML Kit link without rel" privacy.html 's|android-data-disclosure" rel="noopener noreferrer"|android-data-disclosure"|'
+fails "policy without rel beside ML Kit" privacy.html 's|policy" rel="noopener noreferrer"|policy"|'
 fails "other page of the policy host" privacy.html 's|api-services-user-data-policy"|other-page"|'
 fails "Cloudflare policy without rel" privacy.html 's|privacypolicy/" rel="noopener noreferrer"|privacypolicy/"|'
 fails "other page of Cloudflare" en/privacy.html 's|cloudflare.com/privacypolicy/|cloudflare.com/other/|'

@@ -286,15 +286,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i398.Clock>(),
       ),
     );
-    gh.lazySingleton<_i311.SettingsSync>(
-      () => _i311.SettingsSync(
-        gh<_i1028.PostinoDatabase>(),
-        gh<_i307.SettingsRepository>(),
-        gh<_i398.Clock>(),
-        gh<_i398.Connectivity>(),
-        gh<_i167.SyncKeyStore>(),
-      ),
-    );
     gh.factory<_i758.ImmediateNotificationsUseCase>(
       () => _i758.ImmediateNotificationsUseCase(
         gh<_i936.ImmediateNotifications>(),
@@ -333,9 +324,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i96.ModelDownload>(),
       ),
     );
-    gh.lazySingleton<_i355.SettingsSyncControl>(
-      () => settingsSyncModule.settingsSyncControl(gh<_i311.SettingsSync>()),
-    );
     gh.lazySingleton<_i555.NotificationCleanup>(
       () => _i555.NotificationCleanup(
         gh<_i1028.PostinoDatabase>(),
@@ -347,6 +335,20 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i462.LaunchAtLogin>(),
         gh<_i307.SettingsRepository>(),
       ),
+    );
+    gh.lazySingleton<_i311.SettingsSync>(
+      () => _i311.SettingsSync(
+        gh<_i1028.PostinoDatabase>(),
+        gh<_i307.SettingsRepository>(),
+        gh<_i398.Clock>(),
+        gh<_i398.Connectivity>(),
+        gh<_i167.SyncKeyStore>(),
+        gh<_i398.SecureStore>(),
+        gh<_i681.AccountsLock>(),
+      ),
+    );
+    gh.lazySingleton<_i355.SettingsSyncControl>(
+      () => settingsSyncModule.settingsSyncControl(gh<_i311.SettingsSync>()),
     );
     gh.lazySingleton<_i893.SyncEngine>(
       () => _i893.SyncEngine(

@@ -9,6 +9,7 @@ import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/settings_sync.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
+import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/settings_repository.dart';
 import 'package:postino/main.dart';
 
@@ -38,6 +39,8 @@ void main() {
           h.clock,
           h.connectivity,
           keysWith(testSyncKey),
+          getIt<SecureStore>(),
+          getIt<AccountsLock>(),
           backendFor: (_) => file,
         ),
       );
@@ -51,6 +54,8 @@ void main() {
       // Device B: its own database on the same file and clock, sync on the same Account, started as main.dart.
       final bDb = PostinoDatabase.inMemory();
       final bSettings = DeviceSettingsStore(bDb);
+      final bKeychain = FakeSecureStore();
+      final bLock = AccountsLock();
       await bSettings.setSettingsSyncAccount('gmail:ada@gmail.com');
       final bSync = SettingsSync(
         bDb,
@@ -58,16 +63,12 @@ void main() {
         h.clock,
         FakeConnectivity(),
         keysWith(testSyncKey),
+        bKeychain,
+        bLock,
         backendFor: (_) => file,
       )..start();
-      final bMirror = AccountsSettingsMirror(
-        bDb,
-        MailStore(bDb),
-        FakeSecureStore(),
-        bSettings,
-        AccountsLock(),
-        FakeAttachments(),
-      )..start();
+      final bMirror = AccountsSettingsMirror(bDb, MailStore(bDb), bKeychain, bSettings, bLock, FakeAttachments())
+        ..start();
       addTearDown(() async {
         await bMirror.stop();
         await bSync.stop();

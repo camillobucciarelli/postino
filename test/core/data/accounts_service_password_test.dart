@@ -9,6 +9,7 @@ import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/imap/password_credentials.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
+import 'package:postino/core/data/sync/credential_voci.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/accounts_repository.dart';
@@ -70,6 +71,32 @@ void main() {
 
   group('the synced voce (ADR 0016), as connectWithPassword writes it', () {
     Future<PostinoSettingRow?> voce(String id) => getIt<PostinoDatabase>().postinoSettingsDao.readRow('accounts/$id');
+
+    test(
+      'the credentials voce (ADR 0019): stamped now and dirty, a fingerprint, rewritten only when it changes',
+      () async {
+        await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
+        final dao = getIt<PostinoDatabase>().postinoSettingsDao;
+        final v = (await dao.readRow('credentials/icloud:ada@icloud.com'))!;
+        final saved = h.keychain.values[PasswordCredentials.keychainKey('icloud:ada@icloud.com')]!;
+        expect(
+          (v.value, v.updatedAt, v.dirty),
+          (credentialFingerprint(saved), h.clock.now().millisecondsSinceEpoch, true),
+        );
+        expect(v.value, isNot(contains('app-password-1')));
+
+        // Da ricollegare, then the same password again: the voce does not move.
+        await getIt<PostinoDatabase>().accountsDao.setStatus('icloud:ada@icloud.com', AccountStatus.daRicollegare);
+        h.clock.advance(const Duration(minutes: 1));
+        expect(await accounts.connectWithPassword('ada@icloud.com', 'app-password-1'), isA<Ok<Account>>());
+        expect(await dao.readRow('credentials/icloud:ada@icloud.com'), v);
+
+        await getIt<PostinoDatabase>().accountsDao.setStatus('icloud:ada@icloud.com', AccountStatus.daRicollegare);
+        h.connection.password = 'app-password-2';
+        expect(await accounts.connectWithPassword('ada@icloud.com', 'app-password-2'), isA<Ok<Account>>());
+        expect((await dao.readRow('credentials/icloud:ada@icloud.com'))!.updatedAt, greaterThan(v.updatedAt));
+      },
+    );
 
     test('iCloud, with the sync off: before the sync, without servers nor password', () async {
       await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');

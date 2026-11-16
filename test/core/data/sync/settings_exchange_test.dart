@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -26,7 +27,16 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock, {final S
   late final keys = keysWith(key, keychain);
   late final settings = DeviceSettingsStore(db);
   late final labels = AutoLabelsStore(db, clock);
-  late final sync = SettingsSync(db, settings, clock, FakeConnectivity(), keys, backendFor: (_) => backend);
+  late final sync = SettingsSync(
+    db,
+    settings,
+    clock,
+    FakeConnectivity(),
+    keys,
+    keychain,
+    AccountsLock(),
+    backendFor: (_) => backend,
+  );
 
   Future<int> dirty() => db.postinoSettingsDao.watchDirty().first;
   Future<SyncKey?> savedKey() => keys.read();

@@ -389,7 +389,7 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String syncCycleReason({required Object reason}) => 'Reason: ${reason}';
 	@override String get syncPairOther => 'Pair another device';
 	@override String get syncPairOtherSubtitle => 'Shows the code to enter on the new device';
-	@override String get syncPairShowBody => 'On the new device connect this same Account, pick it in “Sync to…”, then type or paste this code. Whoever has the code can read the synced settings: do not share it.';
+	@override String get syncPairShowBody => 'On the new device connect this same Account, pick it in “Sync to…”, then scan this QR, or type or paste the code. Whoever has the code can read the synced settings: do not share it.';
 	@override String get syncPairQrLabel => 'QR of the pairing code';
 	@override String get syncPairCodeLabel => 'Pairing code';
 	@override String syncPairClosesIn({required Object time}) => 'Closes in ${time}';
@@ -404,6 +404,13 @@ class _Translations$impostazioni$en extends Translations$impostazioni$it {
 	@override String get syncPairEnterHelper => 'It starts with P1. Spaces and dashes do not matter.';
 	@override String get syncPairEnterConfirm => 'Pair';
 	@override String get syncPairEnterCancel => 'Cancel';
+	@override String get syncPairScan => 'Scan the QR';
+	@override String get syncPairScanBody => 'Point the camera at the QR the paired device shows in “Sync to…” › “Pair another device”.';
+	@override String get syncPairScanPreview => 'Camera viewfinder';
+	@override String get syncPairScanInvalid => 'This QR is not a valid pairing code. Scan the one in “Pair another device”, on a device that syncs to the same Account in “Sync to…”.';
+	@override String get syncPairCameraDenied => 'Postino may not use the camera. Allow it in the system settings, or type the code.';
+	@override String get syncPairCameraUnavailable => 'The camera is not available. Type the code.';
+	@override String get syncPairType => 'Type the code';
 	@override String get syncPairBusy => 'Checking the code…';
 	@override String get syncPairInvalid => 'Invalid code. Check you copied all of it, and that both devices sync to the same Account in “Sync to…”.';
 	@override String get syncPairNothing => 'There are no encrypted settings on Drive to pair with yet: this device makes its own key at its first sync.';
@@ -926,7 +933,7 @@ extension on TranslationsEn {
 			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Reason: ${reason}',
 			'impostazioni.syncPairOther' => 'Pair another device',
 			'impostazioni.syncPairOtherSubtitle' => 'Shows the code to enter on the new device',
-			'impostazioni.syncPairShowBody' => 'On the new device connect this same Account, pick it in “Sync to…”, then type or paste this code. Whoever has the code can read the synced settings: do not share it.',
+			'impostazioni.syncPairShowBody' => 'On the new device connect this same Account, pick it in “Sync to…”, then scan this QR, or type or paste the code. Whoever has the code can read the synced settings: do not share it.',
 			'impostazioni.syncPairQrLabel' => 'QR of the pairing code',
 			'impostazioni.syncPairCodeLabel' => 'Pairing code',
 			'impostazioni.syncPairClosesIn' => ({required Object time}) => 'Closes in ${time}',
@@ -941,6 +948,13 @@ extension on TranslationsEn {
 			'impostazioni.syncPairEnterHelper' => 'It starts with P1. Spaces and dashes do not matter.',
 			'impostazioni.syncPairEnterConfirm' => 'Pair',
 			'impostazioni.syncPairEnterCancel' => 'Cancel',
+			'impostazioni.syncPairScan' => 'Scan the QR',
+			'impostazioni.syncPairScanBody' => 'Point the camera at the QR the paired device shows in “Sync to…” › “Pair another device”.',
+			'impostazioni.syncPairScanPreview' => 'Camera viewfinder',
+			'impostazioni.syncPairScanInvalid' => 'This QR is not a valid pairing code. Scan the one in “Pair another device”, on a device that syncs to the same Account in “Sync to…”.',
+			'impostazioni.syncPairCameraDenied' => 'Postino may not use the camera. Allow it in the system settings, or type the code.',
+			'impostazioni.syncPairCameraUnavailable' => 'The camera is not available. Type the code.',
+			'impostazioni.syncPairType' => 'Type the code',
 			'impostazioni.syncPairBusy' => 'Checking the code…',
 			'impostazioni.syncPairInvalid' => 'Invalid code. Check you copied all of it, and that both devices sync to the same Account in “Sync to…”.',
 			'impostazioni.syncPairNothing' => 'There are no encrypted settings on Drive to pair with yet: this device makes its own key at its first sync.',

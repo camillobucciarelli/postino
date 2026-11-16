@@ -32,6 +32,7 @@ import 'package:postino/core/domain/report_sharer.dart';
 import 'package:postino/core/domain/screen_guard.dart';
 import 'package:postino/core/domain/server_discovery.dart';
 import 'package:postino/core/domain/text_embedder.dart';
+import 'package:postino/features/impostazioni/presentation/qr_camera.dart';
 import 'package:postino/main.dart';
 
 import 'fake_google_consent.dart';
@@ -42,6 +43,7 @@ import 'fake_microsoft_consent.dart';
 import 'fake_model_manager.dart';
 import 'fake_notifications.dart';
 import 'fake_platform.dart';
+import 'fake_qr_camera.dart';
 import 'fake_report_sharer.dart';
 import 'fake_text_embedder.dart';
 
@@ -57,6 +59,7 @@ class Harness._() {
   /// The device-only keychain (ADR 0017): the Chiave di sincronizzazione (ADR 0019).
   final deviceKeychain = FakeSecureStore();
   final screenGuard = FakeScreenGuard();
+  final qrCamera = FakeQrCamera();
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));
   final connectivity = FakeConnectivity();
   final links = FakeLinkOpener();
@@ -103,6 +106,7 @@ class Harness._() {
       ..registerSingleton<SecureStore>(h.keychain)
       ..registerSingleton<SecureStore>(h.deviceKeychain, instanceName: deviceOnlyKeychainName)
       ..registerSingleton<ScreenGuard>(h.screenGuard)
+      ..registerSingleton<QrCamera>(h.qrCamera)
       ..registerSingleton<Clock>(h.clock)
       ..registerSingleton<Connectivity>(h.connectivity)
       ..registerSingleton<LinkOpener>(h.links)

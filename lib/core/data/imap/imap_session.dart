@@ -132,8 +132,10 @@ class ImapSession(
           : imapFailure(e, atLogin: atLogin, connected: c.isConnected);
       unawaited(_quietly(c.disconnect));
       if (failure is AuthFailure && again) {
-        if (await PasswordCredentials.read(_keychain, _accountId) case final now?
-            when now.encode() != credentials.encode()) {
+        // A keychain that cannot be read now is no other password: the refusal stands. Closed meanwhile (the
+        // Account removed, #191): no new login.
+        final now = await PasswordCredentials.read(_keychain, _accountId).catchError((Object _) => null);
+        if (now != null && now.encode() != credentials.encode() && closes == _closes) {
           return _open(setup, again: false);
         }
       }

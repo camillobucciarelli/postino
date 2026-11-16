@@ -178,8 +178,13 @@ class CredentialVoci(
       await (e.deleted ? _keychain.delete(item) : _keychain.write(item, secret!));
       return false;
     }
-    // The tokens in use go with the Account, when the mirror removes it.
-    return !e.deleted && await _adopt(id, OAuthVoce.decode(secret!));
+    // The tokens in use go with the Account, when the mirror removes it; without the Account here no mirror will,
+    // as with tokens that came before it.
+    if (e.deleted) {
+      if (await _status(id) == null) await OAuthTokens.delete(_keychain, id);
+      return false;
+    }
+    return _adopt(id, OAuthVoce.decode(secret!));
   }
 
   /// Makes [voce] the tokens in use of [id], keeping the access token here: a valid one is no reason to refresh

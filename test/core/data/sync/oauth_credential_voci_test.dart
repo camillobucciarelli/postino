@@ -295,6 +295,26 @@ void main() {
     expect(w.keychain.values.keys.where((k) => k.startsWith('oauth:')), isEmpty);
   });
 
+  test('a token that came before its Account is forgotten when the removal comes before the Account', () async {
+    final a = await device();
+    final b = await device();
+    await a.connect(_gmail, 'r-one');
+    await a.syncNow();
+    final whole = Map.of(file.entries());
+    file.file = sealedWith({'schemaVersion': 3, 'entries': Map.of(whole)..remove(accountSettingsKey(_gmail))});
+    await b.syncNow();
+    expect((await b.status(), (await b.inUse())?.refresh), (null, 'r-one'));
+
+    // Removed on A before B saw the Account: both tombstones come together.
+    tick();
+    await MailStore(a.db).removeAccount(_gmail, at: clock.now());
+    file.file = sealedWith({'schemaVersion': 3, 'entries': whole});
+    await a.syncNow();
+    await b.syncNow();
+    expect(await b.status(), isNull);
+    expect(await b.inUse(), isNull);
+  });
+
   test('no OAuth token in the logs, in a voce printed or in the tokens printed', () async {
     final logs = <String>[];
     final print = debugPrint;

@@ -73,7 +73,9 @@ class OAuthAuth(
     }
     // interaction_required: the organization wants the user to sign in again (MFA, Conditional Access).
     if (r.statusCode == 401 || body['error'] == 'invalid_grant' || body['error'] == 'interaction_required') {
-      if (await tokens() case final now? when again && now.refresh != old.refresh) return _refresh(now, again: false);
+      // A keychain that cannot be read now is no other token: the refusal stands.
+      final now = again ? await tokens().catchError((Object _) => null) : null;
+      if (now != null && now.refresh != old.refresh) return _refresh(now, again: false);
       throw const OAuthFailed(AuthFailure());
     }
     throw OAuthFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));

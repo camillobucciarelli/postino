@@ -135,6 +135,21 @@ void main() {
     expect(n, 2);
   });
 
+  test('a keychain that fails the read again after a refused refresh still answers AuthFailure (#321)', () async {
+    final keychain = gmailKeychain(validFor: Duration.zero);
+    final auth = OAuthAuth(
+      gmailAccount,
+      keychain,
+      MockClient((r) async {
+        keychain.failure = Exception('locked');
+        return gmailFixture('token_invalid_grant');
+      }),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+    await expectLater(auth.validTokens(), _throwsFailure<AuthFailure>());
+  });
+
   test('the scopes of a token saved without them are learnt at its refresh, then kept (#321)', () async {
     final keychain = gmailKeychain(validFor: Duration.zero);
     final t = _auth(keychain);

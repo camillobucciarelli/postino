@@ -68,7 +68,10 @@ Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth
         accessToken: body['access_token'] as String,
         refreshToken: body['refresh_token'] as String?,
         expiresIn: body['expires_in'] as int,
-        scopes: ((body['scope'] as String?) ?? '').split(' '),
+        scopes: [
+          for (final s in ((body['scope'] as String?) ?? '').split(' '))
+            if (s.isNotEmpty) s,
+        ],
         claims: jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(idToken)))) as Map<String, dynamic>,
       ),
     );

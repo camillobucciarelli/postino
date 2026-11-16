@@ -11,4 +11,23 @@ void main() {
     // swipe/ is not per Account: removing an Account writes no tombstone for it.
     expect(accountSettingKeys('a1'), ['auto_labels/a1', 'accounts/a1']);
   });
+
+  test('the credentials of iCloud and IMAP sync; the OAuth ones not yet (#321, fetta 4)', () {
+    expect(isSyncedSetting('credentials/icloud:ada@icloud.com'), isTrue);
+    expect(isSyncedSetting('credentials/imap:ada@example.com'), isTrue);
+    expect(isSyncedSetting('credentials/gmail:ada@gmail.com/c1'), isFalse);
+    expect(isSyncedSetting('credentials/microsoft:ada@outlook.com/c1'), isFalse);
+    expect(isPasswordCredentialSetting('credentials/imap:ada@example.com'), isTrue);
+    expect(isPasswordCredentialSetting('accounts/imap:ada@example.com'), isFalse);
+    // Removing a password Account tombstones its credentials too.
+    expect(accountSettingKeys('imap:ada@example.com'), [
+      'auto_labels/imap:ada@example.com',
+      'accounts/imap:ada@example.com',
+      'credentials/imap:ada@example.com',
+    ]);
+    expect(accountSettingKeys('gmail:ada@gmail.com'), [
+      'auto_labels/gmail:ada@gmail.com',
+      'accounts/gmail:ada@gmail.com',
+    ]);
+  });
 }

@@ -2,6 +2,7 @@ import '../../domain/result.dart';
 import '../../domain/settings_document.dart';
 import '../../domain/settings_entry.dart';
 import '../../domain/settings_merge.dart';
+import '../../domain/synced_settings.dart';
 import 'settings_envelope.dart';
 import 'sync_key.dart';
 
@@ -106,7 +107,7 @@ RemoteSettings _plain(String json) => switch (decodeSettings(json)) {
       schemaVersion: doc.schemaVersion,
       entries: <String, SettingsEntry>{
         for (final e in doc.entries.entries)
-          if (!e.key.startsWith('credentials/')) e.key: e.value,
+          if (!e.key.startsWith(credentialsSettingPrefix)) e.key: e.value,
       },
     ),
     opened: false,

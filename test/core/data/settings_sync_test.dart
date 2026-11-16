@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/core/data/accounts_lock.dart';
 import 'package:postino/core/data/auto_labels_store.dart';
 import 'package:postino/core/data/device_settings_store.dart';
 import 'package:postino/core/data/postino_database.dart';
@@ -37,6 +38,8 @@ class _Device(
     clock,
     connectivity,
     keys,
+    FakeSecureStore(),
+    AccountsLock(),
     backendFor: (_) => backend,
     stopWait: stopWait,
   );

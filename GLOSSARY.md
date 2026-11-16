@@ -130,7 +130,7 @@ _Avoid_: Certificato, password, chiave privata
 ### Preferenze
 
 **Impostazioni di Postino**:
-Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa, mittenti fidati e configurazione delle Etichette automatiche. Seguono l'utente tra i dispositivi tramite l'Account di sincronizzazione, oppure si esportano in un file che l'utente conserva, salva o condivide come preferisce.
+Le preferenze dell'utente: Azioni per scorrimento, colori e ordine degli Account, momenti di ritorno di Posticipa, mittenti fidati, configurazione delle Etichette automatiche e, cifrate, le credenziali degli Account. Seguono l'utente tra i dispositivi tramite l'Account di sincronizzazione, oppure si esportano in un file che l'utente conserva, salva o condivide come preferisce.
 _Avoid_: Config, profilo
 
 **Account di sincronizzazione**:

@@ -26,4 +26,8 @@ class const SettingsEntry({
 
   @override
   List<Object?> get props => [key, value, updatedAt, deviceId, deleted];
+
+  /// Never the value: a voce `credentials/` holds a secret until the cycle swaps it for its fingerprint (ADR 0019).
+  @override
+  String toString() => 'SettingsEntry($key, $updatedAt, $deviceId${deleted ? ', deleted' : ''})';
 }

@@ -1,5 +1,6 @@
 // The credentials of iCloud and IMAP in the sealed file of the Impostazioni (ADR 0019, #321 fetta 3): devices on
 // in-memory databases with their own keychains, one fake backend standing for the file on Drive.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -284,6 +285,64 @@ void main() {
     expect(await a.db.postinoSettingsDao.watchDirty().first, 1);
   });
 
+  test('a connection here while a cycle is in flight is never overwritten by the remote password', () async {
+    final a = await device();
+    final b = await device();
+    await a.connect('pw-one');
+    await a.syncNow();
+    await b.syncNow();
+    tick();
+    await a.connect('pw-two');
+    await a.syncNow();
+
+    file.readGate = Completer<void>();
+    final cycle = b.sync.syncNow();
+    await pumpEventQueue();
+    tick();
+    await b.connect('pw-here');
+    file.readGate!.complete();
+    file.readGate = null;
+    await cycle;
+    await pumpEventQueue();
+
+    expect(await b.password(), 'pw-here');
+    expect(await b.db.postinoSettingsDao.read(_key), credentialFingerprint(_credentials('pw-here').encode()));
+  });
+
+  test(
+    'a live credential of an Account with a tombstone never reaches the keychain, and goes as a tombstone',
+    () async {
+      final a = await device();
+      final b = await device();
+      await a.connect('pw-one');
+      await a.syncNow();
+      // A fetta 1 Postino removed the Account: a tombstone for `accounts/` only, the credential still live.
+      final entries = Map.of(file.entries());
+      entries[accountSettingsKey(_id)] = {'value': null, 'updatedAt': 9999999999999, 'deviceId': 'z', 'deleted': true};
+      final credential = Map.of(entries[_key]! as Map<String, Object?>)..['updatedAt'] = 9999999999999;
+      entries[_key] = credential;
+      file.file = sealedWith({'schemaVersion': 3, 'entries': entries});
+      await b.syncNow();
+      expect(await b.password(), isNull);
+      expect(await b.status(), isNull);
+
+      // The next write of the file drops the password.
+      await b.db.postinoSettingsDao.write('swipe/left', '"archive"', at: clock.now());
+      await b.syncNow();
+      expect(file.entries()[_key], containsPair('deleted', true));
+      expect(jsonEncode(file.entries()), isNot(contains('pw-one')));
+    },
+  );
+
+  test('a locked keychain never stops the rest of the Impostazioni', () async {
+    final a = await device();
+    await a.connect('pw-one', voce: false);
+    a.keychain.failure = Exception('locked');
+    await a.syncNow();
+    expect(file.entries(), contains(accountSettingsKey(_id)));
+    expect(file.entries(), isNot(contains(_key)));
+  });
+
   test('removing the Account tombstones its credential and forgets it on the other device', () async {
     final a = await device();
     final b = await device();
@@ -325,6 +384,10 @@ void main() {
     final a = await device();
     await a.connect('pw-one');
     await a.syncNow();
+    expect(
+      file.entries(),
+      containsPair('credentials/imap:bob@example.com', containsPair('value', {'nope': 'bad-secret'})),
+    );
     expect(file.entries(), contains(oauth));
     expect(await a.rows(), allOf(isNot(contains('rt-secret')), isNot(contains('bad-secret'))));
     expect(a.keychain.values.values.join(), isNot(contains('bad-secret')));

@@ -11,9 +11,6 @@ import '../attachment_crypto.dart';
 import '../imap/password_credentials.dart';
 import '../postino_database.dart';
 
-/// The key of the voce of the password and servers of [accountId] (ADR 0019).
-String credentialsKey(String accountId) => '$credentialsSettingPrefix$accountId';
-
 /// What the row of `postino_settings` keeps for the secret [raw]: a fingerprint, never the secret. Unkeyed: the
 /// database is encrypted with a key that never leaves the device (ADR 0017), on the device that holds the secret.
 String credentialFingerprint(String raw) =>
@@ -27,23 +24,34 @@ Future<void> writeCredentialVoce(PostinoDatabase db, String accountId, String ra
   if (await db.postinoSettingsDao.read(key) != fingerprint) await db.postinoSettingsDao.write(key, fingerprint, at: at);
 }
 
-/// The secrets of the remote voci, by key, and the voci with their fingerprints in place of the secrets.
-typedef HiddenCredentials = ({Map<String, SettingsEntry> entries, Map<String, String> secrets});
+/// The voci with fingerprints in place of the secrets; the secrets by key; the remote voci of credentials this
+/// Postino cannot read, set aside as they are.
+typedef HiddenCredentials = ({
+  Map<String, SettingsEntry> entries,
+  Map<String, String> secrets,
+  Map<String, SettingsEntry> unread,
+});
+
+/// The voci for the sealed file, and the keys of the ones held back, to keep dirty.
+typedef SealedCredentials = ({List<SettingsEntry> entries, Set<String> withheld});
 
 /// The voci `credentials/<accountId>` of iCloud and IMAP at the two edges of a cycle (ADR 0019): after the file is
 /// opened the secrets go to the keychain and the voci keep their fingerprints, so merge, applyRemote and markClean see
 /// fingerprints like any other voce; before it is sealed the fingerprints turn back into the secrets.
 class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, final AccountsLock _lock) {
-  /// [remote] with a fingerprint in place of each secret. A voce that is not password and servers is left out: it
-  /// never reaches the database, nor a log (its parse error may quote it).
+  /// [remote] with a fingerprint in place of each secret. A voce that is not password and servers (a newer
+  /// Postino's shape) is set aside: it never reaches the database, nor a log (its parse error may quote it), and goes
+  /// back into the file unchanged.
   static HiddenCredentials hide(Map<String, SettingsEntry> remote) {
     final secrets = <String, String>{};
     final entries = <String, SettingsEntry>{};
+    final unread = <String, SettingsEntry>{};
     for (final e in remote.values) {
       if (isPasswordCredentialSetting(e.key) && !e.deleted) {
         try {
           PasswordCredentials.decode(e.value!);
         } on Object {
+          unread[e.key] = e;
           continue;
         }
         secrets[e.key] = e.value!;
@@ -57,7 +65,7 @@ class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, fin
         entries[e.key] = e;
       }
     }
-    return (entries: entries, secrets: secrets);
+    return (entries: entries, secrets: secrets, unread: unread);
   }
 
   /// The voce of each attivo iCloud or IMAP Account connected before its credentials synced, as a voce written before
@@ -67,7 +75,13 @@ class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, fin
       final key = credentialsKey(a.id);
       if (a.status != AccountStatus.attivo || !isPasswordCredentialSetting(key)) continue;
       if (await _db.postinoSettingsDao.entry(key) != null) continue;
-      final raw = await _keychain.read(PasswordCredentials.keychainKey(a.id));
+      final String? raw;
+      try {
+        raw = await _keychain.read(PasswordCredentials.keychainKey(a.id));
+      } on Object {
+        // A locked keychain never stops the rest of the Impostazioni: the next cycle tries again.
+        continue;
+      }
       if (raw != null) await _db.postinoSettingsDao.writeBeforeSync(key, credentialFingerprint(raw));
     }
   }
@@ -84,24 +98,60 @@ class CredentialVoci(final PostinoDatabase _db, final SecureStore _keychain, fin
           // Written here since the cycle read the voci: that one wins, and its secret is the one in the keychain.
           if (await _db.postinoSettingsDao.entry(e.key) case final here? when here.winsOver(e)) continue;
           final id = e.key.substring(credentialsSettingPrefix.length);
+          final live = !e.deleted && !_removed(merged, id);
           if (e.deleted) {
             await PasswordCredentials.delete(_keychain, id);
-          } else if (merged['$accountsSettingPrefix$id']?.deleted != true) {
+          } else if (live) {
             await _keychain.write(PasswordCredentials.keychainKey(id), secrets[e.key]!);
           }
-          await _db.postinoSettingsDao.applyRemote([e]);
-          if (!e.deleted) {
+          // Together: a crash in between never leaves the fingerprint taken and the Account still da ricollegare.
+          await _db.transaction(() async {
+            await _db.postinoSettingsDao.applyRemote([e]);
+            if (!live) return;
             final account = (await _db.accountsDao.byPosition()).where((r) => r.id == id).firstOrNull;
             if (account?.status == AccountStatus.daRicollegare) {
               await _db.accountsDao.setStatus(id, AccountStatus.attivo);
             }
-          }
+          });
         }
       });
 
-  /// The secret of the voce [e] for the sealed file: the remote one or the keychain's, whichever has its fingerprint.
-  /// Null when neither does (the keychain changed meanwhile): the voce stays out of this write, and dirty.
-  Future<String?> reveal(SettingsEntry e, Map<String, String> secrets) async {
+  /// The voci of [merged] for the sealed file, each fingerprint back to its secret: the remote one or the keychain's,
+  /// whichever has it. When neither does (the keychain changed meanwhile) the copy already in the file, if any, stays
+  /// and the voce is withheld. The credential of an Account with a tombstone goes as a tombstone, so a password
+  /// written after the removal (a fetta 1 Postino, a reconnection racing it) never stays in the file. The [hidden]
+  /// voci set aside go back unchanged.
+  Future<SealedCredentials> seal(
+    Map<String, SettingsEntry> merged,
+    HiddenCredentials hidden,
+    Map<String, SettingsEntry> remote,
+  ) async {
+    final entries = <SettingsEntry>[];
+    final withheld = <String>{};
+    for (final e in merged.values) {
+      if (!isPasswordCredentialSetting(e.key) || e.deleted) {
+        entries.add(e);
+      } else if (_removed(merged, e.key.substring(credentialsSettingPrefix.length))) {
+        entries.add(
+          SettingsEntry(key: e.key, value: null, updatedAt: e.updatedAt, deviceId: e.deviceId, deleted: true),
+        );
+      } else if (await _reveal(e, hidden.secrets) case final secret?) {
+        entries.add(SettingsEntry(key: e.key, value: secret, updatedAt: e.updatedAt, deviceId: e.deviceId));
+      } else {
+        withheld.add(e.key);
+        if (remote[e.key] case final old?) entries.add(old);
+      }
+    }
+    for (final e in hidden.unread.values) {
+      if (!merged.containsKey(e.key)) entries.add(e);
+    }
+    return (entries: entries, withheld: withheld);
+  }
+
+  static bool _removed(Map<String, SettingsEntry> merged, String accountId) =>
+      merged['$accountsSettingPrefix$accountId']?.deleted ?? false;
+
+  Future<String?> _reveal(SettingsEntry e, Map<String, String> secrets) async {
     if (secrets[e.key] case final remote? when credentialFingerprint(remote) == e.value) return remote;
     final here = await _keychain.read(
       PasswordCredentials.keychainKey(e.key.substring(credentialsSettingPrefix.length)),

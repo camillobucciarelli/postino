@@ -73,7 +73,8 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, fina
     if (regenerate && !remote.writable) return const UnexpectedFailure('file from a newer Postino: update it');
 
     // From here the voci of credentials hold fingerprints; their secrets are only in [secrets] and the keychain.
-    final (:entries, :secrets) = CredentialVoci.hide(remote.entries);
+    final hidden = CredentialVoci.hide(remote.entries);
+    final entries = hidden.entries;
     final merged = mergeSettings(local, entries);
     // Voci outside the closed list (a newer Postino's) stay in the file but never come here.
     final won = [
@@ -85,7 +86,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, fina
         for (final e in won)
           if (isPasswordCredentialSetting(e.key)) e,
       ],
-      secrets,
+      hidden.secrets,
       merged,
     );
     await _db.postinoSettingsDao.applyRemote([
@@ -97,20 +98,10 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, fina
     if (!remote.writable) {
       return _same(merged, entries) ? null : const UnexpectedFailure('file from a newer Postino: update it');
     }
-    final withheld = <String>{};
+    var withheld = const <String>{};
     if (rewrite || !_same(merged, entries)) {
-      final sealed = <SettingsEntry>[];
-      for (final e in merged.values) {
-        if (!isPasswordCredentialSetting(e.key) || e.deleted) {
-          sealed.add(e);
-        } else if (await _credentials.reveal(e, secrets) case final secret?) {
-          sealed.add(SettingsEntry(key: e.key, value: secret, updatedAt: e.updatedAt, deviceId: e.deviceId));
-        } else {
-          // The copy already in the file stays as it was, secret and all.
-          withheld.add(e.key);
-          if (remote.entries[e.key] case final old?) sealed.add(old);
-        }
-      }
+      final sealed = await _credentials.seal(merged, hidden, remote.entries);
+      withheld = sealed.withheld;
       final sealWith = regenerate || key == null ? SyncKey.random() : key;
       // A first key is kept before the write: a write that fails leaves this device with the key the next cycle
       // reuses on a file still absent or in clear. A regenerated one waits as pending, and replaces the key only after
@@ -120,7 +111,7 @@ class SettingsExchange(final PostinoDatabase _db, final SyncKeyStore _keys, fina
       } else if (key == null) {
         await _keys.write(sealWith);
       }
-      if (await backend.write(sealSettings(encodeSettings(sealed), sealWith)) case Err(:final failure)) {
+      if (await backend.write(sealSettings(encodeSettings(sealed.entries), sealWith)) case Err(:final failure)) {
         return failure;
       }
       if (regenerate) {

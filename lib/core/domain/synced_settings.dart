@@ -22,8 +22,11 @@ bool isSyncedSetting(String key) => syncedSettingPrefixes.any(key.startsWith);
 /// Whether [key] is the voce of the password and servers of an iCloud or IMAP Account.
 bool isPasswordCredentialSetting(String key) => _passwordCredentialPrefixes.any(key.startsWith);
 
+/// The key of the voce of the password and servers of [accountId] (ADR 0019).
+String credentialsKey(String accountId) => '$credentialsSettingPrefix$accountId';
+
 /// The keys of the voci that belong to [accountId]: removing the Account writes their tombstones.
 List<String> accountSettingKeys(String accountId) => [
   for (final p in accountSettingPrefixes) '$p$accountId',
-  if (isPasswordCredentialSetting('$credentialsSettingPrefix$accountId')) '$credentialsSettingPrefix$accountId',
+  if (isPasswordCredentialSetting(credentialsKey(accountId))) credentialsKey(accountId),
 ];

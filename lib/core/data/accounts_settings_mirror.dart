@@ -16,7 +16,6 @@ import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'postino_database.dart';
 import 'row_mappers.dart';
-import 'sync/credential_voci.dart';
 import 'sync/provider_factory.dart';
 
 /// Keeps the `accounts` table a mirror of the voci `accounts/<accountId>` of the Impostazioni di Postino

@@ -2,6 +2,7 @@ package com.cbucciarelli.postino
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -23,11 +24,17 @@ object BatteryExemption {
         // A normal permission: held exactly when the merged manifest declares it, so the flavor decides here too.
         val dialog = context.checkSelfPermission(Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) ==
             PackageManager.PERMISSION_GRANTED
-        val intent = if (dialog) {
-            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
-        } else {
-            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        val app = Uri.parse("package:${context.packageName}")
+        if (dialog) return open(context, Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, app))
+        try {
+            open(context, Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            // A Settings app without that list: Postino's own page, whose «Batteria» leads to the same choice.
+            open(context, Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app))
         }
+    }
+
+    private fun open(context: Context, intent: Intent) {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

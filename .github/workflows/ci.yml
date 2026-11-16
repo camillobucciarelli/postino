@@ -128,6 +128,14 @@ jobs:
       - run: flutter build apk --debug --flavor store
       - run: tool/release/battery_permission_check.sh build/app/outputs/flutter-apk/app-site-debug.apk site
       - run: tool/release/battery_permission_check.sh build/app/outputs/flutter-apk/app-store-debug.apk store
+      # Never the debug keys on Play: without the upload key the store release stops at preStoreReleaseBuild, before
+      # compiling. Its message, not only a failure, so a build broken for another reason does not pass here.
+      - name: A store release without the upload key fails
+        run: |
+          if out=$(env -u ANDROID_KEYSTORE_PATH flutter build apk --release --flavor store 2>&1); then
+            echo "::error::The store release was built without the upload key"; exit 1
+          fi
+          grep -q 'A store release needs the upload key' <<< "$out" || { echo "$out"; exit 1; }
 
   # Mutation test dei file Dart della PR (docs/agents/mutation-test.md). Non richiesto; parte dopo i check richiesti
   # per non ritardarli sull'unico runner.

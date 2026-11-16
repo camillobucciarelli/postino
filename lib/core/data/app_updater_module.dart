@@ -10,6 +10,7 @@ import '../domain/result.dart';
 import 'desktop/channel_app_updater.dart';
 import 'postino_database.dart';
 import 'site_app_updater.dart';
+import 'store_flavor.dart';
 
 /// The site the release publishes to (release.yml).
 const _site = 'https://postino.camillobucciarelli.dev';
@@ -44,7 +45,7 @@ AppUpdater appUpdaterFor(
   Clock clock, {
   String? flavor,
 }) => switch (platform) {
-  TargetPlatform.macOS || TargetPlatform.android when flavor?.toLowerCase() == 'store' => const _Unsupported(),
+  TargetPlatform.macOS || TargetPlatform.android when isStoreFlavor(flavor) => const _Unsupported(),
   TargetPlatform.macOS => const ChannelAppUpdater(),
   TargetPlatform.android || TargetPlatform.iOS when build > 0 => SiteAppUpdater(
     client,

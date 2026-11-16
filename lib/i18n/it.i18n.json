@@ -472,6 +472,9 @@
     "removeMessage": "Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.",
     "removeNote": "Le modifiche non ancora inviate al server vanno perse.",
     "removeGmailNote": "Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.",
+    "removeSyncedNote": "L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.",
+    "removeSyncedGmailNote": "Postino revoca anche il suo accesso a Gmail su Google.",
+    "removeSyncAccountNote": "È l'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.",
     "removeConfirm": "Rimuovi",
     "removeCancel": "Annulla"
   }

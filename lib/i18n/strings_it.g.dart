@@ -1402,6 +1402,15 @@ class Translations$accounts$it {
 	/// it: 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.'
 	String get removeGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.';
 
+	/// it: 'L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.'
+	String get removeSyncedNote => 'L\'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.';
+
+	/// it: 'Postino revoca anche il suo accesso a Gmail su Google.'
+	String get removeSyncedGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google.';
+
+	/// it: 'È l'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.'
+	String get removeSyncAccountNote => 'È l\'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.';
+
 	/// it: 'Rimuovi'
 	String get removeConfirm => 'Rimuovi';
 
@@ -1930,6 +1939,9 @@ extension on Translations {
 			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.',
 			'accounts.removeNote' => 'Le modifiche non ancora inviate al server vanno perse.',
 			'accounts.removeGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.',
+			'accounts.removeSyncedNote' => 'L\'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.',
+			'accounts.removeSyncedGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google.',
+			'accounts.removeSyncAccountNote' => 'È l\'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.',
 			'accounts.removeConfirm' => 'Rimuovi',
 			'accounts.removeCancel' => 'Annulla',
 			_ => null,

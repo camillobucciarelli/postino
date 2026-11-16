@@ -678,6 +678,9 @@ class _Translations$accounts$en extends Translations$accounts$it {
 	@override String get removeMessage => 'The emails downloaded on this device are deleted; on the server they stay as they are.';
 	@override String get removeNote => 'Changes not yet sent to the server are lost.';
 	@override String get removeGmailNote => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.';
+	@override String get removeSyncedNote => 'The Account and its access are removed from all paired devices.';
+	@override String get removeSyncedGmailNote => 'Postino also revokes its access to Gmail at Google.';
+	@override String get removeSyncAccountNote => 'It is the sync Account: a device offline right now will find it “Needs signing in” and must remove it there too.';
 	@override String get removeConfirm => 'Remove';
 	@override String get removeCancel => 'Cancel';
 }
@@ -1139,6 +1142,9 @@ extension on TranslationsEn {
 			'accounts.removeMessage' => 'The emails downloaded on this device are deleted; on the server they stay as they are.',
 			'accounts.removeNote' => 'Changes not yet sent to the server are lost.',
 			'accounts.removeGmailNote' => 'Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.',
+			'accounts.removeSyncedNote' => 'The Account and its access are removed from all paired devices.',
+			'accounts.removeSyncedGmailNote' => 'Postino also revokes its access to Gmail at Google.',
+			'accounts.removeSyncAccountNote' => 'It is the sync Account: a device offline right now will find it “Needs signing in” and must remove it there too.',
 			'accounts.removeConfirm' => 'Remove',
 			'accounts.removeCancel' => 'Cancel',
 			_ => null,

@@ -39,8 +39,11 @@ class OAuthAuth(
 
   /// A new access token from the refresh token of [old], saved in the keychain.
   /// A revoked or expired refresh token, or one that needs the user to sign in again, is the Provider's definitive
-  /// refusal: [AuthFailure].
-  Future<OAuthTokens> refresh(OAuthTokens? old) async {
+  /// refusal: [AuthFailure]. Before that the keychain is read again, never Drive: a refresh token that came from
+  /// another device meanwhile (ADR 0019) is tried once.
+  Future<OAuthTokens> refresh(OAuthTokens? old) => _refresh(old, again: true);
+
+  Future<OAuthTokens> _refresh(OAuthTokens? old, {required bool again}) async {
     if (old == null) throw const OAuthFailed(AuthFailure());
     final r = await _http.post(
       _client.tokenEndpoint,
@@ -53,6 +56,14 @@ class OAuthAuth(
         // The Provider may rotate it (Microsoft always does).
         refresh: body['refresh_token'] as String? ?? old.refresh,
         expiresAt: _clock.now().add(Duration(seconds: body['expires_in'] as int)),
+        // Learnt once, for tokens saved before the scopes were kept (#321): afterwards only a consent changes them,
+        // so two devices never take turns over how a refresh and a consent spell them.
+        scopes: old.scopes.isNotEmpty
+            ? old.scopes
+            : [
+                for (final s in ((body['scope'] as String?) ?? '').split(' '))
+                  if (s.isNotEmpty) s,
+              ],
       );
       // Only over the tokens this refresh started from (#174): the Account removed meanwhile has none, and one
       // connected again has newer ones, which an old grant must not overwrite.
@@ -62,6 +73,9 @@ class OAuthAuth(
     }
     // interaction_required: the organization wants the user to sign in again (MFA, Conditional Access).
     if (r.statusCode == 401 || body['error'] == 'invalid_grant' || body['error'] == 'interaction_required') {
+      // A keychain that cannot be read now is no other token: the refusal stands.
+      final now = again ? await tokens().catchError((Object _) => null) : null;
+      if (now != null && now.refresh != old.refresh) return _refresh(now, again: false);
       throw const OAuthFailed(AuthFailure());
     }
     throw OAuthFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));

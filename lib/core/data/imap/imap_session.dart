@@ -86,7 +86,9 @@ class ImapSession(
     }
   }
 
-  Future<ImapClient> _open(Duration? setup) async {
+  /// A login refused is tried once more when the keychain has other credentials by then: a password that came from
+  /// another device while it was in flight (ADR 0019).
+  Future<ImapClient> _open(Duration? setup, {bool again = true}) async {
     final closes = _closes;
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
     if (credentials == null) throw const ImapFailed(AuthFailure());
@@ -129,6 +131,14 @@ class ImapSession(
           ? const OfflineFailure()
           : imapFailure(e, atLogin: atLogin, connected: c.isConnected);
       unawaited(_quietly(c.disconnect));
+      if (failure is AuthFailure && again) {
+        // A keychain that cannot be read now is no other password: the refusal stands. Closed meanwhile (the
+        // Account removed, #191): no new login.
+        final now = await PasswordCredentials.read(_keychain, _accountId).catchError((Object _) => null);
+        if (now != null && now.encode() != credentials.encode() && closes == _closes) {
+          return _open(setup, again: false);
+        }
+      }
       throw ImapFailed(failure);
     } finally {
       if (identical(_opening, c)) _opening = null;

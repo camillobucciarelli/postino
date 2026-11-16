@@ -13,6 +13,9 @@ class const OAuthGrant({
 
   /// Scadenza del token di accesso.
   required final DateTime expiresAt,
+
+  /// The scopes the Provider granted to the token; empty when unknown.
+  final List<String> scopes = const [],
 }) extends Equatable {
   /// Crea la concessione con i token ricevuti dal Provider.
   this;
@@ -22,5 +25,5 @@ class const OAuthGrant({
   bool get stringify => false;
 
   @override
-  List<Object?> get props => [address, accessToken, refreshToken, expiresAt];
+  List<Object?> get props => [address, accessToken, refreshToken, expiresAt, scopes];
 }

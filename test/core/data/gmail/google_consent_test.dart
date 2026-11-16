@@ -58,6 +58,8 @@ void main() {
     expect(grant.accessToken, 'ya29.granted');
     expect(grant.refreshToken, '1//granted');
     expect(grant.expiresAt, _now.add(const Duration(seconds: 3599)));
+    // The scopes go with the grant into the synced voce (#321).
+    expect(grant.scopes, ['https://mail.google.com/', 'openid', 'https://www.googleapis.com/auth/userinfo.email']);
 
     expect(opened.host, 'accounts.google.com');
     final q = opened.queryParameters;

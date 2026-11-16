@@ -63,7 +63,7 @@ class _Device(final FakeSettingsBackend backend, final FakeClock clock, {final S
     await credentials.write(keychain, _id);
     await db.accountsDao.upsert(account);
     await db.postinoSettingsDao.write(accountSettingsKey(_id), encodeAccountSettings(account), at: clock.now());
-    if (voce) await writeCredentialVoce(db, _id, credentials.encode(), at: clock.now());
+    if (voce) await writeCredentialVoce(db, _key, credentials.encode(), at: clock.now());
   }
 
   /// The secret in the keychain here.
@@ -446,12 +446,13 @@ void main() {
   });
 
   test('voci of credentials this Postino does not know stay in the file and never reach the database', () async {
-    const oauth = 'credentials/gmail:ada@gmail.com/c1';
+    // An OAuth voce without its client: no shape this Postino writes.
+    const oauth = 'credentials/gmail:ada@gmail.com';
     file.file = sealedWith({
       'schemaVersion': 3,
       'entries': {
         oauth: {
-          'value': {'refresh': 'rt-secret', 'scopes': <String>[]},
+          'value': {'refresh': 'r-unknown', 'scopes': <String>[]},
           'updatedAt': 1,
           'deviceId': 'z',
           'deleted': false,
@@ -473,8 +474,8 @@ void main() {
       containsPair('credentials/imap:bob@example.com', containsPair('value', {'nope': 'bad-secret'})),
     );
     expect(file.entries(), contains(oauth));
-    expect(await a.rows(), allOf(isNot(contains('rt-secret')), isNot(contains('bad-secret'))));
-    expect(a.keychain.values.values.join(), isNot(contains('bad-secret')));
+    expect(await a.rows(), allOf(isNot(contains('r-unknown')), isNot(contains('bad-secret'))));
+    expect(a.keychain.values.values.join(), allOf(isNot(contains('bad-secret')), isNot(contains('r-unknown'))));
   });
 
   test('no password in the logs nor in the failures, nor in a voce printed', () async {

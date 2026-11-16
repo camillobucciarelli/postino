@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rigenera tutti i PNG di icona, splash e tray, l'.ico di Windows, i lockup e l'immagine Open Graph da assets/brand/*.svg
-# (unica fonte, vedi docs/brand-icone.md).
+# (unica fonte, vedi docs/brand-icone.md). Con l'argomento `play` rifà solo le grafiche di Google Play.
 # Rasterizza con rsvg-convert se c'è, altrimenti con sips (di serie su macOS, SVG con fondo trasparente).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -55,6 +55,8 @@ nested() {
   png "$T/nested.svg" "$6" "$7"
 }
 
+# all: tutti i PNG, compresi quelli di Google Play (play_graphics, che si rifanno da soli con l'argomento `play`).
+all() {
 # iOS: 1024 senza alfa, quadrato a tutto campo (la maschera la mette iOS).
 IOS=ios/Runner/Assets.xcassets/AppIcon.appiconset
 for v in "icon:AppIcon" "icon-dark:AppIcon-dark" "icon-tinted:AppIcon-tinted"; do
@@ -134,4 +136,25 @@ read -r oh oy <<< "$(awk "BEGIN{h = $lh * 960 / $lw; printf \"%.2f %.2f\", h, (6
   echo '</svg>'; } > "$T/og.svg"
 raster "$T/og.svg" docs/download/og.png
 opaque docs/download/og.png
+play_graphics
+}
+
+# Google Play (#345): icona 512 a tutto campo senza angoli (la maschera e l'ombra le mette Play) e grafica in
+# evidenza 1024x500, fondo del tile con lockup-dark.svg centrato (largo 720). L'icona resta PNG a 32 bit (con canale
+# alfa, tutto opaco) come chiede Play; la grafica in evidenza va senza alfa.
+play_graphics() {
+  sed 's/ rx="57"//' "$B/icon.svg" > "$T/square.svg"
+  png "$T/square.svg" 512 docs/store/grafica/icona-512.png
+  read -r _ _ lw lh <<< "$(viewbox "$B/lockup-dark.svg")"
+  read -r fh fy <<< "$(awk "BEGIN{h = $lh * 720 / $lw; printf \"%.2f %.2f\", h, (500 - h) / 2}")"
+  { echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">'
+    sed -n 2p "$B/icon.svg"
+    echo '<rect width="1024" height="500" fill="url(#t)"/>'
+    inline "$B/lockup-dark.svg" "0 0 $lw $lh" 152 "$fy" 720 "$fh"
+    echo '</svg>'; } > "$T/feature.svg"
+  raster "$T/feature.svg" docs/store/grafica/grafica-in-evidenza.png
+  opaque docs/store/grafica/grafica-in-evidenza.png
+}
+
+if [ "${1:-}" = play ]; then play_graphics; else all; fi
 echo "Icone e splash rigenerate da $B"

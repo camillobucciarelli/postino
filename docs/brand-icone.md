@@ -49,6 +49,8 @@ Rasterizza con `rsvg-convert` se installato, altrimenti con `sips` (di serie su 
   Le pagine prodotto lo nominano in `og:image` (URL assoluto, `twitter:card` `summary_large_image`), `release.yml`
   (job `site`) lo pubblica alla radice del bucket e `download_check.sh` controlla meta e file.
 
+- Google Play (#345): `docs/store/grafica/icona-512.png` (512, `icon.svg` senza `rx` a tutto campo, PNG a 32 bit opaco: angoli e ombra li mette Play) e `docs/store/grafica/grafica-in-evidenza.png` (1024×500 senza alfa, gradiente del tile con `lockup-dark.svg` centrato, largo 720). Solo queste due: `tool/brand_icons.sh play`.
+
 macOS 26 (Icon Composer, `.icon` a livelli) non c'è, per scelta. Riprovato con Xcode 27.2 su `AppIcon.icon` a tre
 gruppi (falda, lettera, tasca da `mark.svg`, fondo `linear-gradient` del tile, variante dark da `icon-dark.svg`):
 `ictool` lo rende bene e `actool` lo compila, ma con il `.icon` nel target Xcode genera dal `.icon` anche

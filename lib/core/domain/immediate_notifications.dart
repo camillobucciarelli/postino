@@ -19,8 +19,12 @@ abstract interface class ImmediateNotifications() {
   /// Stops the service: the periodic check (#212) goes on alone.
   Future<void> stop();
 
-  /// Asks the OS to exclude Postino from the battery optimization (its own dialog), unless it already is.
+  /// Asks the OS to exclude Postino from the battery optimization, unless it already is: its own dialog, one tap, or
+  /// with [exemptionInSettings] the system's settings, where the user does it by hand.
   Future<void> requestBatteryExemption();
+
+  /// The Google Play variant (#345): no one-tap dialog, [requestBatteryExemption] opens the system's settings.
+  bool get exemptionInSettings;
 
   /// The fixed notification tapped: the Posta unificata opens.
   Stream<void> get opened;

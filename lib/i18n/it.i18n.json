@@ -192,6 +192,7 @@
     "launchAtLoginFailed": "Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.",
     "immediateNotifications": "Notifiche immediate",
     "immediateNotificationsBody": "La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.",
+    "immediateNotificationsBodySettings": "La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino apre le impostazioni dell'ottimizzazione batteria, dove scegli di non ottimizzare Postino: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.",
     "immediateNotificationsFailed": "Il sistema non ha avviato le Notifiche immediate. Riprova.",
     "checkForUpdates": "Cerca aggiornamenti",
     "checkForUpdatesBody": "Cerca subito una nuova versione di Postino.",

@@ -8,7 +8,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
     <!-- Notifiche immediate (#214): the specialUse foreground service, its start after a reboot, and the system's
-         «Consenti» dialog for the esclusione dall'ottimizzazione batteria (sideloaded APK, no Play review, #121). -->
+         «Consenti» dialog for the esclusione dall'ottimizzazione batteria (sideloaded APK, #121; the Google Play
+         flavor removes it in src/store, #345). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>

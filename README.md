@@ -12,6 +12,10 @@ dart run build_runner build
 
 `routefly` rigenera le rotte da `lib/app`; `slang` rigenera le traduzioni (config in `slang.yaml`); `build_runner` rigenera la dependency injection (injectable). Il codice generato è committato.
 
+## Android: flavor
+
+Su Android ogni build nomina il flavor: `--flavor site` per l'APK del sito, `--flavor store` per Google Play (ADR 0023), ad esempio `flutter run --flavor site`.
+
 ## Client OAuth di Google
 
 Il client ID non sta nel repository: si passa all'avvio, altrimenti l'onboarding mostra l'errore.

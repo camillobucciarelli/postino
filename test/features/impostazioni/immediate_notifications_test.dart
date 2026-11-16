@@ -21,6 +21,12 @@ const _body =
     "chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si "
     'controlla circa ogni 15 minuti.';
 
+/// The Google Play variant (#345): no one-tap dialog, the system's settings where the user does it by hand.
+const _playBody =
+    'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino apre '
+    "le impostazioni dell'ottimizzazione batteria, dove scegli di non ottimizzare Postino: consuma più batteria. "
+    'Spente, la posta nuova si controlla circa ogni 15 minuti.';
+
 void main() {
   testWidgets('not on Android: no switch', (tester) async {
     final h = await openPhoneDeviceSettings(tester);
@@ -73,36 +79,39 @@ void main() {
     expect(await getIt<SettingsRepository>().immediateNotifications(), isNull);
   });
 
-  testWidgets('one switch for the screen reader, with its title, price and state, toggled from the keyboard', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    final h = await openPhoneDeviceSettings(tester, android: true);
-    expect(
-      tester.getSemantics(_row),
-      matchesSemantics(
-        label: 'Notifiche immediate\n$_body',
-        hasToggledState: true,
-        hasEnabledState: true,
-        isEnabled: true,
-        isFocusable: true,
-        hasTapAction: true,
-        hasFocusAction: true,
-      ),
-    );
-    var tabs = 0;
-    while (FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<ImmediateNotificationsRow>() ==
-        null) {
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      expect(++tabs, lessThan(10), reason: 'Tab reaches the switch');
-    }
-    await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await tester.pumpAndSettle();
-    expect(h.immediate.calls, [true]);
-    expect(_switchOn(tester), isTrue);
-    semantics.dispose();
-  });
+  for (final (play, body) in [(false, _body), (true, _playBody)]) {
+    testWidgets('${play ? 'Google Play: ' : ''}one switch for the screen reader, with its title, price and state, '
+        'toggled from the keyboard', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final h = await openPhoneDeviceSettings(tester, android: true, play: play);
+      expect(find.text(play ? _body : _playBody), findsNothing);
+      expect(
+        tester.getSemantics(_row),
+        matchesSemantics(
+          label: 'Notifiche immediate\n$body',
+          hasToggledState: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      var tabs = 0;
+      while (FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<ImmediateNotificationsRow>() ==
+          null) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(++tabs, lessThan(10), reason: 'Tab reaches the switch');
+      }
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(h.immediate.calls, [true]);
+      expect(h.immediate.exemptionRequests, 1);
+      expect(_switchOn(tester), isTrue);
+      semantics.dispose();
+    });
+  }
 
   testWidgets('the fixed notification tapped opens the Posta unificata', (tester) async {
     final h = await openPhoneDeviceSettings(tester, android: true);

@@ -14,6 +14,9 @@ class ImmediateNotificationsUseCase(final ImmediateNotifications _os, final Sett
   /// Whether this device has Notifiche immediate (Android).
   bool get supported => _os.supported;
 
+  /// The battery exemption is done by hand in the system's settings (Google Play, #345), not with one tap.
+  bool get exemptionInSettings => _os.exemptionInSettings;
+
   /// The choice remembered; off until chosen.
   Future<bool> isEnabled() async => _os.supported && (await _settings.immediateNotifications() ?? false);
 

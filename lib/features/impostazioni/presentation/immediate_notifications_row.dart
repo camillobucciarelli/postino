@@ -61,7 +61,11 @@ class _ImmediateNotificationsRowState() extends State<ImmediateNotificationsRow>
     return PostinoSwitchRow(
       key: const ValueKey('immediate-notifications'),
       title: t.immediateNotifications,
-      description: _failed ? t.immediateNotificationsFailed : t.immediateNotificationsBody,
+      description: _failed
+          ? t.immediateNotificationsFailed
+          : _useCase.exemptionInSettings
+          ? t.immediateNotificationsBodySettings
+          : t.immediateNotificationsBody,
       value: enabled ?? false,
       onChanged: enabled == null ? null : (v) => unawaited(_set(enabled: v)),
     );

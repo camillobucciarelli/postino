@@ -23,6 +23,11 @@ val microsoftClientId = (project.findProperty("dart-defines") as String? ?: "")
     .firstOrNull { it.startsWith("MICROSOFT_CLIENT_ID=") }
     ?.substringAfter("=")
 
+// Upload key (#121): set only by the release workflow (tool/release/android_keystore.sh and the ANDROID_* secrets).
+// Without it, a `site` release keeps the debug keys so `flutter run --release --flavor site` works; a `store` release
+// fails (below).
+val releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")?.takeIf { it.isNotEmpty() }
+
 android {
     namespace = "com.cbucciarelli.postino"
     // flutter_local_notifications 23 e androidx.core 1.19 compilano contro le API 37; il target resta quello di Flutter.
@@ -60,9 +65,6 @@ android {
     // The Flutter plugin re-adds armeabi-v7a to abiFilters (its default targets), so also drop it at packaging.
     packaging { jniLibs { excludes += "lib/armeabi-v7a/**" } }
 
-    // Upload key for the sideloaded APK (#121): set only by the release workflow (tool/release/android_keystore.sh
-    // and the ANDROID_* secrets). Without it, release builds keep the debug keys so `flutter run --release` works.
-    val releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")?.takeIf { it.isNotEmpty() }
     if (releaseKeystore != null) {
         signingConfigs {
             create("release") {
@@ -77,6 +79,25 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
+        }
+    }
+
+    // The two distributions (#345, ADR 0023): `site`, the sideloaded APK on R2 (#121), and `store`, Google Play, with
+    // the same applicationId. `--flavor store` sets appFlavor (no update notice); src/store drops the permission of
+    // the one-tap battery dialog, a Play policy matter. Every Android build names its flavor, `--flavor site` too.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("site") { dimension = "distribution" }
+        create("store") { dimension = "distribution" }
+    }
+}
+
+// A Play release is never signed with the debug keys: without the upload key it fails before building anything.
+val storeWithoutUploadKey = releaseKeystore == null
+tasks.matching { it.name == "preStoreReleaseBuild" }.configureEach {
+    doFirst {
+        if (storeWithoutUploadKey) {
+            throw GradleException("A store release needs the upload key: ANDROID_KEYSTORE_PATH is not set")
         }
     }
 }

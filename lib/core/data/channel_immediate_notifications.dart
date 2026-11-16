@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 
 import '../domain/immediate_notifications.dart';
+import 'store_flavor.dart';
 
 /// Android's Notifiche immediate (#214): `ListeningService`, the `specialUse` foreground service that keeps the app's
 /// engine, and with it this isolate's SyncEngine (IDLE, the 60 s poll), alive with Postino closed. Nothing elsewhere.
@@ -53,6 +54,10 @@ class ChannelImmediateNotifications() implements ImmediateNotifications {
   Future<void> requestBatteryExemption() async {
     if (supported) await channel.invokeMethod<void>('requestBatteryExemption');
   }
+
+  /// `--flavor store`, whose manifest lacks the dialog's permission (ADR 0023; CI checks the two agree).
+  @override
+  bool get exemptionInSettings => isStoreFlavor(appFlavor);
 
   @override
   Stream<void> get opened => _opened.stream;

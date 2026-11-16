@@ -26,6 +26,10 @@ class FakeImmediateNotifications() implements ImmediateNotifications {
   /// While set, asking for the battery exemption throws it (no such dialog on the device).
   Exception? exemptionFailure;
 
+  /// True like the Google Play variant.
+  @override
+  bool exemptionInSettings = false;
+
   final _opened = StreamController<void>.broadcast();
 
   /// The fixed notification tapped.

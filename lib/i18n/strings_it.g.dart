@@ -663,6 +663,9 @@ class Translations$impostazioni$it {
 	/// it: 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.'
 	String get immediateNotificationsBody => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.';
 
+	/// it: 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino apre le impostazioni dell'ottimizzazione batteria, dove scegli di non ottimizzare Postino: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.'
+	String get immediateNotificationsBodySettings => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino apre le impostazioni dell\'ottimizzazione batteria, dove scegli di non ottimizzare Postino: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.';
+
 	/// it: 'Il sistema non ha avviato le Notifiche immediate. Riprova.'
 	String get immediateNotificationsFailed => 'Il sistema non ha avviato le Notifiche immediate. Riprova.';
 
@@ -1700,6 +1703,7 @@ extension on Translations {
 			'impostazioni.launchAtLoginFailed' => 'Il sistema non ha accettato la modifica. Riprova, o controlla gli elementi di login nelle impostazioni di sistema.',
 			'impostazioni.immediateNotifications' => 'Notifiche immediate',
 			'impostazioni.immediateNotificationsBody' => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino chiede di non essere limitato dall\'ottimizzazione batteria: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.',
+			'impostazioni.immediateNotificationsBodySettings' => 'La posta nuova arriva in tempo reale, anche con Postino chiuso. In cambio resta una notifica fissa e Postino apre le impostazioni dell\'ottimizzazione batteria, dove scegli di non ottimizzare Postino: consuma più batteria. Spente, la posta nuova si controlla circa ogni 15 minuti.',
 			'impostazioni.immediateNotificationsFailed' => 'Il sistema non ha avviato le Notifiche immediate. Riprova.',
 			'impostazioni.checkForUpdates' => 'Cerca aggiornamenti',
 			'impostazioni.checkForUpdatesBody' => 'Cerca subito una nuova versione di Postino.',

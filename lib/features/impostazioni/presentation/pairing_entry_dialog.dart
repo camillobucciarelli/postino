@@ -32,7 +32,7 @@ class _PairingEntryState() extends State<_PairingEntry> {
   var _scanning = false;
   String? _error;
 
-  /// The last text the camera read that did not pair: it keeps reading it, and is not sent again.
+  /// The last text the camera read that is not a code of this file: it keeps reading it, and is not sent again.
   String? _refused;
 
   @override
@@ -57,7 +57,8 @@ class _PairingEntryState() extends State<_PairingEntry> {
       _busy = false;
       // Switched to the other way in meanwhile: this answer is not about what is on screen.
       if (scanned != _scanning) return;
-      if (scanned) _refused = code;
+      // Only a code that does not open the file stays refused: offline or no file yet, the same QR is tried again.
+      if (result case Err(failure: PairingCodeFailure()) when scanned) _refused = code;
       _error = switch (result) {
         Err(failure: PairingCodeFailure()) => scanned ? t.syncPairScanInvalid : t.syncPairInvalid,
         Err(failure: NothingToPairFailure()) => t.syncPairNothing,

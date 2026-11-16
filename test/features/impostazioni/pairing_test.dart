@@ -200,6 +200,37 @@ void main() {
       expect(scanError, findsOneWidget);
     });
 
+    testWidgets('offline, the same QR still in view pairs once the network is back', (tester) async {
+      final h = await scanning(tester);
+      h.connectivity.online = false;
+      h.qrCamera.read(testSyncKey.code);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: scanError, matching: find.textContaining('offline')), findsOne);
+      expect(await _savedKey(h), isNull);
+
+      h.connectivity.online = true;
+      h.qrCamera.read(testSyncKey.code);
+      await tester.pumpAndSettle();
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+    });
+
+    testWidgets('back to the field while a QR is checked: its refusal does not land under the field', (tester) async {
+      final h = await scanning(tester);
+      _file.readGate = Completer<void>();
+      h.qrCamera.read(SyncKey.random().code);
+      await tester.pump();
+      await tester.tap(typeCode);
+      await tester.pump();
+      _file.readGate!.complete();
+      _file.readGate = null;
+      await tester.pumpAndSettle();
+      expect(_entry, findsOneWidget);
+      expect(find.textContaining('Codice non valido'), findsNothing);
+      expect(find.textContaining('non è un codice di abbinamento'), findsNothing);
+      await _typeCode(tester, testSyncKey.code);
+      expect((await _savedKey(h))?.id, testSyncKey.id);
+    });
+
     testWidgets('the camera refused: says why, and «Digita il codice» goes back to the field, which pairs', (
       tester,
     ) async {

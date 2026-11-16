@@ -14,12 +14,9 @@ mixin _$SearchDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class SearchDaoManager {
   final _$SearchDaoMixin _db;
   SearchDaoManager(this._db);
-  $$AccountsTableTableManager get accounts =>
-      $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
-  $$MessagesTableTableManager get messages =>
-      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
+  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
-  $$BodiesTableTableManager get bodies =>
-      $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
+  $$BodiesTableTableManager get bodies => $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
 }

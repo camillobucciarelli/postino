@@ -12,8 +12,7 @@ mixin _$AttributesDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class AttributesDaoManager {
   final _$AttributesDaoMixin _db;
   AttributesDaoManager(this._db);
-  $$MessagesTableTableManager get messages =>
-      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
 }

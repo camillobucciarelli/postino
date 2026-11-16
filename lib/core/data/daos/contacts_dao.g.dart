@@ -13,10 +13,8 @@ mixin _$ContactsDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class ContactsDaoManager {
   final _$ContactsDaoMixin _db;
   ContactsDaoManager(this._db);
-  $$AccountsTableTableManager get accounts =>
-      $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
-  $$MessagesTableTableManager get messages =>
-      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$AccountsTableTableManager get accounts => $$AccountsTableTableManager(_db.attachedDatabase, _db.accounts);
+  $$MessagesTableTableManager get messages => $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
   $$MessageLabelsTableTableManager get messageLabels =>
       $$MessageLabelsTableTableManager(_db.attachedDatabase, _db.messageLabels);
 }

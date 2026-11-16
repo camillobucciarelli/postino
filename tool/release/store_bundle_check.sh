@@ -1,7 +1,7 @@
 #!/bin/bash
 # The Mac App Store variant (#325, ADR 0021) is a bundle the Store accepts and updates by itself: no Sparkle (framework,
 # link, SU* keys or the mach-lookup exceptions of its installer, which App Review rejects), the App Sandbox on, the
-# category, the encryption answer of ADR 0020 and the privacy manifests (the app's, sqlcipher's and cnativeapi's).
+# category, the encryption answer of ADR 0022 and the privacy manifests (the app's, sqlcipher's and cnativeapi's).
 # Runs on any signed build of the variant: ci.yml checks the ad-hoc signed one, verify_store.sh the release.
 # Usage: store_bundle_check.sh <app>
 set -euo pipefail
@@ -25,8 +25,11 @@ su=$(keys "$plist" | grep '^SU' | paste -sd , -) || true
 [ -z "$su" ] || fail "Sparkle keys in Info.plist: $su"
 [ "$(value LSApplicationCategoryType "$plist")" = public.app-category.productivity ] ||
   fail "LSApplicationCategoryType is not public.app-category.productivity"
-# ADR 0020: SQLCipher, pointycastle and Dart's TLS are not the system's encryption.
-[ "$(value ITSAppUsesNonExemptEncryption "$plist")" = true ] || fail "ITSAppUsesNonExemptEncryption is not true (ADR 0020)"
+# ADR 0022: exempt from providing documentation (France excluded), not "no encryption". true needs the code of an
+# approved document, which Postino has not: App Store Connect rejects the upload (90592), as it does an empty code.
+[ "$(value ITSAppUsesNonExemptEncryption "$plist")" = false ] || fail "ITSAppUsesNonExemptEncryption is not false (ADR 0022)"
+code=$(keys "$plist" | grep -x ITSEncryptionExportComplianceCode) || true
+[ -z "$code" ] || fail "ITSEncryptionExportComplianceCode in Info.plist without an approved document (ADR 0022)"
 for manifest in Resources/PrivacyInfo.xcprivacy Frameworks/{sqlcipher,cnativeapi}.framework/Resources/PrivacyInfo.xcprivacy; do
   manifest="$app/Contents/$manifest"
   plutil -lint -s "$manifest" 2> /dev/null || fail "No valid privacy manifest at ${manifest#"$app"/}"

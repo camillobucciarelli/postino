@@ -27,8 +27,14 @@ Azioni che solo il titolare può fare in App Store Connect (#326). Spuntare ogni
 ## Conformità e commercio
 
 - [x] **Stato di trader (DSA)**: non operatore commerciale.
-- [x] **Prezzo e Paesi**: gratis; 174 Paesi su 175, **Francia esclusa** (16/11/2026, ADR 0020).
-- [ ] **Export compliance**: `ITSAppUsesNonExemptEncryption` resta `true` (ADR 0020). Con la Francia esclusa non c'è dichiarazione francese da caricare; per ogni build caricata rispondere a mano alle domande sulla crittografia in App Store Connect (iOS e macOS, #325), finché non c'è un `ITSEncryptionExportComplianceCode`.
+- [x] **Prezzo e Paesi**: gratis; 174 Paesi su 175, **Francia esclusa** (16/11/2026, ADR 0020; condizione dell'export compliance dell'ADR 0022).
+- [x] **Export compliance**: `ITSAppUsesNonExemptEncryption` vale `false` (ADR 0022): l'app è esente dal fornire documentazione perché la Francia è esclusa. Non significa che l'app non usa crittografia: SQLCipher, pointycastle e il TLS di Dart ci sono. Il 16/11/2026 il titolare ha compilato in App Store Connect (App Information → App Encryption Documentation) il questionario «Documentazione relativa alla crittografia dell'app» con queste risposte:
+  - l'app usa la crittografia: **sì**;
+  - algoritmi proprietari (non standard): **no**;
+  - algoritmi standard in aggiunta a quelli del sistema operativo Apple: **sì**;
+  - distribuzione in Francia: **no**.
+
+  L'esito è «nessun documento richiesto». In App Store Connect non resta registrato alcun documento (la sezione mostra ancora solo «Carica»), ed è quello che ci si aspetta. Per riaprire la Francia serve prima la dichiarazione ANSSI approvata, poi `true` con `ITSEncryptionExportComplianceCode` (ADR 0022). Gli obblighi verso il BIS statunitense (per esempio il rapporto annuale di autoclassificazione) li valuta il titolare: il repo non dà consulenza legale.
 - [ ] Accordi, fiscalità e conti bancari di App Store Connect firmati e completi (richiesti anche per un'app gratuita nei Paesi con obblighi fiscali; per un'app a pagamento sempre).
 - [x] Diritti sui contenuti: nessun contenuto di terzi.
 

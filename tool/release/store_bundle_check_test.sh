@@ -10,7 +10,7 @@ sandbox='<key>com.apple.security.app-sandbox</key><true/>'
 plist_keys='<key>CFBundleExecutable</key><string>Postino</string>
 <key>CFBundleIdentifier</key><string>app.postino.test</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
-<key>ITSAppUsesNonExemptEncryption</key><true/>'
+<key>ITSAppUsesNonExemptEncryption</key><false/>'
 
 # app <Info.plist keys> <entitlements keys>: a fresh bundle at $tmp/Postino.app, signed ad hoc.
 app() {
@@ -58,8 +58,13 @@ app "$plist_keys<key>SUFeedURL</key><string>https://example.com/appcast.xml</str
 fails "SU* key" 'SUFeedURL'
 app "${plist_keys/productivity/utilities}" "$sandbox"
 fails "category" 'LSApplicationCategoryType'
-app "${plist_keys/<true\/>/<false/>}" "$sandbox"
-fails "encryption" 'ITSAppUsesNonExemptEncryption'
+# ADR 0022: true without the code of an approved document is App Store Connect's error 90592.
+app "${plist_keys/NonExemptEncryption<\/key><false\/>/NonExemptEncryption</key><true/>}" "$sandbox"
+fails "encryption true" 'ITSAppUsesNonExemptEncryption'
+app "${plist_keys/<key>ITSAppUsesNonExemptEncryption<\/key><false\/>/}" "$sandbox"
+fails "encryption missing" 'ITSAppUsesNonExemptEncryption'
+app "$plist_keys<key>ITSEncryptionExportComplianceCode</key><string></string>" "$sandbox"
+fails "empty compliance code" 'ITSEncryptionExportComplianceCode'
 app "$plist_keys" "$sandbox"
 rm "$tmp/Postino.app/Contents/Frameworks/cnativeapi.framework/Versions/A/Resources/PrivacyInfo.xcprivacy"
 fails "framework privacy manifest" 'cnativeapi.framework'

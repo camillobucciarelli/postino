@@ -19,6 +19,46 @@ Future<MailStore> _store() async {
 }
 
 void main() {
+  test(
+    'settledMessage: the stored message as the Provider said it, unless an Azione or a Conflitto overlays it (#322)',
+    () async {
+      final db = PostinoDatabase.inMemory();
+      addTearDown(db.close);
+      final store = MailStore(db);
+      await store.addAccount(
+        const Account(id: 'a', address: 'a@example.com', provider: ProviderKind.gmail, color: 0, position: 0),
+      );
+      await store.applySync(
+        'a',
+        SyncBatch(
+          cursor: '1',
+          messages: [
+            msg('1', labelIds: ['INBOX', 'UNREAD']),
+            msg('2'),
+            msg('3'),
+          ],
+        ),
+      );
+      expect(await store.settledMessage('a', '1'), msg('1', labelIds: ['INBOX', 'UNREAD']));
+      expect(await store.settledMessage('a', 'x'), isNull);
+      await store.queue('a', ['2'], const MarkRead());
+      expect(await store.settledMessage('a', '2'), isNull, reason: 'queued Azione');
+      await store.queue('a', ['3'], const MarkRead());
+      await db.intentsDao.conflict('a', '3', 'read', 'true', 'false');
+      expect(await db.select(db.intents).get(), hasLength(1), reason: 'only the voce of 2 is left');
+      expect(await store.settledMessage('a', '3'), isNull, reason: 'open Conflitto');
+    },
+  );
+
+  test('settledMessage withBody: null for a message without a stored body (ADR 0003)', () async {
+    final store = await _store();
+    await store.applySync('a', SyncBatch(cursor: '1', messages: [msg('1')]));
+    expect((await store.settledMessage('a', '1'))?.id, '1');
+    expect(await store.settledMessage('a', '1', withBody: true), isNull);
+    await store.saveBody('a', '1', const MessageBody('Ciao', BodyKind.testo));
+    expect((await store.settledMessage('a', '1', withBody: true))?.id, '1');
+  });
+
   test('a sync result for an Account removed meanwhile writes nothing', () async {
     final db = PostinoDatabase.inMemory();
     addTearDown(db.close);

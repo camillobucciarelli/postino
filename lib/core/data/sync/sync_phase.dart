@@ -31,10 +31,17 @@ class SyncPhase(
   final QueueReplay _replay,
   final Connectivity _connectivity,
   final SyncStatusBoard _status,
+  final Clock _clock,
 ) {
   /// Syncs of an Account failed in a row, offline ones too, before the streak goes in the log (#252): one or two
   /// may be the network, more with the device online is a sync that never gets through.
   static const failuresToLog = SyncStatus.offlineFailuresToShow;
+
+  /// A sync longer than this goes in the log (#322): the lines to tell a slow Provider from a stuck one.
+  static const slowSyncAfter = Duration(seconds: 20);
+
+  /// The Accounts whose rate limit pause has its start in the log and not its end yet (#322).
+  final _pauses = <String>{};
 
   /// Per Account, its syncs failed in a row and whether this streak is in the log already.
   final _streaks = <String, ({int failed, bool logged})>{};
@@ -59,7 +66,13 @@ class SyncPhase(
       // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
       await _replay.beforeSync(accountId, provider);
       final paused = _gate.paused(accountId);
+      if (!paused && _pauses.remove(accountId)) {
+        _log.record('fine', context: 'sync ${account.provider.name}, pausa rate limit');
+      }
+      final started = _clock.now();
       final failure = paused ? null : await _sync(account, provider, autoLabel: autoLabel);
+      final took = _clock.now().difference(started);
+      if (took >= slowSyncAfter) _log.record('${took.inSeconds} s', context: 'sync ${account.provider.name}, lenta');
       // Before [synced]: a refresh waiting on it reads how it went.
       _status.finished(accountId, failure: failure, synced: !paused);
       synced.complete();
@@ -117,7 +130,10 @@ class SyncPhase(
 
         _streaks.remove(accountId);
         if (value.deferred case final deferred? when _connectivity.isOnline) {
-          _log.record(deferred, context: 'sync ${account.provider.name}, messaggi rimandati');
+          _log.record(
+            deferred,
+            context: 'sync ${account.provider.name}, ${value.deferredMessageIds.length} messaggi rimandati',
+          );
         }
         final committed = commit();
         committing.add(committed);
@@ -143,6 +159,9 @@ class SyncPhase(
         _streaks[accountId] = (failed: failed, logged: streak.logged || log);
         if (failure case RateLimitFailure(:final retryAfter?)) {
           _gate.pause(accountId, retryAfter);
+          if (_pauses.add(accountId)) {
+            _log.record('inizio, fino a $retryAfter', context: 'sync ${account.provider.name}, pausa rate limit');
+          }
           debugPrint('[sync] $accountId: paused until $retryAfter');
         }
         // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.

@@ -22,6 +22,7 @@ import '../oauth/oauth_guard.dart';
 import 'gmail_actions.dart';
 import 'gmail_cursor.dart';
 import 'gmail_http.dart';
+import 'gmail_label_edits.dart';
 import 'gmail_labels.dart';
 import 'gmail_message_parser.dart';
 import 'gmail_search.dart';
@@ -37,6 +38,9 @@ class GmailProvider(
   final Future<void> Function(Duration) _sleep = Future<void>.delayed,
   final ImapIdle _idle = imapIdle,
   Duration stall = const Duration(seconds: 30),
+  // The stored copy of a message, if the history may change it without a download (#322).
+  // [withBody]: null unless its body is stored too.
+  final Future<Message?> Function(String id, {bool withBody})? storedMessage,
 }) implements MailProvider {
   this : _gmail = GmailHttp(_accountId, keychain, httpClient, _clock, client: client, sleep: _sleep, stall: stall);
 
@@ -97,6 +101,7 @@ class GmailProvider(
     final was = GmailCursor.decode(cursor);
     final changed = <String>{};
     final deleted = <String>{};
+    final edits = GmailLabelEdits();
     var latest = was.historyId;
     String? page;
     do {
@@ -106,25 +111,45 @@ class GmailProvider(
         for (final kind in ['messagesAdded', 'labelsAdded', 'labelsRemoved']) {
           for (final e in jsonObjects(h[kind])) {
             final id = (e['message'] as Map<String, dynamic>)['id'] as String;
-            changed.add(id);
             deleted.remove(id);
+            if (kind == 'messagesAdded') {
+              changed.add(id);
+              edits.forget(id);
+            } else if (!changed.contains(id)) {
+              edits.add(
+                id,
+                added: kind == 'labelsAdded',
+                labels: [for (final l in e['labelIds'] as List? ?? const []) l as String],
+              );
+            }
           }
         }
         for (final e in jsonObjects(h['messagesDeleted'])) {
           final id = (e['message'] as Map<String, dynamic>)['id'] as String;
           deleted.add(id);
           changed.remove(id);
+          edits.forget(id);
         }
       }
       latest = r['historyId'] as String? ?? latest;
       page = r['nextPageToken'] as String?;
     } while (page != null);
-    // The messages an earlier sync left behind once their wait is over (#252); not before, even if changed again.
-    final due = was.due(_clock.now()).toSet();
-    changed
-      ..removeWhere((id) => was.retries.containsKey(id) && !due.contains(id))
-      ..addAll(due);
-    // ponytail: every changed message is fetched in full; use the history labelIds to fetch metadata only if archive storms get slow.
+    // A label change needs no download for a message stored here, unless it is waiting for a retry (#322) or is in
+    // the inbox without its body, which the inbox keeps (ADR 0003).
+    final edited = <Message>[];
+    for (final id in edits.ids) {
+      final stored = was.retries.containsKey(id) ? null : await storedMessage?.call(id);
+      final next = stored == null ? null : edits.applyTo(stored);
+      if (next == null || next.labelIds.contains(inboxLabelId) && await storedMessage!(id, withBody: true) == null) {
+        changed.add(id);
+      } else {
+        edited.add(next);
+      }
+    }
+    // The messages an earlier sync left behind once their wait is over (#252); one the history touches again is
+    // retried now, in `changed` already (#322).
+    changed.addAll(was.due(_clock.now()));
+    // ponytail: every added message is fetched in full; metadata only if archive storms get slow.
     final (:fetched, :failed) = await _fetchAll(changed, full: (_) => true);
     // The history does not record label changes: the whole list comes every time.
     // ponytail: one more GET (1 quota unit) per poll; a labels-only refresh every few polls if quota ever matters.
@@ -135,7 +160,7 @@ class GmailProvider(
       SyncBatch(
         cursor: next.encode(),
         labels: labels,
-        messages: [for (final (m, _) in fetched.values.nonNulls) m],
+        messages: [...edited, for (final (m, _) in fetched.values.nonNulls) m],
         // Gone by the time it was fetched: removed as well.
         removedMessageIds: [
           ...deleted,

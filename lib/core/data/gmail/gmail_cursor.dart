@@ -10,7 +10,7 @@ typedef GmailRetry = ({int tries, DateTime due});
 class const GmailCursor(final String historyId, [final Map<String, GmailRetry> retries = const {}]) {
   /// The wait after the first failed try, doubled by each next one up to [_maxWait].
   static const _firstWait = Duration(minutes: 1);
-  static const _maxWait = Duration(hours: 1);
+  static const _maxWait = Duration(minutes: 5);
 
   String encode() => retries.isEmpty
       ? historyId

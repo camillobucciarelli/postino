@@ -77,6 +77,9 @@ class FakeMailProvider() implements MailProvider {
   /// Set, every incremental sync says it left messages behind for this reason (#252).
   Failure? deferred;
 
+  /// The ids of the messages [deferred] left behind.
+  List<String> deferredIds = const [];
+
   /// While set, syncs wait for it to complete: a slow Provider.
   Completer<void>? hold;
 
@@ -330,6 +333,7 @@ class FakeMailProvider() implements MailProvider {
             if (e.$2 == null) e.$3,
         ],
         bodies: _inboxBodies(messages),
+        deferredMessageIds: deferredIds,
         deferred: deferred,
       );
     });

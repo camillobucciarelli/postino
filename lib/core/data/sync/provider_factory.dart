@@ -25,7 +25,13 @@ MailProvider providerFor(Account account) {
   if (!g.isRegistered<MailProvider>(instanceName: account.id)) {
     g.registerLazySingleton<MailProvider>(
       () => switch (account.provider) {
-        ProviderKind.gmail => GmailProvider(account.id, g(), g(), g()),
+        ProviderKind.gmail => GmailProvider(
+          account.id,
+          g(),
+          g(),
+          g(),
+          storedMessage: (id, {withBody = false}) => g<MailStore>().settledMessage(account.id, id, withBody: withBody),
+        ),
         ProviderKind.icloud || ProviderKind.imap => ImapProvider(
           account.id,
           account.address,

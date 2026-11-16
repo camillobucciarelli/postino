@@ -43,6 +43,11 @@ class BodiesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabase
     }
   }
 
+  /// True when the message's body is stored.
+  Future<bool> has(String accountId, String messageId) async => (await (select(
+    bodies,
+  )..where((t) => t.accountId.equals(accountId) & t.messageId.equals(messageId))).get()).isNotEmpty;
+
   /// [text]: its [searchableText], when the caller made it before its own transaction (#221).
   Future<void> saveBody(String accountId, String messageId, MessageBody body, {String? text}) async {
     final indexed = text ?? (await searchableTexts([body])).single;

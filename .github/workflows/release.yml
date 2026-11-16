@@ -4,12 +4,20 @@ name: Release
 # `needs: version`: `macos` (DMG), `macos-store` (Mac App Store, #325, off until configured), `android` (sideloaded
 # APK, `--flavor site`) and `ios` (TestFlight, #120). `site` publishes the
 # invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
-# `android`) next to them.
+# `android`) next to them, and `android-store` (Google Play internal testing, #345, off until configured).
+# A manual run with `only: android-store` runs that job alone (the other jobs are skipped), also for a version already
+# released: the first upload to Google Play of the version in pubspec.yaml (docs/store/play-checklist-titolare.md).
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
   push:
     tags: ['v*.*.*']
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'all, or android-store alone (Google Play, also for a version already released)'
+        type: choice
+        options: [all, android-store]
+        default: all
 
 permissions:
   contents: read
@@ -31,8 +39,15 @@ jobs:
         run: |
           version=$(tool/release/version.sh)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      # A Google Play run alone with Play off would skip everything and end green with no AAB.
+      - name: Google Play is on for a run of android-store alone
+        if: inputs.only == 'android-store' && vars.PLAY_STORE != 'true'
+        run: |
+          echo "::error::only: android-store needs the repository variable PLAY_STORE set to true"
+          exit 1
+      # Except a Google Play run alone: it publishes nothing else, and Play refuses a versionCode it already has.
       - name: A manual run never replaces a released version
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.only != 'android-store'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -49,6 +64,7 @@ jobs:
   # en/privacy.html links to en/index.html, which only `download` publishes: a manual run that stops at `version`
   # before the first release with this site leaves that link dangling until the release.
   site:
+    if: inputs.only != 'android-store'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:
@@ -134,6 +150,7 @@ jobs:
 
   macos:
     needs: version
+    if: inputs.only != 'android-store'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 120
     env:
@@ -273,7 +290,7 @@ jobs:
   # has, so a rerun of a released version fails at the upload, as on iOS.
   macos-store:
     needs: version
-    if: vars.MAC_APP_STORE == 'true'
+    if: vars.MAC_APP_STORE == 'true' && inputs.only != 'android-store'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 90
     env:
@@ -358,6 +375,7 @@ jobs:
 
   android:
     needs: version
+    if: inputs.only != 'android-store'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 60
     env:
@@ -457,6 +475,84 @@ jobs:
             upload "android/$VERSION/Postino-$VERSION.apk" 'public, max-age=300'
           fi
 
+  # Google Play (#345, ADR 0023): the `store` flavor as an AAB, signed with the same upload key as the APK (Play App
+  # Signing re-signs it for users), uploaded to the internal testing track; promotion to closed testing and production
+  # is the owner's, by hand in the Play Console. Off until the owner sets the repository variable PLAY_STORE to true,
+  # once the service account exists: until then the job is skipped, not failed. Nothing waits for it, so the APK never
+  # depends on it. Play refuses a versionCode it already has, so a rerun of an uploaded version fails at the upload.
+  # A manual run with `only: android-store` runs this job alone, even for a version already released (the first upload
+  # of the release in pubspec.yaml, docs/store/play-checklist-titolare.md).
+  android-store:
+    needs: version
+    if: vars.PLAY_STORE == 'true'
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      AAB: build/app/outputs/bundle/storeRelease/app-store-release.aab
+      # The upload key's certificate, as in `android`: verify_aab.sh refuses any other signer.
+      ANDROID_CERT_SHA256: 47:03:4A:D7:65:75:3A:E5:27:8C:6C:09:F6:5E:E8:5F:E7:6B:26:56:85:9C:04:AC:78:54:2D:8A:8D:12:1F:04
+    steps:
+      - name: Required secrets are set
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          missing=0
+          for name in GOOGLE_CLIENT_ID MICROSOFT_CLIENT_ID ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD PLAY_SERVICE_ACCOUNT_JSON_BASE64; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Flutter matches .fvmrc
+        run: |
+          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
+          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
+          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      - name: Upload keystore in RUNNER_TEMP
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: tool/release/android_keystore.sh
+      # As the APK's build, with the store flavor: no update notice, no one-tap battery dialog (ADR 0023).
+      - name: flutter build appbundle --release --flavor store
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build appbundle --release --flavor store --build-number="$build" \
+            --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" \
+            --dart-define=POSTINO_BUILD="$build" --dart-define=POSTINO_VERSION="$VERSION"
+      # Last use of the keystore: it goes now, and even when an earlier step failed.
+      - name: Delete the upload keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload-keystore.p12"
+      - run: tool/release/verify_aab.sh "$AAB" "$ANDROID_CERT_SHA256" "$(tool/release/build_number.sh "$VERSION")" "$VERSION"
+      # Kept with the run for a week: the first upload of the app goes in by hand from the Play Console (the API
+      # changes only an app that already has one), and so does any upload the API refuses.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Postino-${{ needs.version.outputs.version }}-play.aab
+          path: ${{ env.AAB }}
+          retention-days: 7
+          if-no-files-found: error
+      - name: Upload to the internal testing track
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          out=$(tool/release/play_upload.sh "$AAB" "$(tool/release/build_number.sh "$VERSION")" "$VERSION")
+          echo "$out"
+          echo "- Google Play: ${out##*$'\n'}" >> "$GITHUB_STEP_SUMMARY"
+
   # TestFlight (#120): internal testers only (no Beta App Review). Signing is Xcode's own, cloud-managed through the
   # App Store Connect API key (tool/release/ios_ipa.sh): no certificate, profile or keychain secret exists. The build
   # number is the same as the other platforms'; App Store Connect refuses one it already has, so a rerun of a released
@@ -464,6 +560,7 @@ jobs:
   # version bumped in pubspec.yaml) at least every ~80 days to keep testers on a live build.
   ios:
     needs: version
+    if: inputs.only != 'android-store'
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 60
     env:

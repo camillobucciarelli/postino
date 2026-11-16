@@ -134,15 +134,13 @@ class GmailProvider(
       latest = r['historyId'] as String? ?? latest;
       page = r['nextPageToken'] as String?;
     } while (page != null);
-    // A label change needs no download for a message stored here, unless it is waiting for a retry (#322) or enters
+    // A label change needs no download for a message stored here, unless it is waiting for a retry (#322) or is in
     // the inbox without its body, which the inbox keeps (ADR 0003).
     final edited = <Message>[];
     for (final id in edits.ids) {
       final stored = was.retries.containsKey(id) ? null : await storedMessage?.call(id);
       final next = stored == null ? null : edits.applyTo(stored);
-      final entersInbox =
-          next != null && next.labelIds.contains(inboxLabelId) && !stored!.labelIds.contains(inboxLabelId);
-      if (next == null || entersInbox && await storedMessage!(id, withBody: true) == null) {
+      if (next == null || next.labelIds.contains(inboxLabelId) && await storedMessage!(id, withBody: true) == null) {
         changed.add(id);
       } else {
         edited.add(next);

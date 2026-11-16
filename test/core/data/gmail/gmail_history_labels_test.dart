@@ -74,6 +74,7 @@ void main() {
         ('labelsRemoved', 'a', ['STARRED']),
       ],
       {'a': stored},
+      {'a'},
     );
     final batch = okValue(await g.provider.incrementalSync('100'));
     expect(g.fetched, isEmpty);
@@ -141,6 +142,33 @@ void main() {
       final batch = okValue(await g.provider.incrementalSync('100'));
       expect(g.fetched, isEmpty);
       expect(batch.messages.single.labelIds, ['Label_1', 'INBOX']);
+    });
+
+    test('already in the inbox here without a body (metadata from an on-demand fetch): downloaded', () async {
+      final g = _Mailbox(
+        [
+          ('labelsRemoved', 'a', ['UNREAD']),
+        ],
+        {
+          'a': msg('a', labelIds: ['INBOX', 'UNREAD']),
+        },
+      );
+      okValue(await g.provider.incrementalSync('100'));
+      expect(g.fetched, ['a']);
+    });
+
+    test('already in the inbox here with its body: applied from the history', () async {
+      final g = _Mailbox(
+        [
+          ('labelsRemoved', 'a', ['UNREAD']),
+        ],
+        {
+          'a': msg('a', labelIds: ['INBOX', 'UNREAD']),
+        },
+        {'a'},
+      );
+      okValue(await g.provider.incrementalSync('100'));
+      expect(g.fetched, isEmpty);
     });
 
     test('a label that is not the inbox needs no body', () async {

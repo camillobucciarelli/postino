@@ -16,6 +16,15 @@ class MainFlutterWindow: NSWindow {
       Updater.register(with: flutterViewController.engine.binaryMessenger)
     #endif
     MailMenu.register(with: flutterViewController.engine.binaryMessenger)
+    // postino (ADR 0019): "it.postino/screen_guard" protect(bool). sharingType is a legacy API Apple advises against
+    // for stopping captures: set anyway, never relied on.
+    let guardChannel = FlutterMethodChannel(
+      name: "it.postino/screen_guard", binaryMessenger: flutterViewController.engine.binaryMessenger)
+    guardChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "protect" else { return result(FlutterMethodNotImplemented) }
+      self?.sharingType = (call.arguments as? Bool) == true ? .none : .readOnly
+      result(false)
+    }
 
     super.awakeFromNib()
   }

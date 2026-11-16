@@ -37,6 +37,7 @@ void main() {
           getIt<SettingsRepository>(),
           h.clock,
           h.connectivity,
+          keysWith(testSyncKey),
           backendFor: (_) => file,
         ),
       );
@@ -51,7 +52,14 @@ void main() {
       final bDb = PostinoDatabase.inMemory();
       final bSettings = DeviceSettingsStore(bDb);
       await bSettings.setSettingsSyncAccount('gmail:ada@gmail.com');
-      final bSync = SettingsSync(bDb, bSettings, h.clock, FakeConnectivity(), backendFor: (_) => file)..start();
+      final bSync = SettingsSync(
+        bDb,
+        bSettings,
+        h.clock,
+        FakeConnectivity(),
+        keysWith(testSyncKey),
+        backendFor: (_) => file,
+      )..start();
       final bMirror = AccountsSettingsMirror(
         bDb,
         MailStore(bDb),

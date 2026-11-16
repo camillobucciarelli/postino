@@ -6,6 +6,7 @@ import 'package:file/memory.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postino/core/data/attachment_cache.dart';
+import 'package:postino/core/data/device_only_key.dart';
 import 'package:postino/core/data/error_log/encrypted_error_log.dart';
 import 'package:postino/core/data/error_log/log_keys.dart';
 import 'package:postino/core/data/imap/imap_session.dart';
@@ -28,6 +29,7 @@ import 'package:postino/core/domain/model_manager.dart';
 import 'package:postino/core/domain/notifications.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/report_sharer.dart';
+import 'package:postino/core/domain/screen_guard.dart';
 import 'package:postino/core/domain/server_discovery.dart';
 import 'package:postino/core/domain/text_embedder.dart';
 import 'package:postino/main.dart';
@@ -51,6 +53,10 @@ class Harness._() {
   final consent = FakeGoogleConsent();
   final microsoft = FakeMicrosoftConsent();
   final keychain = FakeSecureStore();
+
+  /// The device-only keychain (ADR 0017): the Chiave di sincronizzazione (ADR 0019).
+  final deviceKeychain = FakeSecureStore();
+  final screenGuard = FakeScreenGuard();
   final clock = FakeClock(DateTime.utc(2026, 10, 28, 12));
   final connectivity = FakeConnectivity();
   final links = FakeLinkOpener();
@@ -95,6 +101,8 @@ class Harness._() {
       ..registerSingleton<GoogleConsent>(h.consent)
       ..registerSingleton<MicrosoftConsent>(h.microsoft)
       ..registerSingleton<SecureStore>(h.keychain)
+      ..registerSingleton<SecureStore>(h.deviceKeychain, instanceName: deviceOnlyKeychainName)
+      ..registerSingleton<ScreenGuard>(h.screenGuard)
       ..registerSingleton<Clock>(h.clock)
       ..registerSingleton<Connectivity>(h.connectivity)
       ..registerSingleton<LinkOpener>(h.links)

@@ -717,8 +717,8 @@ class Translations$impostazioni$it {
 	/// it: 'Nessuno'
 	String get syncNone => 'Nessuno';
 
-	/// it: 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.'
-	String get syncBody => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.';
+	/// it: 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell'Account scelto, senza credenziali. Postino chiede a Google l'accesso a quello spazio nascosto di Drive, non ai tuoi file.'
+	String get syncBody => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.';
 
 	/// it: 'Sincronizza le Impostazioni su'
 	String get syncChooserTitle => 'Sincronizza le Impostazioni su';
@@ -755,6 +755,102 @@ class Translations$impostazioni$it {
 
 	/// it: 'Motivo: $reason'
 	String syncCycleReason({required Object reason}) => 'Motivo: ${reason}';
+
+	/// it: 'Abbina un altro dispositivo'
+	String get syncPairOther => 'Abbina un altro dispositivo';
+
+	/// it: 'Mostra il codice da inserire sul nuovo dispositivo'
+	String get syncPairOtherSubtitle => 'Mostra il codice da inserire sul nuovo dispositivo';
+
+	/// it: 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.'
+	String get syncPairShowBody => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.';
+
+	/// it: 'QR del codice di abbinamento'
+	String get syncPairQrLabel => 'QR del codice di abbinamento';
+
+	/// it: 'Codice di abbinamento'
+	String get syncPairCodeLabel => 'Codice di abbinamento';
+
+	/// it: 'Si chiude tra $time'
+	String syncPairClosesIn({required Object time}) => 'Si chiude tra ${time}';
+
+	/// it: 'Il codice si chiude tra $seconds secondi'
+	String syncPairClosesInSeconds({required Object seconds}) => 'Il codice si chiude tra ${seconds} secondi';
+
+	/// it: 'Il codice è nascosto mentre lo schermo viene registrato o duplicato.'
+	String get syncPairCaptured => 'Il codice è nascosto mentre lo schermo viene registrato o duplicato.';
+
+	/// it: 'Chiudi'
+	String get syncPairClose => 'Chiudi';
+
+	/// it: 'Non c'è ancora nulla da abbinare: le Impostazioni di questo dispositivo non sono ancora state sincronizzate.'
+	String get syncPairNoKey => 'Non c\'è ancora nulla da abbinare: le Impostazioni di questo dispositivo non sono ancora state sincronizzate.';
+
+	/// it: 'Inserisci il codice'
+	String get syncPairEnter => 'Inserisci il codice';
+
+	/// it: 'Abbina questo dispositivo'
+	String get syncPairEnterTitle => 'Abbina questo dispositivo';
+
+	/// it: 'Su un dispositivo già abbinato apri «Sincronizza su…» › «Abbina un altro dispositivo», poi digita o incolla qui il codice. I due dispositivi devono sincronizzare sullo stesso Account.'
+	String get syncPairEnterBody => 'Su un dispositivo già abbinato apri «Sincronizza su…» › «Abbina un altro dispositivo», poi digita o incolla qui il codice. I due dispositivi devono sincronizzare sullo stesso Account.';
+
+	/// it: 'Codice di abbinamento'
+	String get syncPairEnterField => 'Codice di abbinamento';
+
+	/// it: 'Inizia con P1. Spazi e trattini non contano.'
+	String get syncPairEnterHelper => 'Inizia con P1. Spazi e trattini non contano.';
+
+	/// it: 'Abbina'
+	String get syncPairEnterConfirm => 'Abbina';
+
+	/// it: 'Annulla'
+	String get syncPairEnterCancel => 'Annulla';
+
+	/// it: 'Verifica del codice in corso…'
+	String get syncPairBusy => 'Verifica del codice in corso…';
+
+	/// it: 'Codice non valido. Controlla di averlo copiato per intero, e che i due dispositivi sincronizzino sullo stesso Account in «Sincronizza su…».'
+	String get syncPairInvalid => 'Codice non valido. Controlla di averlo copiato per intero, e che i due dispositivi sincronizzino sullo stesso Account in «Sincronizza su…».';
+
+	/// it: 'Su Drive non ci sono ancora Impostazioni cifrate da abbinare: questo dispositivo crea la sua chiave alla prima sincronizzazione.'
+	String get syncPairNothing => 'Su Drive non ci sono ancora Impostazioni cifrate da abbinare: questo dispositivo crea la sua chiave alla prima sincronizzazione.';
+
+	/// it: 'Abbinamento non riuscito. Motivo: $reason'
+	String syncPairFailed({required Object reason}) => 'Abbinamento non riuscito. Motivo: ${reason}';
+
+	/// it: 'Questo dispositivo non è abbinato'
+	String get syncPairNeededTitle => 'Questo dispositivo non è abbinato';
+
+	/// it: 'Le Impostazioni su Drive sono cifrate. Abbinalo con il codice di un dispositivo che sincronizza su questo Account: fino ad allora le modifiche restano qui.'
+	String get syncPairNeededBody => 'Le Impostazioni su Drive sono cifrate. Abbinalo con il codice di un dispositivo che sincronizza su questo Account: fino ad allora le modifiche restano qui.';
+
+	/// it: 'Chiave di sincronizzazione non più valida'
+	String get syncKeyInvalidTitle => 'Chiave di sincronizzazione non più valida';
+
+	/// it: 'Le Impostazioni su Drive sono cifrate con un'altra chiave. Abbina di nuovo questo dispositivo: le modifiche fatte qui restano e si caricano dopo.'
+	String get syncKeyInvalidBody => 'Le Impostazioni su Drive sono cifrate con un\'altra chiave. Abbina di nuovo questo dispositivo: le modifiche fatte qui restano e si caricano dopo.';
+
+	/// it: 'Rigenera la chiave'
+	String get syncRegenerate => 'Rigenera la chiave';
+
+	/// it: 'Gli altri dispositivi andranno abbinati di nuovo'
+	String get syncRegenerateSubtitle => 'Gli altri dispositivi andranno abbinati di nuovo';
+
+	/// it: 'Rigenerare la chiave di sincronizzazione?'
+	String get syncRegenerateTitle => 'Rigenerare la chiave di sincronizzazione?';
+
+	/// it: 'Postino crea una chiave nuova e cifra con quella le Impostazioni su Drive. Gli altri dispositivi dovranno essere abbinati di nuovo.'
+	String get syncRegenerateMessage => 'Postino crea una chiave nuova e cifra con quella le Impostazioni su Drive. Gli altri dispositivi dovranno essere abbinati di nuovo.';
+
+	/// it: 'Se le Impostazioni su Drive si leggono, prima vengono unite a quelle di questo dispositivo. Se non si leggono (chiave persa o file danneggiato), vengono sostituite da quelle di questo dispositivo: quello che c'era su Drive e non è qui va perso.'
+	String get syncRegenerateNote => 'Se le Impostazioni su Drive si leggono, prima vengono unite a quelle di questo dispositivo. Se non si leggono (chiave persa o file danneggiato), vengono sostituite da quelle di questo dispositivo: quello che c\'era su Drive e non è qui va perso.';
+
+	/// it: 'Rigenera'
+	String get syncRegenerateConfirm => 'Rigenera';
+
+	/// it: 'Annulla'
+	String get syncRegenerateCancel => 'Annulla';
 }
 
 // Path: segnalazione
@@ -1592,7 +1688,7 @@ extension on Translations {
 			'impostazioni.syncSection' => 'Sincronizzazione',
 			'impostazioni.syncTitle' => 'Sincronizza su…',
 			'impostazioni.syncNone' => 'Nessuno',
-			'impostazioni.syncBody' => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.',
+			'impostazioni.syncBody' => 'Le Impostazioni di Postino (per esempio le Etichette automatiche) vengono salvate cifrate in un file nascosto nel Google Drive dell\'Account scelto, senza credenziali. Postino chiede a Google l\'accesso a quello spazio nascosto di Drive, non ai tuoi file.',
 			'impostazioni.syncChooserTitle' => 'Sincronizza le Impostazioni su',
 			'impostazioni.syncCancel' => 'Annulla',
 			'impostazioni.syncBusy' => 'Accesso a Drive in corso…',
@@ -1605,6 +1701,38 @@ extension on Translations {
 			'impostazioni.syncCycleFailed' => 'Impostazioni non sincronizzate',
 			'impostazioni.syncCycleScope' => 'Google non concede più l\'accesso allo spazio nascosto di Drive: scegli di nuovo l\'Account in «Sincronizza su…».',
 			'impostazioni.syncCycleReason' => ({required Object reason}) => 'Motivo: ${reason}',
+			'impostazioni.syncPairOther' => 'Abbina un altro dispositivo',
+			'impostazioni.syncPairOtherSubtitle' => 'Mostra il codice da inserire sul nuovo dispositivo',
+			'impostazioni.syncPairShowBody' => 'Sul nuovo dispositivo collega questo stesso Account, sceglilo in «Sincronizza su…», poi digita o incolla questo codice. Chi ha il codice può leggere le Impostazioni sincronizzate: non condividerlo.',
+			'impostazioni.syncPairQrLabel' => 'QR del codice di abbinamento',
+			'impostazioni.syncPairCodeLabel' => 'Codice di abbinamento',
+			'impostazioni.syncPairClosesIn' => ({required Object time}) => 'Si chiude tra ${time}',
+			'impostazioni.syncPairClosesInSeconds' => ({required Object seconds}) => 'Il codice si chiude tra ${seconds} secondi',
+			'impostazioni.syncPairCaptured' => 'Il codice è nascosto mentre lo schermo viene registrato o duplicato.',
+			'impostazioni.syncPairClose' => 'Chiudi',
+			'impostazioni.syncPairNoKey' => 'Non c\'è ancora nulla da abbinare: le Impostazioni di questo dispositivo non sono ancora state sincronizzate.',
+			'impostazioni.syncPairEnter' => 'Inserisci il codice',
+			'impostazioni.syncPairEnterTitle' => 'Abbina questo dispositivo',
+			'impostazioni.syncPairEnterBody' => 'Su un dispositivo già abbinato apri «Sincronizza su…» › «Abbina un altro dispositivo», poi digita o incolla qui il codice. I due dispositivi devono sincronizzare sullo stesso Account.',
+			'impostazioni.syncPairEnterField' => 'Codice di abbinamento',
+			'impostazioni.syncPairEnterHelper' => 'Inizia con P1. Spazi e trattini non contano.',
+			'impostazioni.syncPairEnterConfirm' => 'Abbina',
+			'impostazioni.syncPairEnterCancel' => 'Annulla',
+			'impostazioni.syncPairBusy' => 'Verifica del codice in corso…',
+			'impostazioni.syncPairInvalid' => 'Codice non valido. Controlla di averlo copiato per intero, e che i due dispositivi sincronizzino sullo stesso Account in «Sincronizza su…».',
+			'impostazioni.syncPairNothing' => 'Su Drive non ci sono ancora Impostazioni cifrate da abbinare: questo dispositivo crea la sua chiave alla prima sincronizzazione.',
+			'impostazioni.syncPairFailed' => ({required Object reason}) => 'Abbinamento non riuscito. Motivo: ${reason}',
+			'impostazioni.syncPairNeededTitle' => 'Questo dispositivo non è abbinato',
+			'impostazioni.syncPairNeededBody' => 'Le Impostazioni su Drive sono cifrate. Abbinalo con il codice di un dispositivo che sincronizza su questo Account: fino ad allora le modifiche restano qui.',
+			'impostazioni.syncKeyInvalidTitle' => 'Chiave di sincronizzazione non più valida',
+			'impostazioni.syncKeyInvalidBody' => 'Le Impostazioni su Drive sono cifrate con un\'altra chiave. Abbina di nuovo questo dispositivo: le modifiche fatte qui restano e si caricano dopo.',
+			'impostazioni.syncRegenerate' => 'Rigenera la chiave',
+			'impostazioni.syncRegenerateSubtitle' => 'Gli altri dispositivi andranno abbinati di nuovo',
+			'impostazioni.syncRegenerateTitle' => 'Rigenerare la chiave di sincronizzazione?',
+			'impostazioni.syncRegenerateMessage' => 'Postino crea una chiave nuova e cifra con quella le Impostazioni su Drive. Gli altri dispositivi dovranno essere abbinati di nuovo.',
+			'impostazioni.syncRegenerateNote' => 'Se le Impostazioni su Drive si leggono, prima vengono unite a quelle di questo dispositivo. Se non si leggono (chiave persa o file danneggiato), vengono sostituite da quelle di questo dispositivo: quello che c\'era su Drive e non è qui va perso.',
+			'impostazioni.syncRegenerateConfirm' => 'Rigenera',
+			'impostazioni.syncRegenerateCancel' => 'Annulla',
 			'segnalazione.action' => 'Segnala un problema',
 			'segnalazione.subject' => 'Problema in Postino',
 			'segnalazione.intro' => 'Descrivi qui cosa è andato storto. Sotto trovi il log degli errori di Postino: senza password né token, rileggilo prima di inviare.',

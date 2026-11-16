@@ -2,7 +2,10 @@ package com.cbucciarelli.postino
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 /// Shows the app's engine (PostinoEngine), which outlives it while the Notifiche immediate are on (#214).
 class MainActivity : FlutterActivity() {
@@ -21,6 +24,21 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun getCachedEngineId(): String = PostinoEngine.ID
+
+    /// "it.postino/screen_guard" (ADR 0019): `protect(bool)` keeps the codice di abbinamento out of screenshots,
+    /// recordings and the Recents with FLAG_SECURE. Registered again by each Activity on the cached engine.
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "it.postino/screen_guard").setMethodCallHandler { call, result ->
+            if (call.method != "protect") return@setMethodCallHandler result.notImplemented()
+            if (call.arguments == true) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+            result.success(false)
+        }
+    }
 
     /// Destroyed with the Activity as before (closed from the Recents, Back up to Android 11), unless the service keeps it.
     override fun shouldDestroyEngineWithHost(): Boolean = !ListeningService.running

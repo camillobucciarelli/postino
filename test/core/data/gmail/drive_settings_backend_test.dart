@@ -10,8 +10,6 @@ import 'package:postino/core/data/gmail/drive_settings_backend.dart';
 import 'package:postino/core/data/gmail/google_client.dart';
 import 'package:postino/core/data/oauth/oauth_tokens.dart';
 import 'package:postino/core/domain/result.dart';
-import 'package:postino/core/domain/settings_document.dart';
-import 'package:postino/core/domain/settings_entry.dart';
 
 import '../../../support/fake_platform.dart';
 
@@ -72,14 +70,11 @@ class _Drive() {
   }
 }
 
-SettingsEntry _e(String key, int at, [String device = 'A']) =>
-    SettingsEntry(key: key, value: '{"at":$at}', updatedAt: at, deviceId: device);
-
 void main() {
   test('no file reads null; the first write creates it in the appDataFolder, the next ones update it', () async {
     final drive = _Drive();
     final backend = drive.backend();
-    expect(await backend.read(), isA<Ok<String?>>().having((r) => r.value, 'value', isNull));
+    expect(await backend.read(), isA<Ok<List<String>>>().having((r) => r.value, 'value', isEmpty));
     final list = drive.requests.single.url.queryParameters;
     expect((list['spaces'], list['orderBy']), ('appDataFolder', 'createdTime'));
 
@@ -92,30 +87,32 @@ void main() {
     expect(drive.files, {'f1': '{"schemaVersion":1}'});
 
     final other = drive.backend();
-    expect(await other.read(), isA<Ok<String?>>().having((r) => r.value, 'value', '{"schemaVersion":1}'));
+    expect(await other.read(), isA<Ok<List<String>>>().having((r) => r.value, 'value', ['{"schemaVersion":1}']));
     expect(await other.write('{"schemaVersion":1,"entries":{}}'), isA<Ok<void>>());
     expect(drive.requests.last.method, 'PATCH');
     expect(drive.files, {'f1': '{"schemaVersion":1,"entries":{}}'});
   });
 
-  test('two files from a concurrent first write are merged into the oldest, the other deleted', () async {
+  test('every copy is read, oldest first; dropping the duplicates deletes all but the oldest', () async {
     final drive = _Drive()
-      ..files['f1'] = encodeSettings([_e('auto_labels/a1', 5), _e('auto_labels/a2', 1)])
-      ..files['f2'] = encodeSettings([_e('auto_labels/a1', 3, 'B'), _e('auto_labels/a3', 2, 'B')]);
-    final r = await drive.backend().read();
+      ..files['f1'] = 'sealed-1'
+      ..files['f2'] = 'sealed-2';
+    final backend = drive.backend();
+    expect(await backend.read(), isA<Ok<List<String>>>().having((r) => r.value, 'value', ['sealed-1', 'sealed-2']));
+    expect(drive.requests.map((r) => r.method), everyElement('GET'));
 
-    final merged = [_e('auto_labels/a1', 5), _e('auto_labels/a2', 1), _e('auto_labels/a3', 2, 'B')];
-    expect(r, isA<Ok<String?>>().having((r) => r.value, 'value', encodeSettings(merged)));
-    expect(drive.files, {'f1': encodeSettings(merged)});
+    expect(await backend.write('merged'), isA<Ok<void>>());
+    expect(await backend.dropDuplicates(), isA<Ok<void>>());
+    expect(drive.files, {'f1': 'merged'});
+    expect(drive.requests.last.method, 'DELETE');
   });
 
-  test('a duplicate that cannot be read is left alone: the oldest is read as it is', () async {
-    final oldest = encodeSettings([_e('auto_labels/a1', 5)]);
-    final drive = _Drive()
-      ..files['f1'] = oldest
-      ..files['f2'] = 'nope';
-    expect(await drive.backend().read(), isA<Ok<String?>>().having((r) => r.value, 'value', oldest));
-    expect(drive.files.keys, ['f1', 'f2']);
-    expect(drive.requests.map((r) => r.method), everyElement('GET'));
+  test('a file that never had duplicates drops nothing', () async {
+    final drive = _Drive()..files['f1'] = 'sealed';
+    final backend = drive.backend();
+    await backend.read();
+    final sent = drive.requests.length;
+    expect(await backend.dropDuplicates(), isA<Ok<void>>());
+    expect(drive.requests, hasLength(sent));
   });
 }

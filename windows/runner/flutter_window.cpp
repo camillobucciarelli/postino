@@ -1,9 +1,47 @@
 #include "flutter_window.h"
 
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
+#include <memory>
 #include <optional>
+#include <variant>
 
 #include "flutter/generated_plugin_registrant.h"
 #include "launch_at_login.h"
+
+// Windows 10 2004 and later; older SDK headers lack the name.
+#ifndef WDA_EXCLUDEFROMCAPTURE
+#define WDA_EXCLUDEFROMCAPTURE 0x00000011
+#endif
+
+namespace {
+
+// postino (ADR 0019): "it.postino/screen_guard" protect(bool) keeps the window out of screenshots and recordings
+// while the codice di abbinamento shows. Before Windows 10 2004 the call fails and nothing is protected.
+void RegisterScreenGuard(flutter::BinaryMessenger* messenger, HWND window) {
+  // Lives as long as the process: the engine keeps calling its handler.
+  static std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      channel;
+  channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      messenger, "it.postino/screen_guard",
+      &flutter::StandardMethodCodec::GetInstance());
+  channel->SetMethodCallHandler(
+      [window](const flutter::MethodCall<flutter::EncodableValue>& call,
+               std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                   result) {
+        if (call.method_name() != "protect") {
+          result->NotImplemented();
+          return;
+        }
+        const auto* on = std::get_if<bool>(call.arguments());
+        SetWindowDisplayAffinity(
+            window, on != nullptr && *on ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+        result->Success(flutter::EncodableValue(false));
+      });
+}
+
+}  // namespace
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -27,6 +65,7 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   RegisterLaunchAtLogin(flutter_controller_->engine()->messenger());
+  RegisterScreenGuard(flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   // postino (#239): started at login, the window stays hidden in the tray.

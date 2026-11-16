@@ -14,11 +14,16 @@ import '../../../core/domain/settings_sync_control.dart';
 import '../../../core/domain/sync_status.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import 'pairing_code_view.dart';
+import 'pairing_entry_dialog.dart';
 import 'sync_account_chooser.dart';
 
 /// The «Sincronizza su…» group (ADR 0016): the entry with the current choice, what it does, and the progress or
 /// the error of the incremental consent to Drive, else the last cycle's outcome (#317): when it went through, or
-/// why it failed with «Riprova». It offers the Accounts that can keep the file, and shows nothing without one.
+/// why it failed with «Riprova». It offers the Accounts that can keep the file, and shows nothing without one. With an
+/// Account chosen, the Abbinamento (ADR 0019): «Abbina un altro dispositivo» on a device that reads the file, the
+/// request to pair this one with «Inserisci il codice» when it does not (Non abbinato, Chiave non più valida), and
+/// «Rigenera la chiave» after a confirmation.
 class const SyncAccountSection({super.key}) extends StatefulWidget {
   @override
   State<SyncAccountSection> createState() => _SyncAccountSectionState();
@@ -61,6 +66,23 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
     });
     // Picking the same Account again (the fix of a missing scope) changes no setting, so no cycle would start.
     if (result is Ok && choice.accountId != null) unawaited(GetIt.I<SettingsSyncControl>().syncNow());
+  }
+
+  Future<void> _regenerate() async {
+    final t = context.t.impostazioni;
+    final confirmed = await showPostinoConfirmDialog(
+      context,
+      title: t.syncRegenerateTitle,
+      message: t.syncRegenerateMessage,
+      note: t.syncRegenerateNote,
+      confirmLabel: t.syncRegenerateConfirm,
+      cancelLabel: t.syncRegenerateCancel,
+    );
+    if (!confirmed) return;
+    // Its outcome goes on the board as a cycle's; offline it never starts one, so it is said here.
+    final result = await GetIt.I<SettingsSyncControl>().regenerateKey();
+    if (!mounted) return;
+    if (result case Err(failure: final OfflineFailure f)) setState(() => _failure = f);
   }
 
   String _error(Failure failure) {
@@ -113,7 +135,17 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
         _ => null,
       };
       // Under the consent's banner, never hidden by it: the Account chosen still syncs (#317).
+      final locked = status?.failure is SyncNotPairedFailure || status?.failure is SyncKeyInvalidFailure;
       final Widget? outcome = switch (status) {
+        // Not a failure to retry: this device must be paired (ADR 0019).
+        SyncStatus(:final failure) when locked => PostinoBanner(
+          key: const ValueKey('settings-sync-pair'),
+          tone: PostinoBannerTone.warning,
+          title: failure is SyncNotPairedFailure ? t.syncPairNeededTitle : t.syncKeyInvalidTitle,
+          message: failure is SyncNotPairedFailure ? t.syncPairNeededBody : t.syncKeyInvalidBody,
+          actionLabel: t.syncPairEnter,
+          onAction: () => unawaited(showPairingEntry(context)),
+        ),
         // A live region: the screen reader says it as it comes.
         SyncStatus(failure: final f?) && final s when s.failed => PostinoBanner(
           key: const ValueKey('settings-sync-error'),
@@ -139,6 +171,20 @@ class _SyncAccountSectionState() extends State<SyncAccountSection> {
             subtitle: address ?? t.syncNone,
             onTap: () => unawaited(_open()),
           ),
+          if (id != null && !locked)
+            PostinoSettingsItem(
+              key: const ValueKey('settings-sync-pair-other'),
+              title: t.syncPairOther,
+              subtitle: t.syncPairOtherSubtitle,
+              onTap: () => unawaited(showPairingCode(context)),
+            ),
+          if (id != null)
+            PostinoSettingsItem(
+              key: const ValueKey('settings-sync-regenerate'),
+              title: t.syncRegenerate,
+              subtitle: t.syncRegenerateSubtitle,
+              onTap: () => unawaited(_regenerate()),
+            ),
           // The banner (in progress, or why it failed) opens and closes under the text, its gap inside (#283).
           // The note in line with the rows' text (#312).
           Padding(

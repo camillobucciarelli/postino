@@ -6,6 +6,7 @@ import 'package:postino/core/domain/error_log.dart';
 import 'package:postino/core/domain/launch_at_login.dart';
 import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
+import 'package:postino/core/domain/screen_guard.dart';
 
 class FakeSecureStore() implements SecureStore {
   final values = <String, String>{};
@@ -290,4 +291,31 @@ class FakeAttachments() implements AttachmentRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
+}
+
+/// The screen protection, in memory: whether it is on, and the iOS capture a test turns on and off.
+class FakeScreenGuard() implements ScreenGuard {
+  /// Whether the protection is on now.
+  var protected = false;
+
+  /// Whether the screen is being captured (recorded, mirrored).
+  var captured = false;
+
+  final _changes = StreamController<bool>.broadcast();
+
+  /// The screen starts or stops being captured.
+  void capture({required bool on}) => _changes.add(captured = on);
+
+  /// While set, the first answer to turning the protection on: a platform that answers late.
+  Future<bool>? answer;
+
+  @override
+  Future<bool> protect({required bool on}) async {
+    protected = on;
+    if (on && answer != null) return answer!;
+    return captured;
+  }
+
+  @override
+  Stream<bool> watchCaptured() => _changes.stream;
 }

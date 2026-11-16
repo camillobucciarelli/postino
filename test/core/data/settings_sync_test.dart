@@ -26,16 +26,23 @@ class _Device(
 }) {
   final db = PostinoDatabase.inMemory();
   final connectivity = FakeConnectivity();
+  // Paired: the shared key.
+  late final keys = keysWith(testSyncKey);
   late final settings = DeviceSettingsStore(db);
   late final labels = AutoLabelsStore(db, clock);
   late final swipes = SwipeActionsStore(db, clock);
-  late final sync = SettingsSync(db, settings, clock, connectivity, backendFor: (_) => backend, stopWait: stopWait);
+  late final sync = SettingsSync(
+    db,
+    settings,
+    clock,
+    connectivity,
+    keys,
+    backendFor: (_) => backend,
+    stopWait: stopWait,
+  );
 
   Future<int> dirty() => db.postinoSettingsDao.watchDirty().first;
 }
-
-Map<String, Object?> _entries(String? file) =>
-    (jsonDecode(file!) as Map<String, dynamic>)['entries'] as Map<String, Object?>;
 
 /// Lets the cycles a trigger started run to the end.
 Future<void> _settled() => pumpEventQueue(times: 200);
@@ -78,7 +85,7 @@ void main() {
   test('the Azioni of the swipes sync under the closed list prefix, the same for every Account', () async {
     await a.swipes.set(SwipeDirection.left, SwipeAction.delete);
     await a.sync.syncNow();
-    expect(_entries(file.file).keys, ['swipe/left']);
+    expect(file.entries().keys, ['swipe/left']);
     await b.sync.syncNow();
     expect(await b.swipes.watch().first, (left: SwipeAction.delete, right: SwipeAction.markRead));
     // Removing an Account leaves them alone.
@@ -153,7 +160,7 @@ void main() {
     }
     expect(await a.labels.watch('a1').first, isEmpty);
     expect(await b.labels.watch('a1').first, isEmpty);
-    expect(_entries(file.file)['auto_labels/a1'], containsPair('deleted', true));
+    expect(file.entries()['auto_labels/a1'], containsPair('deleted', true));
   });
 
   test('the Impostazioni del dispositivo and voci outside the closed list never reach the file', () async {
@@ -161,9 +168,9 @@ void main() {
     await a.db.postinoSettingsDao.write('local/x', '1', at: clock.now());
     await a.labels.setAutomatic('a1', 'L1', automatic: true);
     await a.sync.syncNow();
-    expect(_entries(file.file).keys, ['auto_labels/a1']);
-    expect(file.file, isNot(contains('sidebar')));
-    expect(file.file, isNot(contains('settings_sync_account')));
+    expect(file.entries().keys, ['auto_labels/a1']);
+    expect(jsonEncode(file.entries()), isNot(contains('sidebar')));
+    expect(jsonEncode(file.entries()), isNot(contains('settings_sync_account')));
   });
 
   test('offline the local edits stay dirty and upload when the network returns', () async {
@@ -178,7 +185,7 @@ void main() {
 
     a.connectivity.online = true;
     await _settled();
-    expect(_entries(file.file).keys, ['auto_labels/a1']);
+    expect(file.entries().keys, ['auto_labels/a1']);
     expect(await a.dirty(), 0);
   });
 
@@ -214,7 +221,7 @@ void main() {
   );
 
   test('a file that cannot be read is a failed cycle too', () async {
-    file.file = '{"nope": true}';
+    file.file = '{"postinoEncrypted": 1}';
     await a.sync.syncNow();
     expect((await a.sync.watchStatus().first)['a1']?.failure, isA<UnexpectedFailure>());
   });
@@ -243,7 +250,7 @@ void main() {
     file.writeFailure = null;
     await a.sync.syncNow();
     expect(file.writeAttempts, 2);
-    expect(_entries(file.file).keys, ['auto_labels/a1']);
+    expect(file.entries().keys, ['auto_labels/a1']);
     expect(await a.dirty(), 0);
   });
 
@@ -268,7 +275,7 @@ void main() {
   });
 
   test('a file from a newer Postino is read but never overwritten', () async {
-    final newer = jsonEncode({
+    final newer = sealedWith({
       'schemaVersion': settingsSchemaVersion + 1,
       'entries': {
         'auto_labels/a1': {

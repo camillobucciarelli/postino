@@ -44,8 +44,8 @@ void main() {
       expect(doc.entries.keys, ['auto_labels/a1']);
     });
 
-    test('a v1 file is read through the migration chain, and the file written is v2', () {
-      expect(settingsSchemaVersion, 2);
+    test('a v1 file is read through the migration chain, and the file written is v3 (ADR 0019)', () {
+      expect(settingsSchemaVersion, 3);
       final doc = _decode(
         jsonEncode({
           'schemaVersion': 1,
@@ -56,7 +56,16 @@ void main() {
       );
       expect(doc.writable, isTrue);
       expect(doc.entries.values, [_e('auto_labels/a1', '{}', 1, 'Z')]);
-      expect((jsonDecode(encodeSettings(doc.entries.values)) as Map<String, dynamic>)['schemaVersion'], 2);
+      expect((jsonDecode(encodeSettings(doc.entries.values)) as Map<String, dynamic>)['schemaVersion'], 3);
+    });
+
+    test('a v2 file, the last written in clear, reads as it is', () {
+      expect(lastPlainSchemaVersion, 2);
+      final doc = _decode(
+        '{"schemaVersion":2,"entries":{"auto_labels/a1":{"value":{},"updatedAt":1,"deviceId":"Z","deleted":false}}}',
+      );
+      expect((doc.schemaVersion, doc.writable), (2, true));
+      expect(doc.entries.values, [_e('auto_labels/a1', '{}', 1, 'Z')]);
     });
 
     test('voci with a prefix this Postino does not know are kept, to write back', () {

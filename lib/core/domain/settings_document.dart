@@ -4,7 +4,7 @@ import 'result.dart';
 import 'settings_entry.dart';
 
 /// The file of the Impostazioni di Postino (ADR 0016):
-/// `{"schemaVersion":2,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`.
+/// `{"schemaVersion":3,"entries":{"<key>":{"value":<JSON>|null,"updatedAt":ms,"deviceId":"…","deleted":bool}}}`.
 class const SettingsDocument({
   /// La versione dello schema con cui il file è stato scritto.
   required final int schemaVersion,
@@ -24,7 +24,13 @@ class const SettingsDocument({
 final List<Map<String, Object?> Function(Map<String, Object?>)> _migrations = [
   // v1→v2: the voci `accounts/<accountId>` join the closed list (#142); the shape of the voci does not change.
   (doc) => doc,
+  // v2→v3 (ADR 0019): the file is sealed, and the voci `credentials/` join the closed list with the slices that bring
+  // them (#321); the shape of the voci does not change.
+  (doc) => doc,
 ];
+
+/// The last schema the versions that wrote the file in clear knew: a file in clear above it is no legitimate one.
+const lastPlainSchemaVersion = 2;
 
 /// La versione dello schema che questo Postino scrive.
 int get settingsSchemaVersion => _migrations.length + 1;

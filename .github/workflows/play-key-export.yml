@@ -1,0 +1,58 @@
+name: Play key export
+
+# One-off, manual only (#345, ADR 0023): Google Play signs with the same key as the site's APK, so the two builds
+# update each other. PEPK (tool/release/play_key_export.sh) encrypts the upload key with Play's public key; the
+# artifact holds a ZIP only Google can read, for Play Console «Change key → Export and upload a key from Java
+# keystore». The keystore exists only in the secrets, hence CI.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    # Against mistakes, not a boundary: a dispatch runs the workflow file of its own ref, so a branch could drop this.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 15
+    env:
+      # Upload key certificate (public), as in release.yml: the ZIP must carry exactly this certificate.
+      ANDROID_CERT_SHA256: 47:03:4A:D7:65:75:3A:E5:27:8C:6C:09:F6:5E:E8:5F:E7:6B:26:56:85:9C:04:AC:78:54:2D:8A:8D:12:1F:04
+    steps:
+      - name: Required secrets are set
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - name: Upload keystore in RUNNER_TEMP
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: tool/release/android_keystore.sh
+      - name: PEPK export
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/play-key-export"
+          tool/release/play_key_export.sh "$ANDROID_KEYSTORE_PATH" "$ANDROID_KEY_ALIAS" "$ANDROID_CERT_SHA256" \
+            "$RUNNER_TEMP/play-key-export/output.zip"
+      # upload-artifact zips the folder again: the download holds output.zip, the file for the Play Console.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: play-key-export
+          path: ${{ runner.temp }}/play-key-export/output.zip
+          retention-days: 1
+          if-no-files-found: error
+      - name: Delete keystore and ZIP
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/upload-keystore.p12" "$RUNNER_TEMP/play-key-export"

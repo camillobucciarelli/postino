@@ -8,13 +8,14 @@ Azioni che solo il titolare può fare nella Play Console e nel repo (#345). Le f
 - [ ] **Crea app**: nome `Postino Mail`, lingua predefinita **Italiano – it-IT**, tipo **App**, **Senza costi** (non si può più rendere a pagamento dopo), e le dichiarazioni: norme del programma per gli sviluppatori, **leggi statunitensi sull'esportazione**, termini di Play App Signing ([crea app](https://support.google.com/googleplay/android-developer/answer/9859152)).
 - [ ] Pacchetto: `com.cbucciarelli.postino`, lo stesso dell'APK del sito. Si fissa col primo AAB e non cambia più.
 
-## 2. Firma: Play App Signing con la chiave attuale come chiave di upload
+## 2. Firma: la chiave dell'APK del sito anche su Play
 
-Decisione di #345: la chiave che firma l'APK del sito diventa la **chiave di upload**; Play firma gli APK per gli utenti con la sua **chiave di firma dell'app**. Fonte: [Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756).
+Decisione del titolare del 16/11/2026 (#345, [ADR 0023](../adr/0023-variante-google-play.md)): Play firma gli APK per gli utenti con la **stessa chiave dell'APK del sito**, così le due build si aggiornano a vicenda. La stessa chiave resta anche **chiave di upload** della pipeline. Fonte: [Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756).
 
-- [ ] Al primo AAB la Console propone una chiave generata da Google (dal 2026 di default «ibrida, quantum-ready»). **Lasciarla**: è il caso consigliato da Google (chiave di upload e chiave di firma diverse). Conseguenza: gli APK installati da Play hanno una firma diversa dall'APK del sito, quindi **non ci si aggiorna da uno all'altro**; per passare da una fonte all'altra si disinstalla (gli Account si ricollegano o arrivano dalle Impostazioni sincronizzate).
-- [ ] Alternativa, solo se il titolare vuole che APK del sito e Play si aggiornino a vicenda: prima che una release arrivi in test aperto o produzione, scegliere «usa la chiave di un'altra app / carica una chiave esportata» e caricare la chiave attuale come chiave di firma (procedura in Console, strumento PEPK). Allora serve una **chiave di upload nuova**, diversa, per la pipeline. Non è la decisione di #345: richiede di rivedere la fetta 2.
-- [ ] Il primo AAB, firmato con la chiave attuale (keystore `ANDROID_KEYSTORE_PATH`), definisce la chiave di upload. Controllare in **Test e rilascio → Configurazione → Integrità dell'app → Firma dell'app** che il certificato di upload abbia la SHA-256 della chiave attuale (`keytool -list -v -keystore <keystore>`).
+- [ ] Prima che una release arrivi in test aperto o produzione: Actions → **Play key export** → *Run workflow* su `main` (`gh workflow run play-key-export.yml --ref main`). Scaricare l'artifact `play-key-export` entro un giorno: lo ZIP dell'artifact contiene `output.zip`, cifrato con la chiave pubblica di Play (lo legge solo Google).
+- [ ] **Test e rilascio → Configurazione → Integrità dell'app → Firma dell'app → Change key → Export and upload a key from Java keystore**: caricare `output.zip`, poi cancellarlo dal Mac. Se la Console propone una chiave di upload nuova, **non** generarla: la pipeline firma con la chiave attuale.
+- [ ] Controllare nella stessa pagina che il certificato della chiave di firma **e** quello della chiave di upload abbiano la SHA-256 `47:03:4A:D7:65:75:3A:E5:27:8C:6C:09:F6:5E:E8:5F:E7:6B:26:56:85:9C:04:AC:78:54:2D:8A:8D:12:1F:04`.
+- [ ] Dopo il primo download da Play (test interno): installare sopra l'APK del sito, e viceversa, senza disinstallare.
 - [ ] Google OAuth: Postino su Android usa un client di tipo iOS con schema `com.googleusercontent.apps.<id>`, quindi la SHA-1 di firma non dovrebbe contare (#345). Verificarlo in Google Cloud Console (Credenziali) e con un accesso Gmail dalla build scaricata da Play nel test interno.
 
 ## 3. Primo caricamento manuale

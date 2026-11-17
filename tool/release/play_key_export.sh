@@ -23,7 +23,8 @@ trap 'rm -rf "$tmp"' EXIT
 curl -fsS --proto '=https' --retry 3 --max-time 120 -o "$tmp/pepk.jar" "$pepk_url"
 echo "$pepk_sha256  $tmp/pepk.jar" | shasum -a 256 -c --status \
   || { echo "::error::pepk.jar does not match the pinned SHA-256" >&2; exit 1; }
-openssl pkey -pubin -in "$encryption_key" -noout \
+# -passin: given a non-key file, LibreSSL (macOS) otherwise prompts on /dev/tty and hangs the runner.
+openssl pkey -pubin -in "$encryption_key" -passin pass: -noout \
   || { echo "::error::$encryption_key is not a public key" >&2; exit 1; }
 
 # A failed run must not leave a ZIP behind (PEPK also refuses an existing output).

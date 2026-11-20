@@ -41,6 +41,18 @@ void main() {
     expect(await listed(trashLabelId), ['1'], reason: 'the Cestino still lists it');
   });
 
+  test('an unread message in the Cestino or in Spam lights no unread on its Etichetta, only on its own view', () async {
+    Future<Set<String>> unread() async => {
+      for (final (_, label) in await getIt<InboxRepository>().watchUnreadFolders().first) label,
+    };
+    expect(await unread(), containsAll([inboxLabelId, _lavoro]));
+
+    await engine.act('a', ['1'], const Delete());
+    a.deliver(msg('2', labelIds: const [spamLabelId, _lavoro]));
+    await engine.syncAll();
+    expect(await unread(), {trashLabelId, spamLabelId});
+  });
+
   test('a message in Spam with an Etichetta is not in the list of the Etichetta', () async {
     a.deliver(msg('2', labelIds: const [spamLabelId, _lavoro]));
     await engine.syncAll();

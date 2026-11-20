@@ -200,16 +200,6 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     final a = accounts;
     final t = alias(messages, 't');
     final l = alias(messageLabels, 'l');
-    final x = alias(messageLabels, 'x');
-    // Cestino and Spam are views of their own (see the glossary): a message there keeps its other labels (Gmail, or
-    // the local Elimina until the Provider moves it) but makes no Conversazione belong to them.
-    final elsewhere = select(x)
-      ..where(
-        (x) =>
-            x.accountId.equalsExp(t.accountId) &
-            x.messageId.equalsExp(t.id) &
-            x.labelId.isIn([trashLabelId, spamLabelId].where((id) => id != labelId)),
-      );
     final withLabel =
         select(t).join([
           innerJoin(
@@ -218,7 +208,9 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             useColumns: false,
           ),
         ])..where(
-          t.accountId.equalsExp(m.accountId) & t.conversationId.equalsExp(m.conversationId) & notExistsQuery(elsewhere),
+          t.accountId.equalsExp(m.accountId) &
+              t.conversationId.equalsExp(m.conversationId) &
+              _countsIn(t, Variable(labelId)),
         );
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])
@@ -227,6 +219,22 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     if (accountId != null) query.where(m.accountId.equals(accountId));
     return query.watch().map(
       (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m), r.read(labelIds)?.split('\n') ?? const [])],
+    );
+  }
+
+  /// Whether the message [t], carrying [labelId], makes its Conversazione belong to that view. Cestino and Spam are
+  /// views of their own (see the glossary): a message there keeps its other labels (Gmail, or the local Elimina until
+  /// the Provider moves it) but counts in no other view.
+  Expression<bool> _countsIn($MessagesTable t, Expression<String> labelId) {
+    final x = alias(messageLabels, 'x');
+    return notExistsQuery(
+      select(x)..where(
+        (x) =>
+            x.accountId.equalsExp(t.accountId) &
+            x.messageId.equalsExp(t.id) &
+            x.labelId.isIn(const [trashLabelId, spamLabelId]) &
+            x.labelId.equalsExp(labelId).not(),
+      ),
     );
   }
 
@@ -294,7 +302,7 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             distinct: true,
           ).join([innerJoin(m, m.accountId.equalsExp(l.accountId) & m.id.equalsExp(l.messageId), useColumns: false)])
           ..addColumns([l.accountId, l.labelId])
-          ..where(existsQuery(unreadInConversation));
+          ..where(_countsIn(m, l.labelId) & existsQuery(unreadInConversation));
     return query.watch().map((rows) => {for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!)});
   }
 

@@ -14,7 +14,7 @@ import 'posta_shortcuts.dart';
 
 /// The Azioni of an open Conversazione (#146): its header buttons, the shortcuts and the row menu of its row, on
 /// every message. Archivia and Elimina take it out of the list: the next one opens (or it closes); non letto
-/// closes it, or the opening would read it again.
+/// closes it, or the opening would read it again. They reach the messages its view shows only, as the opening.
 mixin ConversationActing on State<ConversationView> {
   /// The messages shown, null until the database answers.
   List<ConversationMessage>? get shownMessages;
@@ -61,14 +61,14 @@ mixin ConversationActing on State<ConversationView> {
       unawaited(
         opening.then((_) async {
           if (!isLatestRead(accountId, conversationId, choice)) return;
-          await sync.act(accountId, await idsHere(accountId, conversationId), action);
+          await sync.act(accountId, await idsHere(accountId, conversationId, view: widget.view), action);
         }),
       );
     } else {
       if (action is MarkRead) chooseRead(accountId, conversationId);
       final offer = actOnConversation(context, accountId, ids, action);
       // An opening still running brings older messages: they get it too, under the same Annulla.
-      unawaited(opening.then((_) => reachOlder(accountId, conversationId, ids, action, offer)));
+      unawaited(opening.then((_) => reachOlder(accountId, conversationId, ids, action, offer, view: widget.view)));
     }
     final leaving = leavesList(action);
     if (leaving && (widget.cursor?.leave?.call((widget.accountId, widget.conversationId)) ?? false)) return;

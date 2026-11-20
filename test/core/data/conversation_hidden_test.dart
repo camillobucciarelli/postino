@@ -68,4 +68,30 @@ void main() {
     final trashed = (await inbox().watchMessages('a', trashLabelId).first).single;
     expect((trashed.count, trashed.message.id), (3, '3'), reason: 'in the Cestino: as before');
   });
+
+  test('the row takes its place in the list from its latest message shown', () async {
+    a.deliver(msg('9', date: DateTime.utc(2026, 2, 15)));
+    await engine.syncAll();
+    expect([for (final e in await inbox().watchMessages('a', inboxLabelId).first) e.message.id], ['9', '2']);
+  });
+
+  test('opening from the inbox marks the unread messages shown as read', () async {
+    a.deliver(msg('4', conversationId: 't-1', date: DateTime.utc(2026, 2, 2)));
+    await engine.syncAll();
+    await engine.openConversation('a', 't-1', view: inboxLabelId);
+    expect((await inbox().watchMessage('a', '4').first)!.isRead, isTrue);
+    expect([
+      for (final c in a.actionCalls)
+        if (c.$2 is MarkRead) c.$1,
+    ], contains('4'));
+  });
+
+  test('a message in Spam is hidden from the inbox like one in the Cestino, and not marked read', () async {
+    a.deliver(msg('5', conversationId: 't-1', labelIds: const [spamLabelId], date: DateTime.utc(2026, 2, 3)));
+    await engine.syncAll();
+    expect(await shown(inboxLabelId), ['1', '2']);
+    await engine.openConversation('a', 't-1', view: inboxLabelId);
+    expect((await inbox().watchMessage('a', '5').first)!.isRead, isFalse);
+    expect((await inbox().watchMessages('a', inboxLabelId).first).single.count, 2);
+  });
 }

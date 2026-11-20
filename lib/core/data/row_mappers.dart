@@ -34,24 +34,19 @@ Message messageOf(MessageRow r, [List<String> labelIds = const [inboxLabelId], S
 // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
 List<InboxEntry> inboxEntriesOf(List<(AccountRow, MessageRow, List<String>, bool)> rows) {
   final groups = <(String, String), List<(AccountRow, MessageRow, List<String>, bool)>>{};
+  // What the Conversazione opened from the view shows; its place too follows its latest message shown.
   for (final r in rows) {
-    (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
+    if (r.$4) (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
   }
   return [
     for (final g in groups.values)
-      // What the Conversazione opened from the view shows: never empty, a listed Conversazione has a message it shows.
-      if ([
-            for (final r in g)
-              if (r.$4) r,
-          ]
-          case final shown when shown.isNotEmpty)
-        InboxEntry(
-          account: accountOf(shown.first.$1),
-          // The Conversazione's labels: those of any of its messages shown.
-          message: messageOf(shown.first.$2, {for (final r in shown) ...r.$3}.toList()),
-          count: shown.length,
-          unread: shown.any((r) => !r.$2.isRead),
-        ),
+      InboxEntry(
+        account: accountOf(g.first.$1),
+        // The Conversazione's labels: those of any of its messages shown.
+        message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
+        count: g.length,
+        unread: g.any((r) => !r.$2.isRead),
+      ),
   ];
 }
 

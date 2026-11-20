@@ -30,7 +30,7 @@ Failure graphFailure(http.Response r, String path, {DateTime? retryAfter}) {
   final code = graphErrorCode(r.body);
   final lower = code?.toLowerCase();
   return switch (r.statusCode) {
-    401 => const AuthFailure(),
+    401 => const AuthFailure(reason: 'graph API, HTTP 401'),
     404 || 410 => const NotFoundFailure(),
     // A write with `If-Match` on an etag that is no longer the message's: it changed elsewhere.
     412 => const RejectedFailure(graphPreconditionFailed),

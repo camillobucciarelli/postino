@@ -155,6 +155,8 @@ void main() {
     await b.syncNow();
     expect(await b.status(), AccountStatus.attivo);
     expect((await b.inUse())!.refresh, 'r-one');
+    // For the error log, should the Provider refuse it (#353).
+    expect([(await a.inUse())!.synced, (await b.inUse())!.synced], [false, true]);
     for (final d in [a, b]) {
       expect(await d.rows(), isNot(contains('r-one')));
     }

@@ -166,6 +166,8 @@ class SyncPhase(
         }
         // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
         if (failure is AuthFailure) {
+          // Its cause, by Provider: the Account's id is its address (#353).
+          _log.record(failure, context: 'sync ${account.provider.name}, da ricollegare');
           await _store.setStatus(accountId, AccountStatus.daRicollegare);
         }
         return failure;

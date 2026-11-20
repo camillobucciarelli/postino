@@ -35,6 +35,14 @@ void main() {
     expect(await h.errorLog.takeCrashMark(), isFalse, reason: 'a Failure is not a crash');
   });
 
+  test('the passage to da ricollegare leaves its cause in the log, by Provider, never the address (#353)', () async {
+    a.breakAuth(const AuthFailure(reason: 'token refresh: oauth2.googleapis.com, HTTP 400, invalid_grant'));
+    await GetIt.I<SyncEngine>().syncAll();
+    final line = (await h.errorLog.read()).split('\n').singleWhere((l) => l.contains('da ricollegare'));
+    expect(line, contains('[sync gmail, da ricollegare] AuthFailure(token refresh: oauth2.googleapis.com, HTTP 400'));
+    expect(line, isNot(contains('example.com')));
+  });
+
   test('a send the Provider refuses ends up in the log', () async {
     final engine = GetIt.I<SyncEngine>()..start();
     addTearDown(engine.stop);

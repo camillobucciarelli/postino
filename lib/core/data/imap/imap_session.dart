@@ -91,7 +91,7 @@ class ImapSession(
   Future<ImapClient> _open(Duration? setup, {bool again = true}) async {
     final closes = _closes;
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
-    if (credentials == null) throw const ImapFailed(AuthFailure());
+    if (credentials == null) throw const ImapFailed(AuthFailure(reason: 'no password here'));
     final c = ImapClient(
       defaultResponseTimeout: timeout,
       defaultWriteTimeout: timeout,

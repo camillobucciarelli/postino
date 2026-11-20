@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../domain/error_log.dart';
 import '../../domain/oauth_grant.dart';
 import '../../domain/platform_services.dart';
 import '../../domain/result.dart';
@@ -40,8 +41,14 @@ class const TokenResponse({
 }
 
 /// Exchanges [code] for tokens at the client's token endpoint. Never throws: no network is [OfflineFailure], an
-/// organization's refusal its [organizationRefusal].
-Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth, AuthorizationCode code) async {
+/// organization's refusal its [organizationRefusal]. A refresh token that expires goes in [log] with its lifetime
+/// (#353): Google gives one to a client in testing mode, which disconnects the Account after it.
+Future<Result<TokenResponse>> exchangeCode(
+  http.Client client,
+  OAuthClient oauth,
+  AuthorizationCode code,
+  ErrorLog log,
+) async {
   try {
     final r = await client.post(
       oauth.tokenEndpoint,
@@ -61,6 +68,9 @@ Future<Result<TokenResponse>> exchangeCode(http.Client client, OAuthClient oauth
       );
     }
     final body = jsonDecode(r.body) as Map<String, dynamic>;
+    if (body['refresh_token_expires_in'] case final num expires) {
+      log.record('refresh_token_expires_in $expires', context: 'consent ${oauth.tokenEndpoint.host}');
+    }
     // The id_token comes straight from the token endpoint over TLS: its payload needs no signature check.
     final idToken = (body['id_token'] as String).split('.')[1];
     return Ok(

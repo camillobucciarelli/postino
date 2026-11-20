@@ -1,4 +1,4 @@
-// Rimozione di un Account (#174): sync stopped, local data and keychain cleared, Gmail token revoked best effort.
+// Rimozione di un Account (#174): sync stopped, local data and keychain cleared; nothing goes to Google (#353).
 
 import 'dart:async';
 
@@ -199,15 +199,16 @@ void main() {
   });
 
   test('connecting the same Account again while its removal still runs keeps the new credentials', () async {
-    h.httpHold = Completer<void>();
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
     final removing = accounts.remove(_ada);
-    while (h.httpRequests.isEmpty) {
+    while (h.keychain.deletes == 0) {
       await pumpEventQueue();
     }
     h.providerFor(_ada);
     final connecting = accounts.connectGmail();
     await pumpEventQueue();
-    h.httpHold!.complete();
+    gate.complete();
     await Future.wait([removing, connecting]);
 
     expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
@@ -217,22 +218,22 @@ void main() {
     provider.hold = Completer<void>();
     final running = getIt<MailSync>().syncAll();
     await pumpEventQueue();
-    h.httpHold = Completer<void>();
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
     final first = accounts.remove(_ada);
     final second = accounts.remove(_ada);
     expect(identical(first, second), isTrue);
     provider.hold!.complete();
-    while (h.httpRequests.isEmpty) {
+    while (h.keychain.deletes == 0) {
       await pumpEventQueue();
     }
-    // The revocation is still out: a connection now waits for the removal to end.
+    // The keychain cleanup is still running: a connection now waits for the removal to end.
     h.providerFor(_ada);
     final connecting = accounts.connectGmail();
     await pumpEventQueue();
-    h.httpHold!.complete();
+    gate.complete();
     await Future.wait([running, first, second, connecting]);
 
-    expect(h.httpRequests, hasLength(1), reason: 'one revocation');
     expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
   });
 
@@ -306,27 +307,28 @@ void main() {
     await accounts.remove(_ada);
 
     expect(await h.keychain.read('oauth:$_ada'), isNull);
-    expect(h.httpRequests, hasLength(1), reason: 'the revocation went');
   });
 
-  test('a Gmail Account removed during its reconnection consent asks for the consent again', () async {
+  test('a Gmail consent given while the Account is being removed connects it once the removal ends (#353)', () async {
     await getIt<MailStore>().setStatus(_ada, AccountStatus.daRicollegare);
     final page = Completer<void>();
     h.consent.gate = page.future;
     final reconnecting = accounts.connectGmail(loginHint: 'ada@gmail.com');
     await pumpEventQueue();
-    h.httpHold = Completer<void>();
+    final gate = Completer<void>();
+    h.keychain.deleteGate = gate.future;
     final removing = accounts.remove(_ada);
-    while (h.httpRequests.isEmpty) {
+    while (h.keychain.deletes == 0) {
       await pumpEventQueue();
     }
     page.complete();
     await pumpEventQueue();
-    h.httpHold!.complete();
+    gate.complete();
     await removing;
 
-    expect(await reconnecting, isA<Err<Account>>().having((e) => e.failure, 'failure', isA<CancelledFailure>()));
-    expect(await h.keychain.read('oauth:$_ada'), isNull);
+    // No revocation ends the grant now: the consent stands, and the keychain cleanup does not take its tokens.
+    expect(await reconnecting, isA<Ok<Account>>());
+    expect(await h.keychain.read('oauth:$_ada'), contains('refresh-token-2'));
   });
 
   test('a removal whose delete fails leaves the Account working', () async {
@@ -341,16 +343,6 @@ void main() {
 
     expect((await getIt<MailStore>().accounts()).map((a) => a.id), [_ada]);
     expect(await getIt<MailSync>().fetchBody(_ada, 'm1'), isA<Ok<void>>(), reason: 'not fenced off any more');
-  });
-
-  test('a revocation that fails still lets the credentials go', () async {
-    h.httpFailure = Exception('no network');
-
-    await accounts.remove(_ada);
-
-    expect(h.httpRequests, hasLength(1), reason: 'it was tried');
-    expect(await h.keychain.read('oauth:$_ada'), isNull);
-    expect(await getIt<MailStore>().accounts(), isEmpty);
   });
 
   test('an attachment whose download ends after the cache was cleared leaves no file', () async {
@@ -387,10 +379,8 @@ void main() {
     expect(provider.readCalls, isEmpty);
   });
 
-  test('a failed revocation or a keychain that refuses never stops the removal', () async {
-    h
-      ..httpFailure = Exception('no network')
-      ..keychain.failure = Exception('locked');
+  test('a keychain that refuses never stops the removal', () async {
+    h.keychain.failure = Exception('locked');
 
     await accounts.remove(_ada);
 
@@ -408,17 +398,7 @@ void main() {
     expect(await settings.settingsSyncAccount(), isNull);
   });
 
-  test('online, the refresh token is revoked at Google', () async {
-    await accounts.remove(_ada);
-
-    final r = h.httpRequests.single;
-    expect(r.url, Uri.parse('https://oauth2.googleapis.com/revoke'));
-    expect(r.bodyFields, {'token': 'refresh-token-1'});
-  });
-
-  test('offline, nothing is sent and the Account is removed anyway', () async {
-    h.connectivity.online = false;
-
+  test('a Gmail Account removed sends nothing to Google: the grant is for every device, not this one (#353)', () async {
     await accounts.remove(_ada);
 
     expect(h.httpRequests, isEmpty);
@@ -435,7 +415,7 @@ void main() {
     expect(await settings.settingsSyncAccount(), isNull);
   });
 
-  test('an IMAP Account loses its password in the keychain; no revocation', () async {
+  test('an IMAP Account loses its password in the keychain', () async {
     await accounts.connectWithPassword('ada@icloud.com', 'app-password-1');
     expect(await h.keychain.read('password:icloud:ada@icloud.com'), isNotNull);
 

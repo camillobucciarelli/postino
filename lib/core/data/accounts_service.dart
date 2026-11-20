@@ -20,7 +20,6 @@ import '../domain/synced_settings.dart';
 import 'account_credentials.dart';
 import 'account_settings_json.dart';
 import 'accounts_lock.dart';
-import 'gmail/google_revoke.dart';
 import 'imap/password_credentials.dart';
 import 'mail_store.dart';
 import 'oauth/oauth_tokens.dart';
@@ -46,7 +45,6 @@ class AccountsService(
   final AccountsLock _lock,
   final ServerDiscovery _discovery,
   final ConnectionTester _tester,
-  final GoogleRevoke _revoke,
   final AttachmentRepository _attachments,
   final SettingsSync _settingsSync, {
   @ignoreParam final String Function(ProviderKind) _oauthClientOf = oauthClientIdOf,
@@ -68,9 +66,6 @@ class AccountsService(
     String? loginHint,
     Future<Result<OAuthGrant>> Function() consent,
   ) async {
-    // The revocation of a removal still running ends the whole grant at Google (#174), a newer one too: the consent
-    // waits for it. Which Account the grant is for is known only afterwards, so it waits for every removal.
-    await Future.wait([for (final r in _removals.values) r.catchError((Object _) {})]);
     // ponytail: not a `final grant;` assigned in a switch: captured by the lock's closure below, it crashes the AOT
     // compiler of Dart 3.14 (linearscan.cc, `flutter build ios`).
     final consented = await consent();
@@ -82,12 +77,9 @@ class AccountsService(
     // Addresses are case-insensitive: normalized once, so id and stored address agree for onboarding and every reconnection.
     final address = normalizedAddress(grant.address);
     final id = accountIdOf(provider, address);
-    // Removed while the user was on the Provider's page: its revocation would end this grant too, so the consent is
-    // to run again once it is over.
-    if (_removals[id] case final removing?) {
-      await removing.catchError((Object _) {});
-      return const Err(CancelledFailure());
-    }
+    // Removed while the user was on the Provider's page: its keychain cleanup ends first, so it does not take these
+    // tokens. Nothing is revoked at Google (#353): the consent just given stands.
+    await _removals[id]?.catchError((Object _) {});
     final removals = _removalsStarted[id];
     // Under the lock: a removal of the same Account from another device in flight never deletes these credentials.
     final account = await _lock.run(() async {
@@ -241,8 +233,6 @@ class AccountsService(
     if (account == null) return;
     // First: from here nothing of the Account goes to the Provider, whatever the keychain below takes.
     await _sync.removeAccount(accountId, () => _store.removeAccount(accountId, at: _clock.now()));
-    // Still there (they go last); a keychain that does not answer never blocks the removal.
-    final tokens = await OAuthTokens.read(_keychain, accountId).catchError((Object _) => null);
     if (await _settings.settingsSyncAccount() == accountId) {
       // Its tombstones go up first, while its credentials are still here (ADR 0016): else the other devices never
       // see the removal. Offline or failed, they stay dirty until another Account is chosen for the sync.
@@ -252,15 +242,15 @@ class AccountsService(
       await _settings.setSettingsSyncAccount(null);
     }
     // After the delete: a download already running for the Account finds it removed and writes nothing. A cache
-    // that cannot be emptied never stops the revocation nor the keychain cleanup.
+    // that cannot be emptied never stops the keychain cleanup.
     try {
       await _attachments.clear();
     } on Object catch (e) {
       debugPrint('[accounts] $accountId: attachment cache not cleared, ${e.runtimeType}');
     }
-    // Only a Google token goes to Google; Microsoft's is not revoked in v1 (the grant stays in the user's account).
-    if (tokens != null && account.provider == ProviderKind.gmail) await _revoke.revoke(tokens.refresh);
-    // Last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
+    // Nothing is revoked at the Provider (#353): Google revokes the whole grant, the other devices' too, as they share
+    // its client and, with the sync, its refresh token. The grant stays in the user's account until taken away there.
+    // The credentials go last, so a token refresh still running meanwhile cannot write them back; each one on its own, so a keychain
     // that refuses one never leaves the other.
     for (final item in await credentialItems(_db, accountId)) {
       try {

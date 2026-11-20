@@ -74,7 +74,7 @@ class SyncEngine(
     _gate,
     _queue,
   );
-  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock);
+  late final _fetcher = OnDemandFetcher(_store, _gate, _queue, _replay, _cleanup, _clock, _log);
   late final _status = SyncStatusBoard(_clock);
   late final _phase = SyncPhase(
     _store,

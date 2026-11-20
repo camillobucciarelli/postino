@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 
+import '../../domain/error_log.dart';
 import '../../domain/google_consent.dart';
 import '../../domain/oauth_grant.dart';
 import '../../domain/platform_services.dart';
@@ -14,7 +15,8 @@ import 'google_client.dart';
 @Singleton(as: GoogleConsent, env: [Environment.prod])
 class GoogleWebConsent(
   final http.Client _http,
-  final Clock _clock, {
+  final Clock _clock,
+  final ErrorLog _log, {
   @ignoreParam final GoogleClient _client = const GoogleClient.fromEnvironment(),
   @ignoreParam final Authenticate _authenticate = systemBrowser,
   @ignoreParam bool? loopback,
@@ -59,7 +61,7 @@ class GoogleWebConsent(
         code = value;
     }
     final TokenResponse tokens;
-    switch (await exchangeCode(_http, _client, code)) {
+    switch (await exchangeCode(_http, _client, code, _log)) {
       case Err(:final failure):
         return Err(failure);
       case Ok(:final value):

@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 
+import '../../domain/error_log.dart';
 import '../../domain/microsoft_consent.dart';
 import '../../domain/oauth_grant.dart';
 import '../../domain/platform_services.dart';
@@ -16,7 +17,8 @@ import 'microsoft_client.dart';
 @Singleton(as: MicrosoftConsent, env: [Environment.prod])
 class MicrosoftWebConsent(
   final http.Client _http,
-  final Clock _clock, {
+  final Clock _clock,
+  final ErrorLog _log, {
   @ignoreParam final MicrosoftClient _client = const MicrosoftClient.fromEnvironment(),
   @ignoreParam final Authenticate _authenticate = systemBrowser,
   @ignoreParam bool? loopback,
@@ -52,7 +54,7 @@ class MicrosoftWebConsent(
         code = value;
     }
     final TokenResponse tokens;
-    switch (await exchangeCode(_http, _client, code)) {
+    switch (await exchangeCode(_http, _client, code, _log)) {
       case Err(:final failure):
         return Err(failure);
       case Ok(:final value):

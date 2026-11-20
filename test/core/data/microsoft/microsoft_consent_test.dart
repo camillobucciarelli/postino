@@ -40,6 +40,7 @@ void main() {
       return _fixture(r.url.host == 'graph.microsoft.com' ? me : token);
     }),
     FakeClock(_now),
+    FakeErrorLog(),
     client: client,
     authenticate: ({required url, required callbackUrlScheme}) async {
       opened = Uri.parse(url);
@@ -135,6 +136,7 @@ void main() {
         (r) async => r.url.host == 'graph.microsoft.com' ? throw http.ClientException('no network') : _fixture(token),
       ),
       FakeClock(_now),
+      FakeErrorLog(),
       client: _client,
       authenticate: ({required url, required callbackUrlScheme}) async {
         final q = Uri.parse(url).queryParameters;
@@ -252,6 +254,7 @@ void main() {
     final r = await MicrosoftWebConsent(
       MockClient((_) async => http.Response('<html>Bad gateway</html>', 502)),
       FakeClock(_now),
+      FakeErrorLog(),
       client: _client,
       authenticate: ({required url, required callbackUrlScheme}) async {
         final q = Uri.parse(url).queryParameters;
@@ -277,6 +280,7 @@ void main() {
     final offline = MicrosoftWebConsent(
       MockClient((_) async => throw http.ClientException('no network')),
       FakeClock(_now),
+      FakeErrorLog(),
       client: _client,
       authenticate: ({required url, required callbackUrlScheme}) async {
         final q = Uri.parse(url).queryParameters;

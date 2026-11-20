@@ -76,13 +76,9 @@ class Harness._() {
   final discovery = FakeServerDiscovery();
   final connection = FakeConnectionTester();
 
-  /// Every HTTP request the app sends outside the Providers (the Google token revocation); each gets a 200, or
-  /// throws [httpFailure] while it is set (no network).
+  /// Every HTTP request the app sends outside the Providers, each answered 200: none since #353 dropped the Google
+  /// revocation.
   final httpRequests = <http.Request>[];
-  Exception? httpFailure;
-
-  /// While set, each HTTP request waits for it before answering: a slow network.
-  Completer<void>? httpHold;
 
   /// The app's folders, in memory: the attachment cache and its temporary copies.
   /// [onFileOp] sees (and may fail, by throwing) every operation on them.
@@ -126,8 +122,6 @@ class Harness._() {
       ..registerSingleton<http.Client>(
         MockClient((r) async {
           h.httpRequests.add(r);
-          await h.httpHold?.future;
-          if (h.httpFailure case final f?) throw f;
           return http.Response('', 200);
         }),
       )

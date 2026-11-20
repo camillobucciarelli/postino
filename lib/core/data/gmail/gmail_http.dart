@@ -107,9 +107,9 @@ class GmailHttp(
       );
     }
     throw OAuthFailed(switch (r.statusCode) {
-      401 => const AuthFailure(),
+      401 => const AuthFailure(reason: 'gmail API, HTTP 401'),
       // Token without the Gmail scope: only a new consent fixes it.
-      403 when googleScopeMissing(r) => const AuthFailure(),
+      403 when googleScopeMissing(r) => const AuthFailure(reason: 'gmail API, HTTP 403, scope missing'),
       // An expired history cursor, or a message that no longer exists.
       404 => const NotFoundFailure(),
       // A message over the 35 MB cap of messages.send.

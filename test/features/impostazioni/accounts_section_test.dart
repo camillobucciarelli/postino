@@ -147,15 +147,16 @@ void main() {
       find.text('Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.'),
       findsOneWidget,
     );
-    // A Gmail Account: the revocation at Google is said too.
+    // A Gmail Account: nothing is revoked at Google (#353), where to take the authorization away is said.
     expect(
       find.text(
         'Le modifiche non ancora inviate al server vanno perse.\n'
-        'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account '
-        'dovranno ricollegarlo.',
+        "Postino resta tra le app autorizzate del tuo account Google: puoi toglierlo dalle impostazioni dell'account "
+        'Google.',
       ),
       findsOneWidget,
     );
+    expect(find.textContaining('revoca'), findsNothing);
     final focused = FocusManager.instance.primaryFocus!.context!;
     expect(
       find.ancestor(of: find.text('Annulla'), matching: find.byElementPredicate((e) => identical(e, focused))),
@@ -208,7 +209,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Le modifiche non ancora inviate al server vanno perse.'), findsOneWidget);
-    expect(find.textContaining('revoca'), findsNothing);
+    expect(find.textContaining('account Google'), findsNothing);
   });
 
   testWidgets('with the sync on, «Rimuovi» says the Account goes from every paired device (#321)', (tester) async {
@@ -217,16 +218,16 @@ void main() {
     await getIt<SettingsRepository>().setSettingsSyncAccount('a1');
     await tester.pumpAndSettle();
 
-    // The Account di sincronizzazione, on Gmail: revoked at Google, and a device offline finds it da ricollegare.
+    // The Account di sincronizzazione, on Gmail: no revocation (#353), so a device offline still reads the removal
+    // on Drive and nothing more is to say about it.
     await tester.tap(find.byKey(const ValueKey('settings-remove-account-a1')));
     await _settle(tester);
     expect(
       find.text(
         'Le modifiche non ancora inviate al server vanno perse.\n'
         "L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.\n"
-        'Postino revoca anche il suo accesso a Gmail su Google.\n'
-        "È l'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e "
-        'andrà rimosso anche lì.',
+        "Postino resta tra le app autorizzate del tuo account Google: puoi toglierlo dalle impostazioni dell'account "
+        'Google.',
       ),
       findsOneWidget,
     );

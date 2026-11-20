@@ -43,7 +43,7 @@ abstract interface class AccountsRepository() {
   Future<Result<void>> grantDriveAccess(String accountId);
 
   /// Rimozione dell'Account [accountId] (#174): its sync and IDLE stop, everything of it is deleted here (messages,
-  /// Etichette, Bozze, queued Azioni, which are never sent, and Conflitti) with its credentials in the keychain; a
-  /// Gmail refresh token is revoked when online. Nothing changes on the server. Nothing if there is no such Account.
+  /// Etichette, Bozze, queued Azioni, which are never sent, and Conflitti) with its credentials in the keychain;
+  /// nothing is revoked at the Provider (#353). Nothing changes on the server. Nothing if there is no such Account.
   Future<void> remove(String accountId);
 }

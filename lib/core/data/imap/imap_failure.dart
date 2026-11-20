@@ -33,6 +33,6 @@ Failure imapFailure(Object error, {required bool atLogin, required bool connecte
   ImapException(message: 'timeout') => const OfflineFailure(),
   ImapException() || SmtpException() when !connected => const OfflineFailure(),
   ImapException(:final message?) when atLogin && message.contains('UNAVAILABLE') => const OfflineFailure(),
-  ImapException() || SmtpException() when atLogin => const AuthFailure(),
+  ImapException() || SmtpException() when atLogin => const AuthFailure(reason: 'login refused'),
   _ => UnexpectedFailure(error),
 };

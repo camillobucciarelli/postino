@@ -40,11 +40,12 @@ class OAuthAuth(
   /// A new access token from the refresh token of [old], saved in the keychain.
   /// A revoked or expired refresh token, or one that needs the user to sign in again, is the Provider's definitive
   /// refusal: [AuthFailure]. Before that the keychain is read again, never Drive: a refresh token that came from
-  /// another device meanwhile (ADR 0019) is tried once.
+  /// another device meanwhile (ADR 0019) is tried once. Any other refusal (the client, not the token: #353) is an
+  /// [UnexpectedFailure], and the Account stays connected.
   Future<OAuthTokens> refresh(OAuthTokens? old) => _refresh(old, again: true);
 
   Future<OAuthTokens> _refresh(OAuthTokens? old, {required bool again}) async {
-    if (old == null) throw const OAuthFailed(AuthFailure());
+    if (old == null) throw const OAuthFailed(AuthFailure(reason: 'token refresh: no tokens here'));
     final r = await _http.post(
       _client.tokenEndpoint,
       body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
@@ -64,6 +65,7 @@ class OAuthAuth(
                 for (final s in ((body['scope'] as String?) ?? '').split(' '))
                   if (s.isNotEmpty) s,
               ],
+        synced: old.synced,
       );
       // Only over the tokens this refresh started from (#174): the Account removed meanwhile has none, and one
       // connected again has newer ones, which an old grant must not overwrite.
@@ -71,13 +73,28 @@ class OAuthAuth(
       if ((await tokens())?.refresh == old.refresh) await fresh.write(_keychain, _accountId);
       return fresh;
     }
+    final why = _refusal(r.statusCode, body, old);
     // interaction_required: the organization wants the user to sign in again (MFA, Conditional Access).
-    if (r.statusCode == 401 || body['error'] == 'invalid_grant' || body['error'] == 'interaction_required') {
+    if (body['error'] == 'invalid_grant' || body['error'] == 'interaction_required') {
       // A keychain that cannot be read now is no other token: the refusal stands.
       final now = again ? await tokens().catchError((Object _) => null) : null;
       if (now != null && now.refresh != old.refresh) return _refresh(now, again: false);
-      throw const OAuthFailed(AuthFailure());
+      throw OAuthFailed(AuthFailure(reason: why));
     }
-    throw OAuthFailed(UnexpectedFailure('token refresh: HTTP ${r.statusCode}'));
+    throw OAuthFailed(UnexpectedFailure(why));
+  }
+
+  /// The refusal for the error log: the Provider's host, the status, the `error` code and, from the description,
+  /// only Microsoft's `AADSTS…` code (the rest may name the user); whether the token came from the synced file.
+  String _refusal(int status, Map<String, dynamic> body, OAuthTokens old) {
+    final error = '${body['error'] ?? 'no error'}';
+    final code = RegExp(r'AADSTS\d+').firstMatch('${body['error_description'] ?? ''}')?.group(0);
+    return [
+      'token refresh: ${_client.tokenEndpoint.host}',
+      'HTTP $status',
+      // ponytail: an OAuth error code is a short identifier; cut, in case a Provider ever puts more there.
+      [error.length > 40 ? error.substring(0, 40) : error, ?code].join(' '),
+      if (old.synced) 'synced token',
+    ].join(', ');
   }
 }

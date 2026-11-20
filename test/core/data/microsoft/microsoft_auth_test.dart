@@ -72,7 +72,17 @@ void main() {
     final keychain = _keychain(validFor: Duration.zero);
     final t = _auth(keychain, token: 'token_invalid_grant');
 
-    await expectLater(t.auth.validTokens(), _throwsFailure<AuthFailure>());
+    await expectLater(
+      t.auth.validTokens(),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => '${e.failure}',
+          'failure',
+          // Of the description only its code: the rest may name the user (#353).
+          'AuthFailure(token refresh: login.microsoftonline.com, HTTP 400, invalid_grant AADSTS70000)',
+        ),
+      ),
+    );
     expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');
   });
 
@@ -84,14 +94,14 @@ void main() {
     expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');
   });
 
-  test('a 401 from the token endpoint is an AuthFailure too', () async {
+  test('a 401 invalid_client refuses the app, not the token: an UnexpectedFailure (#353)', () async {
     final auth = microsoftAuth(
       _account,
       _keychain(validFor: Duration.zero),
-      MockClient((_) async => http.Response('{}', 401)),
+      MockClient((_) async => http.Response(jsonEncode({'error': 'invalid_client'}), 401)),
       FakeClock(_now),
       client: const MicrosoftClient('x'),
     );
-    await expectLater(auth.validTokens(), _throwsFailure<AuthFailure>());
+    await expectLater(auth.validTokens(), _throwsFailure<UnexpectedFailure>());
   });
 }

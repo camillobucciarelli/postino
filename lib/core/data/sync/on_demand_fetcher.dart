@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../domain/account.dart';
+import '../../domain/error_log.dart';
 import '../../domain/mail_provider.dart';
 import '../../domain/message.dart';
 import '../../domain/platform_services.dart';
@@ -23,6 +24,7 @@ class OnDemandFetcher(
   final QueueReplay _replay,
   final NotificationCleanup _cleanup,
   final Clock _clock,
+  final ErrorLog _log,
 ) {
   Future<Result<void>> openConversation(String accountId, String conversationId) async {
     final account = await _gate.find(accountId);
@@ -124,7 +126,9 @@ class OnDemandFetcher(
             for (final m in value.messages)
               if (m.date.isBefore(before)) m,
           ], const {});
-        case Err(failure: AuthFailure()):
+        case Err(failure: final AuthFailure f):
+          // Its cause, by Provider: the Account's id is its address (#353).
+          _log.record(f, context: 'search ${account.provider.name}, da ricollegare');
           await _store.setStatus(accountId, AccountStatus.daRicollegare);
         case Err(failure: RateLimitFailure(:final retryAfter?)):
           _gate.pause(accountId, retryAfter);

@@ -44,7 +44,7 @@ class SmtpSender(
   /// disconnection: it must not throw.
   Future<void> send(String raw, {Future<void> Function()? onAccepted}) async {
     final credentials = await PasswordCredentials.read(_keychain, _accountId);
-    if (credentials == null) throw const ImapFailed(AuthFailure());
+    if (credentials == null) throw const ImapFailed(AuthFailure(reason: 'no password here'));
     final mime = MimeMessage.parseFromText(raw);
     final from = mime.from?.firstOrNull ?? MailAddress(null, _user);
     final recipients = [...?mime.to, ...?mime.cc, ...?mime.bcc];

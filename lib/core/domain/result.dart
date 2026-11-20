@@ -49,9 +49,15 @@ final class const UnexpectedFailure(
 }
 
 /// The Provider no longer accepts the Account's credentials: the Account becomes Da ricollegare.
-final class const AuthFailure() extends Failure {
-  /// Crea il fallimento.
+final class const AuthFailure({
+  /// Why the Provider refused, for the error log (#353): never tokens, addresses nor the Provider's free text.
+  final String? reason,
+}) extends Failure {
+  /// Crea il fallimento; [reason] è opzionale.
   this;
+
+  @override
+  String toString() => reason == null ? 'AuthFailure' : 'AuthFailure($reason)';
 }
 
 /// The user did not grant the Gmail permission (Google's granular consent let them untick it).

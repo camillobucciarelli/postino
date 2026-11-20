@@ -472,10 +472,8 @@
     "removeTitle": "Remove the Account $name?",
     "removeMessage": "The emails downloaded on this device are deleted; on the server they stay as they are.",
     "removeNote": "Changes not yet sent to the server are lost.",
-    "removeGmailNote": "Postino also revokes its access to Gmail at Google: other devices connected with this Account will have to reconnect it.",
+    "removeGmailNote": "Postino stays among the apps authorized in your Google account: you can remove it in your Google account settings.",
     "removeSyncedNote": "The Account and its access are removed from all paired devices.",
-    "removeSyncedGmailNote": "Postino also revokes its access to Gmail at Google.",
-    "removeSyncAccountNote": "It is the sync Account: a device offline right now will find it “Needs signing in” and must remove it there too.",
     "removeConfirm": "Remove",
     "removeCancel": "Cancel"
   }

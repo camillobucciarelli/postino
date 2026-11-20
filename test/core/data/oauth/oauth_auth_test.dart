@@ -82,11 +82,76 @@ void main() {
 
   test('no tokens in the keychain, or a revoked refresh token, is an AuthFailure', () async {
     final none = _auth(FakeSecureStore());
-    await expectLater(none.auth.validTokens(), _throwsFailure<AuthFailure>());
+    await expectLater(
+      none.auth.validTokens(),
+      throwsA(
+        isA<OAuthFailed>().having((e) => '${e.failure}', 'failure', 'AuthFailure(token refresh: no tokens here)'),
+      ),
+    );
     expect(none.requests, isEmpty);
 
     final revoked = _auth(gmailKeychain(validFor: Duration.zero), token: 'token_invalid_grant');
     await expectLater(revoked.auth.validTokens(), _throwsFailure<AuthFailure>());
+  });
+
+  test('invalid_grant says why in the AuthFailure: Provider, status and error, never the description (#353)', () async {
+    final refused = _auth(gmailKeychain(validFor: Duration.zero), token: 'token_invalid_grant');
+    await expectLater(
+      refused.auth.validTokens(),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => '${e.failure}',
+          'failure',
+          'AuthFailure(token refresh: oauth2.googleapis.com, HTTP 400, invalid_grant)',
+        ),
+      ),
+    );
+  });
+
+  test('a token adopted from the synced file is said so when it is refused (#353)', () async {
+    final keychain = FakeSecureStore();
+    await OAuthTokens(
+      access: '',
+      refresh: '1//from-file',
+      expiresAt: DateTime.utc(1970),
+      synced: true,
+    ).write(keychain, gmailAccount);
+    // A refresh that works keeps knowing where the refresh token came from.
+    await _auth(keychain).auth.validTokens();
+    expect((await OAuthTokens.read(keychain, gmailAccount))!.synced, isTrue);
+    await OAuthTokens(
+      access: '',
+      refresh: '1//from-file',
+      expiresAt: DateTime.utc(1970),
+      synced: true,
+    ).write(keychain, gmailAccount);
+    final refused = _auth(keychain, token: 'token_invalid_grant');
+    await expectLater(
+      refused.auth.validTokens(),
+      throwsA(isA<OAuthFailed>().having((e) => '${e.failure}', 'failure', endsWith('invalid_grant, synced token)'))),
+    );
+  });
+
+  test('the client refused, not the token: an UnexpectedFailure, the Account stays connected (#353)', () async {
+    for (final (status, error) in [(401, 'invalid_client'), (401, 'unauthorized_client'), (400, 'invalid_request')]) {
+      final auth = OAuthAuth(
+        gmailAccount,
+        gmailKeychain(validFor: Duration.zero),
+        MockClient((_) async => gmailJson({'error': error, 'error_description': 'Unauthorized'}, status)),
+        FakeClock(gmailNow),
+        client: gmailTestClient,
+      );
+      await expectLater(
+        auth.validTokens(),
+        throwsA(
+          isA<OAuthFailed>().having(
+            (e) => '${e.failure}',
+            'failure',
+            'UnexpectedFailure(token refresh: oauth2.googleapis.com, HTTP $status, $error)',
+          ),
+        ),
+      );
+    }
   });
 
   test('a refused refresh tries once the refresh token another device brought meanwhile (#321)', () async {

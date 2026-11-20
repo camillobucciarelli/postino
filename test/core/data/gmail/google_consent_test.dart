@@ -23,6 +23,7 @@ http.Response _fixture(String name) {
 
 void main() {
   late List<http.Request> requests;
+  late FakeErrorLog log;
   late Uri opened;
   late String scheme;
 
@@ -35,6 +36,7 @@ void main() {
           return _fixture(token);
         }),
         FakeClock(_now),
+        log,
         client: client,
         authenticate: ({required url, required callbackUrlScheme}) async {
           opened = Uri.parse(url);
@@ -47,6 +49,7 @@ void main() {
 
   setUp(() {
     requests = [];
+    log = FakeErrorLog();
     token = 'token_exchange';
   });
 
@@ -76,6 +79,15 @@ void main() {
     expect(exchange['redirect_uri'], q['redirect_uri']);
     expect(exchange['client_id'], _client.id);
     expect(exchange['code_verifier'], isNotEmpty);
+  });
+
+  test('a refresh token that expires is said in the log, with its lifetime only (#353)', () async {
+    await consent().run();
+    expect(log.entries, isEmpty, reason: 'a token that does not expire says nothing');
+
+    token = 'token_exchange_expiring';
+    await consent().run();
+    expect(await log.read(), 'refresh_token_expires_in 604799');
   });
 
   test('a token without the Gmail scope (granular consent) is a MissingPermissionFailure', () async {

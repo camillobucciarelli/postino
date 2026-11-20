@@ -200,6 +200,7 @@ class CredentialVoci(
       refresh: voce.refresh,
       expiresAt: here?.expiresAt ?? DateTime.utc(1970),
       scopes: voce.scopes,
+      synced: true,
     ).write(_keychain, id);
     return true;
   }

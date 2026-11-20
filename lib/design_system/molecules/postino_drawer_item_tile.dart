@@ -32,11 +32,11 @@ class const PostinoDrawerItemTile(
   String? get _unread =>
       item.unreadLabel ?? (_closed ? item.children!.map((i) => i.unreadLabel).nonNulls.firstOrNull : null);
 
-  Widget _chevron(BuildContext context, double size) => AnimatedRotation(
+  Widget _chevron(BuildContext context) => AnimatedRotation(
     turns: item.expanded ? .5 : 0,
     duration: PostinoMotion.of(context, PostinoMotion.threadExpand),
     curve: PostinoMotion.standard,
-    child: PostinoIcon(PostinoIcons.chevronDown, size: size, color: context.pc.inkMuted),
+    child: PostinoIcon(PostinoIcons.chevronDown, size: PostinoSize.iconSm, color: context.pc.inkMuted),
   );
 
   Widget _railIcon(BuildContext context, PostinoColors c) {
@@ -59,12 +59,6 @@ class const PostinoDrawerItemTile(
             right: PostinoSpacing.s1 + 2,
             child: _FadeToggle(_unread == null ? null : const _UnreadDot()),
           ),
-          if (item.children != null)
-            Positioned(
-              bottom: PostinoSpacing.s1,
-              left: PostinoSpacing.s1,
-              child: _chevron(context, PostinoSize.iconSm - 2),
-            ),
           Positioned(
             bottom: PostinoSpacing.s1,
             right: PostinoSpacing.s1,
@@ -177,7 +171,7 @@ class const PostinoDrawerItemTile(
                         if (group != null)
                           Padding(
                             padding: const EdgeInsetsDirectional.only(start: PostinoSpacing.s3),
-                            child: _chevron(context, PostinoSize.iconSm),
+                            child: _chevron(context),
                           ),
                       ],
                     ),

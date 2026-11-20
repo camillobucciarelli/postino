@@ -80,11 +80,17 @@ Future<List<bool>> _pumpLive(WidgetTester tester, {bool unread = false, bool act
 
 Finder get _row => find.byKey(const ValueKey('group'));
 
+Finder get _chevron => find.descendant(
+  of: _row,
+  matching: find.byWidgetPredicate((w) => w is PostinoIcon && w.icon == PostinoIcons.chevronDown),
+);
+
 void main() {
   testWidgets('open: the row shows the address and the children are there', (tester) async {
     await _pumpLive(tester);
     expect(find.text(_address), findsOneWidget);
     expect(find.text('Viaggi'), findsOneWidget);
+    expect(_chevron, findsOneWidget);
     expect(tester.getSize(_row).height, greaterThanOrEqualTo(48));
   });
 
@@ -223,6 +229,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Viaggi'), findsNothing);
     expect(find.descendant(of: _row, matching: find.byKey(const ValueKey('unread-dot'))), findsOneWidget);
+    // The icons below say open or closed; no chevron in the rail, open or closed.
+    expect(_chevron, findsNothing);
+    await tester.tap(_row);
+    await tester.pumpAndSettle();
+    expect(_chevron, findsNothing);
   });
 
   testWidgets('the box follows the active row while a group above it closes and opens', (tester) async {

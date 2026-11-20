@@ -293,8 +293,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
-  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages is, even
-  /// another one.
+  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages that counts
+  /// there is, even another one.
   Stream<Set<(String, String)>> watchUnreadFolders() {
     final m = messages;
     final l = messageLabels;

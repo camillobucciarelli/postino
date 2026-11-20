@@ -65,7 +65,7 @@ class FakeMailProvider() implements MailProvider {
   /// Cursors older than this have expired.
   int _oldest = 0;
   bool _offline = false;
-  bool _authBroken = false;
+  AuthFailure? _authBroken;
   bool _signalUp = true;
   bool _rateLimited = false;
   DateTime? _retryAfter;
@@ -244,8 +244,8 @@ class FakeMailProvider() implements MailProvider {
     _retryAfter = retryAfter;
   }
 
-  void breakAuth() => _authBroken = true;
-  void restoreAuth() => _authBroken = false;
+  void breakAuth([AuthFailure failure = const AuthFailure()]) => _authBroken = failure;
+  void restoreAuth() => _authBroken = null;
 
   /// The Provider forgets the history: every cursor handed out so far has expired.
   void expireCursors() => _oldest = _version + 1;
@@ -259,13 +259,13 @@ class FakeMailProvider() implements MailProvider {
     _changes.add(s);
   }
 
-  Failure? get _failure => _authBroken
-      ? const AuthFailure()
-      : _offline
-      ? const OfflineFailure()
-      : _rateLimited
-      ? RateLimitFailure(retryAfter: _retryAfter)
-      : null;
+  Failure? get _failure =>
+      _authBroken ??
+      (_offline
+          ? const OfflineFailure()
+          : _rateLimited
+          ? RateLimitFailure(retryAfter: _retryAfter)
+          : null);
 
   // --- MailProvider ---
   Result<T> _guard<T>(T Function() ok) {

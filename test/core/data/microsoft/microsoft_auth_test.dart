@@ -68,11 +68,35 @@ void main() {
     expect(saved.expiresAt, _now.add(const Duration(seconds: 3599)));
   });
 
+  test('a synced refresh token rotated here is this device\'s own from then on (#353)', () async {
+    final keychain = FakeSecureStore();
+    await OAuthTokens(
+      access: '',
+      refresh: 'M.C5.initial',
+      expiresAt: DateTime.utc(1970),
+      synced: true,
+    ).write(keychain, _account);
+    await _auth(keychain).auth.validTokens();
+
+    final rotated = (await OAuthTokens.read(keychain, _account))!;
+    expect((rotated.refresh, rotated.synced), ('M.C5.rotated', false));
+  });
+
   test('invalid_grant is an AuthFailure, the tokens stay as they were', () async {
     final keychain = _keychain(validFor: Duration.zero);
     final t = _auth(keychain, token: 'token_invalid_grant');
 
-    await expectLater(t.auth.validTokens(), _throwsFailure<AuthFailure>());
+    await expectLater(
+      t.auth.validTokens(),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => '${e.failure}',
+          'failure',
+          // Of the description only its code: the rest may name the user (#353).
+          'AuthFailure(token refresh: login.microsoftonline.com, HTTP 400, invalid_grant AADSTS70000)',
+        ),
+      ),
+    );
     expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');
   });
 
@@ -84,14 +108,14 @@ void main() {
     expect((await OAuthTokens.read(keychain, _account))!.refresh, 'M.C5.initial');
   });
 
-  test('a 401 from the token endpoint is an AuthFailure too', () async {
+  test('a 401 invalid_client refuses the app, not the token: an UnexpectedFailure (#353)', () async {
     final auth = microsoftAuth(
       _account,
       _keychain(validFor: Duration.zero),
-      MockClient((_) async => http.Response('{}', 401)),
+      MockClient((_) async => http.Response(jsonEncode({'error': 'invalid_client'}), 401)),
       FakeClock(_now),
       client: const MicrosoftClient('x'),
     );
-    await expectLater(auth.validTokens(), _throwsFailure<AuthFailure>());
+    await expectLater(auth.validTokens(), _throwsFailure<UnexpectedFailure>());
   });
 }

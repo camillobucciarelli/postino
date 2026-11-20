@@ -25,7 +25,6 @@ AccountsService _service() => AccountsService(
   getIt(),
   getIt(),
   getIt(),
-  getIt(),
   oauthClientOf: (p) => p == ProviderKind.icloud ? '' : 'client-${p.name}',
 );
 

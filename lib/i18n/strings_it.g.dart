@@ -1402,17 +1402,11 @@ class Translations$accounts$it {
 	/// it: 'Le modifiche non ancora inviate al server vanno perse.'
 	String get removeNote => 'Le modifiche non ancora inviate al server vanno perse.';
 
-	/// it: 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.'
-	String get removeGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.';
+	/// it: 'Postino resta tra le app autorizzate del tuo account Google: puoi toglierlo dalle impostazioni dell'account Google.'
+	String get removeGmailNote => 'Postino resta tra le app autorizzate del tuo account Google: puoi toglierlo dalle impostazioni dell\'account Google.';
 
 	/// it: 'L'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.'
 	String get removeSyncedNote => 'L\'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.';
-
-	/// it: 'Postino revoca anche il suo accesso a Gmail su Google.'
-	String get removeSyncedGmailNote => 'Postino revoca anche il suo accesso a Gmail su Google.';
-
-	/// it: 'È l'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.'
-	String get removeSyncAccountNote => 'È l\'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.';
 
 	/// it: 'Rimuovi'
 	String get removeConfirm => 'Rimuovi';
@@ -1942,10 +1936,8 @@ extension on Translations {
 			'accounts.removeTitle' => ({required Object name}) => 'Rimuovere l\'Account ${name}?',
 			'accounts.removeMessage' => 'Le email scaricate su questo dispositivo vengono eliminate; sul server restano come sono.',
 			'accounts.removeNote' => 'Le modifiche non ancora inviate al server vanno perse.',
-			'accounts.removeGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google: gli altri dispositivi collegati con questo Account dovranno ricollegarlo.',
+			'accounts.removeGmailNote' => 'Postino resta tra le app autorizzate del tuo account Google: puoi toglierlo dalle impostazioni dell\'account Google.',
 			'accounts.removeSyncedNote' => 'L\'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati.',
-			'accounts.removeSyncedGmailNote' => 'Postino revoca anche il suo accesso a Gmail su Google.',
-			'accounts.removeSyncAccountNote' => 'È l\'Account di sincronizzazione: un dispositivo offline in questo momento lo troverà «da ricollegare» e andrà rimosso anche lì.',
 			'accounts.removeConfirm' => 'Rimuovi',
 			'accounts.removeCancel' => 'Annulla',
 			_ => null,

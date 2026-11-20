@@ -59,6 +59,12 @@ void main() {
     expect(a.searchCalls, hasLength(calls));
   });
 
+  test('a search that makes the Account Da ricollegare leaves the cause in the log (#353)', () async {
+    a.breakAuth(const AuthFailure(reason: 'gmail API, HTTP 401'));
+    await engine().search('a', fattura);
+    expect(await h.errorLog.read(), contains('[search gmail, da ricollegare] AuthFailure(gmail API, HTTP 401)'));
+  });
+
   test('a rate limit pauses the Account: the next search does not reach the Provider', () async {
     a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 1)));
     expect(await engine().search('a', fattura), isA<Err<Object?>>());

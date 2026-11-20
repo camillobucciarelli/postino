@@ -11,7 +11,7 @@ Decisione del proprietario: un Account sincronizzato non deve più arrivare «da
 
 - **Protetto.** Chi ottiene l'accesso all'Account di sincronizzazione, o soltanto alla sua appDataFolder di Drive, vede solo testo cifrato: niente credenziali degli altri Account, niente Impostazioni. La chiave è casuale (256 bit) e non deriva da una password, quindi un attacco offline non può indovinarla. Chi ha accesso a Drive non può nemmeno modificare il file senza che i dispositivi se ne accorgano: AEAD.
 - **Non protetto.**
-  - Un dispositivo abbinato rubato e sbloccato possiede sia la chiave sia i token. Il rimedio: «Rigenera la chiave» da un altro dispositivo, poi revoca presso i Provider e ricollegamento. Per Gmail basta rimuovere e ricollegare l'Account in Postino, che revoca il grant. Per Microsoft si revocano le sessioni dall'account Microsoft. Per iCloud e IMAP si cambia la password specifica per app.
+  - Un dispositivo abbinato rubato e sbloccato possiede sia la chiave sia i token. Il rimedio: «Rigenera la chiave» da un altro dispositivo, poi revoca presso i Provider e ricollegamento. Per Gmail si toglie Postino dalle app autorizzate dell'account Google, poi si ricollega l'Account: «Rimuovi» in Postino non revoca più il grant (#353). Per Microsoft si revocano le sessioni dall'account Microsoft. Per iCloud e IMAP si cambia la password specifica per app.
   - Chi controlla Drive può cancellare il file o rimettere una sua copia cifrata più vecchia (rollback). L'AEAD non lo impedisce: è accettato.
   - Un QR o un codice fotografato mentre è sullo schermo, insieme all'accesso a Drive, basta per leggere il file. La mitigazione è nell'Abbinamento, più sotto.
 
@@ -164,22 +164,15 @@ Condividere un solo token tra i dispositivi tiene lontano proprio quel limite.
 
 ## Rimozione e revoca
 
-**Oggi.**
+**Deciso.** La rimozione resta globale: «Rimuovi» scrive i tombstone delle voci dell'Account su `accounts/` e `credentials/`, e il mirror lo rimuove da ogni dispositivo, credenziali comprese (ADR 0016). Nessuna revoca presso il Provider, né Google né Microsoft (#353).
 
-- «Rimuovi» scrive i tombstone delle voci dell'Account. Il mirror lo rimuove da ogni dispositivo, credenziali comprese (ADR 0016).
-- Il dispositivo che rimuove revoca il refresh token Google. Secondo la documentazione Google la revoca rimuove i permessi concessi all'applicazione, quindi anche gli altri dispositivi perdono l'accesso: per questo non revocano a loro volta.
-- Il token Microsoft non si revoca.
-- La conferma della rimozione però dice soltanto che «gli altri dispositivi collegati con questo Account dovranno ricollegarlo» (`removeGmailNote`). Con la sincronizzazione accesa non è così: l'Account sparisce dagli altri dispositivi.
+**Perché niente revoca Google.** La revoca di Google non è per dispositivo ma per grant: toglie a Postino i permessi concessi da quell'utente. iOS, macOS e Android usano lo stesso client OAuth e, con questa ADR, lo stesso refresh token. Una rimozione da una qualunque copia dell'app (anche una build di test, la variante store, un dispositivo non abbinato) scollegava quindi tutti gli altri dispositivi al primo rinnovo, che risponde `invalid_grant`: l'Account diventava «da ricollegare» senza che l'utente l'avesse chiesto lì.
 
-**Deciso.** La rimozione resta globale: tombstone su `accounts/` e `credentials/`, e revoca Google come oggi. Gli altri dispositivi non si rompono in silenzio, perché tolgono l'Account invece di ritrovarsi con un token revocato.
+- **Cosa si perde.** Dopo «Rimuovi» il grant resta valido presso Google finché l'utente non toglie Postino dalle app autorizzate dell'account Google, o finché il refresh token resta inutilizzato per 6 mesi. Un dispositivo perso con il token resta in grado di usarlo fino ad allora: il rimedio è quello del modello di minaccia.
+- **Conferma di «Rimuovi».** Con la sincronizzazione accesa dice che l'Account viene rimosso da tutti i dispositivi abbinati. Per Gmail dice che Postino resta tra le app autorizzate dell'account Google e che lo si toglie dalle impostazioni dell'account Google.
+- **L'Account di sincronizzazione Gmail non è più un'eccezione.** Senza revoca un dispositivo offline mentre il primo carica i tombstone li legge quando torna online, con il suo token ancora valido, e rimuove l'Account come gli altri. La conferma non dice più che lo troverà «da ricollegare». Resta il caso dei tombstone che non arrivano su Drive (dispositivo che rimuove offline o oltre l'attesa): restano da caricare finché non si sceglie un altro Account di sincronizzazione.
 
-- Con la sincronizzazione accesa, la conferma dice che l'Account viene rimosso da tutti i dispositivi.
-- Con la sincronizzazione spenta resta il testo attuale.
-- **Eccezione: l'Account di sincronizzazione Gmail.**
-  - I tombstone stanno sul suo Drive, e la revoca toglie Drive anche agli altri dispositivi.
-  - Un dispositivo offline mentre il primo carica i tombstone e poi revoca non riesce più a leggerli. Trova l'Account «da ricollegare» e la sincronizzazione ferma, con l'errore visibile in «Sincronizza su…» (#317).
-  - Si rimedia rimuovendo l'Account anche lì, o scegliendo un altro Account di sincronizzazione.
-  - La conferma della rimozione dell'Account di sincronizzazione lo dice.
+**Rinnovo rifiutato (#353).** Solo `invalid_grant` (e `interaction_required` di Microsoft) rendono l'Account «da ricollegare». Un altro rifiuto del token endpoint, per esempio `invalid_client` o `unauthorized_client` con 401, riguarda il client e non il token dell'utente: è un errore imprevisto, va nel log e l'Account resta attivo. Il log errori registra il motivo di ogni passaggio a «da ricollegare» (Provider, status HTTP, codice `error`, se il token era stato adottato dal file sincronizzato) e, al consenso, `refresh_token_expires_in` se il Provider lo manda. Queste righe non portano token, indirizzi né il testo libero di `error_description`: di Microsoft solo il codice `AADSTS…`.
 
 ## Norme Google
 
@@ -215,7 +208,7 @@ Il proprietario ha approvato i default proposti:
 - **QR in due tempi.** La prima fetta mostra il QR e il codice testuale; il dispositivo nuovo digita o incolla il codice. La lettura del QR con la fotocamera arriva in una fetta successiva. Le librerie per generare il QR (per esempio `qr_flutter`) e per leggerlo (per esempio `mobile_scanner`, con `NSCameraUsageDescription` su iOS e macOS e l'entitlement della fotocamera su macOS) si scelgono e si vagliano con `supermatt:dependency-vetting` al momento dell'implementazione.
 - **Rollback del file accettato.** Nessun contatore monotono nel documento: una copia cifrata più vecchia rimessa da chi controlla Drive si accetta.
 - **Protezione dello schermo.** Accettata così com'è: su iOS il codice si nasconde solo mentre lo schermo è registrato o duplicato, su macOS e Linux non c'è una protezione affidabile.
-- **Nessuna revoca Microsoft alla rimozione.** Come oggi: la catena del token condiviso resta valida fino alla sua scadenza (90 giorni senza uso).
+- **Nessuna revoca Microsoft alla rimozione.** Come oggi: la catena del token condiviso resta valida fino alla sua scadenza (90 giorni senza uso). Dal #353 nemmeno Google revoca (vedi «Rimozione e revoca»).
 - **Schermata di Abbinamento.** Si chiude dopo 2 minuti.
 
 ## Precisazioni dall'implementazione (#321, fetta 1)
@@ -249,12 +242,12 @@ Il proprietario ha approvato i default proposti:
 - **Limiti accettati.**
   - Chi adotta un token remoto non tiene il suo, ancora valido. Se l'Accesso condizionale di Microsoft 365 rifiuta i token usati da un altro dispositivo (Da verificare in QA, punto 1), ricollegare un dispositivo porta l'altro «da ricollegare», e così via. Il rimedio, se la QA lo conferma: tenere il token sostituito e provarlo una volta prima di arrendersi.
   - Un token remoto non adottato per la regola degli scope non torna in gioco se poi il Provider rifiuta quello locale: il dispositivo lo trova solo con la voce successiva, o al ricollegamento.
-- **Conferma di «Rimuovi».** Con la sincronizzazione accesa dice che l'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati, per Gmail che Postino revoca l'accesso su Google, e per l'Account di sincronizzazione che un dispositivo offline lo troverà «da ricollegare». Con la sincronizzazione spenta il testo resta quello di prima.
+- **Conferma di «Rimuovi».** Con la sincronizzazione accesa dice che l'Account e il suo accesso vengono rimossi da tutti i dispositivi abbinati. Il testo su Google è cambiato con il #353 (vedi «Rimozione e revoca»).
 
 ## Da verificare in QA
 
 1. **Token Microsoft tra piattaforme e Accesso condizionale.** Il client Microsoft è lo stesso su tutte le piattaforme, ma i redirect URI cambiano (schema `msal…` su iOS, Android e macOS; loopback su Windows e Linux). La documentazione dice che il token è legato a utente e client: che un token emesso con un redirect si rinnovi su un altro dispositivo va confermato. Per gli Account Microsoft 365 di lavoro o scuola, l'Accesso condizionale dell'organizzazione (conformità del dispositivo, protezione dei token) può rifiutare un token usato da un altro dispositivo: il comportamento previsto è «da ricollegare» su quel dispositivo.
-2. **Revoca Google e client desktop.** Non è verificato se la revoca fatta con il client iOS tolga anche il grant del client «App desktop». Non cambia la decisione, perché il tombstone rimuove comunque l'Account, ma può cambiare il testo della conferma.
+2. **Revoca Google e client desktop.** Superato dal #353: Postino non revoca più nulla alla rimozione.
 
 ## Conseguenze
 

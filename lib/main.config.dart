@@ -30,7 +30,6 @@ import 'package:postino/core/data/desktop/native_system_tray.dart' as _i586;
 import 'package:postino/core/data/device_settings_store.dart' as _i207;
 import 'package:postino/core/data/error_log/error_log_module.dart' as _i907;
 import 'package:postino/core/data/gmail/google_consent.dart' as _i1009;
-import 'package:postino/core/data/gmail/google_revoke.dart' as _i960;
 import 'package:postino/core/data/imap/enough_connection_tester.dart' as _i782;
 import 'package:postino/core/data/imap/enough_server_discovery.dart' as _i26;
 import 'package:postino/core/data/local_notifications.dart' as _i102;
@@ -168,10 +167,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i38.MobileQrCamera(),
       registerFor: {_prod},
     );
-    gh.singleton<_i6.MicrosoftConsent>(
-      () => _i801.MicrosoftWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
-      registerFor: {_prod},
-    );
     gh.lazySingleton<_i739.SystemTray>(
       () => _i586.NativeSystemTray(),
       registerFor: {_prod},
@@ -188,16 +183,9 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i634.NativeAppWindow(),
       registerFor: {_prod},
     );
-    gh.lazySingleton<_i960.GoogleRevoke>(
-      () => _i960.GoogleRevoke(gh<_i519.Client>(), gh<_i398.Connectivity>()),
-    );
     gh.singleton<_i398.SecureStore>(
       () => databaseModule.deviceOnlyKeychain(),
       instanceName: 'deviceOnlyKeychain',
-      registerFor: {_prod},
-    );
-    gh.singleton<_i902.GoogleConsent>(
-      () => _i1009.GoogleWebConsent(gh<_i519.Client>(), gh<_i398.Clock>()),
       registerFor: {_prod},
     );
     gh.lazySingleton<_i184.Notifications>(
@@ -228,6 +216,22 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       registerFor: {_prod},
       preResolve: true,
+    );
+    gh.singleton<_i6.MicrosoftConsent>(
+      () => _i801.MicrosoftWebConsent(
+        gh<_i519.Client>(),
+        gh<_i398.Clock>(),
+        gh<_i346.ErrorLog>(),
+      ),
+      registerFor: {_prod},
+    );
+    gh.singleton<_i902.GoogleConsent>(
+      () => _i1009.GoogleWebConsent(
+        gh<_i519.Client>(),
+        gh<_i398.Clock>(),
+        gh<_i346.ErrorLog>(),
+      ),
+      registerFor: {_prod},
     );
     gh.lazySingleton<_i96.ModelDownload>(
       () => modelModule.modelDownload(gh<_i689.ModelManager>()),
@@ -425,7 +429,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i681.AccountsLock>(),
         gh<_i221.ServerDiscovery>(),
         gh<_i967.ConnectionTester>(),
-        gh<_i960.GoogleRevoke>(),
         gh<_i278.AttachmentRepository>(),
         gh<_i311.SettingsSync>(),
       ),

@@ -11,6 +11,9 @@ class const OAuthTokens({
 
   /// The scopes granted to [refresh]; empty for tokens saved before they were kept (#321), until a refresh tells them.
   final List<String> scopes = const [],
+
+  /// [refresh] came from the synced file, not from a consent here (ADR 0019): said in the log if refused (#353).
+  final bool synced = false,
 }) {
   OAuthTokens.of(OAuthGrant g)
     : this(access: g.accessToken, refresh: g.refreshToken, expiresAt: g.expiresAt, scopes: g.scopes);
@@ -27,6 +30,7 @@ class const OAuthTokens({
       refresh: j['refresh'] as String,
       expiresAt: DateTime.parse(j['expiresAt'] as String),
       scopes: [for (final s in j['scopes'] as List<dynamic>? ?? const []) s as String],
+      synced: j['synced'] == true,
     );
   }
 
@@ -40,6 +44,7 @@ class const OAuthTokens({
       'refresh': refresh,
       'expiresAt': expiresAt.toUtc().toIso8601String(),
       if (scopes.isNotEmpty) 'scopes': scopes,
+      if (synced) 'synced': true,
     }),
   );
 

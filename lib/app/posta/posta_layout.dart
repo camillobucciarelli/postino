@@ -157,6 +157,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
                                     onBack: back,
                                     cursor: _cursor,
                                     onOpenDraft: (id) => openDraft(open.$1, id),
+                                    view: labelId,
                                   ),
                             detailKey: detail,
                             empty: Builder(

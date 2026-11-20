@@ -42,6 +42,10 @@ class const ConversationView({
   /// Opens the composer of the Bozza just saved, by Message-ID.
   required final void Function(String messageId) onOpenDraft,
   final ListCursor? cursor,
+
+  /// The Etichetta of the view it is opened from: from any but the Cestino or Spam, the messages in the Cestino or
+  /// Spam are neither shown nor marked read.
+  final String view = inboxLabelId,
 }) extends StatefulWidget {
   @override
   State<ConversationView> createState() => _ConversationViewState();
@@ -115,7 +119,11 @@ class _ConversationViewState()
       ..forward = _forward
       ..labels = _openLabels;
     _subs
-      ..add(GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).listen(_onMessages))
+      ..add(
+        GetIt.I<InboxRepository>()
+            .watchConversation(widget.accountId, widget.conversationId, view: widget.view)
+            .listen(_onMessages),
+      )
       ..add(GetIt.I<InboxRepository>().watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)))
       ..add(GetIt.I<TrustedSendersRepository>().watchTrusted().listen((t) => setState(() => _trusted = t)))
       ..add(
@@ -163,7 +171,10 @@ class _ConversationViewState()
     _hydrationFailed = false;
     // The opening brings the older messages: an Etichetta action taken meanwhile reaches them too.
     opening = GetIt.I<ConversationLabelIntents>()
-        .fetch(conversationKey, () => _sync.openConversation(widget.accountId, widget.conversationId))
+        .fetch(
+          conversationKey,
+          () => _sync.openConversation(widget.accountId, widget.conversationId, view: widget.view),
+        )
         .then((r) {
           if (r is Err) _hydrationFailed = true;
         });

@@ -141,8 +141,9 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
       _db.messagesDao.watchMessages(accountId: accountId, labelId: labelId).map(inboxEntriesOf);
 
   @override
-  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId) => _db.messagesDao
-      .watchConversation(accountId, conversationId)
+  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId, {String? view}) => _db
+      .messagesDao
+      .watchConversation(accountId, conversationId, view: view)
       .map(
         (rows) => [
           for (final (m, b, labelIds) in rows) (message: messageOf(m, labelIds), body: b == null ? null : bodyOf(b)),
@@ -161,9 +162,9 @@ class MailStore(final PostinoDatabase _db) implements InboxRepository {
     });
   }
 
-  /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008).
-  Future<void> markConversationRead(String accountId, String conversationId) async =>
-      queue(accountId, await _db.messagesDao.unreadIn(accountId, conversationId), const MarkRead());
+  /// Marks the Conversazione's unread messages read here and queues the Azione (ADR 0008): only those [view] shows.
+  Future<void> markConversationRead(String accountId, String conversationId, {String? view}) async =>
+      queue(accountId, await _db.messagesDao.unreadIn(accountId, conversationId, view: view), const MarkRead());
 
   /// Applies [action] to the messages here at once and queues it (ADR 0008), in one transaction;
   /// [heldUntil] keeps the voci «trattenute» until then (their Annulla is still offered).

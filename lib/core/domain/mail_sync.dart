@@ -25,8 +25,9 @@ abstract interface class MailSync() {
 
   /// Marks the Conversazione read (locally at once, on the Provider now or when back online)
   /// and downloads its messages missing from the database (Inviati, older than 90 days);
-  /// [Err] when they could not be downloaded (offline...).
-  Future<Result<void>> openConversation(String accountId, String conversationId);
+  /// [Err] when they could not be downloaded (offline...). With [view], the Etichetta it is opened from, only the
+  /// messages that view shows are marked read: from any but the Cestino or Spam, not those in the Cestino or Spam.
+  Future<Result<void>> openConversation(String accountId, String conversationId, {String? view});
 
   /// Downloads a message body into the database; [Err] when it could not (offline...).
   Future<Result<void>> fetchBody(String accountId, String messageId);

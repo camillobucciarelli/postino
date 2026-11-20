@@ -192,8 +192,9 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox) that counts in that
   /// view (see [_countsIn]: one in the Cestino or Spam counts only there), each with its Account;
-  /// of every Account, or only of [accountId], with each message's label ids. Grouping is the caller's.
-  Stream<List<(AccountRow, MessageRow, List<String>)>> watchMessages({
+  /// of every Account, or only of [accountId], with each message's label ids and whether it counts in the view itself
+  /// (a message in the Cestino does not make its Conversazione unread in the inbox). Grouping is the caller's.
+  Stream<List<(AccountRow, MessageRow, List<String>, bool)>> watchMessages({
     String? accountId,
     String labelId = inboxLabelId,
   }) {
@@ -213,13 +214,17 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
               t.conversationId.equalsExp(m.conversationId) &
               _countsIn(t, Variable(labelId)),
         );
+    final counts = _countsIn(m, Variable(labelId));
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
-      ..addColumns([labelIds])
+      ..addColumns([labelIds, counts])
       ..where(existsQuery(withLabel))
       ..orderBy([OrderingTerm.desc(m.date), OrderingTerm.asc(m.id)]);
     if (accountId != null) query.where(m.accountId.equals(accountId));
     return query.watch().map(
-      (rows) => [for (final r in rows) (r.readTable(a), r.readTable(m), r.read(labelIds)?.split('\n') ?? const [])],
+      (rows) => [
+        for (final r in rows)
+          (r.readTable(a), r.readTable(m), r.read(labelIds)?.split('\n') ?? const [], r.read(counts) ?? true),
+      ],
     );
   }
 
@@ -288,8 +293,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
-  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages is, even
-  /// another one.
+  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages that counts
+  /// there is, even another one.
   Stream<Set<(String, String)>> watchUnreadFolders() {
     final m = messages;
     final l = messageLabels;
@@ -297,7 +302,10 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     final unreadInConversation = select(u)
       ..where(
         (u) =>
-            u.accountId.equalsExp(m.accountId) & u.conversationId.equalsExp(m.conversationId) & u.isRead.equals(false),
+            u.accountId.equalsExp(m.accountId) &
+            u.conversationId.equalsExp(m.conversationId) &
+            u.isRead.equals(false) &
+            _countsIn(u, l.labelId),
       );
     final query =
         selectOnly(

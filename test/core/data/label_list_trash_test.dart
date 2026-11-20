@@ -74,4 +74,34 @@ void main() {
     await engine.act('a', ['1'], const Delete());
     expect(await listed(_lavoro), hasLength(1), reason: 'one row per Conversazione');
   });
+
+  test('an unread message deleted from a Conversazione still listed makes it unread only in the Cestino', () async {
+    await engine.act('a', ['1'], const MarkRead());
+    a.deliver(msg('3', conversationId: 't-1'));
+    await engine.syncAll();
+    await engine.act('a', ['3'], const Delete());
+    await engine.syncAll();
+
+    final unread = {for (final (_, label) in await getIt<InboxRepository>().watchUnreadFolders().first) label};
+    expect(unread, {trashLabelId});
+    Future<bool> rowUnread(String labelId) async =>
+        (await getIt<InboxRepository>().watchMessages('a', labelId).first).single.unread;
+    expect(await rowUnread(inboxLabelId), isFalse);
+    expect(await rowUnread(_lavoro), isFalse);
+    expect(await rowUnread(trashLabelId), isTrue);
+  });
+
+  test('an unread message in Spam in a Conversazione still listed makes it unread only in Spam', () async {
+    await engine.act('a', ['1'], const MarkRead());
+    a.deliver(msg('5', conversationId: 't-1', labelIds: const [spamLabelId]));
+    await engine.syncAll();
+
+    final unread = {for (final (_, label) in await getIt<InboxRepository>().watchUnreadFolders().first) label};
+    expect(unread, {spamLabelId});
+    Future<bool> rowUnread(String labelId) async =>
+        (await getIt<InboxRepository>().watchMessages('a', labelId).first).single.unread;
+    expect(await rowUnread(inboxLabelId), isFalse);
+    expect(await rowUnread(_lavoro), isFalse);
+    expect(await rowUnread(spamLabelId), isTrue);
+  });
 }

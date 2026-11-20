@@ -17,7 +17,10 @@ class SearchStore(final PostinoDatabase _db) implements SearchRepository {
     // Nothing asked, or words that are no letters or digits: nothing the index can find.
     if (query.isEmpty || (query.hasText && match == null)) return Stream.value(const []);
     Stream<List<InboxEntry>> rows(Map<String, Set<String>> f) =>
-        _db.searchDao.watchConversations(query, match: match, found: f).map(inboxEntriesOf);
+        // Every row of a search already counts: search_dao keeps only the visible messages.
+        _db.searchDao
+            .watchConversations(query, match: match, found: f)
+            .map((rows) => inboxEntriesOf([for (final (a, m, l) in rows) (a, m, l, true)]));
     return found == null ? rows(const {}) : switchLatest(found, rows);
   }
 }

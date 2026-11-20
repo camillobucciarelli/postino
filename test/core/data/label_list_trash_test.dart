@@ -74,4 +74,20 @@ void main() {
     await engine.act('a', ['1'], const Delete());
     expect(await listed(_lavoro), hasLength(1), reason: 'one row per Conversazione');
   });
+
+  test('an unread message deleted from a Conversazione still listed makes it unread only in the Cestino', () async {
+    await engine.act('a', ['1'], const MarkRead());
+    a.deliver(msg('3', conversationId: 't-1'));
+    await engine.syncAll();
+    await engine.act('a', ['3'], const Delete());
+    await engine.syncAll();
+
+    final unread = {for (final (_, label) in await getIt<InboxRepository>().watchUnreadFolders().first) label};
+    expect(unread, {trashLabelId});
+    Future<bool> rowUnread(String labelId) async =>
+        (await getIt<InboxRepository>().watchMessages('a', labelId).first).single.unread;
+    expect(await rowUnread(inboxLabelId), isFalse);
+    expect(await rowUnread(_lavoro), isFalse);
+    expect(await rowUnread(trashLabelId), isTrue);
+  });
 }

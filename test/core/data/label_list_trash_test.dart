@@ -58,4 +58,20 @@ void main() {
     await engine.syncAll();
     expect(await listed(_lavoro), ['1']);
   });
+
+  test('a message deleted from Spam is in the Cestino, not in Spam, before the Provider moves it', () async {
+    a.deliver(msg('2', labelIds: const [spamLabelId]));
+    await engine.syncAll();
+    a.goOffline();
+    await engine.act('a', ['2'], const Delete());
+    expect(await listed(trashLabelId), ['2']);
+    expect(await listed(spamLabelId), isEmpty);
+  });
+
+  test('a Conversazione with another message still carrying the Etichetta stays in its list', () async {
+    a.deliver(msg('2', labelIds: const [inboxLabelId, _lavoro], conversationId: 't-1'));
+    await engine.syncAll();
+    await engine.act('a', ['1'], const Delete());
+    expect(await listed(_lavoro), hasLength(1), reason: 'one row per Conversazione');
+  });
 }

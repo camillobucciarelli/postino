@@ -190,7 +190,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     }
   }
 
-  /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox), each with its Account;
+  /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox) that counts in that
+  /// view (see [_countsIn]: one in the Cestino or Spam counts only there), each with its Account;
   /// of every Account, or only of [accountId], with each message's label ids. Grouping is the caller's.
   Stream<List<(AccountRow, MessageRow, List<String>)>> watchMessages({
     String? accountId,
@@ -224,7 +225,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   /// Whether the message [t], carrying [labelId], makes its Conversazione belong to that view. Cestino and Spam are
   /// views of their own (see the glossary): a message there keeps its other labels (Gmail, or the local Elimina until
-  /// the Provider moves it) but counts in no other view.
+  /// the Provider moves it) but counts in no other view. With both, the Cestino wins: Elimina from Spam adds TRASH
+  /// here before the Provider takes SPAM away.
   Expression<bool> _countsIn($MessagesTable t, Expression<String> labelId) {
     final x = alias(messageLabels, 'x');
     return notExistsQuery(
@@ -232,8 +234,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
         (x) =>
             x.accountId.equalsExp(t.accountId) &
             x.messageId.equalsExp(t.id) &
-            x.labelId.isIn(const [trashLabelId, spamLabelId]) &
-            x.labelId.equalsExp(labelId).not(),
+            (x.labelId.equals(trashLabelId) & labelId.equals(trashLabelId).not() |
+                x.labelId.equals(spamLabelId) & labelId.isIn(const [spamLabelId, trashLabelId]).not()),
       ),
     );
   }
@@ -286,7 +288,8 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
 
   /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
-  /// any of its messages carries it, and is unread if any of its messages is, even another one.
+  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages is, even
+  /// another one.
   Stream<Set<(String, String)>> watchUnreadFolders() {
     final m = messages;
     final l = messageLabels;

@@ -200,13 +200,26 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     final a = accounts;
     final t = alias(messages, 't');
     final l = alias(messageLabels, 'l');
-    final withLabel = select(t).join([
-      innerJoin(
-        l,
-        l.accountId.equalsExp(t.accountId) & l.messageId.equalsExp(t.id) & l.labelId.equals(labelId),
-        useColumns: false,
-      ),
-    ])..where(t.accountId.equalsExp(m.accountId) & t.conversationId.equalsExp(m.conversationId));
+    final x = alias(messageLabels, 'x');
+    // Cestino and Spam are views of their own (see the glossary): a message there keeps its other labels (Gmail, or
+    // the local Elimina until the Provider moves it) but makes no Conversazione belong to them.
+    final elsewhere = select(x)
+      ..where(
+        (x) =>
+            x.accountId.equalsExp(t.accountId) &
+            x.messageId.equalsExp(t.id) &
+            x.labelId.isIn([trashLabelId, spamLabelId].where((id) => id != labelId)),
+      );
+    final withLabel =
+        select(t).join([
+          innerJoin(
+            l,
+            l.accountId.equalsExp(t.accountId) & l.messageId.equalsExp(t.id) & l.labelId.equals(labelId),
+            useColumns: false,
+          ),
+        ])..where(
+          t.accountId.equalsExp(m.accountId) & t.conversationId.equalsExp(m.conversationId) & notExistsQuery(elsewhere),
+        );
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds])
       ..where(existsQuery(withLabel))

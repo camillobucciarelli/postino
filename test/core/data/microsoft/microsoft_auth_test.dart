@@ -68,6 +68,20 @@ void main() {
     expect(saved.expiresAt, _now.add(const Duration(seconds: 3599)));
   });
 
+  test('a synced refresh token rotated here is this device\'s own from then on (#353)', () async {
+    final keychain = FakeSecureStore();
+    await OAuthTokens(
+      access: '',
+      refresh: 'M.C5.initial',
+      expiresAt: DateTime.utc(1970),
+      synced: true,
+    ).write(keychain, _account);
+    await _auth(keychain).auth.validTokens();
+
+    final rotated = (await OAuthTokens.read(keychain, _account))!;
+    expect((rotated.refresh, rotated.synced), ('M.C5.rotated', false));
+  });
+
   test('invalid_grant is an AuthFailure, the tokens stay as they were', () async {
     final keychain = _keychain(validFor: Duration.zero);
     final t = _auth(keychain, token: 'token_invalid_grant');

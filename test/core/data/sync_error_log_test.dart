@@ -28,19 +28,21 @@ void main() {
   });
 
   test('a sync that fails ends up in the log, with the Account and the error', () async {
-    a.breakAuth();
+    a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 1)));
     await GetIt.I<SyncEngine>().syncAll();
     final log = await h.errorLog.read();
-    expect(log, contains('[sync a] AuthFailure'));
+    expect(log, contains('[sync a] RateLimitFailure'));
     expect(await h.errorLog.takeCrashMark(), isFalse, reason: 'a Failure is not a crash');
   });
 
   test('the passage to da ricollegare leaves its cause in the log, by Provider, never the address (#353)', () async {
-    a.breakAuth(const AuthFailure(reason: 'token refresh: oauth2.googleapis.com, HTTP 400, invalid_grant'));
+    // A real id: the address is in it.
+    final ada = await h.addAccount('gmail:ada@example.com');
+    ada.breakAuth(const AuthFailure(reason: 'token refresh: oauth2.googleapis.com, HTTP 400, invalid_grant'));
     await GetIt.I<SyncEngine>().syncAll();
-    final line = (await h.errorLog.read()).split('\n').singleWhere((l) => l.contains('da ricollegare'));
-    expect(line, contains('[sync gmail, da ricollegare] AuthFailure(token refresh: oauth2.googleapis.com, HTTP 400'));
-    expect(line, isNot(contains('example.com')));
+    final log = await h.errorLog.read();
+    expect(log, contains('[sync gmail, da ricollegare] AuthFailure(token refresh: oauth2.googleapis.com, HTTP 400'));
+    expect(log, isNot(contains('ada@example.com')));
   });
 
   test('a send the Provider refuses ends up in the log', () async {

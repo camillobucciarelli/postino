@@ -17,6 +17,15 @@ void main() {
     expect(tokens.expiresAt, DateTime.utc(2026, 10, 28, 13));
   });
 
+  test('whether the refresh token came from the synced file is kept; a token saved before says no (#353)', () async {
+    final keychain = FakeSecureStore();
+    for (final synced in [true, false]) {
+      await OAuthTokens(access: 'a', refresh: 'r', expiresAt: DateTime.utc(2030), synced: synced).write(keychain, 'x');
+      expect((await OAuthTokens.read(keychain, 'x'))!.synced, synced);
+    }
+    expect(keychain.values['oauth:x'], isNot(contains('synced')), reason: 'written only when true');
+  });
+
   test('every Provider keeps its tokens under oauth:<accountId>', () async {
     final keychain = FakeSecureStore();
     await OAuthTokens(

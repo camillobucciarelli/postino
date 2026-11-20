@@ -149,7 +149,8 @@ class SyncPhase(
         return null;
       case Err(:final failure):
         debugPrint('[sync] $accountId: failed, $failure');
-        _log.failure('sync $accountId', failure);
+        // An AuthFailure goes in the log below, by Provider: its cause never next to the address (#353).
+        if (failure is! AuthFailure) _log.failure('sync $accountId', failure);
         final streak = _streaks[accountId] ?? (failed: 0, logged: false);
         final failed = streak.failed + 1;
         // An OfflineFailure alone is left out (no network is not an error); a streak of them with the network up is.
@@ -166,7 +167,7 @@ class SyncPhase(
         }
         // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
         if (failure is AuthFailure) {
-          // Its cause, by Provider: the Account's id is its address (#353).
+          // Its cause, by Provider: the Account's id holds its address (#353).
           _log.record(failure, context: 'sync ${account.provider.name}, da ricollegare');
           await _store.setStatus(accountId, AccountStatus.daRicollegare);
         }

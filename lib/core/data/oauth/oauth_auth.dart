@@ -65,7 +65,8 @@ class OAuthAuth(
                 for (final s in ((body['scope'] as String?) ?? '').split(' '))
                   if (s.isNotEmpty) s,
               ],
-        synced: old.synced,
+        // A refresh token rotated here is this device's own.
+        synced: old.synced && (body['refresh_token'] ?? old.refresh) == old.refresh,
       );
       // Only over the tokens this refresh started from (#174): the Account removed meanwhile has none, and one
       // connected again has newer ones, which an old grant must not overwrite.

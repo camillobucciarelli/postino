@@ -154,6 +154,21 @@ void main() {
     }
   });
 
+  test('an error code longer than an OAuth one is cut in the log (#353)', () async {
+    final long = 'x' * 50;
+    final auth = OAuthAuth(
+      gmailAccount,
+      gmailKeychain(validFor: Duration.zero),
+      MockClient((_) async => gmailJson({'error': long}, 400)),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+    await expectLater(
+      auth.validTokens(),
+      throwsA(isA<OAuthFailed>().having((e) => '${e.failure}', 'failure', endsWith('HTTP 400, ${'x' * 40})'))),
+    );
+  });
+
   test('a refused refresh tries once the refresh token another device brought meanwhile (#321)', () async {
     final keychain = gmailKeychain(validFor: Duration.zero);
     final requests = <String>[];

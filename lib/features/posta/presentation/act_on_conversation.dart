@@ -36,16 +36,17 @@ UndoOffer? actOnConversation(BuildContext context, String accountId, List<String
 }
 
 /// [action] on the row's Conversazione from the list (menu, swipe): through [onOpenAct] when the Conversazione is open
-/// beside the list, which moves the selection on or closes it; else [actOnStoredConversation].
+/// beside the list, which moves the selection on or closes it; else [actOnStoredConversation] on what [view] shows.
 void actOnRow(
   BuildContext context,
   String accountId,
   String conversationId,
   MailAction action, {
   void Function(MailAction action)? onOpenAct,
+  String? view,
 }) {
   if (onOpenAct case final open?) return open(action);
-  unawaited(actOnStoredConversation(context, accountId, conversationId, action));
+  unawaited(actOnStoredConversation(context, accountId, conversationId, action, view: view));
 }
 
 /// The latest letto/non letto chosen per Conversazione (accountId, conversationId), by token: a non letto waiting
@@ -61,19 +62,21 @@ bool isLatestRead(String accountId, String conversationId, Object choice) =>
     identical(_readChoices[(accountId, conversationId)], choice);
 
 /// [actOnConversation] from the list, where the Conversazione may never have been opened: on its messages here at
-/// once, then on the older ones the sync window left out once they are fetched, unless Annulla came first.
+/// once, then on the older ones the sync window left out once they are fetched, unless Annulla came first; with
+/// [view], only on the messages it shows.
 Future<void> actOnStoredConversation(
   BuildContext context,
   String accountId,
   String conversationId,
-  MailAction action,
-) async {
+  MailAction action, {
+  String? view,
+}) async {
   if (action is MarkRead || action is MarkUnread) chooseRead(accountId, conversationId);
-  final ids = await idsHere(accountId, conversationId);
+  final ids = await idsHere(accountId, conversationId, view: view);
   if (!context.mounted) return;
   final offer = actOnConversation(context, accountId, ids, action);
   if (await GetIt.I<MailSync>().completeConversation(accountId, conversationId) is! Ok) return;
-  await reachOlder(accountId, conversationId, ids, action, offer);
+  await reachOlder(accountId, conversationId, ids, action, offer, view: view);
 }
 
 /// The ids of the messages of the Conversazione here; with [view], only those the view shows.

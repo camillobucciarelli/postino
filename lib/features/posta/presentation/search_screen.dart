@@ -48,6 +48,9 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
 
   bool get _inTrash => widget.labelId == trashLabelId;
 
+  /// The view of the results and of the Conversazione they open: only the search from the Cestino has its messages.
+  String get _view => _inTrash ? trashLabelId : inboxLabelId;
+
   /// What the results show; the list is rebuilt for each new one.
   SearchQuery _query = const SearchQuery();
 
@@ -178,6 +181,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
               key: ValueKey(_query),
               watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query, found: _providers.watchFound()),
               showAccount: widget.accountId == null,
+              view: _view,
               selected: _open,
               cursor: _cursor,
               onOpen: (a, c) => setState(() => _open = (a, c)),
@@ -226,8 +230,7 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
                       onBack: () => setState(() => _open = null),
                       onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
                       cursor: _cursor,
-                      // Only the search from the Cestino has its messages as results.
-                      view: _inTrash ? trashLabelId : inboxLabelId,
+                      view: _view,
                     ),
               detailKey: _open,
               empty: PostinoEmptyState(

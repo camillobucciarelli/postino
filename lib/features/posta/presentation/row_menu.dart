@@ -28,10 +28,13 @@ class const RowMenu({
   /// The Azioni of the Conversazione open beside the list, when it is this row's: they go through it, which moves
   /// the selection on or closes it.
   final void Function(MailAction action)? onOpenAct,
+
+  /// The Etichetta of the list: the Azioni and the picker reach only the messages it shows.
+  final String? view,
   required final Widget child,
 }) extends StatelessWidget {
   void _act(BuildContext context, MailAction action) =>
-      actOnRow(context, accountId, conversationId, action, onOpenAct: onOpenAct);
+      actOnRow(context, accountId, conversationId, action, onOpenAct: onOpenAct, view: view);
 
   @override
   Widget build(BuildContext context) => Builder(
@@ -50,6 +53,7 @@ class const RowMenu({
               conversationId: conversationId,
               labelsAreFolders: labelsAreFolders,
               returnFocus: focusNode,
+              view: view,
             ),
           ),
         ),

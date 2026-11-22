@@ -170,12 +170,14 @@ Widget postaComposerView(
 
 /// An open Conversazione; its params come from the URI, so a new one is a new view.
 /// [onOpenDraft]: the composer of the Bozza a Rispondi/Inoltra just saved (#37).
+/// [view]: the Etichetta of the list it is opened from (the inbox for the Posta unificata or a deep link).
 Widget postaConversationView(
   String accountId,
   String conversationId, {
   required VoidCallback onBack,
   required void Function(String messageId) onOpenDraft,
   ListCursor? cursor,
+  String? view,
 }) => ConversationView(
   key: ValueKey('conversation-$accountId/$conversationId'),
   accountId: accountId,
@@ -183,6 +185,7 @@ Widget postaConversationView(
   onBack: onBack,
   onOpenDraft: onOpenDraft,
   cursor: cursor,
+  view: view ?? inboxLabelId,
 );
 
 /// On top of every list, under its sync status: offline, then the Accounts Da ricollegare, the model download and a

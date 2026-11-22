@@ -26,12 +26,12 @@ class OnDemandFetcher(
   final Clock _clock,
   final ErrorLog _log,
 ) {
-  Future<Result<void>> openConversation(String accountId, String conversationId) async {
+  Future<Result<void>> openConversation(String accountId, String conversationId, {String? view}) async {
     final account = await _gate.find(accountId);
     if (account == null) return const Err(NotFoundFailure());
     final provider = providerFor(account);
     // Read here at once, offline too; the Provider hears it from the queue.
-    await _store.markConversationRead(accountId, conversationId);
+    await _store.markConversationRead(accountId, conversationId, view: view);
     // Fetched inside the Account's slot: no sync can apply a newer change between the fetch and the apply.
     // ponytail: the opening waits behind a running sync (an initial one too); a cursor check on apply if that ever hurts.
     final fetched = await _queue.run(accountId, () async {
@@ -42,7 +42,7 @@ class OnDemandFetcher(
       final fetched = await _fetchConversation(accountId, provider, conversationId);
       if (fetched case Ok(:final value)) {
         await _store.applyPage(accountId, value, const {});
-        await _store.markConversationRead(accountId, conversationId);
+        await _store.markConversationRead(accountId, conversationId, view: view);
       }
       // Its own replay, after any batch a sync fetched before the read: it sends every intent queued so far.
       await _replay.run(accountId, provider);

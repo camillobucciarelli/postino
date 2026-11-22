@@ -41,7 +41,8 @@ class _Sync(final _Inbox inbox, {final MessageBody? fetched}) extends Fake imple
 
 class _Inbox(var List<ConversationMessage> rows) extends Fake implements InboxRepository {
   @override
-  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId) => Stream.value(rows);
+  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId, {String? view}) =>
+      Stream.value(rows);
 }
 
 const _pdf = Attachment(id: 'p', name: 'a.pdf', size: 10);

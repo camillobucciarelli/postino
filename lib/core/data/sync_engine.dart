@@ -203,8 +203,8 @@ class SyncEngine(
       _gate.paused(account.id) ? null : _queue.sync(account.id, (synced) => _phase.run(account, synced));
 
   @override
-  Future<Result<void>> openConversation(String accountId, String conversationId) =>
-      _fetcher.openConversation(accountId, conversationId);
+  Future<Result<void>> openConversation(String accountId, String conversationId, {String? view}) =>
+      _fetcher.openConversation(accountId, conversationId, view: view);
 
   @override
   Future<Result<void>> completeConversation(String accountId, String conversationId) =>

@@ -112,6 +112,7 @@ for f in privacy.html en/privacy.html support.html en/support.html; do
   has "$dir/$f" "<a href=\"$contact\">${contact#mailto:}</a>"
 done
 for f in privacy.html en/privacy.html; do
+  has "$dir/$f" '<h2 id="eliminare-i-dati">' # stable anchor for the Play Console «Delete data URL»
   has "$dir/$f" 'href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"'
 done
 links "$guide" guida/index.html "$contact"

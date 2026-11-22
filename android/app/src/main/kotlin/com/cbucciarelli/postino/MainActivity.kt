@@ -41,6 +41,8 @@ class MainActivity : FlutterActivity() {
         // `open(path)`: an attachment's copy in another app. Registered again by each Activity too.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FileOpener.CHANNEL).setMethodCallHandler { call, result ->
             if (call.method != "open") return@setMethodCallHandler result.notImplemented()
+            // A download that ends after this Activity is gone (the engine goes on, #214) opens nothing.
+            if (isFinishing || isDestroyed) return@setMethodCallHandler result.error("failed", "no activity", null)
             try {
                 FileOpener.open(this, call.arguments as String)
                 result.success(null)

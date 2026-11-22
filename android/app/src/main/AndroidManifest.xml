@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Gmail and Google OAuth; debug/profile get it from their own manifests, release from here. -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- open_filex asks for media and storage access; Postino opens only its own cache files, through the plugin's FileProvider (FileOpener.kt). -->
+    <!-- open_filex asks for media and storage access; Postino opens only its own cache files, through its own FileProvider (FileOpener.kt). -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
@@ -83,6 +83,16 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
+        <!-- An opened attachment (FileOpener.kt): only its decrypted copy in the cache, read by the app the user opens it with. -->
+        <provider
+            android:name=".AttachmentFileProvider"
+            android:authorities="${applicationId}.attachments"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/attachment_paths" />
+        </provider>
         <!-- The QR scanner's ML Kit model (#321, unbundled): Google Play Services downloads it at install, not at the
              first scan. -->
         <meta-data

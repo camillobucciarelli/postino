@@ -14,8 +14,8 @@ object FileOpener {
     /// Dart's side: SystemLinkOpener in lib/core/data/platform_services.dart.
     const val CHANNEL = "it.postino/file_opener"
 
-    /// The FileProvider open_filex declares in its manifest (iOS still needs the plugin): it covers the cache.
-    private const val AUTHORITY_SUFFIX = ".fileProvider.com.crazecoder.openfile"
+    /// Added to the applicationId: the authority of [AttachmentFileProvider] in the manifest.
+    private const val AUTHORITY_SUFFIX = ".attachments"
 
     /// The app is picked by the type of the file's extension. With no app for it the system's chooser says so.
     fun open(activity: Activity, path: String) {

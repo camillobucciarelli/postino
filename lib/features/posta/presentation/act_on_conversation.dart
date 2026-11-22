@@ -76,9 +76,10 @@ Future<void> actOnStoredConversation(
   await reachOlder(accountId, conversationId, ids, action, offer);
 }
 
-/// The ids of the messages of the Conversazione here.
-Future<List<String>> idsHere(String accountId, String conversationId) async => [
-  for (final m in await GetIt.I<InboxRepository>().watchConversation(accountId, conversationId).first) m.message.id,
+/// The ids of the messages of the Conversazione here; with [view], only those the view shows.
+Future<List<String>> idsHere(String accountId, String conversationId, {String? view}) async => [
+  for (final m in await GetIt.I<InboxRepository>().watchConversation(accountId, conversationId, view: view).first)
+    m.message.id,
 ];
 
 /// Once the whole Conversazione is here (a fetch ended): [action] on the messages [ids] lacked, unless [offer]'s
@@ -88,11 +89,12 @@ Future<void> reachOlder(
   String conversationId,
   List<String> ids,
   MailAction action,
-  UndoOffer? offer,
-) async {
+  UndoOffer? offer, {
+  String? view,
+}) async {
   final sync = GetIt.I<MailSync>();
   final older = [
-    for (final id in await idsHere(accountId, conversationId))
+    for (final id in await idsHere(accountId, conversationId, view: view))
       if (!ids.contains(id)) id,
   ];
   if (older.isEmpty || (offer?.taken ?? false)) return;

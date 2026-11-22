@@ -28,23 +28,24 @@ Message messageOf(MessageRow r, [List<String> labelIds = const [inboxLabelId], S
   hasAttachments: r.hasAttachments,
 );
 
-/// One row per Conversazione of [rows] (message, its Account, label ids and whether it counts in the view), which come
-/// newest first: the first of each Conversazione is its latest message, and keeps the order. Only a message that counts
-/// in the view makes the row unread, as in `MessagesDao.watchUnreadFolders`.
+/// One row per Conversazione of [rows] (message, its Account, label ids and whether the view shows it), which come
+/// newest first: the first of each Conversazione is its latest message, and keeps the order. The row is made of the
+/// messages the view shows only (`MessagesDao.inView`), as the Conversazione opened from it.
 // ponytail: grouped in Dart over every message of the listed Conversazioni; a GROUP BY if big inboxes get slow.
 List<InboxEntry> inboxEntriesOf(List<(AccountRow, MessageRow, List<String>, bool)> rows) {
   final groups = <(String, String), List<(AccountRow, MessageRow, List<String>, bool)>>{};
+  // What the Conversazione opened from the view shows; its place too follows its latest message shown.
   for (final r in rows) {
-    (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
+    if (r.$4) (groups[(r.$1.id, r.$2.conversationId)] ??= []).add(r);
   }
   return [
     for (final g in groups.values)
       InboxEntry(
         account: accountOf(g.first.$1),
-        // The Conversazione's labels: those of any of its messages.
+        // The Conversazione's labels: those of any of its messages shown.
         message: messageOf(g.first.$2, {for (final r in g) ...r.$3}.toList()),
         count: g.length,
-        unread: g.any((r) => r.$4 && !r.$2.isRead),
+        unread: g.any((r) => !r.$2.isRead),
       ),
   ];
 }

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
-import '../../../core/domain/message.dart' show trashLabelId;
+import '../../../core/domain/message.dart' show inboxLabelId, trashLabelId;
 import '../../../core/domain/provider_search_use_case.dart';
 import '../../../core/domain/search_query.dart';
 import '../../../core/domain/search_query_parser.dart';
@@ -226,6 +226,8 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
                       onBack: () => setState(() => _open = null),
                       onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
                       cursor: _cursor,
+                      // Only the search from the Cestino has its messages as results.
+                      view: _inTrash ? trashLabelId : inboxLabelId,
                     ),
               detailKey: _open,
               empty: PostinoEmptyState(

@@ -11,6 +11,7 @@ import '../tables/intents_table.dart';
 import '../tables/message_labels_table.dart';
 import '../tables/messages_table.dart';
 import '../tables/sync_cursors_table.dart';
+import 'messages_dao_visibility.dart';
 
 part 'messages_dao.g.dart';
 
@@ -191,9 +192,9 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   }
 
   /// Every message of the Conversazioni with a message carrying [labelId] (by default the inbox) that counts in that
-  /// view (see [_countsIn]: one in the Cestino or Spam counts only there), each with its Account;
-  /// of every Account, or only of [accountId], with each message's label ids and whether it counts in the view itself
-  /// (a message in the Cestino does not make its Conversazione unread in the inbox). Grouping is the caller's.
+  /// view (see [inView]: one in the Cestino or Spam counts only there), each with its Account;
+  /// of every Account, or only of [accountId], with each message's label ids and whether the view shows it ([inView]:
+  /// a message in the Cestino is not part of its Conversazione's row in the inbox). Grouping is the caller's.
   Stream<List<(AccountRow, MessageRow, List<String>, bool)>> watchMessages({
     String? accountId,
     String labelId = inboxLabelId,
@@ -212,9 +213,9 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
         ])..where(
           t.accountId.equalsExp(m.accountId) &
               t.conversationId.equalsExp(m.conversationId) &
-              _countsIn(t, Variable(labelId)),
+              inView(t, Variable(labelId)),
         );
-    final counts = _countsIn(m, Variable(labelId));
+    final counts = inView(m, Variable(labelId));
     final query = select(m).join([innerJoin(a, a.id.equalsExp(m.accountId))])
       ..addColumns([labelIds, counts])
       ..where(existsQuery(withLabel))
@@ -228,23 +229,6 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
   }
 
-  /// Whether the message [t], carrying [labelId], makes its Conversazione belong to that view. Cestino and Spam are
-  /// views of their own (see the glossary): a message there keeps its other labels (Gmail, or the local Elimina until
-  /// the Provider moves it) but counts in no other view. With both, the Cestino wins: Elimina from Spam adds TRASH
-  /// here before the Provider takes SPAM away.
-  Expression<bool> _countsIn($MessagesTable t, Expression<String> labelId) {
-    final x = alias(messageLabels, 'x');
-    return notExistsQuery(
-      select(x)..where(
-        (x) =>
-            x.accountId.equalsExp(t.accountId) &
-            x.messageId.equalsExp(t.id) &
-            (x.labelId.equals(trashLabelId) & labelId.equals(trashLabelId).not() |
-                x.labelId.equals(spamLabelId) & labelId.isIn(const [spamLabelId, trashLabelId]).not()),
-      ),
-    );
-  }
-
   /// The label ids of a `messages` row, one per line.
   CustomExpression<String> get labelIds => CustomExpression<String>(
     '(SELECT group_concat(l.label_id, char(10)) FROM message_labels l '
@@ -253,14 +237,19 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
   );
 
   /// The stored messages of one Conversazione, oldest first, with their body if downloaded
-  /// and their label ids (system ones too: IMPORTANT, STARRED…).
-  Stream<List<(MessageRow, BodyRow?, List<String>)>> watchConversation(String accountId, String conversationId) {
+  /// and their label ids (system ones too: IMPORTANT, STARRED…); only those [view] shows ([inView]), or all.
+  Stream<List<(MessageRow, BodyRow?, List<String>)>> watchConversation(
+    String accountId,
+    String conversationId, {
+    String? view,
+  }) {
     final m = messages;
     final b = bodies;
     final query = select(m).join([leftOuterJoin(b, b.accountId.equalsExp(m.accountId) & b.messageId.equalsExp(m.id))])
       ..addColumns([labelIds])
       ..where(m.accountId.equals(accountId) & m.conversationId.equals(conversationId))
       ..orderBy([OrderingTerm.asc(m.date), OrderingTerm.asc(m.id)]);
+    if (view != null) query.where(inView(m, Variable(view)));
     return query.watch().map(
       (rows) => [
         for (final r in rows) (r.readTable(m), r.readTableOrNull(b), r.read(labelIds)?.split('\n') ?? const []),
@@ -279,21 +268,22 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
     );
   }
 
-  /// The Conversazione's unread messages, by Provider-side id.
-  Future<List<String>> unreadIn(String accountId, String conversationId) =>
+  /// The Conversazione's unread messages, by Provider-side id; only those [view] shows ([inView]), or all.
+  Future<List<String>> unreadIn(String accountId, String conversationId, {String? view}) =>
       (selectOnly(messages)
             ..addColumns([messages.id])
             ..where(
               messages.accountId.equals(accountId) &
                   messages.conversationId.equals(conversationId) &
-                  messages.isRead.equals(false),
+                  messages.isRead.equals(false) &
+                  (view == null ? const Constant(true) : inView(messages, Variable(view))),
             ))
           .map((r) => r.read(messages.id)!)
           .get();
 
   /// The (Account, label) pairs of the Conversazioni that hold an unread message, system labels included
   /// (the inbox is [inboxLabelId]). Same membership as [watchMessages]: a Conversazione belongs to a label if
-  /// any of its messages carries it and counts there ([_countsIn]), and is unread if any of its messages that counts
+  /// any of its messages carries it and counts there ([inView]), and is unread if any of its messages that counts
   /// there is, even another one.
   Stream<Set<(String, String)>> watchUnreadFolders() {
     final m = messages;
@@ -305,7 +295,7 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             u.accountId.equalsExp(m.accountId) &
             u.conversationId.equalsExp(m.conversationId) &
             u.isRead.equals(false) &
-            _countsIn(u, l.labelId),
+            inView(u, l.labelId),
       );
     final query =
         selectOnly(
@@ -313,7 +303,7 @@ class MessagesDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDataba
             distinct: true,
           ).join([innerJoin(m, m.accountId.equalsExp(l.accountId) & m.id.equalsExp(l.messageId), useColumns: false)])
           ..addColumns([l.accountId, l.labelId])
-          ..where(_countsIn(m, l.labelId) & existsQuery(unreadInConversation));
+          ..where(inView(m, l.labelId) & existsQuery(unreadInConversation));
     return query.watch().map((rows) => {for (final r in rows) (r.read(l.accountId)!, r.read(l.labelId)!)});
   }
 

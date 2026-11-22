@@ -79,8 +79,9 @@ abstract interface class InboxRepository() {
   /// The Etichette of every Account by Account id, by name, folders of the user included (the drawer, #311).
   Stream<Map<String, List<Label>>> watchAllLabels();
 
-  /// Every stored message of a Conversazione, oldest first.
-  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId);
+  /// Every stored message of a Conversazione, oldest first; with [view], the Etichetta it is opened from, only those
+  /// that view shows: from any but the Cestino or Spam, not the messages in the Cestino or Spam.
+  Stream<List<ConversationMessage>> watchConversation(String accountId, String conversationId, {String? view});
 
   /// One stored message, or null while it is not stored (a Conflitto names its message by id only).
   Stream<Message?> watchMessage(String accountId, String messageId);

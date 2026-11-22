@@ -546,7 +546,7 @@ class _TooBig(
   @override
   Stream<Map<String, SyncStatus>> watchSyncStatus() => real.watchSyncStatus();
   @override
-  Future<Result<void>> openConversation(String a, String c) => real.openConversation(a, c);
+  Future<Result<void>> openConversation(String a, String c, {String? view}) => real.openConversation(a, c, view: view);
   @override
   Future<Result<void>> fetchBody(String a, String m) => real.fetchBody(a, m);
   @override

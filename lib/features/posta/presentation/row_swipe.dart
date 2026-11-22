@@ -30,6 +30,9 @@ class const RowSwipe({
 
   /// The Azioni of the Conversazione open beside the list, when it is this row's (see `RowMenu.onOpenAct`).
   final void Function(MailAction action)? onOpenAct,
+
+  /// The Etichetta of the list: the Azioni and the picker reach only the messages it shows.
+  final String? view,
   required final Widget Function(Map<CustomSemanticsAction, VoidCallback> semanticActions) builder,
 }) extends StatelessWidget {
   ({MailAction? action, PostinoSwipeAction shown}) _view(BuildContext context, SwipeAction choice) {
@@ -67,7 +70,7 @@ class const RowSwipe({
       void run(SwipeAction choice) {
         final MailAction? action = _view(row, choice).action;
         if (action != null) {
-          return actOnRow(row, accountId, conversationId, action, onOpenAct: onOpenAct);
+          return actOnRow(row, accountId, conversationId, action, onOpenAct: onOpenAct, view: view);
         }
         unawaited(
           openLabelPicker(
@@ -76,6 +79,7 @@ class const RowSwipe({
             conversationId: conversationId,
             labelsAreFolders: labelsAreFolders,
             returnFocus: focusNode,
+            view: view,
           ),
         );
       }

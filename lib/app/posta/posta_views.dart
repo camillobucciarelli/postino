@@ -81,6 +81,7 @@ Widget postaLabelView(String accountId, String labelId, {(String, String)? selec
       fab: WriteFab(accountId: accountId, cursor: cursor, onWrite: openDraft),
       body: MessageList(
         watch: (r) => r.watchMessages(accountId, labelId),
+        view: labelId,
         selected: selected,
         cursor: cursor,
         onOpen: openConversation,

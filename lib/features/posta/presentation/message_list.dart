@@ -50,6 +50,9 @@ class const MessageList({
 
   /// Called with the number of rows each time it changes (the search announces it); never during a build.
   final ValueChanged<int>? onCount,
+
+  /// The Etichetta of this view: the Azioni and the Etichette of a row reach only the messages it shows.
+  final String view = inboxLabelId,
 }) extends StatefulWidget {
   @override
   State<MessageList> createState() => _MessageListState();
@@ -284,7 +287,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     if (key == widget.selected && widget.cursor?.act != null) return widget.cursor!.act!(shortcut);
     final action = mailActionFor(shortcut, starred: _starred(e));
     if (action == null) return;
-    unawaited(actOnStoredConversation(context, key.$1, key.$2, action));
+    unawaited(actOnStoredConversation(context, key.$1, key.$2, action, view: widget.view));
     if (leavesList(action)) _step(key);
   }
 
@@ -383,6 +386,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                       focusNode: node,
                       actions: swipeActions,
                       onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
+                      view: widget.view,
                       builder: (semanticActions) => RowMenu(
                         accountId: a.id,
                         messageId: m.id,
@@ -392,6 +396,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                         read: !unread,
                         starred: _starred(entry),
                         onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
+                        view: widget.view,
                         child: tileWith(semanticActions),
                       ),
                     ),

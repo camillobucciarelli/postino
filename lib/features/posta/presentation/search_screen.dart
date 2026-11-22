@@ -178,6 +178,8 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
               key: ValueKey(_query),
               watch: (_) => GetIt.I<SearchRepository>().watchLocal(_query, found: _providers.watchFound()),
               showAccount: widget.accountId == null,
+              // As the Conversazione it opens.
+              view: _inTrash ? trashLabelId : inboxLabelId,
               selected: _open,
               cursor: _cursor,
               onOpen: (a, c) => setState(() => _open = (a, c)),

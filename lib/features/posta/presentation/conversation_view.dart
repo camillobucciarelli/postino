@@ -97,6 +97,7 @@ class _ConversationViewState()
         conversationId: widget.conversationId,
         labelsAreFolders: _account?.provider.labelsAreFolders ?? false,
         returnFocus: _labelsFocus,
+        view: widget.view,
       ),
     );
   }
@@ -174,6 +175,7 @@ class _ConversationViewState()
         .fetch(
           conversationKey,
           () => _sync.openConversation(widget.accountId, widget.conversationId, view: widget.view),
+          view: widget.view,
         )
         .then((r) {
           if (r is Err) _hydrationFailed = true;
@@ -299,9 +301,13 @@ class _ConversationViewState()
                       onToggle: _toggle,
                       onFetchBody: _fetchBody,
                       onAct: (kind, id) => unawaited(_act(kind, messageId: id)),
-                      onRemoveLabel: (label) => removeConversationLabel(context, conversationKey, [
-                        for (final m in messages) m.message,
-                      ], label),
+                      onRemoveLabel: (label) => removeConversationLabel(
+                        context,
+                        conversationKey,
+                        [for (final m in messages) m.message],
+                        label,
+                        view: widget.view,
+                      ),
                     ),
                   ),
                   // Under the thread, always in view: on the last message (ADR 0014: r, a, f). It opens and closes.

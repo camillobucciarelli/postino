@@ -28,6 +28,9 @@ class const LabelPickerSheet({
 
   /// Whether the Account's Etichette are folders (#146): an addition offers Annulla there.
   required final bool labelsAreFolders,
+
+  /// The Etichetta of the view it is opened from: the ticks and the changes cover only the messages it shows.
+  final String? view,
 }) extends StatefulWidget {
   @override
   State<LabelPickerSheet> createState() => _LabelPickerSheetState();
@@ -48,12 +51,16 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     // The whole Conversazione is brought here: from the list it may never have been opened, and the sync window
     // leaves its older messages out. The ticks taken meanwhile reach them when it ends, the picker closed or not.
     unawaited(
-      _intents.fetch(_key, () => GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId)),
+      _intents.fetch(
+        _key,
+        () => GetIt.I<MailSync>().completeConversation(widget.accountId, widget.conversationId),
+        view: widget.view,
+      ),
     );
     _subs
       ..add(
         repo
-            .watchConversation(widget.accountId, widget.conversationId)
+            .watchConversation(widget.accountId, widget.conversationId, view: widget.view)
             .listen((c) => setState(() => _messages = [for (final m in c) m.message])),
       )
       ..add(repo.watchLabels(widget.accountId).listen((l) => setState(() => _labels = l)));
@@ -72,7 +79,7 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
   void _toggle(String id) {
     final label = _labels.firstWhere((l) => l.id == id);
     if (_selected.contains(id)) {
-      removeConversationLabel(widget.snackbarContext, _key, _messages, label);
+      removeConversationLabel(widget.snackbarContext, _key, _messages, label, view: widget.view);
     } else {
       _add(_messages, label);
     }
@@ -100,7 +107,9 @@ class _LabelPickerSheetState() extends State<LabelPickerSheet> {
     final r = await GetIt.I<MailSync>().createLabel(widget.accountId, name);
     if (r case Ok(:final value)) {
       // Queued behind the fetch, the picker maybe closed: the Conversazione is read again, not `_messages`.
-      final all = await GetIt.I<InboxRepository>().watchConversation(widget.accountId, widget.conversationId).first;
+      final all = await GetIt.I<InboxRepository>()
+          .watchConversation(widget.accountId, widget.conversationId, view: widget.view)
+          .first;
       _add([for (final m in all) m.message], value);
     }
   }

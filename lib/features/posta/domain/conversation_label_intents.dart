@@ -21,9 +21,9 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   final _fetches = <ConversationKey, ({int running, Map<String, bool> desired})>{};
 
   /// The removals whose Annulla is still offered, by the token [remove] returns: the desired state before it
-  /// (`before`, null: none) and what it took the Etichetta off (`had`: the local messages, then the older ones the
-  /// end of a fetch reached). [forget] drops one when its Annulla goes away.
-  final _removals = <Object, ({ConversationKey key, String labelId, bool? before, List<Message> had})>{};
+  /// (`before`, null: none), what it took the Etichetta off (`had`: the local messages, then the older ones the
+  /// end of a fetch reached) and the view it was taken from. [forget] drops one when its Annulla goes away.
+  final _removals = <Object, ({ConversationKey key, String labelId, bool? before, List<Message> had, String? view})>{};
 
   /// The held additions (a folder Provider) whose Annulla may still be offered: when it ends and the ids it takes
   /// back, which the end of a fetch extends with the older messages it reached.
@@ -33,14 +33,15 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   int get openRemovals => _removals.length;
 
   /// Runs [fetch], which brings the whole Conversazione [key] here; the desired states set meanwhile reach what it
-  /// brought.
-  Future<Result<void>> fetch(ConversationKey key, Future<Result<void>> Function() fetch) async {
+  /// brought, of what [view] shows (all with none).
+  // ponytail: one desired state per Conversazione, whatever the view; key it by view too if two views fetch at once.
+  Future<Result<void>> fetch(ConversationKey key, Future<Result<void>> Function() fetch, {String? view}) async {
     final desired = _fetches[key]?.desired ?? <String, bool>{};
     _fetches[key] = (running: (_fetches[key]?.running ?? 0) + 1, desired: desired);
     try {
       final r = await fetch();
       if (r is Ok<void> && desired.isNotEmpty) {
-        final all = await _all(key);
+        final all = await _all(key, view);
         for (final MapEntry(key: labelId, value: add) in desired.entries) {
           // A held addition still in its window: the older messages wait with it, under its Annulla; once each,
           // as a second held voce over the first would survive that Annulla (two fetches ending together).
@@ -94,8 +95,8 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
   }
 
   /// Takes [labelId] off the [messages] of [key] that have it; returns the token of its Annulla ([undoRemoval]),
-  /// to [forget] when that Annulla is no longer offered.
-  Object remove(ConversationKey key, Iterable<Message> messages, String labelId) {
+  /// to [forget] when that Annulla is no longer offered. [view]: the view the [messages] are those of.
+  Object remove(ConversationKey key, Iterable<Message> messages, String labelId, {String? view}) {
     final token = Object();
     final before = _fetches[key]?.desired[labelId];
     _removals[token] = (
@@ -103,6 +104,7 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
       labelId: labelId,
       before: before,
       had: _set(key, messages, labelId, add: false).targets,
+      view: view,
     );
     return token;
   }
@@ -122,15 +124,15 @@ class ConversationLabelIntents(final MailSync _sync, final InboxRepository _inbo
         desired!.remove(r.labelId);
       }
     }
-    final targets = r.before == true ? _lacking(await _all(r.key), r.labelId, add: true) : r.had;
+    final targets = r.before == true ? _lacking(await _all(r.key, r.view), r.labelId, add: true) : r.had;
     unawaited(_apply(r.key.accountId, targets, r.labelId, add: true));
   }
 
   /// The Annulla of the removal [token] is gone (expired, replaced, dismissed): the removal stands, nothing kept.
   void forget(Object token) => _removals.remove(token);
 
-  Future<List<Message>> _all(ConversationKey key) async => [
-    for (final m in await _inbox.watchConversation(key.accountId, key.conversationId).first) m.message,
+  Future<List<Message>> _all(ConversationKey key, String? view) async => [
+    for (final m in await _inbox.watchConversation(key.accountId, key.conversationId, view: view).first) m.message,
   ];
 
   ({List<Message> targets, Future<void> queued}) _set(

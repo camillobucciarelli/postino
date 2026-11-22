@@ -13,12 +13,14 @@ import 'label_picker_sheet.dart';
 
 /// Opens the picker of the Etichette of a Conversazione, anchored to [anchor] (the «Etichette» button, a row of
 /// the list); on closing the focus goes back to [returnFocus]. A removal's snackbar shows under [anchor]'s messenger.
+/// With [view], it sees and reaches only the messages that view shows.
 Future<void> openLabelPicker(
   BuildContext anchor, {
   required String accountId,
   required String conversationId,
   required bool labelsAreFolders,
   FocusNode? returnFocus,
+  String? view,
 }) {
   final t = anchor.t.selettoreEtichette;
   return showPostinoPopover<void>(
@@ -31,15 +33,23 @@ Future<void> openLabelPicker(
       conversationId: conversationId,
       snackbarContext: anchor,
       labelsAreFolders: labelsAreFolders,
+      view: view,
     ),
   );
 }
 
 /// Takes [label] off every message of the Conversazione [key] that has it (the older ones a running fetch brings
 /// too), then shows «Etichetta «X» tolta» under [context]'s messenger, whose Annulla puts it back.
-void removeConversationLabel(BuildContext context, ConversationKey key, List<Message> messages, Label label) {
+/// [view]: the view [messages] are those of.
+void removeConversationLabel(
+  BuildContext context,
+  ConversationKey key,
+  List<Message> messages,
+  Label label, {
+  String? view,
+}) {
   final intents = GetIt.I<ConversationLabelIntents>();
-  final token = intents.remove(key, messages, label.id);
+  final token = intents.remove(key, messages, label.id, view: view);
   if (!context.mounted) return intents.forget(token);
   final t = context.t.selettoreEtichette;
   final clock = GetIt.I<Clock>();

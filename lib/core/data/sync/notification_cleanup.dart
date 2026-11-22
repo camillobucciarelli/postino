@@ -4,6 +4,7 @@ import 'package:injectable/injectable.dart';
 import '../../domain/notifications.dart';
 import '../daos/messages_dao_notifications.dart';
 import '../postino_database.dart';
+import 'new_mail_notifier.dart' show notificationWithin;
 
 /// Removes the notifications that no longer hold anything to read (#238): a message's, once it is no longer unread in
 /// the inbox (read, archived or deleted, elsewhere or here), whatever the rest of its Conversazione; the Account's group
@@ -22,7 +23,7 @@ class NotificationCleanup(final PostinoDatabase _db, final Notifications _notifi
   Future<void> _clean(String accountId, Set<String> messageIds) async {
     if (messageIds.isEmpty) return;
     final unread = await _db.messagesDao.unreadInInbox(accountId, messageIds);
-    await _notifications.cancel(accountId, messageIds.difference(unread));
+    await _notifications.cancel(accountId, messageIds.difference(unread)).timeout(notificationWithin);
   }
 
   /// A failed cleanup leaves notifications behind, never stops the sync.

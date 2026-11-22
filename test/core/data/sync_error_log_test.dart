@@ -160,6 +160,26 @@ void main() {
       expect(await h.errorLog.read(), contains('[sync gmail, lenta] 45 s'));
     });
 
+    test('a sync that hangs is logged once with the step it is at, never one that ends in time', () async {
+      final engine = GetIt.I<SyncEngine>();
+      a.hold = Completer<void>();
+      final sync = engine.syncAll();
+      await pumpEventQueue();
+      h.clock.advance(const Duration(minutes: 25));
+      await pumpEventQueue();
+      final log = await h.errorLog.read();
+      expect(log, contains('[sync gmail, bloccata] in corso da 10 min, passo: download'));
+      expect('bloccata'.allMatches(log), hasLength(1));
+      a.hold!.complete();
+      await sync;
+
+      await h.errorLog.clear();
+      await engine.syncAll();
+      h.clock.advance(const Duration(minutes: 25));
+      await pumpEventQueue();
+      expect(await h.errorLog.read(), isNot(contains('bloccata')));
+    });
+
     test('a rate limit pause is logged when it starts and when it ends', () async {
       final engine = GetIt.I<SyncEngine>();
       a.rateLimit(retryAfter: h.clock.now().add(const Duration(minutes: 5)));

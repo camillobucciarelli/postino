@@ -21,9 +21,17 @@ class OAuthAuth(
   /// The token endpoint answers within this, or the refresh is a [TimeoutException] (offline for the guards): a
   /// refresh that hangs would hold the Account's sync queue for good.
   final Duration _refreshWithin = const Duration(seconds: 30),
+
+  /// The keychain answers within this (#251): one that never does (locked, or waiting behind a system prompt) would
+  /// hold the Account's queue with no error at all.
+  final Duration _keychainWithin = const Duration(seconds: 60),
 }) {
   /// The tokens in the keychain, as they are.
-  Future<OAuthTokens?> tokens() => OAuthTokens.read(_keychain, _accountId);
+  Future<OAuthTokens?> tokens() => _inTime(OAuthTokens.read(_keychain, _accountId));
+
+  /// [keychainCall], or a [TimeoutException] that names the keychain in the error log.
+  Future<T> _inTime<T>(Future<T> keychainCall) =>
+      keychainCall.timeout(_keychainWithin, onTimeout: () => throw TimeoutException('keychain did not answer'));
 
   /// Tokens with an access token still valid for at least a minute.
   Future<OAuthTokens> validTokens() async {
@@ -80,7 +88,7 @@ class OAuthAuth(
       // Only over the tokens this refresh started from (#174): the Account removed meanwhile has none, and one
       // connected again has newer ones, which an old grant must not overwrite.
       // ponytail: a change between this read and the write still races it; a per-Account lock if that ever shows.
-      if ((await tokens())?.refresh == old.refresh) await fresh.write(_keychain, _accountId);
+      if ((await tokens())?.refresh == old.refresh) await _inTime(fresh.write(_keychain, _accountId));
       return fresh;
     }
     final why = _refusal(r.statusCode, body, old);

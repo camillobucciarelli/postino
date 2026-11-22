@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:postino/core/data/oauth/oauth_auth.dart';
 import 'package:postino/core/data/oauth/oauth_failed.dart';
 import 'package:postino/core/data/oauth/oauth_tokens.dart';
+import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -292,4 +293,31 @@ void main() {
     );
     expect((await OAuthTokens.read(keychain, gmailAccount))!.refresh, '1//refresh');
   });
+
+  test('a keychain that never answers is a timeout that names it, not a sync that hangs', () async {
+    final auth = OAuthAuth(
+      gmailAccount,
+      _SilentKeychain(),
+      MockClient((r) async => gmailFixture('token_refresh')),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+      keychainWithin: const Duration(milliseconds: 10),
+    );
+    await expectLater(
+      auth.validTokens(),
+      throwsA(isA<TimeoutException>().having((e) => e.message, 'message', 'keychain did not answer')),
+    );
+  });
+}
+
+/// A keychain whose calls never complete: locked, or waiting behind a system prompt.
+class _SilentKeychain() implements SecureStore {
+  @override
+  Future<String?> read(String key) => Completer<String?>().future;
+
+  @override
+  Future<void> write(String key, String value) => Completer<void>().future;
+
+  @override
+  Future<void> delete(String key) => Completer<void>().future;
 }

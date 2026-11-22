@@ -12,7 +12,7 @@ import 'attachment_actions.dart';
 
 /// The attachment's name, or «Allegato senza nome» when the message gives none.
 /// The same name everywhere (chip, opened copy, Save As), with an extension from its type when it has none,
-/// so it opens in the right app (open_filex picks the app by extension only); [safeFileName] strips bidi
+/// so it opens in the right app (Android and open_filex pick the app by extension only); [safeFileName] strips bidi
 /// and invisible characters, so the chip shows the name the file gets (#75).
 String _name(Attachment a, Translations$conversazione$it t) => safeFileName(switch (a.name) {
   '' => '${t.attachmentUntitled}${a.fallbackExtension}',

@@ -123,29 +123,35 @@ class SystemConnectivity() implements Connectivity {
 class SystemLinkOpener implements LinkOpener {
   SystemLinkOpener() : _launch = _launchExternal, _openFile = _openFilex, _platform = null;
 
-  /// `platform` stands for [defaultTargetPlatform].
+  /// `platform` stands for [defaultTargetPlatform]; `openFile` for open_filex.
   @visibleForTesting
   SystemLinkOpener.test({required this._launch, required this._openFile, required TargetPlatform this._platform});
+
+  /// Android's runner answers `open(path)` here (FileOpener.kt).
+  static const fileChannel = MethodChannel('it.postino/file_opener');
 
   final Future<void> Function(Uri url) _launch;
   final Future<void> Function(String path) _openFile;
   final TargetPlatform? _platform;
 
-  /// A local file (an attachment) opens in the system's app: url_launcher does it on desktop,
-  /// Android and iOS need open_filex (its FileProvider; Quick Look and "Open in").
+  /// A local file (an attachment) opens in the system's app: url_launcher does it on desktop, iOS needs
+  /// open_filex (Quick Look and "Open in"), Android the runner's [fileChannel] through a FileProvider.
+  /// Not open_filex on Android: its plugin drops its channel when an Activity goes and never takes it back, so
+  /// on the engine the Notifiche immediate keep running (#214) a reopened Postino opened no attachment.
   @override
   Future<void> open(Uri url) async {
-    final mobile = switch (_platform ?? defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS => true,
-      _ => false,
-    };
     // Defence in depth (#75): the Conversazione never asks, but an executable is never launched from here.
     if (url.isScheme('file') && url.pathSegments.isNotEmpty && isExecutableName(url.pathSegments.last)) {
       return;
     }
+    final file = url.isScheme('file') && !kIsWeb;
     // ponytail: a link or file nothing can open does nothing; a Snackbar if users ever ask why.
     try {
-      await (url.isScheme('file') && mobile && !kIsWeb ? _openFile(url.toFilePath()) : _launch(url));
+      await switch (_platform ?? defaultTargetPlatform) {
+        TargetPlatform.android when file => fileChannel.invokeMethod<void>('open', url.toFilePath()),
+        TargetPlatform.iOS when file => _openFile(url.toFilePath()),
+        _ => _launch(url),
+      };
     } on Object catch (_) {}
   }
 

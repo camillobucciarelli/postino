@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show kPrimaryButton, kSecondaryButton;
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/app/posta/posta_routes.dart';
 import 'package:postino/core/data/sync_engine.dart';
@@ -35,7 +36,11 @@ late int _labelsBefore;
 DateTime _day(int d) => DateTime.utc(2026, 10, d, 9);
 
 /// Conversazione t: m1 in the inbox, m2 (newest, Viaggi) in the Cestino; the inbox row is m1's.
-Future<void> _start(WidgetTester tester, {Size size = const Size(1600, 900)}) async {
+Future<void> _start(
+  WidgetTester tester, {
+  Size size = const Size(1600, 900),
+  List<String> m1Labels = const ['INBOX'],
+}) async {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;
@@ -46,7 +51,7 @@ Future<void> _start(WidgetTester tester, {Size size = const Size(1600, 900)}) as
   gmail = await h.addAccount('a1');
   gmail.labels.add(const Label(id: 'Label_13', name: 'Fatture', kind: LabelKind.etichetta));
   gmail
-    ..deliver(msg('m1', conversationId: 't', subject: 'Cena', date: _day(1), isRead: true))
+    ..deliver(msg('m1', conversationId: 't', subject: 'Cena', date: _day(1), isRead: true, labelIds: m1Labels))
     ..deliver(
       msg('m2', conversationId: 't', subject: 'Re: Cena', date: _day(2), isRead: true, labelIds: ['INBOX', 'Label_12']),
     );
@@ -139,6 +144,52 @@ void main() {
     expect(await _labelsOf(tester, 'm2'), isNot(contains('Label_13')));
     expect(_sentFor('m2'), isEmpty);
     expect(_ticked(tester, 'Viaggi'), isFalse, reason: 'only the message in the Cestino has it');
+  });
+
+  _onMac('Archivia with the shortcut on an inbox row leaves the message in the Cestino there', (tester) async {
+    await _start(tester);
+    tester.widget<PostinoMessageTile>(_row('m1')).focusNode!.requestFocus();
+    await _settle(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+    await _settle(tester);
+    await _expire(tester);
+
+    expect(await _labelsOf(tester, 'm1'), isNot(contains(inboxLabelId)));
+    expect(await _labelsOf(tester, 'm2'), contains(trashLabelId));
+    expect(_sentFor('m2'), isEmpty);
+  });
+
+  _onMac('unticking from an inbox row, and its Annulla, leave the message in the Cestino alone', (tester) async {
+    await _start(tester, m1Labels: const ['INBOX', 'Label_12']);
+    await _tap(tester, _row('m1'), buttons: kSecondaryButton);
+    await _tap(tester, find.byKey(const ValueKey('row-labels-a1-m1')));
+    await _tap(tester, _tile('Viaggi'));
+    expect(await _labelsOf(tester, 'm1'), isNot(contains('Label_12')));
+    expect(await _labelsOf(tester, 'm2'), contains('Label_12'));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    await _tap(tester, find.widgetWithText(PostinoButton, 'Annulla'));
+    expect(await _labelsOf(tester, 'm1'), contains('Label_12'));
+    expect(_sentFor('m2'), isEmpty);
+  });
+
+  _onMac('a tick while the picker still fetches the Conversazione does not reach the message in the Cestino', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.holdConversation = Completer<void>();
+    await _tap(tester, _row('m1'), buttons: kSecondaryButton);
+    await _tap(tester, find.byKey(const ValueKey('row-labels-a1-m1')));
+    await _tap(tester, _tile('Fatture'));
+    gmail.holdConversation!.complete();
+    await _settle(tester);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await _settle(tester);
+
+    expect(await _labelsOf(tester, 'm1'), contains('Label_13'));
+    expect(await _labelsOf(tester, 'm2'), isNot(contains('Label_13')));
+    expect(_sentFor('m2'), isEmpty);
   });
 
   _onMac('the picker from the Conversazione opened from the inbox ticks and applies on the messages shown only', (

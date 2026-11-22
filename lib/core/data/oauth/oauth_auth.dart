@@ -18,8 +18,8 @@ class OAuthAuth(
   final Clock _clock, {
   required final OAuthClient _client,
 
-  /// The token endpoint answers within this, or the refresh is a [TimeoutException] (offline for the guards): a
-  /// refresh that hangs would hold the Account's sync queue for good.
+  /// The token endpoint answers within this, or the refresh is an [OfflineFailure]: a refresh that hangs would hold
+  /// the Account's sync queue for good. Never a stalled request: no call of the Account can go on without a token.
   final Duration _refreshWithin = const Duration(seconds: 30),
 
   /// The keychain answers within this (#251): one that never does (locked, or waiting behind a system prompt) would
@@ -29,9 +29,11 @@ class OAuthAuth(
   /// The tokens in the keychain, as they are.
   Future<OAuthTokens?> tokens() => _inTime(OAuthTokens.read(_keychain, _accountId));
 
-  /// [keychainCall], or a [TimeoutException] that names the keychain in the error log.
-  Future<T> _inTime<T>(Future<T> keychainCall) =>
-      keychainCall.timeout(_keychainWithin, onTimeout: () => throw TimeoutException('keychain did not answer'));
+  /// [keychainCall], or an [OfflineFailure] that names the keychain in the error log.
+  Future<T> _inTime<T>(Future<T> keychainCall) => keychainCall.timeout(
+    _keychainWithin,
+    onTimeout: () => throw const OAuthFailed(OfflineFailure(detail: 'keychain did not answer')),
+  );
 
   /// Tokens with an access token still valid for at least a minute.
   Future<OAuthTokens> validTokens() async {
@@ -64,7 +66,11 @@ class OAuthAuth(
           _client.tokenEndpoint,
           body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
         )
-        .timeout(_refreshWithin);
+        .timeout(
+          _refreshWithin,
+          onTimeout: () =>
+              throw OAuthFailed(OfflineFailure(detail: 'token refresh: ${_client.tokenEndpoint.host}, no answer')),
+        );
     final body = _json(r.body);
     // The Provider's own trouble (or a proxy's page in its place), not a refusal: tried again by the next sync.
     if (r.statusCode >= 500) throw OAuthFailed(OfflineFailure(detail: _refusal(r.statusCode, body, old)));

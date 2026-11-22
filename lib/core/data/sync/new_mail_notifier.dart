@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
@@ -41,12 +43,14 @@ class NewMailNotifier(
     ]..sort(_byDate);
     if (notified.isEmpty) return;
     final actions = buttonsOf(await _settings.notificationActions());
-    await _safely(
+    final answered = await _safely(
       accountId,
       () => _notifications.summarize(accountId, account.address, [for (final m in notified) m.id]),
     );
+    // An OS that does not answer one call will not answer the next: the sync does not wait once per message.
+    if (!answered) return;
     for (final m in notified) {
-      await _safely(
+      final answered = await _safely(
         accountId,
         () => _notifications.show(
           MailNotification(
@@ -63,17 +67,22 @@ class NewMailNotifier(
           ),
         ),
       );
+      if (!answered) return;
     }
   }
 
-  /// A notification the OS refuses, or never answers about, does not stop the next ones nor the sync.
-  static Future<void> _safely(String accountId, Future<void> Function() post) async {
+  /// A notification the OS refuses does not stop the next ones nor the sync; false when the OS did not answer at all.
+  static Future<bool> _safely(String accountId, Future<void> Function() post) async {
     try {
       await post().timeout(notificationWithin);
+    } on TimeoutException {
+      debugPrint('[notifiche] $accountId: no answer from the OS');
+      return false;
     } on Object catch (e) {
       // The type only: the error may quote the message.
       debugPrint('[notifiche] $accountId: show failed, ${e.runtimeType}');
     }
+    return true;
   }
 
   /// By date; on the same date by Provider id, so the order never depends on the batch's.

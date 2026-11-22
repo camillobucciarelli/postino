@@ -50,7 +50,8 @@ class GmailHttp(
   /// Tokens with an access token still valid for at least a minute.
   Future<OAuthTokens> validTokens() => _auth.validTokens();
 
-  /// A read: GET [path] with [query].
+  /// A read: GET [path] with [query]. Without [retryServerErrors] a 5xx is not tried again here: the caller has its
+  /// own retry (the cursor's, for the messages of a sync), and a Gmail outage must not multiply the waits.
   /// [onProgress] gets the share of the response read, out of its length or else [expected] bytes;
   /// completing [cancel] aborts it.
   Future<Map<String, dynamic>> get(
@@ -59,7 +60,16 @@ class GmailHttp(
     int expected = 0,
     void Function(double done)? onProgress,
     Future<void>? cancel,
-  }) => _request('GET', path, query: query, expected: expected, onProgress: onProgress, cancel: cancel);
+    bool retryServerErrors = true,
+  }) => _request(
+    'GET',
+    path,
+    query: query,
+    expected: expected,
+    onProgress: onProgress,
+    cancel: cancel,
+    retryServerErrors: retryServerErrors,
+  );
 
   /// A write: [method] on [path], [body] as JSON.
   Future<Map<String, dynamic>> send(String method, String path, {Object? body}) => _request(method, path, body: body);
@@ -74,6 +84,7 @@ class GmailHttp(
     int expected = 0,
     void Function(double done)? onProgress,
     Future<void>? cancel,
+    bool retryServerErrors = false,
   }) async {
     final url = _api.resolve(path).replace(queryParameters: query.isEmpty ? null : query);
     final payload = body == null ? null : jsonEncode(body);
@@ -97,8 +108,9 @@ class GmailHttp(
         r = await _auth.authorized(send);
       }
       // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
+      // One count for both: a server error is retried only among the first [_serverRetries] tries.
       for (var n = 0; n < _retries; n++) {
-        final serverError = read && n < _serverRetries && _serverErrors.contains(r.statusCode);
+        final serverError = retryServerErrors && n < _serverRetries && _serverErrors.contains(r.statusCode);
         if (!googleRateLimited(r) && !serverError) break;
         final after = int.tryParse(r.headers['retry-after'] ?? '');
         final wait = after != null

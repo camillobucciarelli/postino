@@ -260,7 +260,7 @@ void main() {
     expect(sent, ['ya29.initial', 'ya29.refreshed']);
   });
 
-  test('a token endpoint that never answers is a timeout, not a refresh that hangs', () async {
+  test('a token endpoint that never answers is offline, not a refresh that hangs nor a stalled request', () async {
     final auth = OAuthAuth(
       gmailAccount,
       gmailKeychain(),
@@ -269,7 +269,18 @@ void main() {
       client: gmailTestClient,
       refreshWithin: const Duration(milliseconds: 10),
     );
-    await expectLater(auth.refresh(await auth.tokens()), throwsA(isA<TimeoutException>()));
+    await expectLater(
+      auth.refresh(await auth.tokens()),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => e.failure,
+          'failure',
+          isA<OfflineFailure>()
+              .having((f) => f.stalled, 'stalled', false)
+              .having((f) => f.detail, 'detail', 'token refresh: oauth2.googleapis.com, no answer'),
+        ),
+      ),
+    );
   });
 
   test('a server error of the token endpoint is offline, its HTML page too: the Account stays connected', () async {
@@ -294,7 +305,7 @@ void main() {
     expect((await OAuthTokens.read(keychain, gmailAccount))!.refresh, '1//refresh');
   });
 
-  test('a keychain that never answers is a timeout that names it, not a sync that hangs', () async {
+  test('a keychain that never answers is a failure that names it, not a sync that hangs', () async {
     final auth = OAuthAuth(
       gmailAccount,
       _SilentKeychain(),
@@ -305,7 +316,15 @@ void main() {
     );
     await expectLater(
       auth.validTokens(),
-      throwsA(isA<TimeoutException>().having((e) => e.message, 'message', 'keychain did not answer')),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => e.failure,
+          'failure',
+          isA<OfflineFailure>()
+              .having((f) => f.stalled, 'stalled', false)
+              .having((f) => f.detail, 'detail', 'keychain did not answer'),
+        ),
+      ),
     );
   });
 }

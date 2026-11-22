@@ -40,8 +40,9 @@ class SyncPhase(
   /// A sync longer than this goes in the log (#322): the lines to tell a slow Provider from a stuck one.
   static const slowSyncAfter = Duration(seconds: 20);
 
-  /// A sync still running after this goes in the log with the step it is at: one that hangs ends nowhere, so
-  /// nothing else would ever say it (the status only shows it running).
+  /// A sync still running after this goes in the log with the step it is at, its Bozze and outbox included: one
+  /// that hangs ends nowhere, so nothing else would ever say it (the status only shows it running). A long first
+  /// sync is logged too: the line says how long, not that it is stuck.
   static const stuckAfter = Duration(minutes: 10);
 
   /// The Accounts whose rate limit pause has its start in the log and not its end yet (#322).
@@ -73,7 +74,7 @@ class SyncPhase(
         .listen(
           (_) => _log.record(
             'in corso da ${stuckAfter.inMinutes} min, passo: $step',
-            context: 'sync ${account.provider.name}, bloccata',
+            context: 'sync ${account.provider.name}, ancora in corso',
           ),
         );
     try {
@@ -98,10 +99,14 @@ class SyncPhase(
       synced.completeError(e, s);
       rethrow;
     } finally {
-      unawaited(stuck.cancel());
+      step = 'bozze e outbox';
       // After the sync phase, failed too: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox
       // attachments. Not once the sync made the Account Da ricollegare: its queue waits (ADR 0008).
-      if (await _gate.active(accountId) != null) await _replay.afterSync(accountId, provider);
+      try {
+        if (await _gate.active(accountId) != null) await _replay.afterSync(accountId, provider);
+      } finally {
+        unawaited(stuck.cancel());
+      }
     }
   }
 

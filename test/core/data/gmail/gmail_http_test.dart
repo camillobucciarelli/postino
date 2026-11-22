@@ -1,7 +1,7 @@
 // The Gmail transport on its own, over a MockClient: no Provider, no fixtures.
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HandshakeException;
+import 'dart:io' show HandshakeException, SocketException;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -203,5 +203,17 @@ void main() {
     final t = _gmail((r) async => throw const HandshakeException('Connection terminated during handshake'));
     final r = await oauthGuard(() async => Ok(await t.gmail.get('profile')));
     expect('${(r as Err).failure}', 'OfflineFailure(GET profile: HandshakeException)');
+  });
+
+  test('without retryServerErrors a server error is not tried again', () async {
+    final t = _gmail((r) async => http.Response('{}', 503));
+    await oauthGuard(() async => Ok(await t.gmail.get('messages/18f3a2b4c5d6e7f9', retryServerErrors: false)));
+    expect(t.requests, hasLength(1));
+    expect(t.sleeps, isEmpty);
+  });
+
+  test('oauthGuard on its own maps a socket error to offline, with its type only', () async {
+    final r = await oauthGuard<void>(() async => throw const SocketException('Connection reset by peer'));
+    expect('${(r as Err).failure}', 'OfflineFailure(SocketException)');
   });
 }

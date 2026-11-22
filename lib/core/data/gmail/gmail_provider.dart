@@ -418,6 +418,8 @@ class GmailProvider(
       j = await _gmail.get(
         'messages/$id',
         query: {'format': full ? 'full' : 'metadata', if (!full) 'metadataHeaders': _headers},
+        // Left behind and retried by the cursor (#252): during an outage, no wait per message on top of it.
+        retryServerErrors: false,
       );
     } on OAuthFailed catch (e) {
       if (e.failure is NotFoundFailure) return null;

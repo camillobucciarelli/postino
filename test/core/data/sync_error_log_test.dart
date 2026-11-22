@@ -168,8 +168,8 @@ void main() {
       h.clock.advance(const Duration(minutes: 25));
       await pumpEventQueue();
       final log = await h.errorLog.read();
-      expect(log, contains('[sync gmail, bloccata] in corso da 10 min, passo: download'));
-      expect('bloccata'.allMatches(log), hasLength(1));
+      expect(log, contains('[sync gmail, ancora in corso] in corso da 10 min, passo: download'));
+      expect('ancora in corso'.allMatches(log), hasLength(1));
       a.hold!.complete();
       await sync;
 
@@ -177,7 +177,7 @@ void main() {
       await engine.syncAll();
       h.clock.advance(const Duration(minutes: 25));
       await pumpEventQueue();
-      expect(await h.errorLog.read(), isNot(contains('bloccata')));
+      expect(await h.errorLog.read(), isNot(contains('ancora in corso')));
     });
 
     test('a rate limit pause is logged when it starts and when it ends', () async {

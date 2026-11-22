@@ -38,6 +38,17 @@ class MainActivity : FlutterActivity() {
             }
             result.success(false)
         }
+        // `open(path)`: an attachment's copy in another app. Registered again by each Activity too.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FileOpener.CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method != "open") return@setMethodCallHandler result.notImplemented()
+            try {
+                FileOpener.open(this, call.arguments as String)
+                result.success(null)
+            } catch (e: Exception) {
+                // The class only: the path names the attachment.
+                result.error("failed", e.javaClass.simpleName, null)
+            }
+        }
     }
 
     /// Destroyed with the Activity as before (closed from the Recents, Back up to Android 11), unless the service keeps it.

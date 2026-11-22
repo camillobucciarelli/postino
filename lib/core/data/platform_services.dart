@@ -121,18 +121,21 @@ class SystemConnectivity() implements Connectivity {
 
 @Singleton(as: LinkOpener, env: [Environment.prod])
 class SystemLinkOpener implements LinkOpener {
-  SystemLinkOpener() : _launch = _launchExternal, _openFile = _openFilex, _platform = null;
+  SystemLinkOpener() : _launch = _launchExternal, _openFile = _openOnMobile, _platform = null;
 
   /// `platform` stands for [defaultTargetPlatform].
   @visibleForTesting
   SystemLinkOpener.test({required this._launch, required this._openFile, required TargetPlatform this._platform});
 
+  /// Android's runner answers `open(path)` here (FileOpener.kt).
+  static const fileChannel = MethodChannel('it.postino/file_opener');
+
   final Future<void> Function(Uri url) _launch;
   final Future<void> Function(String path) _openFile;
   final TargetPlatform? _platform;
 
-  /// A local file (an attachment) opens in the system's app: url_launcher does it on desktop,
-  /// Android and iOS need open_filex (its FileProvider; Quick Look and "Open in").
+  /// A local file (an attachment) opens in the system's app: url_launcher does it on desktop, iOS needs
+  /// open_filex (Quick Look and "Open in"), Android the runner's [fileChannel] through a FileProvider.
   @override
   Future<void> open(Uri url) async {
     final mobile = switch (_platform ?? defaultTargetPlatform) {
@@ -151,7 +154,11 @@ class SystemLinkOpener implements LinkOpener {
 
   static Future<void> _launchExternal(Uri url) => launchUrl(url, mode: LaunchMode.externalApplication);
 
-  static Future<void> _openFilex(String path) => OpenFilex.open(path);
+  /// Not open_filex on Android: its plugin drops its channel when an Activity goes and never takes it back, so
+  /// on the engine the Notifiche immediate keep running (#214) a reopened Postino opened no attachment.
+  static Future<void> _openOnMobile(String path) => defaultTargetPlatform == TargetPlatform.android
+      ? fileChannel.invokeMethod<void>('open', path)
+      : OpenFilex.open(path);
 }
 
 /// The system Save As dialog (file_selector), on desktop only.

@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Gmail and Google OAuth; debug/profile get it from their own manifests, release from here. -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- open_filex asks for media and storage access; Postino opens only its own cache files, through the plugin's FileProvider. -->
+    <!-- open_filex asks for media and storage access; Postino opens only its own cache files, through the plugin's FileProvider (FileOpener.kt). -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>

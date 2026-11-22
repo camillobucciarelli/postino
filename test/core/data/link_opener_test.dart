@@ -1,5 +1,7 @@
-// Opening outside Postino (#34): links through url_launcher; attachments (file:) through open_filex on Android and iOS.
+// Opening outside Postino (#34): links through url_launcher; attachments (file:) through open_filex on iOS and
+// the runner's channel on Android.
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/data/platform_services.dart';
 
@@ -51,5 +53,25 @@ void main() {
     );
     await opener.open(file);
     await opener.open(link);
+  });
+
+  test('Android: a file goes to the runner\'s channel, not to open_filex', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final calls = <(String, String, Object?)>[];
+    for (final channel in [SystemLinkOpener.fileChannel, const MethodChannel('open_file')]) {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add((channel.name, call.method, call.arguments));
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    }
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    try {
+      await SystemLinkOpener().open(file);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+    expect(calls, [('it.postino/file_opener', 'open', '/tmp/postino-attachments/x/Contratto.pdf')]);
   });
 }

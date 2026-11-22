@@ -1,4 +1,5 @@
 // The OAuth tokens of a Google Account on their own, over a MockClient standing for the token endpoint.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -256,5 +257,39 @@ void main() {
     });
     expect(r.statusCode, 401);
     expect(sent, ['ya29.initial', 'ya29.refreshed']);
+  });
+
+  test('a token endpoint that never answers is a timeout, not a refresh that hangs', () async {
+    final auth = OAuthAuth(
+      gmailAccount,
+      gmailKeychain(),
+      MockClient((r) => Completer<http.Response>().future),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+      refreshWithin: const Duration(milliseconds: 10),
+    );
+    await expectLater(auth.refresh(await auth.tokens()), throwsA(isA<TimeoutException>()));
+  });
+
+  test('a server error of the token endpoint is offline, its HTML page too: the Account stays connected', () async {
+    final keychain = gmailKeychain();
+    final auth = OAuthAuth(
+      gmailAccount,
+      keychain,
+      MockClient((r) async => http.Response('<html>Bad Gateway</html>', 502)),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+    await expectLater(
+      auth.refresh(await auth.tokens()),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => '${e.failure}',
+          'failure',
+          'OfflineFailure(token refresh: oauth2.googleapis.com, HTTP 502, no error)',
+        ),
+      ),
+    );
+    expect((await OAuthTokens.read(keychain, gmailAccount))!.refresh, '1//refresh');
   });
 }

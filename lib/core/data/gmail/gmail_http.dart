@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show IOException;
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,7 @@ import 'google_client.dart';
 import 'google_failure.dart';
 
 /// The Gmail API over HTTP for one Account: tokens from the keychain, refreshed when expired or on a 401,
-/// quota hits retried with backoff. Failures are thrown as [OAuthFailed], which `oauthGuard` turns into an [Err].
+/// quota hits retried with backoff; a read is tried again after a server error or a dropped connection. Failures are thrown as [OAuthFailed], which `oauthGuard` turns into an [Err].
 class GmailHttp(
   final String _accountId,
   final SecureStore _keychain,
@@ -30,6 +31,13 @@ class GmailHttp(
   /// Retries per request on a quota hit: 1, 2, 4, 8, 16 s (plus jitter), or the server's Retry-After.
   static const _retries = 5;
   static const _maxWait = 32;
+
+  /// Retries of a read on a server error, with the same waits: Google asks to retry a 5xx with backoff.
+  static const _serverRetries = 3;
+  static const _serverErrors = {500, 502, 503, 504};
+
+  /// The wait before the one new try of a read whose connection dropped (a socket gone stale while the device slept).
+  static const _reconnect = Duration(seconds: 1);
   static final _random = Random();
 
   late final _auth = OAuthAuth(_accountId, _keychain, _http, _clock, client: _client);
@@ -76,10 +84,22 @@ class GmailHttp(
 
     final request = '$method ${gmailRequestKind(path)}';
     http.Response r;
+    // Only a read is sent again on its own: a write that got no answer may have gone through.
+    final read = method == 'GET';
     try {
-      r = await _auth.authorized(send);
+      try {
+        r = await _auth.authorized(send);
+      } on http.RequestAbortedException {
+        rethrow;
+      } on Exception catch (e) {
+        if (!read || (e is! http.ClientException && e is! IOException)) rethrow;
+        await _sleep(_reconnect);
+        r = await _auth.authorized(send);
+      }
       // Per request, so a quota hit never aborts the page; after the last retry it is a RateLimitFailure.
-      for (var n = 0; googleRateLimited(r) && n < _retries; n++) {
+      for (var n = 0; n < _retries; n++) {
+        final serverError = read && n < _serverRetries && _serverErrors.contains(r.statusCode);
+        if (!googleRateLimited(r) && !serverError) break;
         final after = int.tryParse(r.headers['retry-after'] ?? '');
         final wait = after != null
             ? Duration(seconds: min(after, _maxWait))
@@ -94,6 +114,9 @@ class GmailHttp(
       rethrow;
     } on http.ClientException catch (e) {
       // The type only: the message of a ClientException may carry the URL, query included.
+      throw OAuthFailed(OfflineFailure(detail: '$request: ${e.runtimeType}'));
+    } on IOException catch (e) {
+      // A TLS handshake cut short, or a connection reset in the middle of the answer: package:http wraps neither.
       throw OAuthFailed(OfflineFailure(detail: '$request: ${e.runtimeType}'));
     }
     if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;

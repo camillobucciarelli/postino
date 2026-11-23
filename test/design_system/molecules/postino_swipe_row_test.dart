@@ -65,6 +65,8 @@ void main() {
     await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
     expect(_x(tester), inExclusiveRange(-_width, released), reason: 'on its way out, past where it was released');
     expect(_behind(tester), _colors(tester).swipeArchiveBg, reason: 'still armed');
+    await tester.pump(PostinoMotion.swipeSettle - PostinoMotion.swipeDismiss ~/ 2);
+    expect(_x(tester), greaterThan(-_width), reason: 'it takes swipeDismiss, not swipeSettle');
     await tester.pump(PostinoMotion.swipeDismiss);
     expect(_x(tester), -_width, reason: 'off the screen');
     expect(_behind(tester), _colors(tester).swipeArchiveBg);
@@ -104,9 +106,25 @@ void main() {
     expect(swiped, [PostinoSwipeSide.right]);
     await tester.pump(PostinoMotion.swipeSettle ~/ 2);
     expect(_x(tester), inExclusiveRange(0, PostinoSize.swipeThreshold));
+    await tester.pump(PostinoMotion.swipeSettle ~/ 2);
+    expect(_x(tester), 0, reason: 'back in swipeSettle');
     await tester.pumpAndSettle();
     expect(_x(tester), 0);
     expect(_behind(tester), isNull);
+  });
+
+  testWidgets('held short of the threshold: the Azione shows, not armed', (tester) async {
+    await tester.pumpWidget(_row());
+    final g = await tester.startGesture(tester.getCenter(find.byType(PostinoSwipeRow)));
+    await g.moveBy(const Offset(-20, 0));
+    await g.moveBy(const Offset(-(PostinoSize.swipeThreshold - 30), 0));
+    await tester.pump();
+    expect(_behind(tester), _colors(tester).swipeNeutralBg);
+    await g.moveBy(const Offset(-40, 0));
+    await tester.pump();
+    expect(_behind(tester), _colors(tester).swipeArchiveBg);
+    await g.up();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('short of the threshold: back in place, nothing done', (tester) async {

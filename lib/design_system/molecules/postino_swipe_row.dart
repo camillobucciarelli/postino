@@ -110,7 +110,6 @@ class _PostinoSwipeRowState() extends State<PostinoSwipeRow> {
   void _end(DragEndDetails _) => _release(act: true);
 
   void _release({required bool act}) {
-    if (_gone != null) return;
     final side = _side;
     final armed = _armed;
     final takesAway = act && armed && side != null && widget.onSwipe(side);

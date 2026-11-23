@@ -1,0 +1,270 @@
+/* Stile del sito (#173, #364): pagine prodotto it/en, supporto, privacy e guida per gli invitati. Pubblicato come
+   sito.css alla radice del bucket da release.yml (job site); controllato da tool/release/download_check.sh.
+   Layout come quello di Custode (canvas di #364), colori solo dai token del design system: nessuna ombra. */
+
+/* Font serviti dal bucket, nessuna richiesta a terzi. Solo il sottoinsieme latin (basta per italiano e inglese):
+   un carattere fuori copertura cade sul font di sistema. Licenze OFL accanto ai file. Se un file cambia, cambia
+   anche il nome: il bucket lo serve con cache di un anno. */
+@font-face { font-family: Caprasimo; font-style: normal; font-weight: 400; font-display: swap;
+             src: url(fonts/caprasimo-latin.woff2) format("woff2"); }
+@font-face { font-family: Figtree; font-style: normal; font-weight: 400 700; font-display: swap;
+             src: url(fonts/figtree-latin.woff2) format("woff2"); }
+
+/* Token di lib/design_system/tokens (postino_colors.dart, postino_palette.dart, postino_metrics.dart).
+   Ogni colore è light-dark(PostinoColors.light, PostinoColors.dark): segue il color-scheme dell'elemento, così la
+   fascia scura (.scuro) usa i valori del tema scuro anche nella pagina chiara. */
+:root {
+  color-scheme: light dark;
+  --sfondo: light-dark(#F4F2EC, #131312);                 /* surfaceGround: pNeutral100 / pNeutral950 */
+  --superficie: light-dark(#FFFFFF, #242422);             /* surfaceRaised: pNeutral0 / pNeutral850 */
+  --superficie-hover: light-dark(#ECE9E1, #2D2C29);       /* surfaceHover: pNeutral150 / pNeutral800 */
+  --superficie-selezionata: light-dark(#D6EDE5, #143A33); /* surfaceSelected: pVerdigris100 / pVerdigris900 */
+  --fascia-scura: light-dark(#1C1C1A, #242422);           /* surface di PostinoColors.dark (pNeutral900) / surfaceRaised (pNeutral850) */
+  --testo: light-dark(#1C1C1A, #F4F2EC);                  /* ink: pNeutral900 / pNeutral100 */
+  --testo-attenuato: light-dark(#625E55, #A6A093);        /* inkMuted: pNeutral600 / pNeutral400 */
+  --primario: light-dark(#0E6456, #79C9B3);               /* brand: pVerdigris700 / pVerdigris300 */
+  --primario-hover: light-dark(#0B5649, #A9D9CB);         /* brandHover: pVerdigris800 / pVerdigris200 */
+  --primario-tenue: light-dark(#EBF6F2, #0B231E);         /* brandSubtle: pVerdigris50 / pVerdigris950 */
+  --su-primario: light-dark(#FFFFFF, #0B231E);            /* onBrand: pNeutral0 / pVerdigris950 */
+  --bordo: light-dark(#E2DED4, #2D2C29);                  /* borderSubtle: pNeutral200 / pNeutral800 */
+  --bordo-forte: #7F7A6E;                                 /* borderStrong: pNeutral500 in entrambi i temi */
+  --focus: light-dark(#B0500A, #F2A65E);                  /* focusRing: pOrange700 / pOrange300 */
+  --oro: light-dark(#F0C419, #FFE02E);                    /* starFill: pGold400 / pGold300, solo decorativo */
+  --raggio-sm: 0.5rem;        /* PostinoRadius.sm 8 */
+  --raggio-md: 0.75rem;       /* PostinoRadius.md 12 */
+  --raggio-lg: 1rem;          /* PostinoRadius.lg 16 */
+  --raggio-xl: 1.75rem;       /* PostinoRadius.xl 28 */
+  --raggio-pieno: 999px;      /* PostinoRadius.full */
+  --s1: 0.25rem; --s2: 0.5rem; --s3: 0.75rem; --s4: 1rem; --s6: 1.5rem; --s8: 2rem;
+  --tocco: 2.75rem;           /* PostinoSize.touchTargetIos 44 */
+  --icona-md: 1.25rem;        /* PostinoSize.iconMd 20 */
+  --icona-lg: 1.5rem;         /* PostinoSize.iconLg 24 */
+}
+
+html { font-size: 100%; }
+body { margin: 0; background: var(--sfondo); color: var(--testo); font-family: Figtree, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+       font-size: 1rem; line-height: 1.625; overflow-wrap: break-word; }
+h1, h2 { font-family: Caprasimo, Georgia, serif; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere; }
+a { color: var(--primario); text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+a:hover { color: var(--primario-hover); }
+a:focus-visible { outline: 0.2em solid var(--focus); outline-offset: 0.2em; border-radius: 0.25rem; }
+code { background: var(--sfondo); border: 1px solid var(--bordo); border-radius: 0.25rem; padding: 0 var(--s1); font-size: 0.95em; }
+img { max-width: 100%; height: auto; }
+
+/* Link «Salta al contenuto»: fuori schermo finché non ha il focus. */
+.salta { position: absolute; left: var(--s4); top: -10rem; z-index: 1; padding: var(--s3) var(--s4); border-radius: var(--raggio-sm);
+         background: var(--superficie); color: var(--testo); font-weight: 700; }
+.salta:focus { top: var(--s4); }
+
+/* Guida per gli invitati (docs/guida-invitati/index.html, <body class="guida">): la colonna di testo di sempre. */
+.guida { margin: 0 auto; padding: var(--s4); max-width: 44rem; }
+.guida h1 { font-size: 2.125em; margin: var(--s4) 0 var(--s3); padding-bottom: var(--s3); border-bottom: 0.25rem solid var(--oro); }
+.guida h2 { font-size: 1.5em; margin: var(--s8) 0 var(--s3); }
+.guida h3 { font-size: 1.15em; margin: var(--s6) 0 var(--s2); }
+.guida main { background: var(--superficie); border: 1px solid var(--bordo); border-radius: var(--raggio-lg); padding: var(--s4); }
+@media (min-width: 40rem) { .guida main { padding: var(--s4) var(--s6) var(--s6); } }
+.guida li { margin-bottom: var(--s2); }
+
+/* Sito: colonna larga al massimo 1160px, margini di 24px. Si va a capo da soli (flex-wrap, auto-fit): nessuna
+   soglia di larghezza, tranne quella dell'indice delle pagine di aiuto. */
+.wrap { max-width: 72.5rem; margin: 0 auto; padding-inline: var(--s6); box-sizing: border-box; }
+:where(.sito) :where(h1, h2, h3, p, ul, ol) { margin: 0; } /* specificità zero: non scavalca .wrap */
+.sito h1, .sito h2 { letter-spacing: -0.015em; text-wrap: balance; }
+.sito h3 { font-size: 1.0625rem; line-height: 1.41; font-weight: 700; }
+.attenuato { color: var(--testo-attenuato); }
+.occhiello { font-size: 0.8125rem; line-height: 1.385; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primario); }
+.titolo-sezione { font-size: clamp(1.875rem, 4vw, 2.75rem); line-height: 1.12; }
+.attacco { font-size: 1.125rem; line-height: 1.556; color: var(--testo-attenuato); }
+
+/* Icone di PostinoIcons, file SVG in icone/ usati come maschera: prendono il colore del testo. */
+.icona { display: inline-block; flex: none; width: var(--icona-md); height: var(--icona-md); background-color: currentColor;
+         mask: center / contain no-repeat; }
+.icona.lg { width: var(--icona-lg); height: var(--icona-lg); }
+.icona.dispositivo { width: 1.75rem; height: 1.75rem; color: var(--primario); }
+.i-download { mask-image: url(icone/download.svg); }
+.i-check { mask-image: url(icone/check.svg); }
+.i-alert { mask-image: url(icone/alert.svg); }
+.i-chevron { mask-image: url(icone/chevron-right.svg); }
+.i-server { mask-image: url(icone/server.svg); }
+.i-lock { mask-image: url(icone/lock.svg); }
+.i-shield { mask-image: url(icone/shield.svg); }
+.i-shield-check { mask-image: url(icone/shield-check.svg); }
+.i-mac { mask-image: url(icone/mac.svg); }
+.i-android { mask-image: url(icone/android.svg); }
+.i-iphone { mask-image: url(icone/iphone.svg); }
+
+/* Pulsanti: pieno (brand) e con bordo. */
+a.pulsante, a.secondario { display: inline-flex; align-items: center; gap: 0.625rem; box-sizing: border-box; min-height: 3rem;
+                           padding: 0.75rem 1.25rem; border-radius: var(--raggio-sm); font-weight: 700; text-decoration: none; }
+a.pulsante { background: var(--primario); color: var(--su-primario); }
+a.pulsante:hover { background: var(--primario-hover); color: var(--su-primario); }
+a.secondario { border: 1px solid var(--bordo-forte); color: var(--testo); }
+a.secondario:hover { background: var(--superficie-hover); color: var(--testo); }
+.grandi a { min-height: 3.25rem; padding: 0.875rem 1.5rem; font-size: 1.0625rem; line-height: 1.294; }
+.pulsanti { display: flex; flex-wrap: wrap; gap: var(--s3); }
+
+/* Testata: marchio, navigazione, pillola «Buy me a coffee», Scarica. */
+.testata { border-bottom: 1px solid var(--bordo); }
+.testata .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s4); padding-block: var(--s4); }
+.marchio { display: flex; align-items: center; gap: 0.625rem; color: var(--testo); text-decoration: none; font-family: Caprasimo, Georgia, serif;
+           font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.015em; }
+.marchio:hover { color: var(--testo); }
+.marchio img { display: block; }
+.testata ul { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); list-style: none; padding: 0; }
+.testata li a { display: inline-flex; align-items: center; gap: var(--s2); box-sizing: border-box; min-height: var(--tocco);
+                padding: 0.5625rem var(--s3); border-radius: var(--raggio-sm); color: var(--testo); font-weight: 600;
+                font-size: 0.9375rem; line-height: 1.333; text-decoration: none; }
+.testata li a:hover { background: var(--superficie-hover); color: var(--testo); }
+.testata li a[aria-current="page"] { background: var(--superficie-selezionata); }
+.testata li a.sponsor { padding: var(--s2) 0.875rem; border: 1px solid var(--bordo-forte); border-radius: var(--raggio-pieno); background: var(--superficie); }
+.testata li a.sponsor:focus-visible { border-radius: var(--raggio-pieno); }
+.testata li a.pulsante { margin-left: var(--s1); padding-inline: 1.125rem; background: var(--primario); color: var(--su-primario); font-weight: 700; }
+.testata li a.pulsante:hover { background: var(--primario-hover); }
+
+/* Hero centrato: schermata 16:10 in una finestra con la barra del titolo e l'iPhone sovrapposto. */
+.hero { padding-top: 6rem; display: flex; flex-direction: column; align-items: center; gap: var(--s6); text-align: center; }
+.hero h1 { max-width: 56.25rem; font-size: clamp(2.5rem, 6vw, 4.75rem); line-height: 1.05; }
+.hero .attacco { max-width: 40rem; font-size: 1.25rem; line-height: 1.5; text-wrap: pretty; }
+.hero .pulsanti { justify-content: center; margin-top: var(--s2); }
+.nota { font-size: 0.875rem; line-height: 1.43; color: var(--testo-attenuato); }
+.schermate { position: relative; width: 100%; max-width: 67.5rem; margin-top: 2.5rem; padding-bottom: 4.5rem; }
+.finestra { width: 86%; border: 1px solid var(--bordo); border-radius: var(--raggio-lg); overflow: hidden; }
+.finestra::before { content: ""; display: block; height: 28px; background: var(--superficie-hover); border-bottom: 1px solid var(--bordo); }
+.finestra img { display: block; width: 100%; }
+.schermate .telefono { position: absolute; right: 0; bottom: 0; width: 22%; }
+.telefono { display: block; border: 1px solid var(--bordo); border-radius: var(--raggio-xl); }
+
+/* Fascia dei principi. */
+.fascia { margin-top: 4.5rem; border-block: 1px solid var(--bordo); background: var(--superficie-hover); }
+.principi { padding-block: 4rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16.25rem, 100%), 1fr)); gap: 3rem; list-style: none; }
+.principi li { display: flex; flex-direction: column; gap: var(--s3); color: var(--primario); }
+.principi h2 { font-size: 1.5rem; line-height: 1.25; color: var(--testo); }
+.principi p { color: var(--testo-attenuato); }
+
+/* Righe di funzioni alternate: testo e pannello colorato con la schermata. */
+.funzioni { padding-top: 7rem; display: flex; flex-direction: column; gap: 7rem; }
+.riga { display: flex; flex-wrap: wrap; align-items: center; gap: 4rem; }
+.riga.inversa { flex-direction: row-reverse; }
+.colonna { flex: 1 1 23.75rem; min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+.colonna > a { align-self: flex-start; }
+.colonna > a:not([class]) { font-weight: 600; }
+.pannello { flex: 1 1 23.75rem; min-width: 0; display: flex; justify-content: center; padding: 3rem 1.5rem; border-radius: var(--raggio-lg); box-sizing: border-box; }
+.pannello .telefono { width: 17.5rem; }
+.p-brand { background: var(--primario-tenue); }
+.p-selezionato { background: var(--superficie-selezionata); }
+.p-neutro { background: var(--superficie-hover); }
+.elenco { list-style: none; padding: 0; border-top: 1px solid var(--bordo); }
+.elenco li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s4); padding: 0.875rem 0; border-bottom: 1px solid var(--bordo); }
+.elenco li span:first-child { font-weight: 600; }
+.elenco li span + span { color: var(--testo-attenuato); }
+.spunte { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.625rem; }
+.spunte li { display: flex; gap: var(--s3); }
+.spunte .icona { margin-top: 0.1875rem; color: var(--primario); }
+.filtri { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+.filtri li, .etichetta { padding: 0.3125rem 0.625rem; border-radius: var(--raggio-pieno); background: var(--superficie-hover); font-size: 0.8125rem;
+                         line-height: 1.385; font-weight: 600; }
+.etichetta { background: var(--superficie-selezionata); }
+
+/* «E in più»: griglia a celle con i filetti. */
+.sezione { padding-top: 7rem; }
+.celle { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18.75rem, 100%), 1fr)); list-style: none; padding: 0;
+         border-top: 1px solid var(--bordo); border-left: 1px solid var(--bordo); }
+.celle li { padding: 1.75rem; border-right: 1px solid var(--bordo); border-bottom: 1px solid var(--bordo); display: flex; flex-direction: column; gap: var(--s2); }
+.celle p { color: var(--testo-attenuato); }
+
+/* Fascia scura della privacy: i token del tema scuro anche nella pagina chiara. */
+.fascia-scura { margin-top: 7rem; background: var(--fascia-scura); }
+.scuro { color-scheme: dark; color: var(--testo); padding-block: 6rem; display: flex; flex-wrap: wrap; gap: 4rem; }
+.avviso { margin-top: var(--s2); padding: 1.25rem; border: 1px solid var(--bordo-forte); border-radius: var(--raggio-md); display: flex; gap: 0.875rem; }
+.avviso .icona { margin-top: 0.125rem; color: var(--focus); }
+.avviso a { font-weight: 600; }
+.punti { flex: 1 1 23.75rem; min-width: 0; list-style: none; padding: 0; border-top: 1px solid var(--bordo-forte); }
+.punti li { padding: 1.25rem 0; border-bottom: 1px solid var(--bordo-forte); }
+.punti p { margin-top: var(--s1); color: var(--testo-attenuato); }
+
+/* Anteprima della guida. */
+.dividi { display: flex; flex-wrap: wrap; gap: 4rem; }
+.dividi > .colonna { flex-basis: 20rem; }
+.capitoli { flex: 2 1 30rem; min-width: 0; list-style: none; padding: 0; border-top: 1px solid var(--bordo); }
+.capitoli a { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: 1.25rem var(--s1);
+              border-bottom: 1px solid var(--bordo); color: var(--testo); text-decoration: none; }
+.capitoli a:hover { background: var(--superficie-hover); color: var(--testo); }
+.capitoli strong { display: block; font-size: 1.0625rem; }
+.capitoli span span { color: var(--testo-attenuato); }
+
+/* Schede di download. */
+.scarica h2 { font-size: clamp(2.5rem, 5.5vw, 4rem); line-height: 1.05; }
+.scarica > p:not(.occhiello) { max-width: 38.75rem; font-size: 1.1875rem; line-height: 1.58; color: var(--testo-attenuato); }
+.scarica { display: flex; flex-direction: column; gap: 1.25rem; }
+.schede { margin-top: 1.75rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); gap: var(--s4); list-style: none; padding: 0; }
+.schede li { padding: 1.75rem; border: 1px solid var(--bordo); border-radius: var(--raggio-md); background: var(--superficie);
+             display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); }
+.schede h3 { font-family: Caprasimo, Georgia, serif; font-weight: 400; font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.015em; }
+.schede li > p:not(.etichetta) { flex-grow: 1; color: var(--testo-attenuato); }
+
+/* Domande frequenti e versione esatta. */
+.due { padding-top: 6rem; display: flex; flex-wrap: wrap; gap: 4rem; }
+.due > div { flex: 1 1 23.75rem; min-width: 0; display: flex; flex-direction: column; gap: var(--s4); }
+.due h2 { font-size: 2rem; line-height: 1.1875; }
+.domande { border-top: 1px solid var(--bordo); }
+.domande div { padding: var(--s4) 0; border-bottom: 1px solid var(--bordo); }
+.domande p { margin-top: var(--s1); color: var(--testo-attenuato); }
+.versioni { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s1); }
+.versioni a { display: inline-block; padding: var(--s2) 0; font-weight: 600; }
+
+/* Pannello di chiusura. */
+.chiusura { padding-block: 7rem; }
+.chiusura > div { padding: 4.5rem var(--s8); border-radius: var(--raggio-lg); background: var(--primario-tenue); display: flex; flex-direction: column;
+                  align-items: center; gap: 1.25rem; text-align: center; }
+.chiusura h2 { max-width: 45rem; font-size: clamp(2rem, 4.5vw, 3.25rem); line-height: 1.1; }
+.chiusura p { max-width: 35rem; }
+.chiusura .pulsanti { justify-content: center; }
+
+/* Piè di pagina. */
+.piede { border-top: 1px solid var(--bordo); }
+.piede .wrap { padding-block: 2.5rem 3.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s8); }
+.piede .wrap > div { display: flex; flex-direction: column; gap: var(--s2); max-width: 22.5rem; }
+.piede .marchio-piede { font-family: Caprasimo, Georgia, serif; font-size: 1.25rem; line-height: 1.3; }
+.piede ul { display: flex; flex-wrap: wrap; gap: var(--s2) 1.75rem; align-items: flex-start; list-style: none; padding: 0; font-size: 0.9375rem; font-weight: 600; }
+.piede ul a { display: inline-flex; align-items: center; min-height: var(--tocco); }
+
+/* Pagine di aiuto (supporto, privacy): articolo e indice laterale; sotto i 912px l'indice va sotto l'articolo. */
+.aiuto { padding-block: 3rem 6rem; display: grid; gap: 4rem; }
+@media (min-width: 912px) {
+  .aiuto { grid-template-columns: minmax(15rem, 18.75rem) minmax(0, 45rem); }
+  .aiuto > .indice { grid-row: 1; grid-column: 1; }
+}
+.indice { display: flex; flex-direction: column; gap: 1.75rem; }
+.indice h2 { margin-bottom: var(--s1); font-family: inherit; font-size: 0.75rem; line-height: 1.333; font-weight: 600; letter-spacing: 0.08em;
+             text-transform: uppercase; color: var(--testo-attenuato); }
+.indice ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s1); }
+.indice a { display: flex; align-items: center; box-sizing: border-box; min-height: var(--tocco); padding: var(--s2) var(--s3); border-radius: var(--raggio-sm);
+            color: var(--testo); text-decoration: none; font-size: 0.9375rem; line-height: 1.467; }
+.indice a:hover { background: var(--superficie-hover); color: var(--testo); }
+.indice a[aria-current="page"] { background: var(--superficie-selezionata); font-weight: 600; }
+.articolo { min-width: 0; max-width: 45rem; display: flex; flex-direction: column; gap: var(--s6); }
+.articolo > h2 { margin-top: var(--s4); font-size: 1.75rem; line-height: 1.214; }
+.articolo h1 { font-size: clamp(2.125rem, 4.5vw, 3rem); line-height: 1.1; }
+.articolo ul, .articolo ol { padding-left: 1.25em; display: flex; flex-direction: column; gap: var(--s2); }
+.briciole { font-size: 0.875rem; line-height: 1.43; color: var(--testo-attenuato); }
+.articolo .apertura { font-size: 1.1875rem; line-height: 1.58; color: var(--testo-attenuato); }
+.riquadro { padding: 1.25rem var(--s6); border: 1px solid var(--bordo); border-radius: var(--raggio-md); background: var(--primario-tenue);
+            display: flex; flex-direction: column; gap: var(--s2); }
+.riquadro h2 { font-size: 1.5rem; line-height: 1.25; }
+.riquadro.con-icona { flex-direction: row; gap: 0.875rem; color: var(--primario); }
+.riquadro.con-icona p { color: var(--testo); }
+.riquadro.con-icona .icona { margin-top: 0.125rem; }
+.riquadro a { font-weight: 600; }
+.articolo .passi { list-style: none; padding: 0; gap: 0; border-top: 1px solid var(--bordo); counter-reset: passo; }
+.passi li { position: relative; padding: 1.25rem 0 1.25rem 3.25rem; border-bottom: 1px solid var(--bordo); counter-increment: passo; }
+.passi li::before { content: counter(passo); position: absolute; left: 0; top: 1.25rem; width: var(--s8); height: var(--s8); border-radius: var(--raggio-pieno);
+                    background: var(--primario-tenue); color: var(--primario); font-family: Caprasimo, Georgia, serif; display: flex;
+                    align-items: center; justify-content: center; }
+.passi p + p { margin-top: var(--s1); color: var(--testo-attenuato); }
+.passi p:first-child { font-weight: 700; }
+.vicine { margin-top: var(--s6); display: flex; flex-wrap: wrap; gap: var(--s4); }
+.vicine a { flex: 1 1 15rem; padding: var(--s4) 1.25rem; border: 1px solid var(--bordo); border-radius: var(--raggio-md); color: var(--testo);
+            text-decoration: none; display: flex; flex-direction: column; }
+.vicine a:hover { background: var(--superficie-hover); color: var(--testo); }
+.vicine a.successiva { text-align: right; }
+.vicine span { font-size: 0.8125rem; line-height: 1.385; color: var(--testo-attenuato); }

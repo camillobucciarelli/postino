@@ -197,7 +197,7 @@ void main() {
   ) async {
     await _start(tester);
     await _tap(tester, _row('m1'));
-    await _tap(tester, find.byTooltip('Etichette'));
+    await _tap(tester, find.byTooltip('Etichette · L'));
 
     expect(_ticked(tester, 'Viaggi'), isFalse, reason: 'only the message in the Cestino has it');
     await _tap(tester, _tile('Fatture'));

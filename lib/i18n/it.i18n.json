@@ -424,8 +424,8 @@
   "azioni": {
     "archive": "Archivia",
     "delete": "Elimina",
-    "star": "Aggiungi stella",
-    "unstar": "Togli stella",
+    "star": "Aggiungi Stella",
+    "unstar": "Togli Stella",
     "markRead": "Segna come letto",
     "markUnread": "Segna come non letto",
     "archived": "Conversazione archiviata",
@@ -433,7 +433,8 @@
     "labelApplied": "Etichetta «$name» applicata",
     "undo": "Annulla",
     "more": "Altre azioni",
-    "applyLabel": "Applica Etichetta"
+    "applyLabel": "Applica Etichetta",
+    "shiftKey": "Maiusc"
   },
   "scorrimento": {
     "title": "Azioni per scorrimento",

@@ -15,62 +15,212 @@
 <link rel="alternate" hreflang="it" href="https://postino.camillobucciarelli.dev/index.html">
 <link rel="alternate" hreflang="en" href="https://postino.camillobucciarelli.dev/en/index.html">
 <link rel="icon" type="image/svg+xml" href="brand/icon-small.svg">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="sito.css">
 </head>
-<body>
-<header class="barra">
-  <a href="en/index.html" hreflang="en" lang="en">English</a>
-  <a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a>
-</header>
-<main>
-<img class="logo" src="brand/icon.svg" width="64" height="64" alt="">
-<h1>Postino</h1>
-<p>Un client di posta che riunisce tutti i tuoi Account email in un unico posto, veloce anche offline.</p>
-
-<p class="versione">Versione __VERSION__</p>
-<p class="pulsanti">
-  <a class="pulsante" href="macos/__VERSION__/Postino-__VERSION__.dmg" download>Scarica per macOS (DMG)</a>
-  <a class="pulsante" href="android/__VERSION__/Postino-__VERSION__.apk" download>Scarica per Android (APK)</a>
-</p>
-
-<h2>Cosa fa</h2>
-<h3>Posta unificata</h3>
-<p>Gmail, Outlook.com e Microsoft 365 (Account Microsoft personali e di lavoro o scuola), iCloud e qualsiasi casella IMAP in un'unica Posta in arrivo, ordinata per data. Ogni Account ha il suo colore, così riconosci a colpo d'occhio da dove arriva un messaggio.</p>
-<h3>Offline e privata</h3>
-<p>La posta recente è salvata in un database cifrato sul tuo dispositivo: la leggi anche senza rete, e le Azioni (archivia, Stella, segna come letto…) partono quando la rete torna. Postino non ha un server suo per la posta: parla solo con i tuoi Provider. E blocca le immagini remote finché non scegli di vederle.</p>
-<h3>Ricerca</h3>
-<p>I risultati compaiono mentre scrivi, dalla posta sul dispositivo, con filtri per non letti, Stella, allegati, Account e date. Per la posta più vecchia la ricerca continua sul Provider.</p>
-<h3>Notifiche con Azioni</h3>
-<p>Le notifiche di posta nuova sono raggruppate per Account e hanno due pulsanti a tua scelta, ad esempio Archivia e Segna come letto.</p>
-<h3>Etichettatura automatica sul dispositivo</h3>
-<p>Attiva l'Etichettatura automatica su un'Etichetta, se vuoi con una descrizione, e Postino la assegna da solo ai messaggi nuovi che le somigliano. Il modello gira sul dispositivo: il contenuto dei messaggi non viene inviato a nessun servizio.</p>
-<h3>Impostazioni sincronizzate</h3>
-<p>Se lo attivi, Postino tiene allineati tra i tuoi dispositivi Account collegati con le loro credenziali, colori, Azioni a scorrimento ed Etichette automatiche, in uno spazio riservato all'app nel tuo Google Drive. Tutto cifrato, con una chiave che resta sui tuoi dispositivi. Mai la posta.</p>
-
-<h2>Scarica</h2>
-<p>Link stabili all'ultima versione:</p>
+<body class="sito">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+<header class="testata">
+<div class="wrap">
+<a class="marchio" href="index.html"><img src="brand/icon.svg" width="36" height="36" alt="">Postino</a>
+<nav aria-label="Principale">
 <ul>
+  <li><a href="#funzioni">Funzioni</a></li>
+  <li><a href="#privacy">Privacy</a></li>
+  <li><a href="guida/index.html">Guida</a></li>
+  <li><a href="support.html">Supporto</a></li>
+  <li><a href="en/index.html" hreflang="en" lang="en">English</a></li>
+  <li><a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a></li>
+  <li><a class="pulsante" href="#scarica">Scarica</a></li>
+</ul>
+</nav>
+</div>
+</header>
+
+<main id="contenuto">
+<div class="wrap hero">
+<p class="occhiello">Client di posta</p>
+<h1>La tua posta, tutta in un posto.</h1>
+<p class="attacco">Un client di posta che riunisce tutti i tuoi Account email in un unico posto, veloce anche offline.</p>
+<div class="pulsanti grandi">
+  <a class="pulsante" href="#scarica"><span class="icona i-download" aria-hidden="true"></span>Scarica Postino</a>
+  <a class="secondario" href="guida/index.html">Leggi la guida</a>
+</div>
+<p class="nota">Gratis · macOS, Android, iPhone e iPad · Versione __VERSION__</p>
+<div class="schermate">
+  <div class="finestra"><img src="img/ipad-posta-unificata.png" width="1600" height="1000" alt="Postino a tutto schermo: barra laterale, Posta unificata con due Account e una Conversazione aperta con un PDF allegato"></div>
+  <img class="telefono" src="img/iphone-conversazione.png" width="560" height="1217" alt="Postino su iPhone: una Conversazione con le immagini remote bloccate e un PDF allegato">
+</div>
+</div>
+
+<div class="fascia">
+<ul class="wrap principi">
+  <li><span class="icona lg i-server" aria-hidden="true"></span><h2>Nessun server per la posta</h2><p>Postino non ha un server suo per la posta: parla solo con i tuoi Provider.</p></li>
+  <li><span class="icona lg i-lock" aria-hidden="true"></span><h2>Cifrata sul dispositivo</h2><p>La posta recente è salvata in un database cifrato sul tuo dispositivo: la leggi anche senza rete.</p></li>
+  <li><span class="icona lg i-shield" aria-hidden="true"></span><h2>Niente analytics né pubblicità</h2><p>Nell'app non ci sono analytics, pubblicità né raccolta automatica degli errori. Unica eccezione, la lettura dei QR su Android: è nell'<a href="privacy.html">informativa sulla privacy</a>.</p></li>
+</ul>
+</div>
+
+<div id="funzioni" class="wrap funzioni">
+<section class="riga">
+<div class="colonna">
+<p class="occhiello">Posta unificata</p>
+<h2 class="titolo-sezione">Tutti i tuoi Account in un'unica Posta in arrivo.</h2>
+<p class="attacco">Ordinata per data. Ogni Account ha il suo colore, così riconosci a colpo d'occhio da dove arriva un messaggio.</p>
+<ul class="elenco">
+  <li><span>Gmail</span><span>Accesso con Google</span></li>
+  <li><span>Outlook.com, Hotmail, Live</span><span>Account Microsoft personale</span></li>
+  <li><span>Microsoft 365</span><span>Account di lavoro o scuola</span></li>
+  <li><span>iCloud e qualsiasi casella IMAP</span><span>Con la password</span></li>
+</ul>
+<a href="guida/index.html">Collegare un Account Gmail</a>
+</div>
+<div class="pannello p-brand"><img class="telefono" src="img/iphone-posta-unificata.png" width="560" height="1217" alt="Posta unificata su iPhone: messaggi di due Account, ognuno con il suo colore"></div>
+</section>
+
+<section class="riga inversa">
+<div class="colonna">
+<p class="occhiello">Offline e privata</p>
+<h2 class="titolo-sezione">La leggi anche senza rete.</h2>
+<p class="attacco">La posta recente è salvata in un database cifrato sul tuo dispositivo. Postino non ha un server suo per la posta: parla solo con i tuoi Provider.</p>
+<ul class="spunte">
+  <li><span class="icona i-check" aria-hidden="true"></span><span>Le Azioni (archivia, Stella, segna come letto…) partono quando la rete torna.</span></li>
+  <li><span class="icona i-check" aria-hidden="true"></span><span>Le immagini remote restano bloccate finché non scegli di vederle.</span></li>
+</ul>
+<a href="privacy.html">Leggi l'informativa sulla privacy</a>
+</div>
+<div class="pannello p-selezionato"><img class="telefono" src="img/iphone-conversazione.png" width="560" height="1217" alt="Una Conversazione su iPhone con il banner Immagini remote bloccate"></div>
+</section>
+
+<section class="riga">
+<div class="colonna">
+<p class="occhiello">Ricerca</p>
+<h2 class="titolo-sezione">I risultati compaiono mentre scrivi.</h2>
+<p class="attacco">Dalla posta sul dispositivo, con i filtri. Per la posta più vecchia la Ricerca continua sul Provider.</p>
+<ul class="filtri" aria-label="Filtri">
+  <li>Non letti</li>
+  <li>Stella</li>
+  <li>Allegati</li>
+  <li>Account</li>
+  <li>Date</li>
+</ul>
+</div>
+<div class="pannello p-neutro"><img class="telefono" src="img/iphone-ricerca.png" width="560" height="1217" alt="Ricerca su iPhone: da:marta e tre risultati"></div>
+</section>
+</div>
+
+<section class="wrap sezione">
+<h2 class="titolo-sezione">E in più.</h2>
+<ul class="celle">
+  <li><h3>Notifiche con Azioni</h3><p>Le notifiche di posta nuova sono raggruppate per Account e hanno due pulsanti a tua scelta, ad esempio Archivia e Segna come letto.</p></li>
+  <li><h3>Etichettatura automatica sul dispositivo</h3><p>Attiva l'Etichettatura automatica su un'Etichetta, se vuoi con una descrizione, e Postino la assegna da solo ai messaggi nuovi che le somigliano. Il modello gira sul dispositivo.</p></li>
+  <li><h3>Impostazioni sincronizzate</h3><p>Se lo attivi, Postino tiene allineati tra i tuoi dispositivi Account, colori, Azioni a scorrimento ed Etichette automatiche, nel tuo Google Drive. Tutto cifrato, con una chiave che resta sui tuoi dispositivi. Mai la posta.</p></li>
+</ul>
+</section>
+
+<section id="privacy" class="fascia-scura">
+<div class="wrap scuro">
+<div class="colonna">
+<p class="occhiello">Privacy</p>
+<h2 class="titolo-sezione">La posta viaggia solo tra te e i tuoi Provider.</h2>
+<p class="attacco">Lo sviluppatore riceve i tuoi dati solo se gli mandi tu una Segnalazione di un problema.</p>
+<div class="avviso"><span class="icona lg i-alert" aria-hidden="true"></span><p><strong>Su macOS la chiave del database non è ancora protetta dai backup.</strong> Sta nel Portachiavi di login e può finire nei backup di Time Machine. <a href="privacy.html">Leggi l'informativa sulla privacy</a></p></div>
+</div>
+<ul class="punti">
+  <li><h3>Posta cifrata sul dispositivo</h3><p>Intestazioni, testi, Etichette, Bozze e messaggi in uscita stanno in un database cifrato con SQLCipher.</p></li>
+  <li><h3>Credenziali nel portachiavi del sistema</h3><p>Token di accesso e password si usano solo con il Provider a cui appartengono.</p></li>
+  <li><h3>Etichettatura automatica sul dispositivo</h3><p>Il modello gira sul dispositivo: il contenuto dei messaggi non viene inviato a nessun servizio.</p></li>
+  <li><h3>Immagini remote bloccate</h3><p>Si scaricano solo se scegli di vederle, per un messaggio o per un Mittente fidato.</p></li>
+  <li><h3>Un sito senza cookie</h3><p>Queste pagine non usano cookie, analytics né contenuti di terze parti: anche i font sono serviti da qui.</p></li>
+</ul>
+</div>
+</section>
+
+<section class="wrap sezione dividi">
+<div class="colonna">
+<p class="occhiello">Guida</p>
+<h2 class="titolo-sezione">Dall'installazione al primo Account.</h2>
+<p class="attacco">Requisiti, installazione e aggiornamenti passo per passo sono nella Guida per gli invitati.</p>
+<a class="secondario" href="guida/index.html">Apri la guida</a>
+</div>
+<ul class="capitoli">
+  <li><a href="guida/index.html"><span><strong>Installare Postino su macOS</strong><span>Apri il DMG e trascina Postino nella cartella Applicazioni.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="guida/index.html"><span><strong>Installare Postino su Android</strong><span>Scarica l'APK dal browser del telefono e consenti l'installazione.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="guida/index.html"><span><strong>Installare Postino su iOS</strong><span>Con TestFlight, su invito, finché non arriva sull'App Store.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="guida/index.html"><span><strong>Collegare un Account Gmail</strong><span>La schermata «Google non ha verificato questa app» e il limite di 100 Account Google.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+</ul>
+</section>
+
+<section id="scarica" class="wrap sezione scarica">
+<p class="occhiello">Versione __VERSION__ · gratis</p>
+<h2>Scarica Postino</h2>
+<p>I pulsanti scaricano la versione __VERSION__.</p>
+<ul class="schede">
+  <li>
+    <span class="icona dispositivo i-mac" aria-hidden="true"></span>
+    <h3>macOS</h3>
+    <p class="etichetta">Presto sul Mac App Store</p>
+    <p>Apri il DMG e trascina Postino nella cartella Applicazioni. L'app è firmata dallo sviluppatore, notarizzata da Apple e si aggiorna da sola.</p>
+    <a class="pulsante" href="macos/__VERSION__/Postino-__VERSION__.dmg" download><span class="icona i-download" aria-hidden="true"></span>Scarica il DMG</a>
+  </li>
+  <li>
+    <span class="icona dispositivo i-android" aria-hidden="true"></span>
+    <h3>Android</h3>
+    <p>Scarica l'APK dal browser del telefono, non dal browser interno di un'altra app, e aprilo. Quando Android lo chiede, consenti l'installazione da origini sconosciute.</p>
+    <a class="pulsante" href="android/__VERSION__/Postino-__VERSION__.apk" download><span class="icona i-download" aria-hidden="true"></span>Scarica l'APK</a>
+  </li>
+  <li>
+    <span class="icona dispositivo i-iphone" aria-hidden="true"></span>
+    <h3>iPhone e iPad</h3>
+    <p class="etichetta">Presto sull'App Store</p>
+    <!-- STORE: qui va il link a Postino sull'App Store (iPhone, iPad) e sul Mac App Store, da aggiungere alla pubblicazione (#324). -->
+    <p>Il link comparirà qui alla pubblicazione. Intanto si installa con TestFlight, su invito.</p>
+    <a class="secondario" href="guida/index.html">Come installarlo con TestFlight</a>
+  </li>
+</ul>
+</section>
+
+<div class="wrap due">
+<div>
+<h2>Domande frequenti</h2>
+<div class="domande">
+  <div><h3>Come apro Postino su macOS?</h3><p>Al primo avvio macOS chiede conferma per un'app scaricata da Internet: scegli «Apri».</p></div>
+  <div><h3>Come si aggiorna Postino?</h3><p>Su macOS si aggiorna da solo, e puoi cercare gli aggiornamenti con «Cerca aggiornamenti…» nel menu Postino. Su Android e iOS Postino ti avvisa quando esce una versione nuova: su Android installa il nuovo APK sopra quello che hai, su iOS aggiornalo dall'App Store o da TestFlight. Account e posta restano.</p></div>
+</div>
+<p class="attenuato">Per tutto il resto, dal collegamento di un Account Gmail alla Segnalazione di un problema, c'è la <a href="guida/index.html">Guida per gli invitati</a>.</p>
+</div>
+<div>
+<h2>Link stabili</h2>
+<p class="attenuato">I pulsanti qui sopra restano fissi sulla __VERSION__. Questi link puntano sempre all'ultima versione.</p>
+<ul class="versioni">
   <li><a href="macos/latest/Postino.dmg" download>Postino per macOS (DMG), ultima versione</a></li>
   <li><a href="android/latest/Postino.apk" download>Postino per Android (APK), ultima versione</a></li>
-  <!-- STORE: qui va il link a Postino sull'App Store (iPhone, iPad) e sul Mac App Store, da aggiungere alla pubblicazione (#324). -->
-  <li>iPhone e iPad: Postino arriva sull'App Store e sul Mac App Store; il link comparirà qui alla pubblicazione. Intanto si installa con TestFlight, su invito, come spiegato nella <a href="guida/index.html">Guida per gli invitati</a>.</li>
 </ul>
-<p>Requisiti, installazione e aggiornamenti passo per passo sono nella <a href="guida/index.html">Guida per gli invitati</a>.</p>
+</div>
+</div>
 
-<h2>Domande frequenti</h2>
-<h3>Come apro Postino su macOS?</h3>
-<p>Apri il DMG e trascina Postino nella cartella Applicazioni. Al primo avvio macOS chiede conferma per un'app scaricata da Internet: scegli «Apri». L'app è firmata dallo sviluppatore e notarizzata da Apple.</p>
-<h3>Come installo l'APK su Android?</h3>
-<p>Scarica l'APK dal browser del telefono (non dal browser interno di un'altra app) e aprilo. Android ti chiede di consentire l'installazione da origini sconosciute per il browser o per l'app Files: consentila e completa l'installazione.</p>
-<h3>Come si aggiorna Postino?</h3>
-<p>Su macOS si aggiorna da solo: al secondo avvio ti chiede se cercare gli aggiornamenti in automatico, e puoi cercarli quando vuoi con «Cerca aggiornamenti…» nel menu Postino. Su Android e iOS Postino ti avvisa quando esce una versione nuova: su Android scarica il nuovo APK (dall'avviso o da questa pagina) e installalo sopra quello che hai, su iOS aggiornalo dall'App Store o, se l'hai installato da TestFlight, da TestFlight. Account e posta restano.</p>
-<p>Per tutto il resto, dal collegamento di un Account Gmail alla Segnalazione di un problema, c'è la <a href="guida/index.html">Guida per gli invitati</a>.</p>
-
-<h2>Sostieni il progetto</h2>
-<p>Postino si scarica gratis. Se ti è utile puoi <a href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">offrirmi un caffè</a>.</p>
+<div class="wrap chiusura">
+<div>
+<h2>Postino si scarica gratis.</h2>
+<p class="attacco">Se ti è utile puoi offrirmi un caffè.</p>
+<div class="pulsanti grandi">
+  <a class="pulsante" href="#scarica">Scarica Postino</a>
+  <a class="secondario" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">Offrimi un caffè</a>
+</div>
+</div>
+</div>
 </main>
-<footer>
-  <a href="support.html">Supporto</a> · <a href="privacy.html">Informativa sulla privacy</a>
+
+<footer class="piede">
+<div class="wrap">
+<div><span class="marchio-piede">Postino</span><span class="nota">Un client di posta che riunisce tutti i tuoi Account email in un unico posto.</span></div>
+<ul>
+  <li><a href="guida/index.html">Guida per gli invitati</a></li>
+  <li><a href="support.html">Supporto</a></li>
+  <li><a href="privacy.html">Informativa sulla privacy</a></li>
+  <li><a href="en/index.html" hreflang="en" lang="en">English</a></li>
+  <li><a href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">Offrimi un caffè</a></li>
+</ul>
+</div>
 </footer>
 </body>
 </html>

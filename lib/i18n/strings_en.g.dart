@@ -627,6 +627,7 @@ class _Translations$azioni$en extends Translations$azioni$it {
 	@override String get undo => 'Undo';
 	@override String get more => 'More actions';
 	@override String get applyLabel => 'Apply Label';
+	@override String get shiftKey => 'Shift';
 }
 
 // Path: scorrimento
@@ -1124,6 +1125,7 @@ extension on TranslationsEn {
 			'azioni.undo' => 'Undo',
 			'azioni.more' => 'More actions',
 			'azioni.applyLabel' => 'Apply Label',
+			'azioni.shiftKey' => 'Shift',
 			'scorrimento.title' => 'Swipe actions',
 			'scorrimento.intro' => 'Swiping a row of the list runs an Action. The choice applies to all Accounts.',
 			'scorrimento.left' => 'Swipe left',

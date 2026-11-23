@@ -5,7 +5,7 @@ date: 2026-10-27
 
 # Navigazione con routefly
 
-Le pagine (`*_page.dart`) stanno in `lib/app`, organizzate per URL (es. `posta/[accountId]/conversazione/[id]`), con una sola directory base di routefly (file-based routing). Su desktop i pannelli usano `*_layout.dart` + `RouterOutlet`. Aprire una Conversazione è una rotta, il che dà deep link dalle notifiche e tasto indietro su Android. Le pagine sono sottili e importano la presentazione delle feature. Nello stesso quadro: i18n con slang (it + en dalla v1) e stato con signals.
+Le pagine (`*_page.dart`) stanno in `lib/app`, organizzate per URL (es. `posta/[accountId]/conversazione/[id]`), con una sola directory base di routefly (file-based routing). Su desktop i pannelli usano `*_layout.dart` + `RouterOutlet`. Aprire una Conversazione è una rotta, il che dà deep link dalle notifiche. Il tasto indietro di sistema non viene dalla rotta (routefly non impila le pagine): lo gestisce un `PopScope` sul layout, vedi [ADR 0024](0024-back-di-sistema-con-popscope.md). Le pagine sono sottili e importano la presentazione delle feature. Nello stesso quadro: i18n con slang (it + en dalla v1) e stato con signals.
 
 ## Alternative considerate
 

@@ -80,7 +80,7 @@ void _onMac(String name, Future<void> Function(WidgetTester) body) => testWidget
 });
 
 Finder _row(String latest) => find.byKey(ValueKey('row-a1-$latest'));
-Finder get _button => find.byTooltip('Etichette');
+Finder get _button => find.byWidgetPredicate((w) => w is PostinoIconButton && w.label == 'Etichette');
 Finder _tile(String name) => find.widgetWithText(PostinoCheckboxTile, name);
 Finder get _field => find.descendant(of: find.byKey(const ValueKey('label-search')), matching: find.byType(TextField));
 Finder get _snackbar => find.byType(PostinoSnackbar);
@@ -91,8 +91,7 @@ bool _ticked(WidgetTester tester, String name) => tester.widget<PostinoCheckboxT
 /// The label calls that reached the Provider since [from], comparable.
 List<(String, String, bool)> _calls([int from = 0]) => gmail.labelCalls.sublist(from);
 
-FocusNode _buttonFocus(WidgetTester tester) =>
-    tester.widget<PostinoIconButton>(find.ancestor(of: _button, matching: find.byType(PostinoIconButton))).focusNode!;
+FocusNode _buttonFocus(WidgetTester tester) => tester.widget<PostinoIconButton>(_button).focusNode!;
 
 Future<void> _escape(WidgetTester tester) async {
   await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -117,6 +116,20 @@ void main() {
     expect(_calls(from), unorderedEquals([('m1', 'Label_13', true), ('m2', 'Label_13', true)]));
     expect(_ticked(tester, 'Fatture'), isTrue);
     expect(_snackbar, findsNothing);
+  });
+
+  _onMac('the window narrows with the picker open and Etichette moves into «Altre azioni»: unticking still offers '
+      'Annulla', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('m2'));
+    await _tap(tester, _button);
+    tester.view.physicalSize = const Size(900, 900);
+    await _settle(tester);
+    expect(_button, findsNothing, reason: 'Etichette left the bar');
+
+    await _tap(tester, _tile('Viaggi'));
+    expect(find.text('Etichetta «Viaggi» tolta'), findsOneWidget);
+    expect(_undo, findsOneWidget);
   });
 
   _onMac('unticking takes it off the messages that have it, once «Etichetta tolta» beside the list; Annulla puts it '

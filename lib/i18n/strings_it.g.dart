@@ -1247,11 +1247,11 @@ class Translations$azioni$it {
 	/// it: 'Elimina'
 	String get delete => 'Elimina';
 
-	/// it: 'Aggiungi stella'
-	String get star => 'Aggiungi stella';
+	/// it: 'Aggiungi Stella'
+	String get star => 'Aggiungi Stella';
 
-	/// it: 'Togli stella'
-	String get unstar => 'Togli stella';
+	/// it: 'Togli Stella'
+	String get unstar => 'Togli Stella';
 
 	/// it: 'Segna come letto'
 	String get markRead => 'Segna come letto';
@@ -1276,6 +1276,9 @@ class Translations$azioni$it {
 
 	/// it: 'Applica Etichetta'
 	String get applyLabel => 'Applica Etichetta';
+
+	/// it: 'Maiusc'
+	String get shiftKey => 'Maiusc';
 }
 
 // Path: scorrimento
@@ -1923,8 +1926,8 @@ extension on Translations {
 			'conflitti.values.unlabeled' => ({required Object name}) => 'senza l\'etichetta ${name}',
 			'azioni.archive' => 'Archivia',
 			'azioni.delete' => 'Elimina',
-			'azioni.star' => 'Aggiungi stella',
-			'azioni.unstar' => 'Togli stella',
+			'azioni.star' => 'Aggiungi Stella',
+			'azioni.unstar' => 'Togli Stella',
 			'azioni.markRead' => 'Segna come letto',
 			'azioni.markUnread' => 'Segna come non letto',
 			'azioni.archived' => 'Conversazione archiviata',
@@ -1933,6 +1936,7 @@ extension on Translations {
 			'azioni.undo' => 'Annulla',
 			'azioni.more' => 'Altre azioni',
 			'azioni.applyLabel' => 'Applica Etichetta',
+			'azioni.shiftKey' => 'Maiusc',
 			'scorrimento.title' => 'Azioni per scorrimento',
 			'scorrimento.intro' => 'Scorrendo una riga della lista si esegue un\'Azione. La scelta vale per tutti gli Account.',
 			'scorrimento.left' => 'Scorrimento a sinistra',

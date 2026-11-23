@@ -315,10 +315,24 @@ void main() {
         messages: [_message(expanded: false), _message()],
       ),
       'action bar': const PostinoActionBar(
-        children: [
-          PostinoButton(label: 'Rispondi', onPressed: _noop),
-          PostinoButton(label: 'Rispondi a tutti', variant: PostinoButtonVariant.ghost, onPressed: _noop),
-          PostinoButton(label: 'Inoltra', variant: PostinoButtonVariant.ghost, onPressed: _noop),
+        moreLabel: 'Altre azioni',
+        placement: PostinoActionBarPlacement.bottom,
+        groups: [
+          [
+            PostinoBarAction(icon: PostinoIcons.archive, label: 'Archivia', onPressed: _noop, shortcut: 'E'),
+            PostinoBarAction(icon: PostinoIcons.trash, label: 'Elimina', onPressed: _noop, shortcut: '#'),
+          ],
+          [
+            PostinoBarAction(icon: PostinoIcons.forward, label: 'Inoltra', onPressed: _noop, shortcut: 'F'),
+            PostinoBarAction(icon: PostinoIcons.replyAll, label: 'Rispondi a tutti', onPressed: _noop, shortcut: 'A'),
+            PostinoBarAction(
+              icon: PostinoIcons.reply,
+              label: 'Rispondi',
+              onPressed: _noop,
+              shortcut: 'R',
+              primary: true,
+            ),
+          ],
         ],
       ),
       'drawer': _drawer,

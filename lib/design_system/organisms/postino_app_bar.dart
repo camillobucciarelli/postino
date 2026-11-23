@@ -13,7 +13,8 @@ import '../tokens/postino_tokens.dart';
 /// Inside one Account its mark sits next to the title. With [onBack] (a detail) it leads with `arrow-left` instead;
 /// [actions] sit at the end («Chiudi» of the composer). [commands] sit before them as icon buttons while they fit;
 /// those that do not go, in order, into a «more» menu ([moreLabel]), so a narrow pane never squeezes the title
-/// below nothing.
+/// below nothing. A [toolbar] (the Azioni of a Conversazione) takes the title's place and the whole room after the
+/// back arrow.
 class const PostinoAppBar({
   super.key,
 
@@ -37,6 +38,9 @@ class const PostinoAppBar({
 
   /// Nome del menu che raccoglie i [commands] che non ci stanno («Altre azioni»).
   final String moreLabel = '',
+
+  /// Al posto del titolo, una barra di Azioni (PostinoActionBar) che prende tutto lo spazio dopo la freccia.
+  final Widget? toolbar,
 }) extends StatelessWidget implements PreferredSizeWidget {
   /// Barra superiore di una lista o di un dettaglio.
   this;
@@ -124,39 +128,42 @@ class const PostinoAppBar({
             ),
           ],
           titleSpacing: spacing,
+          centerTitle: toolbar != null ? false : null,
           // The AppBar clamps its title to 1.34 and sets `softWrap: false`: undo both, the text is at the user's size.
-          title: MediaQuery(
-            data: MediaQuery.of(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  spacing: PostinoSpacing.s2,
+          title:
+              toolbar ??
+              MediaQuery(
+                data: MediaQuery.of(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (a != null) PostinoAccountMark(color: a.color, initial: a.initial, size: _markSize),
-                    Flexible(
-                      child: Text(
-                        title,
+                    Row(
+                      spacing: PostinoSpacing.s2,
+                      children: [
+                        if (a != null) PostinoAccountMark(color: a.color, initial: a.initial, size: _markSize),
+                        Flexible(
+                          child: Text(
+                            title,
+                            softWrap: true,
+                            maxLines: wrap ? null : 1,
+                            overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
+                            style: titleStyle,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (subtitle case final s?)
+                      Text(
+                        s,
                         softWrap: true,
                         maxLines: wrap ? null : 1,
                         overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
-                        style: titleStyle,
+                        style: PostinoText.meta.copyWith(color: c.inkSubtle),
                       ),
-                    ),
                   ],
                 ),
-                if (subtitle case final s?)
-                  Text(
-                    s,
-                    softWrap: true,
-                    maxLines: wrap ? null : 1,
-                    overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
-                    style: PostinoText.meta.copyWith(color: c.inkSubtle),
-                  ),
-              ],
-            ),
-          ),
+              ),
         );
       },
     );

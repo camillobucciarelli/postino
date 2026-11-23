@@ -4,7 +4,7 @@ import 'package:routefly/routefly.dart';
 import '../features/posta/domain/inbox_sections.dart';
 import '../features/posta/presentation/inbox_section_screen.dart';
 import 'impostazioni/impostazioni_page.dart' show goBackOrToPosta;
-import 'posta/posta_routes.dart' show openDraft;
+import 'posta/posta_routes.dart' show openDraft, openSearch;
 
 /// `/sezione`: «Mostra tutti» of a section of the posta in arrivo (#366), pushed over the view it was opened from;
 /// back pops to it. Its argument is the (section, Account); null Account: the Posta unificata.
@@ -18,8 +18,11 @@ class SectionPage extends StatefulWidget {
 
 class _SectionPageState() extends State<SectionPage> {
   // Read once: the last route's argument, and a later rebuild may find another route on top.
-  final (InboxSection, String?) _scope =
-      Routefly.query.arguments as (InboxSection, String?)? ?? (InboxSection.starred, null);
+  // Routefly keeps the arguments in statics: another route's (a rebuilt stack) is not this page's.
+  final (InboxSection, String?) _scope = switch (Routefly.query.arguments) {
+    (final InboxSection section, final String? accountId) => (section, accountId),
+    _ => (InboxSection.starred, null),
+  };
 
   @override
   Widget build(BuildContext context) => InboxSectionScreen(
@@ -27,5 +30,6 @@ class _SectionPageState() extends State<SectionPage> {
     accountId: _scope.$2,
     onBack: () => goBackOrToPosta(context),
     onOpenDraft: openDraft,
+    onSearch: () => openSearch(accountId: _scope.$2),
   );
 }

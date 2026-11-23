@@ -91,6 +91,9 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   /// The sections of the last list (#366), and the open Conversazione kept in its own (the focus rule).
   InboxSections? _sections;
   HeldConversation? _held;
+
+  /// The Conversazione just closed, whose row gets the focus back (ADR 0014): held until the focus is there (#366).
+  (String, String)? _returning;
   bool? _wasTwoPane;
   int? _counted;
 
@@ -118,6 +121,8 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     final node = FocusNode(skipTraversal: true);
     // Focus got there some other way (Tab, a click): the cursor follows.
     node.addListener(() {
+      // Back on the row just closed: from now the focus holds it, as any focused row.
+      if (node.hasPrimaryFocus && _returning == key) _returning = null;
       if (node.hasPrimaryFocus && _cursor != key && mounted) {
         setState(() => _cursor = key);
       } else if (node.hasPrimaryFocus && _sectioned && _held?.$1 != key && mounted) {
@@ -159,7 +164,10 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     final open = widget.selected;
     if (open != null) _cursor = open;
     // The Conversazione closed: the focus returns to the row just closed.
-    if (open == null && old.selected != null) _focusSoon();
+    if (open == null && old.selected != null) {
+      _returning = old.selected;
+      _focusSoon();
+    }
   }
 
   @override
@@ -191,11 +199,12 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   bool _listFocused() => _nodes.values.any((n) => n.hasFocus) && (_twoPane || widget.selected == null);
 
   /// The Conversazione with the focus for the sections (#366): the open one, else the row the keyboard is on.
-  /// Its menu, or a dialog opened from it, keeps the row held: the focus is only lent to them.
+  /// Its menu, or a dialog opened from it, keeps the row held: the focus is only lent to them. So does the way back
+  /// from the Conversazione just closed, until the focus is on its row again.
   (String, String)? _focused() {
     final cursor = _cursor;
     if (widget.selected != null || cursor == null) return widget.selected;
-    if (_nodes[cursor]?.hasFocus ?? false) return cursor;
+    if ((_nodes[cursor]?.hasFocus ?? false) || cursor == _returning) return cursor;
     return _held?.$1 == cursor && _focusOverPage() ? cursor : null;
   }
 

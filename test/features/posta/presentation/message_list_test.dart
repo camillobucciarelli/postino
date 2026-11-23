@@ -622,6 +622,24 @@ void main() {
       expect(find.byType(InboxSectionScreen), findsNothing);
     });
 
+    testWidgets('on a narrow window the Conversazione closed gets its row back, which moves on the next move', (
+      tester,
+    ) async {
+      await _startSections(tester, unread: 2, read: 1, width: 800);
+      await tester.tap(_rowOf('u1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PostinoThreadView), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(PostinoThreadView), findsNothing);
+      expect(_headings(tester), ['Da leggere 2', 'Letti 1'], reason: 'read now, it waits for the focus back');
+      expect(_focusedId(), 'u1');
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), 'u2');
+      expect(_headings(tester), ['Da leggere 1', 'Letti 2'], reason: 'the focus moved on: it went to Letti');
+    });
+
     testWidgets('the open Conversazione stays shown when newer ones arrive in its section; j goes on from it', (
       tester,
     ) async {

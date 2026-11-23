@@ -27,6 +27,9 @@ class const PostinoMenu({
 
   /// For the tests, on the trigger button.
   final Key? buttonKey,
+
+  /// The trigger button's focus, so a popover opened from an item can give it back.
+  final FocusNode? focusNode,
 }) extends StatefulWidget {
   /// Crea il menu con il suo pulsante.
   this;
@@ -55,6 +58,7 @@ class _PostinoMenuState() extends State<PostinoMenu> {
         key: widget.buttonKey,
         icon: widget.icon,
         label: widget.label,
+        focusNode: widget.focusNode,
         onPressed: () {
           if (menu.isOpen) return menu.close();
           menu.open();

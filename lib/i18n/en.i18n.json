@@ -421,7 +421,8 @@
     "labelApplied": "Label “$name” applied",
     "undo": "Undo",
     "more": "More actions",
-    "applyLabel": "Apply Label"
+    "applyLabel": "Apply Label",
+    "shiftKey": "Shift"
   },
   "scorrimento": {
     "title": "Swipe actions",

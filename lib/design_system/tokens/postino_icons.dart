@@ -161,4 +161,13 @@ abstract final class PostinoIcons() {
 
   /// Segna come letto: una busta aperta.
   static const mailOpen = PostinoIconData(['M3.5 10l8.5-6 8.5 6v9.5h-17z', 'M3.5 10l8.5 6 8.5-6']);
+
+  /// Rispondi: la freccia che torna indietro.
+  static const reply = PostinoIconData(['M10 6L4 12l6 6', 'M4 12h10a6 6 0 0 1 6 6']);
+
+  /// Rispondi a tutti: la doppia freccia.
+  static const replyAll = PostinoIconData(['M11 6l-6 6 6 6', 'M7 6l-6 6 6 6', 'M5 12h9a6 6 0 0 1 6 6']);
+
+  /// Inoltra: la freccia in avanti.
+  static const forward = PostinoIconData(['M14 6l6 6-6 6', 'M20 12H10a6 6 0 0 0-6 6']);
 }

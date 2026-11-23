@@ -1,0 +1,22 @@
+name: litehtml_flutter
+description: Prototipo (#66) di litehtml legato a Flutter via FFI. Codice da buttare.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.38.0"
+
+dependencies:
+  code_assets: ^2.1.0
+  ffi: ^2.2.0
+  flutter:
+    sdk: flutter
+  hooks: ^2.2.0
+  logging: ^1.3.0
+  native_toolchain_c: ^0.19.5
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

@@ -6,6 +6,8 @@ import '../tokens/postino_tokens.dart';
 /// [visibility] goes 0→1 or 1→0 (curve [PostinoMotion.standard]). Fits `AnimatedList`'s animations, or a controller
 /// the owner drives; [kAlwaysCompleteAnimation] for an element at rest. The owner picks the durations from
 /// [PostinoMotion] through [PostinoMotion.of], so with reduced motion it skips the animation.
+/// A [slid] element went off the screen sideways (a swipe): the first half of [visibility] is that slide, then the
+/// height closes in the second half, without fading.
 /// A [leaving] element is gone already: no taps, no focus, nothing for the screen reader.
 class const PostinoSizeFade({
   super.key,
@@ -16,6 +18,9 @@ class const PostinoSizeFade({
   /// The element is on its way out.
   final bool leaving = false,
 
+  /// L'elemento è uscito di lato: la prima metà è lo scorrimento, poi si chiude l'altezza senza sfumare.
+  final bool slid = false,
+
   /// L'elemento che entra o esce.
   required final Widget child,
 }) extends StatelessWidget {
@@ -24,12 +29,15 @@ class const PostinoSizeFade({
 
   @override
   Widget build(BuildContext context) {
-    final shown = visibility.drive(CurveTween(curve: PostinoMotion.standard));
+    final shown = visibility.drive(
+      CurveTween(curve: slid ? const Interval(0, 0.5, curve: PostinoMotion.standard) : PostinoMotion.standard),
+    );
     return SizeTransition(
       sizeFactor: shown,
       alignment: Alignment.topCenter,
+      // Always there, so that the child keeps its state when [slid] changes.
       child: FadeTransition(
-        opacity: shown,
+        opacity: slid ? kAlwaysCompleteAnimation : shown,
         child: IgnorePointer(
           ignoring: leaving,
           child: ExcludeSemantics(

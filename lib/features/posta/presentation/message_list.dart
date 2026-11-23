@@ -341,6 +341,20 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     if (leavesList(action)) _step(key);
   }
 
+  /// A swipe sends [key]'s row ([ik] in its section) off the screen on [side]. An Azione that changes nothing
+  /// (already so, offline) brings no new list: once the exit would be over, a row still in the list comes back in place.
+  // ponytail: a database slower than the exit shows the row back before it leaves; wait for the Azione's write if so.
+  void _slideOut(Object ik, (String, String) key, PostinoSwipeSide side) {
+    final exit = PostinoMotion.of(context, PostinoMotion.swipeDismiss);
+    // With reduced motion the row does not slide: it just goes with the list.
+    if (exit == Duration.zero) return;
+    _motion.slideOut(ik, side);
+    Future<void>.delayed(exit * 2, () {
+      final still = _list?.any((e) => keyOf(e) == key) ?? false;
+      if (mounted && still) setState(() => _motion.slideBack(ik));
+    }).ignore();
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -415,6 +429,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
             key: ValueKey(ik),
             visibility: _motion.of(ik),
             leaving: _motion.leaving(ik),
+            slid: _motion.slid(ik) != null,
             child: conversationRow(
               entry,
               node: node,
@@ -423,6 +438,8 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
               view: widget.view,
               onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
               tile: ([semanticActions]) => tile(node, semanticActions),
+              away: _motion.slid(ik),
+              onSlideOut: (side) => _slideOut(ik, key, side),
             ),
           );
         },

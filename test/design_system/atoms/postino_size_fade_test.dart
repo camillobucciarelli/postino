@@ -4,22 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 
-Widget _fade(Animation<double> visibility, {bool leaving = false, VoidCallback? onTap}) => MaterialApp(
-  home: Scaffold(
-    body: Column(
-      children: [
-        PostinoSizeFade(
-          visibility: visibility,
-          leaving: leaving,
-          child: SizedBox(
-            height: 40,
-            child: TextButton(onPressed: onTap, child: const Text('Riga')),
-          ),
+Widget _fade(Animation<double> visibility, {bool leaving = false, bool slid = false, VoidCallback? onTap}) =>
+    MaterialApp(
+      home: Scaffold(
+        body: Column(
+          children: [
+            PostinoSizeFade(
+              visibility: visibility,
+              leaving: leaving,
+              slid: slid,
+              child: SizedBox(
+                height: 40,
+                child: TextButton(onPressed: onTap, child: const Text('Riga')),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
 
 void main() {
   testWidgets('half way: half the height, and the same curve for height and fade', (tester) async {
@@ -28,6 +30,19 @@ void main() {
     expect(tester.getSize(find.byType(PostinoSizeFade)).height, closeTo(40 * k, 0.01));
     expect(tester.widget<FadeTransition>(find.byType(FadeTransition).last).opacity.value, closeTo(k, 1e-9));
     expect(tester.getTopLeft(find.text('Riga')).dy, lessThan(20), reason: 'closes from the bottom, top in place');
+  });
+
+  testWidgets('slid off sideways: the first half is the slide, then the height closes, never faded (#376)', (
+    tester,
+  ) async {
+    double opacity() => tester.widget<FadeTransition>(find.byType(FadeTransition).last).opacity.value;
+    await tester.pumpWidget(_fade(const AlwaysStoppedAnimation(0.75), slid: true));
+    expect(tester.getSize(find.byType(PostinoSizeFade)).height, 40, reason: 'the slide: the height waits');
+    expect(opacity(), 1);
+    await tester.pumpWidget(_fade(const AlwaysStoppedAnimation(0.25), slid: true));
+    final k = PostinoMotion.standard.transform(0.5);
+    expect(tester.getSize(find.byType(PostinoSizeFade)).height, closeTo(40 * k, 0.01));
+    expect(opacity(), 1);
   });
 
   testWidgets('at rest it is the element itself', (tester) async {

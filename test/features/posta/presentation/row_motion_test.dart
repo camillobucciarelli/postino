@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/core/domain/account.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/row_motion.dart';
 
 import '../../../support/fake_mail_provider.dart' show msg;
@@ -100,6 +101,78 @@ void main() {
     expect(changed, 0);
     expect(motion.leaving(_k(b)), isFalse);
     expect(motion.of(_k(b)), kAlwaysCompleteAnimation);
+  });
+
+  testWidgets('a row slid out by a swipe leaves in twice the time, and is slid until gone (#376)', (tester) async {
+    await start(tester);
+    update([a, b]);
+    motion.slideOut(_k(a), PostinoSwipeSide.left);
+    expect(motion.slid(_k(a)), PostinoSwipeSide.left);
+    update([b]);
+    // The first frame starts the clock.
+    await tester.pump();
+    await tester.pump(_leave);
+    expect(motion.of(_k(a)).value, inExclusiveRange(0, 1), reason: 'the slide, then the closing');
+    expect(motion.slid(_k(a)), PostinoSwipeSide.left);
+    await tester.pumpAndSettle();
+    expect(update([b]), [b]);
+    expect(motion.slid(_k(a)), isNull);
+  });
+
+  testWidgets('a swipe whose row stays: the mark goes, its next leave is the usual one (#376)', (tester) async {
+    await start(tester);
+    update([a, b]);
+    motion.slideOut(_k(a), PostinoSwipeSide.left);
+    update([a, b, c]);
+    expect(motion.slid(_k(a)), PostinoSwipeSide.left, reason: 'another change of the list (a second swipe) keeps it');
+    motion.slideBack(_k(a));
+    expect(motion.slid(_k(a)), isNull);
+    update([b, c]);
+    // The first frame starts the clock.
+    await tester.pump();
+    await tester.pump(_leave ~/ 2);
+    expect(motion.of(_k(a)).value, closeTo(0.5, 1e-9), reason: 'the usual time');
+  });
+
+  testWidgets('a slid row back while leaving turns round as any row, from the same height (#376)', (tester) async {
+    await start(tester);
+    update([a, b]);
+    motion.slideOut(_k(a), PostinoSwipeSide.left);
+    update([b]);
+    // The first frame starts the clock.
+    await tester.pump();
+    await tester.pump(_leave * 3 ~/ 2);
+    final v = motion.of(_k(a)).value;
+    expect(v, inExclusiveRange(0, 0.5), reason: 'the height is closing');
+    update([a, b]);
+    expect(motion.slid(_k(a)), isNull);
+    expect(motion.of(_k(a)).value, closeTo(v * 2, 1e-9));
+    await tester.pumpAndSettle();
+    expect(motion.of(_k(a)), kAlwaysCompleteAnimation);
+  });
+
+  testWidgets('slideBack on a row already leaving changes nothing (#376)', (tester) async {
+    await start(tester);
+    update([a, b]);
+    motion.slideOut(_k(a), PostinoSwipeSide.right);
+    update([b]);
+    motion.slideBack(_k(a));
+    expect(motion.slid(_k(a)), PostinoSwipeSide.right);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a slid row back during the slide is at rest at once (#376)', (tester) async {
+    await start(tester);
+    update([a, b]);
+    motion.slideOut(_k(a), PostinoSwipeSide.left);
+    update([b]);
+    // The first frame starts the clock.
+    await tester.pump();
+    await tester.pump(_leave ~/ 2);
+    update([a, b]);
+    expect(motion.slid(_k(a)), isNull);
+    expect(motion.leaving(_k(a)), isFalse);
+    expect(motion.of(_k(a)), kAlwaysCompleteAnimation);
   });
 
   testWidgets('with reduced motion nothing moves', (tester) async {

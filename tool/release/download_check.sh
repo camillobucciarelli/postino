@@ -1,16 +1,19 @@
 #!/bin/bash
 # Checks the website (#173, #254), hand-written files that release.yml publishes at the bucket root: the product page
 # in Italian (index.html) and English (en/index.html), with the __VERSION__ placeholder the workflow replaces; the
-# privacy policy (privacy.html, en/privacy.html); style.css and the local fonts with their OFL licenses; the invitees'
-# guide, served as guida/index.html with the same style.css. Logo and favicon are assets/brand's own files, published
+# privacy policy (privacy.html, en/privacy.html); sito.css and the local fonts with their OFL licenses; the invitees'
+# guide, served as guida/index.html with the same sito.css. Logo and favicon are assets/brand's own files, published
 # under brand/.
 # Each page: its lang, the switch to its twin in the other language (hreflang), the stylesheet, the «Buy me a coffee»
-# pill, no HTML parser errors (xmllint's HTML4 parser, so the HTML5 header/main/footer are the tags it may not know).
+# pill, no HTML parser errors (xmllint's HTML4 parser, so the HTML5 header/nav/main/section/footer are the tags it may
+# not know). Every <img> has alt, width and height. A link may end in #fragment: an id of the page it leads to.
 # Product pages: download, guide and privacy links. Every page and the guide: every link and url() leads to a file
 # here, to assets/brand, to the guide or to a released download, the site's own absolute URLs included; nothing is
 # loaded from elsewhere (no script, inline style, srcset, @import, single-quoted link) and no host is named in an
 # attribute but the site's own and those of the external links below (only as those links, with their rel). The only
-# mail link is the guide's contact, and on the site only in the privacy and support pages. A typo stops the release before anything is published.
+# mail link is the guide's contact, and on the site only in the privacy and support pages. Images in img/ are PNG and
+# icons in icone/ SVG (the types release.yml uploads), and an icon loads nothing. A typo stops the release before
+# anything is published.
 # Usage: download_check.sh [site dir] [guide]
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -29,9 +32,9 @@ external=(https://buymeacoffee.com/camillobucciarelli https://developers.google.
 page() { # <file> <lang> <twin's lang> <twin, relative> <site root, relative>
   has "$dir/$1" "<html lang=\"$2\">"
   has "$dir/$1" "<a href=\"$4\" hreflang=\"$3\" lang=\"$3\">"
-  has "$dir/$1" "<link rel=\"stylesheet\" href=\"$5style.css\">"
+  has "$dir/$1" "<link rel=\"stylesheet\" href=\"$5sito.css\">"
   has "$dir/$1" "<a class=\"sponsor\" $bmc><span aria-hidden=\"true\">☕</span> Buy me a coffee</a>"
-  errors=$(xmllint --html --noout "$dir/$1" 2>&1 | grep 'parser error' | grep -vE 'Tag (header|main|footer) invalid' || true)
+  errors=$(xmllint --html --noout "$dir/$1" 2>&1 | grep 'parser error' | grep -vE 'Tag (header|nav|main|section|footer) invalid' || true)
   [ -z "$errors" ] || fail "$dir/$1: $errors"
 }
 product() { # <file> <site root, relative>
@@ -47,7 +50,7 @@ product() { # <file> <site root, relative>
   [ -s "$dir/og.png" ] || fail "$dir/og.png: missing or empty (tool/brand_icons.sh)"
 }
 links() { # <file> <its path on the bucket> [the mail link allowed there]
-  local base path url host
+  local base path url host frag img attr target
   base=$(dirname "$2")
   if grep -nE "<script|<style|<iframe|<object|<embed|[[:space:]]style=|srcset=|@import|(href|src)='" "$1"; then
     fail "$1: loads or links something in a form this check does not read"
@@ -72,7 +75,20 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
         ;;
     esac
   done < <(grep -oE '="[^"]*"' "$1" | grep -oE '//[A-Za-z0-9.-]+' | sed 's|^//||' | sort -u)
+  while read -r img; do
+    for attr in 'alt="' 'width="[0-9]+"' 'height="[0-9]+"'; do
+      grep -qE " $attr" <<< "$img" || fail "$1: $img without ${attr%%=*}"
+    done
+  done < <(tr '\n' ' ' < "$1" | grep -oE '<img[[:space:]][^>]*>' || true) # one line per tag, even a wrapped one
   while read -r url; do
+    # A #fragment names an id of the page the link leads to; alone, of this page.
+    frag=
+    if [ "$url" != "${url%%#*}" ]; then
+      frag=${url#*#}
+      url=${url%%#*}
+      [ -n "$frag" ] || { fail "$1: empty #fragment"; continue; }
+      [ -n "$url" ] || url=$(basename "$2")
+    fi
     case $url in
       https://buymeacoffee.com/camillobucciarelli | https://developers.google.com/terms/api-services-user-data-policy | \
         https://developers.google.com/ml-kit/android-data-disclosure | https://www.cloudflare.com/privacypolicy/) continue ;;
@@ -85,8 +101,15 @@ links() { # <file> <its path on the bucket> [the mail link allowed there]
       guida/index.html | macos/latest/Postino.dmg | android/latest/Postino.apk) ;;
       'macos/__VERSION__/Postino-__VERSION__.dmg' | 'android/__VERSION__/Postino-__VERSION__.apk') ;;
       brand/*) [ -f "$root/assets/brand/${path#brand/}" ] || fail "$1: $url is not in assets/brand" ;;
-      *) [ -f "$dir/$path" ] || fail "$1: $url is not a file of the site" ;;
+      *) [ -f "$dir/$path" ] || { fail "$1: $url is not a file of the site"; continue; } ;;
     esac
+    [ -n "$frag" ] || continue
+    case $path in
+      guida/index.html) target=$guide ;;
+      *.html) target=$dir/$path ;;
+      *) fail "$1: #$frag on $url, which is not a page"; continue ;;
+    esac
+    grep -qF " id=\"$frag\"" "$target" || fail "$1: $url#$frag, but $path has no id=\"$frag\""
   done < <(grep -oE '(href|src)="[^"]*"' "$1" | sed -E 's/^[a-z]+="(.*)"$/\1/')
 }
 
@@ -116,15 +139,35 @@ for f in privacy.html en/privacy.html; do
   has "$dir/$f" 'href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"'
 done
 links "$guide" guida/index.html "$contact"
-has "$guide" '<link rel="stylesheet" href="../style.css">'
+# The site job publishes these without the product pages (`download` may not run): a #fragment of another page could
+# name an id the page online does not have yet. Only fragments of the page itself.
+for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$guide"; do
+  if grep -nE '(href|src)="[^"#]+#' "$f"; then fail "$f: a #fragment of another page, maybe not online yet"; fi
+done
+has "$guide" '<link rel="stylesheet" href="../sito.css">'
 # Published as they are: a placeholder there would show.
-for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$dir/style.css" "$guide"; do
+for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$dir/sito.css" "$guide"; do
   if grep -n '__VERSION__' "$f"; then fail "$f: __VERSION__ is replaced only in the product pages"; fi
 done
 while read -r url; do
-  [ -f "$dir/$url" ] || fail "$dir/style.css: url($url) is not a file of the site"
-done < <(grep -oE 'url\([^)]*\)' "$dir/style.css" | sed -E 's/^url\("?([^")]*)"?\)$/\1/')
-if grep -nE '//|@import' "$dir/style.css"; then fail "$dir/style.css: loads something from elsewhere"; fi
+  [ -f "$dir/$url" ] || fail "$dir/sito.css: url($url) is not a file of the site"
+done < <(grep -oE 'url\([^)]*\)' "$dir/sito.css" | sed -E 's/^url\("?([^")]*)"?\)$/\1/')
+if grep -nE '//|@import' "$dir/sito.css"; then fail "$dir/sito.css: loads something from elsewhere"; fi
+# release.yml uploads img/*.png and icone/*.svg: anything else there would stay unpublished. An icon is a mask in
+# sito.css: plain paths, nothing it could load or run.
+for f in "$dir"/img/* "$dir"/icone/*; do
+  [ -e "$f" ] || continue
+  case ${f#"$dir"/} in
+    img/*.png | icone/*.svg) ;;
+    *) fail "$f: not a PNG in img/ or an SVG in icone/" ;;
+  esac
+done
+for f in "$dir"/icone/*.svg; do
+  [ -e "$f" ] || continue
+  if grep -niE '<script|<style|<image|<use|<foreignobject|href|url\(|[[:space:]]on[a-z]+=' "$f"; then
+    fail "$f: an icon that loads or runs something"
+  fi
+done
 for font in caprasimo figtree; do
   grep -qF 'SIL Open Font License, Version 1.1' "$dir/fonts/$font-OFL.txt" 2> /dev/null ||
     fail "$dir/fonts/$font-OFL.txt: no OFL"

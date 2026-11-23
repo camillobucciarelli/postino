@@ -15,62 +15,212 @@
 <link rel="alternate" hreflang="it" href="https://postino.camillobucciarelli.dev/index.html">
 <link rel="alternate" hreflang="en" href="https://postino.camillobucciarelli.dev/en/index.html">
 <link rel="icon" type="image/svg+xml" href="../brand/icon-small.svg">
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../sito.css">
 </head>
-<body>
-<header class="barra">
-  <a href="../index.html" hreflang="it" lang="it">Italiano</a>
-  <a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a>
-</header>
-<main>
-<img class="logo" src="../brand/icon.svg" width="64" height="64" alt="">
-<h1>Postino</h1>
-<p>An email client that brings all your email accounts together in one place, fast even offline.</p>
-
-<p class="versione">Version __VERSION__</p>
-<p class="pulsanti">
-  <a class="pulsante" href="../macos/__VERSION__/Postino-__VERSION__.dmg" download>Download for macOS (DMG)</a>
-  <a class="pulsante" href="../android/__VERSION__/Postino-__VERSION__.apk" download>Download for Android (APK)</a>
-</p>
-
-<h2>What it does</h2>
-<h3>Unified Inbox</h3>
-<p>Gmail, Outlook.com and Microsoft 365 (personal and work or school Microsoft accounts), iCloud and any IMAP mailbox in a single inbox, sorted by date. Each account has its own colour, so you can tell at a glance where a message comes from.</p>
-<h3>Offline and private</h3>
-<p>Recent mail is stored in an encrypted database on your device: you can read it without a connection, and actions (archive, star, mark as read…) go out when the connection is back. Postino has no mail server of its own: it talks only to your providers. And it blocks remote images until you choose to see them.</p>
-<h3>Search</h3>
-<p>Results appear as you type, from the mail on your device, with filters for unread, starred, attachments, account and dates. For older mail the search goes on at the provider.</p>
-<h3>Notifications with actions</h3>
-<p>New mail notifications are grouped by account and have two buttons of your choice, for example Archive and Mark as read.</p>
-<h3>On-device automatic labelling</h3>
-<p>Turn on automatic labelling for a label, with a description if you like, and Postino applies it by itself to new messages that resemble it. The model runs on your device: message content is not sent to any service.</p>
-<h3>Synced settings</h3>
-<p>If you turn it on, Postino keeps connected accounts with their credentials, colours, swipe actions and automatic labels in step across your devices, in a space reserved for the app in your Google Drive. All encrypted, with a key that stays on your devices. Never your mail.</p>
-
-<h2>Download</h2>
-<p>Stable links to the latest version:</p>
+<body class="sito">
+<a class="salta" href="#contenuto">Skip to content</a>
+<header class="testata">
+<div class="wrap">
+<a class="marchio" href="index.html"><img src="../brand/icon.svg" width="36" height="36" alt="">Postino</a>
+<nav aria-label="Main">
 <ul>
+  <li><a href="#funzioni">Features</a></li>
+  <li><a href="#privacy">Privacy</a></li>
+  <li><a href="../guida/index.html" hreflang="it">Guide</a></li>
+  <li><a href="support.html">Support</a></li>
+  <li><a href="../index.html" hreflang="it" lang="it">Italiano</a></li>
+  <li><a class="sponsor" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer"><span aria-hidden="true">☕</span> Buy me a coffee</a></li>
+  <li><a class="pulsante" href="#scarica">Download</a></li>
+</ul>
+</nav>
+</div>
+</header>
+
+<main id="contenuto">
+<div class="wrap hero">
+<p class="occhiello">Email client</p>
+<h1>All your email in one place.</h1>
+<p class="attacco">An email client that brings all your email accounts together in one place, fast even offline.</p>
+<div class="pulsanti grandi">
+  <a class="pulsante" href="#scarica"><span class="icona i-download" aria-hidden="true"></span>Download Postino</a>
+  <a class="secondario" href="../guida/index.html" hreflang="it">Read the guide (in Italian)</a>
+</div>
+<p class="nota">Free · macOS, Android, iPhone and iPad · Version __VERSION__</p>
+<div class="schermate">
+  <div class="finestra"><img src="../img/ipad-posta-unificata-en.png" width="1600" height="1000" alt="Postino full screen: sidebar, Unified Inbox with two accounts and an open conversation with an attached PDF"></div>
+  <img class="telefono" src="../img/iphone-conversazione-en.png" width="560" height="1217" alt="Postino on iPhone: a conversation with remote images blocked and an attached PDF">
+</div>
+</div>
+
+<div class="fascia">
+<ul class="wrap principi">
+  <li><span class="icona lg i-server" aria-hidden="true"></span><h2>No mail server</h2><p>Postino has no mail server of its own: it talks only to your providers.</p></li>
+  <li><span class="icona lg i-lock" aria-hidden="true"></span><h2>Encrypted on your device</h2><p>Recent mail is stored in an encrypted database on your device: you can read it without a connection.</p></li>
+  <li><span class="icona lg i-shield" aria-hidden="true"></span><h2>No analytics, no ads</h2><p>The app has no analytics, no advertising and no automatic error collection. The one exception, QR scanning on Android, is in the <a href="privacy.html">privacy policy</a>.</p></li>
+</ul>
+</div>
+
+<div id="funzioni" class="wrap funzioni">
+<section class="riga">
+<div class="colonna">
+<p class="occhiello">Unified Inbox</p>
+<h2 class="titolo-sezione">All your accounts in a single inbox.</h2>
+<p class="attacco">Sorted by date. Each account has its own colour, so you can tell at a glance where a message comes from.</p>
+<ul class="elenco">
+  <li><span>Gmail</span><span>Sign in with Google</span></li>
+  <li><span>Outlook.com, Hotmail, Live</span><span>Personal Microsoft account</span></li>
+  <li><span>Microsoft 365</span><span>Work or school account</span></li>
+  <li><span>iCloud and any IMAP mailbox</span><span>With your password</span></li>
+</ul>
+<a href="../guida/index.html" hreflang="it">Connecting a Gmail account (in Italian)</a>
+</div>
+<div class="pannello p-brand"><img class="telefono" src="../img/iphone-posta-unificata-en.png" width="560" height="1217" alt="Unified Inbox on iPhone: messages from two accounts, each with its own colour"></div>
+</section>
+
+<section class="riga inversa">
+<div class="colonna">
+<p class="occhiello">Offline and private</p>
+<h2 class="titolo-sezione">Read it without a connection.</h2>
+<p class="attacco">Recent mail is stored in an encrypted database on your device. Postino has no mail server of its own: it talks only to your providers.</p>
+<ul class="spunte">
+  <li><span class="icona i-check" aria-hidden="true"></span><span>Actions (archive, star, mark as read…) go out when the connection is back.</span></li>
+  <li><span class="icona i-check" aria-hidden="true"></span><span>Remote images stay blocked until you choose to see them.</span></li>
+</ul>
+<a href="privacy.html">Read the privacy policy</a>
+</div>
+<div class="pannello p-selezionato"><img class="telefono" src="../img/iphone-conversazione-en.png" width="560" height="1217" alt="A conversation on iPhone with the Remote images blocked banner"></div>
+</section>
+
+<section class="riga">
+<div class="colonna">
+<p class="occhiello">Search</p>
+<h2 class="titolo-sezione">Results appear as you type.</h2>
+<p class="attacco">From the mail on your device, with filters. For older mail the search goes on at the provider.</p>
+<ul class="filtri" aria-label="Filters">
+  <li>Unread</li>
+  <li>Starred</li>
+  <li>Attachments</li>
+  <li>Account</li>
+  <li>Dates</li>
+</ul>
+</div>
+<div class="pannello p-neutro"><img class="telefono" src="../img/iphone-ricerca-en.png" width="560" height="1217" alt="Search on iPhone: from:martha and two results"></div>
+</section>
+</div>
+
+<section class="wrap sezione">
+<h2 class="titolo-sezione">And more.</h2>
+<ul class="celle">
+  <li><h3>Notifications with actions</h3><p>New mail notifications are grouped by account and have two buttons of your choice, for example Archive and Mark as read.</p></li>
+  <li><h3>On-device automatic labelling</h3><p>Turn on automatic labelling for a label, with a description if you like, and Postino applies it by itself to new messages that resemble it. The model runs on your device.</p></li>
+  <li><h3>Synced settings</h3><p>If you turn it on, Postino keeps accounts, colours, swipe actions and automatic labels in step across your devices, in your Google Drive. All encrypted, with a key that stays on your devices. Never your mail.</p></li>
+</ul>
+</section>
+
+<section id="privacy" class="fascia-scura">
+<div class="wrap scuro">
+<div class="colonna">
+<p class="occhiello">Privacy</p>
+<h2 class="titolo-sezione">Your mail travels only between you and your providers.</h2>
+<p class="attacco">The developer receives your data only if you send a problem report yourself.</p>
+<div class="avviso"><span class="icona lg i-alert" aria-hidden="true"></span><p><strong>On macOS the database key is not yet protected from backups.</strong> It is in the login Keychain and can end up in Time Machine backups. <a href="privacy.html">Read the privacy policy</a></p></div>
+</div>
+<ul class="punti">
+  <li><h3>Mail encrypted on your device</h3><p>Headers, bodies, labels, drafts and outgoing messages are in a database encrypted with SQLCipher.</p></li>
+  <li><h3>Credentials in the system keychain</h3><p>Access tokens and passwords are used only with the provider they belong to.</p></li>
+  <li><h3>On-device automatic labelling</h3><p>The model runs on your device: message content is not sent to any service.</p></li>
+  <li><h3>Remote images blocked</h3><p>They are downloaded only if you choose to see them, for one message or for a trusted sender.</p></li>
+  <li><h3>A website without cookies</h3><p>These pages use no cookies, analytics or third-party content: even the fonts are served from here.</p></li>
+</ul>
+</div>
+</section>
+
+<section class="wrap sezione dividi">
+<div class="colonna">
+<p class="occhiello">Guide</p>
+<h2 class="titolo-sezione">From installation to your first account.</h2>
+<p class="attacco">Requirements, installation and updates, step by step, are in the guide for invitees (in Italian).</p>
+<a class="secondario" href="../guida/index.html" hreflang="it">Open the guide</a>
+</div>
+<ul class="capitoli">
+  <li><a href="../guida/index.html" hreflang="it"><span><strong>Installing Postino on macOS</strong><span>Open the DMG and drag Postino into the Applications folder.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="../guida/index.html" hreflang="it"><span><strong>Installing Postino on Android</strong><span>Download the APK from the phone's browser and allow the installation.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="../guida/index.html" hreflang="it"><span><strong>Installing Postino on iOS</strong><span>Through TestFlight, by invitation, until it reaches the App Store.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+  <li><a href="../guida/index.html" hreflang="it"><span><strong>Connecting a Gmail account</strong><span>The “Google hasn't verified this app” screen and the limit of 100 Google accounts.</span></span><span class="icona i-chevron" aria-hidden="true"></span></a></li>
+</ul>
+</section>
+
+<section id="scarica" class="wrap sezione scarica">
+<p class="occhiello">Version __VERSION__ · free</p>
+<h2>Download Postino</h2>
+<p>The buttons download version __VERSION__.</p>
+<ul class="schede">
+  <li>
+    <span class="icona dispositivo i-mac" aria-hidden="true"></span>
+    <h3>macOS</h3>
+    <p class="etichetta">Coming to the Mac App Store</p>
+    <p>Open the DMG and drag Postino into the Applications folder. The app is signed by the developer, notarized by Apple and updates itself.</p>
+    <a class="pulsante" href="../macos/__VERSION__/Postino-__VERSION__.dmg" download><span class="icona i-download" aria-hidden="true"></span>Download the DMG</a>
+  </li>
+  <li>
+    <span class="icona dispositivo i-android" aria-hidden="true"></span>
+    <h3>Android</h3>
+    <p>Download the APK from the phone's browser, not from another app's built-in browser, and open it. When Android asks, allow installs from unknown sources.</p>
+    <a class="pulsante" href="../android/__VERSION__/Postino-__VERSION__.apk" download><span class="icona i-download" aria-hidden="true"></span>Download the APK</a>
+  </li>
+  <li>
+    <span class="icona dispositivo i-iphone" aria-hidden="true"></span>
+    <h3>iPhone and iPad</h3>
+    <p class="etichetta">Coming to the App Store</p>
+    <!-- STORE: put the link to Postino on the App Store (iPhone, iPad) and the Mac App Store here at launch (#324). -->
+    <p>The link will appear here at launch. Meanwhile it installs through TestFlight, by invitation.</p>
+    <a class="secondario" href="../guida/index.html" hreflang="it">Installing with TestFlight (in Italian)</a>
+  </li>
+</ul>
+</section>
+
+<div class="wrap due">
+<div>
+<h2>Frequently asked questions</h2>
+<div class="domande">
+  <div><h3>How do I open Postino on macOS?</h3><p>On first launch macOS asks you to confirm opening an app downloaded from the Internet: choose “Open”.</p></div>
+  <div><h3>How is Postino updated?</h3><p>On macOS it updates itself, and you can check for updates with “Check for Updates…” in the Postino menu. On Android and iOS Postino tells you when a new version is out: on Android install the new APK over the one you have, on iOS update it from the App Store or from TestFlight. Your accounts and mail stay.</p></div>
+</div>
+<p class="attenuato">For everything else, from connecting a Gmail account to reporting a problem, see the <a href="../guida/index.html" hreflang="it">guide for invitees</a> (in Italian).</p>
+</div>
+<div>
+<h2>Stable links</h2>
+<p class="attenuato">The buttons above stay fixed on __VERSION__. These links always point to the latest version.</p>
+<ul class="versioni">
   <li><a href="../macos/latest/Postino.dmg" download>Postino for macOS (DMG), latest version</a></li>
   <li><a href="../android/latest/Postino.apk" download>Postino for Android (APK), latest version</a></li>
-  <!-- STORE: put the link to Postino on the App Store (iPhone, iPad) and the Mac App Store here at launch (#324). -->
-  <li>iPhone and iPad: Postino is coming to the App Store and the Mac App Store; the link will appear here at launch. Meanwhile it installs through TestFlight, by invitation, as explained in the <a href="../guida/index.html" hreflang="it">guide for invitees</a> (in Italian).</li>
 </ul>
-<p>Requirements, installation and updates, step by step, are in the <a href="../guida/index.html" hreflang="it">guide for invitees</a> (in Italian).</p>
+</div>
+</div>
 
-<h2>Frequently asked questions</h2>
-<h3>How do I open Postino on macOS?</h3>
-<p>Open the DMG and drag Postino into the Applications folder. On first launch macOS asks you to confirm opening an app downloaded from the Internet: choose “Open”. The app is signed by the developer and notarized by Apple.</p>
-<h3>How do I install the APK on Android?</h3>
-<p>Download the APK from the phone's browser (not from another app's built-in browser) and open it. Android asks you to allow installs from unknown sources for the browser or the Files app: allow it and finish the installation.</p>
-<h3>How is Postino updated?</h3>
-<p>On macOS it updates itself: on the second launch it asks whether to check for updates automatically, and you can check at any time with “Check for Updates…” in the Postino menu. On Android and iOS Postino tells you when a new version is out: on Android download the new APK (from the notice or from this page) and install it over the one you have, on iOS update it from the App Store or, if you installed it from TestFlight, from TestFlight. Your accounts and mail stay.</p>
-<p>For everything else, from connecting a Gmail account to reporting a problem, see the <a href="../guida/index.html" hreflang="it">guide for invitees</a> (in Italian).</p>
-
-<h2>Support the project</h2>
-<p>Postino is free to download. If you find it useful, you can <a href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">buy me a coffee</a>.</p>
+<div class="wrap chiusura">
+<div>
+<h2>Postino is free to download.</h2>
+<p class="attacco">If you find it useful, you can buy me a coffee.</p>
+<div class="pulsanti grandi">
+  <a class="pulsante" href="#scarica">Download Postino</a>
+  <a class="secondario" href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">Buy me a coffee</a>
+</div>
+</div>
+</div>
 </main>
-<footer>
-  <a href="support.html">Support</a> · <a href="privacy.html">Privacy policy</a>
+
+<footer class="piede">
+<div class="wrap">
+<div><span class="marchio-piede">Postino</span><span class="nota">An email client that brings all your email accounts together in one place.</span></div>
+<ul>
+  <li><a href="../guida/index.html" hreflang="it">Guide for invitees (in Italian)</a></li>
+  <li><a href="support.html">Support</a></li>
+  <li><a href="privacy.html">Privacy policy</a></li>
+  <li><a href="../index.html" hreflang="it" lang="it">Italiano</a></li>
+  <li><a href="https://buymeacoffee.com/camillobucciarelli" rel="noopener noreferrer">Buy me a coffee</a></li>
+</ul>
+</div>
 </footer>
 </body>
 </html>

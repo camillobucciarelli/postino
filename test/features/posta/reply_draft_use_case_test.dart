@@ -82,7 +82,7 @@ void main() {
   }
 
   Future<ReplySource> source(ReplyKind kind, {String? messageId}) =>
-      useCase.source('a1', 't', inbox.rows, kind, messageId: messageId);
+      useCase.source('a1', 't', inbox.rows, kind, self: _account.address, messageId: messageId);
 
   test('Rispondi answers the last message by default, quoting its body', () async {
     given(lastBody: const MessageBody('<p>Alle 20</p>', BodyKind.html));
@@ -98,6 +98,31 @@ void main() {
     expect(d.inReplyTo, '<m2@example.com>');
     expect(d.body, contains('<p>Alle 20</p>'));
     expect(d.body, contains('ha scritto:'));
+  });
+
+  ConversationMessage mine(String id, String from) =>
+      (message: msg(id, conversationId: 't', from: from, to: ['bruno@example.com']), body: null);
+
+  test('Rispondi and Rispondi a tutti skip the Account\'s own last messages (#371)', () async {
+    given();
+    // Case-insensitive: the Provider may write the address differently.
+    inbox.rows = [...inbox.rows.take(1), mine('m2', 'A1@Example.com'), mine('m3', 'a1@example.com')];
+    expect((await source(ReplyKind.reply)).message.id, 'm1');
+    expect((await source(ReplyKind.replyAll)).message.id, 'm1');
+  });
+
+  test('Rispondi falls back to the last message when every one is the Account\'s', () async {
+    given();
+    inbox.rows = [mine('m1', 'a1@example.com'), mine('m2', 'a1@example.com')];
+    expect((await source(ReplyKind.reply)).message.id, 'm2');
+    expect((await source(ReplyKind.replyAll)).message.id, 'm2');
+  });
+
+  test('Inoltra and an explicit message ignore the rule: the last message, or the one chosen', () async {
+    given(lastBody: const MessageBody('x', BodyKind.testo));
+    inbox.rows = [...inbox.rows.take(1), mine('m2', 'a1@example.com')];
+    expect((await source(ReplyKind.forward)).message.id, 'm2');
+    expect((await source(ReplyKind.reply, messageId: 'm2')).message.id, 'm2');
   });
 
   test('Rispondi a tutti answers everyone but the Account', () async {

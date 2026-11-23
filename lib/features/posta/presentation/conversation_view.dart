@@ -214,7 +214,8 @@ class _ConversationViewState()
     if (open && unread) _open();
   }
 
-  /// Rispondi / Rispondi a tutti / Inoltra [messageId] (the last message by default): the Bozza with the
+  /// Rispondi / Rispondi a tutti / Inoltra [messageId] (by default Inoltra the last message, the others the last
+  /// one received: see `ReplyDraftUseCase.source`): the Bozza with the
   /// Citazione is saved, then the composer opened. A body not here yet is downloaded first; a view closed
   /// meanwhile saves nothing. If it cannot be, Rispondi quotes the snippet; Inoltra (which needs the
   /// attachments too, unknown in rows older than database v9) makes no Bozza and says so.
@@ -229,6 +230,7 @@ class _ConversationViewState()
         widget.conversationId,
         messages,
         kind,
+        self: a.address,
         messageId: messageId,
       );
       if (!mounted) return;

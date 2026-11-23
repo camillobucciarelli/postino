@@ -5,6 +5,7 @@ import '../../../core/domain/account.dart';
 import '../../../core/domain/html_text.dart';
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/mail_sync.dart';
+import '../../../core/domain/mailbox.dart';
 import '../../../core/domain/message.dart';
 import '../../../core/domain/reply.dart';
 import '../../../core/domain/result.dart';
@@ -17,16 +18,27 @@ import 'reply_source.dart';
 /// still wants it (a view gone meanwhile saves nothing) and says when Inoltra is [ReplySource.unavailable].
 @injectable
 class ReplyDraftUseCase(final MailSync _sync, final InboxRepository _inbox) {
-  /// [messageId] in [messages] (the last one by default), its body downloaded first when it is not here
-  /// (for Inoltra, also when its attachments are not known).
+  /// [messageId] in [messages], its body downloaded first when it is not here (for Inoltra, also when its
+  /// attachments are not known). By default Inoltra takes the last message, Rispondi and Rispondi a tutti the
+  /// last one not sent by [self] (the Account's address), or the last one if all are its own (#371).
+  /// ponytail: only the Account address counts as «mine»; aliases / send-as are not known here.
   Future<ReplySource> source(
     String accountId,
     String conversationId,
     List<ConversationMessage> messages,
     ReplyKind kind, {
+    required String self,
     String? messageId,
   }) async {
-    var (:message, :body) = messageId == null ? messages.last : messages.firstWhere((m) => m.message.id == messageId);
+    final mine = self.toLowerCase();
+    var (:message, :body) = messageId != null
+        ? messages.firstWhere((m) => m.message.id == messageId)
+        : kind == ReplyKind.forward
+        ? messages.last
+        : messages.lastWhere(
+            (m) => parseMailbox(m.message.from).address.toLowerCase() != mine,
+            orElse: () => messages.last,
+          );
     if ((body == null || kind == ReplyKind.forward && body.attachments == null) &&
         await _sync.fetchBody(accountId, message.id) is Ok) {
       // The database stream answers with the rows as they are now.

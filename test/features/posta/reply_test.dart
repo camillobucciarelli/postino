@@ -74,7 +74,8 @@ void _thread(FakeMailProvider p) => p
   ..attach('m3', 'Contratto.pdf', List.filled(1024, 7))
   ..attach('m3', 'fattura\u202Efdp.exe', List.filled(10, 5));
 
-Future<void> _start(WidgetTester tester) async {
+/// [ownLast]: a1 answered Bruno last (m4, read), so m3 is the last one received.
+Future<void> _start(WidgetTester tester, {bool ownLast = false}) async {
   tester.view
     ..physicalSize = _desktop
     ..devicePixelRatio = 1;
@@ -82,11 +83,16 @@ Future<void> _start(WidgetTester tester) async {
   h = await Harness.create();
   gmail = await h.addAccount('a1');
   _thread(gmail);
+  if (ownLast) {
+    gmail.deliver(
+      msg('m4', conversationId: 't', from: 'a1@example.com', to: ['bruno@example.com'], date: _day(4), isRead: true),
+    );
+  }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
   unawaited(Routefly.navigate(routePaths.posta.path));
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('row-a1-m3')));
+  await tester.tap(find.byKey(ValueKey(ownLast ? 'row-a1-m4' : 'row-a1-m3')));
   await _settle(tester);
 }
 
@@ -238,6 +244,25 @@ void main() {
       await _settle(tester);
       await _tap(tester, find.byKey(const ValueKey('row-a1-m3')));
     }
+  });
+
+  _onMac('with the Account\'s own message last, Rispondi (bar and r) answers the last one received (#371)', (
+    tester,
+  ) async {
+    await _start(tester, ownLast: true);
+    await _tap(tester, find.byKey(const ValueKey('reply')));
+    var d = await _draft(_openId());
+    expect(d.inReplyTo, '<m3@example.com>');
+    expect(d.to, ['bruno@example.com']);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    await _tap(tester, find.byKey(const ValueKey('row-a1-m4')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await _settle(tester);
+    d = await _draft(_openId());
+    expect(d.inReplyTo, '<m3@example.com>');
   });
 
   _onMac('r typed in the composer editor is a letter, not a reply', (tester) async {

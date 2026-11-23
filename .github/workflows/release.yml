@@ -8,8 +8,8 @@ name: Release
 # A manual run with `only: android-store` runs that job alone (the other jobs are skipped), also for a version already
 # released: the first upload to Google Play of the version in pubspec.yaml (docs/store/play-checklist-titolare.md).
 # A manual run with `only: site` publishes the website alone (#370): `site`, then `download` with the product pages
-# naming the highest released version (highest_version.sh), whose files are already up; no app is built, no "latest"
-# key moves. (Solo sito: Actions → Release → Run workflow da main con `only: site`, o
+# naming the highest released version (highest_version.sh), once its DMG and APK are online; no app is built, no
+# "latest" key moves. (Solo sito: Actions → Release → Run workflow da main con `only: site`, o
 # `gh workflow run release.yml --ref main -f only=site`.)
 # Steps live in tool/release/*.sh, one responsibility each.
 on:
@@ -124,13 +124,15 @@ jobs:
 
   # The product page (#173) goes up as index.html at the bucket root and en/index.html, with __VERSION__ replaced; its
   # stylesheet, fonts and privacy pages come from `site`, so it waits for that too (`site` succeeds, doing nothing, on
-  # a tag that is not the highest). It waits for `macos` and `android` (a skipped or failed job skips this one), so it never names a version whose files are not up yet nor moves the "latest" links ahead of them.
+  # a tag that is not the highest). It waits for `macos` and `android` (a skipped or failed job skips this one, except
+  # with `only: site`, below), so it never names a version whose files are not up yet nor moves the "latest" links ahead of them.
   # Its main buttons point to the versioned files of this very run: a manual run publishes those but never moves
   # "latest" (only tag pushes do), so the "latest" links are only the secondary ones. The root `/` itself is served by a
   # Cloudflare Transform Rule (Rewrite URL: path exactly `/` -> static `/index.html`), set by hand by the owner in the
   # dashboard, outside this repo: without it only /index.html works.
   # With `only: site` the jobs before it are skipped (none built anything), so it waits for `site` alone and names the
-  # highest released version instead: its files are already up. Otherwise the same as the default (all four succeed).
+  # highest released version instead, once its DMG and APK answer on the public domain (a tag whose release failed or
+  # is still running has none: the pages stay as they are). Otherwise the same as the default (all four succeed).
   download:
     needs: [version, macos, android, site]
     if: >-
@@ -153,6 +155,11 @@ jobs:
           if [ "$ONLY" = site ]; then
             # `site` already refused a run off main (version.sh).
             version=$(tool/release/highest_version.sh)
+            base=${RELEASE_BASE_URL:-https://postino.camillobucciarelli.dev}
+            for key in "macos/$version/Postino-$version.dmg" "android/$version/Postino-$version.apk"; do
+              curl --silent --fail --head --retry 3 --max-time 60 --output /dev/null "${base%/}/$key" ||
+                { echo "::error::$key is not online: product pages left as they are"; exit 1; }
+            done
           else
             version=$(tool/release/version.sh)
             if [ "$GITHUB_EVENT_NAME" = push ]; then

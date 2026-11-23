@@ -101,4 +101,25 @@ void main() {
     expect(s.all(InboxSection.unread), isEmpty);
     expect(_ids(s.all(InboxSection.read)), ['c2']);
   });
+
+  test('the held Conversazione past the 3 newest takes the place of the third; the limit and the count stay', () {
+    // c4 was opened among the 3 newest; c1 and c2 arrived since.
+    const held = (('a1', 'c4'), InboxSection.unread);
+    final s = InboxSections.of([for (var i = 1; i <= 5; i++) _entry(i, unread: true)], held: held);
+    expect(_ids(s.shown(InboxSection.unread)), ['c1', 'c2', 'c4']);
+    expect(s.hasMore(InboxSection.unread), isTrue);
+    expect(s.all(InboxSection.unread), hasLength(5));
+    // Among the 3 newest, or no hold: the 3 newest as they are.
+    final among = InboxSections.of(
+      [for (var i = 1; i <= 5; i++) _entry(i, unread: true)],
+      held: (('a1', 'c2'), InboxSection.unread),
+    );
+    expect(_ids(among.shown(InboxSection.unread)), ['c1', 'c2', 'c3']);
+    // Held in another section: this one is untouched.
+    final elsewhere = InboxSections.of(
+      [for (var i = 1; i <= 4; i++) _entry(i, starred: true), _entry(5)],
+      held: (('a1', 'c5'), InboxSection.read),
+    );
+    expect(_ids(elsewhere.shown(InboxSection.starred)), ['c1', 'c2', 'c3']);
+  });
 }

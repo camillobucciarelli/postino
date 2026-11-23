@@ -34,7 +34,7 @@ HeldConversation? holdFocus(ConversationKey? focus, HeldConversation? held, Inbo
 }
 
 /// The Conversazioni of the posta in arrivo by section, each in one only, newest first as they come.
-class InboxSections._(final Map<InboxSection, List<InboxEntry>> _by) {
+class InboxSections._(final Map<InboxSection, List<InboxEntry>> _by, final HeldConversation? _held) {
   /// Splits [entries]: with a Stella in Contrassegnate, else with an unread message in Da leggere, else in Letti;
   /// [held] stays where the focus rule keeps it.
   factory InboxSections.of(List<InboxEntry> entries, {HeldConversation? held}) {
@@ -49,14 +49,21 @@ class InboxSections._(final Map<InboxSection, List<InboxEntry>> _by) {
           : InboxSection.read;
       by[section]!.add(e);
     }
-    return InboxSections._(by);
+    return InboxSections._(by, held);
   }
 
   /// Every Conversazione of [s].
   List<InboxEntry> all(InboxSection s) => _by[s]!;
 
   /// What the list shows of [s]: the [sectionPreview] newest of Contrassegnate and Da leggere, all of Letti.
-  List<InboxEntry> shown(InboxSection s) => hasMore(s) ? all(s).take(sectionPreview).toList() : all(s);
+  /// The held Conversazione past them (newer ones arrived since it took the focus) takes the place of the last.
+  List<InboxEntry> shown(InboxSection s) {
+    if (!hasMore(s)) return all(s);
+    final first = all(s).take(sectionPreview).toList();
+    final held = _held == null ? null : all(s).where((e) => keyOf(e) == _held.$1).firstOrNull;
+    if (held == null || first.contains(held)) return first;
+    return [...first.take(sectionPreview - 1), held];
+  }
 
   /// [s] has more than it shows: «Mostra tutti».
   bool hasMore(InboxSection s) => s != InboxSection.read && all(s).length > sectionPreview;

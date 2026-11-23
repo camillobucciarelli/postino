@@ -583,5 +583,97 @@ void main() {
       await tester.pumpAndSettle();
       expect(inScreen, findsNothing, reason: 'the focus left it: it is in Letti now');
     });
+
+    testWidgets('the open Conversazione stays shown when newer ones arrive in its section; j goes on from it', (
+      tester,
+    ) async {
+      final p = await _startSections(tester, unread: 3, read: 1);
+      await tester.tap(_rowOf('u3'));
+      await tester.pumpAndSettle();
+      p.deliver(msg('n1', subject: 'Nuova', date: DateTime.utc(2026, 10, 1, 10), conversationId: 't-n1'));
+      await getIt<SyncEngine>().syncAll();
+      await tester.pumpAndSettle();
+      expect(_headings(tester), ['Da leggere 4', 'Letti 1']);
+      expect(_rowOf('u3'), findsOneWidget, reason: 'it takes the place of the third');
+      expect(_rowOf('u2'), findsNothing);
+      expect(tester.widget<PostinoMessageTile>(_rowOf('u3')).selected, isTrue);
+      expect(_focusedId(), 'u3');
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), 'r1');
+      expect(_rowOf('u3'), findsOneWidget, reason: 'read, it went to Letti');
+      expect(_headings(tester), ['Da leggere 3', 'Letti 2']);
+    });
+
+    testWidgets('a row held by the keyboard focus moves as soon as the focus leaves it', (tester) async {
+      await _startSections(tester, unread: 4, read: 1, width: 800);
+      final row = find.descendant(of: _rowOf('u1'), matching: find.byType(PostinoFocusRing));
+      Focus.of(tester.element(row)).requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      // The Stella is written to the database: real I/O, no time passes on the test's clock.
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.runAsync(pumpEventQueue);
+      }
+      expect(tester.widget<PostinoMessageTile>(_rowOf('u1')).starred, isTrue);
+      expect(_headings(tester), ['Da leggere 4', 'Letti 1'], reason: 'focused, it keeps its section');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), isNot('u1'));
+      expect(_headings(tester), [
+        'Contrassegnate 1',
+        'Da leggere 3',
+        'Letti 1',
+      ], reason: 'the focus left it: it went to Contrassegnate');
+    });
+
+    testWidgets('«Mostra tutti» is reached with Tab from the cursor row and opens with Invio or Spazio', (
+      tester,
+    ) async {
+      await _startSections(tester, starred: 1, unread: 4);
+      for (final key in [LogicalKeyboardKey.enter, LogicalKeyboardKey.space]) {
+        final row = find.descendant(of: _rowOf('s1'), matching: find.byType(PostinoFocusRing));
+        Focus.of(tester.element(row)).requestFocus();
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+        final focused = FocusManager.instance.primaryFocus!.context!;
+        expect(focused.findAncestorWidgetOfExactType<PostinoSectionHeader>()?.title, 'Da leggere');
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+        expect(find.byType(InboxSectionScreen), findsOneWidget, reason: '$key');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(InboxSectionScreen), findsNothing);
+      }
+    });
+
+    testWidgets('j and k over a heading in a list taller than the screen keep the row reached visible and focused', (
+      tester,
+    ) async {
+      await _startSections(tester, starred: 3, read: 30, width: 800);
+      final row = find.descendant(of: _rowOf('s1'), matching: find.byType(PostinoFocusRing));
+      Focus.of(tester.element(row)).requestFocus();
+      await tester.pumpAndSettle();
+      final list = tester.getRect(find.byType(MessageList));
+      void visible(String id) {
+        expect(_focusedId(), id);
+        final r = tester.getRect(_rowOf(id));
+        expect(r.top, greaterThanOrEqualTo(list.top - 0.5), reason: id);
+        expect(r.bottom, lessThanOrEqualTo(list.bottom + 0.5), reason: id);
+      }
+
+      for (final id in ['s2', 's3', for (var i = 1; i <= 30; i++) 'r$i']) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+        visible(id);
+      }
+      for (final id in [for (var i = 29; i >= 1; i--) 'r$i', 's3', 's2']) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+        await tester.pumpAndSettle();
+        visible(id);
+      }
+    });
   });
 }

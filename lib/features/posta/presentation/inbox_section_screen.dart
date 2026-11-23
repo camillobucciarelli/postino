@@ -55,7 +55,9 @@ class _InboxSectionScreenState() extends State<InboxSectionScreen> with Accounts
       child: PostaShortcuts(
         cursor: _cursor,
         child: CallbackShortcuts(
-          bindings: {const SingleActivator(LogicalKeyboardKey.escape): widget.onBack},
+          // Esc leaves only with nothing open: with a Conversazione the list-detail layout closes it on the same key
+          // first, so what counts is what was open when the key came (this build's), not the state after it.
+          bindings: {const SingleActivator(LogicalKeyboardKey.escape): _open == null ? widget.onBack : () {}},
           // As a PostinoDetailPage: the focus starts in the screen, so Esc reaches it.
           child: Focus(
             autofocus: true,

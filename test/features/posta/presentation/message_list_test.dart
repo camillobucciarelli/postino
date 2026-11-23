@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/app/posta/posta_routes.dart' show labelPath;
 import 'package:postino/core/data/sync_engine.dart';
-import 'package:postino/core/domain/mail_action.dart' show readAttribute;
+import 'package:postino/core/domain/mail_action.dart' show readAttribute, starredAttribute;
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/presentation/inbox_section_screen.dart';
@@ -568,20 +568,58 @@ void main() {
       expect(find.byType(InboxSectionScreen), findsNothing);
     });
 
-    testWidgets('in the screen the open Conversazione stays while read, beside the list; it leaves when closed', (
+    testWidgets(
+      'in the screen the open Conversazione stays while read, beside the list; Esc closes it, then the screen',
+      (tester) async {
+        await _startSections(tester, unread: 4);
+        await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
+        await tester.pumpAndSettle();
+        final inScreen = find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u2'));
+        await tester.tap(inScreen);
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoThreadView)),
+          findsOne,
+        );
+        expect(inScreen, findsOneWidget, reason: 'read now, it keeps the focus and its section');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(InboxSectionScreen), findsOneWidget, reason: 'the first Esc closes the Conversazione only');
+        expect(
+          find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoThreadView)),
+          findsNothing,
+        );
+        expect(inScreen, findsOneWidget, reason: 'its row has the focus still');
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+        expect(inScreen, findsNothing, reason: 'the focus left it: it is in Letti now');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(InboxSectionScreen), findsOneWidget, reason: 'j opened the next one: Esc closes it');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(InboxSectionScreen), findsNothing, reason: 'the second Esc leaves the screen');
+      },
+    );
+
+    testWidgets('in the screen the system Indietro closes the open Conversazione first, then the screen', (
       tester,
     ) async {
       await _startSections(tester, unread: 4);
       await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
       await tester.pumpAndSettle();
-      final inScreen = find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u2'));
-      await tester.tap(inScreen);
+      await tester.tap(find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u2')));
       await tester.pumpAndSettle();
-      expect(find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoThreadView)), findsOne);
-      expect(inScreen, findsOneWidget, reason: 'read now, it keeps the focus and its section');
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(inScreen, findsNothing, reason: 'the focus left it: it is in Letti now');
+      expect(find.byType(InboxSectionScreen), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoThreadView)),
+        findsNothing,
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(InboxSectionScreen), findsNothing);
     });
 
     testWidgets('the open Conversazione stays shown when newer ones arrive in its section; j goes on from it', (
@@ -626,6 +664,31 @@ void main() {
         'Da leggere 3',
         'Letti 1',
       ], reason: 'the focus left it: it went to Contrassegnate');
+    });
+
+    testWidgets('a row held by the keyboard focus stays while its menu is open, whatever the sync says', (
+      tester,
+    ) async {
+      final p = await _startSections(tester, unread: 4, read: 1, width: 800);
+      final row = find.descendant(of: _rowOf('u1'), matching: find.byType(PostinoFocusRing));
+      Focus.of(tester.element(row)).requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), isNull, reason: 'the focus is in the menu');
+      // Starred on another device while its menu is open.
+      p.changeElsewhere('u1', starredAttribute, true);
+      await getIt<SyncEngine>().syncAll();
+      await tester.pumpAndSettle();
+      expect(tester.widget<PostinoMessageTile>(_rowOf('u1')).starred, isTrue);
+      expect(_headings(tester), ['Da leggere 4', 'Letti 1'], reason: 'its menu is open: it keeps its section');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), 'u1', reason: 'the menu gives the focus back');
+      expect(_headings(tester), ['Da leggere 4', 'Letti 1']);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(_headings(tester), ['Contrassegnate 1', 'Da leggere 3', 'Letti 1'], reason: 'the focus left it');
     });
 
     testWidgets('«Mostra tutti» is reached with Tab from the cursor row and opens with Invio or Spazio', (

@@ -120,6 +120,9 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     node.addListener(() {
       if (node.hasPrimaryFocus && _cursor != key && mounted) {
         setState(() => _cursor = key);
+      } else if (node.hasPrimaryFocus && _sectioned && _held?.$1 != key && mounted) {
+        // The focus came to the cursor row: its section is held from now (#366), its menu included.
+        setState(() {});
       } else if (!node.hasFocus && _held?.$1 == key && widget.selected != key && mounted && _focusOnPage()) {
         // The focus left the row its section was held for (#366) for another control of the page: it goes where its
         // state says now. Not for its menu, which floats over the page and gives the focus back.
@@ -188,9 +191,19 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   bool _listFocused() => _nodes.values.any((n) => n.hasFocus) && (_twoPane || widget.selected == null);
 
   /// The Conversazione with the focus for the sections (#366): the open one, else the row the keyboard is on.
+  /// Its menu, or a dialog opened from it, keeps the row held: the focus is only lent to them.
   (String, String)? _focused() {
     final cursor = _cursor;
-    return widget.selected ?? (cursor != null && (_nodes[cursor]?.hasFocus ?? false) ? cursor : null);
+    if (widget.selected != null || cursor == null) return widget.selected;
+    if (_nodes[cursor]?.hasFocus ?? false) return cursor;
+    return _held?.$1 == cursor && _focusOverPage() ? cursor : null;
+  }
+
+  /// The focus is in a row's menu or in a dialog over the page (not on another page).
+  bool _focusOverPage() {
+    final focused = FocusManager.instance.primaryFocus?.context;
+    return focused != null &&
+        (ModalRoute.of(focused) is PopupRoute || focused.findAncestorStateOfType<PostinoContextMenuState>() != null);
   }
 
   /// The focus is on a control of the page the list is on, not in a row's menu or a dialog over the page.

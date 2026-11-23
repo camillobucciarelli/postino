@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:routefly/routefly.dart';
 
+import '../../features/posta/domain/inbox_sections.dart';
 import '../../main.dart' show routePaths;
 
 /// What a `/posta` URI shows: the list, and the Conversazione or the Bozza open beside it.
@@ -74,3 +75,8 @@ void openConversation(String accountId, String conversationId) => Routefly.navig
 /// [labelId] is the Etichetta of the view, passed only for the Cestino: it searches the Cestino alone.
 void openSearch({String? accountId, String? labelId}) =>
     unawaited(Routefly.push<void>(routePaths.cerca, arguments: (accountId, labelId)));
+
+/// «Mostra tutti» of [section] of the posta in arrivo (#366), of [accountId] or of the Posta unificata: back pops
+/// to the view. The scope goes as the route's argument, as for the search.
+void openSection(InboxSection section, {String? accountId}) =>
+    unawaited(Routefly.push<void>(routePaths.sezione, arguments: (section, accountId)));

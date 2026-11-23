@@ -83,6 +83,18 @@
       "other": "$n messaggi"
     }
   },
+  "sezioni": {
+    "starred": "Contrassegnate",
+    "unread": "Da leggere",
+    "read": "Letti",
+    "heading": {
+      "one": "$title, $n conversazione",
+      "other": "$title, $n conversazioni"
+    },
+    "showAll": "Mostra tutti",
+    "showAllLabel": "Mostra tutte le $n $title",
+    "scopeAll": "tutti"
+  },
   "conversazione": {
     "selectTitle": "Seleziona una Conversazione",
     "selectBody": "Scegli una Conversazione dalla lista per leggerla qui.",

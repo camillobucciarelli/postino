@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/app/posta/posta_routes.dart' show openConversation;
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
@@ -42,9 +43,13 @@ String _newsletter(String image) =>
     'o <a href="mailto:aiuto@shop.example">scrivici</a>.</p><img src="$image" alt="Logo">'
     '<p><a href="file:///data/user/0/postino/shared_prefs/p.xml">conferma</a></p>';
 
+/// The Conversazione of each message.
+final _conversations = <String, String>{};
+
 /// Every message unread, so each one shows up expanded with its body.
 void _mailbox(FakeMailProvider p) {
   void html(String id, String conversation, String from, String body, int d) {
+    _conversations[id] = conversation;
     p.bodies[id] = MessageBody(body, BodyKind.html);
     p.deliver(
       msg(
@@ -82,8 +87,9 @@ Future<void> _start(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Opens the Conversazione of [latest] as its row does: unread, not every row is in Da leggere (#366).
 Future<void> _open(WidgetTester tester, String latest) async {
-  await tester.tap(find.byKey(ValueKey('row-a1-$latest')));
+  openConversation('a1', _conversations[latest]!);
   await tester.pumpAndSettle();
 }
 

@@ -48,6 +48,13 @@ const _cases = <_Case>[
   ),
   (action: Delete(), expected: Placement.inbox, seen: 'inbox', done: 'trash', write: ('messages/$_id/trash', null)),
   (
+    action: Restore(),
+    expected: Placement.trash,
+    seen: 'trash',
+    done: 'inbox',
+    write: (_modify, '{addLabelIds: [INBOX], removeLabelIds: [TRASH]}'),
+  ),
+  (
     action: ApplyLabel('Label_12'),
     expected: false,
     seen: 'inbox',

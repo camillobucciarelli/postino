@@ -514,6 +514,15 @@ void mailProviderActionContract(String name, CreateHarness create) {
       expect((await now('a')).labelIds, allOf(contains(trashLabelId), isNot(contains(inboxLabelId))));
     });
 
+    test('Ripristina brings a message from the Cestino back into the inbox', () async {
+      await h.deliver(msg('a', labelIds: const [trashLabelId]));
+      expect(
+        _ok(await h.provider.applyAction(h.idOf('a'), const Restore(), expected: Placement.trash)),
+        isA<ActionApplied>(),
+      );
+      expect((await now('a')).labelIds, allOf(contains(inboxLabelId), isNot(contains(trashLabelId))));
+    });
+
     test('no expected value: forced', () async {
       await h.deliver(msg('a', isRead: true));
       expect(_ok(await h.provider.applyAction(h.idOf('a'), const MarkUnread())), isA<ActionApplied>());

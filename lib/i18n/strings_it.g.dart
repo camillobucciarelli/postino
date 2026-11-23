@@ -1247,6 +1247,9 @@ class Translations$azioni$it {
 	/// it: 'Elimina'
 	String get delete => 'Elimina';
 
+	/// it: 'Ripristina'
+	String get restore => 'Ripristina';
+
 	/// it: 'Aggiungi Stella'
 	String get star => 'Aggiungi Stella';
 
@@ -1264,6 +1267,9 @@ class Translations$azioni$it {
 
 	/// it: 'Conversazione spostata nel Cestino'
 	String get deleted => 'Conversazione spostata nel Cestino';
+
+	/// it: 'Conversazione ripristinata'
+	String get restored => 'Conversazione ripristinata';
 
 	/// it: 'Etichetta «$name» applicata'
 	String labelApplied({required Object name}) => 'Etichetta «${name}» applicata';
@@ -1926,12 +1932,14 @@ extension on Translations {
 			'conflitti.values.unlabeled' => ({required Object name}) => 'senza l\'etichetta ${name}',
 			'azioni.archive' => 'Archivia',
 			'azioni.delete' => 'Elimina',
+			'azioni.restore' => 'Ripristina',
 			'azioni.star' => 'Aggiungi Stella',
 			'azioni.unstar' => 'Togli Stella',
 			'azioni.markRead' => 'Segna come letto',
 			'azioni.markUnread' => 'Segna come non letto',
 			'azioni.archived' => 'Conversazione archiviata',
 			'azioni.deleted' => 'Conversazione spostata nel Cestino',
+			'azioni.restored' => 'Conversazione ripristinata',
 			'azioni.labelApplied' => ({required Object name}) => 'Etichetta «${name}» applicata',
 			'azioni.undo' => 'Annulla',
 			'azioni.more' => 'Altre azioni',

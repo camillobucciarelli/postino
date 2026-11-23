@@ -39,13 +39,20 @@ class const RowSwipe({
   /// `PostinoSwipeRow.away`).
   final PostinoSwipeSide? away,
 
-  /// A swipe whose Azione takes the row out of the list (Archivia, Elimina), before the Azione: the row slides off
-  /// the screen, so the list closes after it without fading.
+  /// A swipe whose Azione takes the row out of the list (Archivia, Elimina, Ripristina), before the Azione: the row
+  /// slides off the screen, so the list closes after it without fading.
   final void Function(PostinoSwipeSide side)? onSlideOut,
   required final Widget Function(Map<CustomSemanticsAction, VoidCallback> semanticActions) builder,
 }) extends StatelessWidget {
   ({MailAction? action, PostinoSwipeAction shown}) _view(BuildContext context, SwipeAction choice) {
     final t = context.t.azioni;
+    // In the Cestino both Archivia and Elimina are Ripristina (#372): it is the one Azione that takes the row away.
+    if (isTrash(view) && (choice == SwipeAction.archive || choice == SwipeAction.delete)) {
+      return (
+        action: const Restore(),
+        shown: (label: t.restore, icon: PostinoIcons.inbox, tone: PostinoSwipeTone.archive),
+      );
+    }
     return switch (choice) {
       SwipeAction.archive => (
         action: const Archive(),

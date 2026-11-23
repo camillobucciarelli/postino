@@ -12,7 +12,7 @@ import 'graph_place.dart';
 
 /// The Azioni on Graph (ADR 0008): the message is read once (flags, folder, etag), compared with the expected and
 /// the wanted value, and written only if needed. Letto and Stella are written with `If-Match` on the etag; Archivia,
-/// Elimina and the Etichette (folders) are a move. Failures are thrown as [OAuthFailed].
+/// Elimina, Ripristina and the Etichette (folders) are a move. Failures are thrown as [OAuthFailed].
 class GraphActions(
   final GraphFolders _folders,
   final GraphLookup _lookup,
@@ -57,7 +57,7 @@ class GraphActions(
   Future<Object> _value(GraphPlace at, MailAction action) async => switch (action) {
     MarkRead() || MarkUnread() => at.isRead,
     Star() || Unstar() => at.flagged,
-    Archive() || Delete() => switch (await _folders.labelOf(at.folderId)) {
+    Archive() || Delete() || Restore() => switch (await _folders.labelOf(at.folderId)) {
       inboxLabelId => Placement.inbox,
       trashLabelId => Placement.trash,
       _ => Placement.archive,
@@ -76,6 +76,8 @@ class GraphActions(
         await _moves.move(at.id, GraphMoves.trash);
       case ApplyLabel(:final labelId):
         await _moves.move(at.id, GraphMoves.folderOf(labelId));
+      case Restore():
+        await _moves.move(at.id, GraphMoves.inbox);
       case RemoveLabel():
         // A message is in one folder only: out of it is back in the inbox.
         // ponytail: the inbox even if it came from the archive; remember the folder it left if that matters.

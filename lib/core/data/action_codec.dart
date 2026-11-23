@@ -19,8 +19,8 @@ MailAction actionOf(String attribute, String wanted) {
     placementAttribute => switch (want) {
       Placement.trash => const Delete(),
       Placement.archive => const Archive(),
-      // ponytail: no Azione brings a message back to the inbox in v1; add one when the UI offers it.
-      _ => throw StateError('no Azione puts a message in the inbox'),
+      Placement.inbox => const Restore(),
+      _ => throw StateError('no placement $want'),
     },
     _ => switch (labelIdOf(attribute)) {
       final id? => want == true ? ApplyLabel(id) : RemoveLabel(id),

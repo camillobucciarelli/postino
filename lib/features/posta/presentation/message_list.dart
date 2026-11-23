@@ -302,8 +302,8 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     }
   }
 
-  /// The open Conversazione [key] leaves the list (Archivia, Elimina): the next row opens, else the previous,
-  /// with the focus; false when there is none, or [key] is not here.
+  /// The open Conversazione [key] leaves the list (Archivia, Elimina, Ripristina): the next row opens, else the
+  /// previous, with the focus; false when there is none, or [key] is not here.
   bool _leave((String, String) key) {
     final next = _step(key);
     if (next != null) widget.onOpen(next.$1, next.$2);
@@ -335,7 +335,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione.
     if (key == null || e == null || !_listFocused() || key.$2.startsWith('<')) return;
     if (key == widget.selected && widget.cursor?.act != null) return widget.cursor!.act!(shortcut);
-    final action = mailActionFor(shortcut, starred: isStarred(e));
+    final action = mailActionFor(shortcut, starred: isStarred(e), view: widget.view);
     if (action == null) return;
     unawaited(actOnStoredConversation(context, key.$1, key.$2, action, view: widget.view));
     if (leavesList(action)) _step(key);

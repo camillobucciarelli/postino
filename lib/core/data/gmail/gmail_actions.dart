@@ -44,7 +44,7 @@ class GmailActions(final GmailHttp _gmail, final GmailLabels _labels) {
   static Object _value(Set<String> labels, MailAction action) => switch (action) {
     MarkRead() || MarkUnread() => !labels.contains('UNREAD'),
     Star() || Unstar() => labels.contains(starredLabelId),
-    Archive() || Delete() =>
+    Archive() || Delete() || Restore() =>
       labels.contains(trashLabelId)
           ? Placement.trash
           : labels.contains(inboxLabelId)
@@ -60,6 +60,15 @@ class GmailActions(final GmailHttp _gmail, final GmailLabels _labels) {
     ApplyLabel(:final labelId) => _labels.set(messageId, labelId, add: true),
     RemoveLabel(:final labelId) => _labels.set(messageId, labelId, add: false),
     Delete() => _gmail.send('POST', 'messages/$messageId/trash'),
+    // Not `untrash`: it gives back the labels the message had, the inbox only if it had it.
+    Restore() => _gmail.send(
+      'POST',
+      'messages/$messageId/modify',
+      body: {
+        'addLabelIds': [inboxLabelId],
+        'removeLabelIds': [trashLabelId],
+      },
+    ),
     // Out of the Cestino too, in the same modify.
     Archive() => _labels.remove(messageId, [inboxLabelId, if (labels.contains(trashLabelId)) trashLabelId]),
   };

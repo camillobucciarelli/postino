@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Where a Messaggio lives: the attribute Archivia and Elimina change.
+/// Where a Messaggio lives: the attribute Archivia, Elimina and Ripristina change.
 enum Placement() {
   /// Nella posta in arrivo.
   inbox,
@@ -34,7 +34,7 @@ const readAttribute = 'read';
 /// The attribute of [Star] and [Unstar].
 const starredAttribute = 'starred';
 
-/// The attribute of [Archive] and [Delete].
+/// The attribute of [Archive], [Delete] and [Restore].
 const placementAttribute = 'placement';
 
 /// The attribute of [ApplyLabel] and [RemoveLabel] for the Etichetta [labelId].
@@ -116,6 +116,19 @@ final class const Delete() extends MailAction {
 
   @override
   Placement get wanted => Placement.trash;
+}
+
+/// Ripristina (#372): from the Cestino back to the Posta in arrivo.
+// ponytail: always the inbox, the folder it came from is not stored; store it if users miss it.
+final class const Restore() extends MailAction {
+  /// Crea l'Azione.
+  this;
+
+  @override
+  String get attribute => placementAttribute;
+
+  @override
+  Placement get wanted => Placement.inbox;
 }
 
 /// Applica Etichetta.

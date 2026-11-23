@@ -524,6 +524,8 @@ void main() {
       await tester.pumpAndSettle();
       final bar = tester.widget<PostinoAppBar>(find.byType(PostinoAppBar).last);
       expect((bar.title, bar.subtitle), ('Contrassegnate', 'a1@example.com'));
+      final tile = find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('s1'));
+      expect(tester.widget<PostinoMessageTile>(tile).account, isNull, reason: 'one Account: no mark');
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
 
@@ -540,6 +542,12 @@ void main() {
       expect(find.byType(InboxSectionScreen), findsOneWidget);
       final bar = tester.widget<PostinoAppBar>(find.byType(PostinoAppBar).last);
       expect((bar.title, bar.subtitle), ('Da leggere', 'tutti'));
+      final tile = find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u1'));
+      expect(
+        tester.widget<PostinoMessageTile>(tile).account,
+        isNotNull,
+        reason: 'Accounts mix: each row marks its own',
+      );
       for (var i = 1; i <= 5; i++) {
         expect(find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u$i')), findsOneWidget);
       }

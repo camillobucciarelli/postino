@@ -32,7 +32,8 @@ List<String> _drawn(List<ListItem> items) => [
   for (final i in items)
     i.entry == null
         ? 'h:${i.section!.name} ${i.count}${i.more ? '+' : ''}'
-        : '${i.section?.name}:${i.entry!.message.conversationId}',
+        // A row has no count and no «Mostra tutti».
+        : '${i.section?.name}:${i.entry!.message.conversationId}${i.more || i.count != 0 ? '?' : ''}',
 ];
 
 void main() {

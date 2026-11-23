@@ -13,10 +13,11 @@ class SystemBack() {
   int exits = 0;
 
   /// Mocks the `flutter/platform` channel for this test; call it before pumping the app.
-  static SystemBack install(WidgetTester tester) {
+  /// [resumed] false: the app is built before Android resumes it (a cold start), the test resumes it.
+  static SystemBack install(WidgetTester tester, {bool resumed = true}) {
     final back = SystemBack();
     // The app tells Android only once it runs: a test starts with no lifecycle state.
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    if (resumed) tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       switch (call.method) {
         case 'SystemNavigator.setFrameworkHandlesBack':

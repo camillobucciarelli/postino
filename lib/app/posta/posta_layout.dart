@@ -130,49 +130,54 @@ class _PostaLayoutState() extends State<PostaLayout> {
                       onExpandedChanged: (expanded) =>
                           GetIt.I<SettingsRepository>().setSidebarExpanded(expanded: expanded),
                       child: PostinoSnackbarHost(
-                        child: PostinoFadeThrough(
-                          transitionKey: list,
-                          child: PostinoListDetailLayout(
-                            listWidth: _width,
-                            onListWidthChanged: (w) {
-                              _width = w;
-                              unawaited(GetIt.I<SettingsRepository>().setListWidth(w));
-                            },
-                            resizeLabel: context.t.listWidth.label,
-                            resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
-                            list: switch ((accountId, labelId)) {
-                              (final a?, draftLabelId) => postaDraftsView(a, selected: detail, cursor: _cursor),
-                              (final a?, sentLabelId) => postaSentView(a, selected: open, cursor: _cursor),
-                              (final a?, final l?) => postaLabelView(a, l, selected: open, cursor: _cursor),
-                              (final a?, null) => postaAccountView(a, selected: open, cursor: _cursor),
-                              _ => postaUnifiedView(selected: open, cursor: _cursor),
-                            },
-                            detail: draft != null
-                                ? postaComposerView(draft.$1, draft.$2, onClose: back, onQueued: queued)
-                                : open == null
-                                ? null
-                                : postaConversationView(
-                                    open.$1,
-                                    open.$2,
-                                    onBack: back,
-                                    cursor: _cursor,
-                                    onOpenDraft: (id) => openDraft(open.$1, id),
-                                    view: labelId,
-                                  ),
-                            detailKey: detail,
-                            empty: Builder(
-                              builder: (context) => PostinoEmptyState(
-                                title: context.t.conversazione.selectTitle,
-                                body: context.t.conversazione.selectBody,
-                                icon: PostinoIcons.inbox,
+                        // Outside the fade: while the outgoing list's layout is still shown, the incoming list
+                        // already keeps the system's Indietro in the app (#365).
+                        child: PopScope(
+                          canPop: list == routePaths.posta.path,
+                          child: PostinoFadeThrough(
+                            transitionKey: list,
+                            child: PostinoListDetailLayout(
+                              listWidth: _width,
+                              onListWidthChanged: (w) {
+                                _width = w;
+                                unawaited(GetIt.I<SettingsRepository>().setListWidth(w));
+                              },
+                              resizeLabel: context.t.listWidth.label,
+                              resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
+                              list: switch ((accountId, labelId)) {
+                                (final a?, draftLabelId) => postaDraftsView(a, selected: detail, cursor: _cursor),
+                                (final a?, sentLabelId) => postaSentView(a, selected: open, cursor: _cursor),
+                                (final a?, final l?) => postaLabelView(a, l, selected: open, cursor: _cursor),
+                                (final a?, null) => postaAccountView(a, selected: open, cursor: _cursor),
+                                _ => postaUnifiedView(selected: open, cursor: _cursor),
+                              },
+                              detail: draft != null
+                                  ? postaComposerView(draft.$1, draft.$2, onClose: back, onQueued: queued)
+                                  : open == null
+                                  ? null
+                                  : postaConversationView(
+                                      open.$1,
+                                      open.$2,
+                                      onBack: back,
+                                      cursor: _cursor,
+                                      onOpenDraft: (id) => openDraft(open.$1, id),
+                                      view: labelId,
+                                    ),
+                              detailKey: detail,
+                              empty: Builder(
+                                builder: (context) => PostinoEmptyState(
+                                  title: context.t.conversazione.selectTitle,
+                                  body: context.t.conversazione.selectBody,
+                                  icon: PostinoIcons.inbox,
+                                ),
                               ),
+                              onClose: back,
+                              // The system's Indietro from another list goes to the Posta unificata (#210, an
+                              // Account's inbox opened from its summary); from it, it leaves the app (#365).
+                              onListBack: list == routePaths.posta.path
+                                  ? null
+                                  : () => unawaited(Routefly.navigate(routePaths.posta.path)),
                             ),
-                            onClose: back,
-                            // The system's Indietro from another list goes to the Posta unificata (#210, an
-                            // Account's inbox opened from its summary); from it, it leaves the app (#365).
-                            onListBack: list == routePaths.posta.path
-                                ? null
-                                : () => unawaited(Routefly.navigate(routePaths.posta.path)),
                           ),
                         ),
                       ),

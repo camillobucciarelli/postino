@@ -121,10 +121,22 @@ class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> wit
   /// The detail sliding out after it closed, with its own key.
   (Object?, Widget)? _closing;
 
+  /// Flutter tells Android who handles Indietro only while the app runs, and only on a change: built before the
+  /// app resumed (a cold start into a detail), the layout says it again once resumed.
+  late final _lifecycle = AppLifecycleListener(onResume: _declareBack);
+
+  void _declareBack() {
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) return;
+    // The Navigator above turns false into true when it can pop a route itself.
+    NavigationNotification(canHandlePop: route.popDisposition == RoutePopDisposition.doNotPop).dispatch(context);
+  }
+
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onKey);
+    _lifecycle;
   }
 
   @override
@@ -222,6 +234,7 @@ class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> wit
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _lifecycle.dispose();
     _axis.dispose();
     _detailFocus.dispose();
     super.dispose();

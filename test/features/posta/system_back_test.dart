@@ -151,6 +151,26 @@ void main() {
     expect(_exits, 0);
   });
 
+  testWidgets('on a phone the modal drawer over the Posta unificata closes first, not the app', (tester) async {
+    await _start(tester, _phone);
+    await openDrawer(tester);
+
+    await _back(tester);
+    expect(find.byType(PostinoNavigationDrawer), findsNothing);
+    _expectUnified();
+    expect(_exits, 0);
+  });
+
+  testWidgets('an Indietro while another list fades in does not leave the app', (tester) async {
+    await _start(tester, _phone);
+    unawaited(Routefly.navigate(_inbox()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    await _back(tester);
+    expect(_exits, 0);
+  });
+
   testWidgets('a selection in the Conversazione clears first, the next Indietro closes it', (tester) async {
     await _start(tester, _phone);
     await tester.tap(find.byKey(const ValueKey('row-a1-m1')));

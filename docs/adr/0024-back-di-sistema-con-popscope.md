@@ -19,3 +19,4 @@ Su Android 16 con targetSdk 36 (Flutter 3.50) il predictive back è attivo di de
 
 - Niente anteprima predictive animata dentro l'app, né swipe iOS che segue il dito (fuori ambito in #365).
 - I test (`test/support/system_back.dart`) simulano il back come lo consegna Android 16: arriva all'app solo se l'ultima dichiarazione sul canale `flutter/platform` è `true`.
+- Tre casi in cui Flutter non riannuncia ad Android chi gestisce il back, coperti a parte: il drawer modale aperto ha un proprio `PopScope(canPop: false)` (aprirlo non cambia il `canPop` del layout); `PostaLayout` mette un `PopScope` fuori dalla dissolvenza tra liste (durante i 90 ms è montato solo il layout uscente); il layout ripete la dichiarazione al `resumed` (Flutter la scarta finché l'app non è avviata, e un avvio a freddo dentro un dettaglio non la rimanda).

@@ -1,5 +1,5 @@
 // PostinoListDetailLayout (#365): on iOS below 900 a swipe from the left edge of the full-page detail closes it,
-// past a third of the window; a short one, one away from the edge, one on the two panes or on Android does nothing.
+// past a third of the window or with a flick; a short slow one, one away from the edge, one on the two panes or on Android does nothing.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +34,7 @@ Future<int> _swipe(
   double from = 5,
   required double by,
   TargetPlatform platform = TargetPlatform.iOS,
+  bool flick = false,
 }) async {
   tester.view
     ..physicalSize = size
@@ -42,8 +43,12 @@ Future<int> _swipe(
   var closed = 0;
   await tester.pumpWidget(_layout(size, platform, () => closed++));
   await tester.pumpAndSettle();
-  // Slow, so it is no flick.
-  await tester.timedDragFrom(Offset(from, 400), Offset(by, 0), const Duration(seconds: 1));
+  if (flick) {
+    await tester.flingFrom(Offset(from, 400), Offset(by, 0), 1500);
+  } else {
+    // Slow, so it is no flick.
+    await tester.timedDragFrom(Offset(from, 400), Offset(by, 0), const Duration(seconds: 1));
+  }
   await tester.pumpAndSettle();
   return closed;
 }
@@ -53,6 +58,10 @@ void main() {
 
   testWidgets('below 900 a swipe from the left edge past a third closes the detail', (tester) async {
     expect(await _swipe(tester, phone, by: 200), 1);
+  });
+
+  testWidgets('a short flick from the edge closes the detail', (tester) async {
+    expect(await _swipe(tester, phone, by: 60, flick: true), 1);
   });
 
   testWidgets('a short swipe from the edge does nothing', (tester) async {

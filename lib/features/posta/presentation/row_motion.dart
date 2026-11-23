@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 /// The rows of the list that enter or leave (#282): a row gone from the list stays drawn at its old place while it
@@ -6,6 +8,8 @@ import 'package:flutter/widgets.dart';
 /// Nothing moves until the list has shown rows (loading, then the empty state the first sync fills), nor with reduced
 /// motion (durations zero). Afterwards a list that empties and fills again (Annulla on the last row) animates.
 /// A row is told apart by [_key] (the Conversazione for the inbox, the Conflitto in the list of the Conflitti, #283).
+/// A row marked by [slideOut] (a swipe) is off the screen already when it leaves: its leave lasts twice as long,
+/// the slide and then the closing (`PostinoSizeFade.slid`).
 /// [fromEmpty]: a list shown empty at first opens its first rows too (a column of banners, not an inbox that loads).
 class RowMotion<T>(
   final TickerProvider _vsync,
@@ -15,6 +19,7 @@ class RowMotion<T>(
 }) {
   final _moving = <Object, AnimationController>{};
   final _leaving = <Object>{};
+  final _slid = <Object>{};
   List<T>? _list;
   List<T>? _shown;
   late bool _hadRows = fromEmpty;
@@ -46,18 +51,31 @@ class RowMotion<T>(
     final now = {for (final e in list) _key(e)};
     final was = {for (final e in before) _key(e)};
     for (final k in now) {
-      // Back while leaving (Annulla): it turns round from where it is.
+      // Back while leaving (Annulla): it turns round from where it is, fading in as any row.
       if (_leaving.remove(k)) {
-        _moving[k]!.forward();
+        final c = _moving[k]!;
+        if (_slid.contains(k)) {
+          // Same height as now: on the slid curve the height is closed by the half of the way left below 0.5.
+          c
+            ..reverseDuration = leave
+            ..value = math.min(c.value * 2, 1);
+        }
+        // At 1 already (back during the slide) the controller is gone.
+        _moving[k]?.forward();
       } else if (!was.contains(k)) {
         _controller(k, 0, enter, leave).forward();
       }
     }
     for (final k in was) {
       if (!now.contains(k) && _leaving.add(k)) {
-        (_moving[k] ?? _controller(k, 1, enter, leave)).reverse();
+        final c = _moving[k] ?? _controller(k, 1, enter, leave);
+        if (_slid.contains(k)) c.reverseDuration = leave * 2;
+        c.reverse();
       }
     }
+    // A row in the list is not off the screen: back with Annulla, or a swipe whose row stayed; its next leave is the
+    // usual one.
+    _slid.removeWhere(now.contains);
     final shown = [...list];
     for (var i = 0; i < before.length; i++) {
       if (!_leaving.contains(_key(before[i]))) continue;
@@ -71,6 +89,12 @@ class RowMotion<T>(
   /// 1 at rest; between 0 and 1 while [key]'s row enters or leaves.
   Animation<double> of(Object key) => _moving[key] ?? kAlwaysCompleteAnimation;
 
+  /// [key]'s row slides off the screen (a swipe): when it leaves, the list closes after the slide.
+  void slideOut(Object key) => _slid.add(key);
+
+  /// [key]'s row is off the screen after a swipe (see [slideOut]): until it is gone, or back in the list.
+  bool slid(Object key) => _slid.contains(key);
+
   /// [key]'s row is on its way out.
   bool leaving(Object key) => _leaving.contains(key);
 
@@ -79,6 +103,7 @@ class RowMotion<T>(
         ..addStatusListener((s) {
           if (s.isAnimating) return;
           _moving.remove(key)?.dispose();
+          _slid.remove(key);
           if (_leaving.remove(key)) _shown = [...?_shown]..removeWhere((e) => _key(e) == key);
           if (!_updating) _changed();
         });
@@ -89,6 +114,7 @@ class RowMotion<T>(
     }
     _moving.clear();
     _leaving.clear();
+    _slid.clear();
   }
 
   void dispose() => _stop();

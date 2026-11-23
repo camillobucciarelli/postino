@@ -8,6 +8,7 @@ import '../../../core/domain/swipe_actions.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
 import 'act_on_conversation.dart';
+import 'conversation_actions.dart';
 import 'conversation_labels.dart';
 
 /// Swiping a row of the list (#147): the Azione the Impostazioni bind to each direction, on the row's whole
@@ -33,6 +34,13 @@ class const RowSwipe({
 
   /// The Etichetta of the list: the Azioni and the picker reach only the messages it shows.
   final String? view,
+
+  /// The row is off the screen after a swipe that takes it away, until it is gone (see `PostinoSwipeRow.away`).
+  final bool away = false,
+
+  /// A swipe whose Azione takes the row out of the list (Archivia, Elimina), before the Azione: the row slides off
+  /// the screen, so the list closes after it without fading.
+  final VoidCallback? onSlideOut,
   required final Widget Function(Map<CustomSemanticsAction, VoidCallback> semanticActions) builder,
 }) extends StatelessWidget {
   ({MailAction? action, PostinoSwipeAction shown}) _view(BuildContext context, SwipeAction choice) {
@@ -89,7 +97,15 @@ class const RowSwipe({
       return PostinoSwipeRow(
         left: left,
         right: right,
-        onSwipe: (side) => run(side == PostinoSwipeSide.left ? actions.left : actions.right),
+        away: away,
+        onSwipe: (side) {
+          final choice = side == PostinoSwipeSide.left ? actions.left : actions.right;
+          final action = _view(row, choice).action;
+          final out = action != null && leavesList(action);
+          if (out) onSlideOut?.call();
+          run(choice);
+          return out;
+        },
         child: builder({
           CustomSemanticsAction(label: left.label): () => run(actions.left),
           CustomSemanticsAction(label: right.label): () => run(actions.right),

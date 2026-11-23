@@ -76,6 +76,31 @@ Future<void> _focus(WidgetTester tester, int i) async {
   expect(_focusedRow(), i);
 }
 
+/// Swipes row `m$i` by [dx] (left Archivia, right Segna come letto by default) and lets the database act, with no
+/// time passing on the test's clock.
+Future<void> _swipe(WidgetTester tester, int i, {double dx = -300}) async {
+  final g = await tester.startGesture(tester.getCenter(find.byKey(ValueKey('row-a1-m$i'))));
+  await g.moveBy(Offset(dx.sign * 20, 0));
+  await g.moveBy(Offset(dx - dx.sign * 20, 0));
+  // A frame under the finger, as on a device: the release starts from where the row is drawn.
+  await tester.pump();
+  await g.up();
+  await tester.pump();
+  for (var n = 0; n < 8; n++) {
+    await tester.runAsync(pumpEventQueue);
+    await tester.pump();
+  }
+}
+
+/// Where row `m$i` is sideways, in its own widths: 0 in place, -1 off the screen to the left.
+double _shift(WidgetTester tester, int i) {
+  final fade = _fadeOf(i);
+  return (tester.getTopLeft(find.byKey(ValueKey('row-a1-m$i'))).dx - tester.getTopLeft(fade).dx) /
+      tester.getSize(fade).width;
+}
+
+bool _leaving(WidgetTester tester, int i) => tester.widget<PostinoSizeFade>(_fadeOf(i)).leaving;
+
 Future<void> _removeRemotely(WidgetTester tester, FakeMailProvider p, Iterable<int> ids) async {
   for (final i in ids) {
     p.removeRemotely('m$i');
@@ -318,6 +343,72 @@ void main() {
       expect(_focusedRow(), 2);
       await tester.pumpAndSettle();
       expect(_focusedRow(), 2);
+    });
+
+    testWidgets('swiped to Archivia: the row goes off the screen, then the height closes without fading (#376)', (
+      tester,
+    ) async {
+      await _start(tester);
+      final below = tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy;
+      final rowHeight = tester.getSize(find.byKey(const ValueKey('row-a1-m3'))).height;
+      await _swipe(tester, 3);
+      final released = _shift(tester, 3);
+      expect(released, lessThan(0));
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      expect(_shift(tester, 3), inExclusiveRange(-1, released), reason: 'on its way out');
+      expect(_visible(tester, 3), (opacity: 1.0, height: 1.0), reason: 'the list waits for the slide');
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      expect(_shift(tester, 3), -1, reason: 'off the screen');
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      final closing = _visible(tester, 3);
+      expect(closing.height, inExclusiveRange(0, 1));
+      expect(closing.opacity, 1, reason: 'no fade: the row is out already');
+      expect(_shift(tester, 3), -1);
+      expect(tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy, inExclusiveRange(below - rowHeight, below));
+      await tester.pump(PostinoMotion.swipeDismiss);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
+      expect(tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy, below - rowHeight);
+    });
+
+    testWidgets('swiped to Segna come letto: the row goes back in place and stays (#376)', (tester) async {
+      await _start(tester);
+      await _swipe(tester, 3, dx: 300);
+      await tester.pumpAndSettle();
+      expect(_shift(tester, 3), 0);
+      expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
+    });
+
+    testWidgets('swiped to Archivia and Annulla half way: the row turns round in place (#376)', (tester) async {
+      await _start(tester);
+      await _swipe(tester, 3);
+      await tester.pump(PostinoMotion.swipeDismiss * 3 ~/ 2);
+      final closing = _visible(tester, 3).height;
+      expect(closing, inExclusiveRange(0, 1));
+      await tester.tap(find.widgetWithText(PostinoButton, 'Annulla'));
+      for (var i = 0; i < 8 && _leaving(tester, 3); i++) {
+        await tester.runAsync(pumpEventQueue);
+        await tester.pump();
+      }
+      final back = _visible(tester, 3);
+      expect(_shift(tester, 3), 0, reason: 'in place at once, not sliding back from the side');
+      expect(back.height, closeTo(closing, 0.01), reason: 'the height turns round from where it was');
+      expect(back.opacity, closeTo(back.height, 0.01), reason: 'and fades in with it, as any row coming back');
+      await tester.pump(PostinoMotion.rowEnter ~/ 4);
+      expect(_visible(tester, 3).opacity, inExclusiveRange(back.opacity, 1));
+      await tester.pump(PostinoMotion.rowEnter);
+      expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
+      expect(_shift(tester, 3), 0);
+    });
+
+    testWidgets('swiped to Archivia with reduced motion: gone at once (#376)', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+        disableAnimations: true,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await _start(tester);
+      await _swipe(tester, 3);
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
     });
 
     testWidgets('a row that comes back while leaving turns round', (tester) async {

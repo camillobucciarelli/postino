@@ -372,6 +372,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
             key: ValueKey(key),
             visibility: _motion.of(key),
             leaving: _motion.leaving(key),
+            slid: _motion.slid(key),
             child: RowKeepAlive(
               keep: key == _cursor,
               // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
@@ -387,6 +388,8 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                       actions: swipeActions,
                       onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
                       view: widget.view,
+                      away: _motion.slid(key),
+                      onSlideOut: () => _motion.slideOut(key),
                       builder: (semanticActions) => RowMenu(
                         accountId: a.id,
                         messageId: m.id,

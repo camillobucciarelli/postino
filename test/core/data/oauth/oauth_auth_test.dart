@@ -1,4 +1,5 @@
 // The OAuth tokens of a Google Account on their own, over a MockClient standing for the token endpoint.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:postino/core/data/oauth/oauth_auth.dart';
 import 'package:postino/core/data/oauth/oauth_failed.dart';
 import 'package:postino/core/data/oauth/oauth_tokens.dart';
+import 'package:postino/core/domain/platform_services.dart';
 import 'package:postino/core/domain/result.dart';
 
 import '../../../support/fake_platform.dart';
@@ -257,4 +259,84 @@ void main() {
     expect(r.statusCode, 401);
     expect(sent, ['ya29.initial', 'ya29.refreshed']);
   });
+
+  test('a token endpoint that never answers is offline, not a refresh that hangs nor a stalled request', () async {
+    final auth = OAuthAuth(
+      gmailAccount,
+      gmailKeychain(),
+      MockClient((r) => Completer<http.Response>().future),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+      refreshWithin: const Duration(milliseconds: 10),
+    );
+    await expectLater(
+      auth.refresh(await auth.tokens()),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => e.failure,
+          'failure',
+          isA<OfflineFailure>()
+              .having((f) => f.stalled, 'stalled', false)
+              .having((f) => f.detail, 'detail', 'token refresh: oauth2.googleapis.com, no answer'),
+        ),
+      ),
+    );
+  });
+
+  test('a server error of the token endpoint is offline, its HTML page too: the Account stays connected', () async {
+    final keychain = gmailKeychain();
+    final auth = OAuthAuth(
+      gmailAccount,
+      keychain,
+      MockClient((r) async => http.Response('<html>Bad Gateway</html>', 502)),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+    );
+    await expectLater(
+      auth.refresh(await auth.tokens()),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => '${e.failure}',
+          'failure',
+          'OfflineFailure(token refresh: oauth2.googleapis.com, HTTP 502, no error)',
+        ),
+      ),
+    );
+    expect((await OAuthTokens.read(keychain, gmailAccount))!.refresh, '1//refresh');
+  });
+
+  test('a keychain that never answers is a failure that names it, not a sync that hangs', () async {
+    final auth = OAuthAuth(
+      gmailAccount,
+      _SilentKeychain(),
+      MockClient((r) async => gmailFixture('token_refresh')),
+      FakeClock(gmailNow),
+      client: gmailTestClient,
+      keychainWithin: const Duration(milliseconds: 10),
+    );
+    await expectLater(
+      auth.validTokens(),
+      throwsA(
+        isA<OAuthFailed>().having(
+          (e) => e.failure,
+          'failure',
+          isA<OfflineFailure>()
+              .having((f) => f.stalled, 'stalled', false)
+              .having((f) => f.detail, 'detail', 'keychain did not answer'),
+        ),
+      ),
+    );
+  });
+}
+
+/// A keychain whose calls never complete: locked, or waiting behind a system prompt.
+class _SilentKeychain() implements SecureStore {
+  @override
+  Future<String?> read(String key) => Completer<String?>().future;
+
+  @override
+  Future<void> write(String key, String value) => Completer<void>().future;
+
+  @override
+  Future<void> delete(String key) => Completer<void>().future;
 }

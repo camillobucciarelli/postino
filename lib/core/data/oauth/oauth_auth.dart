@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -16,9 +17,23 @@ class OAuthAuth(
   final http.Client _http,
   final Clock _clock, {
   required final OAuthClient _client,
+
+  /// The token endpoint answers within this, or the refresh is an [OfflineFailure]: a refresh that hangs would hold
+  /// the Account's sync queue for good. Never a stalled request: no call of the Account can go on without a token.
+  final Duration _refreshWithin = const Duration(seconds: 30),
+
+  /// The keychain answers within this (#251): one that never does (locked, or waiting behind a system prompt) would
+  /// hold the Account's queue with no error at all.
+  final Duration _keychainWithin = const Duration(seconds: 60),
 }) {
   /// The tokens in the keychain, as they are.
-  Future<OAuthTokens?> tokens() => OAuthTokens.read(_keychain, _accountId);
+  Future<OAuthTokens?> tokens() => _inTime(OAuthTokens.read(_keychain, _accountId));
+
+  /// [keychainCall], or an [OfflineFailure] that names the keychain in the error log.
+  Future<T> _inTime<T>(Future<T> keychainCall) => keychainCall.timeout(
+    _keychainWithin,
+    onTimeout: () => throw const OAuthFailed(OfflineFailure(detail: 'keychain did not answer')),
+  );
 
   /// Tokens with an access token still valid for at least a minute.
   Future<OAuthTokens> validTokens() async {
@@ -46,11 +61,19 @@ class OAuthAuth(
 
   Future<OAuthTokens> _refresh(OAuthTokens? old, {required bool again}) async {
     if (old == null) throw const OAuthFailed(AuthFailure(reason: 'token refresh: no tokens here'));
-    final r = await _http.post(
-      _client.tokenEndpoint,
-      body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
-    );
-    final body = jsonDecode(r.body) as Map<String, dynamic>;
+    final r = await _http
+        .post(
+          _client.tokenEndpoint,
+          body: {'grant_type': 'refresh_token', 'refresh_token': old.refresh, ..._client.fields},
+        )
+        .timeout(
+          _refreshWithin,
+          onTimeout: () =>
+              throw OAuthFailed(OfflineFailure(detail: 'token refresh: ${_client.tokenEndpoint.host}, no answer')),
+        );
+    final body = _json(r.body);
+    // The Provider's own trouble (or a proxy's page in its place), not a refusal: tried again by the next sync.
+    if (r.statusCode >= 500) throw OAuthFailed(OfflineFailure(detail: _refusal(r.statusCode, body, old)));
     if (r.statusCode == 200) {
       final fresh = OAuthTokens(
         access: body['access_token'] as String,
@@ -71,7 +94,7 @@ class OAuthAuth(
       // Only over the tokens this refresh started from (#174): the Account removed meanwhile has none, and one
       // connected again has newer ones, which an old grant must not overwrite.
       // ponytail: a change between this read and the write still races it; a per-Account lock if that ever shows.
-      if ((await tokens())?.refresh == old.refresh) await fresh.write(_keychain, _accountId);
+      if ((await tokens())?.refresh == old.refresh) await _inTime(fresh.write(_keychain, _accountId));
       return fresh;
     }
     final why = _refusal(r.statusCode, body, old);
@@ -83,6 +106,14 @@ class OAuthAuth(
       throw OAuthFailed(AuthFailure(reason: why));
     }
     throw OAuthFailed(UnexpectedFailure(why));
+  }
+
+  /// The JSON object of an answer; empty when the body is not one (a gateway's HTML page).
+  static Map<String, dynamic> _json(String body) {
+    try {
+      if (jsonDecode(body) case final Map<String, dynamic> json) return json;
+    } on FormatException catch (_) {}
+    return const {};
   }
 
   /// The refusal for the error log: the Provider's host, the status, the `error` code and, from the description,

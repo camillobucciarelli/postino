@@ -40,6 +40,11 @@ class SyncPhase(
   /// A sync longer than this goes in the log (#322): the lines to tell a slow Provider from a stuck one.
   static const slowSyncAfter = Duration(seconds: 20);
 
+  /// A sync still running after this goes in the log with the step it is at, its Bozze and outbox included: one
+  /// that hangs ends nowhere, so nothing else would ever say it (the status only shows it running). A long first
+  /// sync is logged too: the line says how long, not that it is stuck.
+  static const stuckAfter = Duration(minutes: 10);
+
   /// The Accounts whose rate limit pause has its start in the log and not its end yet (#322).
   final _pauses = <String>{};
 
@@ -62,15 +67,28 @@ class SyncPhase(
     if (await _gate.find(accountId) == null) return;
     final provider = providerFor(account);
     _status.started(accountId);
+    var step = 'azioni in coda';
+    final stuck = _clock
+        .every(stuckAfter)
+        .take(1)
+        .listen(
+          (_) => _log.record(
+            'in corso da ${stuckAfter.inMinutes} min, passo: $step',
+            context: 'sync ${account.provider.name}, ancora in corso',
+          ),
+        );
     try {
       // The Azioni first: a value changed elsewhere since they were queued is a Conflitto, not overwritten (ADR 0008).
       await _replay.beforeSync(accountId, provider);
+      step = 'download';
       final paused = _gate.paused(accountId);
       if (!paused && _pauses.remove(accountId)) {
         _log.record('fine', context: 'sync ${account.provider.name}, pausa rate limit');
       }
       final started = _clock.now();
-      final failure = paused ? null : await _sync(account, provider, autoLabel: autoLabel);
+      final failure = paused
+          ? null
+          : await _sync(account, provider, autoLabel: autoLabel, onCommit: () => step = 'salvataggio e notifiche');
       final took = _clock.now().difference(started);
       if (took >= slowSyncAfter) _log.record('${took.inSeconds} s', context: 'sync ${account.provider.name}, lenta');
       // Before [synced]: a refresh waiting on it reads how it went.
@@ -81,14 +99,24 @@ class SyncPhase(
       synced.completeError(e, s);
       rethrow;
     } finally {
+      step = 'bozze e outbox';
       // After the sync phase, failed too: a pull-to-refresh does not wait for Bozze MIME uploads nor outbox
       // attachments. Not once the sync made the Account Da ricollegare: its queue waits (ADR 0008).
-      if (await _gate.active(accountId) != null) await _replay.afterSync(accountId, provider);
+      try {
+        if (await _gate.active(accountId) != null) await _replay.afterSync(accountId, provider);
+      } finally {
+        unawaited(stuck.cancel());
+      }
     }
   }
 
   /// Null when it went through, else why it failed.
-  Future<Failure?> _sync(Account account, MailProvider provider, {required bool autoLabel}) async {
+  Future<Failure?> _sync(
+    Account account,
+    MailProvider provider, {
+    required bool autoLabel,
+    required void Function() onCommit,
+  }) async {
     final accountId = account.id;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
@@ -135,6 +163,7 @@ class SyncPhase(
             context: 'sync ${account.provider.name}, ${value.deferredMessageIds.length} messaggi rimandati',
           );
         }
+        onCommit();
         final committed = commit();
         committing.add(committed);
         try {

@@ -139,6 +139,11 @@ for f in privacy.html en/privacy.html; do
   has "$dir/$f" 'href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener noreferrer"'
 done
 links "$guide" guida/index.html "$contact"
+# The site job publishes these without the product pages (`download` may not run): a #fragment of another page could
+# name an id the page online does not have yet. Only fragments of the page itself.
+for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$guide"; do
+  if grep -nE '(href|src)="[^"#]+#' "$f"; then fail "$f: a #fragment of another page, maybe not online yet"; fi
+done
 has "$guide" '<link rel="stylesheet" href="../sito.css">'
 # Published as they are: a placeholder there would show.
 for f in "$dir/privacy.html" "$dir/en/privacy.html" "$dir/support.html" "$dir/en/support.html" "$dir/sito.css" "$guide"; do

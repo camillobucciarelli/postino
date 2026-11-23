@@ -8,7 +8,7 @@
 # published as it is, broken markup, and the same slips in the guide. Since #364: a #fragment with no such id (on this
 # page, another page or the guide), an empty one or one on a file that is not a page, an <img> without alt or size, a
 # file in img/ or icone/ of a type release.yml does not upload, an icon that loads or runs something, an HTML5 tag the
-# check does not know, an <img> wrapped over two lines without alt; while a fragment to an existing id (also of the
+# check does not know, a page published by the site job (privacy, support, guide) linking an id of another page, an <img> wrapped over two lines without alt; while a fragment to an existing id (also of the
 # guide), a decorative image, another PNG, another clean icon and the known HTML5 tags pass.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -87,10 +87,13 @@ fails "missing Open Graph image" og.png rm
 fails "empty Open Graph image" og.png d
 passes "a link to an id of another page" index.html 's|<li><a href="privacy.html">Informativa|<li><a href="privacy.html#eliminare-i-dati">Informativa|'
 fails "a link to a missing id of this page" index.html 's|<a class="pulsante" href="#scarica">Scarica</a>|<a class="pulsante" href="#scaricare">Scarica</a>|'
-fails "a link to a missing id of another page" en/support.html 's|index.html#funzioni|index.html#features|'
+fails "a link to a missing id of another page" en/index.html 's|<li><a href="privacy.html">Privacy policy</a>|<li><a href="privacy.html#nope">Privacy policy</a>|'
 fails "a link to a missing id of the guide" index.html 's|<li><a href="guida/index.html">Guida</a>|<li><a href="guida/index.html#macos">Guida</a>|'
 fails "an empty fragment" privacy.html 's|<a class="marchio" href="index.html">|<a class="marchio" href="#">|'
-fails "a fragment on a file that is not a page" support.html 's|src="brand/icon.svg"|src="brand/icon.svg#x"|'
+fails "a fragment on a file that is not a page" index.html 's|src="brand/icon.svg"|src="brand/icon.svg#x"|'
+fails "a site-job page linking an id of the product page" support.html 's|<a class="pulsante" href="index.html">|<a class="pulsante" href="index.html#scarica">|'
+fails "the guide linking an id of the privacy page" guide 's|<a href="mailto:([^"]*)">|<a href="../privacy.html#eliminare-i-dati">x</a> <a href="mailto:\1">|'
+passes "a site-job page linking an id of its own" en/privacy.html 's|<a class="marchio" href="index.html">|<a class="marchio" href="#eliminare-i-dati">|'
 passes "a decorative image" index.html 's|alt="Ricerca su iPhone: da:marta e tre risultati"|alt=""|'
 fails "an image without alt" index.html 's| alt="Ricerca su iPhone: da:marta e tre risultati"||'
 fails "an image without size" en/index.html 's| width="560" height="1217"||'

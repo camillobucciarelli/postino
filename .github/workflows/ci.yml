@@ -77,6 +77,7 @@ jobs:
       - run: tool/release/app_store_url_test.sh
       - run: tool/release/appcast_test.sh
       - run: tool/release/r2_unreleased_test.sh
+      - run: tool/release/highest_version_test.sh
       - run: tool/release/ios_export_options_test.sh
       - run: tool/release/testflight_upload_test.sh
       - run: tool/release/guide_check_test.sh

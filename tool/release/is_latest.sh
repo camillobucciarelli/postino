@@ -6,6 +6,5 @@
 set -euo pipefail
 version=${1:?usage: is_latest.sh <X.Y.Z>}
 
-tags=$(git ls-remote --tags --refs origin 'v*.*.*')
-highest=$(sed -n 's|.*refs/tags/v\([0-9]*\.[0-9]*\.[0-9]*\)$|\1|p' <<< "$tags" | sort -t . -k 1,1n -k 2,2n -k 3,3n | tail -n 1)
+highest=$("$(dirname "$0")/highest_version.sh")
 if [ "$version" = "$highest" ]; then echo yes; else echo no; fi

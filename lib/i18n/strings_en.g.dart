@@ -617,12 +617,14 @@ class _Translations$azioni$en extends Translations$azioni$it {
 	// Translations
 	@override String get archive => 'Archive';
 	@override String get delete => 'Delete';
+	@override String get restore => 'Restore';
 	@override String get star => 'Star';
 	@override String get unstar => 'Remove star';
 	@override String get markRead => 'Mark as read';
 	@override String get markUnread => 'Mark as unread';
 	@override String get archived => 'Conversation archived';
 	@override String get deleted => 'Conversation moved to Trash';
+	@override String get restored => 'Conversation restored';
 	@override String labelApplied({required Object name}) => 'Label “${name}” applied';
 	@override String get undo => 'Undo';
 	@override String get more => 'More actions';
@@ -1115,12 +1117,14 @@ extension on TranslationsEn {
 			'conflitti.values.unlabeled' => ({required Object name}) => 'not labelled ${name}',
 			'azioni.archive' => 'Archive',
 			'azioni.delete' => 'Delete',
+			'azioni.restore' => 'Restore',
 			'azioni.star' => 'Star',
 			'azioni.unstar' => 'Remove star',
 			'azioni.markRead' => 'Mark as read',
 			'azioni.markUnread' => 'Mark as unread',
 			'azioni.archived' => 'Conversation archived',
 			'azioni.deleted' => 'Conversation moved to Trash',
+			'azioni.restored' => 'Conversation restored',
 			'azioni.labelApplied' => ({required Object name}) => 'Label “${name}” applied',
 			'azioni.undo' => 'Undo',
 			'azioni.more' => 'More actions',

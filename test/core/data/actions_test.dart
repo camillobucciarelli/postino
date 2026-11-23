@@ -67,6 +67,35 @@ void main() {
     expect(placement(await there('1')), Placement.trash);
   });
 
+  test('Ripristina offline: back in the inbox here at once, on the Provider once online, through the queue', () async {
+    await engine.act('a', ['1'], const Delete());
+    a.goOffline();
+    await engine.act('a', ['1'], const Restore());
+    expect(placement(await here('1')), Placement.inbox);
+    final voce = (await queued()).single;
+    expect((voce.attribute, voce.wanted, voce.expected), (placementAttribute, 'inbox', 'trash'));
+
+    a.goOnline();
+    await engine.syncAll();
+    expect(a.actionCalls.last.$2, const Restore());
+    expect(placement(await there('1')), Placement.inbox);
+    expect(await queued(), isEmpty);
+  });
+
+  test(
+    'Ripristina leaves alone the messages that are not in the Cestino (a reply in Inviati, an archived one)',
+    () async {
+      a.deliver(msg('2', labelIds: const []));
+      await engine.syncAll();
+      await engine.act('a', ['1'], const Delete());
+      await engine.act('a', ['1', '2'], const Restore());
+      expect(placement(await here('1')), Placement.inbox);
+      expect(placement(await here('2')), Placement.archive);
+      await engine.syncAll();
+      expect(a.actionCalls.where((c) => c.$1 == '2'), isEmpty);
+    },
+  );
+
   group('changed elsewhere', () {
     test('the same attribute: a Conflitto, the local version stays and the voce is not retried', () async {
       a.goOffline();

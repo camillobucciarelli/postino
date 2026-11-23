@@ -50,6 +50,9 @@ class IntentsDao(super.attachedDatabase) extends DatabaseAccessor<PostinoDatabas
           final local = await attributes.read(accountId, messageId, attribute);
           // Gone from here (a sync removed it): nothing to change, nothing to replay.
           if (local == null) continue;
+          // Ripristina reaches only the messages in the Cestino: the Cestino shows its whole Conversazione, and a
+          // reply in Inviati or an archived message must stay where it is (#372).
+          if (action is Restore && local != Placement.trash.name) continue;
           final key = _key(accountId, messageId, attribute);
           final existing = await (select(intents)..where(key)).getSingleOrNull();
           final conflict = await (select(

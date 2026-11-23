@@ -12,7 +12,7 @@ import 'conversation_view.dart';
 import 'posta_shortcuts.dart';
 
 /// The Azioni of an open Conversazione (#146): its header buttons, the shortcuts and the row menu of its row, on
-/// every message. Archivia and Elimina take it out of the list: the next one opens (or it closes); non letto
+/// every message. Archivia, Elimina and Ripristina take it out of the list: the next one opens (or it closes); non letto
 /// closes it, or the opening would read it again. They reach the messages its view shows only, as the opening.
 mixin ConversationActing on State<ConversationView> {
   /// The messages shown, null until the database answers.
@@ -43,7 +43,7 @@ mixin ConversationActing on State<ConversationView> {
   }
 
   void _onShortcut(PostaAction shortcut) {
-    if (mailActionFor(shortcut, starred: _starred) case final action?) applyAction(action);
+    if (mailActionFor(shortcut, starred: _starred, view: widget.view) case final action?) applyAction(action);
   }
 
   /// Applies [action] to the whole Conversazione, then moves on or closes.

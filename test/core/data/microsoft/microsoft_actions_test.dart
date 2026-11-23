@@ -140,6 +140,7 @@ void main() {
         (const Unstar(), true, msg('a', isStarred: true), msg('a')),
         (const Archive(), Placement.inbox, msg('a'), msg('a', labelIds: const ['f-archive'])),
         (const Delete(), Placement.inbox, msg('a'), msg('a', labelIds: const [trashLabelId])),
+        (const Restore(), Placement.trash, msg('a', labelIds: const [trashLabelId]), msg('a')),
         (const ApplyLabel(_viaggi), false, msg('a'), msg('a', labelIds: const [_viaggi])),
         (const RemoveLabel(_viaggi), true, msg('a', labelIds: const [_viaggi]), msg('a')),
       ];

@@ -40,7 +40,7 @@ class const RowMenu({
   Widget build(BuildContext context) => Builder(
     builder: (row) => PostinoContextMenu(
       items: [
-        for (final a in conversationActions(context, starred: starred, read: read))
+        for (final a in conversationActions(context, starred: starred, read: read, view: view))
           PostinoMenuItem(label: a.label, icon: a.icon, onPressed: () => _act(context, a.action)),
         PostinoMenuItem(
           key: ValueKey('row-labels-$accountId-$messageId'),

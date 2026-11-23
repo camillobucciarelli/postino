@@ -16,7 +16,7 @@ class UndoOffer(final DateTime until) {
   bool taken = false;
 }
 
-/// Applies [action] to [messageIds] (a whole Conversazione) here at once. Archivia and Elimina are held for
+/// Applies [action] to [messageIds] (a whole Conversazione) here at once. Archivia, Elimina and Ripristina are held for
 /// `undoWindow` behind «Annulla» under [context]'s messenger: within it nothing leaves the device. Annulla takes back
 /// the ids [messageIds] holds then, so a caller may add the ones it acts on later.
 UndoOffer? actOnConversation(BuildContext context, String accountId, List<String> messageIds, MailAction action) {
@@ -24,6 +24,7 @@ UndoOffer? actOnConversation(BuildContext context, String accountId, List<String
   final message = switch (action) {
     Archive() => t.archived,
     Delete() => t.deleted,
+    Restore() => t.restored,
     _ => null,
   };
   final sync = GetIt.I<MailSync>();

@@ -275,6 +275,7 @@ class _ConversationViewState()
             context,
             starred: starred,
             read: allRead,
+            view: widget.view,
             apply: applyAction,
             onLabels: _openLabels,
             labelsKey: _labelsKey,
@@ -297,7 +298,7 @@ class _ConversationViewState()
                 alignEnd: !wide,
                 groups: wide
                     ? [
-                        [b.archive, b.delete],
+                        [b.archive, ?b.delete],
                         [b.star, b.read, b.labels],
                         [b.forward, b.replyAll, b.reply],
                       ]
@@ -356,7 +357,7 @@ class _ConversationViewState()
                       moreLabel: context.t.azioni.more,
                       placement: PostinoActionBarPlacement.bottom,
                       groups: [
-                        [b.archive, b.delete],
+                        [b.archive, ?b.delete],
                         [b.forward, b.replyAll, b.reply],
                       ],
                     ),

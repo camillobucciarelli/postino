@@ -68,6 +68,14 @@ _Avoid_: Preferito, flag, importante
 L'Etichetta di sistema dei messaggi indesiderati: su Gmail l'etichetta `SPAM`, sui Provider IMAP la cartella Junk. Un messaggio Spam non compare nella posta in arrivo né in altre viste; spostarlo nello Spam da un altro client gli cambia Etichetta, non lo cancella.
 _Avoid_: Junk, posta indesiderata
 
+**Cestino**:
+L'Etichetta di sistema dei messaggi eliminati: su Gmail l'etichetta `TRASH`, sui Provider IMAP la cartella Trash, su Microsoft Posta eliminata. Elimina vi sposta un messaggio; nel Cestino al posto di Archivia ed Elimina c'è Ripristina.
+_Avoid_: Spazzatura, eliminati
+
+**Ripristina**:
+L'Azione che riporta i messaggi di una Conversazione dal Cestino alla posta in arrivo, sempre lì e non nella cartella d'origine. Si offre solo nel Cestino, al posto di Archivia, con la stessa scorciatoia `e` e lo stesso Annulla.
+_Avoid_: Recupera, annulla eliminazione
+
 **Posticipa**:
 Nascondere un messaggio fino a un momento scelto, dopo il quale torna nella posta in arrivo. Il messaggio esce dalla posta in arrivo anche sul Provider e attende nell'Etichetta **Posticipati**, così tutti i dispositivi e la webmail restano d'accordo.
 _Avoid_: Snooze, rimanda, sospendi

@@ -14,7 +14,7 @@ import 'imap_session.dart';
 
 /// The Azioni on IMAP (ADR 0008): the message is read once (flags and folder), compared with the expected and the
 /// wanted value, and written only if needed. Letto and Stella are `\Seen` and `\Flagged`, written conditionally
-/// with CONDSTORE where the server has it; Archivia, Elimina and the Etichette (folders) are a move.
+/// with CONDSTORE where the server has it; Archivia, Elimina, Ripristina and the Etichette (folders) are a move.
 /// Failures are thrown as [ImapFailed].
 class ImapActions(
   final ImapSession _session,
@@ -72,7 +72,7 @@ class ImapActions(
   static Object _value(ImapPlace at, MailAction action) => switch (action) {
     MarkRead() || MarkUnread() => at.seen,
     Star() || Unstar() => at.flagged,
-    Archive() || Delete() => switch (at.folder.role) {
+    Archive() || Delete() || Restore() => switch (at.folder.role) {
       FolderRole.inbox => Placement.inbox,
       FolderRole.trash => Placement.trash,
       _ => Placement.archive,
@@ -87,7 +87,7 @@ class ImapActions(
         return storeFlag(c, at, seenFlag, add: action.wanted == true);
       case Star() || Unstar():
         return storeFlag(c, at, flaggedFlag, add: action.wanted == true);
-      case Archive() || Delete():
+      case Archive() || Delete() || Restore():
         await _moves.move(c, at, await _moves.folderFor(c, folders, action.wanted as Placement));
       case ApplyLabel(:final labelId):
         // A folder deleted elsewhere: the Provider refuses, and the replay drops the voce.

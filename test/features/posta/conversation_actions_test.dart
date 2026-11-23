@@ -449,6 +449,11 @@ void main() {
       await _tap(tester, find.widgetWithText(MenuItemButton, 'Etichette'));
       expect(find.widgetWithText(PostinoCheckboxTile, 'Fatture'), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      // Esc: the focus goes back to «Altre azioni», the Etichette button is not there.
+      await _escape(tester);
+      final more = find.byWidgetPredicate((w) => w is PostinoIconButton && w.label == 'Altre azioni');
+      expect(tester.widget<PostinoIconButton>(more).focusNode!.hasPrimaryFocus, isTrue);
     },
   );
 

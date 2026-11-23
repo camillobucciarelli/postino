@@ -118,6 +118,20 @@ void main() {
     expect(_snackbar, findsNothing);
   });
 
+  _onMac('the window narrows with the picker open and Etichette moves into «Altre azioni»: unticking still offers '
+      'Annulla', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('m2'));
+    await _tap(tester, _button);
+    tester.view.physicalSize = const Size(900, 900);
+    await _settle(tester);
+    expect(_button, findsNothing, reason: 'Etichette left the bar');
+
+    await _tap(tester, _tile('Viaggi'));
+    expect(find.text('Etichetta «Viaggi» tolta'), findsOneWidget);
+    expect(_undo, findsOneWidget);
+  });
+
   _onMac('unticking takes it off the messages that have it, once «Etichetta tolta» beside the list; Annulla puts it '
       'back; Esc gives the focus back to the button', (tester) async {
     await _start(tester);

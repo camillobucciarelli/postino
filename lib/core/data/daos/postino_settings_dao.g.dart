@@ -12,8 +12,5 @@ class PostinoSettingsDaoManager {
   final _$PostinoSettingsDaoMixin _db;
   PostinoSettingsDaoManager(this._db);
   $$PostinoSettingsTableTableManager get postinoSettings =>
-      $$PostinoSettingsTableTableManager(
-        _db.attachedDatabase,
-        _db.postinoSettings,
-      );
+      $$PostinoSettingsTableTableManager(_db.attachedDatabase, _db.postinoSettings);
 }

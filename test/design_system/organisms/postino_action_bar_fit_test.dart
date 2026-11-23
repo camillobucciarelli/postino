@@ -55,4 +55,21 @@ void main() {
     expect(short.more, isEmpty);
     expect(fitActionBar(_groups, 1000).extended, isFalse, reason: 'no width given: never');
   });
+
+  // #369 keeps Rispondi, Archivia and Elimina on the bar; a pane narrower than those (900 with the sidebar out and the
+  // list at its widest leaves ~160) sends Elimina, then Archivia, into the menu rather than overflow. Rispondi stays.
+  test('last resort: Elimina, then Archivia, into the menu; never the primary', () {
+    final groups = [
+      [_archive, _a('Elimina')],
+      [_star, _labels],
+      [_reply],
+    ];
+    final at144 = fitActionBar(groups, 3 * 48, divider: 17);
+    expect(_labelsOf(at144.shown.expand((g) => g)), ['Archivia', 'Rispondi']);
+    expect(_labelsOf(at144.more), ['Elimina', 'Stella', 'Etichette']);
+    final at100 = fitActionBar(groups, 100, divider: 17);
+    expect(_labelsOf(at100.shown.expand((g) => g)), ['Rispondi']);
+    expect(_labelsOf(at100.more), ['Archivia', 'Elimina', 'Stella', 'Etichette']);
+    expect(at100.dividers, isFalse);
+  });
 }

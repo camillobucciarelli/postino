@@ -11,6 +11,5 @@ mixin _$BodiesDaoMixin on DatabaseAccessor<PostinoDatabase> {
 class BodiesDaoManager {
   final _$BodiesDaoMixin _db;
   BodiesDaoManager(this._db);
-  $$BodiesTableTableManager get bodies =>
-      $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
+  $$BodiesTableTableManager get bodies => $$BodiesTableTableManager(_db.attachedDatabase, _db.bodies);
 }

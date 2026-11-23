@@ -15,7 +15,7 @@ typedef PostinoBarFit = ({
 
 /// Fits [groups] in [width]: every button one tap target, [divider] between two groups, the primary action
 /// [extendedPrimary] wide with its label (0: never). The label goes first, then the actions with an `overflow`, the
-/// lowest first, behind one «more» button; those without one stay, the dividers giving way last.
+/// lowest first, behind one «more» button; then the dividers, and only then the others but the primary.
 // ponytail: every action counted as one tap target (icon buttons); a wider one beside the primary needs measuring.
 PostinoBarFit fitActionBar(
   List<List<PostinoBarAction>> groups,
@@ -23,7 +23,7 @@ PostinoBarFit fitActionBar(
   double divider = 0,
   double extendedPrimary = 0,
 }) {
-  double cost(Set<PostinoBarAction> out, {required bool extended}) {
+  double cost(Set<PostinoBarAction> out, {required bool extended, bool dividers = true}) {
     var total = out.isEmpty ? 0.0 : kMinInteractiveDimension;
     var filled = 0;
     for (final (i, g) in groups.indexed) {
@@ -33,7 +33,7 @@ PostinoBarFit fitActionBar(
       }
       if (here.isNotEmpty || (out.isNotEmpty && i == _menuGroup(groups))) filled++;
     }
-    return total + divider * (filled - 1).clamp(0, groups.length);
+    return total + (dividers ? divider : 0) * (filled - 1).clamp(0, groups.length);
   }
 
   final extended = extendedPrimary > 0 && cost(const {}, extended: true) <= width;
@@ -48,6 +48,18 @@ PostinoBarFit fitActionBar(
     out.add(a);
   }
   final dividers = divider == 0 || cost(out, extended: extended) <= width;
+  // Last resort, against #369's rule that Archivia and Elimina never leave: a pane narrower than the actions that
+  // stay (900 with the sidebar out and the list at its widest leaves ~160) would push Rispondi out of view, cut and
+  // not tappable. Elimina, then Archivia (the fixed ones from the end) go into the menu instead; the primary never.
+  final fixed = [
+    for (final g in groups)
+      for (final a in g)
+        if (a.overflow == null && !a.primary) a,
+  ].reversed;
+  for (final a in fixed) {
+    if (cost(out, extended: extended, dividers: dividers) <= width) break;
+    out.add(a);
+  }
   return (
     shown: [
       for (final g in groups)

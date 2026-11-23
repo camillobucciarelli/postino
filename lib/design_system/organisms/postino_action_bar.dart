@@ -43,6 +43,9 @@ class const PostinoActionBar({
 
   /// On top, the groups at the end of the bar (beside a back arrow) instead of its start.
   final bool alignEnd = false,
+
+  /// The focus of the «more» button, so a popover opened from its menu can give the focus back to it.
+  final FocusNode? moreFocusNode,
 }) extends StatefulWidget {
   /// Crea la barra delle Azioni.
   this;
@@ -113,6 +116,7 @@ class _PostinoActionBarState() extends State<PostinoActionBar> {
               if (i == fit.menuGroup && fit.more.isNotEmpty)
                 PostinoMenu(
                   label: widget.moreLabel,
+                  focusNode: widget.moreFocusNode,
                   items: [
                     for (final a in fit.more)
                       PostinoMenuItem(label: a.label, icon: a.icon, onPressed: a.onPressed, shortcut: a.shortcut),

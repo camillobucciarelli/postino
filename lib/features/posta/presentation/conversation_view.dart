@@ -87,13 +87,16 @@ class _ConversationViewState()
   void _forward() => unawaited(_act(ReplyKind.forward));
 
   /// The «Etichette» button: the picker anchors to it and gives it the focus back (`l` opens it too). In the «more»
-  /// menu it has no button: the picker anchors to the bar.
+  /// menu it has no button: the picker anchors to the bar and gives the focus back to «Altre azioni». Its snackbars
+  /// show under the Conversazione, which outlives the button (it may leave the bar while the picker is open).
   final _labelsKey = GlobalKey();
   final _labelsFocus = FocusNode(debugLabel: 'Etichette');
+  final _moreFocus = FocusNode(debugLabel: 'Altre azioni');
   final _barKey = GlobalKey();
 
   void _openLabels() {
-    final anchor = _labelsKey.currentContext ?? _barKey.currentContext;
+    final button = _labelsKey.currentContext;
+    final anchor = button ?? _barKey.currentContext;
     if (anchor == null) return;
     unawaited(
       openLabelPicker(
@@ -101,8 +104,9 @@ class _ConversationViewState()
         accountId: widget.accountId,
         conversationId: widget.conversationId,
         labelsAreFolders: _account?.provider.labelsAreFolders ?? false,
-        returnFocus: _labelsFocus,
+        returnFocus: button != null ? _labelsFocus : _moreFocus,
         view: widget.view,
+        snackbarContext: context,
       ),
     );
   }
@@ -252,6 +256,7 @@ class _ConversationViewState()
     }
     _attachments.dispose();
     _labelsFocus.dispose();
+    _moreFocus.dispose();
     super.dispose();
   }
 
@@ -288,6 +293,7 @@ class _ConversationViewState()
             ? null
             : PostinoActionBar(
                 moreLabel: context.t.azioni.more,
+                moreFocusNode: _moreFocus,
                 alignEnd: !wide,
                 groups: wide
                     ? [

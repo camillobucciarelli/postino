@@ -52,7 +52,7 @@ class const PostinoButton({
   /// Lets the caller move the focus here, e.g. to the next row after a resolution.
   final FocusNode? focusNode,
 
-  /// Icona prima del verbo, se serve (Rispondi nella barra in basso).
+  /// Icona prima del verbo, solo per la variante piena (Rispondi nella barra in basso).
   final PostinoIconData? icon,
 }) extends StatelessWidget {
   /// Crea un pulsante.
@@ -84,36 +84,23 @@ class const PostinoButton({
     );
     // Buttons are controls, not content: out of any selection.
     final child = SelectionContainer.disabled(child: Text(label));
-    if (icon case final glyph?) {
-      final leading = PostinoIcon(glyph);
-      return switch (variant) {
-        PostinoButtonVariant.primary => FilledButton.icon(
-          onPressed: onPressed,
-          autofocus: autofocus,
-          focusNode: focusNode,
-          style: style,
-          icon: leading,
-          label: child,
-        ),
-        PostinoButtonVariant.ghost => TextButton.icon(
-          onPressed: onPressed,
-          autofocus: autofocus,
-          focusNode: focusNode,
-          style: style,
-          icon: leading,
-          label: child,
-        ),
-      };
-    }
-    return switch (variant) {
-      PostinoButtonVariant.primary => FilledButton(
+    return switch ((variant, icon)) {
+      (PostinoButtonVariant.primary, null) => FilledButton(
         onPressed: onPressed,
         autofocus: autofocus,
         focusNode: focusNode,
         style: style,
         child: child,
       ),
-      PostinoButtonVariant.ghost => TextButton(
+      (PostinoButtonVariant.primary, final glyph?) => FilledButton.icon(
+        onPressed: onPressed,
+        autofocus: autofocus,
+        focusNode: focusNode,
+        style: style,
+        icon: PostinoIcon(glyph),
+        label: child,
+      ),
+      (PostinoButtonVariant.ghost, _) => TextButton(
         onPressed: onPressed,
         autofocus: autofocus,
         focusNode: focusNode,

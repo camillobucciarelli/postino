@@ -12,8 +12,5 @@ class TrustedSendersDaoManager {
   final _$TrustedSendersDaoMixin _db;
   TrustedSendersDaoManager(this._db);
   $$TrustedSendersTableTableManager get trustedSenders =>
-      $$TrustedSendersTableTableManager(
-        _db.attachedDatabase,
-        _db.trustedSenders,
-      );
+      $$TrustedSendersTableTableManager(_db.attachedDatabase, _db.trustedSenders);
 }

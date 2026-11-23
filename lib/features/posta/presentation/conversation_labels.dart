@@ -12,7 +12,8 @@ import '../domain/conversation_label_intents.dart';
 import 'label_picker_sheet.dart';
 
 /// Opens the picker of the Etichette of a Conversazione, anchored to [anchor] (the «Etichette» button, a row of
-/// the list); on closing the focus goes back to [returnFocus]. A removal's snackbar shows under [anchor]'s messenger.
+/// the list); on closing the focus goes back to [returnFocus]. A removal's snackbar shows under [snackbarContext]'s
+/// messenger, [anchor]'s by default: a context that outlives the button, which may leave the bar meanwhile.
 /// With [view], it sees and reaches only the messages that view shows.
 Future<void> openLabelPicker(
   BuildContext anchor, {
@@ -21,6 +22,7 @@ Future<void> openLabelPicker(
   required bool labelsAreFolders,
   FocusNode? returnFocus,
   String? view,
+  BuildContext? snackbarContext,
 }) {
   final t = anchor.t.selettoreEtichette;
   return showPostinoPopover<void>(
@@ -31,7 +33,7 @@ Future<void> openLabelPicker(
     builder: (_) => LabelPickerSheet(
       accountId: accountId,
       conversationId: conversationId,
-      snackbarContext: anchor,
+      snackbarContext: snackbarContext ?? anchor,
       labelsAreFolders: labelsAreFolders,
       view: view,
     ),

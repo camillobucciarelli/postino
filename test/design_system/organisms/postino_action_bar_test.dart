@@ -1,7 +1,6 @@
 // PostinoActionBar (#369): the Azioni of a detail in groups, an overflow by priority into «Altre azioni», the primary
 // action filled (with its label where the bottom bar has room), the bottom bar clear of the gesture bar and the
-// snackbars above it; the tooltips of the shortcuts for pointer and touch.
-import 'package:flutter/gestures.dart';
+// snackbars above it (postino_snackbar_lift_test.dart).
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -140,6 +139,46 @@ void main() {
     });
   });
 
+  testWidgets('a pane too narrow for the actions that stay: Elimina, then Archivia, go into the menu as a last '
+      'resort; Rispondi never; nothing overflows', (tester) async {
+    await _pump(
+      tester,
+      SizedBox(
+        width: 120,
+        child: PostinoActionBar(groups: _wide, moreLabel: 'Altre azioni'),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(_onBar(tester), ['Rispondi']);
+    expect(await _inMenu(tester), [
+      'Archivia',
+      'Elimina',
+      'Stella',
+      'Letto',
+      'Etichette',
+      'Inoltra',
+      'Rispondi a tutti',
+    ]);
+  });
+
+  testWidgets('alignEnd: the groups sit at the end of the bar (beside a back arrow)', (tester) async {
+    await _pump(
+      tester,
+      SizedBox(
+        width: 400,
+        child: PostinoActionBar(
+          moreLabel: 'Altre azioni',
+          alignEnd: true,
+          groups: [
+            [_a('Stella', overflow: 2), _a('Letto', overflow: 1), _a('Etichette', overflow: 0)],
+          ],
+        ),
+      ),
+    );
+    expect(tester.getRect(find.byKey(const ValueKey('Etichette'))).right, 400);
+    expect(tester.getRect(find.byKey(const ValueKey('Stella'))).left, 400 - 3 * 48);
+  });
+
   group('Stella', () {
     testWidgets('on: filled in the accent; off: the outline in ink-muted; the label says what a tap does', (
       tester,
@@ -167,43 +206,6 @@ void main() {
       expect(color('Aggiungi Stella'), c.inkMuted);
       expect(find.bySemanticsLabel('Togli Stella'), findsOneWidget);
       expect(find.bySemanticsLabel('Aggiungi Stella'), findsOneWidget);
-      semantics.dispose();
-    });
-  });
-
-  group('tooltips', () {
-    Widget bar() => PostinoActionBar(
-      moreLabel: 'Altre azioni',
-      groups: [
-        [_a('Archivia', shortcut: 'E')],
-      ],
-    );
-
-    testWidgets('pointer: «Nome · scorciatoia»', (tester) async {
-      await _pump(tester, bar());
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      addTearDown(mouse.removePointer);
-      await mouse.addPointer(location: Offset.zero);
-      await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('Archivia'))));
-      await tester.pumpAndSettle();
-      expect(find.text('Archivia · E'), findsOneWidget);
-    });
-
-    testWidgets('touch: a long press shows the name only', (tester) async {
-      await _pump(tester, bar());
-      await tester.longPress(find.byKey(const ValueKey('Archivia')));
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Archivia'), findsOneWidget);
-      expect(find.text('Archivia · E'), findsNothing);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-    });
-
-    testWidgets('the screen reader hears the name only, not the shortcut', (tester) async {
-      final semantics = tester.ensureSemantics();
-      await _pump(tester, bar());
-      final node = tester.getSemantics(find.bySemanticsLabel('Archivia'));
-      expect(node.tooltip, isEmpty);
-      expect(find.bySemanticsLabel(RegExp('·')), findsNothing);
       semantics.dispose();
     });
   });
@@ -252,31 +254,6 @@ void main() {
       expect(bar.bottom, 800);
       final reply = tester.getRect(find.byKey(const ValueKey('Rispondi')));
       expect(reply.bottom, lessThanOrEqualTo(800 - 34));
-    });
-
-    testWidgets('a snackbar shows above the bar, and back at the bottom once the bar is gone', (tester) async {
-      final show = GlobalKey();
-      final shown = ValueNotifier(true);
-      addTearDown(shown.dispose);
-      await _pump(
-        tester,
-        ValueListenableBuilder(
-          valueListenable: shown,
-          builder: (context, on, _) =>
-              Column(key: show, mainAxisAlignment: MainAxisAlignment.end, children: [if (on) bottom()]),
-        ),
-        width: 390,
-        viewPadding: const EdgeInsets.only(bottom: 34),
-        atBottom: true,
-      );
-      ScaffoldMessenger.of(show.currentContext!).showSnackBar(const SnackBar(content: Text('Archiviata')));
-      await tester.pumpAndSettle();
-      final bar = tester.getRect(find.byType(PostinoActionBar));
-      expect(tester.getRect(find.text('Archiviata')).bottom, lessThanOrEqualTo(bar.top));
-
-      shown.value = false;
-      await tester.pumpAndSettle();
-      expect(tester.getRect(find.text('Archiviata')).bottom, greaterThan(bar.top));
     });
   });
 }

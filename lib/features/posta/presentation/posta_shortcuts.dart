@@ -81,7 +81,8 @@ class ListCursor() {
   /// Starts a new Bozza (`c`): the «Scrivi» button plugs itself in.
   VoidCallback? write;
 
-  /// Rispondi, Rispondi a tutti and Inoltra (`r`, `a`, `f`) the last message of the open Conversazione (#37):
+  /// Rispondi and Rispondi a tutti (`r`, `a`) the last message received, Inoltra (`f`) the last one of the open
+  /// Conversazione (#37, #371):
   /// the Conversazione plugs itself in; idle with none open.
   VoidCallback? reply;
   VoidCallback? replyAll;

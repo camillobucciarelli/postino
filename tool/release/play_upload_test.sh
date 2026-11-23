@@ -3,7 +3,8 @@
 # service account as issuer, the androidpublisher scope, Google's token audience and a signature that verifies with the
 # key; the requests are insert, upload, track update, commit, in that order, with the token from a header file; a draft
 # app (refused at the track update or at the commit) gets the whole edit again as a draft; a wrong versionCode or any
-# other refusal fails and drops the edit. Like Google's front end, the fake refuses a POST with no Content-Length.
+# other refusal fails and drops the edit. GOOGLE_PLAY_TRACK and GOOGLE_PLAY_RELEASE_STATUS pick the track and the status;
+# a status other than draft or completed fails before any request. Like Google's front end, the fake refuses a POST with no Content-Length.
 set -euo pipefail
 script=$(cd "$(dirname "$0")" && pwd)/play_upload.sh
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/play-test.XXXXXX")
@@ -93,6 +94,14 @@ run 0 FAKE_DRAFT=commit
 calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/internal" "POST $e/e1:commit" "DELETE $e/e1" \
   "POST $e" "$upload" "PUT $e/e1/tracks/internal" "POST $e/e1:commit"
 drafts
+
+run 0 GOOGLE_PLAY_TRACK=alpha GOOGLE_PLAY_RELEASE_STATUS=draft
+calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/alpha" "POST $e/e1:commit"
+jq -e '.track == "alpha" and .releases[0].status == "draft"' "$tmp/log.body" > /dev/null || { echo "alpha body: $(cat "$tmp/log.body")"; exit 1; }
+run fail GOOGLE_PLAY_RELEASE_STATUS=inProgress
+[ ! -e "$tmp/log" ] && grep -q 'only draft or completed' "$tmp/out" || { echo "bad status:"; cat "$tmp/out"; exit 1; }
+run fail GOOGLE_PLAY_TRACK='alpha/../x'
+[ ! -e "$tmp/log" ] || { echo "a bad track reached curl"; exit 1; }
 
 run fail FAKE_CODE=7
 calls "POST /token" "POST $e" "$upload" "DELETE $e/e1"

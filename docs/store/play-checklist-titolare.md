@@ -32,7 +32,7 @@ Fonte: [Getting started](https://developers.google.com/android-publisher/getting
 - [ ] Creare un **service account** e una chiave JSON. La chiave non va nel repo.
 - [ ] Play Console → **Utenti e autorizzazioni → Invita nuovi utenti**: l'email del service account, accesso **solo a Postino Mail**, permessi **Rilascia sulle tracce di test** (e *Visualizza le informazioni dell'app*). Niente produzione: la promozione la fa il titolare a mano.
 - [ ] GitHub → Settings → Secrets and variables → Actions: il segreto con il JSON (nome fissato dalla fetta 2 in `release.yml`) e la variabile `PLAY_STORE` = `true`. Senza la variabile il job `android-store` non parte.
-- [ ] Al tag successivo controllare che la run carichi l'AAB sulla traccia interna.
+- [ ] Al tag successivo controllare che la run carichi l'AAB sulla traccia della variabile `GOOGLE_PLAY_TRACK` (di default quella interna; `alpha` è il test chiuso) con lo stato di `GOOGLE_PLAY_RELEASE_STATUS` (`completed` o `draft`).
 
 ## 5. Test chiuso: 12 tester per 14 giorni
 

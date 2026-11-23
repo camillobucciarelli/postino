@@ -4,7 +4,7 @@ name: Release
 # `needs: version`: `macos` (DMG), `macos-store` (Mac App Store, #325, off until configured), `android` (sideloaded
 # APK, `--flavor site`) and `ios` (TestFlight, #120). `site` publishes the
 # invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
-# `android`) next to them, and `android-store` (Google Play internal testing, #345, off until configured).
+# `android`) next to them, and `android-store` (Google Play, #345, off until configured).
 # A manual run with `only: android-store` runs that job alone (the other jobs are skipped), also for a version already
 # released: the first upload to Google Play of the version in pubspec.yaml (docs/store/play-checklist-titolare.md).
 # A manual run with `only: site` publishes the website alone (#370): `site`, then `download` with the product pages
@@ -505,8 +505,9 @@ jobs:
           fi
 
   # Google Play (#345, ADR 0023): the `store` flavor as an AAB, signed with the same upload key as the APK (Play App
-  # Signing re-signs it for users), uploaded to the internal testing track; promotion to closed testing and production
-  # is the owner's, by hand in the Play Console. Off until the owner sets the repository variable PLAY_STORE to true,
+  # Signing re-signs it for users), uploaded to the track and with the release status of the repository variables
+  # GOOGLE_PLAY_TRACK and GOOGLE_PLAY_RELEASE_STATUS (default internal and completed); production is the owner's, by
+  # hand in the Play Console. Off until the owner sets the repository variable PLAY_STORE to true,
   # once the service account exists: until then the job is skipped, not failed. Nothing waits for it, so the APK never
   # depends on it. Play refuses a versionCode it already has, so a rerun of an uploaded version fails at the upload.
   # A manual run with `only: android-store` runs this job alone, even for a version already released (the first upload
@@ -574,9 +575,11 @@ jobs:
           path: ${{ env.AAB }}
           retention-days: 7
           if-no-files-found: error
-      - name: Upload to the internal testing track
+      - name: Upload to Google Play
         env:
           PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+          GOOGLE_PLAY_TRACK: ${{ vars.GOOGLE_PLAY_TRACK }}
+          GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.GOOGLE_PLAY_RELEASE_STATUS }}
         run: |
           out=$(tool/release/play_upload.sh "$AAB" "$(tool/release/build_number.sh "$VERSION")" "$VERSION")
           echo "$out"

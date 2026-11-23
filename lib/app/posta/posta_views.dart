@@ -35,6 +35,7 @@ Widget postaUnifiedView({(String, String)? selected, ListCursor? cursor}) => Pos
   body: MessageList(
     watch: (r) => r.watchUnifiedInbox(),
     showAccount: true,
+    onShowAll: openSection,
     selected: selected,
     cursor: cursor,
     onOpen: openConversation,
@@ -58,6 +59,7 @@ Widget postaAccountView(String id, {(String, String)? selected, ListCursor? curs
   fab: WriteFab(accountId: id, cursor: cursor, onWrite: openDraft),
   body: MessageList(
     watch: (r) => r.watchMessages(id, inboxLabelId),
+    onShowAll: (section) => openSection(section, accountId: id),
     selected: selected,
     cursor: cursor,
     onOpen: openConversation,

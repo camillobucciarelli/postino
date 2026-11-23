@@ -1,13 +1,18 @@
 // The list of Conversazioni (the twin of message_list.dart for the mutation test): the cursor follows a focus that
 // came some other way, the number of rows is reported when it changes, and rows leave and arrive animated (#282).
+// Most rows are read: the list has no sections; the sections of the posta in arrivo (#366) have their own group.
 import 'dart:async';
 
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:postino/app/posta/posta_routes.dart' show labelPath;
 import 'package:postino/core/data/sync_engine.dart';
+import 'package:postino/core/domain/mail_action.dart' show readAttribute;
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/design_system/design_system.dart';
+import 'package:postino/features/posta/presentation/inbox_section_screen.dart';
 import 'package:postino/features/posta/presentation/message_list.dart';
 import 'package:postino/i18n/strings.g.dart';
 import 'package:postino/main.dart';
@@ -26,7 +31,9 @@ Future<FakeMailProvider> _start(WidgetTester tester, {int count = 5, void Functi
   final h = await Harness.create();
   final p = await h.addAccount('a1');
   for (var i = 1; i <= count; i++) {
-    p.deliver(msg('m$i', subject: 'Fattura $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i'));
+    p.deliver(
+      msg('m$i', subject: 'Fattura $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i', isRead: true),
+    );
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
@@ -84,6 +91,64 @@ Future<void> _removeRemotely(WidgetTester tester, FakeMailProvider p, Iterable<i
   await tester.pumpAndSettle();
 }
 
+/// `s1..s[starred]` with a Stella, `u1..u[unread]` unread, `r1..r[read]` read; in each group the first is the newest,
+/// and the groups come newest first in that order, as the sections do.
+Future<FakeMailProvider> _startSections(
+  WidgetTester tester, {
+  int starred = 0,
+  int unread = 0,
+  int read = 0,
+  double width = 1600,
+}) async {
+  tester.view
+    ..physicalSize = Size(width, 900)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final h = await Harness.create();
+  final p = await h.addAccount('a1');
+  var minute = 59;
+  void add(String prefix, int n, {bool isRead = true, bool star = false}) {
+    for (var i = 1; i <= n; i++) {
+      p.deliver(
+        msg(
+          '$prefix$i',
+          subject: 'Oggetto $prefix$i',
+          date: DateTime.utc(2026, 10, 1, 9, minute--),
+          conversationId: 't-$prefix$i',
+          isRead: isRead,
+          isStarred: star,
+          labelIds: [inboxLabelId, if (star) starredLabelId],
+        ),
+      );
+    }
+  }
+
+  add('s', starred, star: true);
+  add('u', unread, isRead: false);
+  add('r', read);
+  LocaleSettings.setLocaleSync(AppLocale.it);
+  await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+  // Routefly keeps the last navigation in statics.
+  unawaited(Routefly.navigate(routePaths.posta.path));
+  await tester.pumpAndSettle();
+  return p;
+}
+
+Finder _rowOf(String id) => find.byKey(ValueKey('row-a1-$id'));
+
+/// The headings, top to bottom, as drawn.
+List<String> _headings(WidgetTester tester) => [
+  for (final h in tester.widgetList<PostinoSectionHeader>(find.byType(PostinoSectionHeader))) '${h.title} ${h.count}',
+];
+
+/// The id of the row that has the focus, null when focus is elsewhere.
+String? _focusedId() {
+  final key = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<PostinoMessageTile>()?.key;
+  return key is ValueKey<String> ? key.value.split('-').last : null;
+}
+
+double _topOf(WidgetTester tester, Finder f) => tester.getTopLeft(f).dy;
+
 void main() {
   testWidgets('the focused row leaves the list: the focus goes to the row now in its place, and j / k go on', (
     tester,
@@ -122,7 +187,7 @@ void main() {
     await _focus(tester, 3);
     await _removeRemotely(tester, p, [1, 2, 3, 4, 5]);
     expect(find.byType(PostinoMessageTile), findsNothing);
-    p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+    p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9', isRead: true));
     await getIt<SyncEngine>().syncAll();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('row-a1-m9')), findsOneWidget);
@@ -204,7 +269,7 @@ void main() {
 
     testWidgets('a row that arrives opens its height and fades in', (tester) async {
       final p = await _start(tester);
-      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9', isRead: true));
       await _syncNoSettle(tester);
       await tester.pump(PostinoMotion.rowEnter ~/ 2);
       final mid = _visible(tester, 9);
@@ -274,7 +339,7 @@ void main() {
 
     testWidgets('a row that arrives and leaves on the next frame just goes', (tester) async {
       final p = await _start(tester);
-      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+      p.deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9', isRead: true));
       await _syncNoSettle(tester);
       p.removeRemotely('m9');
       await _syncNoSettle(tester);
@@ -302,7 +367,7 @@ void main() {
       final p = await _start(tester);
       p
         ..removeRemotely('m3')
-        ..deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9'));
+        ..deliver(msg('m9', subject: 'Nuova', date: DateTime.utc(2026, 10, 2), conversationId: 't9', isRead: true));
       await _syncNoSettle(tester);
       expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
       expect(tester.widget<PostinoSizeFade>(_fadeOf(9)).visibility, kAlwaysCompleteAnimation);
@@ -326,12 +391,189 @@ void main() {
       await _syncNoSettle(tester);
       await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
       final out = _visible(tester, 3).opacity;
-      p.deliver(msg('m3', subject: 'Fattura 3', date: DateTime.utc(2026, 10, 1, 9, 3), conversationId: 't3'));
+      p.deliver(
+        msg('m3', subject: 'Fattura 3', date: DateTime.utc(2026, 10, 1, 9, 3), conversationId: 't3', isRead: true),
+      );
       await _syncNoSettle(tester);
       await tester.pump(PostinoMotion.rowEnter ~/ 4);
       expect(_visible(tester, 3).opacity, greaterThan(out));
       await tester.pumpAndSettle();
       expect(_visible(tester, 3), (opacity: 1.0, height: 1.0));
+    });
+  });
+
+  group('sections of the posta in arrivo (#366)', () {
+    testWidgets('Contrassegnate, Da leggere, Letti in order, each heading with its count; 3 rows and «Mostra tutti»', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _startSections(tester, starred: 2, unread: 4, read: 2);
+      expect(_headings(tester), ['Contrassegnate 2', 'Da leggere 4', 'Letti 2']);
+      expect(_topOf(tester, _rowOf('s2')), lessThan(_topOf(tester, _rowOf('u1'))));
+      expect(_topOf(tester, _rowOf('u3')), lessThan(_topOf(tester, _rowOf('r1'))));
+      expect(_rowOf('u3'), findsOneWidget);
+      expect(_rowOf('u4'), findsNothing, reason: 'only the 3 newest');
+      expect(_rowOf('r2'), findsOneWidget, reason: 'Letti shows all');
+      expect(
+        find.widgetWithText(PostinoButton, 'Mostra tutti'),
+        findsOneWidget,
+        reason: 'only Da leggere has more than 3',
+      );
+      expect(
+        find.semantics.byPredicate((n) => n.label == 'Da leggere, 4 conversazioni' && n.flagsCollection.isHeader),
+        findsOne,
+      );
+      expect(find.semantics.byLabel('Mostra tutte le 4 Da leggere'), findsOne);
+      handle.dispose();
+    });
+
+    testWidgets('without Contrassegnate nor Da leggere there is no heading: the list as before', (tester) async {
+      await _startSections(tester, read: 3);
+      expect(find.byType(PostinoSectionHeader), findsNothing);
+      expect(_rowOf('r3'), findsOneWidget);
+    });
+
+    testWidgets('an empty section has no heading', (tester) async {
+      await _startSections(tester, unread: 1, read: 1);
+      expect(_headings(tester), ['Da leggere 1', 'Letti 1']);
+      expect(find.widgetWithText(PostinoButton, 'Mostra tutti'), findsNothing);
+    });
+
+    testWidgets('a Conversazione with a Stella on an older message is Contrassegnata, and its row shows the Stella', (
+      tester,
+    ) async {
+      final h = await Harness.create();
+      final p = await h.addAccount('a1');
+      p
+        ..deliver(
+          msg(
+            'm1',
+            date: DateTime.utc(2026, 10, 1, 9),
+            conversationId: 't1',
+            isRead: true,
+            isStarred: true,
+            labelIds: const [inboxLabelId, starredLabelId],
+          ),
+        )
+        ..deliver(msg('m2', date: DateTime.utc(2026, 10, 1, 10), conversationId: 't1', isRead: true))
+        ..deliver(msg('m3', date: DateTime.utc(2026, 10, 1, 8), conversationId: 't3', isRead: true));
+      LocaleSettings.setLocaleSync(AppLocale.it);
+      await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
+      unawaited(Routefly.navigate(routePaths.posta.path));
+      await tester.pumpAndSettle();
+      expect(_headings(tester), ['Contrassegnate 1', 'Letti 1']);
+      expect(tester.widget<PostinoMessageTile>(_rowOf('m2')).starred, isTrue, reason: 'its latest message has none');
+    });
+
+    testWidgets('j and k go over the headings, row after row', (tester) async {
+      await _startSections(tester, starred: 2, read: 2);
+      await tester.tap(_rowOf('s1'));
+      await tester.pumpAndSettle();
+      final seen = [_focusedId()];
+      for (var i = 0; i < 3; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+        seen.add(_focusedId());
+      }
+      expect(seen, ['s1', 's2', 'r1', 'r2']);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), 'r1');
+    });
+
+    testWidgets('the focus rule: the open Conversazione stays in Da leggere once read, and moves when the focus does', (
+      tester,
+    ) async {
+      await _startSections(tester, unread: 2, read: 1);
+      await tester.tap(_rowOf('u1'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<PostinoMessageTile>(_rowOf('u1')).unread, isFalse, reason: 'opening reads it');
+      expect(_headings(tester), ['Da leggere 2', 'Letti 1'], reason: 'it keeps its section while open');
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(_focusedId(), 'u2');
+      expect(_headings(tester), ['Da leggere 1', 'Letti 2'], reason: 'the focus moved on: it went to Letti');
+      expect(_topOf(tester, _rowOf('u1')), greaterThan(_topOf(tester, _rowOf('u2'))));
+    });
+
+    testWidgets('a Conversazione without the focus changes section at once, animated', (tester) async {
+      final p = await _startSections(tester, unread: 1, read: 2);
+      await tester.tap(_rowOf('r1'));
+      await tester.pumpAndSettle();
+      // Read on another device: u1 is not the focused one.
+      p.changeElsewhere('u1', readAttribute, true);
+      await getIt<SyncEngine>().syncAll();
+      await tester.pump();
+      await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
+      expect(_rowOf('u1'), findsNWidgets(2), reason: 'it fades from Da leggere while it opens in Letti');
+      await tester.pumpAndSettle();
+      expect(_rowOf('u1'), findsOneWidget);
+      expect(find.byType(PostinoSectionHeader), findsNothing, reason: 'Letti alone has no heading');
+    });
+
+    testWidgets('an Account inbox has the sections too, and its «Mostra tutti» is of that Account; an Etichetta none', (
+      tester,
+    ) async {
+      final p = await _startSections(tester, starred: 4, read: 1);
+      p.deliver(msg('e1', conversationId: 't-e1', labelIds: const ['Label_12'], isStarred: true));
+      await getIt<SyncEngine>().syncAll();
+      unawaited(Routefly.navigate(routePaths.posta.$accountId.path.changes({'accountId': 'a1'})));
+      await tester.pumpAndSettle();
+      expect(_headings(tester), ['Contrassegnate 4', 'Letti 1']);
+      await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
+      await tester.pumpAndSettle();
+      final bar = tester.widget<PostinoAppBar>(find.byType(PostinoAppBar).last);
+      expect((bar.title, bar.subtitle), ('Contrassegnate', 'a1@example.com'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      unawaited(Routefly.navigate(labelPath('a1', 'Label_12')));
+      await tester.pumpAndSettle();
+      expect(_rowOf('e1'), findsOneWidget);
+      expect(find.byType(PostinoSectionHeader), findsNothing);
+    });
+
+    testWidgets('«Mostra tutti» opens the whole section over the posta; Esc and Indietro close it', (tester) async {
+      await _startSections(tester, unread: 5, read: 1);
+      await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
+      await tester.pumpAndSettle();
+      expect(find.byType(InboxSectionScreen), findsOneWidget);
+      final bar = tester.widget<PostinoAppBar>(find.byType(PostinoAppBar).last);
+      expect((bar.title, bar.subtitle), ('Da leggere', 'tutti'));
+      for (var i = 1; i <= 5; i++) {
+        expect(find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u$i')), findsOneWidget);
+      }
+      expect(find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('r1')), findsNothing);
+      expect(
+        find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoSectionHeader)),
+        findsNothing,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(InboxSectionScreen), findsNothing);
+
+      await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Indietro').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(InboxSectionScreen), findsNothing);
+    });
+
+    testWidgets('in the screen the open Conversazione stays while read, beside the list; it leaves when closed', (
+      tester,
+    ) async {
+      await _startSections(tester, unread: 4);
+      await tester.tap(find.widgetWithText(PostinoButton, 'Mostra tutti'));
+      await tester.pumpAndSettle();
+      final inScreen = find.descendant(of: find.byType(InboxSectionScreen), matching: _rowOf('u2'));
+      await tester.tap(inScreen);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(InboxSectionScreen), matching: find.byType(PostinoThreadView)), findsOne);
+      expect(inScreen, findsOneWidget, reason: 'read now, it keeps the focus and its section');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(inScreen, findsNothing, reason: 'the focus left it: it is in Letti now');
     });
   });
 }

@@ -38,6 +38,7 @@ export 'molecules/postino_menu.dart';
 export 'molecules/postino_message_body.dart';
 export 'molecules/postino_message_tile.dart';
 export 'molecules/postino_popover.dart';
+export 'molecules/postino_section_header.dart';
 export 'molecules/postino_settings_item.dart';
 export 'molecules/postino_settings_section.dart';
 export 'molecules/postino_snackbar.dart';

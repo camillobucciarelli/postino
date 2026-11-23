@@ -364,6 +364,21 @@ final _components = <String, Widget Function()>{
       ),
     ],
   ),
+  // A section of the posta in arrivo (#366): with «Mostra tutti», and without.
+  'section_header': () => const Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      PostinoSectionHeader(
+        title: 'Da leggere',
+        count: 12,
+        semanticLabel: 'Da leggere, 12 conversazioni',
+        actionLabel: 'Mostra tutti',
+        actionSemanticLabel: 'Mostra tutte le 12 Da leggere',
+        onAction: _noop,
+      ),
+      PostinoSectionHeader(title: 'Letti', count: 2, semanticLabel: 'Letti, 2 conversazioni'),
+    ],
+  ),
   'empty_state': () =>
       const PostinoEmptyState(title: 'Niente di nuovo', body: 'I messaggi compaiono qui appena arrivano.'),
   'composer_field': () => Column(

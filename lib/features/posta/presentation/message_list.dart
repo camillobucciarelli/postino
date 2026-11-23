@@ -12,8 +12,10 @@ import '../../../core/domain/swipe_actions.dart';
 import '../../../core/domain/swipe_actions_repository.dart';
 import '../../../design_system/design_system.dart';
 import '../../../i18n/strings.g.dart';
+import '../domain/inbox_sections.dart';
 import 'act_on_conversation.dart';
 import 'conversation_actions.dart';
+import 'list_items.dart';
 import 'message_time.dart';
 import 'posta_shortcuts.dart';
 import 'refresh_mail.dart';
@@ -53,6 +55,12 @@ class const MessageList({
 
   /// The Etichetta of this view: the Azioni and the Etichette of a row reach only the messages it shows.
   final String view = inboxLabelId,
+
+  /// The posta in arrivo (#366): Contrassegnate, Da leggere and Letti; «Mostra tutti» calls it with its section.
+  final void Function(InboxSection section)? onShowAll,
+
+  /// Only this section of the posta in arrivo, all of it and without heading (the screen of «Mostra tutti»).
+  final InboxSection? section,
 }) extends StatefulWidget {
   @override
   State<MessageList> createState() => _MessageListState();
@@ -75,15 +83,15 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   (String, String)? _cursor;
   List<InboxEntry>? _list;
 
-  /// Rows entering and leaving (#282).
-  late final _motion = RowMotion<InboxEntry>(
-    this,
-    () => mounted ? setState(() {}) : null,
-    (e) => (e.account.id, e.message.conversationId),
-  );
+  /// Rows and headings entering and leaving (#282); a row that changes section leaves one and enters the other.
+  late final _motion = RowMotion<ListItem>(this, () => mounted ? setState(() {}) : null, itemKey);
 
-  /// The rows drawn: [_list] plus the ones on their way out.
-  List<InboxEntry>? _drawn;
+  /// The items drawn: the rows of [_list] and the headings, plus the ones on their way out.
+  List<ListItem>? _drawn;
+
+  /// The sections of the last list (#366), and the open Conversazione kept in its own (the focus rule).
+  InboxSections? _sections;
+  HeldConversation? _held;
   bool? _wasTwoPane;
   int? _counted;
 
@@ -173,6 +181,12 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   /// Focus on the list, and the list is in front (not under a full-page Conversazione).
   bool _listFocused() => _nodes.values.any((n) => n.hasFocus) && (_twoPane || widget.selected == null);
 
+  /// The Conversazione with the focus for the sections (#366): the open one, else the row the keyboard is on.
+  (String, String)? _focused() {
+    final cursor = _cursor;
+    return widget.selected ?? (cursor != null && (_nodes[cursor]?.hasFocus ?? false) ? cursor : null);
+  }
+
   /// The focus goes to the cursor row (the first one in a list nobody has moved in).
   void _focusCursorRow() {
     if (_cursor != null) _reveal(_cursor!, 0);
@@ -198,7 +212,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     // Where the row is drawn, rows on their way out included (a mass removal leaves them above it for a while).
     final list = _drawn;
     if (tries == 0 || list == null || !_scroll.hasClients) return;
-    final at = list.indexWhere((e) => (e.account.id, e.message.conversationId) == key);
+    final at = list.indexWhere((i) => i.entry != null && keyOf(i.entry!) == key && !_motion.leaving(itemKey(i)));
     if (at < 0) return;
     final p = _scroll.position;
     final rowExtent = (p.maxScrollExtent + p.viewportDimension) / list.length;
@@ -285,7 +299,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione.
     if (key == null || e == null || !_listFocused() || key.$2.startsWith('<')) return;
     if (key == widget.selected && widget.cursor?.act != null) return widget.cursor!.act!(shortcut);
-    final action = mailActionFor(shortcut, starred: _starred(e));
+    final action = mailActionFor(shortcut, starred: isStarred(e));
     if (action == null) return;
     unawaited(actOnStoredConversation(context, key.$1, key.$2, action, view: widget.view));
     if (leavesList(action)) _step(key);
@@ -294,13 +308,20 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
-      final list = entries.value.value;
+      final all = entries.value.value;
       // Read here, not in itemBuilder (which runs at layout, outside the tracking): a change rebuilds the rows.
       final swipeActions = swipes.value.value ?? swipeActionsDefault;
+      final sections = (widget.onShowAll != null || widget.section != null) && all != null
+          ? InboxSections.of(all, held: _held = holdFocus(_focused(), _held, _sections))
+          : null;
+      _sections = sections;
+      final items = all == null ? null : listItems(all, sections, only: widget.section);
+      // The Conversazioni in the order shown: the cursor and the keys go through them, over the headings.
+      final list = items == null ? null : [for (final i in items) ?i.entry];
       _realign(list);
       _list = list;
       final shown = _drawn = _motion.update(
-        list,
+        items,
         enter: PostinoMotion.of(context, PostinoMotion.rowEnter),
         leave: PostinoMotion.of(context, PostinoMotion.swipeDismiss),
       );
@@ -311,7 +332,6 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
       final t = context.t.list;
       final now = GetIt.I<Clock>().now();
       final inConflict = conflicts.value.value ?? const <(String, String)>{};
-      final locale = Localizations.localeOf(context).languageCode;
       return PostinoMessageList(
         controller: _scroll,
         loading: list == null,
@@ -322,56 +342,33 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
         emptyBody: widget.emptyBody ?? t.emptyBody,
         emptyIcon: widget.emptyIcon,
         itemBuilder: (context, i) {
-          final entry = shown![i];
-          final InboxEntry(message: m, account: a, :count, :unread, :status) = entry;
-          final labels = [
-            for (final l in _labelsOf(a.id))
-              if (l.kind == LabelKind.etichetta && m.labelIds.contains(l.id)) l.name,
-          ];
-          final time = messageTime(m.date, now, locale, t.yesterday);
+          final item = shown![i];
+          final entry = item.entry;
+          if (entry == null) return _heading(context, item);
+          final InboxEntry(message: m, account: a, :unread) = entry;
+          final starred = isStarred(entry);
           final key = (a.id, m.conversationId);
           final conflict = inConflict.contains((a.id, m.id));
+          final ik = itemKey(item);
+          // Changing section, its old place fades as a copy: the focus and the actions are on the row it moves to.
+          if (_motion.leaving(ik) && list!.any((e) => keyOf(e) == key)) {
+            return PostinoSizeFade(
+              key: ValueKey(ik),
+              visibility: _motion.of(ik),
+              leaving: true,
+              child: ExcludeFocus(
+                child: _tile(context, item, null, conflict: conflict, now: now),
+              ),
+            );
+          }
           final node = _node(key)..skipTraversal = key != (_cursor ?? _firstKey(list!));
           PostinoMessageTile tileWith([Map<CustomSemanticsAction, VoidCallback>? semanticActions]) =>
-              PostinoMessageTile(
-                key: ValueKey('row-${a.id}-${m.id}'),
-                focusNode: node,
-                customSemanticsActions: semanticActions,
-                sender: m.fromName ?? m.from,
-                subject: m.subject,
-                preview: m.snippet,
-                time: time,
-                unread: unread,
-                starred: m.isStarred,
-                count: count,
-                labels: labels,
-                conflict: conflict,
-                selected: widget.selected == key,
-                onTap: () {
-                  setState(() => _cursor = key);
-                  node.requestFocus();
-                  widget.onOpen(a.id, m.conversationId);
-                },
-                account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
-                semanticLabel: [
-                  if (unread) t.unread,
-                  m.fromName ?? m.from,
-                  m.subject,
-                  if (count > 1) t.messages(n: count),
-                  if (m.snippet.isNotEmpty) m.snippet,
-                  ?status,
-                  if (conflict) context.t.conflitti.sign,
-                  if (m.isStarred) t.starred,
-                  if (widget.showAccount) t.account(name: a.name),
-                  ...labels,
-                  time,
-                ].join(', '),
-              );
+              _tile(context, item, node, conflict: conflict, now: now, semanticActions: semanticActions);
           return PostinoSizeFade(
             // By Conversazione, not by index: a list that changes under a swipe in progress keeps it with its row.
-            key: ValueKey(key),
-            visibility: _motion.of(key),
-            leaving: _motion.leaving(key),
+            key: ValueKey(ik),
+            visibility: _motion.of(ik),
+            leaving: _motion.leaving(ik),
             child: RowKeepAlive(
               keep: key == _cursor,
               // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
@@ -382,7 +379,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                       conversationId: m.conversationId,
                       labelsAreFolders: a.provider.labelsAreFolders,
                       read: !unread,
-                      starred: _starred(entry),
+                      starred: starred,
                       focusNode: node,
                       actions: swipeActions,
                       onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
@@ -394,7 +391,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                         focusNode: node,
                         labelsAreFolders: a.provider.labelsAreFolders,
                         read: !unread,
-                        starred: _starred(entry),
+                        starred: starred,
                         onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
                         view: widget.view,
                         child: tileWith(semanticActions),
@@ -406,10 +403,82 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
       );
     },
   );
-}
 
-/// A message of the Conversazione has the Stella: the row's labels are those of all of them.
-bool _starred(InboxEntry e) => e.message.labelIds.contains(starredLabelId);
+  /// A section's heading, with «Mostra tutti» when the section has more than it shows.
+  Widget _heading(BuildContext context, ListItem item) {
+    final t = context.t.sezioni;
+    final title = sectionTitle(context.t, item.section!);
+    final ik = itemKey(item);
+    return PostinoSizeFade(
+      key: ValueKey(ik),
+      visibility: _motion.of(ik),
+      leaving: _motion.leaving(ik),
+      child: PostinoSectionHeader(
+        title: title,
+        count: item.count,
+        semanticLabel: t.heading(n: item.count, title: title),
+        actionLabel: t.showAll,
+        actionSemanticLabel: t.showAllLabel(n: item.count, title: title),
+        onAction: item.more ? () => widget.onShowAll?.call(item.section!) : null,
+      ),
+    );
+  }
+
+  /// The tile of a Conversazione's row; [node] null for the copy that fades from its old section.
+  PostinoMessageTile _tile(
+    BuildContext context,
+    ListItem item,
+    FocusNode? node, {
+    required bool conflict,
+    required DateTime now,
+    Map<CustomSemanticsAction, VoidCallback>? semanticActions,
+  }) {
+    final t = context.t.list;
+    final entry = item.entry!;
+    final InboxEntry(message: m, account: a, :count, :unread, :status) = entry;
+    final starred = isStarred(entry);
+    final labels = [
+      for (final l in _labelsOf(a.id))
+        if (l.kind == LabelKind.etichetta && m.labelIds.contains(l.id)) l.name,
+    ];
+    final time = messageTime(m.date, now, Localizations.localeOf(context).languageCode, t.yesterday);
+    final key = (a.id, m.conversationId);
+    return PostinoMessageTile(
+      key: ValueKey('row-${a.id}-${m.id}'),
+      focusNode: node,
+      customSemanticsActions: semanticActions,
+      sender: m.fromName ?? m.from,
+      subject: m.subject,
+      preview: m.snippet,
+      time: time,
+      unread: unread,
+      starred: starred,
+      count: count,
+      labels: labels,
+      conflict: conflict,
+      selected: widget.selected == key,
+      onTap: () {
+        setState(() => _cursor = key);
+        node?.requestFocus();
+        widget.onOpen(a.id, m.conversationId);
+      },
+      account: widget.showAccount ? (color: PostinoAccountColor.values[a.color], initial: a.initial) : null,
+      semanticLabel: [
+        if (unread) t.unread,
+        m.fromName ?? m.from,
+        m.subject,
+        if (count > 1) t.messages(n: count),
+        if (m.snippet.isNotEmpty) m.snippet,
+        ?status,
+        if (conflict) context.t.conflitti.sign,
+        if (starred) t.starred,
+        if (widget.showAccount) t.account(name: a.name),
+        ...labels,
+        time,
+      ].join(', '),
+    );
+  }
+}
 
 /// The first row, the Tab stop before any focus; none in a list emptied while its last rows leave.
 (String, String)? _firstKey(List<InboxEntry> list) =>

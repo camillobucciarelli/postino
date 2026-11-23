@@ -76,6 +76,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$offline$it offline = Translations$offline$it.internal(_root);
 	late final Translations$syncStatus$it syncStatus = Translations$syncStatus$it.internal(_root);
 	late final Translations$list$it list = Translations$list$it.internal(_root);
+	late final Translations$sezioni$it sezioni = Translations$sezioni$it.internal(_root);
 	late final Translations$conversazione$it conversazione = Translations$conversazione$it.internal(_root);
 	late final Translations$composizione$it composizione = Translations$composizione$it.internal(_root);
 	late final Translations$bozze$it bozze = Translations$bozze$it.internal(_root);
@@ -329,6 +330,39 @@ class Translations$list$it {
 		one: '${n} messaggio',
 		other: '${n} messaggi',
 	);
+}
+
+// Path: sezioni
+class Translations$sezioni$it {
+	Translations$sezioni$it.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// it: 'Contrassegnate'
+	String get starred => 'Contrassegnate';
+
+	/// it: 'Da leggere'
+	String get unread => 'Da leggere';
+
+	/// it: 'Letti'
+	String get read => 'Letti';
+
+	/// it: '(one) {$title, $n conversazione} (other) {$title, $n conversazioni}'
+	String heading({required num n, required Object title}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n,
+		one: '${title}, ${n} conversazione',
+		other: '${title}, ${n} conversazioni',
+	);
+
+	/// it: 'Mostra tutti'
+	String get showAll => 'Mostra tutti';
+
+	/// it: 'Mostra tutte le $n $title'
+	String showAllLabel({required Object n, required Object title}) => 'Mostra tutte le ${n} ${title}';
+
+	/// it: 'tutti'
+	String get scopeAll => 'tutti';
 }
 
 // Path: conversazione
@@ -1603,6 +1637,13 @@ extension on Translations {
 			'list.starred' => 'con Stella',
 			'list.account' => ({required Object name}) => 'account ${name}',
 			'list.messages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${n} messaggio', other: '${n} messaggi', ), 
+			'sezioni.starred' => 'Contrassegnate',
+			'sezioni.unread' => 'Da leggere',
+			'sezioni.read' => 'Letti',
+			'sezioni.heading' => ({required num n, required Object title}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('it'))(n, one: '${title}, ${n} conversazione', other: '${title}, ${n} conversazioni', ), 
+			'sezioni.showAll' => 'Mostra tutti',
+			'sezioni.showAllLabel' => ({required Object n, required Object title}) => 'Mostra tutte le ${n} ${title}',
+			'sezioni.scopeAll' => 'tutti',
 			'conversazione.selectTitle' => 'Seleziona una Conversazione',
 			'conversazione.selectBody' => 'Scegli una Conversazione dalla lista per leggerla qui.',
 			'conversazione.to' => ({required Object recipients}) => 'a ${recipients}',

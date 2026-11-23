@@ -208,6 +208,8 @@ void main() {
             'n$i',
             subject: 'Messaggio $i',
             date: _day(1).add(Duration(hours: i)),
+            // Read: a long list without sections (#366).
+            isRead: true,
           ),
         );
       }

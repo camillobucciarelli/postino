@@ -36,7 +36,8 @@ Future<void> _start(WidgetTester tester, double width, {bool? stored, int many =
     ..deliver(msg('x', subject: 'Da uno'))
     ..deliver(msg('l', subject: 'In viaggio', labelIds: const ['Label_12']));
   for (var i = 0; i < many; i++) {
-    a1.deliver(msg('n$i', subject: 'Messaggio $i', date: DateTime.utc(2026, 10, 1, 9, i)));
+    // Read: Letti under Da leggere, the scroll of a long list.
+    a1.deliver(msg('n$i', subject: 'Messaggio $i', date: DateTime.utc(2026, 10, 1, 9, i), isRead: true));
   }
   (await h.addAccount('a2')).deliver(msg('y', subject: 'Da due', isRead: true));
   if (reconnect) {

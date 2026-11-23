@@ -24,7 +24,10 @@ Future<double> _gap(WidgetTester tester, {required double top, required double b
   final h = await Harness.create();
   final p = await h.addAccount('a1');
   for (var i = 1; i <= 8; i++) {
-    p.deliver(msg('m$i', subject: 'Fattura $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i'));
+    // Read: the list has no sections (#366).
+    p.deliver(
+      msg('m$i', subject: 'Fattura $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i', isRead: true),
+    );
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));

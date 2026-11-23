@@ -83,6 +83,18 @@
       "other": "$n messages"
     }
   },
+  "sezioni": {
+    "starred": "Starred",
+    "unread": "Unread",
+    "read": "Read",
+    "heading": {
+      "one": "$title, $n conversation",
+      "other": "$title, $n conversations"
+    },
+    "showAll": "Show all",
+    "showAllLabel": "Show all $n $title",
+    "scopeAll": "all"
+  },
   "conversazione": {
     "selectTitle": "Select a conversation",
     "selectBody": "Pick a conversation from the list to read it here.",

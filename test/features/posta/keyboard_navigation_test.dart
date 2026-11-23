@@ -23,8 +23,9 @@ const _desktop = Size(1600, 900);
 const _narrow = Size(800, 800);
 const _phone = Size(390, 844);
 
-/// Rows `m1` to `mN`, newest first: `mN` is the first row.
-Future<FakeMailProvider> _start(WidgetTester tester, Size size, {int n = 5}) async {
+/// Rows `m1` to `mN`, newest first: `mN` is the first row. Read, so the list has no sections (#366), but the rows
+/// in [starred]: unread with a Stella, the first rows of Contrassegnate, which they keep once read.
+Future<FakeMailProvider> _start(WidgetTester tester, Size size, {int n = 5, Set<int> starred = const {}}) async {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;
@@ -32,7 +33,18 @@ Future<FakeMailProvider> _start(WidgetTester tester, Size size, {int n = 5}) asy
   final h = await Harness.create();
   final p = await h.addAccount('a1');
   for (var i = 1; i <= n; i++) {
-    p.deliver(msg('m$i', subject: 'Oggetto $i', date: DateTime.utc(2026, 10, 1, 9, i), conversationId: 't$i'));
+    final star = starred.contains(i);
+    p.deliver(
+      msg(
+        'm$i',
+        subject: 'Oggetto $i',
+        date: DateTime.utc(2026, 10, 1, 9, i),
+        conversationId: 't$i',
+        isRead: !star,
+        isStarred: star,
+        labelIds: [inboxLabelId, if (star) starredLabelId],
+      ),
+    );
   }
   LocaleSettings.setLocaleSync(AppLocale.it);
   await tester.pumpWidget(TranslationProvider(child: const PostinoApp()));
@@ -230,7 +242,7 @@ void main() {
     testWidgets('arrow down / j open the next Conversazione, focus it and mark it read; arrow up / k the previous', (
       tester,
     ) async {
-      await _start(tester, _desktop);
+      await _start(tester, _desktop, starred: {3, 4, 5});
       await _tapRow(tester, 5);
       for (final (key, to) in [
         (LogicalKeyboardKey.arrowDown, 4),
@@ -261,7 +273,7 @@ void main() {
     testWidgets('arrows move the focus without opening; Enter opens; Esc goes back to the row just closed', (
       tester,
     ) async {
-      await _start(tester, _phone);
+      await _start(tester, _phone, starred: {2, 3, 4});
       await _tapRow(tester, 4);
       await _press(tester, LogicalKeyboardKey.escape);
       expect(_focusedRow(), 4);
@@ -398,7 +410,7 @@ void main() {
   group('Conversazione', () {
     for (final (name, size) in [('two panes', _desktop), ('one pane', _phone)]) {
       testWidgets('j / k open the next / previous ($name)', (tester) async {
-        await _start(tester, size);
+        await _start(tester, size, starred: {2, 3, 4});
         await _tapRow(tester, 3);
         await _focusConversation(tester, 3);
         await _press(tester, LogicalKeyboardKey.keyJ);

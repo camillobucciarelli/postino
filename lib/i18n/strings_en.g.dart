@@ -58,6 +58,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$offline$en offline = _Translations$offline$en._(_root);
 	@override late final _Translations$syncStatus$en syncStatus = _Translations$syncStatus$en._(_root);
 	@override late final _Translations$list$en list = _Translations$list$en._(_root);
+	@override late final _Translations$sezioni$en sezioni = _Translations$sezioni$en._(_root);
 	@override late final _Translations$conversazione$en conversazione = _Translations$conversazione$en._(_root);
 	@override late final _Translations$composizione$en composizione = _Translations$composizione$en._(_root);
 	@override late final _Translations$bozze$en bozze = _Translations$bozze$en._(_root);
@@ -211,6 +212,25 @@ class _Translations$list$en extends Translations$list$it {
 		one: '${n} message',
 		other: '${n} messages',
 	);
+}
+
+// Path: sezioni
+class _Translations$sezioni$en extends Translations$sezioni$it {
+	_Translations$sezioni$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get starred => 'Starred';
+	@override String get unread => 'Unread';
+	@override String get read => 'Read';
+	@override String heading({required num n, required Object title}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${title}, ${n} conversation',
+		other: '${title}, ${n} conversations',
+	);
+	@override String get showAll => 'Show all';
+	@override String showAllLabel({required Object n, required Object title}) => 'Show all ${n} ${title}';
+	@override String get scopeAll => 'all';
 }
 
 // Path: conversazione
@@ -808,6 +828,13 @@ extension on TranslationsEn {
 			'list.starred' => 'starred',
 			'list.account' => ({required Object name}) => 'account ${name}',
 			'list.messages' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} message', other: '${n} messages', ), 
+			'sezioni.starred' => 'Starred',
+			'sezioni.unread' => 'Unread',
+			'sezioni.read' => 'Read',
+			'sezioni.heading' => ({required num n, required Object title}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${title}, ${n} conversation', other: '${title}, ${n} conversations', ), 
+			'sezioni.showAll' => 'Show all',
+			'sezioni.showAllLabel' => ({required Object n, required Object title}) => 'Show all ${n} ${title}',
+			'sezioni.scopeAll' => 'all',
 			'conversazione.selectTitle' => 'Select a conversation',
 			'conversazione.selectBody' => 'Pick a conversation from the list to read it here.',
 			'conversazione.to' => ({required Object recipients}) => 'to ${recipients}',

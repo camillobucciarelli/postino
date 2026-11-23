@@ -26,6 +26,18 @@ _Avoid_: collisione, divergenza
 La vista che fonde la posta in arrivo di tutti gli Account.
 _Avoid_: Inbox globale, posta combinata
 
+**Contrassegnate**:
+La prima sezione della posta in arrivo di un Account e della Posta unificata: le Conversazioni con almeno un messaggio con Stella, anche se hanno messaggi da leggere. Mostra le tre più recenti; «Mostra tutti» apre l'elenco completo. È solo il nome della sezione: il concetto resta la Stella.
+_Avoid_: Preferiti, importanti, speciali
+
+**Da leggere**:
+La seconda sezione della posta in arrivo: le Conversazioni con almeno un messaggio non letto e nessuna Stella. Mostra le tre più recenti; «Mostra tutti» apre l'elenco completo.
+_Avoid_: Non letti, nuovi
+
+**Letti**:
+La terza sezione della posta in arrivo: tutte le altre Conversazioni, per intero. Ha un'intestazione solo se sopra c'è almeno un'altra sezione.
+_Avoid_: Già letti, archivio
+
 **Contatto**:
 Una persona a cui l'utente può scrivere, suggerita durante la scrittura di un messaggio. Proviene dagli indirizzi visti nella posta dell'utente o dalla rubrica dell'Account sul Provider.
 _Avoid_: Rubrica (è la fonte), destinatario (è un ruolo in un singolo messaggio)
@@ -172,4 +184,5 @@ _Avoid_: Telemetria, analytics
 - Una **Conversazione** appartiene a un solo **Account**
 - Una **Bozza** appartiene a un solo **Account**
 - La **Posta unificata** mostra la posta in arrivo di tutti gli **Account**
+- Nella posta in arrivo una **Conversazione** sta in una sola sezione fra **Contrassegnate**, **Da leggere** e **Letti**; quella aperta o selezionata resta nella sua finché il focus non passa altrove
 - Una **Sessione di smistamento** applica le **Azioni** ai messaggi della posta in arrivo

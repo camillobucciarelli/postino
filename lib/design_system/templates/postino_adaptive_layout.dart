@@ -40,7 +40,8 @@ class const PostinoAdaptiveLayout({
     return PostinoSinglePaneLayout(
       appBar: appBar,
       body: body,
-      drawer: docked ? null : drawer,
+      // Open, the modal drawer tells the system its Indietro is the app's (#365): the route's PopScope closes it.
+      drawer: docked ? null : PopScope(canPop: false, child: drawer),
       banners: banners,
       fab: fab,
     );

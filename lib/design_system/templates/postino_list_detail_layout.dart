@@ -25,6 +25,10 @@ double shownListWidth(double preferred, double window) => preferred.clamp(
 /// Below 900: the detail is a full page over the list, with the Material 3 shared axis X
 /// (slide + fade); the list stays mounted under it, so going back finds it as it was.
 /// The list and the open detail keep their State across both, and across a resize. Esc calls [onClose].
+/// The system's Indietro (Android, #365) goes the same way, through a [PopScope] (the detail is drawn here, not
+/// pushed): an open drawer first, then a selection in the detail, then [onClose]; with nothing open [onListBack],
+/// or, without it, the system's own (the page pops, or the app leaves). Below 900 on iOS a swipe from the left
+/// edge of the detail past a third of the window (or a flick) calls [onClose] too.
 /// With reduced motion every change is instant.
 class const PostinoListDetailLayout({
   super.key,
@@ -35,8 +39,11 @@ class const PostinoListDetailLayout({
   /// Pannello mostrato quando nessun dettaglio è aperto, sulle finestre larghe.
   required final Widget empty,
 
-  /// Chiamato quando l'utente chiude il dettaglio, con il tasto Esc.
+  /// Chiamato quando l'utente chiude il dettaglio, con il tasto Esc, l'Indietro di sistema o lo swipe dal bordo.
   required final VoidCallback onClose,
+
+  /// The system's Indietro with no detail open; null: left to the system.
+  final VoidCallback? onListBack,
 
   /// Il dettaglio aperto, o null se nessun elemento è aperto.
   final Widget? detail,
@@ -66,6 +73,14 @@ class const PostinoListDetailLayout({
 class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> with SingleTickerProviderStateMixin {
   static const _slide = 30.0;
   static const _fadeSplit = 0.3;
+
+  /// The edge a swipe starts from (iOS's own back gesture area), and how far or fast it must go to close.
+  static const _edge = 20.0;
+  static const _swipeFraction = 1 / 3;
+  static const _flick = 700.0;
+
+  /// How far the swipe in progress went.
+  double _swiped = 0;
 
   final _listKey = GlobalKey();
 
@@ -106,10 +121,22 @@ class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> wit
   /// The detail sliding out after it closed, with its own key.
   (Object?, Widget)? _closing;
 
+  /// Flutter tells Android who handles Indietro only while the app runs, and only on a change: built before the
+  /// app resumed (a cold start into a detail), the layout says it again once resumed.
+  late final _lifecycle = AppLifecycleListener(onResume: _declareBack);
+
+  void _declareBack() {
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) return;
+    // The Navigator above turns false into true when it can pop a route itself.
+    NavigationNotification(canHandlePop: route.popDisposition == RoutePopDisposition.doNotPop).dispatch(context);
+  }
+
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onKey);
+    _lifecycle;
   }
 
   @override
@@ -174,27 +201,53 @@ class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> wit
       return false;
     }
     // A selection in the Conversazione takes the first Esc.
-    if (focus != null) {
-      const clear = PostinoClearSelectionIntent();
-      if (Actions.maybeFind<PostinoClearSelectionIntent>(focus) case final action? when action.isEnabled(clear)) {
-        Actions.invoke(focus, clear);
-        return true;
-      }
-    }
-    widget.onClose();
+    if (!_clearSelection()) widget.onClose();
     return true;
+  }
+
+  /// Clears a selection (or what else answers [PostinoClearSelectionIntent]) under the focus; false: none.
+  bool _clearSelection() {
+    final focus = primaryFocus?.context;
+    if (focus == null) return false;
+    const clear = PostinoClearSelectionIntent();
+    if (Actions.maybeFind<PostinoClearSelectionIntent>(focus) case final action? when action.isEnabled(clear)) {
+      Actions.invoke(focus, clear);
+      return true;
+    }
+    return false;
+  }
+
+  /// The system's Indietro this layout took (it is called only while this route is in front).
+  void _onBack(bool didPop, Object? _) {
+    if (didPop) return;
+    final route = ModalRoute.of(context);
+    // The PopScope hides the route's own entries from the Navigator: an open drawer closes first.
+    if (route?.willHandlePopInternally ?? false) {
+      route!.navigator!.pop();
+    } else if (widget.detail != null) {
+      if (!_clearSelection()) widget.onClose();
+    } else {
+      widget.onListBack?.call();
+    }
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _lifecycle.dispose();
     _axis.dispose();
     _detailFocus.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: widget.detail == null && widget.onListBack == null,
+    onPopInvokedWithResult: _onBack,
+    child: _layout(context),
+  );
+
+  Widget _layout(BuildContext context) {
     final list = KeyedSubtree(key: _listKey, child: widget.list);
     final window = MediaQuery.sizeOf(context).width;
     if (window >= PostinoSize.breakpointListDetail) {
@@ -259,6 +312,24 @@ class _PostinoListDetailLayoutState() extends State<PostinoListDetailLayout> wit
                 child: Opacity(
                   opacity: detailIn,
                   child: Focus(focusNode: _detailFocus, child: _keyed(key, detail)),
+                ),
+              ),
+            // iOS has no system Indietro: the swipe from the left edge. Out of the semantics tree, it adds no
+            // action for VoiceOver, whose own gestures never reach it.
+            if (widget.detail != null && Theme.of(context).platform == TargetPlatform.iOS)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: _edge,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  excludeFromSemantics: true,
+                  onHorizontalDragStart: (_) => _swiped = 0,
+                  onHorizontalDragUpdate: (d) => _swiped += d.delta.dx,
+                  onHorizontalDragEnd: (d) {
+                    if (_swiped > window * _swipeFraction || (d.primaryVelocity ?? 0) > _flick) widget.onClose();
+                  },
                 ),
               ),
           ],

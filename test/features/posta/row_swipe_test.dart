@@ -99,6 +99,28 @@ void main() {
     expect(_sent, contains(('o1', const Archive())));
   });
 
+  testWidgets('Archivia that changes nothing (an Etichetta, not in the inbox): the row comes back in place (#376)', (
+    tester,
+  ) async {
+    await _start(tester);
+    gmail.deliver(msg('l1', conversationId: 'l', subject: 'Solo etichetta', date: _day(5), labelIds: ['Label_13']));
+    await getIt<SyncEngine>().syncAll();
+    unawaited(
+      Routefly.navigate(
+        routePaths.posta.$accountId.etichetta.$labelId.changes({'accountId': 'a1', 'labelId': 'Label_13'}),
+      ),
+    );
+    await _settle(tester);
+    expect(_row('l1'), findsOneWidget);
+    final row = find.ancestor(of: _row('l1'), matching: find.byType(PostinoSwipeRow));
+    final place = tester.getTopLeft(row).dx;
+    await _swipe(tester, 'l1', -200);
+    expect(_row('l1'), findsOneWidget);
+    expect(tester.getTopLeft(_row('l1')).dx, place, reason: 'back in place, not left off the screen');
+    await _expire(tester);
+    expect(_sent, isEmpty);
+  });
+
   testWidgets('Annulla of a swipe is the one of the other ways: the row comes back', (tester) async {
     await _start(tester);
     await _swipe(tester, 'o1', -200);

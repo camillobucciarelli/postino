@@ -9,7 +9,7 @@ import 'package:postino/design_system/design_system.dart';
 const _width = 400.0;
 
 /// Left Archivia (takes the row away), right Segna come letto (keeps it).
-Widget _row({bool away = false, List<PostinoSwipeSide>? swiped}) => MaterialApp(
+Widget _row({PostinoSwipeSide? away, List<PostinoSwipeSide>? swiped}) => MaterialApp(
   theme: PostinoTheme.light(),
   home: Align(
     alignment: Alignment.topLeft,
@@ -61,7 +61,7 @@ void main() {
     expect(swiped, [PostinoSwipeSide.left]);
     final released = _x(tester);
     expect(released, lessThan(0));
-    await tester.pumpWidget(_row(away: true, swiped: swiped));
+    await tester.pumpWidget(_row(away: PostinoSwipeSide.left, swiped: swiped));
     await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
     expect(_x(tester), inExclusiveRange(-_width, released), reason: 'on its way out, past where it was released');
     expect(_behind(tester), _colors(tester).swipeArchiveBg, reason: 'still armed');
@@ -74,11 +74,22 @@ void main() {
     expect(_x(tester), -_width, reason: 'it stays out while away');
   });
 
+  testWidgets('built anew while away (the list moved it): off the screen from the start, colour behind', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_row(away: PostinoSwipeSide.left));
+    expect(_x(tester), -_width);
+    expect(_behind(tester), _colors(tester).swipeArchiveBg);
+    await tester.pumpWidget(_row());
+    expect(_x(tester), 0);
+    expect(_behind(tester), isNull);
+  });
+
   testWidgets('off the screen it takes no drag', (tester) async {
     final swiped = <PostinoSwipeSide>[];
     await tester.pumpWidget(_row(swiped: swiped));
     await _drag(tester, -200);
-    await tester.pumpWidget(_row(away: true, swiped: swiped));
+    await tester.pumpWidget(_row(away: PostinoSwipeSide.left, swiped: swiped));
     await tester.pump(PostinoMotion.swipeDismiss);
     await _drag(tester, 200);
     await tester.pump(const Duration(seconds: 1));
@@ -90,7 +101,7 @@ void main() {
   testWidgets('no longer away (stayed, or Annulla): in place at once, nothing behind', (tester) async {
     await tester.pumpWidget(_row());
     await _drag(tester, -200);
-    await tester.pumpWidget(_row(away: true));
+    await tester.pumpWidget(_row(away: PostinoSwipeSide.left));
     await tester.pump(PostinoMotion.swipeDismiss ~/ 2);
     await tester.pumpWidget(_row());
     expect(_x(tester), 0, reason: 'not sliding back from the side');

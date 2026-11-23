@@ -371,6 +371,28 @@ void main() {
       expect(tester.getTopLeft(find.byKey(const ValueKey('row-a1-m2'))).dy, below - rowHeight);
     });
 
+    testWidgets('two quick swipes: the second row stays off the screen when the first one is gone above it (#376)', (
+      tester,
+    ) async {
+      await _start(tester);
+      await _swipe(tester, 4);
+      await tester.pump(PostinoMotion.swipeDismiss);
+      await _swipe(tester, 3);
+      await tester.pump(PostinoMotion.swipeDismiss * 3 ~/ 2);
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('row-a1-m4')),
+        findsNothing,
+        reason: 'the first one is gone: the second moved up',
+      );
+      expect(_shift(tester, 3), -1, reason: 'still off the screen, not back in place');
+      final closing = _visible(tester, 3);
+      expect(closing.height, inExclusiveRange(0, 1));
+      expect(closing.opacity, 1);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('row-a1-m3')), findsNothing);
+    });
+
     testWidgets('swiped to Segna come letto: the row goes back in place and stays (#376)', (tester) async {
       await _start(tester);
       await _swipe(tester, 3, dx: 300);

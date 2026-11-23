@@ -35,12 +35,13 @@ class const RowSwipe({
   /// The Etichetta of the list: the Azioni and the picker reach only the messages it shows.
   final String? view,
 
-  /// The row is off the screen after a swipe that takes it away, until it is gone (see `PostinoSwipeRow.away`).
-  final bool away = false,
+  /// The side the row is off the screen on after a swipe that takes it away, until it is gone or back in place (see
+  /// `PostinoSwipeRow.away`).
+  final PostinoSwipeSide? away,
 
   /// A swipe whose Azione takes the row out of the list (Archivia, Elimina), before the Azione: the row slides off
   /// the screen, so the list closes after it without fading.
-  final VoidCallback? onSlideOut,
+  final void Function(PostinoSwipeSide side)? onSlideOut,
   required final Widget Function(Map<CustomSemanticsAction, VoidCallback> semanticActions) builder,
 }) extends StatelessWidget {
   ({MailAction? action, PostinoSwipeAction shown}) _view(BuildContext context, SwipeAction choice) {
@@ -102,7 +103,7 @@ class const RowSwipe({
           final choice = side == PostinoSwipeSide.left ? actions.left : actions.right;
           final action = _view(row, choice).action;
           final out = action != null && leavesList(action);
-          if (out) onSlideOut?.call();
+          if (out) onSlideOut?.call(side);
           run(choice);
           return out;
         },

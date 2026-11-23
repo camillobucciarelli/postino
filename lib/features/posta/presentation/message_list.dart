@@ -291,6 +291,20 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
     if (leavesList(action)) _step(key);
   }
 
+  /// A swipe sends [key]'s row off the screen on [side]. An Azione that changes nothing (already so, offline) brings
+  /// no new list: once the exit would be over, a row still in the list comes back in place.
+  // ponytail: a database slower than the exit shows the row back before it leaves; wait for the Azione's write if so.
+  void _slideOut((String, String) key, PostinoSwipeSide side) {
+    final exit = PostinoMotion.of(context, PostinoMotion.swipeDismiss);
+    // With reduced motion the row does not slide: it just goes with the list.
+    if (exit == Duration.zero) return;
+    _motion.slideOut(key, side);
+    Future<void>.delayed(exit * 2, () {
+      final still = _list?.any((e) => (e.account.id, e.message.conversationId) == key) ?? false;
+      if (mounted && still) setState(() => _motion.slideBack(key));
+    }).ignore();
+  }
+
   @override
   Widget build(BuildContext context) => SignalBuilder(
     builder: (context) {
@@ -372,7 +386,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
             key: ValueKey(key),
             visibility: _motion.of(key),
             leaving: _motion.leaving(key),
-            slid: _motion.slid(key),
+            slid: _motion.slid(key) != null,
             child: RowKeepAlive(
               keep: key == _cursor,
               // A Bozza or a queued Inviati row (its Conversazione is its Message-ID) is no Conversazione: no picker.
@@ -389,7 +403,7 @@ class _MessageListState() extends State<MessageList> with TickerProviderStateMix
                       onOpenAct: widget.selected == key ? widget.cursor?.apply : null,
                       view: widget.view,
                       away: _motion.slid(key),
-                      onSlideOut: () => _motion.slideOut(key),
+                      onSlideOut: (side) => _slideOut(key, side),
                       builder: (semanticActions) => RowMenu(
                         accountId: a.id,
                         messageId: m.id,

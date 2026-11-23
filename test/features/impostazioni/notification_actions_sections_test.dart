@@ -48,7 +48,7 @@ void main() {
   testWidgets('each choice reads with its place, and Tab then Space chooses it', (tester) async {
     final semantics = tester.ensureSemantics();
     await openPhoneDeviceSettings(tester);
-    expect(tester.getSemantics(_choice('second', 'star')).label, 'Seconda Azione della notifica\nAggiungi stella');
+    expect(tester.getSemantics(_choice('second', 'star')).label, 'Seconda Azione della notifica\nAggiungi Stella');
 
     Focus.of(tester.element(find.descendant(of: _choice('second', 'star'), matching: find.byType(Text))))
         .requestFocus();

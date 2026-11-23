@@ -116,6 +116,9 @@ void _onMac(String name, Future<void> Function(WidgetTester) body) => testWidget
 });
 
 Finder _row(String latest) => find.byKey(ValueKey('row-a1-$latest'));
+Finder get _bottomBar =>
+    find.byWidgetPredicate((w) => w is PostinoActionBar && w.placement == PostinoActionBarPlacement.bottom);
+Finder _on(Finder bar, String label) => find.descendant(of: bar, matching: find.bySemanticsLabel(label));
 Finder _open(String conversation) => find.byKey(ValueKey('conversation-a1/$conversation'));
 Finder get _snackbar => find.byType(PostinoSnackbar);
 Finder get _undo => find.widgetWithText(PostinoButton, 'Annulla');
@@ -135,7 +138,7 @@ void main() {
       'gets it when the window ends', (tester) async {
     await _start(tester);
     await _tap(tester, _row('o1'));
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
 
     expect(_row('o1'), findsNothing);
     expect(_open('t'), findsOneWidget);
@@ -150,7 +153,7 @@ void main() {
   _onMac('Annulla within the window puts the row back, and nothing reaches the Provider', (tester) async {
     await _start(tester);
     await _tap(tester, _row('o1'));
-    await _tap(tester, find.byTooltip('Elimina'));
+    await _tap(tester, find.byTooltip('Elimina · #'));
     // No Cestino view: the copy says where it went.
     expect(find.text('Conversazione spostata nel Cestino'), findsOneWidget);
     expect(_row('o1'), findsNothing);
@@ -167,17 +170,70 @@ void main() {
   ) async {
     await _start(tester);
     await _tap(tester, _row('m2'));
-    await _tap(tester, find.byTooltip('Aggiungi stella'));
+    await _tap(tester, find.byTooltip('Aggiungi Stella · S'));
     expect(_snackbar, findsNothing);
     expect(_tile(tester, 'm2').starred, isTrue);
     expect(_sent, containsAll([('m1', const Star()), ('m2', const Star())]));
-    expect(find.byTooltip('Togli stella'), findsOneWidget);
+    expect(find.bySemanticsLabel('Togli Stella'), findsOneWidget);
 
-    await _tap(tester, find.byTooltip('Segna come non letto'));
+    await _tap(tester, find.byTooltip('Segna come non letto · ⇧U'));
     expect(_snackbar, findsNothing);
     expect(_open('t'), findsNothing);
     expect(_tile(tester, 'm2').unread, isTrue);
     expect(_sent, containsAll([('m1', const MarkUnread()), ('m2', const MarkUnread())]));
+  });
+
+  // #369: below 900 the top bar holds the toggles and Etichette, the bar fixed at the bottom the rest.
+  _onMac('below 900: Stella, letto and Etichette on top; Archivia, Elimina, Inoltra, Rispondi a tutti and Rispondi '
+      'in the bar fixed at the bottom; no text buttons', (tester) async {
+    await _start(tester, width: 390);
+    await _tap(tester, _row('o1'));
+    final top = find.byType(PostinoAppBar);
+    for (final label in ['Aggiungi Stella', 'Segna come non letto', 'Etichette']) {
+      expect(_on(top, label), findsOneWidget, reason: label);
+      expect(_on(_bottomBar, label), findsNothing, reason: label);
+    }
+    for (final label in ['Archivia', 'Elimina', 'Inoltra', 'Rispondi a tutti', 'Rispondi']) {
+      expect(_on(_bottomBar, label), findsOneWidget, reason: label);
+      expect(_on(top, label), findsNothing, reason: label);
+    }
+    expect(find.widgetWithText(PostinoButton, 'Rispondi a tutti'), findsNothing);
+    expect(find.widgetWithText(PostinoButton, 'Inoltra'), findsNothing);
+    expect(tester.getRect(_bottomBar).bottom, 900);
+  });
+
+  _onMac('from 900: one bar on top, Archivia · Elimina | Stella · letto · Etichette | Inoltra · Rispondi a tutti · '
+      'Rispondi; no bar at the bottom', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('o1'));
+    expect(_bottomBar, findsNothing);
+    final top = find.byType(PostinoAppBar);
+    final order = [
+      'Archivia',
+      'Elimina',
+      'Aggiungi Stella',
+      'Segna come non letto',
+      'Etichette',
+      'Inoltra',
+      'Rispondi a tutti',
+      'Rispondi',
+    ];
+    final lefts = [for (final label in order) tester.getRect(_on(top, label)).left];
+    expect(lefts, orderedEquals([...lefts]..sort()), reason: '$order');
+    expect(find.widgetWithText(PostinoButton, 'Rispondi'), findsNothing);
+  });
+
+  _onMac('the Stella shows its state: outline and «Aggiungi Stella», then filled and «Togli Stella»', (tester) async {
+    await _start(tester);
+    await _tap(tester, _row('o1'));
+    PostinoIcon star(String label) => tester.widget<PostinoIcon>(
+      find.descendant(of: find.bySemanticsLabel(label), matching: find.byType(PostinoIcon)),
+    );
+    expect(star('Aggiungi Stella').filled, isFalse);
+    await _tap(tester, find.bySemanticsLabel('Aggiungi Stella'));
+    expect(find.bySemanticsLabel('Aggiungi Stella'), findsNothing);
+    expect(star('Togli Stella').filled, isTrue);
+    expect(find.bySemanticsLabel('Togli Stella'), findsOneWidget);
   });
 
   _onMac('the context menu of a row: Archivia with Annulla, Stella and letto/non letto without', (tester) async {
@@ -188,7 +244,7 @@ void main() {
     await _expire(tester);
     expect(_sent, contains(('o1', const Archive())));
 
-    await _menu(tester, 'x1', 'Aggiungi stella');
+    await _menu(tester, 'x1', 'Aggiungi Stella');
     expect(_tile(tester, 'x1').starred, isTrue);
     await _menu(tester, 'x1', 'Segna come non letto');
     expect(_tile(tester, 'x1').unread, isTrue);
@@ -307,7 +363,7 @@ void main() {
     tester,
   ) async {
     await openSlowly(tester);
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
     await endFetch(tester);
     expect(_sent.where((s) => s.$2 is Archive), isEmpty);
     await _expire(tester);
@@ -316,7 +372,7 @@ void main() {
 
   _onMac('Annulla of an Archivia taken during the opening keeps the older messages here too', (tester) async {
     await openSlowly(tester);
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
     await endFetch(tester);
     await _tap(tester, _undo);
     await _expire(tester);
@@ -325,7 +381,7 @@ void main() {
 
   _onMac('non letto during the opening reaches the older messages it brings', (tester) async {
     await openSlowly(tester);
-    await _tap(tester, find.byTooltip('Segna come non letto'));
+    await _tap(tester, find.byTooltip('Segna come non letto · ⇧U'));
     await endFetch(tester);
     expect(_sent, containsAll([('o1', const MarkUnread()), ('o0', const MarkUnread())]));
   });
@@ -334,7 +390,7 @@ void main() {
     tester,
   ) async {
     await openSlowly(tester, provider: ProviderKind.imap);
-    await _tap(tester, find.byTooltip('Etichette'));
+    await _tap(tester, find.byTooltip('Etichette · L'));
     await _tap(tester, find.widgetWithText(PostinoCheckboxTile, 'Fatture'));
     await _escape(tester);
     await endFetch(tester);
@@ -348,7 +404,7 @@ void main() {
     tester,
   ) async {
     await openSlowly(tester);
-    await _tap(tester, find.byTooltip('Segna come non letto'));
+    await _tap(tester, find.byTooltip('Segna come non letto · ⇧U'));
     expect(_open('o'), findsNothing);
     expect(_tile(tester, 'o1').unread, isTrue);
 
@@ -367,24 +423,31 @@ void main() {
   });
 
   _onMac(
-    'at 900 with the sidebar expanded the header keeps its room: the Azioni that do not fit are in «Altre azioni»',
+    'at 900 with the sidebar expanded the header keeps its room: Etichette, letto and Stella leave first for «Altre '
+    'azioni»; Rispondi, Archivia and Elimina stay',
     (tester) async {
       await _start(tester, width: 900, sidebarExpanded: true);
       await _tap(tester, _row('o1'));
       expect(tester.takeException(), isNull);
-      expect(find.byTooltip('Etichette'), findsOneWidget);
+      for (final label in ['Archivia', 'Elimina', 'Rispondi']) {
+        expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
+      }
+      expect(find.bySemanticsLabel('Etichette'), findsNothing);
 
-      // Archivia keeps its button; the others wait in the menu, in order, keyboard first.
-      expect(find.byTooltip('Archivia'), findsOneWidget);
       await _tap(tester, find.byTooltip('Altre azioni'));
-      expect(
-        [for (final e in find.byType(MenuItemButton).evaluate()) ((e.widget as MenuItemButton).child! as Text).data],
-        ['Elimina', 'Aggiungi stella', 'Segna come non letto'],
-      );
+      final menu = [
+        for (final e in find.byType(MenuItemButton).evaluate()) ((e.widget as MenuItemButton).child! as Text).data,
+      ];
+      expect(menu.take(3), ['Aggiungi Stella', 'Segna come non letto', 'Etichette']);
+      expect(menu, isNot(contains('Rispondi')));
       // The first item has the focus: Invio picks it.
       await _key(tester, LogicalKeyboardKey.enter);
-      expect(_row('o1'), findsNothing);
-      expect(find.text('Conversazione spostata nel Cestino'), findsOneWidget);
+      expect(_tile(tester, 'o1').starred, isTrue);
+
+      // Etichette from the menu opens the picker, anchored to the bar.
+      await _tap(tester, find.byTooltip('Altre azioni'));
+      await _tap(tester, find.widgetWithText(MenuItemButton, 'Etichette'));
+      expect(find.widgetWithText(PostinoCheckboxTile, 'Fatture'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -419,7 +482,7 @@ void main() {
     await _tap(tester, _row('s1'));
     expect(_open('s'), findsOneWidget);
 
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
     expect(_open('s'), findsNothing);
     expect(find.byType(PostinoComposerField), findsNothing);
     expect(find.descendant(of: find.byType(PostinoMessageTile), matching: find.text('In coda')), findsOneWidget);
@@ -435,7 +498,7 @@ void main() {
     expect(_sent, contains(('m1', const Unstar())));
     await tester.tap(_row('m2'), buttons: kSecondaryButton);
     await _settle(tester);
-    expect(find.text('Aggiungi stella'), findsOneWidget);
+    expect(find.text('Aggiungi Stella'), findsOneWidget);
   });
 
   _onMac('with no Conversazione open the shortcuts act on the focused row; Archivia moves the focus on', (
@@ -463,7 +526,7 @@ void main() {
     gmail.goOffline();
     h.connectivity.online = false;
     await _tap(tester, _row('o1'));
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
     expect(_row('o1'), findsNothing);
     await _expire(tester);
     expect(_sent, isNot(contains(('o1', const Archive()))));
@@ -477,7 +540,7 @@ void main() {
   _onMac('on a folder Provider an Etichetta applied offers Annulla, which keeps it off the Provider', (tester) async {
     await _start(tester, provider: ProviderKind.imap);
     await _tap(tester, _row('o1'));
-    await _tap(tester, find.byTooltip('Etichette'));
+    await _tap(tester, find.byTooltip('Etichette · L'));
     await _tap(tester, find.widgetWithText(PostinoCheckboxTile, 'Fatture'));
     expect(find.text('Etichetta «Fatture» applicata'), findsOneWidget);
     expect(tester.widget<PostinoCheckboxTile>(find.widgetWithText(PostinoCheckboxTile, 'Fatture')).value, isTrue);
@@ -495,10 +558,11 @@ void main() {
   ) async {
     await _start(tester);
     await _tap(tester, _row('m2'));
-    for (final name in ['Archivia', 'Elimina', 'Aggiungi stella', 'Segna come non letto', 'Etichette']) {
-      expect(tester.getSemantics(find.byTooltip(name)), isSemantics(tooltip: name, isButton: true), reason: name);
+    for (final name in ['Archivia', 'Elimina', 'Aggiungi Stella', 'Segna come non letto', 'Etichette']) {
+      // The name only: the shortcut is the tooltip's, out of the semantics (#369).
+      expect(tester.getSemantics(find.bySemanticsLabel(name)), isSemantics(label: name, isButton: true), reason: name);
     }
-    await _tap(tester, find.byTooltip('Archivia'));
+    await _tap(tester, find.byTooltip('Archivia · E'));
     final announced = tester.getSemantics(find.bySemanticsLabel(RegExp('^Conversazione archiviata, ')));
     expect(announced.flagsCollection.isLiveRegion, isTrue);
 

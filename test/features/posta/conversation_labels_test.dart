@@ -80,7 +80,7 @@ void _onMac(String name, Future<void> Function(WidgetTester) body) => testWidget
 });
 
 Finder _row(String latest) => find.byKey(ValueKey('row-a1-$latest'));
-Finder get _button => find.byTooltip('Etichette');
+Finder get _button => find.byWidgetPredicate((w) => w is PostinoIconButton && w.label == 'Etichette');
 Finder _tile(String name) => find.widgetWithText(PostinoCheckboxTile, name);
 Finder get _field => find.descendant(of: find.byKey(const ValueKey('label-search')), matching: find.byType(TextField));
 Finder get _snackbar => find.byType(PostinoSnackbar);
@@ -91,8 +91,7 @@ bool _ticked(WidgetTester tester, String name) => tester.widget<PostinoCheckboxT
 /// The label calls that reached the Provider since [from], comparable.
 List<(String, String, bool)> _calls([int from = 0]) => gmail.labelCalls.sublist(from);
 
-FocusNode _buttonFocus(WidgetTester tester) =>
-    tester.widget<PostinoIconButton>(find.ancestor(of: _button, matching: find.byType(PostinoIconButton))).focusNode!;
+FocusNode _buttonFocus(WidgetTester tester) => tester.widget<PostinoIconButton>(_button).focusNode!;
 
 Future<void> _escape(WidgetTester tester) async {
   await tester.sendKeyEvent(LogicalKeyboardKey.escape);

@@ -1,8 +1,10 @@
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
+import '../tokens/postino_icons.dart';
 import '../tokens/postino_tokens.dart';
 import 'postino_focus_ring.dart';
+import 'postino_icon.dart';
 
 /// Aspetto di un `PostinoButton`.
 enum PostinoButtonVariant() {
@@ -49,6 +51,9 @@ class const PostinoButton({
 
   /// Lets the caller move the focus here, e.g. to the next row after a resolution.
   final FocusNode? focusNode,
+
+  /// Icona prima del verbo, se serve (Rispondi nella barra in basso).
+  final PostinoIconData? icon,
 }) extends StatelessWidget {
   /// Crea un pulsante.
   this;
@@ -79,6 +84,27 @@ class const PostinoButton({
     );
     // Buttons are controls, not content: out of any selection.
     final child = SelectionContainer.disabled(child: Text(label));
+    if (icon case final glyph?) {
+      final leading = PostinoIcon(glyph);
+      return switch (variant) {
+        PostinoButtonVariant.primary => FilledButton.icon(
+          onPressed: onPressed,
+          autofocus: autofocus,
+          focusNode: focusNode,
+          style: style,
+          icon: leading,
+          label: child,
+        ),
+        PostinoButtonVariant.ghost => TextButton.icon(
+          onPressed: onPressed,
+          autofocus: autofocus,
+          focusNode: focusNode,
+          style: style,
+          icon: leading,
+          label: child,
+        ),
+      };
+    }
     return switch (variant) {
       PostinoButtonVariant.primary => FilledButton(
         onPressed: onPressed,

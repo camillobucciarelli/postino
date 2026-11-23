@@ -20,6 +20,7 @@ import '../domain/reply_draft_use_case.dart';
 import '../domain/reply_kind.dart';
 import 'attachment_actions.dart';
 import 'conversation_acting.dart';
+import 'conversation_bar_actions.dart';
 import 'conversation_body.dart';
 import 'conversation_conflicts.dart';
 import 'conversation_labels.dart';
@@ -30,9 +31,11 @@ import 'posta_shortcuts.dart';
 /// expanded. Opening it marks it read and fetches what is missing; a missing body is downloaded when its
 /// message expands, and retried when the network returns. The thread renders in [ConversationBody], the
 /// attachments act through [AttachmentActions] (#34).
-/// Rispondi, Rispondi a tutti and Inoltra (#37): the bar at the bottom acts on the last message, the menu
-/// of each message on that one, `r`/`a`/`f` through [cursor] on the last; each saves a Bozza with the
-/// Citazione ([ReplyDraftUseCase]) and opens it ([onOpenDraft]). Routing is the caller's ([onBack], [onOpenDraft]).
+/// Rispondi, Rispondi a tutti and Inoltra (#37): the bars act on the last message, the menu of each message on that
+/// one, `r`/`a`/`f` through [cursor] on the last; each saves a Bozza with the Citazione ([ReplyDraftUseCase]) and
+/// opens it ([onOpenDraft]). Routing is the caller's ([onBack], [onOpenDraft]).
+/// The Azioni (#369): below 900, Stella, letto/non letto and Etichette on top, and fixed at the bottom Archivia,
+/// Elimina, Inoltra, Rispondi a tutti and Rispondi; from 900 all of them in one bar on top.
 class const ConversationView({
   super.key,
   required final String accountId,
@@ -83,12 +86,14 @@ class _ConversationViewState()
   void _replyAll() => unawaited(_act(ReplyKind.replyAll));
   void _forward() => unawaited(_act(ReplyKind.forward));
 
-  /// The «Etichette» button: the picker anchors to it and gives it the focus back (`l` opens it too).
+  /// The «Etichette» button: the picker anchors to it and gives it the focus back (`l` opens it too). In the «more»
+  /// menu it has no button: the picker anchors to the bar.
   final _labelsKey = GlobalKey();
   final _labelsFocus = FocusNode(debugLabel: 'Etichette');
+  final _barKey = GlobalKey();
 
   void _openLabels() {
-    final anchor = _labelsKey.currentContext;
+    final anchor = _labelsKey.currentContext ?? _barKey.currentContext;
     if (anchor == null) return;
     unawaited(
       openLabelPicker(
@@ -258,23 +263,42 @@ class _ConversationViewState()
     final messages = _messages;
     final a = _account;
     final ready = messages != null && messages.isNotEmpty && a != null;
+    final wide = MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail;
+    final b = !ready
+        ? null
+        : conversationBarActions(
+            context,
+            starred: starred,
+            read: allRead,
+            apply: applyAction,
+            onLabels: _openLabels,
+            labelsKey: _labelsKey,
+            labelsFocus: _labelsFocus,
+            onReply: _reply,
+            onReplyAll: _replyAll,
+            onForward: _forward,
+          );
     return PostinoSinglePaneLayout(
       // Beside the list (two panes) there is nothing to go back to: Esc closes it, no button.
       appBar: PostinoAppBar(
+        key: _barKey,
         title: '',
-        onBack: MediaQuery.sizeOf(context).width >= PostinoSize.breakpointListDetail ? null : widget.onBack,
-        commands: ready ? actionCommands(context) : const [],
-        moreLabel: context.t.azioni.more,
-        actions: [
-          if (ready)
-            PostinoIconButton(
-              key: _labelsKey,
-              icon: PostinoIcons.tag,
-              label: context.t.selettoreEtichette.button,
-              focusNode: _labelsFocus,
-              onPressed: _openLabels,
-            ),
-        ],
+        onBack: wide ? null : widget.onBack,
+        toolbar: b == null
+            ? null
+            : PostinoActionBar(
+                moreLabel: context.t.azioni.more,
+                alignEnd: !wide,
+                groups: wide
+                    ? [
+                        [b.archive, b.delete],
+                        [b.star, b.read, b.labels],
+                        [b.forward, b.replyAll, b.reply],
+                      ]
+                    : [
+                        [b.star, b.read, b.labels],
+                      ],
+              ),
       ),
       // The thread fades in once it is there (#283); a thread ready at the first build is just there.
       body: PostinoFadeSwitcher(
@@ -310,7 +334,7 @@ class _ConversationViewState()
                       ),
                     ),
                   ),
-                  // Under the thread, always in view: on the last message (ADR 0014: r, a, f). It opens and closes.
+                  // Under the thread: Inoltra could not start. It opens and closes.
                   PostinoReveal(
                     child: _forwardUnavailable
                         ? PostinoBanner(
@@ -320,23 +344,16 @@ class _ConversationViewState()
                           )
                         : null,
                   ),
-                  PostinoActionBar(
-                    children: [
-                      PostinoButton(key: const ValueKey('reply'), label: t.reply, onPressed: _reply),
-                      PostinoButton(
-                        key: const ValueKey('reply-all'),
-                        label: t.replyAll,
-                        variant: PostinoButtonVariant.ghost,
-                        onPressed: _replyAll,
-                      ),
-                      PostinoButton(
-                        key: const ValueKey('forward'),
-                        label: t.forward,
-                        variant: PostinoButtonVariant.ghost,
-                        onPressed: _forward,
-                      ),
-                    ],
-                  ),
+                  // Below 900 the bar is fixed under the thread, always in view.
+                  if (!wide && b != null)
+                    PostinoActionBar(
+                      moreLabel: context.t.azioni.more,
+                      placement: PostinoActionBarPlacement.bottom,
+                      groups: [
+                        [b.archive, b.delete],
+                        [b.forward, b.replyAll, b.reply],
+                      ],
+                    ),
                 ],
               ),
       ),

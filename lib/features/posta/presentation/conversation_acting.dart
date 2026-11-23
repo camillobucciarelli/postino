@@ -6,7 +6,6 @@ import 'package:get_it/get_it.dart';
 import '../../../core/domain/inbox_repository.dart' show ConversationMessage;
 import '../../../core/domain/mail_action.dart';
 import '../../../core/domain/mail_sync.dart';
-import '../../../design_system/design_system.dart';
 import 'act_on_conversation.dart';
 import 'conversation_actions.dart';
 import 'conversation_view.dart';
@@ -78,13 +77,7 @@ mixin ConversationActing on State<ConversationView> {
     }
   }
 
-  /// The Azioni as commands of the header: icon buttons while they fit, the rest in its «more» menu.
-  List<PostinoMenuItem> actionCommands(BuildContext context) => [
-    for (final a in conversationActions(
-      context,
-      starred: _starred,
-      read: shownMessages?.every((m) => m.message.isRead) ?? true,
-    ))
-      PostinoMenuItem(icon: a.icon, label: a.label, onPressed: () => applyAction(a.action)),
-  ];
+  /// The state of the bar's toggles: the Conversazione has the Stella; every message is read.
+  bool get starred => _starred;
+  bool get allRead => shownMessages?.every((m) => m.message.isRead) ?? true;
 }

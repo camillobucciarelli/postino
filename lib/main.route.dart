@@ -3,7 +3,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:routefly/routefly.dart';
 
-import 'app/cerca_page.dart' as a10;
+import 'app/cerca_page.dart' as a11;
 import 'app/conflitti_page.dart' as a0;
 import 'app/impostazioni/[accountId]/etichette_page.dart' as a2;
 import 'app/impostazioni/dispositivo_page.dart' as a3;
@@ -14,6 +14,7 @@ import 'app/posta/[accountId]/conversazione/[conversationId]_page.dart' as a7;
 import 'app/posta/[accountId]/etichetta/[labelId]_page.dart' as a8;
 import 'app/posta/[accountId]_page.dart' as a9;
 import 'app/posta/posta_layout.dart' as a5;
+import 'app/sezione_page.dart' as a10;
 
 Route b0Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a0.ConflictsPage());
@@ -36,4 +37,6 @@ Route b8Builder(BuildContext ctx, RouteSettings settings) =>
 Route b9Builder(BuildContext ctx, RouteSettings settings) =>
     Routefly.defaultRouteBuilder(ctx, settings, const a9.AccountPage());
 Route b10Builder(BuildContext ctx, RouteSettings settings) =>
-    Routefly.defaultRouteBuilder(ctx, settings, const a10.SearchPage());
+    Routefly.defaultRouteBuilder(ctx, settings, const a10.SectionPage());
+Route b11Builder(BuildContext ctx, RouteSettings settings) =>
+    Routefly.defaultRouteBuilder(ctx, settings, const a11.SearchPage());

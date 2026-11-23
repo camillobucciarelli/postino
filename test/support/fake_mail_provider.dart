@@ -15,6 +15,7 @@ import 'package:postino/core/domain/search_query.dart';
 
 import 'fake_search_match.dart';
 
+/// A message of the Provider; [isStarred] adds `STARRED` to [labelIds].
 Message msg(
   String id, {
   DateTime? date,
@@ -35,7 +36,8 @@ Message msg(
   id: id,
   messageId: '<$id@example.com>',
   conversationId: conversationId ?? 't-$id',
-  labelIds: labelIds,
+  // As the adapters say it: a starred message carries STARRED (the row's Stella reads the labels, #366).
+  labelIds: [...labelIds, if (isStarred && !labelIds.contains(starredLabelId)) starredLabelId],
   isRead: isRead,
   isStarred: isStarred,
   from: from,

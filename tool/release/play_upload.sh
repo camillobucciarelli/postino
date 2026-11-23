@@ -1,5 +1,6 @@
 #!/bin/bash
-# Uploads the Google Play AAB (#345, ADR 0023) to the track GOOGLE_PLAY_TRACK (default internal) with the release status
+# Uploads the Google Play AAB (#345, ADR 0023) to the track GOOGLE_PLAY_TRACK (default internal; production is refused,
+# it is rolled out by hand in the Play Console) with the release status
 # GOOGLE_PLAY_RELEASE_STATUS (default completed) with the Google Play Developer API, as
 # the service account of PLAY_SERVICE_ACCOUNT_JSON_BASE64 (its JSON key, base64). curl, openssl and jq only:
 # - access token: a JWT signed RS256 with the key, exchanged at https://oauth2.googleapis.com/token, scope
@@ -30,6 +31,7 @@ case "$status" in
   *) echo "::error::GOOGLE_PLAY_RELEASE_STATUS is '$status': only draft or completed (inProgress and halted need a userFraction, not supported)" >&2; exit 1 ;;
 esac
 [[ $track =~ ^[A-Za-z0-9:_-]+$ ]] || { echo "::error::GOOGLE_PLAY_TRACK '$track' is not a track name" >&2; exit 1; }
+[ "$track" != production ] || { echo "::error::GOOGLE_PLAY_TRACK is production: production is rolled out by hand in the Play Console" >&2; exit 1; }
 api=${PLAY_API_URL:-https://androidpublisher.googleapis.com}
 token_url=${PLAY_TOKEN_URL:-https://oauth2.googleapis.com/token}
 
@@ -93,7 +95,6 @@ publish() {
 # again as a draft (the uncommitted one is dropped, so the AAB goes up a second time).
 if ! publish "$status" 2> "$dir/publish.err"; then
   cat "$dir/publish.err" >&2
-  [ "$status" = completed ] || exit 1
   grep -Fq 'Only releases with status draft may be created on draft app' "$dir/publish.err" || exit 1
   drop
   echo "::warning::The app is still a draft in the Play Console: release $name saved as a draft, roll it out by hand"

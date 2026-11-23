@@ -4,7 +4,7 @@
 # key; the requests are insert, upload, track update, commit, in that order, with the token from a header file; a draft
 # app (refused at the track update or at the commit) gets the whole edit again as a draft; a wrong versionCode or any
 # other refusal fails and drops the edit. GOOGLE_PLAY_TRACK and GOOGLE_PLAY_RELEASE_STATUS pick the track and the status;
-# a status other than draft or completed fails before any request. Like Google's front end, the fake refuses a POST with no Content-Length.
+# a status other than draft or completed, or the production track, fails before any request. Like Google's front end, the fake refuses a POST with no Content-Length.
 set -euo pipefail
 script=$(cd "$(dirname "$0")" && pwd)/play_upload.sh
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/play-test.XXXXXX")
@@ -56,7 +56,7 @@ run() {
   local want=$1 rc=0
   shift
   rm -f "$tmp/log"*
-  env PATH="$tmp/bin:$PATH" LOG="$tmp/log" PLAY_SERVICE_ACCOUNT_JSON_BASE64="$account" PLAY_API_URL=http://play \
+  env -u GOOGLE_PLAY_TRACK -u GOOGLE_PLAY_RELEASE_STATUS PATH="$tmp/bin:$PATH" LOG="$tmp/log" PLAY_SERVICE_ACCOUNT_JSON_BASE64="$account" PLAY_API_URL=http://play \
     PLAY_TOKEN_URL=http://play/token "$@" "$script" "$tmp/app.aab" 1002003 1.2.3 > "$tmp/out" 2>&1 || rc=$?
   { [ "$want" = 0 ] && [ "$rc" -eq 0 ]; } || { [ "$want" = fail ] && [ "$rc" -ne 0 ]; } || { echo "exit $rc, want $want ($*):"; cat "$tmp/out"; exit 1; }
 }
@@ -98,6 +98,15 @@ drafts
 run 0 GOOGLE_PLAY_TRACK=alpha GOOGLE_PLAY_RELEASE_STATUS=draft
 calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/alpha" "POST $e/e1:commit"
 jq -e '.track == "alpha" and .releases[0].status == "draft"' "$tmp/log.body" > /dev/null || { echo "alpha body: $(cat "$tmp/log.body")"; exit 1; }
+run 0 GOOGLE_PLAY_TRACK=alpha
+calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/alpha" "POST $e/e1:commit"
+jq -e '.track == "alpha" and .releases[0].status == "completed"' "$tmp/log.body" > /dev/null || { echo "alpha body: $(cat "$tmp/log.body")"; exit 1; }
+run 0 GOOGLE_PLAY_TRACK=alpha FAKE_DRAFT=track
+calls "POST /token" "POST $e" "$upload" "PUT $e/e1/tracks/alpha" "DELETE $e/e1" \
+  "POST $e" "$upload" "PUT $e/e1/tracks/alpha" "POST $e/e1:commit"
+drafts
+run fail GOOGLE_PLAY_TRACK=production
+[ ! -e "$tmp/log" ] && grep -q 'rolled out by hand' "$tmp/out" || { echo "production:"; cat "$tmp/out"; exit 1; }
 run fail GOOGLE_PLAY_RELEASE_STATUS=inProgress
 [ ! -e "$tmp/log" ] && grep -q 'only draft or completed' "$tmp/out" || { echo "bad status:"; cat "$tmp/out"; exit 1; }
 run fail GOOGLE_PLAY_TRACK='alpha/../x'

@@ -205,43 +205,35 @@ class _SearchScreenState() extends State<SearchScreen> with AccountsSignal {
 
   @override
   Widget build(BuildContext context) => SignalBuilder(
-    // The system's Indietro (Android) closes the open Conversazione first, like its own Indietro: the detail is
-    // drawn here, not pushed, so there is no page to pop; the results stay.
-    builder: (context) => BackButtonListener(
-      onBackButtonPressed: () async {
-        if (_open == null || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
-        setState(() => _open = null);
-        return true;
-      },
-      child: PostaShortcuts(
-        cursor: _cursor,
-        // From a result with nothing open, Esc goes back to the field.
-        child: CallbackShortcuts(
-          bindings: {const SingleActivator(LogicalKeyboardKey.escape): _field.requestFocus},
-          child: Scaffold(
-            body: PostinoListDetailLayout(
-              list: _results(context),
-              detail: _open == null
-                  ? null
-                  : ConversationView(
-                      key: ValueKey('search-${_open!.$1}/${_open!.$2}'),
-                      accountId: _open!.$1,
-                      conversationId: _open!.$2,
-                      onBack: () => setState(() => _open = null),
-                      onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
-                      cursor: _cursor,
-                      view: _view,
-                    ),
-              detailKey: _open,
-              empty: PostinoEmptyState(
-                title: context.t.conversazione.selectTitle,
-                body: context.t.conversazione.selectBody,
-                icon: PostinoIcons.inbox,
-              ),
-              onClose: () => setState(() => _open = null),
-              resizeLabel: context.t.listWidth.label,
-              resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
+    // The system's Indietro closes the open Conversazione first (the layout's onClose), then the search.
+    builder: (context) => PostaShortcuts(
+      cursor: _cursor,
+      // From a result with nothing open, Esc goes back to the field.
+      child: CallbackShortcuts(
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): _field.requestFocus},
+        child: Scaffold(
+          body: PostinoListDetailLayout(
+            list: _results(context),
+            detail: _open == null
+                ? null
+                : ConversationView(
+                    key: ValueKey('search-${_open!.$1}/${_open!.$2}'),
+                    accountId: _open!.$1,
+                    conversationId: _open!.$2,
+                    onBack: () => setState(() => _open = null),
+                    onOpenDraft: (id) => widget.onOpenDraft(_open!.$1, id),
+                    cursor: _cursor,
+                    view: _view,
+                  ),
+            detailKey: _open,
+            empty: PostinoEmptyState(
+              title: context.t.conversazione.selectTitle,
+              body: context.t.conversazione.selectBody,
+              icon: PostinoIcons.inbox,
             ),
+            onClose: () => setState(() => _open = null),
+            resizeLabel: context.t.listWidth.label,
+            resizeValueLabel: (w) => context.t.listWidth.value(px: w.round()),
           ),
         ),
       ),

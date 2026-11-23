@@ -16,6 +16,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/system_back.dart';
 import '../../support/ui.dart';
 
 const _desktop = Size(1600, 900);
@@ -130,26 +131,31 @@ void main() {
     expect(_row('a2', 'n1'), findsOneWidget);
   });
 
-  testWidgets('the system Indietro closes the open Conversazione first; the search and its results stay', (
-    tester,
-  ) async {
-    await _start(tester, size: _phone);
-    await _openFromBar(tester);
-    await _type(tester, 'fattura');
-    await tester.tap(_row('a1', 'm1'));
-    await tester.pumpAndSettle();
-    expect(find.byType(ConversationView), findsOneWidget);
+  for (final (name, size) in [('phone', _phone), ('desktop', _desktop)]) {
+    testWidgets('$name: the system Indietro closes the open Conversazione first; the search and its results stay', (
+      tester,
+    ) async {
+      // As Android 16 delivers it (#365): only when the app declared it handles it.
+      final system = SystemBack.install(tester);
+      await _start(tester, size: size);
+      await _openFromBar(tester);
+      await _type(tester, 'fattura');
+      await tester.tap(_row('a1', 'm1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConversationView), findsOneWidget);
+      expect(system.frameworkHandlesBack, isTrue);
 
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(find.byType(ConversationView), findsNothing);
-    expect(find.byType(TextField), findsOneWidget);
-    expect(_row('a1', 'm1'), findsOneWidget);
+      await system.press(tester);
+      expect(find.byType(ConversationView), findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(_row('a1', 'm1'), findsOneWidget);
 
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsNothing, reason: 'the second Indietro leaves the search');
-  });
+      await system.press(tester);
+      expect(find.byType(TextField), findsNothing, reason: 'the second Indietro leaves the search');
+      expect(system.exits, 0);
+      expect(system.frameworkHandlesBack, isFalse, reason: 'back on the Posta unificata Android takes it');
+    });
+  }
 
   testWidgets('on a narrow window `/` from an open Conversazione returns to the visible field', (tester) async {
     await _start(tester, size: _phone);

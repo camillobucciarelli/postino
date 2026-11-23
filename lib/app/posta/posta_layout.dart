@@ -111,7 +111,7 @@ class _PostaLayoutState() extends State<PostaLayout> {
 
     // One shell above the content: only the content is replaced on navigation.
     // Above the gate: the keys work during the onboarding too (p shares the log without an Account).
-    final shell = PostaShortcuts(
+    return PostaShortcuts(
       cursor: _cursor,
       child: CrashReportPrompt(
         onReport: reportProblem,
@@ -168,6 +168,11 @@ class _PostaLayoutState() extends State<PostaLayout> {
                               ),
                             ),
                             onClose: back,
+                            // The system's Indietro from another list goes to the Posta unificata (#210, an
+                            // Account's inbox opened from its summary); from it, it leaves the app (#365).
+                            onListBack: list == routePaths.posta.path
+                                ? null
+                                : () => unawaited(Routefly.navigate(routePaths.posta.path)),
                           ),
                         ),
                       ),
@@ -176,25 +181,6 @@ class _PostaLayoutState() extends State<PostaLayout> {
           ),
         ),
       ),
-    );
-    // The system's Indietro (Android) closes the open Conversazione or Bozza like its own Indietro: the detail is
-    // drawn here, not pushed, so there is no page to pop (#39, a Conversazione opened from a notification). From
-    // another list it goes to the Posta unificata (#210, an Account's inbox opened from its summary).
-    return BackButtonListener(
-      onBackButtonPressed: () async {
-        // A page pushed over it (Impostazioni) pops first, an open drawer closes first.
-        final route = ModalRoute.of(context);
-        if (route != null && (!route.isCurrent || route.willHandlePopInternally)) return false;
-        if (detail != null) {
-          back();
-        } else if (list != routePaths.posta.path) {
-          unawaited(Routefly.navigate(routePaths.posta.path));
-        } else {
-          return false;
-        }
-        return true;
-      },
-      child: shell,
     );
   }
 }

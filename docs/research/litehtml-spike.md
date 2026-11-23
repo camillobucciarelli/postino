@@ -156,3 +156,45 @@ Il requisito «tutto il testo selezionabile e copiabile» è coperto per il test
 | Link, immagini, integrazione nell'app, font per piattaforma | no | 2–3 settimane |
 | Accessibilità completa (VoiceOver, TalkBack, Narrator, Orca) e selezione tastiera/touch | parziale (macOS, test automatici) | 2–3 settimane |
 | Totale | | 7–11 settimane/persona (somma delle righe: giorni 10–17 ≈ 2–3,5 settimane a 5 giorni/settimana, più 5–8 settimane delle tre voci in settimane); l'incertezza maggiore è su Windows e Android e sulle prestazioni, non misurate |
+
+## 8. Ricostruzione (2026-11-23)
+
+Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo spike 1 è stato ricostruito da zero sul branch `spike/66-litehtml-macos`, questa volta pushato su `origin`, seguendo questo rapporto. Memoria (spike 2) e accessibilità/selezione (spike 3) non sono stati ricostruiti. Le misure sono in `packages/litehtml_flutter/MEASUREMENTS.md`; i PNG stanno fuori dal repo in `~/Downloads/litehtml-spike-66/`.
+
+**Email di prova [F]**: le newsletter Zalando e ProntoPro della issue non hanno riferimenti nel repo né nei rapporti (HTML personali, mai salvati). Al loro posto due newsletter pubbliche (MIT) e complesse: `colorlib-1` (ColorlibHQ/email-templates n. 1, generata con MJML: 116 tabelle, 26 `bgcolor`, colonne, hero con `height`) e `cerberus-hybrid` (TedGoas/Cerberus: colonne ibride, `max-width` su tabelle `width=100%`, spaziatori `height=40`, `dir=rtl`, `<center>`). Nessun HTML di email nel repo.
+
+**Scelta di build [F]**: native assets, come nel rapporto: `hook/build.dart` con `native_toolchain_c` 0.19.6 (`hooks` 2.2, `code_assets` 2.2). Gumbo come libreria statica C99, litehtml + wrapper come dinamica C++17 che la linka, `-w`. Ha funzionato al primo tentativo con Flutter 3.50.0 (`.fvmrc`, non più 3.47.8): `flutter test`, `flutter build macos --release` e l'app partono senza CMake né podspec. `plugin_ffi` non provato: non serviva. Prima compilazione ~45 s, poi in cache.
+
+**Architettura [F]**: `src/litehtml_c.h` con 4 funzioni (`lh_create(html, width, cb)`, `lh_render`, `lh_draw`, `lh_destroy`) e 8 callback sincrone: misura (`create_font`, `text_width`) e disegno (`draw_text`, `fill_rect`, `draw_borders`, `draw_image`, `set_clip`, `del_clip`). Differenze dal rapporto: niente stato globale, perché ogni `LitehtmlDocument` crea le proprie `NativeCallable.isolateLocal`, i propri font e la propria cache delle larghezze, che muoiono con lui; niente `get_image_size` verso Dart; `lh_height` e `lh_content_width` tolte (`lh_render` restituisce l'altezza). `LitehtmlView(html, width)`: `StatefulWidget` che crea il documento, fa layout e registra una `Picture` all'`initState` o al cambio di html; un cambio di sola larghezza rifà layout e draw sullo stesso DOM; `CustomPaint` alto quanto il contenuto. Il layout resta sincrono sull'isolate UI.
+
+**Immagini [F]**: rettangoli grigi `#D0D0D0`. La "dimensione dichiarata" è letta dagli attributi `width`/`height` di ogni `<img>` (visita del DOM dopo `lh_create`) e passata a litehtml come dimensione intrinseca: così `style="width:100%; height:auto"` dà il rapporto d'aspetto giusto, come fa il browser prima di caricare l'immagine. Con un solo attributo (es. `height=""`) l'immagine ha altezza 0, perché senza scaricarla non c'è modo di saperla. Gli sfondi CSS con immagine non si disegnano (resta il `background-color`).
+
+**Confronto con il browser [F]**: Chrome 158 di sistema in headless (via `playwright-core` 1.49.1, script fuori dal repo), stessa larghezza, 2x, rete bloccata (niente web font, niente immagini), `<img>` sostituiti da PNG grigi della dimensione degli attributi e altezza 0 senza attributi: le stesse regole del prototipo, così il confronto misura il layout e non il caricamento. Affiancati in `<email>-<larghezza>-confronto.png` (litehtml a sinistra).
+
+| Area | Esito sulle due email |
+|---|---|
+| Tabelle | Struttura, larghezze delle colonne e annidamenti come Chrome dopo 3 patch: `max-width` (sezione con testo bianco di Cerberus, larga come la pagina invece di 500 px), `height` dei `td` (spaziatori di 40 px ridotti a una riga di ~1 px; hero di Colorlib più basso: Chrome somma il padding all'`height` della cella), `cellpadding` (ogni cella teneva 1 px di padding: deriva verticale cumulativa). Altezza finale: 3831 contro 3844 px, 1688 contro 1706 px. |
+| `bgcolor` | Corretto su `table`/`td` senza toppe (lo legge litehtml). |
+| Colonne ibride / float | Colonne `inline-block` di Cerberus a 2 e 3 affiancate come in Chrome. Float: nessun caso nelle due email (MJML e Cerberus non li usano), coperto solo dal test sintetico dello spike perso. |
+| Bordi | Bordi pieni e raggi uguali (bottoni arrotondati) uguali a Chrome; `dotted`/`dashed`/`double` disegnati pieni. |
+| Font | Famiglie risolte da macOS (Georgia per Playfair, Helvetica per Montserrat/sans-serif): stessi a capo di Chrome quasi ovunque. `letter-spacing` **non supportato** da litehtml v0.10 (nessuna occorrenza nel sorgente): le etichette maiuscole di Colorlib sono più strette e "HAPPY CUSTOMERS" sta su una riga invece di due. |
+| Media query | Valutate a ogni larghezza (test sul relayout 600→400 px); le due email non ne attivano nessuna a 700/1000. |
+| `<center>` / `align=center` | Chrome usa `-webkit-center` (centra anche le tabelle-bottone figlie, ma le tabelle non lo ereditano); litehtml un `text-align:center` ereditato ovunque: prima della correzione il testo di Cerberus era centrato invece che a sinistra e il bottone dell'hero di Colorlib stava a sinistra. Corretto con due regole di user CSS nel wrapper (non una patch): copre i figli diretti, non il comportamento completo. |
+| `dir=rtl` | Non supportato: la riga "testo a sinistra, immagine a destra" di Cerberus resta nell'ordine del sorgente. |
+| Altro | Una riga chiara di 1 px tra alcune sezioni di Colorlib (arrotondamenti) che Chrome non ha; spaziature verticali delle colonne di Cerberus 10–15 px più strette di Chrome. |
+
+**Patch a litehtml [F]** (marcate `PATCH postino`, elencate in `third_party/litehtml/VERSION`), ognuna applicata solo dopo averne visto l'effetto sui PNG o sulle misure:
+
+| Patch | File | Nel rapporto precedente | Motivo |
+|---|---|---|---|
+| `max-width` sulle tabelle | `render_table.cpp` | sì | layout sbagliato visibile in Cerberus |
+| `height` in px di `td` (più padding e bordi, come Chrome) come altezza minima della riga | `render_table.cpp` | sì (senza padding) | spaziatori e hero |
+| `cellpadding` della tabella sul padding delle celle | `el_td.cpp` | **no, nuova** | litehtml v0.10 ignora l'attributo; deriva verticale su tutte le newsletter |
+| Un `el_space` per run di spazi tra i tag (`\n` separati) | `document.cpp` | sì (spike memoria) | callback `text_width` −75/−83 %, creazione dimezzata |
+| `<style>` non spezzato in parole | `document.cpp` | sì (spike memoria) | **non applicata**: il testo di `<style>` non genera callback di misura (verificato) e la memoria è fuori scope |
+
+**Misure [F]** (release, Apple M5 Pro; dettaglio in `MEASUREMENTS.md`): dall'HTML alla `Picture` ~13–14 ms per Colorlib e ~9 ms per Cerberus a caldo, ~70 ms al primo documento del processo (font di sistema). Il layout vero e proprio è 0,9–1,6 ms e non chiama Dart; il draw 3,7–4,3 ms. Callback per email: ~1550–3000 `text_width` e 11–17 `create_font` alla creazione, ~500 di disegno; il tempo speso dentro le callback Dart di misura è 1,2–1,7 ms. Le soglie del §7 («qualche decina di ms a 700 px») sono rispettate a caldo; il primo documento le supera.
+
+**Cosa non è stato verificato**: `LitehtmlView` dentro l'app demo è stata solo avviata (nessun errore, nessuno screenshot della finestra); i PNG vengono dalla stessa `Picture` che il widget dipinge. Nessuna misura di memoria; nessuna prova di selezione o Semantics; nessuna newsletter reale con dati (Zalando, ProntoPro), quindi immagini con soli attributi parziali, font web e casi `dir`/`letter-spacing` delle email vere restano da vedere.
+
+**Differenze rispetto al rapporto precedente**: Flutter 3.50.0; API C più piccola e nessuno stato globale (uno dei "da riscrivere" del §7); dimensione delle immagini dagli attributi invece che dall'header PNG dei data URI; una patch nuova (`cellpadding`); una delle patch di memoria applicata per le prestazioni, l'altra no; numeri e confronto con il browser finalmente registrati; `letter-spacing`, `dir=rtl` e `-webkit-center` emersi come limiti non citati prima. La raccomandazione del §7 (GO condizionato) è confermata sulle condizioni di tempi e confronto visivo; restano aperte quelle su memoria e accessibilità, i cui spike non sono stati ricostruiti.

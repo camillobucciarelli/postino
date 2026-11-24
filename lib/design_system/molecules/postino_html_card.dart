@@ -14,7 +14,8 @@ import '../tokens/postino_tokens.dart';
 /// Wider than the column ([contentWidth]: the fixed width it asks for, in px) it scales down to fit,
 /// never scrolling sideways. Rendered by litehtml (#383); if litehtml refuses the HTML, or the text is scaled,
 /// by flutter_widget_from_html, where an `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
-/// [blockedImageLabel] and its `alt`. A tap on a link calls [onTapUrl] with its real URL.
+/// [blockedImageLabel] and its `alt`. A tap on a link calls [onTapUrl] with its real URL. Whatever the HTML says,
+/// either engine loads only `data:` images and, with [allowRemoteImages], http(s) ones (ADR 0007).
 class const PostinoHtmlCard({
   super.key,
 
@@ -32,6 +33,9 @@ class const PostinoHtmlCard({
 
   /// «Immagine bloccata»: what screen readers say for a placeholder, before its `alt`.
   final String? blockedImageLabel,
+
+  /// Remote images may load: the message's images were shown, or its sender is trusted.
+  final bool allowRemoteImages = false,
 }) extends StatelessWidget {
   /// Crea la scheda per `html`; `onTapUrl` riceve i link toccati.
   this;
@@ -63,6 +67,8 @@ class const PostinoHtmlCard({
                 html: '${_baseCss(style, c.brand)}$html',
                 width: width,
                 onLinkTap: onTapUrl,
+                focusColor: c.focusRing,
+                imageProvider: (src) => _image(src, allowRemoteImages),
                 errorBuilder: (context, _) => fallback(context),
               );
         if (width == box.maxWidth) return content;
@@ -91,7 +97,7 @@ class const PostinoHtmlCard({
   /// The engine before litehtml: the fallback.
   Widget _fwfh(TextStyle style, Color placeholder) => HtmlWidget(
     html,
-    factoryBuilder: _Factory.new,
+    factoryBuilder: () => _Factory(allowRemoteImages),
     textStyle: style,
     onTapUrl: (url) {
       onTapUrl(url);
@@ -124,7 +130,16 @@ class const PostinoHtmlCard({
 /// none, and in debug that throws (box.dart:2184, proxy_box.dart:106): fwfh swallows it, but the
 /// throw leaves `_computingThisDryBaseline` set along the chain (box.dart:2134, no `finally`), so
 /// every later paint and hover throws again: the lag on opening a message.
-class _Factory() extends WidgetFactory {
+class _Factory(final bool _allowRemote) extends WidgetFactory {
+  @override
+  ImageProvider? imageProviderFromNetwork(String url) => _image(url, _allowRemote);
+
+  @override
+  ImageProvider? imageProviderFromAsset(String url) => null;
+
+  @override
+  ImageProvider? imageProviderFromFileUri(String url) => null;
+
   @override
   Widget? buildImage(BuildTree tree, ImageMetadata data) => switch (super.buildImage(tree, data)) {
     final w? => _BottomBaseline(child: w),
@@ -134,6 +149,16 @@ class _Factory() extends WidgetFactory {
   @override
   Widget? buildHorizontalScrollView(BuildTree tree, Widget child) =>
       _BottomBaseline(child: super.buildHorizontalScrollView(tree, child) ?? child);
+}
+
+/// The image for an engine's `src`, checked again here and not only by `prepareHtml`, so a parser difference
+/// between the cleaner and an engine can never load a blocked tracker (ADR 0007): `data:` images always, http(s)
+/// only when [allowRemote], nothing else (`cid:` has no content to show).
+ImageProvider? _image(String src, bool allowRemote) {
+  final url = src.trim().toLowerCase();
+  final ok =
+      url.startsWith('data:image/') || (allowRemote && (url.startsWith('https://') || url.startsWith('http://')));
+  return ok ? litehtmlImageProvider(src) : null;
 }
 
 /// Its baseline at its bottom, where text already puts a box without one (`getDistanceToBaseline`

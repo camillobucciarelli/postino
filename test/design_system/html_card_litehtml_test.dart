@@ -1,6 +1,8 @@
 // HTML fixtures split across lines: the tags are the separators.
 // ignore_for_file: missing_whitespace_between_adjacent_strings
 // PostinoHtmlCard on litehtml (#383): the engine, its fallback, links, and the remote images rule.
+import 'dart:io';
+
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,20 @@ Future<void> _pump(WidgetTester tester, Widget child, {double textScale = 1}) =>
     ),
   ),
 );
+
+/// Records every network image request and fails it.
+class _Requests() implements HttpClient {
+  final urls = <String>[];
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async {
+    urls.add('$url');
+    throw const SocketException('no network in tests');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 const _png =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
@@ -104,6 +120,54 @@ void main() {
         'https://tracker.example/p.png',
         _png,
         'https://cdn.example/a.png',
+      ]);
+    });
+  });
+
+  group('the card checks every image src again (ADR 0007)', () {
+    /// The network requests made while showing [card].
+    Future<List<String>> requested(WidgetTester tester, PostinoHtmlCard card) async {
+      final requests = _Requests();
+      debugNetworkImageHttpClientProvider = () => requests;
+      try {
+        await _pump(tester, card);
+        await tester.pump();
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump();
+      } finally {
+        debugNetworkImageHttpClientProvider = null;
+      }
+      return requests.urls;
+    }
+
+    // The same HTML under another rule: litehtml's Picture cache (keyed by HTML) would skip loading.
+    setUp(LitehtmlPictureCache.shared.clear);
+
+    // Not cleaned on purpose: as if a remote src slipped past prepareHtml.
+    const raw = '<img src="https://track.example/p.png" width="10" height="10"><p>x</p>';
+
+    for (final fallback in [false, true]) {
+      testWidgets('remote images blocked: no request, even uncleaned (${fallback ? 'fwfh' : 'litehtml'})', (
+        tester,
+      ) async {
+        PostinoHtmlCard.debugFallbackEngine = fallback;
+        addTearDown(() => PostinoHtmlCard.debugFallbackEngine = false);
+        expect(await requested(tester, PostinoHtmlCard(html: raw, onTapUrl: (_) {})), isEmpty);
+      });
+    }
+
+    testWidgets('a src built to slip past prepareHtml loads nothing with remote images blocked', (tester) async {
+      const evil =
+          '<sty<style>le>p{}</sty@import url(//x.example/a.css);le><img src=https://track.example/1.png></style>'
+          '<style>/* </style> */</style><img src=https://track.example/2.png>'
+          '<img src="https://track.example/3.png"<p>';
+      final html = prepareHtml(evil, allowRemote: false).html;
+      expect(await requested(tester, PostinoHtmlCard(html: html, onTapUrl: (_) {})), isEmpty);
+    });
+
+    testWidgets('remote images allowed: requested', (tester) async {
+      expect(await requested(tester, PostinoHtmlCard(html: raw, allowRemoteImages: true, onTapUrl: (_) {})), [
+        'https://track.example/p.png',
       ]);
     });
   });

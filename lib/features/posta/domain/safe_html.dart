@@ -191,7 +191,9 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       continue;
     }
     if (tag == 'style') {
-      e.text = css(e.text);
+      // Taking out `@import`/`url()` can join `</sty` and `le>` into a closing tag, and what follows would become
+      // markup the loop never saw. A `<` in CSS is only ever text: escaped (`\3C `), it cannot close the element.
+      e.text = css(e.text).replaceAll('<', r'\3C ');
       continue;
     }
     for (final key in e.attributes.keys.toList()) {

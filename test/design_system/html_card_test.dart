@@ -188,7 +188,10 @@ void main() {
     final placeholder = find.byWidgetPredicate((w) => w is PostinoIcon && w.icon == PostinoIcons.image);
 
     testWidgets('allowed: the image is built from its candidate, no placeholder', (tester) async {
-      await _pump(tester, PostinoHtmlCard(html: prepareHtml(srcset, allowRemote: true).html, onTapUrl: (_) {}));
+      await _pump(
+        tester,
+        PostinoHtmlCard(html: prepareHtml(srcset, allowRemote: true).html, allowRemoteImages: true, onTapUrl: (_) {}),
+      );
       await tester.pump();
       expect(placeholder, findsNothing);
       expect(

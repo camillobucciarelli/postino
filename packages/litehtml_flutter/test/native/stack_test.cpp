@@ -36,6 +36,7 @@ struct test_case {
   const char *name;
   std::string html;
   int32_t status; // atteso da lh_create
+  bool layout_ok; // lh_render >= 0 (false: budget di layout esaurito)
 };
 
 void *run(void *arg) {
@@ -44,13 +45,15 @@ void *run(void *arg) {
                   draw_borders, draw_image, set_clip, del_clip};
   int32_t status = -1;
   lh_doc *doc = lh_create(c->html.data(), c->html.size(), 600, &cb, &status);
+  bool layout_ok = false;
   if (doc) {
-    lh_render(doc, 600);
+    layout_ok = lh_render(doc, 600) >= 0;
     lh_draw(doc);
     lh_destroy(doc);
   }
-  if (status != c->status) {
-    fprintf(stderr, "%s: status %d, atteso %d\n", c->name, status, c->status);
+  if (status != c->status || (doc && layout_ok != c->layout_ok)) {
+    fprintf(stderr, "%s: status %d layout %d, attesi %d %d\n", c->name, status,
+            layout_ok, c->status, c->layout_ok);
     return arg;
   }
   printf("ok %s\n", c->name);
@@ -60,17 +63,18 @@ void *run(void *arg) {
 } // namespace
 
 int main() {
-  // Appena sotto il tetto del parser (512 elementi aperti) e oltre quello del DOM (128).
+  // Al tetto del DOM (128 livelli contando html e body): i casi più profondi ammessi.
   test_case cases[] = {
-      {"div", repeat("<div>", 510) + "x", LH_OK},
-      {"float", repeat("<div style=\"float:left\">", 510) + "x", LH_OK},
-      {"flex", repeat("<div style=\"display:flex\">", 510) + "x", LH_OK},
-      {"ul", repeat("<ul><li>", 255) + "x", LH_OK},
-      {"table", repeat("<table><tr><td>", 127) + "x", LH_OK},
-      {"span", repeat("<span>", 510) + "x", LH_OK},
-      {"css", "<style>" + repeat("@media screen{", 100000) + "</style>x", LH_OK},
-      {"css-fn", "<p style=\"color:" + repeat("f(", 100000) + "\">x</p>", LH_OK},
-      {"html-100k", repeat("<div>", 100000) + "x", LH_TOO_DEEP},
+      {"div", repeat("<div>", 126) + "x", LH_OK, true},
+      {"float", repeat("<div style=\"float:left\">", 126) + "x", LH_OK, true},
+      {"flex", repeat("<div style=\"display:flex\">", 126) + "x", LH_OK, false},
+      {"ul", repeat("<ul><li>", 63) + "x", LH_OK, true},
+      {"table", repeat("<table><tr><td>", 31) + "x", LH_OK, false},
+      {"span", repeat("<span>", 126) + "x", LH_OK, true},
+      {"css", "<style>" + repeat("@media screen{", 100000) + "</style>x", LH_OK, true},
+      {"css-fn", "<p style=\"color:" + repeat("f(", 100000) + "\">x</p>", LH_OK, true},
+      {"dom-127", repeat("<div>", 127) + "x", LH_TOO_DEEP, false},
+      {"html-100k", repeat("<div>", 100000) + "x", LH_TOO_DEEP, false},
   };
   pthread_attr_t attr;
   pthread_attr_init(&attr);
@@ -78,9 +82,12 @@ int main() {
   int failed = 0;
   for (auto &c : cases) {
     pthread_t thread;
-    void *result = nullptr;
-    pthread_create(&thread, &attr, run, &c);
-    pthread_join(thread, &result);
+    void *result = &c;
+    if (pthread_create(&thread, &attr, run, &c) != 0 ||
+        pthread_join(thread, &result) != 0) {
+      fprintf(stderr, "%s: thread non avviato\n", c.name);
+      return 1;
+    }
     failed += result != nullptr;
   }
   return failed;

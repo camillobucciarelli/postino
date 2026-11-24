@@ -63,13 +63,22 @@ void main() {
       expect(() => render('${'<div><span><b><i><ul><li>' * (_levels ~/ 6)}x'), throwsLitehtml(LitehtmlFailure.tooDeep));
     });
 
-    test('500 <div> (oltre il tetto del DOM, sotto quello del parser): nodi appiattiti e resi', () {
-      // Appiattito, il div alto 10 perde il suo testo, che diventa una riga a parte dopo di lui.
-      expect(render('<body style="margin: 0">${'<div>' * 500}<div style="height: 10px">x</div>'), greaterThan(10));
+    test('124 <div> (sotto il tetto del DOM) resi', () {
+      expect(render('<body style="margin: 0">${'<div>' * 124}<div style="height: 10px"></div>'), 10);
+    });
+
+    test('200 <div> (oltre il tetto del DOM, sotto quello del parser) → tooDeep, non contenuto nascosto reso', () {
+      // Appiattire mostrerebbe come testo i figli di <style> e display:none: si rifiuta e si ripiega.
+      final html = '${'<div>' * 200}<div style="display:none">nascosto</div><style>p{color:red}</style><p>x</p>';
+      expect(() => render(html), throwsLitehtml(LitehtmlFailure.tooDeep));
+    });
+
+    test('10 tabelle annidate senza larghezze si impaginano (limite noto: da 11 budget di layout)', () {
+      expect(render('${'<table><tr><td>' * 10}x'), greaterThan(0));
     });
 
     test('tabelle annidate: budget di layout → layout, non un blocco infinito', () {
-      final doc = LitehtmlDocument('${'<table><tr><td>' * 40}x', 600);
+      final doc = LitehtmlDocument('${'<table><tr><td>' * 20}x', 600);
       addTearDown(doc.dispose);
 
       expect(() => doc.layout(600), throwsLitehtml(LitehtmlFailure.layout));
@@ -97,7 +106,9 @@ void main() {
       const html =
           '<table><tr><td colspan="0">a</td><td colspan="-5">b</td></tr> '
           '<tr><td rowspan="-3">c</td><td rowspan="99999999999">d</td></tr></table>';
-      expect(render(html), greaterThan(0));
+      // Ogni span non valido vale 1: due righe di due celle, come senza attributi.
+      const plain = '<table><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></table>';
+      expect(render(html), render(plain));
     });
 
     test('colspan enorme in molte celle → failed (budget di celle)', () {

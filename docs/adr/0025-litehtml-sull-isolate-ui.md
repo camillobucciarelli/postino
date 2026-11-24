@@ -13,7 +13,7 @@ Creazione, layout e disegno di un `LitehtmlDocument` girano sincroni sull'isolat
 
 Siccome lo stack di quel thread non lo sceglie il pacchetto, i limiti di annidamento (patch `PATCH postino` in `third_party/litehtml/VERSION`) sono tarati perché il caso peggiore ammesso stia in uno stack piccolo:
 
-- al più 512 elementi aperti nel parser HTML (oltre: `LitehtmlFailure.tooDeep`), DOM di litehtml profondo al più 128 (oltre: nodi appiattiti), al più 32 blocchi e funzioni CSS annidati (oltre: blocco vuoto);
+- al più 512 elementi aperti nel parser HTML (oltre: `LitehtmlFailure.tooDeep`), DOM di litehtml profondo al più 128 (oltre: `tooDeep`), al più 32 blocchi e funzioni CSS annidati (oltre: blocco vuoto);
 - misurato su arm64 (macOS, 2026-11-24): il caso peggiore usa meno di 160 KB di stack con `-O3`, l'ottimizzazione fissata in `hook/build.dart`, e meno di 384 KB con `-O0`;
 - `test/native/stack_test.sh`, nel job `check`, fa girare i casi peggiori in un thread con 256 KB di stack.
 
@@ -30,5 +30,6 @@ Il tempo è limitato da tre budget: HTML al più 4 MiB (`tooLarge`), 500 000 chi
 ## Conseguenze
 
 - Un'email blocca il frame per il tempo di creazione e layout: ~10–15 ms a caldo per una newsletter tipica, ~70 ms per il primo documento del processo. Per un HTML ostile da 4 MiB senza annidamento sono ~1–1,5 s, misurati con callback finte: resta un limite noto.
+- Il layout delle tabelle annidate senza larghezze costa circa 3 volte per livello: da 11 livelli (18 con `width="100%"`) esaurisce il budget e l'email va al ripiego. Le newsletter di prova ne hanno meno; una cache delle misure delle celle in `render_table` è il rimedio se emergono email reali così.
 - Ogni patch a litehtml che aggiunge ricorsione va rimisurata con `stack_test.sh`. Lo stesso vale per un cambio di ottimizzazione in `hook/build.dart`.
 - Un HTML rifiutato (`LitehtmlException`) non è un crash: chi integra il motore (#383, fetta 2) ripiega su un altro motore.

@@ -20,8 +20,8 @@ Sicurezza su HTML non fidato (#383; misure in docs/research/litehtml-spike.md §
   funzioni CSS annidati; oltre, il contenuto si salta senza ricorsione e il blocco resta vuoto.
   Limita anche remove_whitespace_*, is_any_value e le altre visite ricorsive dei token.
 - include/litehtml/document.h, src/document.cpp: DOM di litehtml profondo al più kMaxDomDepth
-  (128); i nodi più profondi diventano figli senza figli dell'ultimo livello, in ordine di
-  documento (come Chrome).
+  (128); oltre, createFromString lancia html_too_deep (appiattire come Chrome renderebbe visibili
+  i figli di <style>, <script> e display:none).
 - src/gumbo/parser.c, src/gumbo/include/gumbo.h: al più kGumboMaxOpenElements (512) elementi
   aperti; oltre, il parse si ferma e createFromString lancia html_too_deep.
 - src/gumbo/parser.c: destroy_node iterativo invece che ricorsivo.

@@ -46,7 +46,7 @@ namespace litehtml
 	class render_item;
 
 	// PATCH postino: lanciata da createFromString se l'HTML supera il tetto di elementi
-	// aperti del parser (kGumboMaxOpenElements).
+	// aperti del parser (kGumboMaxOpenElements) o di profondità del DOM (kMaxDomDepth).
 	struct html_too_deep : std::exception
 	{
 		const char* what() const noexcept override { return "litehtml: html too deeply nested"; }

@@ -78,7 +78,16 @@ document::ptr document::createFromString(
 
 	// Create litehtml::elements.
 	elements_list root_elements;
-	doc->create_node(output->root, root_elements, true, true);
+	// PATCH postino: create_node può lanciare html_too_deep; l'output di Gumbo va liberato comunque.
+	try
+	{
+		doc->create_node(output->root, root_elements, true, true);
+	}
+	catch (...)
+	{
+		gumbo_destroy_output(&kGumboDefaultOptions, output);
+		throw;
+	}
 	if (!root_elements.empty())
 	{
 		doc->m_root = root_elements.back();
@@ -268,11 +277,11 @@ GumboOutput* document::parse_html(estring str)
 	return output;
 }
 
-// PATCH postino: tetto alla profondità del DOM (HTML non fidato). Come Chrome (512 nel
-// parser HTML), i nodi più profondi diventano figli, in ordine di documento e senza figli
-// propri, dell'elemento all'ultimo livello ammesso. Layout, stili, disegno e distruttori
-// di litehtml sono ricorsivi sull'albero: con il tetto lo stack che usano è limitato.
-// Tarato sullo stack minimo delle piattaforme (vedi docs/research/litehtml-spike.md §9).
+// PATCH postino: tetto alla profondità del DOM (HTML non fidato). Layout, stili, disegno e
+// distruttori di litehtml sono ricorsivi sull'albero: oltre kMaxDomDepth create_node lancia
+// html_too_deep, così lo stack che usano resta limitato e il chiamante ripiega su un altro
+// motore. Non si appiattisce come Chrome: i figli di <style>, <script> e display:none
+// diventerebbero testo visibile. Tarato sullo stack minimo delle piattaforme (ADR 0025).
 static const int kMaxDomDepth = 128;
 
 void document::create_node(void* gnode, elements_list& elements, bool parseTextNode, bool process_root, int depth)
@@ -313,7 +322,11 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 			{
 				parseTextNode = false;
 			}
-			if (ret && depth < kMaxDomDepth)
+			if (ret && depth >= kMaxDomDepth && node->v.element.children.length > 0)
+			{
+				throw html_too_deep(); // PATCH postino
+			}
+			if (ret)
 			{
 				elements_list child;
 				for (unsigned int i = 0; i < node->v.element.children.length; i++)
@@ -328,36 +341,6 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 					);
 				}
 				elements.push_back(ret);
-			}
-			else if (ret && depth > kMaxDomDepth)
-			{
-				// PATCH postino: nodo già appiattito, nasce senza figli.
-				elements.push_back(ret);
-			}
-			else if (ret)
-			{
-				// PATCH postino: all'ultimo livello i discendenti si appiattiscono senza
-				// ricorsione (visita in preordine con uno stack esplicito).
-				elements.push_back(ret);
-				std::vector<GumboNode*> pending;
-				for (unsigned int i = node->v.element.children.length; i > 0; i--)
-					pending.push_back(static_cast<GumboNode*>(node->v.element.children.data[i - 1]));
-				elements_list flat;
-				while (!pending.empty())
-				{
-					GumboNode* next = pending.back();
-					pending.pop_back();
-					if (next->type == GUMBO_NODE_ELEMENT)
-					{
-						for (unsigned int i = next->v.element.children.length; i > 0; i--)
-							pending.push_back(static_cast<GumboNode*>(next->v.element.children.data[i - 1]));
-					}
-					flat.clear();
-					// depth > kMaxDomDepth: l'elemento nasce senza figli.
-					create_node(next, flat, parseTextNode, true, kMaxDomDepth + 1);
-					for (auto& el : flat)
-						ret->appendChild(el);
-				}
 			}
 		} else
 		{

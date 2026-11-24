@@ -215,16 +215,18 @@ Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo 
 | 200 000 righe `<tr><td>` | 18 s (`is_rowspanned` quadratico) |
 | 100 000 `<td colspan=1000>` | 20 s, ~10⁸ celle allocate |
 
-**Patch [F]** (elenco in `third_party/litehtml/VERSION`): tetto di 32 blocchi CSS annidati; tetto di 512 elementi aperti in Gumbo (oltre: `html_too_deep` → `LitehtmlFailure.tooDeep`, non un documento troncato, così l'integrazione può ripiegare); DOM di litehtml appiattito oltre 128 livelli; `destroy_node` di Gumbo iterativo; errori di Gumbo disattivati (`max_errors = 0`); budget di 500 000 `render_item::render` per layout; `colspan`/`rowspan` come nello standard HTML e budget di 500 000 celle per documento; `is_rowspanned` O(1). Nel wrapper: HTML oltre 4 MiB rifiutato, eccezioni di litehtml catturate, documento inutilizzabile dopo un layout fallito.
+**Patch [F]** (elenco in `third_party/litehtml/VERSION`): tetto di 32 blocchi CSS annidati; tetto di 512 elementi aperti in Gumbo (oltre: `html_too_deep` → `LitehtmlFailure.tooDeep`, non un documento troncato, così l'integrazione può ripiegare); DOM di litehtml al più 128 livelli (oltre: `tooDeep`; la prima versione appiattiva come Chrome, ma così `<style>` e `display:none` diventavano testo visibile); `destroy_node` di Gumbo iterativo; errori di Gumbo disattivati (`max_errors = 0`); budget di 500 000 `render_item::render` per layout; `colspan`/`rowspan` come nello standard HTML e budget di 500 000 celle per documento; `is_rowspanned` O(1). Nel wrapper: HTML oltre 4 MiB rifiutato, eccezioni di litehtml catturate, documento inutilizzabile dopo un layout fallito.
 
 **Dopo le patch [F]**:
 
 | Caso | Esito | Stack minimo `-O3` / `-O0` |
 |---|---|---|
-| 510 `<div>` (sotto il tetto del parser, oltre quello del DOM) | reso | 96 / 256 KB |
-| 510 `<div style="float:left">` o `display:flex` | reso / budget di layout | 160 / 384 KB |
-| 255 `<ul><li>` | reso | 96 / 256 KB |
-| 127 `<table><tr><td>` | budget di layout (`-1`) in 20 ms | 64 / 160 KB |
+| 126 `<div>` (al tetto del DOM) | reso | 96 / 256 KB |
+| 126 `<div style="float:left">` o `display:flex` | reso / budget di layout | 160 / 384 KB |
+| 63 `<ul><li>` | reso | 96 / 256 KB |
+| 127–511 elementi annidati | `tooDeep` | — |
+| 31 `<table><tr><td>` | budget di layout (`-1`) in ~50 ms | 64 / 128 KB |
+| 10 / 11 `<table><tr><td>` senza larghezze | reso in 30 ms / budget di layout | — |
 | CSS annidato a 100 000 (`(`, `f(`, `{`, `@media{`, `:not(`) | reso, blocco profondo vuoto | 32 KB |
 | 100 000 elementi annidati di qualsiasi tag | `tooDeep` in ~1 ms | 32 KB |
 | newsletter di prova (colorlib-1, colorlib-10, cerberus, mailchimp) | altezze identiche a prima delle patch, 371–2 136 chiamate di layout | 32 KB |
@@ -234,6 +236,6 @@ Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo 
 
 **Isolate [F]**: in `flutter test`, `ui.ParagraphBuilder` dentro `Isolate.run` lancia «UI actions are only available on root isolate». Un `LitehtmlDocument` creato lì non va in crash, ma impagina con misure a zero perché le callback falliscono. Il layout resta quindi sull'isolate UI: la scelta e i margini di stack sono in ADR 0025.
 
-**Build [F]**: app con il pacchetto come dipendenza: `flutter build macos --debug`, `flutter build ios --no-codesign` e `flutter build apk --debug --flavor site` riusciti; un test di integrazione temporaneo (documento normale, CSS annidato a 100 000, HTML annidato a 100 000, 510 float annidati, tabelle annidate, HTML oltre il limite) è passato sul simulatore iOS (iPhone 17 Pro, iOS 27) e sull'emulatore Android arm64 (API 36). Sull'emulatore la prima prova falliva al caricamento: `dlopen failed: cannot locate symbol "atan2f"`, e la libreria chiedeva `libc++_shared.so`, che l'APK non contiene. Ora si linkano `libm` e `c++_static`. Windows e Linux non sono mai stati compilati: il solo runner è macOS e da macOS non si compila per quelle piattaforme.
+**Build [F]**: app con il pacchetto come dipendenza: `flutter build macos --debug`, `flutter build ios --no-codesign` e `flutter build apk --debug --flavor site` riusciti; un test di integrazione temporaneo (documento normale, CSS annidato a 100 000, HTML annidato a 100 000 e a 200 livelli, 126 float annidati, tabelle annidate, HTML oltre il limite) è passato sul simulatore iOS (iPhone 17 Pro, iOS 27) e sull'emulatore Android arm64 (API 36). Sull'emulatore la prima prova falliva al caricamento: `dlopen failed: cannot locate symbol "atan2f"`, e la libreria chiedeva `libc++_shared.so`, che l'APK non contiene. Ora si linkano `libm` e `c++_static`. Windows e Linux non sono mai stati compilati: il solo runner è macOS e da macOS non si compila per quelle piattaforme.
 
 **Cosa non è verificato**: lo stack reale del thread UI su ogni piattaforma (i valori in ADR 0025 vengono dalla documentazione); i frame di stack con MSVC e con gcc; i tempi con le callback Dart vere sui casi ostili da 4 MiB (le misure sopra usano callback finte).

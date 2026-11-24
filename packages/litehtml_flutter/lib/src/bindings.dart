@@ -61,9 +61,10 @@ typedef TextWidthFn = Float Function(Pointer<Char> text, Int64 font);
 typedef DrawTextFn = Void Function(Pointer<Char> text, Int64 font, Uint32 color, Pointer<LhRect> pos);
 typedef FillRectFn = Void Function(Pointer<LhRect> rect, Pointer<LhRect> clip, Pointer<Float> radii, Uint32 color);
 typedef DrawBordersFn = Void Function(Pointer<LhBorders> borders);
-typedef DrawImageFn = Void Function(Pointer<LhRect> rect, Pointer<Float> radii);
+typedef DrawImageFn = Void Function(Pointer<Char> src, Pointer<LhRect> rect, Pointer<Float> radii);
 typedef SetClipFn = Void Function(Pointer<LhRect> rect, Pointer<Float> radii);
 typedef DelClipFn = Void Function();
+typedef LoadImageFn = Void Function(Pointer<Char> src);
 
 final class LhCallbacks extends Struct {
   external Pointer<NativeFunction<CreateFontFn>> createFont;
@@ -74,7 +75,28 @@ final class LhCallbacks extends Struct {
   external Pointer<NativeFunction<DrawImageFn>> drawImage;
   external Pointer<NativeFunction<SetClipFn>> setClip;
   external Pointer<NativeFunction<DelClipFn>> delClip;
+  external Pointer<NativeFunction<LoadImageFn>> loadImage;
 }
+
+typedef ExportTextFn = Void Function(Pointer<Char> text, Int64 font, Pointer<LhRect> pos);
+typedef ExportSeparatorFn = Void Function(Int32 kind);
+typedef ExportOpenFn = Void Function(Int32 kind, Int32 level, Pointer<Char> attr, Pointer<LhRect> box);
+typedef ExportCloseFn = Void Function();
+
+final class LhExportCallbacks extends Struct {
+  external Pointer<NativeFunction<ExportTextFn>> text;
+  external Pointer<NativeFunction<ExportSeparatorFn>> separator;
+  external Pointer<NativeFunction<ExportOpenFn>> open;
+  external Pointer<NativeFunction<ExportCloseFn>> close;
+}
+
+/// Separatori e nodi di [lhExport] (`LH_SEP_*`, `LH_NODE_*`).
+const lhSepSpace = 0;
+const lhSepLine = 1;
+const lhSepBreak = 2;
+const lhNodeHeading = 0;
+const lhNodeLink = 1;
+const lhNodeImage = 2;
 
 final class LhDoc extends Opaque {}
 
@@ -102,5 +124,11 @@ external double lhRender(Pointer<LhDoc> doc, double width);
 @Native<Void Function(Pointer<LhDoc>)>(symbol: 'lh_draw')
 external void lhDraw(Pointer<LhDoc> doc);
 
+@Native<Void Function(Pointer<LhDoc>, Pointer<LhExportCallbacks>)>(symbol: 'lh_export')
+external void lhExport(Pointer<LhDoc> doc, Pointer<LhExportCallbacks> cb);
+
 @Native<Void Function(Pointer<LhDoc>)>(symbol: 'lh_destroy')
 external void lhDestroy(Pointer<LhDoc> doc);
+
+@Native<Int32 Function(Pointer<LhDoc>, Pointer<Char>, Float, Float)>(symbol: 'lh_set_image_size')
+external int lhSetImageSize(Pointer<LhDoc> doc, Pointer<Char> src, double width, double height);

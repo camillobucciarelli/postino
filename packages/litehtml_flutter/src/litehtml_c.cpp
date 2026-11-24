@@ -1,5 +1,6 @@
 // document_container che inoltra misura e disegno alle callback Dart.
 #include "litehtml_c.h"
+#include "litehtml_export.h"
 
 #include <litehtml.h>
 
@@ -13,6 +14,8 @@ using namespace litehtml;
 namespace {
 
 constexpr float kViewportHeight = 800;
+// Lato del segnaposto di un <img> senza src né dimensioni.
+constexpr float kPlaceholder = 24;
 
 // Chrome rende <center> e align=center con `-webkit-center`: centra anche i
 // blocchi figli (tabelle-bottone di MJML) e una <table> non lo eredita (torna a
@@ -21,7 +24,11 @@ constexpr float kViewportHeight = 800;
 constexpr const char *kUserCss =
     "center table, div[align=center] table { text-align: left; }"
     "center > table, [align=center] > table { margin-left: auto; "
-    "margin-right: auto; }";
+    "margin-right: auto; }"
+    // Un <img> senza dimensioni dichiarate non esce dalla colonna (1200 px in
+    // 360): stretto alle proporzioni, come fanno i client di posta. Con width
+    // o height negli attributi resta com'è (spaziatori, layout a pixel).
+    "img:not([width]):not([height]) { max-width: 100%; }";
 
 lh_rect to_rect(const position &p) { return {p.x, p.y, p.width, p.height}; }
 
@@ -102,20 +109,27 @@ public:
     cb_.fill_rect(&r, &r, radii, to_argb(m.color));
   }
 
-  // Niente rete: le immagini non si caricano mai.
+  // Il caricamento lo chiede collect_images, solo per gli <img>: gli sfondi
+  // CSS non si disegnano.
   void load_image(const char *, const char *, bool) override {}
 
   // Dimensione "intrinseca" di un <img> = attributi width/height se entrambi
   // numerici, come il rapporto d'aspetto che il browser ricava dagli attributi
-  // prima del caricamento (serve con `height:auto`). Altrimenti 0x0.
+  // prima del caricamento (serve con `height:auto`). Altrimenti 0x0; un <img>
+  // senza src (bloccato, cid:) senza dimensioni è un segnaposto grigio di
+  // kPlaceholder px, come l'icona del motore di ripiego.
   // ponytail: chiave = src; due <img> con lo stesso src e attributi diversi
   // prendono il primo.
   void collect_images(const element::ptr &el) {
     if (std::string(el->get_tagName()) == "img") {
       float w = std::atof(el->get_attr("width", "0"));
       float h = std::atof(el->get_attr("height", "0"));
-      img_sizes_.emplace(el->get_attr("src", ""), size(w > 0 && h > 0 ? w : 0,
-                                                       w > 0 && h > 0 ? h : 0));
+      std::string src = el->get_attr("src", "");
+      bool declared = w > 0 && h > 0;
+      float fallback = src.empty() ? kPlaceholder : 0;
+      auto added = img_sizes_.emplace(
+          src, size(declared ? w : fallback, declared ? h : fallback));
+      if (added.second && !src.empty()) cb_.load_image(src.c_str());
     }
     for (auto &child : el->children()) collect_images(child);
   }
@@ -125,14 +139,23 @@ public:
     sz = it == img_sizes_.end() ? size(0, 0) : it->second;
   }
 
-  // Solo gli <img> diventano rettangoli grigi; gli sfondi immagine no.
+  // Dimensione naturale arrivata dal caricamento; true se cambia il layout.
+  bool set_image_size(const std::string &src, float w, float h) {
+    auto it = img_sizes_.find(src);
+    if (it == img_sizes_.end()) return false;
+    if (it->second.width == w && it->second.height == h) return false;
+    it->second = size(w, h);
+    return true;
+  }
+
+  // Solo gli <img>; gli sfondi immagine no.
   void draw_image(uint_ptr, const background_layer &layer,
                   const std::string &url, const std::string &) override {
     if (img_sizes_.count(url) == 0) return;
-    auto r = to_rect(layer.border_box);
+    auto r = to_rect(layer.origin_box);
     float radii[8];
     to_radii(layer.border_radius, radii);
-    cb_.draw_image(&r, radii);
+    cb_.draw_image(url.c_str(), &r, radii);
   }
 
   void draw_solid_fill(uint_ptr, const background_layer &layer,
@@ -293,4 +316,18 @@ void lh_draw(lh_doc *d) {
   }
 }
 
+void lh_export(lh_doc *d, const lh_export_callbacks *cb) {
+  if (d->failed) return;
+  try {
+    export_content(d->doc, *cb);
+  } catch (...) {
+    d->failed = true;
+  }
+}
+
 void lh_destroy(lh_doc *d) { delete d; }
+
+int32_t lh_set_image_size(lh_doc *d, const char *src, float width,
+                          float height) {
+  return d->cont.set_image_size(src, width, height) ? 1 : 0;
+}

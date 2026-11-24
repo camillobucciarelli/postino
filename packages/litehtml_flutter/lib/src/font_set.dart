@@ -1,6 +1,9 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/painting.dart' show TextStyle;
+
 import 'font_metrics.dart';
+import 'platform_fonts.dart';
 
 /// Font di un documento: litehtml li chiede con `create_font` e li cita per id.
 ///
@@ -10,8 +13,8 @@ class FontSet() {
 
   /// Crea un font e restituisce `(id, metriche)`; l'id parte da 1 (0 per litehtml è "nessun font").
   (int, FontMetrics) create(String family, double size, int weight, bool italic, int decoration) {
-    final families = family.split(',').map(_resolve).where((f) => f.isNotEmpty).toList();
-    final style = ui.TextStyle(
+    final families = platformFonts(family);
+    final style = TextStyle(
       fontFamily: families.isEmpty ? null : families.first,
       fontFamilyFallback: families.length > 1 ? families.sublist(1) : null,
       fontSize: size,
@@ -54,20 +57,12 @@ class FontSet() {
 
   double descent(int id) => _fonts[id - 1].descent;
 
-  /// Famiglie generiche e di sistema mappate sui nomi dei font di macOS.
-  static String _resolve(String raw) {
-    final name = raw.trim().replaceAll('"', '').replaceAll("'", '');
-    return switch (name.toLowerCase()) {
-      'sans-serif' => 'Helvetica',
-      'serif' => 'Times New Roman',
-      'monospace' => 'Courier New',
-      'system-ui' || '-apple-system' || 'blinkmacsystemfont' => '.AppleSystemUIFont',
-      _ => name,
-    };
-  }
+  /// Stile del font [id], per i widget che devono coincidere col testo disegnato (selezione).
+  TextStyle textStyle(int id) => _fonts[id - 1].textStyle;
 }
 
-class _Font(final ui.TextStyle style) {
+class _Font(final TextStyle textStyle) {
+  late final style = textStyle.getTextStyle();
   final widths = <String, double>{};
   double descent = 0;
 

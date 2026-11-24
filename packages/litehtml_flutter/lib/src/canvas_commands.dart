@@ -8,6 +8,9 @@ import 'font_set.dart';
 class CanvasCommands(final FontSet _fonts) {
   ui.Canvas? canvas;
 
+  /// Immagini caricate per `src`; quelle che mancano sono rettangoli grigi.
+  final images = <String, ui.Image>{};
+
   static const _imageGrey = ui.Color(0xFFD0D0D0);
 
   void drawText(String text, int font, int color, LhRect pos) {
@@ -35,10 +38,29 @@ class CanvasCommands(final FontSet _fonts) {
     if (needsClip) c.restore();
   }
 
-  void drawImage(LhRect rect, Pointer<Float> radii) {
-    final paint = ui.Paint()..color = _imageGrey;
+  // ponytail: l'immagine riempie il riquadro (niente object-fit).
+  void drawImage(String src, LhRect rect, Pointer<Float> radii) {
+    final c = canvas!;
     final r = _rect(rect);
-    _isZero(radii) ? canvas!.drawRect(r, paint) : canvas!.drawRRect(_rrect(r, radii), paint);
+    final image = images[src];
+    if (image == null) {
+      final paint = ui.Paint()..color = _imageGrey;
+      _isZero(radii) ? c.drawRect(r, paint) : c.drawRRect(_rrect(r, radii), paint);
+      return;
+    }
+    final round = !_isZero(radii);
+    if (round) {
+      c
+        ..save()
+        ..clipRRect(_rrect(r, radii));
+    }
+    c.drawImageRect(
+      image,
+      ui.Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      r,
+      ui.Paint()..filterQuality = ui.FilterQuality.medium,
+    );
+    if (round) c.restore();
   }
 
   /// Bordi per lato; con raggi e quattro lati uguali un anello arrotondato.

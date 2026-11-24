@@ -97,6 +97,7 @@ class _ConversationBodyState() extends State<ConversationBody> {
       quiet: quiet,
       // A trusted sender's images are not blocked: a src-less one there is a `cid:` one, labelled by its alt.
       blockedImageLabel: allow ? null : context.t.conversazione.blockedImage,
+      allowRemoteImages: allow,
       onTapUrl: (url) => unawaited(openTokenLink(context, table, url)),
     );
   }

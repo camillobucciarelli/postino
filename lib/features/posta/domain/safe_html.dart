@@ -154,7 +154,8 @@ bool _script(String url) =>
 
 /// Cleans [html] and, unless [allowRemote], blocks every remote (http, https, `//`) resource:
 /// `src`/`srcset`/`background`, CSS `url(...)` and `@import` in `style` attributes and `<style>`
-/// (fonts too), `<link>`. `data:` stays; `cid:` and local schemes lose their `src` (a placeholder).
+/// (fonts too), `<link>`. `data:` stays; `cid:` and local schemes lose their `src` (a placeholder). An `<img>` with
+/// only a kept `srcset` gets its first candidate as `src`.
 SafeHtml prepareHtml(String html, {required bool allowRemote}) {
   final doc = parse(html);
   _patchFwfh(doc);
@@ -190,7 +191,9 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
       continue;
     }
     if (tag == 'style') {
-      e.text = css(e.text);
+      // Taking out `@import`/`url()` can join `</sty` and `le>` into a closing tag, and what follows would become
+      // markup the loop never saw. A `<` in CSS is only ever text: escaped (`\3C `), it cannot close the element.
+      e.text = css(e.text).replaceAll('<', r'\3C ');
       continue;
     }
     for (final key in e.attributes.keys.toList()) {
@@ -229,6 +232,12 @@ SafeHtml prepareHtml(String html, {required bool allowRemote}) {
           e.attributes.remove(key);
         }
       }
+    }
+    // Neither engine reads `srcset`: a `src`-less `<img>` whose `srcset` stayed gets its first candidate as `src`.
+    final srcset = e.attributes['srcset'];
+    if (tag == 'img' && srcset != null && !e.attributes.containsKey('src')) {
+      final first = srcset.split(',').first.trim().split(RegExp(r'\s+')).first;
+      if (first.isNotEmpty) e.attributes['src'] = first;
     }
   }
   _boxTables(doc);

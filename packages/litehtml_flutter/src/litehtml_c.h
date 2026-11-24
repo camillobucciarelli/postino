@@ -59,10 +59,36 @@ typedef struct {
   void (*fill_rect)(const lh_rect *rect, const lh_rect *clip,
                     const float *radii, uint32_t color);
   void (*draw_borders)(const lh_borders *borders);
-  void (*draw_image)(const lh_rect *rect, const float *radii);
+  // `src` di un <img>; rect = riquadro del contenuto.
+  void (*draw_image)(const char *src, const lh_rect *rect, const float *radii);
   void (*set_clip)(const lh_rect *rect, const float *radii);
   void (*del_clip)(void);
+  // Una volta per `src` non vuoto di un <img>, dentro lh_create: il chiamante
+  // lo carica e poi chiama lh_set_image_size.
+  void (*load_image)(const char *src);
 } lh_callbacks;
+
+// Contenuto per selezione e Semantics (lh_export).
+#define LH_SEP_SPACE 0    // spazio tolto a inizio o fine riga
+#define LH_SEP_LINE 1     // confine di blocco o cella (di fila: uno solo)
+#define LH_SEP_BREAK 2    // <br>, a capo di <pre> (di fila: si contano)
+#define LH_NODE_HEADING 0 // h1..h6: level 1..6
+#define LH_NODE_LINK 1    // <a href>: attr = href; box = border box se a blocco o inline-block, vuoto se inline;
+                          // level = livello di pittura (2*z-index, +1 se posizionato)
+#define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente), level 1 se senza src
+
+typedef struct {
+  // Una parola o una run di spazi (" ") visibile, col font e il box di
+  // draw_text.
+  void (*text)(const char *text, int64_t font, const lh_rect *pos);
+  // Separatore nel testo (LH_SEP_*): i confini di blocco di fila valgono uno,
+  // gli a capo espliciti si contano.
+  void (*separator)(int32_t kind);
+  // Apre un nodo (LH_NODE_*) col suo box; close lo chiude dopo i figli.
+  void (*open)(int32_t kind, int32_t level, const char *attr,
+               const lh_rect *box);
+  void (*close)(void);
+} lh_export_callbacks;
 
 typedef struct lh_doc lh_doc;
 
@@ -77,8 +103,14 @@ LH_EXPORT lh_doc *lh_create(const char *html, size_t length, float width,
 LH_EXPORT float lh_render(lh_doc *doc, float width);
 // Emette i comandi di disegno per tutto il documento.
 LH_EXPORT void lh_draw(lh_doc *doc);
+// Emette testo e nodi dell'ultimo layout in ordine di documento; non fa nulla
+// se il documento è fallito.
+LH_EXPORT void lh_export(lh_doc *doc, const lh_export_callbacks *cb);
 LH_EXPORT void lh_destroy(lh_doc *doc);
-
+// Dimensione naturale di un'immagine caricata, in px CSS. Restituisce 1 se è
+// cambiata (serve un nuovo lh_render), 0 altrimenti.
+LH_EXPORT int32_t lh_set_image_size(lh_doc *doc, const char *src, float width,
+                                    float height);
 #ifdef __cplusplus
 }
 #endif

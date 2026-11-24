@@ -1,0 +1,96 @@
+name: Update goldens
+
+# I golden di test/design_system sono di riferimento solo per il runner che li confronta: il job `apple`
+# di ci.yml, su macos-26 hosted. Un altro Mac (anche quello dello sviluppatore) disegna testo e
+# antialiasing un po' diversi (0,03-0,34% dei pixel). Questo workflow li rigenera su quel runner.
+#
+# Lancialo prima con `commit` spento: il riepilogo dice quante immagini questo runner disegna in modo
+# diverso. Con `commit` acceso fa un commit sul branch scelto; mai su main.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit delle immagini rigenerate sul branch scelto
+        type: boolean
+        default: false
+  # TEMPORANEO, solo per la prima rigenerazione (#389): il workflow non è ancora su main, quindi non
+  # si può lanciare a mano. Il commit successivo toglie questo trigger.
+  push:
+    branches: [claude/cool-euler-d3v9h8]
+    paths: [.github/workflows/update-goldens.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  goldens:
+    # Stessa immagine del job `apple` di ci.yml: cambiarla in un posto solo vuol dire golden rossi.
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
+      - run: flutter pub get
+      - name: Codegen
+        run: |
+          dart run routefly
+          dart run slang
+          dart run build_runner build
+      - name: Confronto con le immagini committate
+        run: |
+          set -o pipefail
+          status=0
+          flutter test test/design_system 2>&1 | tee compare.log | tail -20 || status=$?
+          {
+            echo "## Immagini committate contro questo runner"
+            echo
+            echo "Exit status: \`$status\` (0: ogni immagine coincide)"
+            echo
+            echo '```'
+            tail -3 compare.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: golden-differences
+          path: test/design_system/failures/
+          if-no-files-found: ignore
+      - name: Rigenera
+        run: |
+          rm -rf test/design_system/failures
+          flutter test --update-goldens test/design_system
+      - name: Le nuove immagini passano in ordine casuale
+        run: flutter test test/design_system --test-randomize-ordering-seed=random
+      - name: Che cosa è cambiato
+        run: |
+          {
+            echo "## Immagini rigenerate"
+            echo
+            echo '```'
+            git status --short test/design_system
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit
+        if: inputs.commit || github.event_name == 'push'
+        run: |
+          if [[ "$GITHUB_REF_NAME" == "${{ github.event.repository.default_branch }}" ]]; then
+            echo "Niente commit sul branch di default: lancialo sul branch di una PR." >&2
+            exit 1
+          fi
+          git add test/design_system/goldens
+          if git diff --cached --quiet; then
+            echo "Nessuna immagine cambiata."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(goldens): rigenera le immagini su macos-26 hosted"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

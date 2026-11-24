@@ -18,7 +18,7 @@ concurrency:
 jobs:
   check:
     # macOS: alcuni test di tool/release usano strumenti Apple (security, PlistBuddy).
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -80,7 +80,7 @@ jobs:
 
   android:
     # JDK da setup-java; Android SDK dell'immagine hosted (ANDROID_HOME).
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -119,7 +119,7 @@ jobs:
   # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
 
   apple:
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
@@ -139,7 +139,7 @@ jobs:
         run: |
           git diff --exit-code
           test -z "$(git status --porcelain)"
-      # Goldens are compared only on macOS, where they are recorded.
+      # Goldens are compared only here, on the image that records them (update-goldens.yml). Same `runs-on` in both.
       - run: flutter test test/design_system
       # Text contrast on the list and the Conversazione needs the real fonts too (#55).
       - run: flutter test test/features/posta/screen_reader_test.dart

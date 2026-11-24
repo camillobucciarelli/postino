@@ -76,6 +76,10 @@ dependencies:
   llamadart_llama_cpp_flutter: ^0.19.8
   llamadart_litert_lm_flutter: ^0.19.8
   mobile_scanner: ^7.5.0
+  # Motore HTML dei corpi email (#383). Non ancora usato dall'app: dipendere da qui fa compilare la libreria nativa
+  # nei job android e apple della CI.
+  litehtml_flutter:
+    path: packages/litehtml_flutter
 
 dev_dependencies:
   flutter_test:

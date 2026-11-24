@@ -55,6 +55,15 @@ jobs:
         env:
           POSTINO_REQUIRE_IMAP_SERVER: '1'
         run: flutter test
+      # Motore HTML (#383): i test Dart compilano la libreria nativa per macOS; stack_test.sh verifica che i limiti
+      # di annidamento reggano su 256 KB di stack (ADR 0025). Le build android e apple la compilano per l'app.
+      - name: litehtml_flutter
+        working-directory: packages/litehtml_flutter
+        run: |
+          flutter pub get
+          git ls-files -- 'lib/*.dart' 'test/*.dart' 'hook/*.dart' | xargs dart format --output=none --set-exit-if-changed
+          flutter test
+          test/native/stack_test.sh
       - run: tool/release/version_test.sh
       - run: tool/release/verify_apk_test.sh
       - run: tool/release/battery_permission_check_test.sh

@@ -1,13 +1,16 @@
 #!/bin/bash
-# Uploads the Google Play AAB (#345, ADR 0023) to the internal testing track with the Google Play Developer API, as
+# Uploads the Google Play AAB (#345, ADR 0023) to the track GOOGLE_PLAY_TRACK (default internal; production is refused,
+# it is rolled out by hand in the Play Console) with the release status
+# GOOGLE_PLAY_RELEASE_STATUS (default completed) with the Google Play Developer API, as
 # the service account of PLAY_SERVICE_ACCOUNT_JSON_BASE64 (its JSON key, base64). curl, openssl and jq only:
 # - access token: a JWT signed RS256 with the key, exchanged at https://oauth2.googleapis.com/token, scope
 #   androidpublisher (https://developers.google.com/identity/protocols/oauth2/service-account);
 # - one edit: edits.insert -> edits.bundles.upload (uploadType=media, application/octet-stream) -> edits.tracks.update
-#   (PUT, track internal) -> edits.commit (https://developers.google.com/android-publisher/edits and api-ref/rest/v3).
+#   (PUT, the track) -> edits.commit (https://developers.google.com/android-publisher/edits and api-ref/rest/v3).
 # The API changes only an app that already has an upload from the Play Console ("You can only use this API to make
 # changes to an existing app (that has at least one APK uploaded)", edits page): the first AAB goes in by hand, from
-# the workflow's artifact. Release status `completed`; while the app is still a draft in the Console Play accepts only
+# the workflow's artifact. Status `draft` or `completed` only: `inProgress` and `halted` are staged rollouts, which need a
+# userFraction this script does not send. While the app is still a draft in the Console Play accepts only
 # `draft` releases ("Only releases with status draft may be created on draft app"), so on that refusal the edit is
 # made again with a draft release, to be rolled out by hand from the Console. Play refuses a versionCode it already has, so a
 # rerun of an uploaded version fails at the upload: that is the only duplicate guard, as on TestFlight.
@@ -21,7 +24,14 @@ name=${3:?$usage}
 : "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:?}"
 [ -f "$aab" ] || { echo "::error::Nothing to upload at $aab" >&2; exit 1; }
 package=com.cbucciarelli.postino
-track=internal
+track=${GOOGLE_PLAY_TRACK:-internal}
+status=${GOOGLE_PLAY_RELEASE_STATUS:-completed}
+case "$status" in
+  draft | completed) ;;
+  *) echo "::error::GOOGLE_PLAY_RELEASE_STATUS is '$status': only draft or completed (inProgress and halted need a userFraction, not supported)" >&2; exit 1 ;;
+esac
+[[ $track =~ ^[A-Za-z0-9:_-]+$ ]] || { echo "::error::GOOGLE_PLAY_TRACK '$track' is not a track name" >&2; exit 1; }
+[ "$track" != production ] || { echo "::error::GOOGLE_PLAY_TRACK is production: production is rolled out by hand in the Play Console" >&2; exit 1; }
 api=${PLAY_API_URL:-https://androidpublisher.googleapis.com}
 token_url=${PLAY_TOKEN_URL:-https://oauth2.googleapis.com/token}
 
@@ -83,8 +93,7 @@ publish() {
 
 # The draft refusal may come from the track update or from the commit's validation: either way the whole edit is made
 # again as a draft (the uncommitted one is dropped, so the AAB goes up a second time).
-status=completed
-if ! publish completed 2> "$dir/publish.err"; then
+if ! publish "$status" 2> "$dir/publish.err"; then
   cat "$dir/publish.err" >&2
   grep -Fq 'Only releases with status draft may be created on draft app' "$dir/publish.err" || exit 1
   drop

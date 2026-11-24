@@ -32,13 +32,13 @@ Fonte: [Getting started](https://developers.google.com/android-publisher/getting
 - [ ] Creare un **service account** e una chiave JSON. La chiave non va nel repo.
 - [ ] Play Console → **Utenti e autorizzazioni → Invita nuovi utenti**: l'email del service account, accesso **solo a Postino Mail**, permessi **Rilascia sulle tracce di test** (e *Visualizza le informazioni dell'app*). Niente produzione: la promozione la fa il titolare a mano.
 - [ ] GitHub → Settings → Secrets and variables → Actions: il segreto con il JSON (nome fissato dalla fetta 2 in `release.yml`) e la variabile `PLAY_STORE` = `true`. Senza la variabile il job `android-store` non parte.
-- [ ] Al tag successivo controllare che la run carichi l'AAB sulla traccia interna.
+- [ ] Al tag successivo controllare che la run carichi l'AAB sulla traccia della variabile `GOOGLE_PLAY_TRACK` (di default quella interna; `alpha` è il test chiuso) con lo stato di `GOOGLE_PLAY_RELEASE_STATUS` (`completed` o `draft`).
 
 ## 5. Test chiuso: 12 tester per 14 giorni
 
 Fonte: [requisiti di test per i nuovi account personali](https://support.google.com/googleplay/android-developer/answer/14151465).
 
-- [ ] **Test chiuso** (traccia Alpha o una nuova): promuovere la release dalla traccia interna; Paesi come la sezione 9 di [play-dichiarazioni.md](play-dichiarazioni.md) (Francia esclusa).
+- [ ] **Test chiuso** (traccia Alpha o una nuova): con `GOOGLE_PLAY_TRACK` = `alpha` la release arriva direttamente sul test chiuso; promuoverla dalla traccia interna serve solo con il default (`internal`); Paesi come la sezione 9 di [play-dichiarazioni.md](play-dichiarazioni.md) (Francia esclusa).
 - [ ] Tester: una lista email o un Google Group con **almeno 12 persone**, che accettano l'invito dal link di partecipazione e **restano iscritte per 14 giorni di fila**: chi esce e rientra riparte da zero. Meglio reclutarne 15 o più.
 - [ ] I tester con Gmail superano il limite di 100 utenti del progetto OAuth in modalità test? Finché #42 (verifica OAuth di Google) non è chiusa, ogni tester Gmail va aggiunto agli utenti di test della schermata di consenso, oppure prova con una casella IMAP, iCloud o Microsoft.
 - [ ] Dopo 14 giorni: **Dashboard → Richiedi l'accesso alla produzione** e rispondere alle domande sul test (come sono stati reclutati i tester, che feedback, cosa è cambiato).

@@ -6,13 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:litehtml_flutter/litehtml_flutter.dart';
 
 /// Il corpo in una `SelectionArea`, sotto un `Text` come nella Conversazione.
-Widget area(String html, FocusNode focus) => MaterialApp(
+Widget area(String html, FocusNode focus, {double width = 400}) => MaterialApp(
   home: Scaffold(
     body: SelectionArea(
       focusNode: focus,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [LitehtmlView(html: html, width: 400, errorBuilder: (_, e) => Text('ripiego $e'))],
+        children: [LitehtmlView(html: html, width: width, errorBuilder: (_, e) => Text('ripiego $e'))],
       ),
     ),
   ),
@@ -50,6 +50,21 @@ void main() {
     final focus = FocusNode();
     addTearDown(focus.dispose);
     await tester.pumpWidget(area(_html, focus));
+    focus.requestFocus();
+    await tester.pump();
+
+    await shortcut(tester, LogicalKeyboardKey.keyA);
+    await shortcut(tester, LogicalKeyboardKey.keyC);
+
+    expect(copied.last, 'uno\ndue\na\nb\nparole su piu righe');
+  }, variant: macOS);
+
+  testWidgets('dopo un cambio di larghezza si copia il contenuto nuovo', (tester) async {
+    final copied = watchClipboard(tester);
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    await tester.pumpWidget(area(_html, focus));
+    await tester.pumpWidget(area(_html, focus, width: 100));
     focus.requestFocus();
     await tester.pump();
 

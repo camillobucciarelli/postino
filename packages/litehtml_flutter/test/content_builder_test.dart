@@ -25,6 +25,15 @@ void main() {
       expect(contentOf(html).plainText, 'CIAO\na  b\nc');
     });
 
+    test('il testo tagliato da overflow non si copia né si annuncia (preheader)', () {
+      final content = contentOf(
+        '<div style="max-height: 0; overflow: hidden">nascosto <a href="https://x.it">link</a></div> '
+        '<p>visibile</p>',
+      );
+      expect(content.plainText, 'visibile');
+      expect(content.nodes.map((n) => n.label), ['visibile']);
+    });
+
     test('i frammenti hanno il box del testo disegnato', () {
       final f = contentOf('<body style="margin: 0"><p style="margin: 0; font-size: 20px">ciao</p>').fragments.single;
       expect(f.offset, Offset.zero);
@@ -53,6 +62,12 @@ void main() {
         // Senza testo né alt: il dominio.
         ('vuoto.it', false, 'https://vuoto.it/p'),
       ]);
+    });
+
+    test('un link con <br> resta un solo nodo', () {
+      final links = contentOf('<p><a href="https://x.it">uno<br>due</a></p>').links;
+      expect(links.map((l) => l.label), ['uno due']);
+      expect(links.single.rects, hasLength(2));
     });
 
     test('un link su due righe ha un box per riga', () {

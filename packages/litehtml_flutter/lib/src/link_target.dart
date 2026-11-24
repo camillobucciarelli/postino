@@ -58,6 +58,9 @@ class _LinkTargetState() extends State<LinkTarget> {
       headingLevel: level > 0 ? level : null,
       onTap: widget.onTap,
       child: Focus(
+        // Senza onTap Invio non farebbe nulla: niente fermata di Tab.
+        canRequestFocus: widget.onTap != null,
+        skipTraversal: widget.onTap == null,
         onKeyEvent: _onKey,
         onFocusChange: (_) => setState(() {}),
         child: Builder(

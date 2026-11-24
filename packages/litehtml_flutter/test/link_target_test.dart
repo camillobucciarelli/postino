@@ -5,7 +5,7 @@ import 'package:litehtml_flutter/litehtml_flutter.dart';
 
 const _ring = Color(0xFF123456);
 
-Widget view(String html, ValueChanged<String> onLinkTap) => WidgetsApp(
+Widget view(String html, ValueChanged<String>? onLinkTap) => WidgetsApp(
   color: const Color(0xFFFFFFFF),
   // Il focus parte da fuori dal corpo, come nell'app.
   builder: (context, _) => Focus(
@@ -48,6 +48,13 @@ void main() {
 
     // La cella destra («terza») sta più in alto di «seconda» ma viene dopo nel documento.
     expect(order, ['https://a.it', 'https://b.it', 'https://c.it']);
+  });
+
+  testWidgets('senza onLinkTap i link non sono fermate di Tab', (tester) async {
+    await tester.pumpWidget(view(_html, null));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(rings, findsNothing);
   });
 
   testWidgets('Invio senza un link col focus non chiama onLinkTap', (tester) async {

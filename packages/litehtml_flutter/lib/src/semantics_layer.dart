@@ -22,6 +22,8 @@ class const LitehtmlSemanticsLayer({
     child: FocusTraversalGroup(
       policy: OrderedTraversalPolicy(),
       child: Stack(
+        // L'anello di focus esce di 3 px dai box dei link.
+        clipBehavior: Clip.none,
         children: [
           for (final (i, node) in content.nodes.indexed)
             Positioned.fromRect(rect: node.bounds, child: _node(node, i.toDouble())),

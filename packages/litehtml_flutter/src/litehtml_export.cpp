@@ -24,9 +24,11 @@ public:
   exporter(document_container *container, const lh_export_callbacks &cb)
       : container_(container), cb_(cb) {}
 
-  // (x, y) = origine dei figli del padre, come in render_item::draw_children.
+  // (x, y) = origine dei figli del padre, come in render_item::draw_children;
+  // clip = area visibile lasciata dagli antenati con overflow non visible.
   // La ricorsione è limitata dalla profondità del DOM (kMaxDomDepth).
-  void walk(const std::shared_ptr<render_item> &ri, float x, float y) {
+  void walk(const std::shared_ptr<render_item> &ri, float x, float y,
+            position clip) {
     const auto &el = ri->src_el();
     // <br> e a capo di <pre>: line_box li marca "skip" come gli spazi a fine
     // riga, ma nel testo restano un a capo.
@@ -48,7 +50,9 @@ public:
     const bool block = !el->is_inline();
     if (block) cb_.separator(LH_SEP_LINE);
 
-    if (el->is_text()) text(*el, pos);
+    // Testo tagliato da overflow (es. il "preheader" con max-height:0): non
+    // si vede, quindi non si seleziona né si annuncia.
+    if (el->is_text() && visible(pos, clip)) text(*el, pos);
 
     const char *tag = el->get_tagName();
     int kind = -1;
@@ -59,7 +63,7 @@ public:
     } else if (std::strcmp(tag, "a") == 0 && el->get_attr("href")) {
       kind = LH_NODE_LINK;
       attr = el->get_attr("href");
-    } else if (std::strcmp(tag, "img") == 0) {
+    } else if (std::strcmp(tag, "img") == 0 && visible(pos, clip)) {
       kind = LH_NODE_IMAGE;
       attr = el->get_attr("alt", "");
     }
@@ -67,12 +71,21 @@ public:
       auto box = to_rect(pos);
       cb_.open(kind, level, attr, &box);
     }
-    for (const auto &child : ri->children()) walk(child, pos.x, pos.y);
+    // Come draw_children: gli elementi non inline tagliano al content box.
+    if (el->css().get_overflow() > overflow_visible &&
+        el->css().get_display() != display_inline) {
+      clip = clip.intersect(pos);
+    }
+    for (const auto &child : ri->children()) walk(child, pos.x, pos.y, clip);
     if (kind >= 0) cb_.close();
     if (block) cb_.separator(LH_SEP_LINE);
   }
 
 private:
+  static bool visible(const position &box, const position &clip) {
+    return clip.intersect(box).width > 0;
+  }
+
   void text(const element &el, position pos) {
     std::string s;
     if (el.is_white_space()) {
@@ -98,5 +111,6 @@ private:
 
 void export_content(const document::ptr &doc, const lh_export_callbacks &cb) {
   auto root = doc->root_render();
-  if (root) exporter(doc->container(), cb).walk(root, 0, 0);
+  // Nessun taglio alla radice: tutta l'altezza del documento.
+  if (root) exporter(doc->container(), cb).walk(root, 0, 0, position(-1e7f, -1e7f, 2e7f, 2e7f));
 }

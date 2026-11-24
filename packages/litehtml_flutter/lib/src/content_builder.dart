@@ -26,7 +26,8 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf) {
 
   void separator(int kind) {
     if (kind > _separator) _separator = kind;
-    if (kind == lhSepLine) {
+    // Un a capo chiude il nodo, tranne dentro un link: un link su più righe resta una sola fermata di Tab.
+    if (kind == lhSepLine && !_open.any((o) => o.kind == lhNodeLink)) {
       _flush();
     } else {
       _nodeSpace = true;

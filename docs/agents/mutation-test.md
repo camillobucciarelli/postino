@@ -26,7 +26,8 @@ Costo: circa 4 secondi a mutante su un M-series più un'esecuzione dei test per 
 
 Job `mutation` sul runner `postino-mac`. **Non** è un check richiesto.
 
-- Sulle PR: job `mutation` in `ci.yml`, dopo `check`, `android` e `apple` (`needs`), così non ritarda i check richiesti sul runner condiviso. Solo i file modificati, al più 60 mutanti, `timeout-minutes: 30`. Senza file mutabili finisce subito con successo.
-- A mano, workflow `.github/workflows/mutation.yml` (Actions › Mutation › Run workflow): `path` (default `lib/`) e `max-mutants` (default 0, tutti), `timeout-minutes: 420`.
+- Niente job sulle PR: su un solo runner ritardava i check richiesti. In locale, prima della PR, `--base=origin/main`.
+- Ogni notte, workflow `.github/workflows/mutation.yml` (`schedule`, 01:17 UTC): tutta `lib/`, al più 600 mutanti (campione deterministico, stesso campione finché il codice non cambia), ~16 secondi a mutante nel caso peggiore misurato, quindi al più ~2 ore e 40 dentro `timeout-minutes: 420`.
+- A mano, stesso workflow (Actions › Mutation › Run workflow): `path` (default `lib/`) e `max-mutants` (default 0, tutti), `timeout-minutes: 420`.
 - Report nel summary del job e nell'artifact `mutation-report`.
 - Soglia: `_threshold` in `tool/mutation/run.dart`, un solo punto per locale e CI, oggi `0` (il job fallisce solo per errori dello strumento). Una run che non misura nulla non applica la soglia.

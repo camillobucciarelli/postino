@@ -46,3 +46,11 @@ flutter analyze && flutter test
 
 - Decisioni architetturali: [`docs/adr`](docs/adr)
 - Linguaggio di dominio: [`GLOSSARY.md`](GLOSSARY.md)
+
+## Licenza
+
+GNU AGPL-3.0, con i permessi aggiuntivi per la distribuzione sugli store in [LICENSE-EXCEPTIONS.txt](LICENSE-EXCEPTIONS.txt). Vedi [LICENSE](LICENSE).
+
+## Sicurezza
+
+Le vulnerabilità si segnalano in privato: vedi [SECURITY.md](SECURITY.md).

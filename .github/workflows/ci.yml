@@ -9,29 +9,29 @@ on:
 permissions:
   contents: read
 
-# Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
+# Runner hosted (repo pubblico: minuti macOS gratis). Il Mac self-hosted resta solo per la release e la firma.
+# Una run superata di una PR non serve: la nuova la cancella.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
-    # Self-hosted Mac (come apple): Flutter dal PATH del runner, niente flutter-action.
-    runs-on: [self-hosted, macOS, ARM64]
+    # macOS: alcuni test di tool/release usano strumenti Apple (security, PlistBuddy).
+    runs-on: macos-latest
+    timeout-minutes: 30
     steps:
-      # Una PR da fork fallisce qui, prima di eseguire il suo codice: un job saltato darebbe un check richiesto verde.
-      - name: PR from this repository
-        if: github.event_name == 'pull_request'
-        env:
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          REPO: ${{ github.repository }}
-        run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
       - uses: actions/checkout@v7
-      - name: Flutter matches .fvmrc
-        run: |
-          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
-          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
-          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
       - run: flutter pub get
       - name: Codegen
         run: |
@@ -79,22 +79,21 @@ jobs:
       - run: tool/release/play_key_export_test.sh
 
   android:
-    # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
-    runs-on: [self-hosted, macOS, ARM64]
+    # JDK da setup-java; Android SDK dell'immagine hosted (ANDROID_HOME).
+    runs-on: macos-latest
+    timeout-minutes: 30
     steps:
-      # Una PR da fork fallisce qui, prima di eseguire il suo codice: un job saltato darebbe un check richiesto verde.
-      - name: PR from this repository
-        if: github.event_name == 'pull_request'
-        env:
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          REPO: ${{ github.repository }}
-        run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
       - uses: actions/checkout@v7
-      - name: Flutter matches .fvmrc
-        run: |
-          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
-          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
-          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
       - run: flutter pub get
       - name: Codegen
         run: |
@@ -115,29 +114,21 @@ jobs:
           fi
           grep -q 'A store release needs the upload key' <<< "$out" || { echo "$out"; exit 1; }
 
-  # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
-  # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
-  # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history
+  # Job `linux` e `windows` rimossi. Con il repo pubblico i minuti hosted sono gratis: il ritorno
+  # è deciso in camillobucciarelli/officina#8. I job sono nella git history
   # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
 
   apple:
-    # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the
-    # runner's PATH (~/fvm/versions/stable), no flutter-action.
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: macos-latest
+    timeout-minutes: 40
     steps:
-      # Una PR da fork fallisce qui, prima di eseguire il suo codice: un job saltato darebbe un check richiesto verde.
-      - name: PR from this repository
-        if: github.event_name == 'pull_request'
-        env:
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          REPO: ${{ github.repository }}
-        run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
       - uses: actions/checkout@v7
-      - name: Flutter matches .fvmrc
-        run: |
-          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
-          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
-          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
+      # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
       - run: flutter pub get
       - name: Codegen
         run: |

@@ -22,7 +22,7 @@ Un file, una responsabilità; SOLID; clean architecture (ADR 0006) con le regole
 
 ### Merge delle PR
 
-Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). Tutti i job di tutti i workflow (`ci.yml`, `release.yml`, `ios-version-file.yml`, `mutation.yml`, `play-key-export.yml`) girano sull'unico runner self-hosted `postino-mac` (macOS): niente runner hosted. Sulle PR `ci.yml` parte a ogni push. Una PR da fork fallisce al primo passo invece di saltare i check (un check richiesto saltato conta come verde); contro una che modifica `ci.yml` protegge solo l'impostazione del repo sui workflow delle PR da fork. Il cancello di Codex (#246) è stato rimosso: la review di Codex resta un controllo, ma non blocca più la CI. La regola è imposta anche da un ruleset su `main`.
+Una PR si unisce solo se tutti i check *richiesti* (`check`, `android`, `apple`, GitGuardian) sono verdi sull'ultimo commit (nessuno fallito o in attesa). I job di `ci.yml` girano su runner hosted `macos-latest` (repo pubblico: minuti gratis), con Flutter da `.fvmrc` via `subosito/flutter-action`; anche le PR da fork, perché il runner hosted non ha segreti né chiavi. Gli altri workflow (`release.yml`, `ios-version-file.yml`, `mutation.yml`, `play-key-export.yml`) girano sull'unico runner self-hosted `postino-mac` (macOS), che non esegue mai codice di una PR. Sulle PR `ci.yml` parte a ogni push e una run nuova cancella quella superata. Il cancello di Codex (#246) è stato rimosso: la review di Codex resta un controllo, ma non blocca più la CI. La regola è imposta anche da un ruleset su `main`.
 
 ### Review prima del push
 

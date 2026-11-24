@@ -12,6 +12,9 @@ class const ContentNode({
 
   /// Destinazione se il nodo è un link.
   final String? href,
+
+  /// Livello di pittura di un link: fra link sovrapposti risponde quello col livello più alto (a parità, l'ultimo).
+  final int layer = 0,
   final bool image = false,
 }) {
   Rect get bounds => rects.reduce((a, b) => a.expandToInclude(b));

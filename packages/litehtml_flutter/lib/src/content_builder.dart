@@ -115,11 +115,15 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
   _Node _newNode() {
     var level = 0;
     String? href;
+    var layer = 0;
     for (final o in _open.reversed) {
       if (o.kind == lhNodeHeading && level == 0) level = o.level;
-      if (o.kind == lhNodeLink) href ??= o.attr;
+      if (o.kind == lhNodeLink && href == null) {
+        href = o.attr;
+        layer = o.level;
+      }
     }
-    return _Node(level, href);
+    return _Node(level, href, layer);
   }
 
   void _flush() {
@@ -132,7 +136,7 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
     // Link senza testo né alt: il dominio, come fanno i lettori di schermo dei browser.
     if (label.isEmpty && href != null) label = _hostOf(href);
     if (label.isEmpty) return;
-    _nodes.add(ContentNode(label: label, rects: node.rects, headingLevel: node.level, href: href));
+    _nodes.add(ContentNode(label: label, rects: node.rects, headingLevel: node.level, href: href, layer: node.layer));
   }
 
   static String _collapse(String s) => s.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -157,7 +161,7 @@ class _Fragment(final StringBuffer text, final int font, var Rect rect, final St
   );
 }
 
-class _Node(final int level, final String? href) {
+class _Node(final int level, final String? href, final int layer) {
   final label = StringBuffer();
   final rects = <Rect>[];
 

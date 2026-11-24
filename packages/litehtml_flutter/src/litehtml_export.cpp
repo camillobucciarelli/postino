@@ -26,9 +26,10 @@ public:
 
   // (x, y) = origine dei figli del padre, come in render_item::draw_children;
   // clip = area visibile lasciata dagli antenati con overflow non visible.
+  // layer = livello di pittura ereditato (vedi paint_layer).
   // La ricorsione è limitata dalla profondità del DOM (kMaxDomDepth).
   void walk(const std::shared_ptr<render_item> &ri, float x, float y,
-            position clip) {
+            position clip, int layer) {
     const auto &el = ri->src_el();
     // <br> e a capo di <pre>: line_box li marca "skip" come gli spazi a fine
     // riga, ma nel testo restano un a capo.
@@ -44,6 +45,7 @@ public:
       return;
     }
     if (el->css().get_position() == element_position_fixed) x = y = 0;
+    layer = paint_layer(*el, layer);
     position pos = ri->pos();
     pos.x += x;
     pos.y += y;
@@ -87,6 +89,7 @@ public:
         box = shaped && area.width > 0 && area.height > 0
                   ? to_rect(area)
                   : lh_rect{0, 0, 0, 0};
+        level = layer;
       }
       cb_.open(kind, level, attr, &box);
     }
@@ -95,12 +98,25 @@ public:
         el->css().get_display() != display_inline) {
       clip = clip.intersect(pos);
     }
-    for (const auto &child : ri->children()) walk(child, pos.x, pos.y, clip);
+    for (const auto &child : ri->children()) {
+      walk(child, pos.x, pos.y, clip, layer);
+    }
     if (kind >= 0) cb_.close();
     if (block) cb_.separator(LH_SEP_LINE);
   }
 
 private:
+  // Livello di pittura, come l'ordine di draw_stacking_context: un elemento
+  // posizionato sta sopra il flusso normale del suo z-index, e z-index più
+  // alti sopra quelli più bassi. A parità di livello dipinge sopra chi viene
+  // dopo nel documento.
+  // ponytail: un contesto di impilamento per tutto il documento; z-index
+  // annidati in posizionati con z-index diversi si confrontano piatti.
+  static int paint_layer(const element &el, int inherited) {
+    if (!el.is_positioned()) return inherited;
+    return el.css().get_z_index() * 2 + 1;
+  }
+
   static bool visible(const position &box, const position &clip) {
     return clip.intersect(box).width > 0;
   }
@@ -131,5 +147,8 @@ private:
 void export_content(const document::ptr &doc, const lh_export_callbacks &cb) {
   auto root = doc->root_render();
   // Nessun taglio alla radice: tutta l'altezza del documento.
-  if (root) exporter(doc->container(), cb).walk(root, 0, 0, position(-1e7f, -1e7f, 2e7f, 2e7f));
+  if (root) {
+    exporter(doc->container(), cb)
+        .walk(root, 0, 0, position(-1e7f, -1e7f, 2e7f, 2e7f), 0);
+  }
 }

@@ -144,13 +144,15 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
   }
 
   /// `href` sotto [p], dai box dei link conservati con la `Picture`: testo e immagini di un link, l'area intera di
-  /// un'ancora a blocco o inline-block. Validi anche senza DOM (documento dalla cache).
+  /// un'ancora a blocco o inline-block. Validi anche senza DOM (documento dalla cache). Fra link sovrapposti vince
+  /// quello dipinto sopra: livello più alto, a parità l'ultimo nel documento.
   String? _linkAt(Offset p) {
     if (_error != null) return null;
+    ContentNode? top;
     for (final link in _content.links) {
-      if (link.rects.any((r) => r.contains(p))) return link.href;
+      if (link.rects.any((r) => r.contains(p)) && (top == null || link.layer >= top.layer)) top = link;
     }
-    return null;
+    return top?.href;
   }
 
   /// La `Picture` completa (nessuna immagine in arrivo o fallita: riaprendo si riprova) va in cache, le altre si

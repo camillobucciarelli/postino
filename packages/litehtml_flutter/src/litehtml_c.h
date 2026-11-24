@@ -73,7 +73,8 @@ typedef struct {
 #define LH_SEP_LINE 1     // confine di blocco o cella (di fila: uno solo)
 #define LH_SEP_BREAK 2    // <br>, a capo di <pre> (di fila: si contano)
 #define LH_NODE_HEADING 0 // h1..h6: level 1..6
-#define LH_NODE_LINK 1    // <a href>: attr = href; box = border box se a blocco o inline-block, vuoto se inline
+#define LH_NODE_LINK 1    // <a href>: attr = href; box = border box se a blocco o inline-block, vuoto se inline;
+                          // level = livello di pittura (2*z-index, +1 se posizionato)
 #define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente), level 1 se senza src
 
 typedef struct {

@@ -115,6 +115,33 @@ void main() {
     expect(taps, ['blocco', 'bottone']);
   });
 
+  testWidgets('fra link sovrapposti risponde quello dipinto sopra, anche dalla cache', (tester) async {
+    final taps = <String>[];
+    const html =
+        '<body style="margin:0"><div style="position:relative">'
+        '<a href="sotto" style="display:block;height:40px">sotto</a>'
+        '<a href="sopra" style="position:absolute;left:0;top:0;z-index:1;background:#fff;display:block;width:200px;'
+        'height:40px">sopra</a></div>'
+        '<div style="position:relative;height:40px"><a href="alto" style="position:absolute;top:0;z-index:2;'
+        'display:block;width:100px;height:40px">alto</a></div>'
+        '<a href="flusso" style="display:block;height:40px;margin-top:-40px">flusso</a>';
+    await tester.pumpWidget(_view(html, onLinkTap: taps.add));
+    Future<void> tap(double x, double y) => tester.tapAt(tester.getTopLeft(find.byType(LitehtmlView)) + Offset(x, y));
+    await tap(10, 20);
+    await tap(300, 20);
+    // Il posizionato con z-index 2 sta sopra il blocco che viene dopo nel documento.
+    await tap(10, 60);
+    await tap(300, 60);
+    expect(taps, ['sopra', 'sotto', 'alto', 'flusso']);
+
+    taps.clear();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(_view(html, onLinkTap: taps.add));
+    await tap(10, 20);
+    await tap(10, 60);
+    expect(taps, ['sopra', 'alto']);
+  });
+
   group('un link tagliato da overflow', () {
     Iterable<FocusNode> stops(WidgetTester tester) {
       final view = tester.element(find.byType(LitehtmlView));

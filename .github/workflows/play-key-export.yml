@@ -32,7 +32,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Upload keystore in RUNNER_TEMP
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -47,7 +47,7 @@ jobs:
           tool/release/play_key_export.sh "$ANDROID_KEYSTORE_PATH" "$ANDROID_KEY_ALIAS" "$ANDROID_CERT_SHA256" \
             "$RUNNER_TEMP/play-key-export/output.zip"
       # upload-artifact zips the folder again: the download holds output.zip, the file for the Play Console.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: play-key-export
           path: ${{ runner.temp }}/play-key-export/output.zip

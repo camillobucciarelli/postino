@@ -1,8 +1,11 @@
 name: Mutation
 
-# Mutation test a mano (docs/agents/mutation-test.md): tutta lib/ o i percorsi in `path`. Sulle PR gira il job
-# `mutation` di ci.yml, solo sui file modificati.
+# Mutation test (docs/agents/mutation-test.md), fuori dalle PR per non occupare l'unico runner: ogni notte su lib/ con
+# al più 600 mutanti, oppure a mano su tutta lib/ o sui percorsi in `path`.
 on:
+  # 01:17 UTC (02:17 o 03:17 in Italia): finisce prima del mattino anche nel caso peggiore (~16 s a mutante).
+  schedule:
+    - cron: '17 1 * * *'
   workflow_dispatch:
     inputs:
       path:
@@ -21,10 +24,10 @@ concurrency:
 jobs:
   mutation:
     runs-on: [self-hosted, macOS, ARM64]
-    # Tutta lib/ dura ~5 ore (stima in docs/agents/mutation-test.md).
+    # Tutta lib/ dura ~5 ore (stima in docs/agents/mutation-test.md); la notte, 600 mutanti, al più ~2 ore e 40.
     timeout-minutes: 420
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -33,10 +36,12 @@ jobs:
       - run: flutter pub get
       - name: Mutation test
         env:
-          TARGET: ${{ inputs.path }}
-          MAX_MUTANTS: ${{ inputs.max-mutants }}
+          # Sullo schedule gli input sono vuoti: lib/ e il tetto notturno. Niente `inputs.x || default`: lo `0` a mano
+          # deve restare 0.
+          TARGET: ${{ github.event_name == 'schedule' && 'lib/' || inputs.path }}
+          MAX_MUTANTS: ${{ github.event_name == 'schedule' && '600' || inputs.max-mutants }}
         run: dart run tool/mutation/run.dart --path="$TARGET" --max-mutants="$MAX_MUTANTS"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report

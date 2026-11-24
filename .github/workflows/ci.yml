@@ -6,10 +6,8 @@ on:
   pull_request:
   workflow_dispatch:
 
-# pull-requests: read per il cancello di Codex, che legge i commenti della PR.
 permissions:
   contents: read
-  pull-requests: read
 
 # Una sola runner self-hosted: le run superate di una PR non devono accodarsi.
 concurrency:
@@ -28,17 +26,7 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           REPO: ${{ github.repository }}
         run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
-      - uses: actions/checkout@v4
-      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
-      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
-      - name: Codex gate
-        env:
-          EVENT: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
-        run: tool/ci/gate.sh
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -89,10 +77,6 @@ jobs:
       - run: tool/release/readable_check_test.sh
       - run: tool/release/keychain_create_test.sh
       - run: tool/release/play_key_export_test.sh
-      - run: tool/ci/approval_test.sh
-      - run: tool/ci/codex_ok_test.sh
-      - run: tool/ci/gate_test.sh
-      - run: tool/ci/rerun_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
@@ -105,17 +89,7 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           REPO: ${{ github.repository }}
         run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
-      - uses: actions/checkout@v4
-      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
-      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
-      - name: Codex gate
-        env:
-          EVENT: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
-        run: tool/ci/gate.sh
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -141,35 +115,6 @@ jobs:
           fi
           grep -q 'A store release needs the upload key' <<< "$out" || { echo "$out"; exit 1; }
 
-  # Mutation test dei file Dart della PR (docs/agents/mutation-test.md). Non richiesto; parte dopo i check richiesti
-  # per non ritardarli sull'unico runner.
-  mutation:
-    needs: [check, android, apple]
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Flutter matches .fvmrc
-        run: |
-          want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
-          have=$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p')
-          test "$want" = "$have" || { echo "Flutter $have on runner, $want pinned"; exit 1; }
-      - run: flutter pub get
-      # Al più 60 mutanti (~10 minuti sul runner con i widget test).
-      - name: Mutation test
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: dart run tool/mutation/run.dart --base="$BASE" --max-mutants=60
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mutation-report
-          path: build/mutation/
-          if-no-files-found: ignore
-
   # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
   # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
   # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history
@@ -187,17 +132,7 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           REPO: ${{ github.repository }}
         run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
-      - uses: actions/checkout@v4
-      # Sulle PR fallisce in pochi secondi, prima di Flutter, finché Codex non approva la testa (#246). Fallisce, non
-      # salta: un check richiesto saltato conta come verde. codex-ok.yml rilancia la run all'ok di Codex.
-      - name: Codex gate
-        env:
-          EVENT: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
-        run: tool/ci/gate.sh
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

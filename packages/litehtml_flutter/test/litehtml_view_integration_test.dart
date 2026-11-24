@@ -142,6 +142,20 @@ void main() {
     expect(taps, ['sopra', 'alto']);
   });
 
+  for (final (z, top) in [('2147483647', 'sopra'), ('-2147483648', 'sotto')]) {
+    testWidgets('z-index $z sul link posizionato: risponde $top, senza crash', (tester) async {
+      final taps = <String>[];
+      final html =
+          '<body style="margin:0"><div style="position:relative">'
+          '<a href="sotto" style="display:block;height:40px">sotto</a>'
+          '<a href="sopra" style="position:absolute;left:0;top:0;z-index:$z;display:block;width:200px;'
+          'height:40px">sopra</a></div>';
+      await tester.pumpWidget(_view(html, onLinkTap: taps.add));
+      await tester.tapAt(tester.getTopLeft(find.byType(LitehtmlView)) + const Offset(10, 20));
+      expect(taps, [top]);
+    });
+  }
+
   group('un link tagliato da overflow', () {
     Iterable<FocusNode> stops(WidgetTester tester) {
       final view = tester.element(find.byType(LitehtmlView));

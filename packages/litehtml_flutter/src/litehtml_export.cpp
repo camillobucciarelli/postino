@@ -3,6 +3,9 @@
 
 #include <render_item.h>
 
+#include <algorithm>
+#include <climits>
+#include <cstdint>
 #include <cstring>
 #include <string>
 
@@ -114,7 +117,10 @@ private:
   // annidati in posizionati con z-index diversi si confrontano piatti.
   static int paint_layer(const element &el, int inherited) {
     if (!el.is_positioned()) return inherited;
-    return el.css().get_z_index() * 2 + 1;
+    // z-index ostili (2147483647): saturato perché 2*z+1 stia in un int.
+    constexpr int64_t kMaxZ = INT_MAX / 2 - 1;
+    const int64_t z = std::clamp<int64_t>(el.css().get_z_index(), -kMaxZ, kMaxZ);
+    return int(z * 2 + 1);
   }
 
   static bool visible(const position &box, const position &clip) {

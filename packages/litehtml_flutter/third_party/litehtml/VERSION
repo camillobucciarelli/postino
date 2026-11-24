@@ -40,5 +40,6 @@ eccezioni di litehtml: lh_create/lh_render restituiscono un errore, mai un crash
 Build (hook/build.dart): macOS (flutter test), simulatore iOS ed emulatore Android arm64 (test di
 integrazione temporaneo con i casi annidati) compilati e provati; su Android libc++ statica e libm
 esplicita, altrimenti dlopen fallisce. Windows (MSVC: /EHsc, /utf-8,
-/permissive-, strings.h di visualc) e Linux (clang/gcc) seguono il CMake di litehtml v0.10 ma non
-sono mai stati compilati: il runner CI è solo macOS.
+/permissive-, strings.h di visualc) e Linux (clang, libm) seguono il CMake di litehtml v0.10:
+compilati senza modifiche, flutter test verde e app desktop costruita nei job `windows` e `linux`
+della CI (runner GitHub-hosted, #383). stack_test.sh gira su Linux con 384 KB (ADR 0025).

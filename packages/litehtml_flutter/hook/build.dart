@@ -9,8 +9,8 @@ const _lh = 'third_party/litehtml';
 
 /// Gumbo (C) come libreria statica, litehtml + wrapper (C++) come dinamica che la linka.
 ///
-/// Provato su macOS, simulatore iOS ed emulatore Android; Windows (MSVC) e Linux seguono le opzioni del CMake di
-/// litehtml v0.10 ma non sono mai stati compilati (unico runner CI macOS, vedi `third_party/litehtml/VERSION`).
+/// Provato su macOS, simulatore iOS ed emulatore Android; Windows (MSVC) e Linux (clang) compilati e con i test del
+/// pacchetto verdi nei job `windows` e `linux` della CI, su runner GitHub-hosted (vedi `third_party/litehtml/VERSION`).
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;

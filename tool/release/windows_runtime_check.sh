@@ -16,6 +16,7 @@ fi
 
 missing=0
 checked=0
+runtime=0
 for bin in "$dir"/*.exe "$dir"/*.dll; do
   [ -e "$bin" ] || continue
   # dumpbin lists each dependency alone on an indented line; a dumpbin failure fails the check (pipefail). Options
@@ -25,11 +26,14 @@ for bin in "$dir"/*.exe "$dir"/*.dll; do
   for dep in $deps; do
     case "$(tr '[:upper:]' '[:lower:]' <<< "$dep")" in
       msvcp* | vcruntime* | concrt* | vcomp* | vccorlib*)
+        runtime=$((runtime + 1))
         test -e "$dir/$dep" || { echo "::error::${bin##*/} needs $dep, not in $dir"; missing=1; }
         ;;
     esac
   done
 done
 test "$checked" -gt 0 || { echo "::error::No .exe or .dll in $dir"; exit 1; }
-test "$missing" = 0 && echo "Visual C++ runtime bundled: $checked binaries checked"
+# The app links the runtime dynamically: none found means dumpbin's output was not read, not that none is needed.
+test "$runtime" -gt 0 || { echo "::error::No Visual C++ runtime dependency found in $dir: dumpbin output not parsed"; exit 1; }
+test "$missing" = 0 && echo "Visual C++ runtime bundled: $runtime runtime imports in $checked binaries"
 exit "$missing"

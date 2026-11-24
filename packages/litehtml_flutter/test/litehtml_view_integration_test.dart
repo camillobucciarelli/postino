@@ -315,6 +315,31 @@ void main() {
     expect(taps, ['h']);
   });
 
+  testWidgets('cache a B, aperto ad A, poi B e di nuovo A: altezza di A, anche in cache', (tester) async {
+    final long = '<p>${'parola ' * 100}</p>';
+    await tester.pumpWidget(_view(long, width: 400));
+    final atA = _height(tester);
+    await tester.pumpWidget(_view(long, width: 200));
+    final atB = _height(tester);
+    expect(atB, greaterThan(atA));
+    await tester.pumpWidget(const SizedBox());
+    LitehtmlPictureCache.shared.clear();
+
+    // La Picture di B in cache.
+    await tester.pumpWidget(_view(long, width: 200));
+    await tester.pumpWidget(const SizedBox());
+    expect(LitehtmlPictureCache.shared.length, 1);
+
+    await tester.pumpWidget(_view(long, width: 400));
+    await tester.pumpWidget(_view(long, width: 200));
+    expect(_height(tester), atB);
+    await tester.pumpWidget(_view(long, width: 400));
+    expect(_height(tester), atA);
+
+    await tester.pumpWidget(const SizedBox());
+    expect(LitehtmlPictureCache.shared.take(long, 400)?.$2, atA);
+  });
+
   testWidgets('una nuova larghezza rifà il layout senza mettere in cache', (tester) async {
     final long = '<p>${'parola ' * 100}</p>';
     await tester.pumpWidget(_view(long));

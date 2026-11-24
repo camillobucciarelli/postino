@@ -93,6 +93,8 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
       _picture = picture;
       _height = height;
       _content = content;
+      // Un DOM vivo impaginato a un'altra larghezza va rifatto al prossimo _render: [_height] ora è della cache.
+      _laidOut = null;
       return;
     }
     _render();

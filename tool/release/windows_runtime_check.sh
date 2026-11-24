@@ -7,8 +7,10 @@ set -euo pipefail
 dir=${1:?usage: windows_runtime_check.sh <dir>}
 
 if [ -z "${DUMPBIN:-}" ]; then
-  vs=$("${ProgramFiles(x86):-C:/Program Files (x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' \
+  # vswhere's fixed path on every Windows with Visual Studio; it prints a Windows path, made POSIX for the glob.
+  vs=$("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' \
     -property installationPath | tr -d '\r')
+  vs=$(cygpath -u "$vs")
   DUMPBIN=$(ls "$vs"/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe | tail -n 1)
 fi
 
@@ -16,8 +18,9 @@ missing=0
 checked=0
 for bin in "$dir"/*.exe "$dir"/*.dll; do
   [ -e "$bin" ] || continue
-  # dumpbin lists each dependency alone on an indented line; a dumpbin failure fails the check (pipefail).
-  deps=$("$DUMPBIN" /nologo /dependents "$bin" | tr -d '\r' | sed -n 's/^ *\([^ ]*\.[dD][lL][lL]\)$/\1/p')
+  # dumpbin lists each dependency alone on an indented line; a dumpbin failure fails the check (pipefail). Options
+  # with "-", not "/": Git Bash would rewrite "/nologo" as a path.
+  deps=$("$DUMPBIN" -nologo -dependents "$bin" | tr -d '\r' | sed -n 's/^ *\([^ ]*\.[dD][lL][lL]\)$/\1/p')
   checked=$((checked + 1))
   for dep in $deps; do
     case "$(tr '[:upper:]' '[:lower:]' <<< "$dep")" in

@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/painting.dart' show TextStyle;
+
 import 'font_metrics.dart';
 import 'platform_fonts.dart';
 
@@ -12,7 +14,7 @@ class FontSet() {
   /// Crea un font e restituisce `(id, metriche)`; l'id parte da 1 (0 per litehtml è "nessun font").
   (int, FontMetrics) create(String family, double size, int weight, bool italic, int decoration) {
     final families = platformFonts(family);
-    final style = ui.TextStyle(
+    final style = TextStyle(
       fontFamily: families.isEmpty ? null : families.first,
       fontFamilyFallback: families.length > 1 ? families.sublist(1) : null,
       fontSize: size,
@@ -54,9 +56,13 @@ class FontSet() {
   }
 
   double descent(int id) => _fonts[id - 1].descent;
+
+  /// Stile del font [id], per i widget che devono coincidere col testo disegnato (selezione).
+  TextStyle textStyle(int id) => _fonts[id - 1].textStyle;
 }
 
-class _Font(final ui.TextStyle style) {
+class _Font(final TextStyle textStyle) {
+  late final style = textStyle.getTextStyle();
   final widths = <String, double>{};
   double descent = 0;
 

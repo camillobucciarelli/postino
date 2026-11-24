@@ -11,7 +11,7 @@ inc="-I$lh/include -I$lh/include/litehtml -I$lh/src/gumbo/include -I$lh/src/gumb
 for f in "$lh"/src/gumbo/*.c; do
   echo "clang -std=c99 -w -O3 $inc -c $f -o $out/gumbo_$(basename "$f").o"
 done >"$out/jobs"
-for f in "$lh"/src/*.cpp "$pkg/src/litehtml_c.cpp"; do
+for f in "$lh"/src/*.cpp "$pkg"/src/*.cpp; do
   echo "clang++ -std=c++17 -w -O3 $inc -c $f -o $out/$(basename "$f").o"
 done >>"$out/jobs"
 # Una riga per compilazione, in parallelo.

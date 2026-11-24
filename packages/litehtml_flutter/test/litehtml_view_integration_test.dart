@@ -4,8 +4,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:litehtml_flutter/litehtml_flutter.dart';
-import 'package:litehtml_flutter/src/litehtml_images.dart';
-import 'package:litehtml_flutter/src/litehtml_picture_cache.dart';
 
 /// PNG rosso 20×30.
 const _png =
@@ -120,9 +118,9 @@ void main() {
 
     test('oltre il limite libera la meno recente; take la toglie', () {
       final cache = LitehtmlPictureCache(maxEntries: 2)
-        ..put('a', 1, picture(), 10)
-        ..put('b', 1, picture(), 20)
-        ..put('c', 1, picture(), 30);
+        ..put('a', 1, picture(), 10, LitehtmlContent.empty)
+        ..put('b', 1, picture(), 20, LitehtmlContent.empty)
+        ..put('c', 1, picture(), 30, LitehtmlContent.empty);
       expect(cache.length, 2);
       expect(cache.take('a', 1), isNull);
       expect(cache.take('b', 1)?.$2, 20);

@@ -1,6 +1,9 @@
 import 'dart:ui' as ui;
 
-/// `Picture` dei documenti usciti dalla vista, senza DOM nativo: rientrando in vista si ridisegnano subito e il DOM
+import 'litehtml_content.dart';
+
+/// `Picture` (con altezza e [LitehtmlContent] per selezione e Semantics) dei documenti usciti dalla vista, senza DOM
+/// nativo: rientrando in vista si ridisegnano subito e il DOM
 /// si ricrea solo quando serve (link, nuova larghezza).
 ///
 /// LRU per numero di documenti, [maxEntries] (32 di default). Lo spike #66 misurava ~0,2 MB per documento fuori vista
@@ -12,17 +15,17 @@ class LitehtmlPictureCache({final int maxEntries = 32}) {
   static final shared = LitehtmlPictureCache();
 
   /// In ordine di inserimento: la prima è la meno recente.
-  final _entries = <(String, double), (ui.Picture, double)>{};
+  final _entries = <(String, double), (ui.Picture, double, LitehtmlContent)>{};
 
   int get length => _entries.length;
 
-  /// Toglie e restituisce `(picture, altezza)` di [html] a [width]: da qui in poi la `Picture` è del chiamante.
-  (ui.Picture, double)? take(String html, double width) => _entries.remove((html, width));
+  /// Toglie e restituisce `(picture, altezza, contenuto)` di [html] a [width]: da qui in poi la `Picture` è del chiamante.
+  (ui.Picture, double, LitehtmlContent)? take(String html, double width) => _entries.remove((html, width));
 
   /// Conserva [picture] (di qui in poi della cache) e libera la meno recente oltre [maxEntries].
-  void put(String html, double width, ui.Picture picture, double height) {
+  void put(String html, double width, ui.Picture picture, double height, LitehtmlContent content) {
     _entries.remove((html, width))?.$1.dispose();
-    _entries[(html, width)] = (picture, height);
+    _entries[(html, width)] = (picture, height, content);
     while (_entries.length > maxEntries) {
       _entries.remove(_entries.keys.first)!.$1.dispose();
     }
@@ -30,7 +33,7 @@ class LitehtmlPictureCache({final int maxEntries = 32}) {
 
   /// Libera tutte le `Picture`.
   void clear() {
-    for (final (picture, _) in _entries.values) {
+    for (final (picture, _, _) in _entries.values) {
       picture.dispose();
     }
     _entries.clear();

@@ -57,7 +57,7 @@ void main(List<String> args) async {
     await CBuilder.library(
       name: 'litehtml_flutter',
       assetName: 'src/bindings.dart',
-      sources: [...sources('$_lh/src/', '.cpp'), 'src/litehtml_c.cpp'],
+      sources: [...sources('$_lh/src/', '.cpp'), 'src/litehtml_c.cpp', 'src/litehtml_export.cpp'],
       includes: [...includes, 'src'],
       language: Language.cpp,
       std: 'c++17',

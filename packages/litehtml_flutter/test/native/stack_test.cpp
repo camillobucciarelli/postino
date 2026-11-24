@@ -26,6 +26,10 @@ void draw_image(const char *, const lh_rect *, const float *) {}
 void set_clip(const lh_rect *, const float *) {}
 void del_clip() {}
 void load_image(const char *) {}
+void text(const char *, int64_t, const lh_rect *) {}
+void separator(int32_t) {}
+void open(int32_t, int32_t, const char *, const lh_rect *) {}
+void close() {}
 
 std::string repeat(const char *s, int n) {
   std::string r;
@@ -51,6 +55,8 @@ void *run(void *arg) {
     layout_ok = lh_render(doc, 600) >= 0;
     lh_draw(doc);
     lh_link_at(doc, 1, 1); // hit-test: ricorsivo sull'albero di render
+    lh_export_callbacks ex{text, separator, open, close};
+    lh_export(doc, &ex);
     lh_destroy(doc);
   }
   if (status != c->status || (doc && layout_ok != c->layout_ok)) {

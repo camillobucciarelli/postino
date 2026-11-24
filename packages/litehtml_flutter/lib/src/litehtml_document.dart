@@ -5,7 +5,9 @@ import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
 import 'canvas_commands.dart';
+import 'content_builder.dart';
 import 'font_set.dart';
+import 'litehtml_content.dart';
 import 'litehtml_exception.dart';
 
 /// Un documento litehtml vivo: DOM nativo, font e callback sono suoi (nessuno stato globale).
@@ -80,6 +82,41 @@ class LitehtmlDocument(String html, double width) {
     }
     return recorder.endRecording();
   }
+
+  /// Testo e struttura dell'ultimo layout per selezione, Semantics e tastiera.
+  ///
+  /// Il risultato è tutto in Dart e resta valido dopo [dispose]: va preso dopo ogni [layout].
+  LitehtmlContent content() {
+    final builder = ContentBuilder(_fonts.textStyle);
+    final text = NativeCallable<ExportTextFn>.isolateLocal(
+      (Pointer<Char> text, int font, Pointer<LhRect> pos) =>
+          builder.text(text.cast<Utf8>().toDartString(), font, _rectOf(pos.ref)),
+    );
+    final separator = NativeCallable<ExportSeparatorFn>.isolateLocal(builder.separator);
+    final open = NativeCallable<ExportOpenFn>.isolateLocal(
+      (int kind, int level, Pointer<Char> attr, Pointer<LhRect> box) =>
+          builder.open(kind, level, attr.cast<Utf8>().toDartString(), _rectOf(box.ref)),
+    );
+    final close = NativeCallable<ExportCloseFn>.isolateLocal(builder.close);
+    final cb = calloc<LhExportCallbacks>();
+    try {
+      cb.ref
+        ..text = text.nativeFunction
+        ..separator = separator.nativeFunction
+        ..open = open.nativeFunction
+        ..close = close.nativeFunction;
+      lhExport(_live, cb);
+    } finally {
+      calloc.free(cb);
+      text.close();
+      separator.close();
+      open.close();
+      close.close();
+    }
+    return builder.build();
+  }
+
+  static ui.Rect _rectOf(LhRect r) => ui.Rect.fromLTWH(r.x, r.y, r.w, r.h);
 
   /// Libera DOM nativo e callback; il documento non è più utilizzabile. Idempotente.
   void dispose() {

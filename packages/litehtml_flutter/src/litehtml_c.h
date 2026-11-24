@@ -64,6 +64,25 @@ typedef struct {
   void (*del_clip)(void);
 } lh_callbacks;
 
+// Contenuto per selezione e Semantics (lh_export).
+#define LH_SEP_SPACE 0    // spazio tolto a inizio o fine riga
+#define LH_SEP_LINE 1     // <br>, a capo di <pre>, confine di blocco o cella
+#define LH_NODE_HEADING 0 // h1..h6: level 1..6
+#define LH_NODE_LINK 1    // <a href>: attr = href
+#define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente)
+
+typedef struct {
+  // Una parola o una run di spazi (" ") visibile, col font e il box di
+  // draw_text.
+  void (*text)(const char *text, int64_t font, const lh_rect *pos);
+  // Separatore nel testo (LH_SEP_*); più separatori di fila si sommano.
+  void (*separator)(int32_t kind);
+  // Apre un nodo (LH_NODE_*) col suo box; close lo chiude dopo i figli.
+  void (*open)(int32_t kind, int32_t level, const char *attr,
+               const lh_rect *box);
+  void (*close)(void);
+} lh_export_callbacks;
+
 typedef struct lh_doc lh_doc;
 
 // Crea il documento (parse + stili) da `length` byte UTF-8 per una viewport
@@ -77,6 +96,9 @@ LH_EXPORT lh_doc *lh_create(const char *html, size_t length, float width,
 LH_EXPORT float lh_render(lh_doc *doc, float width);
 // Emette i comandi di disegno per tutto il documento.
 LH_EXPORT void lh_draw(lh_doc *doc);
+// Emette testo e nodi dell'ultimo layout in ordine di documento; non fa nulla
+// se il documento è fallito.
+LH_EXPORT void lh_export(lh_doc *doc, const lh_export_callbacks *cb);
 LH_EXPORT void lh_destroy(lh_doc *doc);
 
 #ifdef __cplusplus

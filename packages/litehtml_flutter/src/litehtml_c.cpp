@@ -1,5 +1,6 @@
 // document_container che inoltra misura e disegno alle callback Dart.
 #include "litehtml_c.h"
+#include "litehtml_export.h"
 
 #include <litehtml.h>
 
@@ -288,6 +289,15 @@ void lh_draw(lh_doc *d) {
   position clip(0, 0, 1e7f, 1e7f);
   try {
     d->doc->draw(0, 0, 0, &clip);
+  } catch (...) {
+    d->failed = true;
+  }
+}
+
+void lh_export(lh_doc *d, const lh_export_callbacks *cb) {
+  if (d->failed) return;
+  try {
+    export_content(d->doc, *cb);
   } catch (...) {
     d->failed = true;
   }

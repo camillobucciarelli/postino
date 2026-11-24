@@ -25,6 +25,10 @@ void draw_borders(const lh_borders *) {}
 void draw_image(const lh_rect *, const float *) {}
 void set_clip(const lh_rect *, const float *) {}
 void del_clip() {}
+void text(const char *, int64_t, const lh_rect *) {}
+void separator(int32_t) {}
+void open(int32_t, int32_t, const char *, const lh_rect *) {}
+void close() {}
 
 std::string repeat(const char *s, int n) {
   std::string r;
@@ -49,6 +53,8 @@ void *run(void *arg) {
   if (doc) {
     layout_ok = lh_render(doc, 600) >= 0;
     lh_draw(doc);
+    lh_export_callbacks ex{text, separator, open, close};
+    lh_export(doc, &ex);
     lh_destroy(doc);
   }
   if (status != c->status || (doc && layout_ok != c->layout_ok)) {

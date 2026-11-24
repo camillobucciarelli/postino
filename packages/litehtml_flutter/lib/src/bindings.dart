@@ -76,6 +76,25 @@ final class LhCallbacks extends Struct {
   external Pointer<NativeFunction<DelClipFn>> delClip;
 }
 
+typedef ExportTextFn = Void Function(Pointer<Char> text, Int64 font, Pointer<LhRect> pos);
+typedef ExportSeparatorFn = Void Function(Int32 kind);
+typedef ExportOpenFn = Void Function(Int32 kind, Int32 level, Pointer<Char> attr, Pointer<LhRect> box);
+typedef ExportCloseFn = Void Function();
+
+final class LhExportCallbacks extends Struct {
+  external Pointer<NativeFunction<ExportTextFn>> text;
+  external Pointer<NativeFunction<ExportSeparatorFn>> separator;
+  external Pointer<NativeFunction<ExportOpenFn>> open;
+  external Pointer<NativeFunction<ExportCloseFn>> close;
+}
+
+/// Separatori e nodi di [lhExport] (`LH_SEP_*`, `LH_NODE_*`).
+const lhSepSpace = 0;
+const lhSepLine = 1;
+const lhNodeHeading = 0;
+const lhNodeLink = 1;
+const lhNodeImage = 2;
+
 final class LhDoc extends Opaque {}
 
 /// Byte massimi dell'HTML accettato da [lhCreate] (`LH_MAX_HTML_BYTES`).
@@ -101,6 +120,9 @@ external double lhRender(Pointer<LhDoc> doc, double width);
 
 @Native<Void Function(Pointer<LhDoc>)>(symbol: 'lh_draw')
 external void lhDraw(Pointer<LhDoc> doc);
+
+@Native<Void Function(Pointer<LhDoc>, Pointer<LhExportCallbacks>)>(symbol: 'lh_export')
+external void lhExport(Pointer<LhDoc> doc, Pointer<LhExportCallbacks> cb);
 
 @Native<Void Function(Pointer<LhDoc>)>(symbol: 'lh_destroy')
 external void lhDestroy(Pointer<LhDoc> doc);

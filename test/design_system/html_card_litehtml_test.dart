@@ -131,8 +131,11 @@ void main() {
       debugNetworkImageHttpClientProvider = () => requests;
       try {
         await _pump(tester, card);
-        await tester.pump();
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        // Una richiesta parte entro pochi giri; senza richieste si aspetta il massimo, ~1 s.
+        for (var i = 0; i < 20 && requests.urls.isEmpty; i++) {
+          await tester.pump();
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        }
         await tester.pump();
       } finally {
         debugNetworkImageHttpClientProvider = null;

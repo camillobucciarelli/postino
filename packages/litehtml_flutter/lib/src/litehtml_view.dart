@@ -34,6 +34,9 @@ class const LitehtmlView({
   /// attivo.
   final ValueChanged<String>? onLinkTap,
 
+  /// Nome per i lettori di schermo di un `<img>` senza `src` (immagine bloccata), prima del suo `alt`.
+  final String? blockedImageLabel,
+
   /// Colore dell'anello di focus dei link: l'app passa il token del design system.
   final Color focusColor = const Color(0xFF0B57D0),
 
@@ -102,7 +105,7 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
       final old = _picture;
       _picture = doc.record();
       old?.dispose();
-      _content = doc.content();
+      _content = doc.content(blockedImageLabel: widget.blockedImageLabel);
     } on LitehtmlException catch (e) {
       // Dopo un layout fallito il documento non serve più.
       _disposeDoc();
@@ -140,27 +143,25 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
     return doc;
   }
 
-  /// `href` sotto [p]: prima i box dei link del contenuto (testo e immagini, senza DOM), poi il DOM per le aree che
-  /// quei box non coprono (padding di un bottone `inline-block`, link `display:block`), ricreandolo se la `Picture`
-  /// veniva dalla cache.
+  /// `href` sotto [p]: prima i box dei link del contenuto (testo e immagini), poi il DOM vivo per le aree che quei box
+  /// non coprono (padding di un bottone `inline-block`, link `display:block`). Con la `Picture` dalla cache il DOM non
+  /// si ricrea per un tap: impaginato prima che arrivino le immagini, avrebbe un'altra geometria di quella disegnata.
   String? _linkAt(Offset p) {
     if (_error != null) return null;
     for (final link in _content.links) {
       if (link.rects.any((r) => r.contains(p))) return link.href;
     }
-    try {
-      return _layout().linkAt(p.dx, p.dy);
-    } on LitehtmlException {
-      return null;
-    }
+    final doc = _doc;
+    return doc == null || _laidOut != widget.width ? null : doc.linkAt(p.dx, p.dy);
   }
 
-  /// La `Picture` completa (nessuna immagine in arrivo) va in cache, le altre si liberano.
+  /// La `Picture` completa (nessuna immagine in arrivo o fallita: riaprendo si riprova) va in cache, le altre si
+  /// liberano.
   void _stash(LitehtmlView of) {
     final picture = _picture;
     _picture = null;
     if (picture == null) return;
-    if ((_images?.settled ?? true) && !_stale) {
+    if ((_images?.complete ?? true) && !_stale) {
       _cache.put(of.html, of.width, picture, _height, _content);
     } else {
       picture.dispose();

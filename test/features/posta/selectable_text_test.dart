@@ -20,7 +20,6 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
-import '../../support/html_fallback_engine.dart';
 
 late Harness h;
 String? _clipboard;
@@ -117,8 +116,6 @@ bool _expanded(WidgetTester tester) =>
     tester.widget<PostinoThreadMessage>(find.byType(PostinoThreadMessage).first).expanded;
 
 void main() {
-  // Looks for the body's text and links as widgets.
-  setUp(useHtmlFallbackEngine);
   for (final (name, platform, mod) in [
     ('Ctrl', TargetPlatform.windows, _ctrl),
     ('Cmd', TargetPlatform.macOS, LogicalKeyboardKey.metaLeft),

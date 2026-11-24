@@ -1,4 +1,6 @@
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 // Immagini, link e cache delle Picture di LitehtmlView (#383, fetta 2).
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
@@ -31,22 +33,75 @@ Widget _view(
   ),
 );
 
-Future<void> _decode(WidgetTester tester) async {
-  await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
-  // L'immagine arriva in una microtask del primo pump; il nuovo disegno nel secondo.
-  await tester.pump();
-  await tester.pump();
+/// Lascia decodificare le immagini (tempo reale) finché [done], per al più ~5 s.
+Future<void> _until(WidgetTester tester, bool Function() done) async {
+  for (var i = 0; i < 100 && !done(); i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    // L'immagine arriva in una microtask del primo pump; il nuovo disegno nel secondo.
+    await tester.pump();
+    await tester.pump();
+  }
 }
+
+double _height(WidgetTester tester) => tester.getSize(find.byType(LitehtmlView)).height;
 
 void main() {
   setUp(LitehtmlPictureCache.shared.clear);
 
   testWidgets('un <img> senza dimensioni prende quelle naturali quando arriva', (tester) async {
     await tester.pumpWidget(_view('<body style="margin:0"><img style="display:block" src="$_png">'));
-    expect(tester.getSize(find.byType(LitehtmlView)).height, 0);
+    expect(_height(tester), 0);
 
-    await _decode(tester);
-    expect(tester.getSize(find.byType(LitehtmlView)).height, 30);
+    await _until(tester, () => _height(tester) == 30);
+    expect(_height(tester), 30);
+  });
+
+  testWidgets('un <img> senza src né dimensioni è un segnaposto di 24 px', (tester) async {
+    await tester.pumpWidget(_view('<body style="margin:0"><img style="display:block" alt="Logo">'));
+    expect(_height(tester), 24);
+  });
+
+  testWidgets('tornando dalla cache, un tap usa la geometria disegnata anche prima delle immagini', (tester) async {
+    final taps = <String>[];
+    const html =
+        '<body style="margin:0"><img style="display:block" src="$_png">'
+        '<a href="A" style="display:block;height:40px">A</a><a href="B" style="display:block;height:40px">B</a>';
+    await tester.pumpWidget(_view(html, onLinkTap: taps.add));
+    await _until(tester, () => _height(tester) == 110);
+    await tester.pumpWidget(const SizedBox());
+    expect(LitehtmlPictureCache.shared.length, 1);
+
+    await tester.pumpWidget(_view(html, onLinkTap: taps.add));
+    // Sul testo di A (sotto l'immagine alta 30) e sotto il testo, nel blocco di A.
+    await tester.tapAt(tester.getTopLeft(find.byType(LitehtmlView)) + const Offset(5, 35));
+    await tester.tapAt(tester.getTopLeft(find.byType(LitehtmlView)) + const Offset(5, 60));
+    expect(taps, isNot(contains('B')));
+    expect(taps.first, 'A');
+    expect(_height(tester), 110);
+  });
+
+  testWidgets('una Picture con un\'immagine fallita non va in cache: riaprendo si riprova', (tester) async {
+    var asked = 0;
+    ImageProvider? failing(String src) {
+      asked++;
+      return MemoryImage(Uint8List.fromList([1, 2, 3]));
+    }
+
+    const html = '<img src="https://x.test/a.png" width="10" height="10">';
+    await tester.pumpWidget(_view(html, images: failing));
+    await _until(tester, () => false);
+    await tester.pumpWidget(const SizedBox());
+    expect(LitehtmlPictureCache.shared.length, 0);
+
+    await tester.pumpWidget(_view(html, images: failing));
+    expect(asked, 2);
+  });
+
+  testWidgets('un nuovo html mette in cache la Picture di quello vecchio', (tester) async {
+    await tester.pumpWidget(_view('<p>uno</p>'));
+    await tester.pumpWidget(_view('<p>due</p>'));
+    expect(LitehtmlPictureCache.shared.length, 1);
+    expect(LitehtmlPictureCache.shared.take('<p>uno</p>', 400), isNotNull);
   });
 
   testWidgets('carica solo i src degli <img>, una volta ciascuno, e niente sfondi', (tester) async {
@@ -67,6 +122,7 @@ void main() {
   test('litehtmlImageProvider: data e http(s) sì, cid e relativi no', () {
     expect(litehtmlImageProvider(_png), isA<MemoryImage>());
     expect(litehtmlImageProvider('https://x.test/a.png'), isA<NetworkImage>());
+    expect((litehtmlImageProvider('//x.test/a.png')! as NetworkImage).url, 'https://x.test/a.png');
     expect(litehtmlImageProvider('cid:logo'), isNull);
     expect(litehtmlImageProvider('img/a.png'), isNull);
     expect(litehtmlImageProvider('data:image/png;base64,%%%'), isNull);
@@ -133,7 +189,7 @@ void main() {
     await tester.pumpWidget(_view(html, onLinkTap: taps.add));
     expect(LitehtmlPictureCache.shared.length, 0);
     expect(tester.getSize(find.byType(LitehtmlView)).height, 40);
-    // Il DOM si ricrea per il link.
+    // Dai box dei link conservati con la Picture, senza DOM.
     await tester.tapAt(tester.getTopLeft(find.byType(LitehtmlView)) + const Offset(5, 5));
     expect(taps, ['h']);
   });

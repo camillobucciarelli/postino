@@ -73,7 +73,7 @@ typedef struct {
 #define LH_SEP_LINE 1     // <br>, a capo di <pre>, confine di blocco o cella
 #define LH_NODE_HEADING 0 // h1..h6: level 1..6
 #define LH_NODE_LINK 1    // <a href>: attr = href
-#define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente)
+#define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente), level 1 se senza src
 
 typedef struct {
   // Una parola o una run di spazi (" ") visibile, col font e il box di

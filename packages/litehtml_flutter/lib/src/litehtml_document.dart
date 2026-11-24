@@ -109,9 +109,10 @@ class LitehtmlDocument(String html, double width) {
 
   /// Testo e struttura dell'ultimo layout per selezione, Semantics e tastiera.
   ///
-  /// Il risultato è tutto in Dart e resta valido dopo [dispose]: va preso dopo ogni [layout].
-  LitehtmlContent content() {
-    final builder = ContentBuilder(_fonts.textStyle);
+  /// Il risultato è tutto in Dart e resta valido dopo [dispose]: va preso dopo ogni [layout]. [blockedImageLabel]
+  /// apre il nome di un `<img>` senza `src` (immagine bloccata).
+  LitehtmlContent content({String? blockedImageLabel}) {
+    final builder = ContentBuilder(_fonts.textStyle, blockedImageLabel);
     final text = NativeCallable<ExportTextFn>.isolateLocal(
       (Pointer<Char> text, int font, Pointer<LhRect> pos) =>
           builder.text(text.cast<Utf8>().toDartString(), font, _rectOf(pos.ref)),

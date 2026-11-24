@@ -9,7 +9,9 @@ import 'litehtml_content.dart';
 ///
 /// Le parole contigue con lo stesso font diventano un [TextFragment]; i nodi spezzano il testo ai confini di blocco,
 /// di titolo e di link, così ogni link è un nodo a sé (attivabile) e un paragrafo non lo inghiotte.
-class ContentBuilder(final TextStyle Function(int font) _styleOf) {
+///
+/// Un'immagine senza `src` (segnaposto) ha per nome [_blockedLabel] seguito dall'`alt`, se c'è.
+class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String? _blockedLabel]) {
   final _fragments = <_Fragment>[];
   final _nodes = <ContentNode>[];
   final _open = <({int kind, int level, String attr})>[];
@@ -36,7 +38,8 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf) {
 
   void open(int kind, int level, String attr, Rect box) {
     if (kind == lhNodeImage) {
-      _image(attr, box);
+      final blocked = _blockedLabel;
+      _image(level == 1 && blocked != null ? [blocked, attr].where((l) => l.isNotEmpty).join(': ') : attr, box);
     } else {
       _flush();
     }

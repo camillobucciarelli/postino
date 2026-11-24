@@ -1,6 +1,7 @@
 import 'package:flutter/painting.dart';
 
-/// L'`ImageProvider` di un `src`: `data:` dai suoi byte, `http(s)` dalla rete; altro (`cid:`, relativi, `file:`) null.
+/// L'`ImageProvider` di un `src`: `data:` dai suoi byte, `http(s)` (e `//`, in https) dalla rete; altro (`cid:`,
+/// relativi, `file:`) null.
 ///
 /// Quali `src` arrivano qui lo decide chi prepara l'HTML (le regole sulle immagini remote stanno nell'app).
 ImageProvider? litehtmlImageProvider(String src) {
@@ -15,6 +16,7 @@ ImageProvider? litehtmlImageProvider(String src) {
     }
   }
   if (lower.startsWith('http://') || lower.startsWith('https://')) return NetworkImage(url);
+  if (lower.startsWith('//')) return NetworkImage('https:$url');
   return null;
 }
 
@@ -29,10 +31,11 @@ class LitehtmlImages(
   final _listening = <ImageStream, ImageStreamListener>{};
   final _infos = <ImageInfo>[];
   var _pending = 0;
+  var _failed = false;
   var _disposed = false;
 
-  /// Nessun caricamento in corso: la `Picture` registrata adesso è completa.
-  bool get settled => _pending == 0;
+  /// Tutte arrivate: la `Picture` registrata adesso è completa (con un errore no: va riprovata).
+  bool get complete => _pending == 0 && !_failed;
 
   /// Avvia il caricamento di [sources]; una risposta già in cache arriva a `onImage` prima del ritorno.
   void load(Iterable<String> sources) {
@@ -48,12 +51,18 @@ class LitehtmlImages(
         stream.removeListener(listener);
       }
 
-      listener = ImageStreamListener((info, _) {
-        done();
-        if (_disposed) return info.dispose();
-        _infos.add(info);
-        _onImage(src, info);
-      }, onError: (_, _) => done());
+      listener = ImageStreamListener(
+        (info, _) {
+          done();
+          if (_disposed) return info.dispose();
+          _infos.add(info);
+          _onImage(src, info);
+        },
+        onError: (_, _) {
+          _failed = true;
+          done();
+        },
+      );
       _listening[stream] = listener;
       stream.addListener(listener);
     }

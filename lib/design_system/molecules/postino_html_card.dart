@@ -42,8 +42,8 @@ class const PostinoHtmlCard({
 
   static final _paper = PostinoTheme.light();
 
-  /// Tests that look for the body's text as widgets: litehtml paints it (#383; Semantics and selection come with
-  /// its fetta 3). True renders with the fallback engine.
+  /// Tests that look for the body's text as `Text`/`RichText` widgets or tap it by text: litehtml paints it and
+  /// exposes it only through Semantics and its selection layer. True renders with the fallback engine.
   @visibleForTesting
   static bool debugFallbackEngine = false;
 
@@ -64,10 +64,13 @@ class const PostinoHtmlCard({
             debugFallbackEngine || !width.isFinite || width <= 0 || MediaQuery.textScalerOf(context).scale(1) != 1
             ? fallback(context)
             : LitehtmlView(
-                html: '${_baseCss(style, c.brand)}$html',
+                // The image rule is part of the document: litehtml caches Pictures by HTML, and one drawn with
+                // remote images blocked must not come back once they are allowed (or the other way round).
+                html: '${_baseCss(style, c.brand)}${allowRemoteImages ? '<!-- remote images -->' : ''}$html',
                 width: width,
                 onLinkTap: onTapUrl,
                 focusColor: c.focusRing,
+                blockedImageLabel: blockedImageLabel,
                 imageProvider: (src) => _image(src, allowRemoteImages),
                 errorBuilder: (context, _) => fallback(context),
               );
@@ -153,11 +156,12 @@ class _Factory(final bool _allowRemote) extends WidgetFactory {
 
 /// The image for an engine's `src`, checked again here and not only by `prepareHtml`, so a parser difference
 /// between the cleaner and an engine can never load a blocked tracker (ADR 0007): `data:` images always, http(s)
-/// only when [allowRemote], nothing else (`cid:` has no content to show).
+/// and `//` (remote for `prepareHtml` too) only when [allowRemote], nothing else (`cid:` has no content to show).
 ImageProvider? _image(String src, bool allowRemote) {
   final url = src.trim().toLowerCase();
   final ok =
-      url.startsWith('data:image/') || (allowRemote && (url.startsWith('https://') || url.startsWith('http://')));
+      url.startsWith('data:image/') ||
+      (allowRemote && (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('//')));
   return ok ? litehtmlImageProvider(src) : null;
 }
 

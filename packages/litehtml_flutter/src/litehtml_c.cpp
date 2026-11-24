@@ -15,6 +15,8 @@ using namespace litehtml;
 namespace {
 
 constexpr float kViewportHeight = 800;
+// Lato del segnaposto di un <img> senza src né dimensioni.
+constexpr float kPlaceholder = 24;
 
 // Chrome rende <center> e align=center con `-webkit-center`: centra anche i
 // blocchi figli (tabelle-bottone di MJML) e una <table> non lo eredita (torna a
@@ -110,7 +112,9 @@ public:
 
   // Dimensione "intrinseca" di un <img> = attributi width/height se entrambi
   // numerici, come il rapporto d'aspetto che il browser ricava dagli attributi
-  // prima del caricamento (serve con `height:auto`). Altrimenti 0x0.
+  // prima del caricamento (serve con `height:auto`). Altrimenti 0x0; un <img>
+  // senza src (bloccato, cid:) senza dimensioni è un segnaposto grigio di
+  // kPlaceholder px, come l'icona del motore di ripiego.
   // ponytail: chiave = src; due <img> con lo stesso src e attributi diversi
   // prendono il primo.
   void collect_images(const element::ptr &el) {
@@ -118,8 +122,10 @@ public:
       float w = std::atof(el->get_attr("width", "0"));
       float h = std::atof(el->get_attr("height", "0"));
       std::string src = el->get_attr("src", "");
+      bool declared = w > 0 && h > 0;
+      float fallback = src.empty() ? kPlaceholder : 0;
       auto added = img_sizes_.emplace(
-          src, size(w > 0 && h > 0 ? w : 0, w > 0 && h > 0 ? h : 0));
+          src, size(declared ? w : fallback, declared ? h : fallback));
       if (added.second && !src.empty()) cb_.load_image(src.c_str());
     }
     for (auto &child : el->children()) collect_images(child);

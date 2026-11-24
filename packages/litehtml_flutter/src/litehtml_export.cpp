@@ -66,6 +66,8 @@ public:
     } else if (std::strcmp(tag, "img") == 0 && visible(pos, clip)) {
       kind = LH_NODE_IMAGE;
       attr = el->get_attr("alt", "");
+      // 1: senza src (bloccata o cid:), il segnaposto.
+      level = *el->get_attr("src", "") ? 0 : 1;
     }
     if (kind >= 0) {
       auto box = to_rect(pos);

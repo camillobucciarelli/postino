@@ -115,6 +115,51 @@ void main() {
     expect(taps, ['blocco', 'bottone']);
   });
 
+  group('un link tagliato da overflow', () {
+    Iterable<FocusNode> stops(WidgetTester tester) {
+      final view = tester.element(find.byType(LitehtmlView));
+      bool inView(FocusNode n) {
+        var found = false;
+        n.context?.visitAncestorElements((e) => !(found = e == view));
+        return found;
+      }
+
+      return FocusManager.instance.rootScope.traversalDescendants.where(inView);
+    }
+
+    testWidgets('nascosto: il tap sul testo che segue non lo apre e Tab non ci si ferma', (tester) async {
+      final taps = <String>[];
+      await tester.pumpWidget(
+        _view(
+          '<div style="max-height:0;overflow:hidden"><a href="https://hidden.test" style="display:block;height:40px">'
+          'hidden</a></div><p>visibile</p>',
+          onLinkTap: taps.add,
+        ),
+      );
+      final origin = tester.getTopLeft(find.byType(LitehtmlView));
+      await tester.tapAt(origin + const Offset(20, 20));
+      await tester.tapAt(origin + const Offset(300, 30));
+      expect(taps, isEmpty);
+      expect(stops(tester), isEmpty);
+    });
+
+    testWidgets('in parte: risponde solo la parte visibile', (tester) async {
+      final taps = <String>[];
+      await tester.pumpWidget(
+        _view(
+          '<body style="margin:0"><div style="height:20px;overflow:hidden">'
+          '<a href="p" style="display:block;height:40px">x</a></div><p style="margin:0">dopo</p>',
+          onLinkTap: taps.add,
+        ),
+      );
+      final origin = tester.getTopLeft(find.byType(LitehtmlView));
+      await tester.tapAt(origin + const Offset(300, 10));
+      await tester.tapAt(origin + const Offset(300, 30));
+      expect(taps, ['p']);
+      expect(stops(tester), hasLength(1));
+    });
+  });
+
   testWidgets('una Picture con un\'immagine fallita non va in cache: riaprendo si riprova', (tester) async {
     var asked = 0;
     ImageProvider? failing(String src) {

@@ -86,6 +86,21 @@ void main() {
   });
 
   group('area dei link', () {
+    test('l\'area di un\'ancora si taglia al clip degli antenati; tutta nascosta, nessun nodo', () {
+      final hidden = contentOf(
+        '<div style="max-height:0;overflow:hidden"><a href="https://hidden.test" style="display:block;height:40px">'
+        'hidden</a></div><p>visibile</p>',
+      );
+      expect(hidden.links, isEmpty);
+      expect(hidden.nodes.map((n) => n.label), ['visibile']);
+
+      final partial = contentOf(
+        '<body style="margin:0"><div style="height:20px;overflow:hidden">'
+        '<a href="p" style="display:block;height:40px">x</a></div>',
+      );
+      expect(partial.links.single.rects.single, const Rect.fromLTWH(0, 0, 400, 20));
+    });
+
     test('un\'ancora a blocco o inline-block copre tutto il suo box, una inline solo il testo', () {
       final links = contentOf(
         '<body style="margin: 0; font-size: 10px">'

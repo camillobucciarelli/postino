@@ -75,10 +75,16 @@ public:
         // Area cliccabile di un'ancora a blocco o inline-block: tutto il
         // border box (padding di un bottone, spazio vuoto di un blocco). Un
         // <a> inline ha solo i box del suo testo e delle sue immagini.
+        // Solo la parte che si vede: un'ancora dentro un antenato con
+        // overflow (preheader con max-height:0) non deve coprire il testo
+        // che segue né diventare una fermata di Tab invisibile.
         position area = pos;
         area += ri->get_paddings();
         area += ri->get_borders();
-        box = block || el->css().get_display() == display_inline_block
+        area = clip.intersect(area);
+        const bool shaped =
+            block || el->css().get_display() == display_inline_block;
+        box = shaped && area.width > 0 && area.height > 0
                   ? to_rect(area)
                   : lh_rect{0, 0, 0, 0};
       }

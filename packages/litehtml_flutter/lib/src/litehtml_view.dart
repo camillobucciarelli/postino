@@ -140,9 +140,14 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
     return doc;
   }
 
-  /// `href` sotto [p], ricreando il DOM se la `Picture` veniva dalla cache.
+  /// `href` sotto [p]: prima i box dei link del contenuto (testo e immagini, senza DOM), poi il DOM per le aree che
+  /// quei box non coprono (padding di un bottone `inline-block`, link `display:block`), ricreandolo se la `Picture`
+  /// veniva dalla cache.
   String? _linkAt(Offset p) {
     if (_error != null) return null;
+    for (final link in _content.links) {
+      if (link.rects.any((r) => r.contains(p))) return link.href;
+    }
     try {
       return _layout().linkAt(p.dx, p.dy);
     } on LitehtmlException {

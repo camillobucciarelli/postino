@@ -1,6 +1,8 @@
 // Immagini, link e cache delle Picture di LitehtmlView (#383, fetta 2).
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:litehtml_flutter/litehtml_flutter.dart';
@@ -83,6 +85,42 @@ void main() {
     await tester.tapAt(origin + const Offset(10, 10));
     await tester.tapAt(origin + const Offset(10, 60));
     expect(taps, ['https://x.test/1']);
+  });
+
+  testWidgets('un link inline nel testo, anche su un\'immagine, risponde al tap', (tester) async {
+    final taps = <String>[];
+    await tester.pumpWidget(
+      _view(
+        '<body style="margin:0;font-size:20px"><p style="margin:0">testo <a href="inline">link</a> fine</p> '
+        '<a href="img"><img src="$_png" width="20" height="30"></a>',
+        onLinkTap: taps.add,
+      ),
+    );
+    final origin = tester.getTopLeft(find.byType(LitehtmlView));
+    // Ahem: 20 px per carattere; «testo » occupa 0..120, «link» 120..200.
+    await tester.tapAt(origin + const Offset(150, 10));
+    await tester.tapAt(origin + const Offset(50, 10));
+    await tester.tapAt(origin + const Offset(10, 40));
+    expect(taps, ['inline', 'img']);
+  });
+
+  testWidgets('sopra un link il cursore è la mano, fuori no', (tester) async {
+    await tester.pumpWidget(
+      _view(
+        '<body style="margin:0;font-size:20px"><p style="margin:0">testo <a href="x">link</a> fine</p>',
+        onLinkTap: (_) {},
+      ),
+    );
+    final origin = tester.getTopLeft(find.byType(LitehtmlView));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: origin + const Offset(50, 10));
+    await mouse.moveTo(origin + const Offset(150, 10));
+    await tester.pump();
+    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.click);
+    await mouse.moveTo(origin + const Offset(50, 10));
+    await tester.pump();
+    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), isNot(SystemMouseCursors.click));
+    await mouse.removePointer();
   });
 
   testWidgets('fuori dall\'albero la Picture va in cache e rientrando la vista la riprende', (tester) async {

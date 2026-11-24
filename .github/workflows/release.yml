@@ -39,7 +39,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: version
         name: Release ref (tag or main) and version from pubspec.yaml
         run: |
@@ -74,7 +74,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: tool/release/guide_check.sh
       - run: tool/release/download_check.sh
       - name: Upload the guide and the website's static files to R2
@@ -141,7 +141,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: tool/release/download_check.sh
       - name: Upload the download page to R2
         env:
@@ -203,7 +203,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # A tag release is final (immutable cache, appcast signature): a rerun never overwrites it, before any build.
       - name: No tag release of this version yet
         if: github.event_name == 'push'
@@ -347,7 +347,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -435,7 +435,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # As for the DMG: a tag release is never overwritten.
       - name: No tag release of this version yet
         if: github.event_name == 'push'
@@ -539,7 +539,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)
@@ -569,7 +569,7 @@ jobs:
       - run: tool/release/verify_aab.sh "$AAB" "$ANDROID_CERT_SHA256" "$(tool/release/build_number.sh "$VERSION")" "$VERSION"
       # Kept with the run for a week: the first upload of the app goes in by hand from the Play Console (the API
       # changes only an app that already has one), and so does any upload the API refuses.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Postino-${{ needs.version.outputs.version }}-play.aab
           path: ${{ env.AAB }}
@@ -613,7 +613,7 @@ jobs:
             test -n "${!name}" || { echo "::error::Secret $name is not set"; missing=1; }
           done
           exit "$missing"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Flutter matches .fvmrc
         run: |
           want=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)

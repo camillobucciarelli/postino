@@ -1,9 +1,11 @@
 import 'dart:ui' as ui;
 
+import 'font_metrics.dart';
+
 /// Font di un documento: litehtml li chiede con `create_font` e li cita per id.
 ///
 /// La misura usa `ui.Paragraph`, lo stesso motore del testo dell'app.
-class FontSet {
+class FontSet() {
   final _fonts = <_Font>[];
 
   /// Crea un font e restituisce `(id, metriche)`; l'id parte da 1 (0 per litehtml è "nessun font").
@@ -37,15 +39,10 @@ class FontSet {
     return (_fonts.length, metrics);
   }
 
-  /// Stringhe misurate con un `Paragraph` (mancate della cache).
-  int measured = 0;
-
+  /// Larghezza di [text] nel font [id], con una cache per font (litehtml misura spesso le stesse parole).
   double width(String text, int id) {
     final font = _fonts[id - 1];
-    return font.widths[text] ??= () {
-      measured++;
-      return font.paragraph(text).maxIntrinsicWidth;
-    }();
+    return font.widths[text] ??= font.paragraph(text).maxIntrinsicWidth;
   }
 
   /// Paragrafo pronto da dipingere e distanza dal suo top alla baseline.
@@ -70,26 +67,7 @@ class FontSet {
   }
 }
 
-class FontMetrics {
-  const FontMetrics({
-    required this.ascent,
-    required this.descent,
-    required this.height,
-    required this.xHeight,
-    required this.chWidth,
-  });
-
-  final double ascent;
-  final double descent;
-  final double height;
-  final double xHeight;
-  final double chWidth;
-}
-
-class _Font {
-  _Font(this.style);
-
-  final ui.TextStyle style;
+class _Font(final ui.TextStyle style) {
   final widths = <String, double>{};
   double descent = 0;
 

@@ -646,7 +646,20 @@ typedef struct GumboInternalOutput {
    * reported so we can work out something appropriate for your use-case.
    */
   GumboVector /* GumboError */ errors;
+
+  /**
+   * PATCH postino: true se il parse si è fermato perché gli elementi aperti
+   * hanno superato kGumboMaxOpenElements (il resto dell'input è ignorato).
+   */
+  bool too_deep;
 } GumboOutput;
+
+/**
+ * PATCH postino: tetto agli elementi aperti (HTML non fidato). Molte regole
+ * dell'albero scorrono lo stack degli elementi aperti a ogni token: senza
+ * tetto il parse di HTML annidato a 100k livelli è quadratico (~6 s).
+ */
+#define kGumboMaxOpenElements 512
 
 /**
  * Parses a buffer of UTF8 text into an GumboNode parse tree.  The buffer must

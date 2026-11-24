@@ -236,25 +236,40 @@ private:
 struct lh_doc {
   container cont;
   document::ptr doc;
+  // Dopo un'eccezione l'albero di render può essere a metà: non si usa più.
+  bool failed = false;
 };
 
-lh_doc *lh_create(const char *html, float width, const lh_callbacks *cb) {
+lh_doc *lh_create(const char *html, size_t length, float width,
+                  const lh_callbacks *cb, int32_t *status) {
+  if (length > LH_MAX_HTML_BYTES) {
+    *status = LH_TOO_LARGE;
+    return nullptr;
+  }
   auto *d = new lh_doc{container(*cb, width), nullptr};
   try {
     d->doc = document::createFromString(
-        estring(html, encoding::utf_8), &d->cont, master_css, kUserCss);
+        estring(std::string(html, length), encoding::utf_8), &d->cont,
+        master_css, kUserCss);
     if (d->doc) d->cont.collect_images(d->doc->root());
+  } catch (const html_too_deep &) {
+    delete d;
+    *status = LH_TOO_DEEP;
+    return nullptr;
   } catch (...) {
     d->doc = nullptr;
   }
   if (!d->doc) {
     delete d;
+    *status = LH_FAILED;
     return nullptr;
   }
+  *status = LH_OK;
   return d;
 }
 
 float lh_render(lh_doc *d, float width) {
+  if (d->failed) return -1;
   try {
     if (d->cont.width != width) {
       d->cont.width = width;
@@ -263,15 +278,18 @@ float lh_render(lh_doc *d, float width) {
     d->doc->render(width);
     return d->doc->height();
   } catch (...) {
+    d->failed = true;
     return -1;
   }
 }
 
 void lh_draw(lh_doc *d) {
+  if (d->failed) return;
   position clip(0, 0, 1e7f, 1e7f);
   try {
     d->doc->draw(0, 0, 0, &clip);
   } catch (...) {
+    d->failed = true;
   }
 }
 

@@ -59,8 +59,11 @@ static void* malloc_wrapper(void* unused, size_t size) { return malloc(size); }
 
 static void free_wrapper(void* unused, void* ptr) { free(ptr); }
 
+// PATCH postino: max_errors 0 invece di -1 (illimitati). Ogni errore di parse copiava
+// l'intero stack degli elementi aperti: con HTML annidato a decine di migliaia di
+// livelli il costo era quadratico (100k <div> ~40 s). litehtml non legge gli errori.
 const GumboOptions kGumboDefaultOptions = {&malloc_wrapper, &free_wrapper, NULL,
-    8, false, -1, GUMBO_TAG_LAST, GUMBO_NAMESPACE_HTML};
+    8, false, 0, GUMBO_TAG_LAST, GUMBO_NAMESPACE_HTML};
 
 static const GumboStringPiece kDoctypeHtml = GUMBO_STRING("html");
 static const GumboStringPiece kPublicIdHtml4_0 =
@@ -467,6 +470,7 @@ static GumboNode* new_document_node(GumboParser* parser) {
 static void output_init(GumboParser* parser) {
   GumboOutput* output = gumbo_parser_allocate(parser, sizeof(GumboOutput));
   output->root = NULL;
+  output->too_deep = false;
   output->document = new_document_node(parser);
   parser->_output = output;
   gumbo_init_errors(parser);
@@ -2348,37 +2352,46 @@ static bool handle_after_head(GumboParser* parser, GumboToken* token) {
   }
 }
 
-static void destroy_node(GumboParser* parser, GumboNode* node) {
-  switch (node->type) {
-    case GUMBO_NODE_DOCUMENT: {
-      GumboDocument* doc = &node->v.document;
-      for (unsigned int i = 0; i < doc->children.length; ++i) {
-        destroy_node(parser, doc->children.data[i]);
-      }
-      gumbo_parser_deallocate(parser, (void*) doc->children.data);
-      gumbo_parser_deallocate(parser, (void*) doc->name);
-      gumbo_parser_deallocate(parser, (void*) doc->public_identifier);
-      gumbo_parser_deallocate(parser, (void*) doc->system_identifier);
-    } break;
-    case GUMBO_NODE_TEMPLATE:
-    case GUMBO_NODE_ELEMENT:
-      for (unsigned int i = 0; i < node->v.element.attributes.length; ++i) {
-        gumbo_destroy_attribute(parser, node->v.element.attributes.data[i]);
-      }
-      gumbo_parser_deallocate(parser, node->v.element.attributes.data);
-      for (unsigned int i = 0; i < node->v.element.children.length; ++i) {
-        destroy_node(parser, node->v.element.children.data[i]);
-      }
-      gumbo_parser_deallocate(parser, node->v.element.children.data);
-      break;
-    case GUMBO_NODE_TEXT:
-    case GUMBO_NODE_CDATA:
-    case GUMBO_NODE_COMMENT:
-    case GUMBO_NODE_WHITESPACE:
-      gumbo_parser_deallocate(parser, (void*) node->v.text.text);
-      break;
+// PATCH postino: distruzione iterativa con uno stack esplicito (era ricorsiva: HTML
+// annidato a migliaia di livelli esauriva lo stack del thread).
+static void destroy_node(GumboParser* parser, GumboNode* root) {
+  GumboVector pending;
+  gumbo_vector_init(parser, 16, &pending);
+  gumbo_vector_add(parser, (void*) root, &pending);
+  while (pending.length > 0) {
+    GumboNode* node = gumbo_vector_pop(parser, &pending);
+    switch (node->type) {
+      case GUMBO_NODE_DOCUMENT: {
+        GumboDocument* doc = &node->v.document;
+        for (unsigned int i = 0; i < doc->children.length; ++i) {
+          gumbo_vector_add(parser, doc->children.data[i], &pending);
+        }
+        gumbo_parser_deallocate(parser, (void*) doc->children.data);
+        gumbo_parser_deallocate(parser, (void*) doc->name);
+        gumbo_parser_deallocate(parser, (void*) doc->public_identifier);
+        gumbo_parser_deallocate(parser, (void*) doc->system_identifier);
+      } break;
+      case GUMBO_NODE_TEMPLATE:
+      case GUMBO_NODE_ELEMENT:
+        for (unsigned int i = 0; i < node->v.element.attributes.length; ++i) {
+          gumbo_destroy_attribute(parser, node->v.element.attributes.data[i]);
+        }
+        gumbo_parser_deallocate(parser, node->v.element.attributes.data);
+        for (unsigned int i = 0; i < node->v.element.children.length; ++i) {
+          gumbo_vector_add(parser, node->v.element.children.data[i], &pending);
+        }
+        gumbo_parser_deallocate(parser, node->v.element.children.data);
+        break;
+      case GUMBO_NODE_TEXT:
+      case GUMBO_NODE_CDATA:
+      case GUMBO_NODE_COMMENT:
+      case GUMBO_NODE_WHITESPACE:
+        gumbo_parser_deallocate(parser, (void*) node->v.text.text);
+        break;
+    }
+    gumbo_parser_deallocate(parser, node);
   }
-  gumbo_parser_deallocate(parser, node);
+  gumbo_vector_destroy(parser, &pending);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inbody
@@ -4068,6 +4081,14 @@ GumboOutput* gumbo_parse_with_options(
 
     ++loop_count;
     assert(loop_count < 1000000000);
+
+    // PATCH postino: tetto agli elementi aperti. Ci si ferma solo tra un token e
+    // l'altro (mai con un token da rielaborare, che possiede ancora i suoi dati).
+    if (state->_open_elements.length > kGumboMaxOpenElements &&
+        !state->_reprocess_current_token) {
+      parser._output->too_deep = true;
+      break;
+    }
 
   } while ((token.type != GUMBO_TOKEN_EOF || state->_reprocess_current_token) &&
            !(options->stop_on_first_error && has_error));

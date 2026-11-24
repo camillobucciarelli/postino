@@ -5,10 +5,7 @@ import 'bindings.dart';
 import 'font_set.dart';
 
 /// Esegue sul `Canvas` corrente i comandi di disegno emessi da litehtml.
-class CanvasCommands {
-  CanvasCommands(this._fonts);
-
-  final FontSet _fonts;
+class CanvasCommands(final FontSet _fonts) {
   ui.Canvas? canvas;
 
   static const _imageGrey = ui.Color(0xFFD0D0D0);
@@ -26,8 +23,9 @@ class CanvasCommands {
     final paint = ui.Paint()..color = ui.Color(color);
     final needsClip = !_contains(clipRect, r);
     if (needsClip) {
-      c.save();
-      c.clipRect(clipRect);
+      c
+        ..save()
+        ..clipRect(clipRect);
     }
     if (_isZero(radii)) {
       c.drawRect(r, paint);

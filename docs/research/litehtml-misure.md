@@ -1,6 +1,6 @@
 # Misure del prototipo litehtml (#66)
 
-Registrate il 2026-11-23 con l'harness `example/` (build release, macOS 27.2.1, Apple M5 Pro, 24 GB, Flutter 3.50.0, Impeller/Metal). Numeri reali, copiati da `measurements-release.md` scritto dall'harness.
+Registrate il 2026-11-23 con l'harness `packages/litehtml_flutter/example/` del branch `spike/66-litehtml-macos` (tolto dal pacchetto di produzione in #383, insieme ai contatori di callback che usava) (build release, macOS 27.2.1, Apple M5 Pro, 24 GB, Flutter 3.50.0, Impeller/Metal). Numeri reali, copiati da `measurements-release.md` scritto dall'harness.
 
 ## Email di prova
 
@@ -13,7 +13,7 @@ Le newsletter citate dalla issue (Zalando, ProntoPro) non hanno riferimenti nel 
 
 ## Come si riproduce
 
-Da `packages/litehtml_flutter/example`:
+Dal branch `spike/66-litehtml-macos`, in `packages/litehtml_flutter/example`:
 
 ```sh
 fvm flutter build macos --release \

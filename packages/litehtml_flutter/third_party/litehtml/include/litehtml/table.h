@@ -2,6 +2,7 @@
 #define LH_TABLE_H
 
 #include <vector>
+#include <exception>
 #include <memory>
 #include "css_length.h"
 #include "types.h"
@@ -194,6 +195,16 @@ namespace litehtml
 		}
 	};
 
+	// PATCH postino: budget di celle delle tabelle per documento (HTML non fidato).
+	// document ricarica table_cells_left a kMaxTableCells prima di costruire l'albero
+	// di render; se finisce, la costruzione si interrompe con table_too_large.
+	const long kMaxTableCells = 500000;
+	extern thread_local long table_cells_left;
+	struct table_too_large : std::exception
+	{
+		const char* what() const noexcept override { return "litehtml: too many table cells"; }
+	};
+
 	class table_grid
 	{
 	public:
@@ -202,6 +213,8 @@ namespace litehtml
 		int						m_rows_count;
 		int						m_cols_count;
 		rows					m_cells;
+		// PATCH postino: per colonna, ultima riga coperta da un rowspan (-1 nessuna).
+		std::vector<int>		m_rowspan_end;
 		table_column::vector	m_columns;
 		table_row::vector		m_rows;
 		std::vector<std::shared_ptr<render_item>> m_captions;
@@ -220,6 +233,8 @@ namespace litehtml
 		void			clear();
 		void			begin_row(const std::shared_ptr<render_item>& row);
 		void			add_cell(const std::shared_ptr<render_item>& el);
+		// PATCH postino: aggiunge una cella consumando il budget table_cells_left.
+		static void		push_cell(std::vector<table_cell>& row, const table_cell& cell);
 		bool			is_rowspanned(int r, int c);
 		void			finish();
 		table_cell*		cell(int t_col, int t_row);

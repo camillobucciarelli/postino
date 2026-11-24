@@ -1,4 +1,6 @@
 /// Binding FFI scritti a mano per `src/litehtml_c.h` (asset nativo da `hook/build.dart`).
+// Le struct FFI non possono avere costruttori.
+// ignore_for_file: use_primary_constructors
 @DefaultAsset('package:litehtml_flutter/src/bindings.dart')
 library;
 
@@ -76,8 +78,23 @@ final class LhCallbacks extends Struct {
 
 final class LhDoc extends Opaque {}
 
-@Native<Pointer<LhDoc> Function(Pointer<Char>, Float, Pointer<LhCallbacks>)>(symbol: 'lh_create')
-external Pointer<LhDoc> lhCreate(Pointer<Char> html, double width, Pointer<LhCallbacks> cb);
+/// Byte massimi dell'HTML accettato da [lhCreate] (`LH_MAX_HTML_BYTES`).
+const lhMaxHtmlBytes = 4 * 1024 * 1024;
+
+/// Esiti di [lhCreate] (`LH_OK`, `LH_TOO_LARGE`, `LH_FAILED`, `LH_TOO_DEEP`).
+const lhOk = 0;
+const lhTooLarge = 1;
+const lhFailed = 2;
+const lhTooDeep = 3;
+
+@Native<Pointer<LhDoc> Function(Pointer<Char>, Size, Float, Pointer<LhCallbacks>, Pointer<Int32>)>(symbol: 'lh_create')
+external Pointer<LhDoc> lhCreate(
+  Pointer<Char> html,
+  int length,
+  double width,
+  Pointer<LhCallbacks> cb,
+  Pointer<Int32> status,
+);
 
 @Native<Float Function(Pointer<LhDoc>, Float)>(symbol: 'lh_render')
 external double lhRender(Pointer<LhDoc> doc, double width);

@@ -159,7 +159,7 @@ Il requisito «tutto il testo selezionabile e copiabile» è coperto per il test
 
 ## 8. Ricostruzione (2026-11-23)
 
-Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo spike 1 è stato ricostruito da zero sul branch `spike/66-litehtml-macos`, questa volta pushato su `origin`, seguendo questo rapporto. Memoria (spike 2) e accessibilità/selezione (spike 3) non sono stati ricostruiti. Le misure sono in `packages/litehtml_flutter/MEASUREMENTS.md`; i PNG stanno fuori dal repo in `~/Downloads/litehtml-spike-66/`.
+Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo spike 1 è stato ricostruito da zero sul branch `spike/66-litehtml-macos`, questa volta pushato su `origin`, seguendo questo rapporto. Memoria (spike 2) e accessibilità/selezione (spike 3) non sono stati ricostruiti. Le misure sono in `docs/research/litehtml-misure.md` (era `packages/litehtml_flutter/MEASUREMENTS.md` sul branch dello spike); i PNG stanno fuori dal repo in `~/Downloads/litehtml-spike-66/`.
 
 **Email di prova [F]**: le newsletter Zalando e ProntoPro della issue non hanno riferimenti nel repo né nei rapporti (HTML personali, mai salvati). Al loro posto due newsletter pubbliche (MIT) e complesse: `colorlib-1` (ColorlibHQ/email-templates n. 1, generata con MJML: 116 tabelle, 26 `bgcolor`, colonne, hero con `height`) e `cerberus-hybrid` (TedGoas/Cerberus: colonne ibride, `max-width` su tabelle `width=100%`, spaziatori `height=40`, `dir=rtl`, `<center>`). Nessun HTML di email nel repo.
 
@@ -193,8 +193,47 @@ Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo 
 | Un `el_space` per run di spazi tra i tag (`\n` separati) | `document.cpp` | sì (spike memoria) | callback `text_width` −75/−83 %, creazione dimezzata |
 | `<style>` non spezzato in parole | `document.cpp` | sì (spike memoria) | **non applicata**: il testo di `<style>` non genera callback di misura (verificato) e la memoria è fuori scope |
 
-**Misure [F]** (release, Apple M5 Pro; dettaglio in `MEASUREMENTS.md`): dall'HTML alla `Picture` ~13–14 ms per Colorlib e ~9 ms per Cerberus a caldo, ~70 ms al primo documento del processo (font di sistema). Il layout vero e proprio è 0,9–1,6 ms e non chiama Dart; il draw 3,7–4,3 ms. Callback per email: ~1550–3000 `text_width` e 11–17 `create_font` alla creazione, ~500 di disegno; il tempo speso dentro le callback Dart di misura è 1,2–1,7 ms. Le soglie del §7 («qualche decina di ms a 700 px») sono rispettate a caldo; il primo documento le supera.
+**Misure [F]** (release, Apple M5 Pro; dettaglio in `litehtml-misure.md`): dall'HTML alla `Picture` ~13–14 ms per Colorlib e ~9 ms per Cerberus a caldo, ~70 ms al primo documento del processo (font di sistema). Il layout vero e proprio è 0,9–1,6 ms e non chiama Dart; il draw 3,7–4,3 ms. Callback per email: ~1550–3000 `text_width` e 11–17 `create_font` alla creazione, ~500 di disegno; il tempo speso dentro le callback Dart di misura è 1,2–1,7 ms. Le soglie del §7 («qualche decina di ms a 700 px») sono rispettate a caldo; il primo documento le supera.
 
 **Cosa non è stato verificato**: `LitehtmlView` dentro l'app demo è stata solo avviata (nessun errore, nessuno screenshot della finestra); i PNG vengono dalla stessa `Picture` che il widget dipinge. Nessuna misura di memoria; nessuna prova di selezione o Semantics; nessuna newsletter reale con dati (Zalando, ProntoPro), quindi immagini con soli attributi parziali, font web e casi `dir`/`letter-spacing` delle email vere restano da vedere.
 
 **Differenze rispetto al rapporto precedente**: Flutter 3.50.0; API C più piccola e nessuno stato globale (uno dei "da riscrivere" del §7); dimensione delle immagini dagli attributi invece che dall'header PNG dei data URI; una patch nuova (`cellpadding`); una delle patch di memoria applicata per le prestazioni, l'altra no; numeri e confronto con il browser finalmente registrati; `letter-spacing`, `dir=rtl` e `-webkit-center` emersi come limiti non citati prima. La raccomandazione del §7 (GO condizionato) è confermata sulle condizioni di tempi e confronto visivo; restano aperte quelle su memoria e accessibilità, i cui spike non sono stati ricostruiti.
+
+## 9. HTML non fidato (#383, fetta 1, 2026-11-24)
+
+**Metodo [F]**: harness C++ fuori dal repo che crea, impagina, disegna e distrugge un documento con callback finte (larghezza del testo = 8 px per byte) in un thread con stack scelto, compilato come `hook/build.dart` (`-O3`) e anche `-O0`. Apple M5 Pro, arm64. La parte che conta è diventata `packages/litehtml_flutter/test/native/stack_test.sh` (stack di 256 KB, nel job `check`); i casi a 100 000 livelli sono anche test Dart (`test/litehtml_security_test.dart`).
+
+**Prima delle patch [F]**, codice di `spike/66-litehtml-macos`, thread da 512 KB:
+
+| Input | Esito |
+|---|---|
+| 1 000 `<div>` annidati; 800 `<div>`; 1 000 `@media{` | crash (stack overflow) |
+| CSS `(` o `f(` annidati a 100 000 | crash (`consume_component_value` ↔ `consume_simple_block`) |
+| 20 `<table><tr><td>` annidate senza larghezze | non finisce (layout esponenziale: 10 livelli = 30 ms) |
+| 20 000 `<div>` annidati, stack da 8 MB | 1,7 s nel parser (ogni errore di Gumbo copia lo stack degli elementi aperti) |
+| `<td colspan=0>`, `colspan=-5`, `rowspan=-3` | crash (indice di colonna/riga negativo) |
+| 200 000 righe `<tr><td>` | 18 s (`is_rowspanned` quadratico) |
+| 100 000 `<td colspan=1000>` | 20 s, ~10⁸ celle allocate |
+
+**Patch [F]** (elenco in `third_party/litehtml/VERSION`): tetto di 32 blocchi CSS annidati; tetto di 512 elementi aperti in Gumbo (oltre: `html_too_deep` → `LitehtmlFailure.tooDeep`, non un documento troncato, così l'integrazione può ripiegare); DOM di litehtml appiattito oltre 128 livelli; `destroy_node` di Gumbo iterativo; errori di Gumbo disattivati (`max_errors = 0`); budget di 500 000 `render_item::render` per layout; `colspan`/`rowspan` come nello standard HTML e budget di 500 000 celle per documento; `is_rowspanned` O(1). Nel wrapper: HTML oltre 4 MiB rifiutato, eccezioni di litehtml catturate, documento inutilizzabile dopo un layout fallito.
+
+**Dopo le patch [F]**:
+
+| Caso | Esito | Stack minimo `-O3` / `-O0` |
+|---|---|---|
+| 510 `<div>` (sotto il tetto del parser, oltre quello del DOM) | reso | 96 / 256 KB |
+| 510 `<div style="float:left">` o `display:flex` | reso / budget di layout | 160 / 384 KB |
+| 255 `<ul><li>` | reso | 96 / 256 KB |
+| 127 `<table><tr><td>` | budget di layout (`-1`) in 20 ms | 64 / 160 KB |
+| CSS annidato a 100 000 (`(`, `f(`, `{`, `@media{`, `:not(`) | reso, blocco profondo vuoto | 32 KB |
+| 100 000 elementi annidati di qualsiasi tag | `tooDeep` in ~1 ms | 32 KB |
+| newsletter di prova (colorlib-1, colorlib-10, cerberus, mailchimp) | altezze identiche a prima delle patch, 371–2 136 chiamate di layout | 32 KB |
+| 349 000 `<div>` piatti (~4 MB) | reso in ~1,3 s | — |
+| 200 000 righe / 400 000 celle in una tabella (~4 MB) | budget di layout dopo ~1,3–1,6 s | — |
+| 100 000 `<td colspan=1000>` | `failed` (budget di celle) in 0,3 s | — |
+
+**Isolate [F]**: in `flutter test`, `ui.ParagraphBuilder` dentro `Isolate.run` lancia «UI actions are only available on root isolate». Un `LitehtmlDocument` creato lì non va in crash, ma impagina con misure a zero perché le callback falliscono. Il layout resta quindi sull'isolate UI: la scelta e i margini di stack sono in ADR 0025.
+
+**Build [F]**: app con il pacchetto come dipendenza: `flutter build macos --debug`, `flutter build ios --no-codesign` e `flutter build apk --debug --flavor site` riusciti; un test di integrazione temporaneo (documento normale, CSS annidato a 100 000, HTML annidato a 100 000, 510 float annidati, tabelle annidate, HTML oltre il limite) è passato sul simulatore iOS (iPhone 17 Pro, iOS 27) e sull'emulatore Android arm64 (API 36). Sull'emulatore la prima prova falliva al caricamento: `dlopen failed: cannot locate symbol "atan2f"`, e la libreria chiedeva `libc++_shared.so`, che l'APK non contiene. Ora si linkano `libm` e `c++_static`. Windows e Linux non sono mai stati compilati: il solo runner è macOS e da macOS non si compila per quelle piattaforme.
+
+**Cosa non è verificato**: lo stack reale del thread UI su ogni piattaforma (i valori in ADR 0025 vengono dalla documentazione); i frame di stack con MSVC e con gcc; i tempi con le callback Dart vere sui casi ostili da 4 MiB (le misure sopra usano callback finte).

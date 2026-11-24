@@ -31,6 +31,9 @@ litehtml::rendered_width litehtml::render_item::render(pixel_t x, pixel_t y,
 													   const containing_block_context& containing_block_size,
 													   formatting_context* fmt_ctx, bool second_pass)
 {
+	// PATCH postino: budget di lavoro del layout
+	if (--render_calls_left < 0) throw render_budget_exceeded();
+
 	calc_outlines(containing_block_size.width);
 
 	m_pos.clear();

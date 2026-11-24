@@ -301,6 +301,36 @@ raw_rule::ptr css_parser::consume_at_rule()
 
 char mirror(char c);
 
+// PATCH postino: limite di annidamento
+namespace
+{
+struct nesting_guard
+{
+	int& depth;
+	explicit nesting_guard(int& d) : depth(d) { depth++; }
+	~nesting_guard() { depth--; }
+};
+}
+
+// PATCH postino: consuma, senza ricorsione, fino alla parentesi che chiude il blocco
+// già aperto (o a EOF), contando i blocchi e le funzioni aperti nel frattempo.
+void css_parser::skip_nested(char closing_bracket)
+{
+	string closers(1, closing_bracket);
+	while (!closers.empty())
+	{
+		css_token token = next_token();
+		if (token.type == EOF)
+			return;
+		if (token.type == closers.back())
+			closers.pop_back();
+		else if (is_one_of(token.type, '{', '[', '('))
+			closers.push_back(mirror((char)token.ch));
+		else if (token.type == FUNCTION)
+			closers.push_back(')');
+	}
+}
+
 // https://www.w3.org/TR/css-syntax-3/#consume-simple-block
 css_token css_parser::consume_simple_block(char opening_bracket)
 {
@@ -309,6 +339,14 @@ css_token css_parser::consume_simple_block(char opening_bracket)
 	css_token block(block_type);
 
 	char closing_bracket = mirror(opening_bracket);
+
+	// PATCH postino: limite di annidamento
+	if (m_depth >= kMaxCssNesting)
+	{
+		skip_nested(closing_bracket);
+		return block;
+	}
+	nesting_guard guard(m_depth);
 
 	while (true)
 	{
@@ -361,6 +399,14 @@ css_token css_parser::consume_function(const string& name)
 {
 	// Create a function with its name equal to the value of the current input token and with its value initially set to an empty list.
 	css_token function(CV_FUNCTION, name);
+
+	// PATCH postino: limite di annidamento
+	if (m_depth >= kMaxCssNesting)
+	{
+		skip_nested(')');
+		return function;
+	}
+	nesting_guard guard(m_depth);
 
 	while (true)
 	{

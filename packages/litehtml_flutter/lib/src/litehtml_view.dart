@@ -6,19 +6,14 @@ import 'litehtml_document.dart';
 
 /// Rende [html] con litehtml alla larghezza [width]; l'altezza è quella del contenuto.
 ///
-/// ponytail: layout sincrono sull'isolate UI a ogni cambio di html o larghezza; fuori dall'isolate se le
-/// misure lo chiedono.
-class LitehtmlView extends StatefulWidget {
-  const LitehtmlView({super.key, required this.html, required this.width});
-
-  final String html;
-  final double width;
-
+/// Layout sincrono sull'isolate UI a ogni cambio di html o larghezza (ADR 0025). Un HTML rifiutato dal motore lancia
+/// `LitehtmlException` da `initState`/`didUpdateWidget`: con HTML non fidato chi lo usa gestisce il ripiego.
+class const LitehtmlView({super.key, required final String html, required final double width}) extends StatefulWidget {
   @override
   State<LitehtmlView> createState() => _LitehtmlViewState();
 }
 
-class _LitehtmlViewState extends State<LitehtmlView> {
+class _LitehtmlViewState() extends State<LitehtmlView> {
   LitehtmlDocument? _doc;
   ui.Picture? _picture;
   double _height = 0;
@@ -67,15 +62,12 @@ class _LitehtmlViewState extends State<LitehtmlView> {
   );
 }
 
-class _PicturePainter extends CustomPainter {
-  _PicturePainter(this.picture);
-
-  final ui.Picture picture;
-
+class _PicturePainter(final ui.Picture picture) extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.clipRect(Offset.zero & size);
-    canvas.drawPicture(picture);
+    canvas
+      ..clipRect(Offset.zero & size)
+      ..drawPicture(picture);
   }
 
   @override

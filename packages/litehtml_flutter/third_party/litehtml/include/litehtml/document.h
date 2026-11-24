@@ -6,6 +6,7 @@
 #include "master_css.h"
 #include "encodings.h"
 #include "font_description.h"
+#include <exception>
 #include <vector>
 
 typedef struct GumboInternalOutput GumboOutput;
@@ -43,6 +44,13 @@ namespace litehtml
 
 	class html_tag;
 	class render_item;
+
+	// PATCH postino: lanciata da createFromString se l'HTML supera il tetto di elementi
+	// aperti del parser (kGumboMaxOpenElements).
+	struct html_too_deep : std::exception
+	{
+		const char* what() const noexcept override { return "litehtml: html too deeply nested"; }
+	};
 
 	class document : public std::enable_shared_from_this<document>
 	{
@@ -119,7 +127,8 @@ namespace litehtml
 		uint_ptr	add_font(const font_description& descr, font_metrics* fm);
 
 		GumboOutput* parse_html(estring str);
-		void create_node(void* gnode, elements_list& elements, bool parseTextNode, bool process_root);
+		// PATCH postino: depth = profondità del nodo nel DOM di litehtml (tetto kMaxDomDepth).
+		void create_node(void* gnode, elements_list& elements, bool parseTextNode, bool process_root, int depth = 0);
 		bool update_media_lists(const media_features& features);
 		void fix_tables_layout();
 		void fix_table_children(const std::shared_ptr<render_item>& el_ptr, style_display disp, const char* disp_str);

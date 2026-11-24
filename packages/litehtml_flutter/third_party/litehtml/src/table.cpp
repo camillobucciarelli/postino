@@ -3,25 +3,54 @@
 #include "element.h"
 #include "render_item.h"
 #include "types.h"
+#include <algorithm>
+#include <cstdlib>
+
+// PATCH postino: colspan e rowspan come nello standard HTML (colspan 1..1000, rowspan
+// 1..65534; 0, negativi e non numerici valgono 1). Prima colspan=0 o negativi facevano
+// indicizzare colonne e righe a indice negativo e un colspan enorme allocava miliardi
+// di celle.
+static int span_attr(const char* value, long max)
+{
+	long n = strtol(value, nullptr, 10);
+	return (int) (n < 1 ? 1 : std::min(n, max));
+}
+
+// PATCH postino: celle della griglia (vuote comprese) per documento; oltre, la
+// costruzione dell'albero di render lancia table_too_large. 500k celle ~ 36 MB.
+thread_local long litehtml::table_cells_left = 0;
+
+void litehtml::table_grid::push_cell(std::vector<table_cell>& row, const table_cell& cell)
+{
+	if (--table_cells_left < 0) throw table_too_large();
+	row.push_back(cell);
+}
 
 void litehtml::table_grid::add_cell(const std::shared_ptr<render_item>& el)
 {
 	table_cell cell;
 	cell.el = el;
-	cell.colspan	= atoi(el->src_el()->get_attr("colspan", "1"));
-	cell.rowspan	= atoi(el->src_el()->get_attr("rowspan", "1"));
+	cell.colspan	= span_attr(el->src_el()->get_attr("colspan", "1"), 1000);
+	cell.rowspan	= span_attr(el->src_el()->get_attr("rowspan", "1"), 65534);
 	cell.borders	= el->get_borders();
 
 	while( is_rowspanned( (int) m_cells.size() - 1, (int) m_cells.back().size() ) )
 	{
-		m_cells.back().emplace_back();
+		push_cell(m_cells.back(), table_cell());
 	}
 
-	m_cells.back().push_back(cell);
+	// PATCH postino: riga in cui finisce lo span verticale della cella in questa colonna.
+	int col = (int) m_cells.back().size();
+	if (cell.rowspan > 1)
+	{
+		if ((int) m_rowspan_end.size() <= col) m_rowspan_end.resize(col + 1, -1);
+		m_rowspan_end[col] = std::max(m_rowspan_end[col], (int) m_cells.size() - 1 + cell.rowspan - 1);
+	}
+
+	push_cell(m_cells.back(), cell);
 	for(int i = 1; i < cell.colspan; i++)
 	{
-		table_cell empty_cell;
-		m_cells.back().push_back(empty_cell);
+		push_cell(m_cells.back(), table_cell());
 	}
 }
 
@@ -35,22 +64,12 @@ void litehtml::table_grid::begin_row(const std::shared_ptr<render_item>& row)
 }
 
 
+// PATCH postino: O(1) con m_rowspan_end invece di scorrere tutte le righe precedenti
+// (quadratico: 200k righe ~18 s). Stessa semantica: una riga precedente ha nella
+// colonna c una cella il cui rowspan arriva alla riga r.
 bool litehtml::table_grid::is_rowspanned( int r, int c )
 {
-	for(int row = r - 1; row >= 0; row--)
-	{
-		if(c < (int) m_cells[row].size())
-		{
-			if(m_cells[row][c].rowspan > 1)
-			{
-				if(m_cells[row][c].rowspan >= r - row + 1)
-				{
-					return true;
-				}
-			}
-		}
-	}
-	return false;
+	return c < (int) m_rowspan_end.size() && m_rowspan_end[c] >= r;
 }
 
 void litehtml::table_grid::finish()
@@ -65,8 +84,7 @@ void litehtml::table_grid::finish()
 	{
 		for(int j = (int) cell.size(); j < m_cols_count; j++)
 		{
-			table_cell empty_cell;
-			cell.push_back(empty_cell);
+			push_cell(cell, table_cell()); // PATCH postino: budget di celle
 		}
 	}
 
@@ -413,6 +431,7 @@ void litehtml::table_grid::clear()
 	m_rows_count	= 0;
 	m_cols_count	= 0;
 	m_cells.clear();
+	m_rowspan_end.clear(); // PATCH postino
 	m_columns.clear();
 	m_rows.clear();
 }

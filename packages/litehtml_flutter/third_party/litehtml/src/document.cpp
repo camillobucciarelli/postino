@@ -60,6 +60,14 @@ document::ptr document::createFromString(
 	// Parse document into GumboOutput
 	GumboOutput* output = doc->parse_html(str);
 
+	// PATCH postino: HTML oltre kGumboMaxOpenElements elementi aperti. Errore e non
+	// documento troncato: il chiamante ripiega su un altro motore invece di perdere testo.
+	if (output->too_deep)
+	{
+		gumbo_destroy_output(&kGumboDefaultOptions, output);
+		throw html_too_deep();
+	}
+
 	// mode must be set before doc->create_node because it is used in html_tag::set_attr
 	switch (output->document->v.document.doc_type_quirks_mode)
 	{
@@ -131,6 +139,7 @@ document::ptr document::createFromString(
 		doc->m_root->compute_styles();
 
 		// Create rendering tree
+		table_cells_left = kMaxTableCells; // PATCH postino: budget di celle
 		doc->m_root_render = doc->m_root->create_render_item(nullptr);
 
 		// Now the m_tabular_elements is filled with tabular elements.
@@ -259,7 +268,14 @@ GumboOutput* document::parse_html(estring str)
 	return output;
 }
 
-void document::create_node(void* gnode, elements_list& elements, bool parseTextNode, bool process_root)
+// PATCH postino: tetto alla profondità del DOM (HTML non fidato). Come Chrome (512 nel
+// parser HTML), i nodi più profondi diventano figli, in ordine di documento e senza figli
+// propri, dell'elemento all'ultimo livello ammesso. Layout, stili, disegno e distruttori
+// di litehtml sono ricorsivi sull'albero: con il tetto lo stack che usano è limitato.
+// Tarato sullo stack minimo delle piattaforme (vedi docs/research/litehtml-spike.md §9).
+static const int kMaxDomDepth = 128;
+
+void document::create_node(void* gnode, elements_list& elements, bool parseTextNode, bool process_root, int depth)
 {
 	auto* node = (GumboNode*)gnode;
 	switch (node->type)
@@ -297,13 +313,13 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 			{
 				parseTextNode = false;
 			}
-			if (ret)
+			if (ret && depth < kMaxDomDepth)
 			{
 				elements_list child;
 				for (unsigned int i = 0; i < node->v.element.children.length; i++)
 				{
 					child.clear();
-					create_node(static_cast<GumboNode*> (node->v.element.children.data[i]), child, parseTextNode, true);
+					create_node(static_cast<GumboNode*> (node->v.element.children.data[i]), child, parseTextNode, true, depth + 1);
 					std::for_each(child.begin(), child.end(),
 						[&ret](element::ptr& el)
 						{
@@ -313,11 +329,41 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 				}
 				elements.push_back(ret);
 			}
+			else if (ret && depth > kMaxDomDepth)
+			{
+				// PATCH postino: nodo già appiattito, nasce senza figli.
+				elements.push_back(ret);
+			}
+			else if (ret)
+			{
+				// PATCH postino: all'ultimo livello i discendenti si appiattiscono senza
+				// ricorsione (visita in preordine con uno stack esplicito).
+				elements.push_back(ret);
+				std::vector<GumboNode*> pending;
+				for (unsigned int i = node->v.element.children.length; i > 0; i--)
+					pending.push_back(static_cast<GumboNode*>(node->v.element.children.data[i - 1]));
+				elements_list flat;
+				while (!pending.empty())
+				{
+					GumboNode* next = pending.back();
+					pending.pop_back();
+					if (next->type == GUMBO_NODE_ELEMENT)
+					{
+						for (unsigned int i = next->v.element.children.length; i > 0; i--)
+							pending.push_back(static_cast<GumboNode*>(next->v.element.children.data[i - 1]));
+					}
+					flat.clear();
+					// depth > kMaxDomDepth: l'elemento nasce senza figli.
+					create_node(next, flat, parseTextNode, true, kMaxDomDepth + 1);
+					for (auto& el : flat)
+						ret->appendChild(el);
+				}
+			}
 		} else
 		{
 			for (unsigned int i = 0; i < node->v.element.children.length; i++)
 			{
-				create_node(static_cast<GumboNode*> (node->v.element.children.data[i]), elements, parseTextNode, true);
+				create_node(static_cast<GumboNode*> (node->v.element.children.data[i]), elements, parseTextNode, true, depth);
 			}
 		}
 	}
@@ -506,8 +552,14 @@ uint_ptr document::get_font( const font_description& descr, font_metrics* fm )
 	return add_font(descr, fm);
 }
 
+// PATCH postino: budget di lavoro del layout (vedi render_item.h). Le newsletter misurate
+// ne usano fino a ~2100 (~1 ms): il budget è 250 volte tanto (~250 ms nel caso peggiore).
+thread_local long render_calls_left = 0;
+static const long kMaxRenderCalls = 500000;
+
 pixel_t document::render( pixel_t max_width, render_type rt )
 {
+	render_calls_left = kMaxRenderCalls;
 	pixel_t ret = 0;
 	if(m_root && m_root_render)
 	{
@@ -857,6 +909,7 @@ bool document::media_changed()
 		// so rebuild it here to add/remove render items for elements whose display
 		// just changed; otherwise a newly-shown element keeps no render item and
 		// never lays out (it collapses to zero).
+		table_cells_left = kMaxTableCells; // PATCH postino: budget di celle
 		m_root_render = m_root->create_render_item(nullptr);
 		if (m_root_render)
 		{

@@ -8,13 +8,23 @@
 namespace litehtml
 {
 
+// PATCH postino: profondità massima di blocchi e funzioni annidati. Oltre, il contenuto
+// del blocco viene saltato senza ricorsione e il blocco resta vuoto. Ogni albero di
+// component value è quindi profondo al più kMaxCssNesting, e così le funzioni che lo
+// percorrono ricorsivamente (remove_whitespace_*, is_any_value, copia e distruzione
+// di css_token, parse dei blocchi annidati di stylesheet e selettori).
+const int kMaxCssNesting = 32;
+
 class css_parser
 {
 	css_token_vector m_tokens;
 	int m_index = 0;
+	// PATCH postino: blocchi e funzioni aperti (limite di annidamento, HTML non fidato).
+	int m_depth = 0;
 
 	css_token next_token();
 	css_token peek_token();
+	void skip_nested(char closing_bracket);
 
 public:
 	css_parser() {}

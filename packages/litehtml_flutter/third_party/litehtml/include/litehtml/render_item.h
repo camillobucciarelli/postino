@@ -1,6 +1,7 @@
 #ifndef LH_RENDER_ITEM_H
 #define LH_RENDER_ITEM_H
 
+#include <exception>
 #include <memory>
 #include <list>
 #include <tuple>
@@ -15,6 +16,17 @@
 namespace litehtml
 {
     class element;
+
+    // PATCH postino: budget di lavoro del layout (HTML non fidato). Il layout delle
+    // tabelle annidate rifà il layout dei figli per misurarli: il costo cresce in modo
+    // esponenziale con la profondità (20 tabelle vuote annidate non finiscono). Ogni
+    // render_item::render consuma una chiamata; document::render ricarica il budget e,
+    // se finisce, il layout si interrompe con render_budget_exceeded.
+    struct render_budget_exceeded : std::exception
+    {
+        const char* what() const noexcept override { return "litehtml: render budget exceeded"; }
+    };
+    extern thread_local long render_calls_left;
 
     class render_item : public std::enable_shared_from_this<render_item>
     {

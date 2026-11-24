@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
-import 'package:html/dom.dart' as dom;
+import 'package:litehtml_flutter/litehtml_flutter.dart';
 
 import '../atoms/postino_icon.dart';
 import '../tokens/postino_icons.dart';
@@ -12,7 +12,8 @@ import '../tokens/postino_tokens.dart';
 /// An HTML message body (ADR 0007), already cleaned. In dark theme it sits on a light rounded
 /// «cartoncino», so the colors its sender chose read as meant; in light theme straight on the page.
 /// Wider than the column ([contentWidth]: the fixed width it asks for, in px) it scales down to fit,
-/// never scrolling sideways. An `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
+/// never scrolling sideways. Rendered by litehtml (#383); if litehtml refuses the HTML, or the text is scaled,
+/// by flutter_widget_from_html, where an `<img>` without `src` (blocked, or `cid:`) is a placeholder, labelled
 /// [blockedImageLabel] and its `alt`. A tap on a link calls [onTapUrl] with its real URL.
 class const PostinoHtmlCard({
   super.key,
@@ -37,40 +38,38 @@ class const PostinoHtmlCard({
 
   static final _paper = PostinoTheme.light();
 
+  /// Tests that look for the body's text as widgets: litehtml paints it (#383; Semantics and selection come with
+  /// its fetta 3). True renders with the fallback engine.
+  @visibleForTesting
+  static bool debugFallbackEngine = false;
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final body = LayoutBuilder(
       builder: (context, box) {
         final c = context.pc;
-        final content = HtmlWidget(
-          html,
-          factoryBuilder: _Factory.new,
-          textStyle: quiet
-              ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
-              : PostinoText.body.copyWith(color: c.ink),
-          onTapUrl: (url) {
-            onTapUrl(url);
-            return true;
-          },
-          customWidgetBuilder: (e) => e.localName == 'img' && !_hasSource(e)
-              ? InlineCustomWidget(
-                  child: _BottomBaseline(
-                    child: Semantics(
-                      label: [blockedImageLabel, e.attributes['alt']].nonNulls.where((l) => l.isNotEmpty).join(': '),
-                      image: true,
-                      child: PostinoIcon(PostinoIcons.image, size: PostinoSize.iconLg, color: c.inkSubtle),
-                    ),
-                  ),
-                )
-              : null,
-        );
-        final w = contentWidth;
-        if (w == null || w <= box.maxWidth) return content;
+        final style = quiet
+            ? PostinoText.bodyQuote.copyWith(color: c.inkMuted)
+            : PostinoText.body.copyWith(color: c.ink);
+        final fixed = contentWidth;
+        final width = fixed != null && fixed > box.maxWidth ? fixed : box.maxWidth;
+        Widget fallback(BuildContext context) => _fwfh(style, c.inkSubtle);
+        // ponytail: litehtml ignores the text scale; scaled text (accessibility) keeps the engine that honours it.
+        final content =
+            debugFallbackEngine || !width.isFinite || width <= 0 || MediaQuery.textScalerOf(context).scale(1) != 1
+            ? fallback(context)
+            : LitehtmlView(
+                html: '${_baseCss(style, c.brand)}$html',
+                width: width,
+                onLinkTap: onTapUrl,
+                errorBuilder: (context, _) => fallback(context),
+              );
+        if (width == box.maxWidth) return content;
         return FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.topLeft,
-          child: SizedBox(width: w, child: content),
+          child: SizedBox(width: width, child: content),
         );
       },
     );
@@ -88,17 +87,36 @@ class const PostinoHtmlCard({
           )
         : body;
   }
-}
 
-/// fwfh ignores `srcset`: a `src`-less `<img>` whose `srcset` survived `prepareHtml` (it is allowed)
-/// gets its first candidate as `src`; without either, its sources were removed.
-bool _hasSource(dom.Element e) {
-  final a = e.attributes;
-  if (a.containsKey('src')) return true;
-  final first = a['srcset']?.split(',').first.trim().split(RegExp(r'\s+')).first;
-  if (first == null || first.isEmpty) return false;
-  a['src'] = first;
-  return true;
+  /// The engine before litehtml: the fallback.
+  Widget _fwfh(TextStyle style, Color placeholder) => HtmlWidget(
+    html,
+    factoryBuilder: _Factory.new,
+    textStyle: style,
+    onTapUrl: (url) {
+      onTapUrl(url);
+      return true;
+    },
+    customWidgetBuilder: (e) => e.localName == 'img' && !e.attributes.containsKey('src')
+        ? InlineCustomWidget(
+            child: _BottomBaseline(
+              child: Semantics(
+                label: [blockedImageLabel, e.attributes['alt']].nonNulls.where((l) => l.isNotEmpty).join(': '),
+                image: true,
+                child: PostinoIcon(PostinoIcons.image, size: PostinoSize.iconLg, color: placeholder),
+              ),
+            ),
+          )
+        : null,
+  );
+
+  /// The body's text style and link colour (`brand`, as fwfh draws links) as the page's defaults, before the
+  /// sender's own CSS, which wins coming later.
+  static String _baseCss(TextStyle s, Color link) {
+    String css(Color c) => 'rgba(${(c.r * 255).round()},${(c.g * 255).round()},${(c.b * 255).round()},${c.a})';
+    return '<style>body{margin:0;font-family:"${s.fontFamily}";font-size:${s.fontSize}px;'
+        'line-height:${s.height};color:${css(s.color!)}}a{color:${css(link)}}</style>';
+  }
 }
 
 /// fwfh 0.17.4 sizes a crowded table by its cells' min intrinsic width (html_table.dart:500), which

@@ -20,6 +20,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/html_fallback_engine.dart';
 
 /// The fake image loader: records every image request and fails it, so nothing loads.
 class _ImageRequests() implements HttpClient {
@@ -110,6 +111,7 @@ void _test(String description, Future<void> Function(WidgetTester) body) => test
 
 void main() {
   _test('an HTML body is rendered, not its tags', (tester) async {
+    useHtmlFallbackEngine(); // looks for the body's text
     await _start(tester);
     await _open(tester, 'c1');
     expect(find.byType(PostinoHtmlCard), findsOneWidget);
@@ -162,6 +164,7 @@ void main() {
   });
 
   _test('the Conversazione is one column of at most reading-max-width, centered', (tester) async {
+    useHtmlFallbackEngine(); // looks for the body's text
     await _start(tester);
     await _open(tester, 'w1');
     // Docked drawer (900); beside the list (1400); phone-like (700); then wider again.
@@ -192,6 +195,7 @@ void main() {
   });
 
   _test('a link tap opens its real URL, mailto: too; never a local file', (tester) async {
+    useHtmlFallbackEngine(); // looks for the body's text
     await _start(tester);
     await _open(tester, 'p1');
     await tester.tapOnText(find.textRange.ofSubstring('novità'));

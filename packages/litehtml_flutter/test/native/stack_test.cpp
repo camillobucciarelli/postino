@@ -22,9 +22,10 @@ float text_width(const char *text, int64_t) { return strlen(text) * 8.0f; }
 void draw_text(const char *, int64_t, uint32_t, const lh_rect *) {}
 void fill_rect(const lh_rect *, const lh_rect *, const float *, uint32_t) {}
 void draw_borders(const lh_borders *) {}
-void draw_image(const lh_rect *, const float *) {}
+void draw_image(const char *, const lh_rect *, const float *) {}
 void set_clip(const lh_rect *, const float *) {}
 void del_clip() {}
+void load_image(const char *) {}
 
 std::string repeat(const char *s, int n) {
   std::string r;
@@ -41,14 +42,15 @@ struct test_case {
 
 void *run(void *arg) {
   auto *c = static_cast<test_case *>(arg);
-  lh_callbacks cb{create_font, text_width, draw_text,  fill_rect,
-                  draw_borders, draw_image, set_clip, del_clip};
+  lh_callbacks cb{create_font,  text_width, draw_text, fill_rect, draw_borders,
+                  draw_image,   set_clip,   del_clip,  load_image};
   int32_t status = -1;
   lh_doc *doc = lh_create(c->html.data(), c->html.size(), 600, &cb, &status);
   bool layout_ok = false;
   if (doc) {
     layout_ok = lh_render(doc, 600) >= 0;
     lh_draw(doc);
+    lh_link_at(doc, 1, 1); // hit-test: ricorsivo sull'albero di render
     lh_destroy(doc);
   }
   if (status != c->status || (doc && layout_ok != c->layout_ok)) {

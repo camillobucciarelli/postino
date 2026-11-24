@@ -61,9 +61,10 @@ typedef TextWidthFn = Float Function(Pointer<Char> text, Int64 font);
 typedef DrawTextFn = Void Function(Pointer<Char> text, Int64 font, Uint32 color, Pointer<LhRect> pos);
 typedef FillRectFn = Void Function(Pointer<LhRect> rect, Pointer<LhRect> clip, Pointer<Float> radii, Uint32 color);
 typedef DrawBordersFn = Void Function(Pointer<LhBorders> borders);
-typedef DrawImageFn = Void Function(Pointer<LhRect> rect, Pointer<Float> radii);
+typedef DrawImageFn = Void Function(Pointer<Char> src, Pointer<LhRect> rect, Pointer<Float> radii);
 typedef SetClipFn = Void Function(Pointer<LhRect> rect, Pointer<Float> radii);
 typedef DelClipFn = Void Function();
+typedef LoadImageFn = Void Function(Pointer<Char> src);
 
 final class LhCallbacks extends Struct {
   external Pointer<NativeFunction<CreateFontFn>> createFont;
@@ -74,6 +75,7 @@ final class LhCallbacks extends Struct {
   external Pointer<NativeFunction<DrawImageFn>> drawImage;
   external Pointer<NativeFunction<SetClipFn>> setClip;
   external Pointer<NativeFunction<DelClipFn>> delClip;
+  external Pointer<NativeFunction<LoadImageFn>> loadImage;
 }
 
 final class LhDoc extends Opaque {}
@@ -104,3 +106,9 @@ external void lhDraw(Pointer<LhDoc> doc);
 
 @Native<Void Function(Pointer<LhDoc>)>(symbol: 'lh_destroy')
 external void lhDestroy(Pointer<LhDoc> doc);
+
+@Native<Int32 Function(Pointer<LhDoc>, Pointer<Char>, Float, Float)>(symbol: 'lh_set_image_size')
+external int lhSetImageSize(Pointer<LhDoc> doc, Pointer<Char> src, double width, double height);
+
+@Native<Pointer<Char> Function(Pointer<LhDoc>, Float, Float)>(symbol: 'lh_link_at')
+external Pointer<Char> lhLinkAt(Pointer<LhDoc> doc, double x, double y);

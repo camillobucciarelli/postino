@@ -16,6 +16,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/html_fallback_engine.dart';
 
 void _mailbox(FakeMailProvider p) {
   p
@@ -75,6 +76,8 @@ Future<void> _guidelines(WidgetTester tester) async {
 }
 
 void main() {
+  // Looks for the body's text and links as widgets.
+  setUp(useHtmlFallbackEngine);
   testWidgets('a row reads unread, sender, subject, count, preview, Stella, Account and date as one button', (
     tester,
   ) async {

@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:postino/design_system/design_system.dart';
 import 'package:postino/features/posta/domain/safe_html.dart';
 
+import '../support/html_fallback_engine.dart';
+
 Future<void> _pump(WidgetTester tester, Widget card, {double width = 360, ThemeData? theme}) => tester.pumpWidget(
   MaterialApp(
     theme: theme ?? PostinoTheme.light(),
@@ -69,6 +71,8 @@ String _newsletter() =>
     '</td></tr></table></body></html>';
 
 void main() {
+  // Looks for the body's text and links as widgets.
+  setUp(useHtmlFallbackEngine);
   testWidgets('in dark theme the HTML sits on the light cartoncino', (tester) async {
     final card = PostinoHtmlCard(html: '<p>Ciao</p>', onTapUrl: (_) {});
     await _pump(tester, card, theme: PostinoTheme.dark());

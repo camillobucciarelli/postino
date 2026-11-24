@@ -59,9 +59,13 @@ typedef struct {
   void (*fill_rect)(const lh_rect *rect, const lh_rect *clip,
                     const float *radii, uint32_t color);
   void (*draw_borders)(const lh_borders *borders);
-  void (*draw_image)(const lh_rect *rect, const float *radii);
+  // `src` di un <img>; rect = riquadro del contenuto.
+  void (*draw_image)(const char *src, const lh_rect *rect, const float *radii);
   void (*set_clip)(const lh_rect *rect, const float *radii);
   void (*del_clip)(void);
+  // Una volta per `src` non vuoto di un <img>, dentro lh_create: il chiamante
+  // lo carica e poi chiama lh_set_image_size.
+  void (*load_image)(const char *src);
 } lh_callbacks;
 
 typedef struct lh_doc lh_doc;
@@ -78,6 +82,13 @@ LH_EXPORT float lh_render(lh_doc *doc, float width);
 // Emette i comandi di disegno per tutto il documento.
 LH_EXPORT void lh_draw(lh_doc *doc);
 LH_EXPORT void lh_destroy(lh_doc *doc);
+// Dimensione naturale di un'immagine caricata, in px CSS. Restituisce 1 se è
+// cambiata (serve un nuovo lh_render), 0 altrimenti.
+LH_EXPORT int32_t lh_set_image_size(lh_doc *doc, const char *src, float width,
+                                    float height);
+// href del link (<a href>) sotto il punto (x, y) dell'ultimo layout, NULL se
+// non c'è. La stringa vive nel DOM: valida fino al prossimo lh_* sul documento.
+LH_EXPORT const char *lh_link_at(lh_doc *doc, float x, float y);
 
 #ifdef __cplusplus
 }

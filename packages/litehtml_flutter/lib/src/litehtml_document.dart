@@ -33,7 +33,8 @@ class LitehtmlDocument(String html, double width) {
       ..drawBorders = _own(NativeCallable<DrawBordersFn>.isolateLocal(_drawBorders)).nativeFunction
       ..drawImage = _own(NativeCallable<DrawImageFn>.isolateLocal(_drawImage)).nativeFunction
       ..setClip = _own(NativeCallable<SetClipFn>.isolateLocal(_setClip)).nativeFunction
-      ..delClip = _own(NativeCallable<DelClipFn>.isolateLocal(_delClip)).nativeFunction;
+      ..delClip = _own(NativeCallable<DelClipFn>.isolateLocal(_delClip)).nativeFunction
+      ..loadImage = _own(NativeCallable<LoadImageFn>.isolateLocal(_loadImage)).nativeFunction;
     final source = html.toNativeUtf8(allocator: calloc);
     final status = calloc<Int32>();
     try {
@@ -58,6 +59,29 @@ class LitehtmlDocument(String html, double width) {
   late final Pointer<LhCallbacks> _callbacks;
   final _callables = <NativeCallable<Function>>[];
   Pointer<LhDoc> _doc = nullptr;
+  final _sources = <String>[];
+
+  /// I `src` non vuoti degli `<img>`, in ordine di documento e senza doppioni: il chiamante li carica e li passa a
+  /// [setImage]. Finché un'immagine manca, al suo posto c'è un rettangolo grigio.
+  List<String> get imageSources => List.unmodifiable(_sources);
+
+  /// Immagine caricata per [src], disegnata dal prossimo [record]. Restituisce true se la sua dimensione naturale
+  /// cambia il layout: allora serve un nuovo [layout] prima di [record].
+  bool setImage(String src, ui.Image image, {double scale = 1}) {
+    _commands.images[src] = image;
+    final native = src.toNativeUtf8(allocator: calloc);
+    try {
+      return lhSetImageSize(_live, native.cast(), image.width / scale, image.height / scale) != 0;
+    } finally {
+      calloc.free(native);
+    }
+  }
+
+  /// `href` del link sotto [x], [y] (coordinate dell'ultimo layout), o null.
+  String? linkAt(double x, double y) {
+    final href = lhLinkAt(_live, x, y);
+    return href == nullptr ? null : href.cast<Utf8>().toDartString();
+  }
 
   /// Layout alla larghezza data; restituisce l'altezza del contenuto.
   ///
@@ -83,6 +107,7 @@ class LitehtmlDocument(String html, double width) {
 
   /// Libera DOM nativo e callback; il documento non è più utilizzabile. Idempotente.
   void dispose() {
+    _commands.images.clear();
     if (_doc != nullptr) lhDestroy(_doc);
     _doc = nullptr;
     if (_callables.isEmpty) return;
@@ -132,7 +157,10 @@ class LitehtmlDocument(String html, double width) {
 
   void _drawBorders(Pointer<LhBorders> borders) => _commands.drawBorders(borders.ref);
 
-  void _drawImage(Pointer<LhRect> rect, Pointer<Float> radii) => _commands.drawImage(rect.ref, radii);
+  void _drawImage(Pointer<Char> src, Pointer<LhRect> rect, Pointer<Float> radii) =>
+      _commands.drawImage(src.cast<Utf8>().toDartString(), rect.ref, radii);
+
+  void _loadImage(Pointer<Char> src) => _sources.add(src.cast<Utf8>().toDartString());
 
   void _setClip(Pointer<LhRect> rect, Pointer<Float> radii) => _commands.setClip(rect.ref, radii);
 

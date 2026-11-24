@@ -16,6 +16,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../support/fake_mail_provider.dart';
 import '../../support/fake_webview.dart';
 import '../../support/harness.dart';
+import '../../support/html_fallback_engine.dart';
 
 const _body =
     '<p>Accedi a <a href="https://paypal.com.evil.io/login">paypal.com</a>, '
@@ -64,6 +65,8 @@ void _onPlatform(String description, TargetPlatform platform, Future<void> Funct
     });
 
 void main() {
+  // Looks for the body's text and links as widgets.
+  setUp(useHtmlFallbackEngine);
   testWidgets('a text showing another domain asks first, naming the real one; opens only on agreement', (tester) async {
     await _start(tester);
     await _tapLink(tester, 'paypal.com');

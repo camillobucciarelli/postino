@@ -86,6 +86,7 @@ jobs:
       - run: tool/release/readable_check_test.sh
       - run: tool/release/keychain_create_test.sh
       - run: tool/release/play_key_export_test.sh
+      - run: tool/release/windows_runtime_check_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
@@ -196,6 +197,8 @@ jobs:
           flutter pub get
           flutter test
       - run: flutter build windows --release
+      # Il runtime Visual C++ sta accanto all'exe: sul runner è installato, su un PC qualsiasi no.
+      - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
 
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the

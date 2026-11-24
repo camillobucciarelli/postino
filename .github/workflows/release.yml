@@ -688,6 +688,7 @@ jobs:
           flutter build windows --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
             --dart-define=GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" \
             --dart-define=POSTINO_BUILD="$build" --dart-define=POSTINO_VERSION="$VERSION"
+      - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
       # The archive unpacks into Postino-<version>\ (7-Zip is on the Windows runner).
       - name: Postino-<version>.zip
         run: |

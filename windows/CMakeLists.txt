@@ -87,6 +87,12 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+# The Visual C++ runtime (msvcp140, vcruntime140, ...) next to the exe: the targets link it dynamically, and a PC
+# without the Visual C++ Redistributable could not start the app (#383). Checked by tool/release/windows_runtime_check.sh.
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT Runtime)
+include(InstallRequiredSystemLibraries)
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

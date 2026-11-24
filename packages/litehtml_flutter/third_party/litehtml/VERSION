@@ -1,0 +1,13 @@
+litehtml v0.10 (tag v0.10, commit 9bc84b8b8d15a4e50f18b327aa30955048b441c2)
+https://github.com/litehtml/litehtml
+
+Vendorizzati: include/, src/ (gumbo incluso, con la sua LICENSE in src/gumbo/), LICENSE, README.md.
+Tolti: CMake, containers/, support/, doc/, progetti Visual Studio, src/gumbo/visualc/.
+
+Patch locali (cercare "PATCH postino"), ognuna verificata sui PNG di #66:
+- src/render_table.cpp: max-width applicato alle tabelle (width="100%" + max-width:500px).
+- src/render_table.cpp: height in px di <td> (attributo o CSS, più padding/bordi) come altezza
+  minima della riga (celle spaziatrici; hero con height).
+- src/el_td.cpp: cellpadding della <table> mappato sul padding delle celle (prima restava 1px).
+- src/document.cpp: un el_space per run di spazi tra i tag invece che per carattere
+  ('\n' separati): da ~12000 a ~3000 callback text_width e tempo di creazione dimezzato.

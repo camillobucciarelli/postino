@@ -34,7 +34,7 @@ public:
     // riga, ma nel testo restano un a capo.
     if (el->is_break()) {
       if (el->css().get_display() != display_none) {
-        cb_.separator(LH_SEP_LINE);
+        cb_.separator(LH_SEP_BREAK);
       }
       return;
     }
@@ -71,6 +71,17 @@ public:
     }
     if (kind >= 0) {
       auto box = to_rect(pos);
+      if (kind == LH_NODE_LINK) {
+        // Area cliccabile di un'ancora a blocco o inline-block: tutto il
+        // border box (padding di un bottone, spazio vuoto di un blocco). Un
+        // <a> inline ha solo i box del suo testo e delle sue immagini.
+        position area = pos;
+        area += ri->get_paddings();
+        area += ri->get_borders();
+        box = block || el->css().get_display() == display_inline_block
+                  ? to_rect(area)
+                  : lh_rect{0, 0, 0, 0};
+      }
       cb_.open(kind, level, attr, &box);
     }
     // Come draw_children: gli elementi non inline tagliano al content box.

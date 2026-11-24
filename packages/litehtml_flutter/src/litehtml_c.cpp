@@ -3,7 +3,6 @@
 #include "litehtml_export.h"
 
 #include <litehtml.h>
-#include <litehtml/render_item.h>
 
 #include <cctype>
 #include <cstdlib>
@@ -25,7 +24,11 @@ constexpr float kPlaceholder = 24;
 constexpr const char *kUserCss =
     "center table, div[align=center] table { text-align: left; }"
     "center > table, [align=center] > table { margin-left: auto; "
-    "margin-right: auto; }";
+    "margin-right: auto; }"
+    // Un <img> senza dimensioni dichiarate non esce dalla colonna (1200 px in
+    // 360): stretto alle proporzioni, come fanno i client di posta. Con width
+    // o height negli attributi resta com'è (spaziatori, layout a pixel).
+    "img:not([width]):not([height]) { max-width: 100%; }";
 
 lh_rect to_rect(const position &p) { return {p.x, p.y, p.width, p.height}; }
 
@@ -327,19 +330,4 @@ void lh_destroy(lh_doc *d) { delete d; }
 int32_t lh_set_image_size(lh_doc *d, const char *src, float width,
                           float height) {
   return d->cont.set_image_size(src, width, height) ? 1 : 0;
-}
-
-const char *lh_link_at(lh_doc *d, float x, float y) {
-  if (d->failed) return nullptr;
-  auto root = d->doc->root_render();
-  if (!root) return nullptr;
-  try {
-    for (auto el = root->get_element_by_point(x, y, x, y, nullptr); el;
-         el = el->parent()) {
-      if (std::string(el->get_tagName()) != "a") continue;
-      if (auto href = el->get_attr("href")) return href;
-    }
-  } catch (...) {
-  }
-  return nullptr;
 }

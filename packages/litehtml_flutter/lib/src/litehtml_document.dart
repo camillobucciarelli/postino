@@ -79,12 +79,6 @@ class LitehtmlDocument(String html, double width) {
     }
   }
 
-  /// `href` del link sotto [x], [y] (coordinate dell'ultimo layout), o null.
-  String? linkAt(double x, double y) {
-    final href = lhLinkAt(_live, x, y);
-    return href == nullptr ? null : href.cast<Utf8>().toDartString();
-  }
-
   /// Layout alla larghezza data; restituisce l'altezza del contenuto.
   ///
   /// Lancia [LitehtmlException] se il layout fallisce: il documento non è più utilizzabile.

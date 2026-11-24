@@ -93,6 +93,7 @@ final class LhExportCallbacks extends Struct {
 /// Separatori e nodi di [lhExport] (`LH_SEP_*`, `LH_NODE_*`).
 const lhSepSpace = 0;
 const lhSepLine = 1;
+const lhSepBreak = 2;
 const lhNodeHeading = 0;
 const lhNodeLink = 1;
 const lhNodeImage = 2;
@@ -131,6 +132,3 @@ external void lhDestroy(Pointer<LhDoc> doc);
 
 @Native<Int32 Function(Pointer<LhDoc>, Pointer<Char>, Float, Float)>(symbol: 'lh_set_image_size')
 external int lhSetImageSize(Pointer<LhDoc> doc, Pointer<Char> src, double width, double height);
-
-@Native<Pointer<Char> Function(Pointer<LhDoc>, Float, Float)>(symbol: 'lh_link_at')
-external Pointer<Char> lhLinkAt(Pointer<LhDoc> doc, double x, double y);

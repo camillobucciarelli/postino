@@ -70,16 +70,18 @@ typedef struct {
 
 // Contenuto per selezione e Semantics (lh_export).
 #define LH_SEP_SPACE 0    // spazio tolto a inizio o fine riga
-#define LH_SEP_LINE 1     // <br>, a capo di <pre>, confine di blocco o cella
+#define LH_SEP_LINE 1     // confine di blocco o cella (di fila: uno solo)
+#define LH_SEP_BREAK 2    // <br>, a capo di <pre> (di fila: si contano)
 #define LH_NODE_HEADING 0 // h1..h6: level 1..6
-#define LH_NODE_LINK 1    // <a href>: attr = href
+#define LH_NODE_LINK 1    // <a href>: attr = href; box = border box se a blocco o inline-block, vuoto se inline
 #define LH_NODE_IMAGE 2   // <img>: attr = alt ("" se assente), level 1 se senza src
 
 typedef struct {
   // Una parola o una run di spazi (" ") visibile, col font e il box di
   // draw_text.
   void (*text)(const char *text, int64_t font, const lh_rect *pos);
-  // Separatore nel testo (LH_SEP_*); più separatori di fila si sommano.
+  // Separatore nel testo (LH_SEP_*): i confini di blocco di fila valgono uno,
+  // gli a capo espliciti si contano.
   void (*separator)(int32_t kind);
   // Apre un nodo (LH_NODE_*) col suo box; close lo chiude dopo i figli.
   void (*open)(int32_t kind, int32_t level, const char *attr,
@@ -108,10 +110,6 @@ LH_EXPORT void lh_destroy(lh_doc *doc);
 // cambiata (serve un nuovo lh_render), 0 altrimenti.
 LH_EXPORT int32_t lh_set_image_size(lh_doc *doc, const char *src, float width,
                                     float height);
-// href del link (<a href>) sotto il punto (x, y) dell'ultimo layout, NULL se
-// non c'è. La stringa vive nel DOM: valida fino al prossimo lh_* sul documento.
-LH_EXPORT const char *lh_link_at(lh_doc *doc, float x, float y);
-
 #ifdef __cplusplus
 }
 #endif

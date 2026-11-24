@@ -54,7 +54,6 @@ void *run(void *arg) {
   if (doc) {
     layout_ok = lh_render(doc, 600) >= 0;
     lh_draw(doc);
-    lh_link_at(doc, 1, 1); // hit-test: ricorsivo sull'albero di render
     lh_export_callbacks ex{text, separator, open, close};
     lh_export(doc, &ex);
     lh_destroy(doc);

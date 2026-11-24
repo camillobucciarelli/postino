@@ -143,16 +143,14 @@ class _LitehtmlViewState() extends State<LitehtmlView> {
     return doc;
   }
 
-  /// `href` sotto [p]: prima i box dei link del contenuto (testo e immagini), poi il DOM vivo per le aree che quei box
-  /// non coprono (padding di un bottone `inline-block`, link `display:block`). Con la `Picture` dalla cache il DOM non
-  /// si ricrea per un tap: impaginato prima che arrivino le immagini, avrebbe un'altra geometria di quella disegnata.
+  /// `href` sotto [p], dai box dei link conservati con la `Picture`: testo e immagini di un link, l'area intera di
+  /// un'ancora a blocco o inline-block. Validi anche senza DOM (documento dalla cache).
   String? _linkAt(Offset p) {
     if (_error != null) return null;
     for (final link in _content.links) {
       if (link.rects.any((r) => r.contains(p))) return link.href;
     }
-    final doc = _doc;
-    return doc == null || _laidOut != widget.width ? null : doc.linkAt(p.dx, p.dy);
+    return null;
   }
 
   /// La `Picture` completa (nessuna immagine in arrivo o fallita: riaprendo si riprova) va in cache, le altre si

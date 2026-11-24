@@ -1,3 +1,6 @@
+// ignore_for_file: missing_whitespace_between_adjacent_strings
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:litehtml_flutter/litehtml_flutter.dart';
 
@@ -13,6 +16,12 @@ void main() {
     test('<br> e paragrafi vanno a capo, le righe spezzate dal layout restano unite da uno spazio', () {
       expect(contentOf('<p>uno<br>due</p><p>tre <b>quattro</b></p>').plainText, 'uno\ndue\ntre quattro');
       expect(contentOf('<p style="width: 60px">uno due tre quattro</p>').plainText, 'uno due tre quattro');
+    });
+
+    test('gli a capo espliciti di fila si contano (riga vuota), i confini di blocco no', () {
+      expect(contentOf('<p>uno<br><br>due</p>').plainText, 'uno\n\ndue');
+      expect(contentOf('<pre>uno\n\ndue</pre>').plainText, 'uno\n\ndue');
+      expect(contentOf('<div><div><p>uno</p></div></div><div><p>due</p></div>').plainText, 'uno\ndue');
     });
 
     test('ogni cella di tabella va a capo, in ordine di documento', () {
@@ -73,6 +82,21 @@ void main() {
     test('un link su due righe ha un box per riga', () {
       final link = contentOf('<p style="width: 80px"><a href="https://x.it">uno due tre</a></p>').links.single;
       expect(link.rects, hasLength(greaterThan(1)));
+    });
+  });
+
+  group('area dei link', () {
+    test('un\'ancora a blocco o inline-block copre tutto il suo box, una inline solo il testo', () {
+      final links = contentOf(
+        '<body style="margin: 0; font-size: 10px">'
+        '<a href="b" style="display: block; height: 40px">blocco</a>'
+        '<a href="i" style="display: inline-block; padding: 20px">bottone</a> '
+        '<a href="t">testo</a>',
+      ).links.toList();
+      expect(links.map((l) => l.href), ['b', 'i', 't']);
+      expect(links[0].rects.single, const Rect.fromLTWH(0, 0, 400, 40));
+      expect(links[1].rects.single.height, greaterThanOrEqualTo(50));
+      expect(links[2].rects.single.height, lessThan(20));
     });
   });
 }

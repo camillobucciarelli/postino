@@ -16,6 +16,9 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
   final _nodes = <ContentNode>[];
   final _open = <({int kind, int level, String attr})>[];
   var _separator = _none;
+
+  /// A capo espliciti (`<br>`, `\n` di `<pre>`) dall'ultimo frammento: si contano, i confini di blocco no.
+  var _breaks = 0;
   _Node? _node;
   var _nodeSpace = false;
 
@@ -27,6 +30,10 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
   }
 
   void separator(int kind) {
+    if (kind == lhSepBreak) {
+      _breaks++;
+      kind = lhSepLine;
+    }
     if (kind > _separator) _separator = kind;
     // Un a capo chiude il nodo, tranne dentro un link: un link su più righe resta una sola fermata di Tab.
     if (kind == lhSepLine && !_open.any((o) => o.kind == lhNodeLink)) {
@@ -44,6 +51,8 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
       _flush();
     }
     _open.add((kind: kind, level: level, attr: attr));
+    // Un'ancora a blocco o inline-block porta la sua area cliccabile intera.
+    if (kind == lhNodeLink && !box.isEmpty) _node = _newNode()..add(box);
   }
 
   void close() {
@@ -70,12 +79,13 @@ class ContentBuilder(final TextStyle Function(int font) _styleOf, [final String?
     }
     final separator = switch (_separator) {
       _ when last == null => '',
-      lhSepLine => '\n',
+      lhSepLine => '\n' * (_breaks > 0 ? _breaks : 1),
       lhSepSpace when !text.startsWith(' ') && !last.endsWithSpace => ' ',
       _ => '',
     };
     _fragments.add(_Fragment(StringBuffer(text), font, rect, separator));
     _separator = _none;
+    _breaks = 0;
   }
 
   void _addToNode(String text, Rect rect) {
@@ -151,8 +161,10 @@ class _Node(final int level, final String? href) {
   final label = StringBuffer();
   final rects = <Rect>[];
 
-  /// Un box per riga: le parole contigue sulla stessa riga si uniscono.
+  /// Un box per riga: le parole contigue sulla stessa riga si uniscono; un box dentro uno già presente (il testo
+  /// nell'area di un'ancora a blocco) non si aggiunge.
   void add(Rect r) {
+    if (rects.any((e) => e.contains(r.topLeft) && e.contains(r.bottomRight - const Offset(0.01, 0.01)))) return;
     if (rects.isNotEmpty) {
       final last = rects.last;
       if (last.top == r.top && last.bottom == r.bottom && r.left >= last.left && r.left - last.right < 1) {

@@ -75,22 +75,14 @@ class GmailProvider(
     final fetched = <String, (Message, MessageBody?)?>{};
     final failed = <String, Failure>{};
     final kept = <Message>[];
-    RateLimitFailure? limited;
     for (var i = 0; i < ids.length; i += _page) {
-      final pageIds = ids.skip(i).take(_page);
-      // After a rate limit the pages left wait for the next syncs, as its chunks left do (#394).
-      if (limited != null) {
-        for (final id in pageIds) {
-          failed[id] = limited;
-        }
-        continue;
-      }
       // Stored by an earlier initial sync that did not end (#394): kept as stored, not downloaded again.
       // ponytail: a label changed meanwhile on a kept message stays stale until it changes again; one lookup per id.
       final todo = <String>[];
-      for (final id in pageIds) {
-        if (resume ? await storedMessage?.call(id, withBody: inbox.contains(id)) : null case final m?) {
-          kept.add(m);
+      for (final id in ids.skip(i).take(_page)) {
+        final stored = resume ? await storedMessage?.call(id, withBody: inbox.contains(id)) : null;
+        if (stored != null) {
+          kept.add(stored);
         } else {
           todo.add(id);
         }
@@ -98,8 +90,10 @@ class GmailProvider(
       final page = await _fetchAll(todo, full: inbox.contains);
       fetched.addAll(page.fetched);
       failed.addAll(page.failed);
-      limited = page.limited;
       await onPage?.call([for (final (m, _) in page.fetched.values.nonNulls) m], _inboxBodies(page.fetched));
+      // The pages stored, the sync fails and the Account pauses: the next one resumes from them (#394). Not deferred to
+      // the cursor: an incremental sync would notify the rest of the mailbox as new (#39).
+      if (page.limited case final limit?) throw OAuthFailed(limit);
     }
     // ponytail: a message left behind by the very first sync (none stored yet) comes with an incremental one, which may
     // notify it although it is old (#39); mark those retries as quiet if that is ever seen.
@@ -113,7 +107,6 @@ class GmailProvider(
         bodies: _inboxBodies(fetched),
         deferredMessageIds: failed.keys.toList(),
         deferred: failed.values.firstOrNull,
-        rateLimited: limited,
       ),
     );
   });
@@ -173,9 +166,10 @@ class GmailProvider(
     changed.addAll(was.due(_clock.now()));
     // ponytail: every added message is fetched in full; metadata only if archive storms get slow.
     final (:fetched, :failed, :limited) = await _fetchAll(changed, full: (_) => true);
-    // The history does not record label changes: the whole list comes every time.
+    // The history does not record label changes: the whole list comes every time, but not on top of a rate limit,
+    // whose 429 would lose the batch (#394): the stored list stays until the next sync.
     // ponytail: one more GET (1 quota unit) per poll; a labels-only refresh every few polls if quota ever matters.
-    final labels = await _labels.list();
+    final labels = limited == null ? await _labels.list() : null;
     // From the end of the downloads: a long batch does not leave its retries already due.
     final next = was.after(latest, settled: {...fetched.keys, ...deleted}, failed: failed.keys, now: _clock.now());
     return Ok(
@@ -432,13 +426,19 @@ class GmailProvider(
             (r) => switch (r) {
               Ok(:final value) => fetched[id] = value,
               Err(failure: final f && (AuthFailure() || OfflineFailure(stalled: false))) => throw OAuthFailed(f),
-              Err(failure: final RateLimitFailure f) => failed[id] = limited = f,
+              Err(failure: final RateLimitFailure f) => failed[id] = limited = _longer(limited, f),
               Err(failure: final f) => failed[id] = f,
             },
           ),
       ]);
     }
     return (fetched: fetched, failed: failed, limited: limited);
+  }
+
+  /// Of two rate limits in one chunk, the one that ends last: the pause must not be shorter than Gmail asked.
+  static RateLimitFailure _longer(RateLimitFailure? a, RateLimitFailure b) {
+    final (was, now) = (a?.retryAfter, b.retryAfter);
+    return a != null && was != null && (now == null || !now.isAfter(was)) ? a : b;
   }
 
   Future<(Message, MessageBody?)?> _fetch(String id, {required bool full}) async {

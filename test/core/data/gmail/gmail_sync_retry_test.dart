@@ -30,8 +30,12 @@ class _Mailbox(final List<String> ids) {
   /// History records touching these ids again (a label changed elsewhere).
   final touched = <String>[];
 
-  /// The messages stored here, their bodies too.
+  /// The messages stored here, their bodies too but for those in [bodiless].
   final stored = <String, Message>{};
+  final bodiless = <String>{};
+
+  /// The label list answers 429.
+  var labelsLimited = false;
 
   late final provider = GmailProvider(
     gmailAccount,
@@ -48,7 +52,11 @@ class _Mailbox(final List<String> ids) {
           case 'stall':
             return Completer<http.StreamedResponse>().future;
           case final status?:
-            return _stream(http.Response('{}', int.parse(status)));
+            // `429:<s>` is a 429 with a Retry-After of <s> seconds.
+            final [code, ...after] = status.split(':');
+            return _stream(
+              http.Response('{}', int.parse(code), headers: {if (after.isNotEmpty) 'retry-after': after.single}),
+            );
         }
         return _stream(
           gmailJson({
@@ -63,6 +71,7 @@ class _Mailbox(final List<String> ids) {
       }
       return _stream(switch (path) {
         'history' when history == 'gone' => gmailFixture('not_found'),
+        'labels' when labelsLimited => http.Response('{}', 429),
         'history' => gmailJson({
           'historyId': '200',
           'history': [
@@ -90,7 +99,7 @@ class _Mailbox(final List<String> ids) {
     client: gmailTestClient,
     sleep: (_) async {},
     stall: const Duration(milliseconds: 20),
-    storedMessage: (id, {withBody = false}) async => stored[id],
+    storedMessage: (id, {withBody = false}) async => withBody && bodiless.contains(id) ? null : stored[id],
   );
 
   static http.StreamedResponse _stream(http.Response r) =>
@@ -174,27 +183,52 @@ void main() {
     expect(batch.deferredMessageIds..sort(), ['m3', 'm5', 'm6', 'm7', 'm8', 'm9']);
   });
 
-  test('initial sync: a rate limit defers the message, and a new initial sync skips those stored (#394)', () async {
+  test('initial sync: a rate limit fails it with the pages stored, and the resumed one skips them (#394)', () async {
     final g = _Mailbox([for (var i = 0; i < 10; i++) 'm$i'])..broken['m7'] = '429';
-    final first = okValue(
-      await g.provider.initialSync(
-        onPage: (m, _) async {
-          for (final x in m) {
-            g.stored[x.id] = x;
-          }
-        },
-      ),
-    );
-    expect(first.messages, hasLength(9));
-    expect(first.deferredMessageIds, ['m7']);
-    expect(first.rateLimited, isA<RateLimitFailure>());
+    Future<void> store(List<Message> page, Map<String, MessageBody> _) async {
+      for (final m in page) {
+        g.stored[m.id] = m;
+      }
+    }
+
+    expect(await g.provider.initialSync(onPage: store), isErr<RateLimitFailure>());
+    expect(g.stored, hasLength(9), reason: 'what came is stored');
     g
       ..broken.clear()
       ..fetched.clear();
-    final again = okValue(await g.provider.initialSync(resume: true));
+    final again = okValue(await g.provider.initialSync(onPage: store, resume: true));
     expect(g.fetched, ['m7'], reason: 'the stored ones are not downloaded again');
     expect(again.messages, hasLength(10), reason: 'the stored ones stay in the snapshot');
-    expect(again.rateLimited, isNull);
+  });
+
+  test('a resumed initial sync downloads an inbox message stored without its body (#394)', () async {
+    final g = _Mailbox(['a', 'b']);
+    final first = okValue(await g.provider.initialSync());
+    for (final m in first.messages) {
+      g.stored[m.id] = m;
+    }
+    g
+      ..bodiless.add('b')
+      ..fetched.clear();
+    okValue(await g.provider.initialSync(resume: true));
+    expect(g.fetched, ['b']);
+  });
+
+  test('a limited batch does not read the labels: a 429 there would lose it (#394)', () async {
+    final g = _Mailbox(['a', 'b'])
+      ..broken['b'] = '429'
+      ..labelsLimited = true;
+    final batch = okValue(await g.provider.incrementalSync('100'));
+    expect(_ids(batch), ['a']);
+    expect(batch.labels, isNull, reason: 'the stored ones stay');
+  });
+
+  test('two rate limits in one chunk: the pause is the longer one (#394)', () async {
+    final g = _Mailbox(['a', 'b', 'c'])
+      ..broken['a'] = '429:900'
+      ..broken['b'] = '429:60';
+    final batch = okValue(await g.provider.incrementalSync('100'));
+    expect(batch.rateLimited?.retryAfter, gmailNow.add(const Duration(seconds: 900)));
   });
 
   test('an initial sync not resumed (an expired cursor) downloads the stored ones again (#394)', () async {

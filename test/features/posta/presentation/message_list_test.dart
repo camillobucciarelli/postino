@@ -842,15 +842,8 @@ void main() {
         final row = find.descendant(of: _rowOf('s1'), matching: find.byType(PostinoFocusRing));
         Focus.of(tester.element(row)).requestFocus();
         await tester.pumpAndSettle();
-        // Reading order: with the button at the right end it comes after the Scrivi FAB (same column), so up to 2 Tab.
-        for (var n = 0; n < 2; n++) {
-          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-          await tester.pumpAndSettle();
-          if (FocusManager.instance.primaryFocus!.context!.findAncestorWidgetOfExactType<PostinoSectionHeader>() !=
-              null) {
-            break;
-          }
-        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
         final focused = FocusManager.instance.primaryFocus!.context!;
         expect(focused.findAncestorWidgetOfExactType<PostinoSectionHeader>()?.title, 'Da leggere');
         await tester.sendKeyEvent(key);

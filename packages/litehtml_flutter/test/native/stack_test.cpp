@@ -11,7 +11,10 @@
 
 namespace {
 
-constexpr size_t kStackKB = 256;
+#ifndef STACK_KB
+#define STACK_KB 256
+#endif
+constexpr size_t kStackKB = STACK_KB;
 
 int64_t create_font(const char *, float size, int32_t, int32_t, int32_t,
                     lh_font_metrics *m) {

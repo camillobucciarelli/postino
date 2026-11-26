@@ -15,7 +15,8 @@ Siccome lo stack di quel thread non lo sceglie il pacchetto, i limiti di annidam
 
 - al più 512 elementi aperti nel parser HTML (oltre: `LitehtmlFailure.tooDeep`), DOM di litehtml profondo al più 128 (oltre: `tooDeep`), al più 32 blocchi e funzioni CSS annidati (oltre: blocco vuoto);
 - misurato su arm64 (macOS, 2026-11-24): il caso peggiore usa meno di 160 KB di stack con `-O3`, l'ottimizzazione fissata in `hook/build.dart`, e meno di 384 KB con `-O0`;
-- `test/native/stack_test.sh`, nel job `check`, fa girare i casi peggiori in un thread con 256 KB di stack.
+- misurato su x86_64 (Linux, clang `-O3`, runner `ubuntu-latest`, 2026-11-24): il caso peggiore, 126 `display:flex` annidati, supera 256 KB e sta in 384 KB; gli altri casi stanno in 256 KB;
+- `test/native/stack_test.sh` fa girare i casi peggiori in un thread con 256 KB di stack nel job `check` (macOS arm64) e con 384 KB nel job `linux` (x86_64). Su Windows (MSVC) non gira: lo script è clang e pthread, e lì i test Dart del pacchetto caricano la libreria senza misurarne lo stack.
 
 Il margine è pensato sul thread più piccolo che può ospitare l'isolate UI. Da Flutter 3.29 su iOS e Android l'isolate UI gira sul thread principale della piattaforma (1 MB su iOS, 8 MB su Android); i thread secondari hanno di default 512 KB su iOS e Apple, circa 1 MB su Android e Windows. Questi valori sono di documentazione e non sono stati misurati sui dispositivi.
 

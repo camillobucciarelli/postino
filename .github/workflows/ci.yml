@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Build nativa solo se serve (camillobucciarelli/officina#1): `android` e `apple` girano se la PR tocca codice
+  # Build nativa solo se serve (camillobucciarelli/officina#1): `android`, `apple`, `linux` e `windows` girano se la PR tocca codice
   # nativo, dipendenze o questo workflow. Su main e a mano girano sempre. Un errore solo di build nativa in una PR
   # di solo Dart esce quindi su main, non nella PR.
   changes:
@@ -37,7 +37,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             files=$(git diff --name-only HEAD^1 HEAD)
             echo "$files"
-            grep -qE '^(android|ios|macos)/|^packages/|^pubspec\.(yaml|lock)$|^\.fvmrc$|^\.github/workflows/ci\.yml$|^tool/release/(battery_permission_check|store_bundle_check)\.sh$' <<< "$files" || native=false
+            grep -qE '^(android|ios|macos|linux|windows)/|^packages/|^pubspec\.(yaml|lock)$|^\.fvmrc$|^\.github/workflows/ci\.yml$|^tool/release/(battery_permission_check|store_bundle_check|windows_runtime_check)\.sh$' <<< "$files" || native=false
           fi
           echo "native=$native" | tee -a "$GITHUB_OUTPUT"
 
@@ -107,6 +107,7 @@ jobs:
       - run: tool/release/readable_check_test.sh
       - run: tool/release/keychain_create_test.sh
       - run: tool/release/play_key_export_test.sh
+      - run: tool/release/windows_runtime_check_test.sh
 
   # `flutter test` intero su un runner hosted macOS (3 core) dura 29 minuti (#389): diviso in parti parallele.
   # Il codice generato è nel repository (`static` lo verifica), quindi qui il codegen non serve.
@@ -189,9 +190,70 @@ jobs:
           fi
           grep -q 'A store release needs the upload key' <<< "$out" || { echo "$out"; exit 1; }
 
-  # Job `linux` e `windows` rimossi. Con il repo pubblico i minuti hosted sono gratis: il ritorno
-  # è deciso in camillobucciarelli/officina#8. I job sono nella git history
-  # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
+  # `linux` e `windows` (#383) compilano il motore HTML nativo (packages/litehtml_flutter) con gcc/clang e MSVC e
+  # l'app desktop. Non sono check richiesti. Come `android` e `apple`, girano solo se la PR tocca codice nativo.
+  # Flutter da flutter-action alla versione di .fvmrc; il codice generato è committato (lo verifica `static`),
+  # quindi niente codegen.
+  linux:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev \
+            libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libnotify-dev
+      - run: flutter pub get
+      # I test Dart caricano la libreria nativa compilata qui (un documento litehtml aperto, disegnato e liberato).
+      # Su x86_64 il caso peggiore (126 flex annidati) supera 256 KB di stack e sta in 384 KB (ADR 0025); su Linux
+      # i thread, quello dell'isolate UI compreso, hanno di default 8 MB di stack (glibc).
+      - name: litehtml_flutter
+        working-directory: packages/litehtml_flutter
+        run: |
+          flutter pub get
+          flutter test
+          STACK_KB=384 test/native/stack_test.sh
+      - run: flutter build linux --release
+
+  windows:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+      - run: flutter pub get
+      # I test Dart caricano la libreria nativa compilata con MSVC. stack_test.sh no: è uno script clang con pthread.
+      - name: litehtml_flutter
+        working-directory: packages/litehtml_flutter
+        run: |
+          flutter pub get
+          flutter test
+      - run: flutter build windows --release
+      # Il runtime Visual C++ sta accanto all'exe: sul runner è installato, su un PC qualsiasi no.
+      - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
 
   apple:
     needs: changes

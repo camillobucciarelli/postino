@@ -37,40 +37,44 @@ class const PostinoSectionHeader({
     final action = onAction;
     return Padding(
       padding: const EdgeInsets.fromLTRB(PostinoSpacing.s4, PostinoSpacing.s4, PostinoSpacing.s2, PostinoSpacing.s1),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Semantics(
-            container: true,
-            header: true,
-            label: semanticLabel,
-            excludeSemantics: true,
-            child: SelectionContainer.disabled(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s2),
-                child: Text(
-                  '${title.toUpperCase()}  $count',
-                  style: PostinoText.overline.copyWith(color: context.pc.inkSubtle),
+      // The full width: a Wrap shrinks to its content, and under loose constraints (PostinoSizeFade) it would be centered.
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Semantics(
+              container: true,
+              header: true,
+              label: semanticLabel,
+              excludeSemantics: true,
+              child: SelectionContainer.disabled(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: PostinoSpacing.s2),
+                  child: Text(
+                    '${title.toUpperCase()}  $count',
+                    style: PostinoText.overline.copyWith(color: context.pc.inkSubtle),
+                  ),
                 ),
               ),
             ),
-          ),
-          if (action != null)
-            Semantics(
-              container: true,
-              button: true,
-              label: actionSemanticLabel ?? actionLabel,
-              onTap: action,
-              excludeSemantics: true,
-              child: PostinoButton(
-                label: actionLabel ?? '',
-                onPressed: action,
-                variant: PostinoButtonVariant.ghost,
-                size: PostinoButtonSize.sm,
+            if (action != null)
+              Semantics(
+                container: true,
+                button: true,
+                label: actionSemanticLabel ?? actionLabel,
+                onTap: action,
+                excludeSemantics: true,
+                child: PostinoButton(
+                  label: actionLabel ?? '',
+                  onPressed: action,
+                  variant: PostinoButtonVariant.ghost,
+                  size: PostinoButtonSize.sm,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -73,7 +73,7 @@ class MicrosoftProvider(
   });
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => oauthGuard(() async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage, bool resume = false}) => oauthGuard(() async {
     // The cursor comes first: a folder that changes while listing shows up in the next incremental sync.
     final (_, folderLink) = await _folders.delta(null);
     final folders = await _folders.list();

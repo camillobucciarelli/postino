@@ -120,17 +120,22 @@ class SyncPhase(
     final accountId = account.id;
     final cursor = await _store.cursor(accountId);
     var full = cursor == null;
-    Future<Result<SyncBatch>> initial() {
+    // Without a cursor no initial sync ended: one that stopped midway is resumed (#394).
+    final resume = full;
+    Future<Result<SyncBatch>> initial({required bool resume}) {
       debugPrint('[sync] $accountId: initial sync start');
-      return provider.initialSync(onPage: (messages, bodies) => _store.applyPage(accountId, messages, bodies));
+      return provider.initialSync(
+        onPage: (messages, bodies) => _store.applyPage(accountId, messages, bodies),
+        resume: resume,
+      );
     }
 
     if (!full) debugPrint('[sync] $accountId: incremental sync start');
-    var result = full ? await initial() : await provider.incrementalSync(cursor);
+    var result = full ? await initial(resume: resume) : await provider.incrementalSync(cursor);
     if (result case Err(failure: NotFoundFailure())) {
       // Expired cursor: start over.
       full = true;
-      result = await initial();
+      result = await initial(resume: false);
     }
     switch (result) {
       case Ok(:final value):
@@ -157,6 +162,12 @@ class SyncPhase(
         }
 
         _streaks.remove(accountId);
+        // Went through, but what the rate limit left out waits for the pause (#394).
+        if (value.rateLimited case final limited?) {
+          _pause(account, limited);
+        } else {
+          _gate.resetBackoff(accountId);
+        }
         if (value.deferred case final deferred? when _connectivity.isOnline) {
           _log.record(
             deferred,
@@ -187,14 +198,7 @@ class SyncPhase(
         // The Provider, not the Account: its id is the address (#252).
         if (log) _log.record(failure, context: 'sync ${account.provider.name}, $failed di fila');
         _streaks[accountId] = (failed: failed, logged: streak.logged || log);
-        if (failure case RateLimitFailure(:final retryAfter?)) {
-          _gate.pause(accountId, retryAfter);
-          if (_pauses.add(accountId)) {
-            _log.record('inizio, fino a $retryAfter', context: 'sync ${account.provider.name}, pausa rate limit');
-          }
-          debugPrint('[sync] $accountId: paused until $retryAfter');
-        }
-        // ponytail: a fixed retry on the next poll; exponential backoff if Providers keep refusing.
+        if (failure is RateLimitFailure) _pause(account, failure);
         if (failure is AuthFailure) {
           // Its cause, by Provider: the Account's id holds its address (#353).
           _log.record(failure, context: 'sync ${account.provider.name}, da ricollegare');
@@ -202,5 +206,14 @@ class SyncPhase(
         }
         return failure;
     }
+  }
+
+  /// No sync of the Account until the end of [limit], or of its backoff when the Provider gives none (#394).
+  void _pause(Account account, RateLimitFailure limit) {
+    final until = _gate.rateLimited(account.id, limit.retryAfter);
+    if (_pauses.add(account.id)) {
+      _log.record('inizio, fino a $until', context: 'sync ${account.provider.name}, pausa rate limit');
+    }
+    debugPrint('[sync] ${account.id}: paused until $until');
   }
 }

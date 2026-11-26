@@ -74,10 +74,14 @@ void main() {
     await engine.syncAll();
     a.rateLimit();
     await engine.syncAll();
+    // Paused, the slot has no replay to wait for: the status comes a turn later (#394).
+    await pumpEventQueue();
     expect(last()?.failed, isTrue);
     a
       ..rateLimit(on: false)
       ..goOffline();
+    // Past the pause the rate limit set (#394).
+    h.clock.advance(const Duration(minutes: 1));
     await engine.syncAll();
     expect(last()?.failed, isTrue);
     a.goOnline();

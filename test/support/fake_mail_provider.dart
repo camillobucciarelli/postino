@@ -79,6 +79,9 @@ class FakeMailProvider() implements MailProvider {
   /// Set, every incremental sync says it left messages behind for this reason (#252).
   Failure? deferred;
 
+  /// Set, every incremental sync goes through but says the Provider rate-limited it (#394).
+  RateLimitFailure? rateLimitedBatch;
+
   /// The ids of the messages [deferred] left behind.
   List<String> deferredIds = const [];
 
@@ -158,6 +161,9 @@ class FakeMailProvider() implements MailProvider {
 
   /// What the sync engine asked for: initial syncs, and the delta of the last incremental one.
   int initialSyncs = 0;
+
+  /// The `resume` of every [initialSync] that reached the Provider.
+  final resumes = <bool>[];
 
   /// Every [initialSync] and [incrementalSync] that reached the Provider, also those that fail.
   int syncCalls = 0;
@@ -284,8 +290,9 @@ class FakeMailProvider() implements MailProvider {
   };
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) async {
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage, bool resume = false}) async {
     syncCalls++;
+    resumes.add(resume);
     await hold?.future;
     if (_failure == null && onPage != null) {
       final all = _messages.values.toList();
@@ -337,6 +344,7 @@ class FakeMailProvider() implements MailProvider {
         bodies: _inboxBodies(messages),
         deferredMessageIds: deferredIds,
         deferred: deferred,
+        rateLimited: rateLimitedBatch,
       );
     });
     await hold?.future;

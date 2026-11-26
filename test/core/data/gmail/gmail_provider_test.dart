@@ -1293,7 +1293,7 @@ void main() {
       expect(sleeps.where((d) => d == const Duration(milliseconds: 125)), hasLength(2));
     });
 
-    test('persistent 429s on page two still fail, with page one stored', () async {
+    test('persistent 429s on page two defer the rest, with page one stored (#394)', () async {
       final stored = <int>[];
       final p = GmailProvider(
         gmailAccount,
@@ -1322,8 +1322,11 @@ void main() {
         client: gmailTestClient,
         sleep: (_) async {},
       );
-      expect(await p.initialSync(onPage: (m, _) async => stored.add(m.length)), isErr<RateLimitFailure>());
-      expect(stored, [100]);
+      final batch = okValue(await p.initialSync(onPage: (m, _) async => stored.add(m.length)));
+      // m120 is in the chunk m120..m124: those four come, the chunks after it are left for later.
+      expect(stored, [100, 24]);
+      expect(batch.deferredMessageIds, hasLength(26));
+      expect(batch.rateLimited, isA<RateLimitFailure>());
     });
 
     test('a 429 that clears on retry is not a failure', () async {

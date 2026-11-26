@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:postino/core/data/mail_store.dart';
 import 'package:postino/core/data/postino_database.dart';
 import 'package:postino/core/data/sync_engine.dart';
 import 'package:postino/core/domain/inbox_repository.dart';
+import 'package:postino/core/domain/result.dart';
 import 'package:postino/main.dart';
 
 import '../../../support/fake_mail_provider.dart';
@@ -51,6 +54,18 @@ void main() {
     await GetIt.I<SyncEngine>().syncAll();
     expect((await inbox()).where((e) => e.startsWith('c:')), hasLength(4));
     expect(await store.cursor('c'), isNotNull);
+  });
+
+  test('an initial sync resumes the one that did not end, not the one for an expired cursor (#394)', () async {
+    final c = (await h.addAccount('c'))
+      ..failAfterPages = 0
+      ..deliver(msg('1'));
+    await GetIt.I<SyncEngine>().syncAll();
+    c.failAfterPages = null;
+    await GetIt.I<SyncEngine>().syncAll();
+    c.expireCursors();
+    await GetIt.I<SyncEngine>().syncAll();
+    expect(c.resumes, [true, true, false]);
   });
 
   test('a failed sync deletes nothing', () async {
@@ -121,5 +136,58 @@ void main() {
     a.removeRemotely('2');
     await GetIt.I<SyncEngine>().syncAll();
     expect(await bodies(), ['Corpo di 1']);
+  });
+
+  group('a rate limit without an end pauses the Account (#394)', () {
+    /// Syncs every 15 s until the Provider is asked again: how long the pause was.
+    Future<Duration> pause() async {
+      final calls = a.syncCalls;
+      var waited = Duration.zero;
+      while (a.syncCalls == calls) {
+        h.clock.advance(const Duration(seconds: 15));
+        waited += const Duration(seconds: 15);
+        await GetIt.I<SyncEngine>().syncAll();
+      }
+      return waited;
+    }
+
+    test('60 s, doubled up to 15 min, back to 60 s after a sync that goes through', () async {
+      a.rateLimit();
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(
+        [for (var i = 0; i < 6; i++) await pause()],
+        [
+          for (final s in [60, 120, 240, 480, 900, 900]) Duration(seconds: s),
+        ],
+      );
+      a.rateLimit(on: false);
+      await pause();
+      a.rateLimit();
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(await pause(), const Duration(seconds: 60));
+    });
+
+    test('a sync queued behind the limited one does not ask the Provider', () async {
+      a
+        ..rateLimit()
+        ..hold = Completer<void>();
+      final calls = a.syncCalls;
+      final limited = GetIt.I<SyncEngine>().syncAll();
+      await pumpEventQueue();
+      final queued = GetIt.I<SyncEngine>().syncAll();
+      a.hold!.complete();
+      await Future.wait([limited, queued]);
+      expect(a.syncCalls, calls + 1);
+    });
+
+    test('a batch that went through but was limited is saved, and pauses the Account', () async {
+      a
+        ..rateLimitedBatch = const RateLimitFailure()
+        ..deliver(msg('3'));
+      await GetIt.I<SyncEngine>().syncAll();
+      expect(await inbox(), contains('a:3'));
+      expect(await pause(), const Duration(seconds: 60));
+      expect(await pause(), const Duration(seconds: 120), reason: 'a limited batch does not reset the backoff');
+    });
   });
 }

@@ -5,8 +5,10 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postino/core/data/gmail/gmail_cursor.dart';
 import 'package:postino/core/data/gmail/gmail_provider.dart';
 import 'package:postino/core/domain/mail_provider.dart';
+import 'package:postino/core/domain/message.dart';
 import 'package:postino/core/domain/result.dart';
 import 'package:postino/core/domain/search_query.dart';
 
@@ -27,6 +29,9 @@ class _Mailbox(final List<String> ids) {
 
   /// History records touching these ids again (a label changed elsewhere).
   final touched = <String>[];
+
+  /// The messages stored here, their bodies too.
+  final stored = <String, Message>{};
 
   late final provider = GmailProvider(
     gmailAccount,
@@ -85,6 +90,7 @@ class _Mailbox(final List<String> ids) {
     client: gmailTestClient,
     sleep: (_) async {},
     stall: const Duration(milliseconds: 20),
+    storedMessage: (id, {withBody = false}) async => stored[id],
   );
 
   static http.StreamedResponse _stream(http.Response r) =>
@@ -149,9 +155,54 @@ void main() {
     expect(batch.cursor, '200');
   });
 
-  test('a rate limit on one message still stops the sync, which the engine pauses', () async {
-    final g = _Mailbox(['a', 'b'])..broken['b'] = '429';
-    expect(await g.provider.incrementalSync('100'), isErr<RateLimitFailure>());
+  test('a rate limit on one message defers it: the batch is saved and says it was limited (#394)', () async {
+    final g = _Mailbox([for (var i = 0; i < 10; i++) 'm$i'])..broken['m9'] = '429';
+    final batch = okValue(await g.provider.incrementalSync('100'));
+    expect(batch.messages, hasLength(9));
+    expect(batch.deferredMessageIds, ['m9']);
+    expect(batch.rateLimited, isA<RateLimitFailure>());
+    final cursor = GmailCursor.decode(batch.cursor);
+    expect(cursor.historyId, '200');
+    expect(cursor.retries.keys, ['m9']);
+  });
+
+  test('a rate limit stops the chunks left: they are deferred, not requested (#394)', () async {
+    final g = _Mailbox([for (var i = 0; i < 10; i++) 'm$i'])..broken['m3'] = '429';
+    final batch = okValue(await g.provider.incrementalSync('100'));
+    expect(g.fetched.where((id) => id.compareTo('m5') >= 0), isEmpty);
+    expect(_ids(batch), ['m0', 'm1', 'm2', 'm4']);
+    expect(batch.deferredMessageIds..sort(), ['m3', 'm5', 'm6', 'm7', 'm8', 'm9']);
+  });
+
+  test('initial sync: a rate limit defers the message, and a new initial sync skips those stored (#394)', () async {
+    final g = _Mailbox([for (var i = 0; i < 10; i++) 'm$i'])..broken['m7'] = '429';
+    final first = okValue(
+      await g.provider.initialSync(
+        onPage: (m, _) async {
+          for (final x in m) {
+            g.stored[x.id] = x;
+          }
+        },
+      ),
+    );
+    expect(first.messages, hasLength(9));
+    expect(first.deferredMessageIds, ['m7']);
+    expect(first.rateLimited, isA<RateLimitFailure>());
+    g
+      ..broken.clear()
+      ..fetched.clear();
+    final again = okValue(await g.provider.initialSync(resume: true));
+    expect(g.fetched, ['m7'], reason: 'the stored ones are not downloaded again');
+    expect(again.messages, hasLength(10), reason: 'the stored ones stay in the snapshot');
+    expect(again.rateLimited, isNull);
+  });
+
+  test('an initial sync not resumed (an expired cursor) downloads the stored ones again (#394)', () async {
+    final g = _Mailbox(['a', 'b']);
+    g.stored['a'] = okValue(await g.provider.initialSync()).messages.first;
+    g.fetched.clear();
+    okValue(await g.provider.initialSync());
+    expect(g.fetched..sort(), ['a', 'b'], reason: 'its labels may have changed while the history was lost');
   });
 
   test('an expired historyId is still NotFound, retries or not', () async {

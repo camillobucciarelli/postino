@@ -32,12 +32,25 @@ class const SyncBatch({
   /// Why messages failed for the first time in this sync (#252); null when none did. Those failing again on a retry
   /// say nothing more: the log would get a line every hour.
   final Failure? deferred,
+
+  /// The Provider rate-limited this sync (#394): what it left behind is in [deferredMessageIds], and the Account
+  /// pauses as after a sync refused for it.
+  final RateLimitFailure? rateLimited,
 }) extends Equatable {
   /// Crea un batch; senza argomenti le liste sono vuote e le Etichette non lette.
   this;
 
   @override
-  List<Object?> get props => [cursor, messages, labels, removedMessageIds, bodies, deferredMessageIds, deferred];
+  List<Object?> get props => [
+    cursor,
+    messages,
+    labels,
+    removedMessageIds,
+    bodies,
+    deferredMessageIds,
+    deferred,
+    rateLimited,
+  ];
 }
 
 /// A page of the initial sync, delivered as soon as it is fetched so the UI fills up progressively.
@@ -71,7 +84,9 @@ abstract interface class MailProvider() {
   /// Headers of the last 90 days with Labels and Conversations, plus the inbox bodies.
   /// [onPage] gets each page as soon as it is fetched (newest first); the returned batch is still the whole
   /// snapshot, with the cursor: the caller saves the cursor only from it, so an interrupted run never skips messages.
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage});
+  /// [resume]: no initial sync ended for the Account yet, so what an interrupted one stored may be kept as it is
+  /// instead of downloaded again (#394); not after an expired cursor, where the stored copies may be stale.
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage, bool resume = false});
 
   /// Changes since [cursor]; an expired cursor is [NotFoundFailure], and the caller redoes the initial sync.
   Future<Result<SyncBatch>> incrementalSync(String cursor);

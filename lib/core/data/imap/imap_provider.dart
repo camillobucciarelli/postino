@@ -98,7 +98,7 @@ class ImapProvider(
   Future<Result<void>> refreshAuth() => imapGuard(() => _session.run((_) async {}));
 
   @override
-  Future<Result<SyncBatch>> initialSync({SyncPage? onPage}) => imapGuard(
+  Future<Result<SyncBatch>> initialSync({SyncPage? onPage, bool resume = false}) => imapGuard(
     () => _session.run((c) async {
       final folders = await _list(c);
       final since = _since;

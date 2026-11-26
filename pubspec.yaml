@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.6.5+2
+version: 1.6.6+2
 
 environment:
   sdk: ^3.14.0
@@ -76,6 +76,10 @@ dependencies:
   llamadart_llama_cpp_flutter: ^0.19.8
   llamadart_litert_lm_flutter: ^0.19.8
   mobile_scanner: ^7.5.0
+  # Motore HTML dei corpi email (#383). Non ancora usato dall'app: dipendere da qui fa compilare la libreria nativa
+  # nei job android e apple della CI.
+  litehtml_flutter:
+    path: packages/litehtml_flutter
 
 dev_dependencies:
   flutter_test:

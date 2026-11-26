@@ -19,6 +19,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/html_fallback_engine.dart';
 import '../../support/ui.dart';
 
 const _desktop = Size(1600, 900);
@@ -93,6 +94,8 @@ void _expectAllTextInMaterial(WidgetTester tester) {
 }
 
 void main() {
+  // Looks for the body's text and links as widgets.
+  setUp(useHtmlFallbackEngine);
   for (final size in [_desktop, _phone]) {
     testWidgets('at ${size.width.toInt()}×${size.height.toInt()} all text of the Conversazione is under a Material', (
       tester,

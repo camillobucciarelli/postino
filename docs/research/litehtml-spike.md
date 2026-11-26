@@ -156,3 +156,86 @@ Il requisito «tutto il testo selezionabile e copiabile» è coperto per il test
 | Link, immagini, integrazione nell'app, font per piattaforma | no | 2–3 settimane |
 | Accessibilità completa (VoiceOver, TalkBack, Narrator, Orca) e selezione tastiera/touch | parziale (macOS, test automatici) | 2–3 settimane |
 | Totale | | 7–11 settimane/persona (somma delle righe: giorni 10–17 ≈ 2–3,5 settimane a 5 giorni/settimana, più 5–8 settimane delle tre voci in settimane); l'incertezza maggiore è su Windows e Android e sulle prestazioni, non misurate |
+
+## 8. Ricostruzione (2026-11-23)
+
+Il codice dei tre branch spike del 2026-10-30 è andato perso (mai pushato). Lo spike 1 è stato ricostruito da zero sul branch `spike/66-litehtml-macos`, questa volta pushato su `origin`, seguendo questo rapporto. Memoria (spike 2) e accessibilità/selezione (spike 3) non sono stati ricostruiti. Le misure sono in `docs/research/litehtml-misure.md` (era `packages/litehtml_flutter/MEASUREMENTS.md` sul branch dello spike); i PNG stanno fuori dal repo in `~/Downloads/litehtml-spike-66/`.
+
+**Email di prova [F]**: le newsletter Zalando e ProntoPro della issue non hanno riferimenti nel repo né nei rapporti (HTML personali, mai salvati). Al loro posto due newsletter pubbliche (MIT) e complesse: `colorlib-1` (ColorlibHQ/email-templates n. 1, generata con MJML: 116 tabelle, 26 `bgcolor`, colonne, hero con `height`) e `cerberus-hybrid` (TedGoas/Cerberus: colonne ibride, `max-width` su tabelle `width=100%`, spaziatori `height=40`, `dir=rtl`, `<center>`). Nessun HTML di email nel repo.
+
+**Scelta di build [F]**: native assets, come nel rapporto: `hook/build.dart` con `native_toolchain_c` 0.19.6 (`hooks` 2.2, `code_assets` 2.2). Gumbo come libreria statica C99, litehtml + wrapper come dinamica C++17 che la linka, `-w`. Ha funzionato al primo tentativo con Flutter 3.50.0 (`.fvmrc`, non più 3.47.8): `flutter test`, `flutter build macos --release` e l'app partono senza CMake né podspec. `plugin_ffi` non provato: non serviva. Prima compilazione ~45 s, poi in cache.
+
+**Architettura [F]**: `src/litehtml_c.h` con 4 funzioni (`lh_create(html, width, cb)`, `lh_render`, `lh_draw`, `lh_destroy`) e 8 callback sincrone: misura (`create_font`, `text_width`) e disegno (`draw_text`, `fill_rect`, `draw_borders`, `draw_image`, `set_clip`, `del_clip`). Differenze dal rapporto: niente stato globale, perché ogni `LitehtmlDocument` crea le proprie `NativeCallable.isolateLocal`, i propri font e la propria cache delle larghezze, che muoiono con lui; niente `get_image_size` verso Dart; `lh_height` e `lh_content_width` tolte (`lh_render` restituisce l'altezza). `LitehtmlView(html, width)`: `StatefulWidget` che crea il documento, fa layout e registra una `Picture` all'`initState` o al cambio di html; un cambio di sola larghezza rifà layout e draw sullo stesso DOM; `CustomPaint` alto quanto il contenuto. Il layout resta sincrono sull'isolate UI.
+
+**Immagini [F]**: rettangoli grigi `#D0D0D0`. La "dimensione dichiarata" è letta dagli attributi `width`/`height` di ogni `<img>` (visita del DOM dopo `lh_create`) e passata a litehtml come dimensione intrinseca: così `style="width:100%; height:auto"` dà il rapporto d'aspetto giusto, come fa il browser prima di caricare l'immagine. Con un solo attributo (es. `height=""`) l'immagine ha altezza 0, perché senza scaricarla non c'è modo di saperla. Gli sfondi CSS con immagine non si disegnano (resta il `background-color`).
+
+**Confronto con il browser [F]**: Chrome 158 di sistema in headless (via `playwright-core` 1.49.1, script fuori dal repo), stessa larghezza, 2x, rete bloccata (niente web font, niente immagini), `<img>` sostituiti da PNG grigi della dimensione degli attributi e altezza 0 senza attributi: le stesse regole del prototipo, così il confronto misura il layout e non il caricamento. Affiancati in `<email>-<larghezza>-confronto.png` (litehtml a sinistra).
+
+| Area | Esito sulle due email |
+|---|---|
+| Tabelle | Struttura, larghezze delle colonne e annidamenti come Chrome dopo 3 patch: `max-width` (sezione con testo bianco di Cerberus, larga come la pagina invece di 500 px), `height` dei `td` (spaziatori di 40 px ridotti a una riga di ~1 px; hero di Colorlib più basso: Chrome somma il padding all'`height` della cella), `cellpadding` (ogni cella teneva 1 px di padding: deriva verticale cumulativa). Altezza finale: 3831 contro 3844 px, 1688 contro 1706 px. |
+| `bgcolor` | Corretto su `table`/`td` senza toppe (lo legge litehtml). |
+| Colonne ibride / float | Colonne `inline-block` di Cerberus a 2 e 3 affiancate come in Chrome. Float: nessun caso nelle due email (MJML e Cerberus non li usano), coperto solo dal test sintetico dello spike perso. |
+| Bordi | Bordi pieni e raggi uguali (bottoni arrotondati) uguali a Chrome; `dotted`/`dashed`/`double` disegnati pieni. |
+| Font | Famiglie risolte da macOS (Georgia per Playfair, Helvetica per Montserrat/sans-serif): stessi a capo di Chrome quasi ovunque. `letter-spacing` **non supportato** da litehtml v0.10 (nessuna occorrenza nel sorgente): le etichette maiuscole di Colorlib sono più strette e "HAPPY CUSTOMERS" sta su una riga invece di due. |
+| Media query | Valutate a ogni larghezza (test sul relayout 600→400 px); le due email non ne attivano nessuna a 700/1000. |
+| `<center>` / `align=center` | Chrome usa `-webkit-center` (centra anche le tabelle-bottone figlie, ma le tabelle non lo ereditano); litehtml un `text-align:center` ereditato ovunque: prima della correzione il testo di Cerberus era centrato invece che a sinistra e il bottone dell'hero di Colorlib stava a sinistra. Corretto con due regole di user CSS nel wrapper (non una patch): copre i figli diretti, non il comportamento completo. |
+| `dir=rtl` | Non supportato: la riga "testo a sinistra, immagine a destra" di Cerberus resta nell'ordine del sorgente. |
+| Altro | Una riga chiara di 1 px tra alcune sezioni di Colorlib (arrotondamenti) che Chrome non ha; spaziature verticali delle colonne di Cerberus 10–15 px più strette di Chrome. |
+
+**Patch a litehtml [F]** (marcate `PATCH postino`, elencate in `third_party/litehtml/VERSION`), ognuna applicata solo dopo averne visto l'effetto sui PNG o sulle misure:
+
+| Patch | File | Nel rapporto precedente | Motivo |
+|---|---|---|---|
+| `max-width` sulle tabelle | `render_table.cpp` | sì | layout sbagliato visibile in Cerberus |
+| `height` in px di `td` (più padding e bordi, come Chrome) come altezza minima della riga | `render_table.cpp` | sì (senza padding) | spaziatori e hero |
+| `cellpadding` della tabella sul padding delle celle | `el_td.cpp` | **no, nuova** | litehtml v0.10 ignora l'attributo; deriva verticale su tutte le newsletter |
+| Un `el_space` per run di spazi tra i tag (`\n` separati) | `document.cpp` | sì (spike memoria) | callback `text_width` −75/−83 %, creazione dimezzata |
+| `<style>` non spezzato in parole | `document.cpp` | sì (spike memoria) | **non applicata**: il testo di `<style>` non genera callback di misura (verificato) e la memoria è fuori scope |
+
+**Misure [F]** (release, Apple M5 Pro; dettaglio in `litehtml-misure.md`): dall'HTML alla `Picture` ~13–14 ms per Colorlib e ~9 ms per Cerberus a caldo, ~70 ms al primo documento del processo (font di sistema). Il layout vero e proprio è 0,9–1,6 ms e non chiama Dart; il draw 3,7–4,3 ms. Callback per email: ~1550–3000 `text_width` e 11–17 `create_font` alla creazione, ~500 di disegno; il tempo speso dentro le callback Dart di misura è 1,2–1,7 ms. Le soglie del §7 («qualche decina di ms a 700 px») sono rispettate a caldo; il primo documento le supera.
+
+**Cosa non è stato verificato**: `LitehtmlView` dentro l'app demo è stata solo avviata (nessun errore, nessuno screenshot della finestra); i PNG vengono dalla stessa `Picture` che il widget dipinge. Nessuna misura di memoria; nessuna prova di selezione o Semantics; nessuna newsletter reale con dati (Zalando, ProntoPro), quindi immagini con soli attributi parziali, font web e casi `dir`/`letter-spacing` delle email vere restano da vedere.
+
+**Differenze rispetto al rapporto precedente**: Flutter 3.50.0; API C più piccola e nessuno stato globale (uno dei "da riscrivere" del §7); dimensione delle immagini dagli attributi invece che dall'header PNG dei data URI; una patch nuova (`cellpadding`); una delle patch di memoria applicata per le prestazioni, l'altra no; numeri e confronto con il browser finalmente registrati; `letter-spacing`, `dir=rtl` e `-webkit-center` emersi come limiti non citati prima. La raccomandazione del §7 (GO condizionato) è confermata sulle condizioni di tempi e confronto visivo; restano aperte quelle su memoria e accessibilità, i cui spike non sono stati ricostruiti.
+
+## 9. HTML non fidato (#383, fetta 1, 2026-11-24)
+
+**Metodo [F]**: harness C++ fuori dal repo che crea, impagina, disegna e distrugge un documento con callback finte (larghezza del testo = 8 px per byte) in un thread con stack scelto, compilato come `hook/build.dart` (`-O3`) e anche `-O0`. Apple M5 Pro, arm64. La parte che conta è diventata `packages/litehtml_flutter/test/native/stack_test.sh` (stack di 256 KB, nel job `check`); i casi a 100 000 livelli sono anche test Dart (`test/litehtml_security_test.dart`).
+
+**Prima delle patch [F]**, codice di `spike/66-litehtml-macos`, thread da 512 KB:
+
+| Input | Esito |
+|---|---|
+| 1 000 `<div>` annidati; 800 `<div>`; 1 000 `@media{` | crash (stack overflow) |
+| CSS `(` o `f(` annidati a 100 000 | crash (`consume_component_value` ↔ `consume_simple_block`) |
+| 20 `<table><tr><td>` annidate senza larghezze | non finisce (layout esponenziale: 10 livelli = 30 ms) |
+| 20 000 `<div>` annidati, stack da 8 MB | 1,7 s nel parser (ogni errore di Gumbo copia lo stack degli elementi aperti) |
+| `<td colspan=0>`, `colspan=-5`, `rowspan=-3` | crash (indice di colonna/riga negativo) |
+| 200 000 righe `<tr><td>` | 18 s (`is_rowspanned` quadratico) |
+| 100 000 `<td colspan=1000>` | 20 s, ~10⁸ celle allocate |
+
+**Patch [F]** (elenco in `third_party/litehtml/VERSION`): tetto di 32 blocchi CSS annidati; tetto di 512 elementi aperti in Gumbo (oltre: `html_too_deep` → `LitehtmlFailure.tooDeep`, non un documento troncato, così l'integrazione può ripiegare); DOM di litehtml al più 128 livelli (oltre: `tooDeep`; la prima versione appiattiva come Chrome, ma così `<style>` e `display:none` diventavano testo visibile); `destroy_node` di Gumbo iterativo; errori di Gumbo disattivati (`max_errors = 0`); budget di 500 000 `render_item::render` per layout; `colspan`/`rowspan` come nello standard HTML e budget di 500 000 celle per documento; `is_rowspanned` O(1). Nel wrapper: HTML oltre 4 MiB rifiutato, eccezioni di litehtml catturate, documento inutilizzabile dopo un layout fallito.
+
+**Dopo le patch [F]**:
+
+| Caso | Esito | Stack minimo `-O3` / `-O0` |
+|---|---|---|
+| 126 `<div>` (al tetto del DOM) | reso | 96 / 256 KB |
+| 126 `<div style="float:left">` o `display:flex` | reso / budget di layout | 160 / 384 KB |
+| 63 `<ul><li>` | reso | 96 / 256 KB |
+| 127–511 elementi annidati | `tooDeep` | — |
+| 31 `<table><tr><td>` | budget di layout (`-1`) in ~50 ms | 64 / 128 KB |
+| 10 / 11 `<table><tr><td>` senza larghezze | reso in 30 ms / budget di layout | — |
+| CSS annidato a 100 000 (`(`, `f(`, `{`, `@media{`, `:not(`) | reso, blocco profondo vuoto | 32 KB |
+| 100 000 elementi annidati di qualsiasi tag | `tooDeep` in ~1 ms | 32 KB |
+| newsletter di prova (colorlib-1, colorlib-10, cerberus, mailchimp) | altezze identiche a prima delle patch, 371–2 136 chiamate di layout | 32 KB |
+| 349 000 `<div>` piatti (~4 MB) | reso in ~1,3 s | — |
+| 200 000 righe / 400 000 celle in una tabella (~4 MB) | budget di layout dopo ~1,3–1,6 s | — |
+| 100 000 `<td colspan=1000>` | `failed` (budget di celle) in 0,3 s | — |
+
+**Isolate [F]**: in `flutter test`, `ui.ParagraphBuilder` dentro `Isolate.run` lancia «UI actions are only available on root isolate». Un `LitehtmlDocument` creato lì non va in crash, ma impagina con misure a zero perché le callback falliscono. Il layout resta quindi sull'isolate UI: la scelta e i margini di stack sono in ADR 0025.
+
+**Build [F]**: app con il pacchetto come dipendenza: `flutter build macos --debug`, `flutter build ios --no-codesign` e `flutter build apk --debug --flavor site` riusciti; un test di integrazione temporaneo (documento normale, CSS annidato a 100 000, HTML annidato a 100 000 e a 200 livelli, 126 float annidati, tabelle annidate, HTML oltre il limite) è passato sul simulatore iOS (iPhone 17 Pro, iOS 27) e sull'emulatore Android arm64 (API 36). Sull'emulatore la prima prova falliva al caricamento: `dlopen failed: cannot locate symbol "atan2f"`, e la libreria chiedeva `libc++_shared.so`, che l'APK non contiene. Ora si linkano `libm` e `c++_static`. Windows e Linux non sono mai stati compilati: il solo runner è macOS e da macOS non si compila per quelle piattaforme.
+
+**Cosa non è verificato**: lo stack reale del thread UI su ogni piattaforma (i valori in ADR 0025 vengono dalla documentazione); i frame di stack con MSVC e con gcc; i tempi con le callback Dart vere sui casi ostili da 4 MiB (le misure sopra usano callback finte).

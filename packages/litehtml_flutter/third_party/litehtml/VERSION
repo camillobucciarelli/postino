@@ -1,0 +1,44 @@
+litehtml v0.10 (tag v0.10, commit 9bc84b8b8d15a4e50f18b327aa30955048b441c2)
+https://github.com/litehtml/litehtml
+
+Vendorizzati: include/, src/ (gumbo incluso, con la sua LICENSE in src/gumbo/), LICENSE, README.md,
+src/gumbo/visualc/include/strings.h (serve a MSVC).
+Tolti: CMake, containers/, support/, doc/, progetti Visual Studio, il resto di src/gumbo/visualc/.
+
+Patch locali (cercare "PATCH postino").
+
+Layout, verificate sui PNG di #66:
+- src/render_table.cpp: max-width applicato alle tabelle (width="100%" + max-width:500px).
+- src/render_table.cpp: height in px di <td> (attributo o CSS, più padding/bordi) come altezza
+  minima della riga (celle spaziatrici; hero con height).
+- src/el_td.cpp: cellpadding della <table> mappato sul padding delle celle (prima restava 1px).
+- src/document.cpp: un el_space per run di spazi tra i tag invece che per carattere
+  ('\n' separati): da ~12000 a ~3000 callback text_width e tempo di creazione dimezzato.
+
+Sicurezza su HTML non fidato (#383; misure in docs/research/litehtml-spike.md §9):
+- include/litehtml/css_parser.h, src/css_parser.cpp: al più kMaxCssNesting (32) blocchi e
+  funzioni CSS annidati; oltre, il contenuto si salta senza ricorsione e il blocco resta vuoto.
+  Limita anche remove_whitespace_*, is_any_value e le altre visite ricorsive dei token.
+- include/litehtml/document.h, src/document.cpp: DOM di litehtml profondo al più kMaxDomDepth
+  (128); oltre, createFromString lancia html_too_deep (appiattire come Chrome renderebbe visibili
+  i figli di <style>, <script> e display:none).
+- src/gumbo/parser.c, src/gumbo/include/gumbo.h: al più kGumboMaxOpenElements (512) elementi
+  aperti; oltre, il parse si ferma e createFromString lancia html_too_deep.
+- src/gumbo/parser.c: destroy_node iterativo invece che ricorsivo.
+- src/gumbo/parser.c: max_errors 0 nelle opzioni di default (ogni errore copiava lo stack degli
+  elementi aperti: parse quadratico).
+- include/litehtml/render_item.h, src/render_item.cpp, src/document.cpp: budget di 500000
+  chiamate a render_item::render per document::render (layout esponenziale delle tabelle e dei
+  flex annidati); oltre, render_budget_exceeded.
+- include/litehtml/table.h, src/table.cpp, src/document.cpp: colspan 1..1000 e rowspan 1..65534
+  come nello standard (0 e negativi facevano leggere colonne a indice negativo); budget di 500000
+  celle per documento (table_too_large); is_rowspanned O(1) invece che quadratico.
+
+Il wrapper (src/litehtml_c.cpp) rifiuta l'HTML oltre LH_MAX_HTML_BYTES (4 MiB) e cattura le
+eccezioni di litehtml: lh_create/lh_render restituiscono un errore, mai un crash.
+
+Build (hook/build.dart): macOS (flutter test), simulatore iOS ed emulatore Android arm64 (test di
+integrazione temporaneo con i casi annidati) compilati e provati; su Android libc++ statica e libm
+esplicita, altrimenti dlopen fallisce. Windows (MSVC: /EHsc, /utf-8,
+/permissive-, strings.h di visualc) e Linux (clang/gcc) seguono il CMake di litehtml v0.10 ma non
+sono mai stati compilati: il runner CI è solo macOS.

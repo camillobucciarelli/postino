@@ -16,6 +16,7 @@ import 'package:routefly/routefly.dart';
 
 import '../../support/fake_mail_provider.dart';
 import '../../support/harness.dart';
+import '../../support/html_fallback_engine.dart';
 
 DateTime _day(int d) => DateTime.utc(2026, 10, d, 9);
 
@@ -44,6 +45,8 @@ Finder _in(String id, Finder f) => find.descendant(of: find.byKey(ValueKey('mess
 Finder _text(String s) => find.textContaining(s, findRichText: true);
 
 void main() {
+  // Looks for the body's text and links as widgets.
+  setUp(useHtmlFallbackEngine);
   group('header', () {
     void mailbox(FakeMailProvider p) {
       p

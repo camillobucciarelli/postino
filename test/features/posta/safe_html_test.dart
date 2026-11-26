@@ -339,4 +339,22 @@ body { background-image: url(//t.example/bg.png); }
       });
     }
   });
+
+  group('CSS rewriting creates no markup (#383)', () {
+    for (final html in [
+      // Taking out the @import joins `</sty` and `le>`.
+      '<style>p{}</sty@import url(//x.example/a.css);le><img src="https://track.example/p.png"></style><p>x</p>',
+      '<style>p{}</sty@import "//x.example/a.css";le><img src="https://track.example/p.png"></style>',
+      // A url() becoming `none`, a closing tag inside a CSS comment.
+      '<style>/* </style> */ p{background:url(//x.example/b.png)}</style><p>x</p>',
+      '<sty<style>le>p{}</sty@import url(//x.example/a.css);le><img src=https://track.example/p.png></style>',
+    ]) {
+      test('no remote image escapes from ${html.substring(0, 40)}…', () {
+        final out = _blocked(html).html;
+        final doc = parse(out);
+        expect(doc.querySelectorAll('img').where((i) => i.attributes.containsKey('src')), isEmpty);
+        expect(doc.querySelectorAll('style').map((e) => e.text).join(), isNot(contains('<')));
+      });
+    }
+  });
 }

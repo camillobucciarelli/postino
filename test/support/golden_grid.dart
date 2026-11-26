@@ -1,5 +1,6 @@
 // The goldens of the design system: one image per component, light and dark side by side, text at 100% over 200%.
-// ponytail: goldens are recorded and compared only on macOS (developers and the self-hosted Apple runner):
+// ponytail: goldens are recorded and compared only on macOS, on the macos-26 hosted image of the `test` CI job
+// (.github/workflows/update-goldens.yml records them; another Mac may differ by up to 0.3% of pixels):
 // Linux CI rasterises text and anti-aliasing differently (1-2% of pixels); the tap target guidelines still run everywhere.
 // The text contrast guideline samples the rendered pixels too (the most frequent light and dark colour around
 // each text): on Linux a small caption has no solid ink pixel winning over its anti-aliasing, so it runs on macOS only.

@@ -4,7 +4,8 @@ name: Release
 # `needs: version`: `macos` (DMG), `macos-store` (Mac App Store, #325, off until configured), `android` (sideloaded
 # APK, `--flavor site`) and `ios` (TestFlight, #120). `site` publishes the
 # invitees' guide (#123) and the website's static files, `download` the product page (#173, after `macos` and
-# `android`) next to them, and `android-store` (Google Play, #345, off until configured).
+# `android`) next to them, and `android-store` (Google Play, #345, off until configured). `windows` and `linux` build
+# on GitHub-hosted runners (#383) and `desktop` publishes their archives; nothing else waits for them.
 # A manual run with `only: android-store` runs that job alone (the other jobs are skipped), also for a version already
 # released: the first upload to Google Play of the version in pubspec.yaml (docs/store/play-checklist-titolare.md).
 # A manual run with `only: site` publishes the website alone (#370): `site`, then `download` with the product pages
@@ -647,3 +648,162 @@ jobs:
           echo "- iOS: build $(tool/release/build_number.sh "$VERSION") of $VERSION uploaded to TestFlight (internal testers)" >> "$GITHUB_STEP_SUMMARY"
       # No version file here (#323): the build is not on the App Store until it passes review and is released by
       # hand. ios-version-file.yml publishes it then.
+
+  # Windows and Linux (#383): the one exception to the self-hosted runner. GitHub-hosted runners build the app and keep
+  # the archive with the run (zip for Windows, tar.gz for Linux). Only values that ship inside the app reach them (the
+  # OAuth client IDs and the desktop client's secret, README); R2's keys stay on the self-hosted runner, where `desktop`
+  # publishes the archives. Google on Windows and Linux needs an "App desktop" client: without
+  # GOOGLE_DESKTOP_CLIENT_ID and GOOGLE_DESKTOP_CLIENT_SECRET the app builds but no Gmail Account can connect, so the
+  # job warns instead of failing. Not done yet: Authenticode signing of the Windows build, and the download page does
+  # not name these archives.
+  windows:
+    needs: version
+    if: inputs.only != 'android-store'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+      # Generated code is committed (checked by ci.yml), so no codegen here.
+      - name: flutter build windows --release
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        run: |
+          test -n "$MICROSOFT_CLIENT_ID" || { echo "::error::Secret MICROSOFT_CLIENT_ID is not set"; exit 1; }
+          test -n "$GOOGLE_CLIENT_ID" || echo "::warning::GOOGLE_DESKTOP_CLIENT_ID is not set: no Gmail Account can connect"
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build windows --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --dart-define=GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" \
+            --dart-define=POSTINO_BUILD="$build" --dart-define=POSTINO_VERSION="$VERSION"
+      - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
+      # The archive unpacks into Postino-<version>\ (7-Zip is on the Windows runner).
+      - name: Postino-<version>.zip
+        run: |
+          mkdir -p build/release
+          cp -r build/windows/x64/runner/Release "build/release/Postino-$VERSION"
+          cd build/release && 7z a -tzip "Postino-$VERSION.zip" "Postino-$VERSION"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: build/release/Postino-${{ needs.version.outputs.version }}.zip
+          retention-days: 7
+          if-no-files-found: error
+
+  linux:
+    needs: version
+    if: inputs.only != 'android-store'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev \
+            libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libnotify-dev
+      - name: flutter build linux --release
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        run: |
+          test -n "$MICROSOFT_CLIENT_ID" || { echo "::error::Secret MICROSOFT_CLIENT_ID is not set"; exit 1; }
+          test -n "$GOOGLE_CLIENT_ID" || echo "::warning::GOOGLE_DESKTOP_CLIENT_ID is not set: no Gmail Account can connect"
+          build=$(tool/release/build_number.sh "$VERSION")
+          flutter build linux --release --build-number="$build" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --dart-define=GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" --dart-define=MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID" \
+            --dart-define=POSTINO_BUILD="$build" --dart-define=POSTINO_VERSION="$VERSION"
+      # The archive unpacks into Postino-<version>/, executable bits kept.
+      - name: Postino-<version>.tar.gz
+        run: |
+          mkdir -p build/release
+          tar -czf "build/release/Postino-$VERSION.tar.gz" -C build/linux/x64/release --transform "s|^bundle|Postino-$VERSION|" bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: build/release/Postino-${{ needs.version.outputs.version }}.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+
+  # The Windows and Linux archives to R2, from the self-hosted runner that holds R2's keys, with the DMG's conventions:
+  # <platform>/<version>/Postino-<version>.<ext>, immutable for a tag (a manual run's upload is replaced by its tag run),
+  # and <platform>/latest/Postino.<ext> only for a tag of the highest version. One leg per platform: a failed build or
+  # upload on one never holds back the other, and "Re-run failed jobs" retries only the leg that failed (a leg whose
+  # archive is already up stops at the check, as for the DMG). Nothing waits for it: `download` and the other platforms
+  # never depend on Windows or Linux.
+  desktop:
+    needs: [version, windows, linux]
+    if: ${{ !cancelled() && needs.version.result == 'success' && inputs.only != 'android-store' }}
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: windows, ext: zip, type: application/zip }
+          - { platform: linux, ext: tar.gz, type: application/gzip }
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      KEY: ${{ matrix.platform }}/${{ needs.version.outputs.version }}/Postino-${{ needs.version.outputs.version }}.${{ matrix.ext }}
+      FILE: build/release/Postino-${{ needs.version.outputs.version }}.${{ matrix.ext }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      RELEASE_BASE_URL: ${{ vars.RELEASE_BASE_URL }}
+    steps:
+      - name: The ${{ matrix.platform }} build succeeded
+        env:
+          BUILD: ${{ needs[matrix.platform].result }}
+        run: |
+          test "$BUILD" = success || { echo "::error::The build is $BUILD, nothing to publish"; exit 1; }
+      - uses: actions/checkout@v7
+      # A tag release is never overwritten, as for the DMG and the APK.
+      - name: No tag release of this version yet
+        if: github.event_name == 'push'
+        run: tool/release/r2_unreleased.sh "$KEY"
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.platform }}
+          path: build/release
+      - name: Upload the archive to R2
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          EXT: ${{ matrix.ext }}
+          TYPE: ${{ matrix.type }}
+        run: |
+          echo "- $PLATFORM sha256: \`$(shasum -a 256 "$FILE" | cut -d ' ' -f 1)\`" >> "$GITHUB_STEP_SUMMARY"
+          upload() {
+            tool/release/r2_upload.sh "$FILE" "$1" "$TYPE" "$2"
+            echo "- $PLATFORM: ${RELEASE_BASE_URL:+${RELEASE_BASE_URL%/}/}$1" >> "$GITHUB_STEP_SUMMARY"
+          }
+          # Same cache policy as the DMG: a tag build is final, a manual build is replaced by its tag run.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            upload "$KEY" 'public, max-age=31536000, immutable'
+            latest=$(tool/release/is_latest.sh "$VERSION")
+            if [ "$latest" = yes ]; then upload "$PLATFORM/latest/Postino.$EXT" 'public, max-age=300'; fi
+          else
+            upload "$KEY" 'public, max-age=300'
+          fi

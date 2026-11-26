@@ -86,6 +86,7 @@ jobs:
       - run: tool/release/readable_check_test.sh
       - run: tool/release/keychain_create_test.sh
       - run: tool/release/play_key_export_test.sh
+      - run: tool/release/windows_runtime_check_test.sh
 
   android:
     # JDK: quello di Android Studio, trovato da Flutter; ANDROID_HOME sul runner.
@@ -124,10 +125,80 @@ jobs:
           fi
           grep -q 'A store release needs the upload key' <<< "$out" || { echo "$out"; exit 1; }
 
-  # Job `linux` e `windows` rimossi: niente minuti GitHub-hosted (a pagamento) e un job
-  # saltato (`if: false`) darebbe un check "skipping" che blocca il merge.
-  # Per riattivarli: runner self-hosted Linux/Windows e recupero dei job dalla git history
-  # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
+  # Eccezione al runner self-hosted (#383): `linux` e `windows` girano su runner GitHub-hosted (il repository è
+  # pubblico) per compilare il motore HTML nativo (packages/litehtml_flutter) con gcc/clang e MSVC e l'app desktop.
+  # Non sono check richiesti. Flutter da flutter-action alla versione di .fvmrc; il codice generato è committato (lo
+  # verifica `check`), quindi niente codegen.
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # Una PR da fork fallisce qui, prima di eseguire il suo codice, come negli altri job.
+      - name: PR from this repository
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev liblzma-dev \
+            libsecret-1-dev libjsoncpp-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libnotify-dev
+      - run: flutter pub get
+      # I test Dart caricano la libreria nativa compilata qui (un documento litehtml aperto, disegnato e liberato).
+      # Su x86_64 il caso peggiore (126 flex annidati) supera 256 KB di stack e sta in 384 KB (ADR 0025); su Linux
+      # i thread, quello dell'isolate UI compreso, hanno di default 8 MB di stack (glibc).
+      - name: litehtml_flutter
+        working-directory: packages/litehtml_flutter
+        run: |
+          flutter pub get
+          flutter test
+          STACK_KB=384 test/native/stack_test.sh
+      - run: flutter build linux --release
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Una PR da fork fallisce qui, prima di eseguire il suo codice, come negli altri job.
+      - name: PR from this repository
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        run: test "$HEAD_REPO" = "$REPO" || { echo "::error::PR from a fork ($HEAD_REPO) not built"; exit 1; }
+      - uses: actions/checkout@v7
+      - id: fvm
+        name: Flutter version from .fvmrc
+        run: echo "version=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+      - run: flutter pub get
+      # I test Dart caricano la libreria nativa compilata con MSVC. stack_test.sh no: è uno script clang con pthread.
+      - name: litehtml_flutter
+        working-directory: packages/litehtml_flutter
+        run: |
+          flutter pub get
+          flutter test
+      - run: flutter build windows --release
+      # Il runtime Visual C++ sta accanto all'exe: sul runner è installato, su un PC qualsiasi no.
+      - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
 
   apple:
     # Same self-hosted Mac as key-vault-password-manager; Flutter comes from the

@@ -16,6 +16,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Build nativa solo se serve (camillobucciarelli/officina#1): `android` e `apple` girano se la PR tocca codice
+  # nativo, dipendenze o questo workflow. Su main e a mano girano sempre. Un errore solo di build nativa in una PR
+  # di solo Dart esce quindi su main, non nella PR.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.native.outputs.native }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      # In una PR il checkout è il merge commit: il primo genitore è la base.
+      - id: native
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          native=true
+          if [ "$EVENT" = pull_request ]; then
+            files=$(git diff --name-only HEAD^1 HEAD)
+            echo "$files"
+            grep -qE '^(android|ios|macos)/|^packages/|^pubspec\.(yaml|lock)$|^\.fvmrc$|^\.github/workflows/ci\.yml$|^tool/release/(battery_permission_check|store_bundle_check)\.sh$' <<< "$files" || native=false
+          fi
+          echo "native=$native" | tee -a "$GITHUB_OUTPUT"
+
   # Al massimo 5 job macOS hosted insieme (limite di GitHub): static, 3 x test, apple. Android gira su Linux.
   static:
     # macOS: alcuni test di tool/release usano strumenti Apple (security, PlistBuddy).
@@ -85,6 +110,8 @@ jobs:
 
   # `flutter test` intero su un runner hosted macOS (3 core) dura 29 minuti (#389): diviso in parti parallele.
   # Il codice generato è nel repository (`static` lo verifica), quindi qui il codegen non serve.
+  # I golden e il contrasto del testo (#55) si confrontano qui: girano solo su macOS, e `runs-on` deve restare
+  # l'immagine che registra i golden (update-goldens.yml).
   test:
     runs-on: macos-26
     timeout-minutes: 30
@@ -112,22 +139,25 @@ jobs:
           POSTINO_REQUIRE_IMAP_SERVER: '1'
         run: flutter test --total-shards 3 --shard-index ${{ matrix.shard }}
 
-  # Il check richiesto dal ruleset: verde solo se `static` e tutte le parti di `test` sono verdi.
+  # Il check richiesto dal ruleset: verde solo se `changes`, `static` e tutte le parti di `test` sono verdi.
+  # `changes` è qui perché, se fallisce, `android` e `apple` vengono saltati e un job saltato vale come verde.
   check:
     if: always()
-    needs: [static, test]
+    needs: [changes, static, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "static, test: $RESULTS"
+          echo "changes, static, test: $RESULTS"
           for r in $RESULTS; do [ "$r" = success ] || exit 1; done
 
   android:
     # Linux: più core dei runner macOS hosted, e non occupa uno dei 5 posti macOS.
     # JDK da setup-java; Android SDK dell'immagine hosted (ANDROID_HOME).
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -144,11 +174,7 @@ jobs:
           cache: true
           pub-cache: true
       - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
+      # Niente codegen: il codice generato è nel repository e `static` lo verifica.
       # Both flavors (#345, ADR 0023): the APK from the site keeps the one-tap battery dialog, Google Play's does not.
       - run: flutter build apk --debug --flavor site
       - run: flutter build apk --debug --flavor store
@@ -168,8 +194,10 @@ jobs:
   # (versione di ci.yml precedente al commit "ci: rimuove i job linux e windows").
 
   apple:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: macos-26
-    # Misurato con cache fredda (#389): 27 minuti.
+    # Misurato su hosted (#389): 15 minuti per le tre build.
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -180,19 +208,7 @@ jobs:
           cache: true
           pub-cache: true
       - run: flutter pub get
-      - name: Codegen
-        run: |
-          dart run routefly
-          dart run slang
-          dart run build_runner build
-      - name: Generated code is committed
-        run: |
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-      # Goldens are compared only here, on the image that records them (update-goldens.yml). Same `runs-on` in both.
-      - run: flutter test test/design_system
-      # Text contrast on the list and the Conversazione needs the real fonts too (#55).
-      - run: flutter test test/features/posta/screen_reader_test.dart
+      # Niente codegen: il codice generato è nel repository e `static` lo verifica.
       - run: flutter build macos --debug
       # The Mac App Store variant (#325, ADR 0021): its own Xcode target, so a Swift file added to the Runner only, or
       # Sparkle slipping back in, fails here and not at release time.

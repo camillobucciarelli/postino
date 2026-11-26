@@ -16,11 +16,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
+  # Al massimo 5 job macOS hosted insieme (limite di GitHub): static, 3 x test, apple. Android gira su Linux.
+  static:
     # macOS: alcuni test di tool/release usano strumenti Apple (security, PlistBuddy).
     runs-on: macos-26
-    # Misurato con cache fredda (#389): `flutter test` da solo oltre 26 minuti.
-    timeout-minutes: 60
+    # Misurato su hosted (#389): circa 8 minuti.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
@@ -50,12 +51,6 @@ jobs:
             | grep -vE '\.(g|freezed|config|route)\.dart$' \
             | xargs dart format --output=none --set-exit-if-changed
       - run: flutter analyze --fatal-infos
-      # I test `imap` avviano da soli GreenMail (jar fissato e verificato, scaricato in .dart_tool/greenmail): con
-      # POSTINO_REQUIRE_IMAP_SERVER=1 un Java mancante fa fallire il job invece di saltare i test.
-      - name: flutter test
-        env:
-          POSTINO_REQUIRE_IMAP_SERVER: '1'
-        run: flutter test
       # Motore HTML (#383): i test Dart compilano la libreria nativa per macOS; stack_test.sh verifica che i limiti
       # di annidamento reggano su 256 KB di stack (ADR 0025). Le build android e apple la compilano per l'app.
       - name: litehtml_flutter
@@ -88,10 +83,52 @@ jobs:
       - run: tool/release/keychain_create_test.sh
       - run: tool/release/play_key_export_test.sh
 
-  android:
-    # JDK da setup-java; Android SDK dell'immagine hosted (ANDROID_HOME).
+  # `flutter test` intero su un runner hosted macOS (3 core) dura 29 minuti (#389): diviso in parti parallele.
+  # Il codice generato è nel repository (`static` lo verifica), quindi qui il codegen non serve.
+  test:
     runs-on: macos-26
-    # Misurato con cache fredda (#389): 26 minuti, 20 per il primo `flutter build apk`.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
+      - run: flutter pub get
+      # I test `imap` avviano da soli GreenMail (jar fissato e verificato, scaricato in .dart_tool/greenmail): con
+      # POSTINO_REQUIRE_IMAP_SERVER=1 un Java mancante fa fallire il job invece di saltare i test.
+      - name: flutter test
+        env:
+          POSTINO_REQUIRE_IMAP_SERVER: '1'
+        run: flutter test --total-shards 3 --shard-index ${{ matrix.shard }}
+
+  # Il check richiesto dal ruleset: verde solo se `static` e tutte le parti di `test` sono verdi.
+  check:
+    if: always()
+    needs: [static, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "static, test: $RESULTS"
+          for r in $RESULTS; do [ "$r" = success ] || exit 1; done
+
+  android:
+    # Linux: più core dei runner macOS hosted, e non occupa uno dei 5 posti macOS.
+    # JDK da setup-java; Android SDK dell'immagine hosted (ANDROID_HOME).
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7

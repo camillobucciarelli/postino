@@ -41,7 +41,8 @@ jobs:
           fi
           echo "native=$native" | tee -a "$GITHUB_OUTPUT"
 
-  # Al massimo 5 job macOS hosted insieme (limite di GitHub): static, 3 x test, apple. Android gira su Linux.
+  # Al massimo 5 job macOS hosted insieme (limite di GitHub): static e 3 x test partono subito; con le build native
+  # c'è anche apple-macos e apple-ios, e uno dei sei aspetta un posto. Android gira su Linux.
   static:
     # macOS: alcuni test di tool/release usano strumenti Apple (security, PlistBuddy).
     runs-on: macos-26
@@ -138,7 +139,13 @@ jobs:
       - name: flutter test
         env:
           POSTINO_REQUIRE_IMAP_SERVER: '1'
-        run: flutter test --total-shards 3 --shard-index ${{ matrix.shard }}
+          SHARD: ${{ matrix.shard }}
+        # Ogni parte riceve un terzo dei file e compila solo quelli. `--total-shards` no: le tre parti sommavano
+        # 53 minuti contro i 29 del comando intero (#389).
+        run: |
+          files=$(git ls-files -- 'test/*_test.dart' | sort | awk -v s="$SHARD" 'NR % 3 == s')
+          echo "$(wc -l <<< "$files") file di test in questa parte"
+          xargs flutter test <<< "$files"
 
   # Il check richiesto dal ruleset: verde solo se `changes`, `static` e tutte le parti di `test` sono verdi.
   # `changes` è qui perché, se fallisce, `android` e `apple` vengono saltati e un job saltato vale come verde.
@@ -255,12 +262,25 @@ jobs:
       # Il runtime Visual C++ sta accanto all'exe: sul runner è installato, su un PC qualsiasi no.
       - run: tool/release/windows_runtime_check.sh build/windows/x64/runner/Release
 
+  # `apple` è il check richiesto dal ruleset: riassume le due build, che girano in parallelo. Saltate (PR senza
+  # codice nativo) valgono come verdi; se `changes` fallisce lo segnala `check`.
   apple:
+    if: always()
+    needs: [apple-macos, apple-ios]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "apple-macos, apple-ios: $RESULTS"
+          for r in $RESULTS; do [ "$r" = success ] || [ "$r" = skipped ] || exit 1; done
+
+  apple-macos:
     needs: changes
     if: needs.changes.outputs.native == 'true'
     runs-on: macos-26
-    # Misurato su hosted (#389): 15 minuti per le tre build.
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
@@ -271,9 +291,24 @@ jobs:
           pub-cache: true
       - run: flutter pub get
       # Niente codegen: il codice generato è nel repository e `static` lo verifica.
-      - run: flutter build macos --debug
-      # The Mac App Store variant (#325, ADR 0021): its own Xcode target, so a Swift file added to the Runner only, or
-      # Sparkle slipping back in, fails here and not at release time.
+      # Solo la variante Mac App Store (#325, ADR 0021), che ha il suo target Xcode: Sparkle che rientra, o un file
+      # Swift che manca al target store, fallisce qui. Il target Runner (DMG, con Sparkle) non si compila più nelle
+      # PR: 7 minuti in più per lo stesso codice Dart. Lo compila `release.yml`.
       - run: flutter build macos --release --flavor store
       - run: tool/release/store_bundle_check.sh build/macos/Build/Products/Release-store/Postino.app
+
+  apple-ios:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Versione da .fvmrc, unica fonte; la action rifiuta anche flutter-version.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+          pub-cache: true
+      - run: flutter pub get
       - run: flutter build ios --no-codesign

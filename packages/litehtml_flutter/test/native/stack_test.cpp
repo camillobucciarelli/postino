@@ -5,6 +5,7 @@
 
 #include <pthread.h>
 
+#include <climits>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -31,7 +32,10 @@ void del_clip() {}
 void load_image(const char *) {}
 void text(const char *, int64_t, const lh_rect *) {}
 void separator(int32_t) {}
-void open(int32_t, int32_t, const char *, const lh_rect *) {}
+int32_t max_level = INT_MIN; // livello di pittura più alto emesso da lh_export
+void open(int32_t, int32_t level, const char *, const lh_rect *) {
+  if (level > max_level) max_level = level;
+}
 void close() {}
 
 std::string repeat(const char *s, int n) {
@@ -45,6 +49,7 @@ struct test_case {
   std::string html;
   int32_t status; // atteso da lh_create
   bool layout_ok; // lh_render >= 0 (false: budget di layout esaurito)
+  int32_t max_level = INT_MIN; // atteso da lh_export, se diverso da INT_MIN
 };
 
 void *run(void *arg) {
@@ -60,6 +65,10 @@ void *run(void *arg) {
     lh_export_callbacks ex{text, separator, open, close};
     lh_export(doc, &ex);
     lh_destroy(doc);
+  }
+  if (c->max_level != INT_MIN && max_level != c->max_level) {
+    fprintf(stderr, "%s: livello %d, atteso %d\n", c->name, max_level, c->max_level);
+    return arg;
   }
   if (status != c->status || (doc && layout_ok != c->layout_ok)) {
     fprintf(stderr, "%s: status %d layout %d, attesi %d %d\n", c->name, status,
@@ -83,6 +92,11 @@ int main() {
       {"span", repeat("<span>", 126) + "x", LH_OK, true},
       {"css", "<style>" + repeat("@media screen{", 100000) + "</style>x", LH_OK, true},
       {"css-fn", "<p style=\"color:" + repeat("f(", 100000) + "\">x</p>", LH_OK, true},
+      // z-index al massimo di int (#399): saturato prima del cast, livello = (INT_MAX/2-1)*2+1.
+      {"z-index-max",
+       "<div style=\"position:relative\"><a href=\"x\" "
+       "style=\"position:absolute;z-index:2147483647\">x</a></div>",
+       LH_OK, true, (INT_MAX / 2 - 1) * 2 + 1},
       {"dom-127", repeat("<div>", 127) + "x", LH_TOO_DEEP, false},
       {"html-100k", repeat("<div>", 100000) + "x", LH_TOO_DEEP, false},
   };

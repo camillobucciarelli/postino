@@ -55,7 +55,7 @@ class const MessageList({
   /// The Etichetta of this view: the Azioni and the Etichette of a row reach only the messages it shows.
   final String view = inboxLabelId,
 
-  /// The posta in arrivo (#366): Contrassegnate, Da leggere and Letti; «Mostra tutti» calls it with its section.
+  /// The posta in arrivo (#366): Da leggere, Contrassegnate and Letti; «Mostra tutti» calls it with its section.
   final void Function(InboxSection section)? onShowAll,
 
   /// Only this section of the posta in arrivo, all of it and without heading (the screen of «Mostra tutti»).

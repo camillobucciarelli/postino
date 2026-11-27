@@ -45,7 +45,11 @@ class const PostinoSinglePaneLayout({
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: banners),
         ),
-        Expanded(child: PostinoBelowBar(child: body)),
+        // A group of its own: Tab goes through the whole body before the floating [fab] (reading order alone would reach a
+        // right-aligned control after a FAB that shares its column).
+        Expanded(
+          child: FocusTraversalGroup(child: PostinoBelowBar(child: body)),
+        ),
       ],
     ),
   );

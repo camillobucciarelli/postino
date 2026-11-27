@@ -540,6 +540,18 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('each heading fills the list: title 16 px from the left edge, «Mostra tutti» at the right', (
+      tester,
+    ) async {
+      await _startSections(tester, unread: 4, read: 2);
+      final list = tester.getRect(find.byType(PostinoMessageList));
+      for (final h in tester.widgetList<PostinoSectionHeader>(find.byType(PostinoSectionHeader))) {
+        final title = find.text('${h.title.toUpperCase()}  ${h.count}');
+        expect(tester.getTopLeft(title).dx - list.left, PostinoSpacing.s4, reason: h.title);
+      }
+      expect(tester.getTopRight(find.widgetWithText(PostinoButton, 'Mostra tutti')).dx, greaterThan(list.right - 40));
+    });
+
     testWidgets('without Contrassegnate nor Da leggere there is no heading: the list as before', (tester) async {
       await _startSections(tester, read: 3);
       expect(find.byType(PostinoSectionHeader), findsNothing);

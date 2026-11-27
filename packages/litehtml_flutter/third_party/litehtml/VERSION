@@ -43,3 +43,5 @@ esplicita, altrimenti dlopen fallisce. Windows (MSVC: /EHsc, /utf-8,
 /permissive-, strings.h di visualc) e Linux (clang, libm) seguono il CMake di litehtml v0.10:
 compilati senza modifiche, flutter test verde e app desktop costruita nei job `windows` e `linux`
 della CI (runner GitHub-hosted, #383). stack_test.sh gira su Linux con 384 KB (ADR 0025).
+- include/litehtml/css_properties.h: get_z_index() satura prima del cast float->int (z-index 2147483647
+  era UB: INT_MAX su arm64, INT_MIN su x86_64; #399).

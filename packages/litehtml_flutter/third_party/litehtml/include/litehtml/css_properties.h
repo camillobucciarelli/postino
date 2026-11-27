@@ -1,6 +1,7 @@
 #ifndef LITEHTML_CSS_PROPERTIES_H
 #define LITEHTML_CSS_PROPERTIES_H
 
+#include <climits>
 #include "string_id.h"
 #include "types.h"
 #include "css_margins.h"
@@ -376,7 +377,13 @@ namespace litehtml
 
 	inline int css_properties::get_z_index() const
 	{
-		return (int)m_z_index.val();
+		// PATCH postino (#399): z-index ostili (2147483647 = 2^31 in float): il cast fuori range e' UB
+		// (arm64 satura, x86_64 da' INT_MIN). Si satura prima.
+		const float z = m_z_index.val();
+		if (z != z) return 0;
+		if (z >= 2147483648.0f) return INT_MAX;
+		if (z <= -2147483648.0f) return INT_MIN;
+		return (int)z;
 	}
 
 	inline void css_properties::set_z_index(int mZIndex)

@@ -1293,7 +1293,7 @@ void main() {
       expect(sleeps.where((d) => d == const Duration(milliseconds: 125)), hasLength(2));
     });
 
-    test('persistent 429s on page two still fail, with page one stored', () async {
+    test('persistent 429s on page two fail the initial sync, with what came stored (#394)', () async {
       final stored = <int>[];
       final p = GmailProvider(
         gmailAccount,
@@ -1323,7 +1323,8 @@ void main() {
         sleep: (_) async {},
       );
       expect(await p.initialSync(onPage: (m, _) async => stored.add(m.length)), isErr<RateLimitFailure>());
-      expect(stored, [100]);
+      // m120 is in the chunk m120..m124: those four come and are stored, the chunks after it are not asked.
+      expect(stored, [100, 24]);
     });
 
     test('a 429 that clears on retry is not a failure', () async {

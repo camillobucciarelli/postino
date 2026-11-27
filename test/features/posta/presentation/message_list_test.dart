@@ -516,14 +516,14 @@ void main() {
   });
 
   group('sections of the posta in arrivo (#366)', () {
-    testWidgets('Contrassegnate, Da leggere, Letti in order, each heading with its count; 3 rows and «Mostra tutti»', (
+    testWidgets('Da leggere, Contrassegnate, Letti in order, each heading with its count; 3 rows and «Mostra tutti»', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       await _startSections(tester, starred: 2, unread: 4, read: 2);
-      expect(_headings(tester), ['Contrassegnate 2', 'Da leggere 4', 'Letti 2']);
-      expect(_topOf(tester, _rowOf('s2')), lessThan(_topOf(tester, _rowOf('u1'))));
-      expect(_topOf(tester, _rowOf('u3')), lessThan(_topOf(tester, _rowOf('r1'))));
+      expect(_headings(tester), ['Da leggere 4', 'Contrassegnate 2', 'Letti 2']);
+      expect(_topOf(tester, _rowOf('u3')), lessThan(_topOf(tester, _rowOf('s1'))));
+      expect(_topOf(tester, _rowOf('s2')), lessThan(_topOf(tester, _rowOf('r1'))));
       expect(_rowOf('u3'), findsOneWidget);
       expect(_rowOf('u4'), findsNothing, reason: 'only the 3 newest');
       expect(_rowOf('r2'), findsOneWidget, reason: 'Letti shows all');
@@ -791,10 +791,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(_focusedId(), isNot('u1'));
       expect(_headings(tester), [
-        'Contrassegnate 1',
-        'Da leggere 3',
+        'Da leggere 4',
         'Letti 1',
-      ], reason: 'the focus left it: it went to Contrassegnate');
+      ], reason: 'the focus left it: still unread, so still in Da leggere (the Stella does not win)');
     });
 
     testWidgets('a row held by the keyboard focus stays while its menu is open, whatever the sync says', (
@@ -819,7 +818,7 @@ void main() {
       expect(_headings(tester), ['Da leggere 4', 'Letti 1']);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(_headings(tester), ['Contrassegnate 1', 'Da leggere 3', 'Letti 1'], reason: 'the focus left it');
+      expect(_headings(tester), ['Da leggere 4', 'Letti 1'], reason: 'the focus left it: still unread');
     });
 
     testWidgets('«Mostra tutti» is reached with Tab from the cursor row and opens with Invio or Spazio', (

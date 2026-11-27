@@ -23,7 +23,7 @@ List<ListItem> listItems(List<InboxEntry> list, InboxSections? sections, {InboxS
     ],
 ];
 
-/// The name of section [s]: Contrassegnate, Da leggere, Letti.
+/// The name of section [s]: Da leggere, Contrassegnate, Letti.
 String sectionTitle(Translations t, InboxSection s) => switch (s) {
   InboxSection.starred => t.sezioni.starred,
   InboxSection.unread => t.sezioni.unread,

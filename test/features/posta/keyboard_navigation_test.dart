@@ -24,7 +24,7 @@ const _narrow = Size(800, 800);
 const _phone = Size(390, 844);
 
 /// Rows `m1` to `mN`, newest first: `mN` is the first row. Read, so the list has no sections (#366), but the rows
-/// in [starred]: unread with a Stella, the first rows of Contrassegnate, which they keep once read.
+/// in [starred]: unread with a Stella, the first rows of Da leggere, which they leave for Contrassegnate once read.
 Future<FakeMailProvider> _start(WidgetTester tester, Size size, {int n = 5, Set<int> starred = const {}}) async {
   tester.view
     ..physicalSize = size
@@ -247,7 +247,9 @@ void main() {
       for (final (key, to) in [
         (LogicalKeyboardKey.arrowDown, 4),
         (LogicalKeyboardKey.keyJ, 3),
-        (LogicalKeyboardKey.arrowUp, 4),
+        // Read, 5 and 4 went below 3 (Da leggere comes first): the focus goes down to them, then back up.
+        (LogicalKeyboardKey.arrowDown, 5),
+        (LogicalKeyboardKey.keyJ, 4),
         (LogicalKeyboardKey.keyK, 5),
       ]) {
         final first = to <= 3;

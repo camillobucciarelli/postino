@@ -1,14 +1,14 @@
 import '../../../core/domain/inbox_repository.dart';
 import '../../../core/domain/message.dart';
 
-/// The sections of the posta in arrivo (#366), in their order: Contrassegnate, Da leggere, Letti.
+/// The sections of the posta in arrivo (#366), in their order: Da leggere, Contrassegnate, Letti.
 enum InboxSection() {
-  starred,
   unread,
+  starred,
   read,
 }
 
-/// How many Conversazioni Contrassegnate and Da leggere show before «Mostra tutti».
+/// How many Conversazioni Da leggere and Contrassegnate show before «Mostra tutti».
 const sectionPreview = 3;
 
 /// A Conversazione of a list: (Account id, Conversazione id).
@@ -35,17 +35,17 @@ HeldConversation? holdFocus(ConversationKey? focus, HeldConversation? held, Inbo
 
 /// The Conversazioni of the posta in arrivo by section, each in one only, newest first as they come.
 class InboxSections._(final Map<InboxSection, List<InboxEntry>> _by, final HeldConversation? _held) {
-  /// Splits [entries]: with a Stella in Contrassegnate, else with an unread message in Da leggere, else in Letti;
+  /// Splits [entries]: with an unread message in Da leggere (even with a Stella), else with a Stella in Contrassegnate, else in Letti;
   /// [held] stays where the focus rule keeps it.
   factory InboxSections.of(List<InboxEntry> entries, {HeldConversation? held}) {
     final by = {for (final s in InboxSection.values) s: <InboxEntry>[]};
     for (final e in entries) {
       final section = held != null && keyOf(e) == held.$1
           ? held.$2
-          : isStarred(e)
-          ? InboxSection.starred
           : e.unread
           ? InboxSection.unread
+          : isStarred(e)
+          ? InboxSection.starred
           : InboxSection.read;
       by[section]!.add(e);
     }
@@ -55,7 +55,7 @@ class InboxSections._(final Map<InboxSection, List<InboxEntry>> _by, final HeldC
   /// Every Conversazione of [s].
   List<InboxEntry> all(InboxSection s) => _by[s]!;
 
-  /// What the list shows of [s]: the [sectionPreview] newest of Contrassegnate and Da leggere, all of Letti.
+  /// What the list shows of [s]: the [sectionPreview] newest of Da leggere and Contrassegnate, all of Letti.
   /// The held Conversazione past them (newer ones arrived since it took the focus) takes the place of the last.
   List<InboxEntry> shown(InboxSection s) {
     if (!hasMore(s)) return all(s);

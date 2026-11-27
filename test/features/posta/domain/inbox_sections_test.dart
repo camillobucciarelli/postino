@@ -30,18 +30,18 @@ InboxEntry _entry(int id, {bool unread = false, bool starred = false}) => InboxE
 List<String> _ids(List<InboxEntry> l) => [for (final e in l) e.message.conversationId];
 
 void main() {
-  test('sections in order: Contrassegnate, Da leggere, Letti; the Stella wins over unread', () {
+  test('sections in order: Da leggere, Contrassegnate, Letti; unread wins over the Stella', () {
     final s = InboxSections.of([
       _entry(1),
       _entry(2, unread: true),
       _entry(3, starred: true, unread: true),
       _entry(4, starred: true),
     ]);
-    expect(InboxSection.values, [InboxSection.starred, InboxSection.unread, InboxSection.read]);
-    expect(_ids(s.all(InboxSection.starred)), ['c3', 'c4'], reason: 'with a Stella even if unread');
-    expect(_ids(s.all(InboxSection.unread)), ['c2']);
+    expect(InboxSection.values, [InboxSection.unread, InboxSection.starred, InboxSection.read]);
+    expect(_ids(s.all(InboxSection.unread)), ['c2', 'c3'], reason: 'unread even with a Stella');
+    expect(_ids(s.all(InboxSection.starred)), ['c4'], reason: 'with a Stella and read');
     expect(_ids(s.all(InboxSection.read)), ['c1']);
-    expect(s.sectionOf(('a1', 'c3')), InboxSection.starred);
+    expect(s.sectionOf(('a1', 'c3')), InboxSection.unread);
     expect(s.sectionOf(('a1', 'c9')), isNull);
   });
 

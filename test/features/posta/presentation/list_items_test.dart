@@ -69,8 +69,8 @@ void main() {
 
   test('the sections are named in the language of the app', () {
     final it = AppLocale.it.buildSync();
-    expect([for (final s in InboxSection.values) sectionTitle(it, s)], ['Contrassegnate', 'Da leggere', 'Letti']);
+    expect([for (final s in InboxSection.values) sectionTitle(it, s)], ['Da leggere', 'Contrassegnate', 'Letti']);
     final en = AppLocale.en.buildSync();
-    expect([for (final s in InboxSection.values) sectionTitle(en, s)], ['Starred', 'Unread', 'Read']);
+    expect([for (final s in InboxSection.values) sectionTitle(en, s)], ['Unread', 'Starred', 'Read']);
   });
 }
